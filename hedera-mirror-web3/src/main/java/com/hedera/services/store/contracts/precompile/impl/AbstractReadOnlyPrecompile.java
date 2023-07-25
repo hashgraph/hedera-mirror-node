@@ -27,7 +27,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
@@ -37,7 +36,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
     private static final long MINIMUM_GAS_COST = 100L;
 
-    protected TokenID tokenId;
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final EncodingFacade encoder;
     protected final EvmEncodingFacade evmEncoder;
