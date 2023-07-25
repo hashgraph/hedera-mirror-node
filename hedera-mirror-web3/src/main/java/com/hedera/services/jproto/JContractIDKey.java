@@ -43,12 +43,6 @@ public class JContractIDKey extends JKey {
         this.contractNum = contractID.getContractNum();
     }
 
-    public JContractIDKey(final long shardNum, final long realmNum, final long contractNum) {
-        this.shardNum = shardNum;
-        this.realmNum = realmNum;
-        this.contractNum = contractNum;
-    }
-
     @Override
     public JContractIDKey getContractIDKey() {
         return this;
@@ -73,10 +67,6 @@ public class JContractIDKey extends JKey {
 
     public long getRealmNum() {
         return realmNum;
-    }
-
-    public long getContractNum() {
-        return contractNum;
     }
 
     @Override
