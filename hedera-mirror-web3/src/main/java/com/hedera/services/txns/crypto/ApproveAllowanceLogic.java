@@ -207,6 +207,7 @@ public class ApproveAllowanceLogic {
 
             final var nfts = updateSpender(
                     store, approvingAccount.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
+            store.wrap();
             for (final var nft : nfts) {
                 nftsTouched.put(nft.getNftId(), nft);
             }

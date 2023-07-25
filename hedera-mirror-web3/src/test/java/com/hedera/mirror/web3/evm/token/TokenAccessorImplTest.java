@@ -39,6 +39,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -73,14 +74,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
 
-    private final long serialNo = 0L;
     private static final String HEX_TOKEN = "0x00000000000000000000000000000000000004e4";
     private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
-    private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
     private static final Long ENTITY_ID =
             EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
+    private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
+    private final long serialNo = 0L;
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+    public TokenAccessorImpl tokenAccessor;
 
     @Mock
     private EntityRepository entityRepository;
@@ -106,6 +109,9 @@ class TokenAccessorImplTest {
     @Mock
     private NftAllowanceRepository nftAllowanceRepository;
 
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private MirrorNodeEvmProperties properties;
 
@@ -116,11 +122,7 @@ class TokenAccessorImplTest {
     private Token token;
 
     private List<DatabaseAccessor<Object, ?>> accessors;
-
     private Store store;
-    private final DomainBuilder domainBuilder = new DomainBuilder();
-
-    public TokenAccessorImpl tokenAccessor;
 
     @BeforeEach
     void setUp() {
@@ -144,7 +146,7 @@ class TokenAccessorImplTest {
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
         store = new StoreImpl(accessors);
-        tokenAccessor = new TokenAccessorImpl(properties, store);
+        tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 
     @Test

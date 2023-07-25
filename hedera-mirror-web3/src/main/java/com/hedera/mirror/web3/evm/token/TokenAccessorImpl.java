@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -50,6 +51,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private final MirrorNodeEvmProperties properties;
     private final Store store;
+    private final MirrorEvmContractAliases aliases;
 
     @Override
     public Optional<EvmTokenInfo> evmInfoForToken(Address address) {
@@ -158,7 +160,9 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
         final var tokenNum = EntityNum.fromEvmAddress(token);
-        final var spenderNum = EntityNum.fromEvmAddress(spender);
+
+        final var resolvedSpender = aliases.resolveForEvm(spender);
+        final var spenderNum = EntityNum.fromEvmAddress(resolvedSpender);
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
 
@@ -184,7 +188,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
         final var tokenNum = EntityNum.fromEvmAddress(token);
-        final var operatorNum = EntityNum.fromEvmAddress(operator);
+        final var operatorNum = EntityNum.fromEvmAddress(aliases.resolveForEvm(operator));
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, operatorNum);
 
