@@ -30,7 +30,7 @@ with min_timestamp as (select min(timestamp) as created_timestamp, owner, spende
              from min_timestamp mt
              where cah.owner = mt.owner and cah.spender = mt.spender)
 update crypto_allowance ca
-set created_timestamp = mt.created_timestamp
+set amount = ca.amount_granted, created_timestamp = mt.created_timestamp
 from min_timestamp mt
 where ca.owner = mt.owner
   and ca.spender = mt.spender;
@@ -80,7 +80,7 @@ with min_timestamp as (select min(timestamp) as created_timestamp, owner, spende
              from min_timestamp mt
              where tah.owner = mt.owner and tah.spender = mt.spender and tah.token_id = mt.token_id)
 update token_allowance ta
-set created_timestamp = mt.created_timestamp
+set amount = ta.amount_granted, created_timestamp = mt.created_timestamp
 from min_timestamp mt
 where ta.owner = mt.owner
   and ta.spender = mt.spender
