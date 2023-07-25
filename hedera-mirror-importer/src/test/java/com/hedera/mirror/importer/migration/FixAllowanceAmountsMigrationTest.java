@@ -204,7 +204,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
     }
 
-    // Range.closedOpen(timestampLower, timestampUpper)
     @SneakyThrows
     private void migrate() {
         runSql(FileUtils.readFileToString(migrationSql, "UTF-8"));
