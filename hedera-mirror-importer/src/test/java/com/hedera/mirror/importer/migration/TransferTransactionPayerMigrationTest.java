@@ -666,7 +666,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     // custom class with shared attributes for all transfer classes prior to migration
     @Data
     @NoArgsConstructor
-    @lombok.AllArgsConstructor
+    @AllArgsConstructor
     private static class SharedTransfer {
         private long amount;
         private long consensusTimeStamp;
@@ -675,7 +675,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         private EntityId sender;
     }
 
-    @lombok.AllArgsConstructor(access = lombok.AccessLevel.PRIVATE) // For Builder
+    @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE) // For Builder
     @Builder
     @Data
     @NoArgsConstructor
