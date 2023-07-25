@@ -113,7 +113,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 assertThat((boolean) fixedFee[0].get(2)).isFalse();
                 assertThat((boolean) fixedFee[0].get(3)).isFalse();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(4))
-                        .isEqualTo(convertAddress(SENDER_ADDRESS));
+                        .isEqualTo(convertAddress(SENDER_ALIAS));
             }
             case FRACTIONAL_FEE -> {
                 assertThat((long) fractionalFee[0].get(0)).isEqualTo(100L);
@@ -122,7 +122,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 assertThat((long) fractionalFee[0].get(3)).isEqualTo(1000L);
                 assertThat((boolean) fractionalFee[0].get(4)).isTrue();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fractionalFee[0].get(5))
-                        .isEqualTo(convertAddress(SENDER_ADDRESS));
+                        .isEqualTo(convertAddress(SENDER_ALIAS));
             }
             case ROYALTY_FEE -> {
                 assertThat((long) royaltyFee[0].get(0)).isEqualTo(20L);
@@ -132,7 +132,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
                 assertThat((boolean) royaltyFee[0].get(4)).isFalse();
                 assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(5))
-                        .isEqualTo(convertAddress(SENDER_ADDRESS));
+                        .isEqualTo(convertAddress(SENDER_ALIAS));
             }
         }
     }
@@ -242,7 +242,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     enum ContractReadFunctions {
         IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_FROZEN_ETH_ADDRESS(
-                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS}, new Boolean[] {true}),
+                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
         IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
@@ -332,7 +332,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
         BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
         BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, ETH_ADDRESS, 1L}),
+        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L}),
         WIPE_NFT_TOKEN(
                 "wipeTokenAccountNFTExternal",
                 new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ADDRESS, new long[] {1}}),
