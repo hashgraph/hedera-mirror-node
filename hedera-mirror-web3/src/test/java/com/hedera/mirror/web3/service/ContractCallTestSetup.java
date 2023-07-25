@@ -116,7 +116,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
 
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051, TOKEN));
-    protected static final Address NOT_PAUSED_NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -361,13 +360,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 ownerEntityId,
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED);
-        final var notPausedNftEntityId = nftPersist(
-                NOT_PAUSED_NFT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                senderEntityId,
-                KEY_PROTO,
-                TokenPauseStatusEnum.UNPAUSED);
+
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
@@ -392,19 +385,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ownerEntityId, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ethAccount, notPausedNftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
-        nftCustomFeePersist(senderEntityId, notPausedNftEntityId);
+
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContarct, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
-        contractAllowancesPersist(
-                senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, notPausedNftEntityId);
-        contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, notPausedNftEntityId);
+        allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }

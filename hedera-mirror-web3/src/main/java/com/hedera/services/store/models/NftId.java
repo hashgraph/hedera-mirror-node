@@ -56,8 +56,4 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
     public static NftId fromGrpc(final NftID nftId) {
         return fromGrpc(nftId.getTokenID(), nftId.getSerialNumber());
     }
-
-    public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
-        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
-    }
 }
