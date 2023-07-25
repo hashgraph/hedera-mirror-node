@@ -25,6 +25,7 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
@@ -35,6 +36,7 @@ import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -331,6 +333,26 @@ class SyntheticTxnFactoryTest {
         assertEquals(nonFungible, txnBody.getTokenWipe().getToken());
         assertEquals(a, txnBody.getTokenWipe().getAccount());
         assertEquals(targetSerialNos, txnBody.getTokenWipe().getSerialNumbersList());
+    }
+
+    @Test
+    void createsAdjustAllowanceForAllNFT() {
+        final var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
+
+        final var result = subject.createApproveAllowanceForAllNFT(allowances, senderId);
+        final var txnBody = result.build();
+
+        assertEquals(
+                receiver,
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+        assertEquals(
+                sender, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getOwner());
+        assertEquals(
+                nonFungible,
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(
+                BoolValue.of(true),
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
     }
 
     @Test

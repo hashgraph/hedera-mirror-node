@@ -23,14 +23,17 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -47,6 +50,12 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -56,11 +65,14 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,8 +97,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
+    protected static final ByteString SENDER_PUBLIC_KEY =
+            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+    protected static final Address SENDER_ALIAS = Address.wrap(
+            Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 750, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
+    protected static final ByteString SPENDER_PUBLIC_KEY =
+            ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
+    protected static final Address SPENDER_ALIAS = Address.wrap(
+            Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
@@ -112,6 +132,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
+    protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
+    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
+    protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
     protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
@@ -149,6 +174,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenAssociateToAccount)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build()))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
@@ -191,7 +223,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
-                                            .build()))))
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(TokenCreate)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())
+                                    .build())))
             .build();
 
     @Autowired
@@ -329,11 +368,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(modificationContarct, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(modificationContarct, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -465,7 +507,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
                         .num(spenderEntityId.getEntityNum())
-                        .evmAddress(spenderEvmAddress))
+                        .evmAddress(SPENDER_ALIAS.toArray())
+                        .alias(SPENDER_PUBLIC_KEY.toByteArray())
+                        .deleted(false))
                 .persist();
         return spenderEntityId;
     }
@@ -477,7 +521,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(ethAccount)
                         .num(ethAccount)
                         .evmAddress(evmAddress.toArrayUnsafe())
-                        .balance(2000L))
+                        .balance(2000L)
+                        .deleted(false))
                 .persist();
         return ethAccount;
     }
@@ -490,8 +535,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
                         .num(senderEntityId.getEntityNum())
-                        .evmAddress(null)
-                        .alias(toEvmAddress(senderEntityId))
+                        .evmAddress(SENDER_ALIAS.toArray())
+                        .deleted(false)
+                        .alias(SENDER_PUBLIC_KEY.toByteArray())
                         .balance(20000L))
                 .persist();
         return senderEntityId;
@@ -843,5 +889,51 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
+    }
+
+    private static TokenCreateWrapper getFungibleToken() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 100_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleToken() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 100_000L));
+    }
+
+    private static FixedFeeWrapper getFixedFee() {
+        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
+    }
+
+    private static FractionalFeeWrapper getFractionalFee() {
+        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
+    }
+
+    private static RoyaltyFeeWrapper getRoyaltyFee() {
+        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
     }
 }

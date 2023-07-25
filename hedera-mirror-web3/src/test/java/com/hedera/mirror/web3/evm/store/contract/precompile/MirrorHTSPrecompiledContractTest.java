@@ -99,10 +99,10 @@ class MirrorHTSPrecompiledContractTest {
     private HederaEvmWorldStateTokenAccount account;
 
     @Mock
-    private EntityAddressSequencer entityAddressSequencer;
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
+    private EntityAddressSequencer entityAddressSequencer;
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;

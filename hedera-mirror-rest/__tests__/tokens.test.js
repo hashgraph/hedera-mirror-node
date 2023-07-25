@@ -395,7 +395,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                  ti.balance,
                  (select max(consensus_end) from record_file) as consensus_timestamp
           from token_account ti
-          where ti.token_id = $1
+          where ti.token_id = $1 and ti.associated = true
           order by ti.account_id desc
           limit $2`,
         params: [tokenId, defaultLimit],
@@ -489,7 +489,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                    ti.balance,
                    (select max(consensus_end) from record_file) as consensus_timestamp
             from token_account ti
-            where ti.token_id = $1
+            where ti.token_id = $1 and ti.associated = true
             order by ti.account_id desc
             limit $2`,
         params: [tokenId, 30],
@@ -516,6 +516,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             from token_account ti
             where ti.token_id = $1
               and ti.account_id ${op} $2
+              and ti.associated = true
             order by ti.account_id desc
             limit $3`,
           params: [tokenId, accountId, defaultLimit],
@@ -543,6 +544,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             from token_account ti
             where ti.token_id = $1
               and ti.balance ${op} $2
+              and ti.associated = true
             order by ti.account_id desc
             limit $3`,
           params: [tokenId, balance, defaultLimit],
@@ -608,7 +610,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                    ti.balance,
                    (select max(consensus_end) from record_file) as consensus_timestamp
             from token_account ti
-            where ti.token_id = $1
+            where ti.token_id = $1 and ti.associated = true
             order by ti.account_id ${order}
             limit $2`,
           params: [tokenId, defaultLimit],
@@ -676,7 +678,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                       on e.type = '${constants.entityTypes.ACCOUNT}'
                         and e.id = ti.account_id
                         and e.public_key = $2
-          where ti.token_id = $1
+          where ti.token_id = $1 and ti.associated = true
           order by ti.account_id desc
           limit $3`,
         params: [tokenId, publicKey, defaultLimit],
@@ -829,6 +831,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           where ti.token_id = $1
             and ti.account_id = $2
             and ti.balance = $3
+            and ti.associated = true
           order by ti.account_id asc
           limit $5`,
         params: [tokenId, accountId, balance, publicKey, 1],

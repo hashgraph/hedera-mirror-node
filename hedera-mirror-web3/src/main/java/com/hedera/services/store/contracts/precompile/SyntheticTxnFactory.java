@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
@@ -30,6 +31,7 @@ import com.hedera.services.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
+import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -43,9 +45,11 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
@@ -54,8 +58,10 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenTransferList.Builder;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -240,6 +246,21 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenGrantKyc(builder);
     }
 
+    public TransactionBody.Builder createApproveAllowanceForAllNFT(
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull Id ownerId) {
+
+        final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
+
+        builder.addNftAllowances(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
+                .setTokenId(setApprovalForAllWrapper.tokenId())
+                .setOwner(Objects.requireNonNull(ownerId).asGrpcAccount())
+                .setSpender(setApprovalForAllWrapper.to())
+                .build());
+
+        return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
+    }
+
     public TransactionBody.Builder createUnpause(final UnpauseWrapper unpauseWrapper) {
         final var builder = TokenUnpauseTransactionBody.newBuilder();
         builder.setToken(unpauseWrapper.token());
@@ -265,6 +286,45 @@ public class SyntheticTxnFactory {
         final var builder = TokenPauseTransactionBody.newBuilder();
         builder.setToken(pauseWrapper.token());
         return TransactionBody.newBuilder().setTokenPause(builder);
+    }
+
+    public TransactionBody.Builder createTokenCreate(TokenCreateWrapper tokenCreateWrapper) {
+        final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
+        txnBodyBuilder.setName(tokenCreateWrapper.getName());
+        txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
+        txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
+        txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
+        txnBodyBuilder.setSupplyType(
+                tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+        txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
+        txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValueExact());
+        if (tokenCreateWrapper.getTreasury() != null) {
+            txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+        }
+        txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
+        txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
+        if (tokenCreateWrapper.getExpiry().second() != 0) {
+            txnBodyBuilder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().second())
+                    .build());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null) {
+            txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
+        }
+        if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0) {
+            txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder()
+                    .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+        }
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
+                .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
+                .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
+                .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+                .toList());
+        return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
     /**

@@ -39,6 +39,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -268,11 +269,16 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         }
                         this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-
                         this.transactionBody = precompile.body(
                                 input,
                                 aliasResolver,
                                 new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
+                        break;
+                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL:
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody =
+                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
                         break;
                     default:
                         this.precompile =
@@ -305,6 +311,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
+                break;
+            case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL:
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
                 break;
             default:
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
@@ -366,7 +377,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             case AbiConstants.ABI_ID_ERC_APPROVE,
                     AbiConstants.ABI_ID_ERC_TRANSFER,
                     AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
-                    AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> true;
+                    AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
             default -> false;
         };
     }

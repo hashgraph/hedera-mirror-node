@@ -550,6 +550,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, filters) => {
     conditions.push(`ti.consensus_timestamp = (${tsQuery})`);
   } else {
     selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
+    conditions.push('ti.associated = true');
   }
   const whereQuery = `where ${conditions.join('\nand ')}`;
   const orderQuery = `order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}`;
