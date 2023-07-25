@@ -22,6 +22,8 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -79,6 +81,8 @@ public interface Store {
      * Adding a safe layer on top of the in-memory state to write to, while still using the database as a backup.
      */
     void wrap();
+
+    boolean hasApprovedForAll(Address ownerAddress, AccountID operatorId, TokenID tokenId);
 
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 

@@ -31,10 +31,12 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfA
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.*;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -133,12 +135,14 @@ public class HTSTestsUtil {
     public static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
     public static final WipeWrapper fungibleWipe = WipeWrapper.forFungible(fungible, account, AMOUNT);
     public static final WipeWrapper nonFungibleWipe = WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
     public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000007fffffffffffffff00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
     public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
     public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Address senderAddr = Address.ALTBN128_PAIRING;
