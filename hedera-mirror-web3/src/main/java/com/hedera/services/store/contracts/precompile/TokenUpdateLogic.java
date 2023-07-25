@@ -60,20 +60,16 @@ import java.util.Optional;
  */
 public class TokenUpdateLogic {
     private final OptionValidator validator;
-    private final HederaTokenStore tokenStore;
     boolean allowChangedTreasuryToOwnNfts;
 
     public TokenUpdateLogic(
-            final /*@AreTreasuryWildcardsEnabled*/ boolean allowChangedTreasuryToOwnNfts,
-            OptionValidator validator,
-            HederaTokenStore tokenStore) {
+            final /*@AreTreasuryWildcardsEnabled*/ boolean allowChangedTreasuryToOwnNfts, OptionValidator validator) {
         this.validator = validator;
-        this.tokenStore = tokenStore;
         this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
     }
 
-    public void updateToken(TokenUpdateTransactionBody op, long now, Store store) {
-        updateToken(op, now, false, store);
+    public void updateToken(TokenUpdateTransactionBody op, long now, Store store, HederaTokenStore tokenStore) {
+        updateToken(op, now, false, store, tokenStore);
     }
 
     /**
@@ -93,7 +89,12 @@ public class TokenUpdateLogic {
      * @param now                        the current consensus time
      * @param mergeUnsetMemoFromExisting whether to preserve the token's memo if the transaction memo is unset
      */
-    public void updateToken(TokenUpdateTransactionBody op, long now, boolean mergeUnsetMemoFromExisting, Store store) {
+    public void updateToken(
+            TokenUpdateTransactionBody op,
+            long now,
+            boolean mergeUnsetMemoFromExisting,
+            Store store,
+            HederaTokenStore tokenStore) {
         final var tokenID = tokenValidityCheck(op);
         if (op.hasExpiry()) {
             validateTrueOrRevert(validator.isValidExpiry(op.getExpiry()), INVALID_EXPIRATION_TIME);
@@ -129,7 +130,7 @@ public class TokenUpdateLogic {
             if (!newTreasury.equals(existingTreasury)) {
                 validateFalseOrRevert(isDetached(existingTreasury, store), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-                outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury, store);
+                outcome = prepTreasuryChange(tokenID, token, newTreasury, existingTreasury, store, tokenStore);
                 if (outcome != OK) {
                     abortWith(outcome);
                 }
@@ -143,7 +144,8 @@ public class TokenUpdateLogic {
             long replacedTreasuryBalance = getTokenBalance(oldTreasury, tokenID, store);
             if (replacedTreasuryBalance > 0) {
                 if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-                    outcome = doTokenTransfer(tokenID, oldTreasury, op.getTreasury(), replacedTreasuryBalance);
+                    outcome = doTokenTransfer(
+                            tokenID, oldTreasury, op.getTreasury(), replacedTreasuryBalance, tokenStore);
                 } else {
                     outcome = tokenStore.changeOwnerWildCard(
                             new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), -1),
@@ -157,7 +159,7 @@ public class TokenUpdateLogic {
         }
     }
 
-    public void updateTokenExpiryInfo(TokenUpdateTransactionBody op, Store store) {
+    public void updateTokenExpiryInfo(TokenUpdateTransactionBody op, Store store, HederaTokenStore tokenStore) {
         final var tokenID = tokenStore.resolve(op.getToken());
         validateTrueOrRevert(!tokenID.equals(MISSING_TOKEN), INVALID_TOKEN_ID);
         if (op.hasExpiry()) {
@@ -173,7 +175,7 @@ public class TokenUpdateLogic {
         }
     }
 
-    public void updateTokenKeys(TokenUpdateTransactionBody op, long now) {
+    public void updateTokenKeys(TokenUpdateTransactionBody op, long now, HederaTokenStore tokenStore) {
         final var tokenID = tokenValidityCheck(op);
         Token token = tokenStore.get(tokenID);
         checkTokenPreconditions(token, op);
@@ -222,7 +224,8 @@ public class TokenUpdateLogic {
             final Token token,
             final AccountID newTreasury,
             final AccountID oldTreasury,
-            Store store) {
+            Store store,
+            HederaTokenStore tokenStore) {
         var status = OK;
         if (token.hasFreezeKey()) {
             status = tokenStore.unfreeze(newTreasury, id);
@@ -241,7 +244,8 @@ public class TokenUpdateLogic {
         throw new InvalidTransactionException(cause);
     }
 
-    private ResponseCodeEnum doTokenTransfer(TokenID tId, AccountID from, AccountID to, long adjustment) {
+    private ResponseCodeEnum doTokenTransfer(
+            TokenID tId, AccountID from, AccountID to, long adjustment, HederaTokenStore tokenStore) {
         ResponseCodeEnum validity = tokenStore.adjustBalance(from, tId, -adjustment);
         if (validity == OK) {
             validity = tokenStore.adjustBalance(to, tId, adjustment);

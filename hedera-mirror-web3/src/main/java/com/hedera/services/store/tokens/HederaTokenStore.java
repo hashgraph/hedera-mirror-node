@@ -114,7 +114,7 @@ public class HederaTokenStore {
     }
 
     public static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
-        return new TokenRelationshipKey(asTypedEvmAddress(accountID), asTypedEvmAddress(tokenID));
+        return new TokenRelationshipKey(asTypedEvmAddress(tokenID), asTypedEvmAddress(accountID));
     }
 
     protected ResponseCodeEnum checkAccountUsability(final AccountID aId) {
@@ -469,8 +469,8 @@ public class HederaTokenStore {
             checkKeyOfType(appliedValidity, token.hasKycKey(), newKycKey.isPresent(), TOKEN_HAS_NO_KYC_KEY);
             checkKeyOfType(appliedValidity, token.hasFreezeKey(), newFreezeKey.isPresent(), TOKEN_HAS_NO_FREEZE_KEY);
             checkKeyOfType(appliedValidity, token.hasPauseKey(), newPauseKey.isPresent(), TOKEN_HAS_NO_PAUSE_KEY);
-            checkKeyOfType(appliedValidity, !token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
-            checkKeyOfType(appliedValidity, !token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
+            checkKeyOfType(appliedValidity, token.hasWipeKey(), newWipeKey.isPresent(), TOKEN_HAS_NO_WIPE_KEY);
+            checkKeyOfType(appliedValidity, token.hasSupplyKey(), newSupplyKey.isPresent(), TOKEN_HAS_NO_SUPPLY_KEY);
             checkKeyOfType(appliedValidity, token.hasAdminKey(), !isExpiryOnly, TOKEN_IS_IMMUTABLE);
             checkKeyOfType(
                     appliedValidity,
@@ -487,7 +487,7 @@ public class HederaTokenStore {
                 return;
             }
 
-            updateAdminKeyIfAppropriate(token, changes);
+            token = updateAdminKeyIfAppropriate(token, changes);
             updateAutoRenewAccountIfAppropriate(token, changes);
             updateAutoRenewPeriodIfAppropriate(token, changes);
 
@@ -504,6 +504,8 @@ public class HederaTokenStore {
             updateTreasuryIfAppropriate(token, changes);
             updateMemoIfAppropriate(token, changes);
             updateExpiryIfAppropriate(token, changes);
+
+            store.updateToken(token);
         });
         return appliedValidity.get();
     }
@@ -594,15 +596,17 @@ public class HederaTokenStore {
         return OK;
     }
 
-    private void updateAdminKeyIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateAdminKeyIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.hasAdminKey()) {
             final var newAdminKey = changes.getAdminKey();
             if (REMOVES_ADMIN_KEY.test(newAdminKey)) {
-                token.setAdminKey(null);
+                updatedToken = token.setAdminKey(null);
             } else {
-                token.setAdminKey(asFcKeyUnchecked(newAdminKey));
+                updatedToken = token.setAdminKey(asFcKeyUnchecked(newAdminKey));
             }
         }
+        return updatedToken;
     }
 
     private void updateAutoRenewAccountIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
