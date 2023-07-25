@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
@@ -57,7 +56,6 @@ import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txn.token.AssociateLogic;
 import com.hedera.services.txn.token.BurnLogic;
 import com.hedera.services.txn.token.CreateLogic;
@@ -384,24 +382,18 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    HederaTokenStore hederaTokenStore(
-            ContextOptionValidator contextOptionValidator,
-            MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            Store store) {
-        return new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
-    }
-
-    @Bean
     TokenUpdatePrecompile tokenUpdatePrecompile(
-            final PrecompilePricingUtils pricingUtils,
+            PrecompilePricingUtils pricingUtils,
             TokenUpdateLogic tokenUpdateLogic,
-            SyntheticTxnFactory syntheticTxnFactory) {
-        return new TokenUpdatePrecompile(pricingUtils, tokenUpdateLogic, syntheticTxnFactory);
+            SyntheticTxnFactory syntheticTxnFactory,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            ContextOptionValidator contextOptionValidator) {
+        return new TokenUpdatePrecompile(
+                pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
     }
 
     @Bean
-    TokenUpdateLogic tokenUpdateLogic(
-            MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator, HederaTokenStore tokenStore) {
-        return new TokenUpdateLogic(mirrorNodeEvmProperties, validator, tokenStore);
+    TokenUpdateLogic tokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
+        return new TokenUpdateLogic(mirrorNodeEvmProperties, validator);
     }
 }

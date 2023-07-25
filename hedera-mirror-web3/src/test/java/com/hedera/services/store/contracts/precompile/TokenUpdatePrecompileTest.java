@@ -41,6 +41,7 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -126,6 +127,9 @@ public class TokenUpdatePrecompileTest {
     @Mock
     HederaTokenStore tokenStore;
 
+    @Mock
+    private ContextOptionValidator contextOptionValidator;
+
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private final TransactionBody transactionBody = TransactionBody.newBuilder()
@@ -146,8 +150,8 @@ public class TokenUpdatePrecompileTest {
 
         tokenUpdatePrecompileStatic = Mockito.mockStatic(TokenUpdatePrecompile.class);
 
-        TokenUpdatePrecompile tokenUpdatePrecompile =
-                new TokenUpdatePrecompile(pricingUtils, updateLogic, syntheticTxnFactory);
+        TokenUpdatePrecompile tokenUpdatePrecompile = new TokenUpdatePrecompile(
+                pricingUtils, updateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
 
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
 

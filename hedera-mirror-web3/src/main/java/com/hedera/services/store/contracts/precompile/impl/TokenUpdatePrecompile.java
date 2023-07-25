@@ -31,21 +31,25 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
-import static com.hedera.services.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Objects;
@@ -71,14 +75,24 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
 
     private TokenUpdateWrapper updateOp;
 
-    private final SyntheticTxnFactory syntheticTxnFactory;
+    private HederaTokenStore hederaTokenStore;
+
+    private final ContextOptionValidator contextOptionValidator;
+
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    private final TokenUpdateLogic tokenUpdateLogic;
 
     public TokenUpdatePrecompile(
             PrecompilePricingUtils pricingUtils,
             TokenUpdateLogic tokenUpdateLogic,
-            SyntheticTxnFactory syntheticTxnFactory) {
-        super(pricingUtils, tokenUpdateLogic, syntheticTxnFactory);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+            SyntheticTxnFactory syntheticTxnFactory,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            ContextOptionValidator contextOptionValidator) {
+        super(pricingUtils, syntheticTxnFactory);
+        this.tokenUpdateLogic = tokenUpdateLogic;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
+        this.contextOptionValidator = contextOptionValidator;
     }
 
     @Override
@@ -97,13 +111,25 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
         Objects.requireNonNull(updateOp);
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
-        type = UPDATE_TOKEN_INFO;
-        return super.run(frame, store, transactionBody);
+
+        initializeHederaTokenStore(store);
+
+        final var validity = tokenUpdateLogic.validate(transactionBody);
+        validateTrue(validity == OK, validity);
+
+        tokenUpdateLogic.updateToken(
+                transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp(), store, hederaTokenStore);
+
+        return new EmptyRunResult();
     }
 
     @Override
     public Set<Integer> getFunctionSelectors() {
         return Set.of(ABI_ID_UPDATE_TOKEN_INFO, ABI_ID_UPDATE_TOKEN_INFO_V2, ABI_ID_UPDATE_TOKEN_INFO_V3);
+    }
+
+    private void initializeHederaTokenStore(Store store) {
+        hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 
     /**

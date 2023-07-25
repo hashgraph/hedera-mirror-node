@@ -311,8 +311,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {EMPTY_ADDRESS}),
         DELETE_TOKEN("deleteTokenExternal", new Object[] {EMPTY_ADDRESS}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
+        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
 
         private final String name;
         private final Object[] functionParameters;
@@ -336,7 +335,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         WIPE_NFT_TOKEN(
                 "wipeTokenAccountNFTExternal",
                 new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ADDRESS, new long[] {1}}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS});
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;

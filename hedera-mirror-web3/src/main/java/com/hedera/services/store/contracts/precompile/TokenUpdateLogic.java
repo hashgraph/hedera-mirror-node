@@ -63,8 +63,7 @@ public class TokenUpdateLogic {
     private final OptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    public TokenUpdateLogic(
-            MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
+    public TokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.validator = validator;
     }
