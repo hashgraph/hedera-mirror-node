@@ -105,7 +105,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -893,7 +892,7 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT))
                 .index(transactionIndex())
                 .initialBalance(10000000L)
-                .itemizedTransfer(Arrays.asList(ItemizedTransfer.builder()
+                .itemizedTransfer(List.of(ItemizedTransfer.builder()
                         .amount(100L)
                         .entityId(entityId(ACCOUNT))
                         .isApproval(false)
