@@ -28,14 +28,12 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@Disabled("Until merge to main and finishing other test scenarios needed. Will come back to this.")
 class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
     private final SyntheticTokenAllowanceOwnerMigration migration;
@@ -220,10 +218,10 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         var rangeUpdate1 = Range.closedOpen(range.lowerEndpoint() - 2, range.lowerEndpoint() - 1);
         var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
 
-        var update1 = builder.customize(t -> t.amount(999L).timestampRange(rangeUpdate1))
+        var update1 = builder.customize(t -> t.amount(999L).amountGranted(999L).timestampRange(rangeUpdate1))
                 .get();
-        var update2 =
-                builder.customize(t -> t.amount(0).timestampRange(rangeUpdate2)).get();
+        var update2 = builder.customize(t -> t.amount(0).amountGranted(0L).timestampRange(rangeUpdate2))
+                .get();
         saveHistory(update1);
         saveHistory(update2);
 
@@ -244,6 +242,8 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         domainBuilder
                 .tokenAllowanceHistory()
                 .customize(c -> c.amount(tokenAllowance.getAmount())
+                        .amountGranted(tokenAllowance.getAmountGranted())
+                        .createdTimestamp(tokenAllowance.getCreatedTimestamp())
                         .owner(tokenAllowance.getOwner())
                         .payerAccountId(tokenAllowance.getPayerAccountId())
                         .spender(tokenAllowance.getSpender())

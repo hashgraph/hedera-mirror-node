@@ -33,12 +33,14 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
                     create temp table token_allowance_temp (
                       amount            bigint not null,
+                      amount_granted    bigint not null,
                       created_timestamp bigint not null,
+                      open_timestamp    bigint not null,
                       owner             bigint not null,
                       payer_account_id  bigint not null,
                       spender           bigint not null,
                       token_id          bigint not null,
-                      primary key (owner, spender, token_id, created_timestamp)
+                      primary key (owner, spender, token_id, open_timestamp)
                     ) on commit drop;
 
                     with affected as (
@@ -55,7 +57,9 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
                       where ta.owner in (a.owner, a.sender_id) and ta.spender = a.spender and ta.token_id = a.token_id
                       returning
                         ta.amount,
-                        lower(ta.timestamp_range) as created_timestamp,
+                        ta.amount_granted,
+                        ta.created_timestamp,
+                        lower(ta.timestamp_range) as open_timestamp,
                         a.sender_id as owner,
                         ta.payer_account_id,
                         ta.spender,
@@ -67,37 +71,41 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
                         (ta.owner = a.sender_id and ta.spender = a.spender and ta.token_id = a.token_id)
                       returning
                         ta.amount,
-                        lower(ta.timestamp_range) as created_timestamp,
+                        ta.amount_granted,
+                        ta.created_timestamp,
+                        lower(ta.timestamp_range) as open_timestamp,
                         a.sender_id as owner,
                         ta.payer_account_id,
                         ta.spender,
                         ta.token_id
                     )
-                    insert into token_allowance_temp (amount, created_timestamp, owner, payer_account_id, spender, token_id)
-                    select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
+                    insert into token_allowance_temp (amount, amount_granted, created_timestamp, open_timestamp, owner, payer_account_id, spender, token_id)
+                    select amount, amount_granted, created_timestamp, open_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance
                     union all
-                    select amount, created_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
+                    select amount, amount_granted, created_timestamp, open_timestamp, owner, payer_account_id, spender, token_id from delete_token_allowance_history;
 
                     with correct_timestamp_range as (
                       select
                         amount,
+                        amount_granted,
+                        created_timestamp,
                         owner,
                         payer_account_id,
                         spender,
-                        int8range(created_timestamp, (
-                          select c.created_timestamp
+                        int8range(open_timestamp, (
+                          select c.open_timestamp
                           from token_allowance_temp c
                           where c.owner = p.owner and c.spender = p.spender and c.token_id = p.token_id
-                            and c.created_timestamp > p.created_timestamp
-                          order by c.created_timestamp
+                            and c.open_timestamp > p.open_timestamp
+                          order by c.open_timestamp
                           limit 1)) as timestamp_range,
                         token_id
                       from token_allowance_temp p
                     ), history as (
-                      insert into token_allowance_history (amount, owner, payer_account_id, spender, timestamp_range, token_id)
+                      insert into token_allowance_history (amount, amount_granted, created_timestamp, owner, payer_account_id, spender, timestamp_range, token_id)
                       select * from correct_timestamp_range where upper(timestamp_range) is not null
                     )
-                    insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
+                    insert into token_allowance (amount, amount_granted, created_timestamp, owner, payer_account_id, spender, timestamp_range, token_id)
                     select * from correct_timestamp_range where upper(timestamp_range) is null;
 
                     commit;
@@ -118,8 +126,8 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        // The version where contract_result sender_id was added
-        return MigrationVersion.fromVersion("1.58.4");
+        // contract_result sender_id was added in 1.58.4, but SQL above is now compatible with 1.84.0+
+        return MigrationVersion.fromVersion("1.84.0");
     }
 
     @Override

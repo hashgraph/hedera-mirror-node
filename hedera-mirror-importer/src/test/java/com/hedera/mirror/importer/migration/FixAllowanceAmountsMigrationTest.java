@@ -111,6 +111,8 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
+    private final String idColumns = "payer_account_id, spender, token_id";
+
     @AfterEach
     void teardown() {
         runSql(REVERT_DDL);
@@ -120,13 +122,12 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
     void empty() {
         migrate();
 
-        assertThat(entityRepository.findAll()).isEmpty();
+        assertThat(tokenAllowanceRepository.findAll()).isEmpty();
+        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
     }
 
     @Test
     void tokenMigrationNoTransfers() {
-        final var idColumns = "owner, spender, token_id";
-
         runSql(PRE_TOKEN_ALLOWANCES);
 
         migrate();

@@ -328,7 +328,7 @@ public class DomainBuilder {
         var timestamp = timestamp();
         var builder = CryptoAllowance.builder()
                 .amount(10L)
-                .amountGranted(100L)
+                .amountGranted(10L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
@@ -342,7 +342,7 @@ public class DomainBuilder {
         var timestamp = timestamp();
         var builder = CryptoAllowanceHistory.builder()
                 .amount(10L)
-                .amountGranted(100L)
+                .amountGranted(10L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
@@ -823,7 +823,7 @@ public class DomainBuilder {
         var timestamp = timestamp();
         var builder = TokenAllowance.builder()
                 .amount(10L)
-                .amountGranted(100L)
+                .amountGranted(10L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
@@ -838,7 +838,7 @@ public class DomainBuilder {
         var timestamp = timestamp();
         var builder = TokenAllowanceHistory.builder()
                 .amount(10L)
-                .amountGranted(100L)
+                .amountGranted(10L)
                 .createdTimestamp(timestamp)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
