@@ -153,7 +153,7 @@ const networks = {
 const defaultBucketNames = {
   [networks.DEMO]: 'hedera-demo-streams',
   [networks.MAINNET]: 'hedera-mainnet-streams',
-  [networks.TESTNET]: 'hedera-testnet-streams-2023-01',
+  [networks.TESTNET]: 'hedera-testnet-streams-2023-07',
   [networks.PREVIEWNET]: 'hedera-preview-testnet-streams',
   [networks.OTHER]: null,
 };
