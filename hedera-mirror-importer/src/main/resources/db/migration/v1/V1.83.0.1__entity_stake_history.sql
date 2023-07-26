@@ -31,8 +31,7 @@ alter table if exists entity_stake
 
 update entity_stake
 set timestamp_range =
-  int8range((select consensus_timestamp from node_stake where epoch_day = end_stake_period limit 1), null)
-from node_stake;
+  int8range((select consensus_timestamp from node_stake where epoch_day = end_stake_period limit 1), null);
 
 alter table if exists entity_stake
   alter column timestamp_range set not null;
