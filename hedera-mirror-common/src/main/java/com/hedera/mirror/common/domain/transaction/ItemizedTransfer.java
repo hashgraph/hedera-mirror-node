@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,20 +12,26 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-package domain
+package com.hedera.mirror.common.domain.transaction;
 
-const tableNameNonFeeTransfer = "non_fee_transfer"
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-type NonFeeTransfer struct {
-	Amount             int64
-	ConsensusTimestamp int64
-	EntityId           *EntityId
-	PayerAccountId     EntityId
-}
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
+@Data
+@NoArgsConstructor
+public class ItemizedTransfer {
 
-func (NonFeeTransfer) TableName() string {
-	return tableNameNonFeeTransfer
+    private Long amount;
+
+    private EntityId entityId;
+
+    private Boolean isApproval;
 }
