@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
+import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.DataClassRowMapper;
@@ -152,15 +153,19 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     private final MirrorProperties mirrorProperties;
     private final NamedParameterJdbcTemplate transferJdbcTemplate;
 
+    @Getter
+    private final TransactionOperations transactionOperations;
+
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
             NamedParameterJdbcTemplate transferJdbcTemplate,
             MirrorProperties mirrorProperties,
             TransactionOperations transactionOperations) {
-        super(transferJdbcTemplate, dbProperties.getSchema(), transactionOperations);
-        this.transferJdbcTemplate = transferJdbcTemplate;
+        super(transferJdbcTemplate, dbProperties.getSchema());
         this.mirrorProperties = mirrorProperties;
+        this.transferJdbcTemplate = transferJdbcTemplate;
+        this.transactionOperations = transactionOperations;
     }
 
     @Override

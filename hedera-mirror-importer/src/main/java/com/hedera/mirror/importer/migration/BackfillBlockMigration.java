@@ -24,6 +24,7 @@ import jakarta.inject.Named;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -51,14 +52,18 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
 
     private final RecordFileRepository recordFileRepository;
 
+    @Getter
+    private final TransactionOperations transactionOperations;
+
     @Lazy
     public BackfillBlockMigration(
             DBProperties dbProperties,
             NamedParameterJdbcTemplate jdbcTemplate,
             RecordFileRepository recordFileRepository,
             TransactionOperations transactionOperations) {
-        super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
+        super(jdbcTemplate, dbProperties.getSchema());
         this.recordFileRepository = recordFileRepository;
+        this.transactionOperations = transactionOperations;
     }
 
     @Override

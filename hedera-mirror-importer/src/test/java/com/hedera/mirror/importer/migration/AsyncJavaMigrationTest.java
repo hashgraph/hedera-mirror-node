@@ -167,7 +167,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         private final int successChecksum;
 
         public TestAsyncJavaMigration(boolean error, long sleep, int successChecksum) {
-            super(jdbcTemplate2, dbProperties.getSchema(), transactionOperations);
+            super(jdbcTemplate2, dbProperties.getSchema());
             this.error = error;
             this.sleep = sleep;
             this.successChecksum = successChecksum;
@@ -190,6 +190,11 @@ class AsyncJavaMigrationTest extends IntegrationTest {
             }
 
             return Optional.empty();
+        }
+
+        @Override
+        protected TransactionOperations getTransactionOperations() {
+            return transactionOperations;
         }
 
         @Override

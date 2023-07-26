@@ -64,7 +64,6 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     protected final NamedParameterJdbcTemplate jdbcTemplate;
     private final String schema;
-    private final TransactionOperations transactionOperations;
     private final AtomicBoolean complete = new AtomicBoolean(false);
 
     @Override
@@ -83,6 +82,8 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         }
         return lastChecksum;
     }
+
+    protected abstract TransactionOperations getTransactionOperations();
 
     @Override
     public MigrationVersion getVersion() {
@@ -127,7 +128,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
             do {
                 final var previous = last;
                 last = Objects.requireNonNullElse(
-                        transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
+                        getTransactionOperations().execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {

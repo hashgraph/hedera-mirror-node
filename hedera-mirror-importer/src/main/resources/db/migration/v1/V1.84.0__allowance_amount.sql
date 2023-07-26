@@ -16,41 +16,29 @@ alter table if exists crypto_allowance_history
     add column if not exists amount            bigint not null default 0,
     add column if not exists created_timestamp bigint not null default 0;
 
--- Backfill crypto_allowance.created_timestamp
-with min_timestamp as (select min(timestamp) as created_timestamp, owner, spender
-                       from (select lower(timestamp_range) as timestamp, owner, spender
-                             from crypto_allowance
-                             union all
-                             select lower(timestamp_range) as timestamp, owner, spender
-                             from crypto_allowance_history) ca
-                       group by owner, spender),
-     update_history as (
-         update crypto_allowance_history cah
-             set amount = cah.amount_granted, created_timestamp = mt.created_timestamp
-             from min_timestamp mt
-             where cah.owner = mt.owner and cah.spender = mt.spender)
-update crypto_allowance ca
-set amount = ca.amount_granted, created_timestamp = mt.created_timestamp
-from min_timestamp mt
-where ca.owner = mt.owner
-  and ca.spender = mt.spender;
+create table if not exists crypto_allowance_migration (like crypto_allowance including defaults);
 
--- Backfill crypto_allowance.amount
-with spent_allowance as (select coalesce(sum(ct.amount), 0) as amount, ca.owner, ca.spender
-                         from crypto_transfer ct,
-                              crypto_allowance ca
-                         where ca.amount_granted > 0
-                           and ct.is_approval = true
-                           and ct.amount < 0
-                           and ct.entity_id = ca.owner
-                           and ct.payer_account_id = ca.spender
-                           and ct.consensus_timestamp >= lower(ca.timestamp_range)
-                         group by ca.owner, ca.spender)
-update crypto_allowance ca
-set amount = ca.amount_granted + a.amount
-from spent_allowance a
-where a.owner = ca.owner
-  and a.spender = ca.spender;
+-- Copy rows before updating amount so crypto_allowance_migration.amount will be 0
+insert into crypto_allowance_migration
+select * from crypto_allowance where amount_granted <> 0;
+
+-- Add a sentinel row with (consensus_end, 0, 0) as (created_timestamp, owner, spender)
+insert into crypto_allowance_migration (amount_granted, created_timestamp, owner, payer_account_id, spender, timestamp_range)
+select 0, consensus_end, 0, 0, 0, int8range(consensus_end, null)
+from record_file
+order by consensus_end desc
+limit 1;
+
+alter table crypto_allowance_migration add primary key (owner, spender);
+
+-- Backfill crypto_allowance.created_timestamp
+update crypto_allowance
+set created_timestamp = lower(timestamp_range),
+    amount = amount_granted;
+
+update crypto_allowance_history
+set created_timestamp = lower(timestamp_range),
+    amount = amount_granted;
 
 -- Alter token_allowance
 alter table if exists token_allowance
