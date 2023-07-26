@@ -40,6 +40,7 @@ import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWra
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,13 +50,38 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
+    private static final long serialNo = 100;
+    private static final long secondAmount = 200;
+    private static final long newExpiry = 1_234_567L;
+    private final EntityNum contractNum = EntityNum.fromLong(666);
+    private final EntityNum accountNum = EntityNum.fromLong(1234);
+    private static final AccountID a = IdUtils.asAccount("0.0.2");
+    private static final AccountID b = IdUtils.asAccount("0.0.3");
+    private static final AccountID c = IdUtils.asAccount("0.0.4");
+    private static final TokenID fungible = IdUtils.asToken("0.0.555");
+    private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
+    private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
+    private static final List<ByteString> newMetadata =
+            List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
+    private static final long valueInTinyBars = 123;
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final TokenID token = IdUtils.asToken("0.0.1");
+    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
+    public static final AccountID sender = IdUtils.asAccount("0.0.2");
+
+    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
+    public static final Id payerId = Id.fromGrpcAccount(payer);
+    public static final Id senderId = Id.fromGrpcAccount(sender);
+
     private SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
     @Test
@@ -393,26 +419,19 @@ class SyntheticTxnFactoryTest {
         assertEquals(fungible, txnBody.getTokenUnpause().getToken());
     }
 
-    private static final long serialNo = 100;
-    private static final long secondAmount = 200;
-    private static final long newExpiry = 1_234_567L;
-    private final EntityNum contractNum = EntityNum.fromLong(666);
-    private final EntityNum accountNum = EntityNum.fromLong(1234);
-    private static final AccountID a = IdUtils.asAccount("0.0.2");
-    private static final AccountID b = IdUtils.asAccount("0.0.3");
-    private static final AccountID c = IdUtils.asAccount("0.0.4");
+    @Test
+    void createsExpectedTransactionCall() {
+        final var result = subject.createTransactionCall(1, Bytes.of(1));
+        final var txnBody = result.build();
 
-    public static final TokenID token = IdUtils.asToken("0.0.1");
-    public static final AccountID payer = IdUtils.asAccount("0.0.12345");
-    public static final AccountID sender = IdUtils.asAccount("0.0.2");
-
-    public static final AccountID receiver = IdUtils.asAccount("0.0.3");
-    public static final Id payerId = Id.fromGrpcAccount(payer);
-    public static final Id senderId = Id.fromGrpcAccount(sender);
-    private static final TokenID fungible = IdUtils.asToken("0.0.555");
-    private static final TokenID nonFungible = IdUtils.asToken("0.0.666");
-    private static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
-    private static final List<ByteString> newMetadata =
-            List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
-    private static final long valueInTinyBars = 123;
+        assertTrue(result.hasContractCall());
+        assertEquals(1, txnBody.getContractCall().getGas());
+        assertEquals(
+                EntityIdUtils.contractIdFromEvmAddress(
+                        Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
+                txnBody.getContractCall().getContractID());
+        assertEquals(
+                ByteString.copyFrom(Bytes.of(1).toArray()),
+                txnBody.getContractCall().getFunctionParameters());
+    }
 }
