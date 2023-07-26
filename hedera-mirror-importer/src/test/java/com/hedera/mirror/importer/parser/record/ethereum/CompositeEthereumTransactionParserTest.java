@@ -37,7 +37,9 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
     @BeforeAll
     static void beforeAll() {
         ethereumTransactionParser = new CompositeEthereumTransactionParser(
-                new LegacyEthereumTransactionParser(), new Eip1559EthereumTransactionParser());
+                new LegacyEthereumTransactionParser(),
+                new Eip2930EthereumTransactionParser(),
+                new Eip1559EthereumTransactionParser());
     }
 
     @SneakyThrows
