@@ -34,7 +34,6 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
@@ -370,36 +369,6 @@ public class SyntheticTxnFactory {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
         }
-
-        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
-    }
-
-    private TransactionBody.Builder checkTokenKeysTypeAndBuild(
-            final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
-        tokenKeys.forEach(tokenKeyWrapper -> {
-            final var key = tokenKeyWrapper.key().asGrpc();
-            if (tokenKeyWrapper.isUsedForAdminKey()) {
-                builder.setAdminKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForKycKey()) {
-                builder.setKycKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForFreezeKey()) {
-                builder.setFreezeKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForWipeKey()) {
-                builder.setWipeKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForSupplyKey()) {
-                builder.setSupplyKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
-                builder.setFeeScheduleKey(key);
-            }
-            if (tokenKeyWrapper.isUsedForPauseKey()) {
-                builder.setPauseKey(key);
-            }
-        });
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);
     }

@@ -75,6 +75,8 @@ public class FunctionEncodeDecoder {
             "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,int32,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[])";
     private static final String TOKEN_FIXED_FEE_FRACTIONAL_FEE =
             "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
+    private static final String ADDRESS_TOKEN =
+            "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -169,6 +171,8 @@ public class FunctionEncodeDecoder {
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]));
             case ADDRESS_INT_BYTES, ADDRESS_INT_INTS -> Tuple.of(
                     convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
+            case ADDRESS_TOKEN -> Tuple.of(
+                    convertAddress((Address) parameters[0]), encodeToken((TokenCreateWrapper) parameters[1]));
             case DOUBLE_ADDRESS_INT64, DOUBLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
             case TOKEN_INT64_INT32 -> Tuple.of(
