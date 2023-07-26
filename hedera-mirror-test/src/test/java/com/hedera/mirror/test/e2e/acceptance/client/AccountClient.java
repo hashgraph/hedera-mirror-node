@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
@@ -29,14 +30,17 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.Key;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
@@ -258,6 +262,19 @@ public class AccountClient extends AbstractNetworkClient {
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, spender);
 
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info(
+                "Approved spender {} an allowance for all serial numbers on {} via {}",
+                spender,
+                tokenId,
+                response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, ContractId spender) throws InvalidProtocolBufferException {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, AccountId.fromBytes(spender.toBytes()));
         var response = executeTransactionAndRetrieveReceipt(transaction);
         log.info(
                 "Approved spender {} an allowance for all serial numbers on {} via {}",

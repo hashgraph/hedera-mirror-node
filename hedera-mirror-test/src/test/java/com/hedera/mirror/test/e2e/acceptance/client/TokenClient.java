@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -40,14 +42,17 @@ import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -242,6 +247,16 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
         log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
         tokenAccounts.add(new TokenAccount(token, accountId));
+        return response;
+    }
+
+    public NetworkTransactionResponse associate(ContractId contractId, TokenId token)
+            throws InvalidProtocolBufferException {
+        TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
+                .setAccountId(AccountId.fromBytes(contractId.toBytes()))
+                .setTokenIds((List.of(token)))
+                .setTransactionMemo(getMemo("Associate w token"));
+        var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction);
         return response;
     }
 

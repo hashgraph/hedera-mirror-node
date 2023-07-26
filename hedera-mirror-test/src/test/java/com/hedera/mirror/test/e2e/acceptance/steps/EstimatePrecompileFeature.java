@@ -5,6 +5,7 @@ import com.esaulpaugh.headlong.util.Strings;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
@@ -96,7 +97,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     private final TokenClient tokenClient;
     private final List<TokenId> tokenIds = new ArrayList<>();
     private final AccountClient accountClient;
-    private NetworkTransactionResponse networkResponse;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedErcTesteContract;
     private ExpandedAccountId receiverAccount;
@@ -272,8 +272,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Then("I call estimateGas with dissociate token function for fungible token")
     public void dissociateFunctionEstimateGas() {
         //associating the token with the address
-        networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(0));
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.associate(receiverAccount, tokenIds.get(0));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.DISSOCIATE_TOKEN.getFunctionName())
                 .encodeCallWithArgs(
@@ -286,8 +286,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Then("I call estimateGas with dissociate token function for NFT")
     public void dissociateFunctionNFTEstimateGas() {
         //associating the NFT with the address
-        networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(1));
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.associate(receiverAccount, tokenIds.get(1));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.DISSOCIATE_TOKEN.getFunctionName())
                 .encodeCallWithArgs(
@@ -321,35 +321,74 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.DISSOCIATE_AND_ASSOCIATE.getActualGas());
     }
 
+    @Then("I call estimateGas with approve function without association")
+    public void approveWithoutAssociationEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.APPROVE.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("10"));
+
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
+    }
+
+    @Then("I call estimateGas with setApprovalForAll function without association")
+    public void setApprovalForAllWithoutAssociationEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.SET_APPROVAL_FOR_ALL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        true);
+
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
+    }
+
+    @Then("I call estimateGas with approveNFT function without association")
+    public void approveNonFungibleWithoutAssociationEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.APPROVE_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("1"));
+
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
+    }
+
+    @Then("I associate contracts with the tokens and approve the all nft serials")
+    public void associateTokensWithContract() throws InvalidProtocolBufferException {
+        //In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
+        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), tokenIds.get(0));
+        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), tokenIds.get(1));
+        tokenClient.associate(deployedErcTesteContract.contractId(), tokenIds.get(0));
+        //approve is also needed for the approveNFT function
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), deployedEstimatePrecompileContract.contractId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
     @Then("I call estimateGas with approve function")
     public void approveEstimateGas() {
-//        ByteBuffer encodedFunctionCall = getFunctionFromArtifact("approveExternal")
-//                .encodeCallWithArgs(
-//                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
-//                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
-//                        new BigInteger("10"));
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.APPROVE.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("10"));
 
-        validateGasEstimation(
-                ContractMethods.APPROVE.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString("10"), ContractMethods.APPROVE_NFT.getActualGas());
-
-//        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.APPROVE.getActualGas());
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.APPROVE.getActualGas());
     }
 
     @Then("I call estimateGas with approveNFT function")
     public void approveNftEstimateGas() {
-        validateGasEstimation(
-                ContractMethods.APPROVE_NFT.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(firstNftSerialNumber)), ContractMethods.APPROVE_NFT.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.APPROVE_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("1"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.APPROVE_NFT.getActualGas());
     }
 
     @Then("I call estimateGas with ERC approve function")
     public void ercApproveEstimateGas() {
-
         Function function = Function.fromJson(getAbiFunctionAsJsonString(compiledErcTestContractSolidityArtifacts, ContractMethods.APPROVE_ERC.getFunctionName()));
         ByteBuffer encodedFunctionCall = function
                 .encodeCallWithArgs(
@@ -357,16 +396,27 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("10"));
 
-        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.APPROVE_ERC.getActualGas());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(Strings.encode(encodedFunctionCall))
+                .to(ercTestContractSolidityAddress)
+                .estimate(true)
+                .build();
+        ContractCallResponse msgSenderResponse =
+                mirrorClient.contractsCall(contractCallRequestBody);
+        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+
+        assertTrue(isWithinDeviation(ContractMethods.APPROVE_ERC.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     @Then("I call estimateGas with setApprovalForAll function")
     public void setApprovalForAllEstimateGas() {
-        validateGasEstimation(
-                ContractMethods.SET_APPROVAL_FOR_ALL.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(firstNftSerialNumber)), ContractMethods.SET_APPROVAL_FOR_ALL.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.SET_APPROVAL_FOR_ALL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        true);
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.SET_APPROVAL_FOR_ALL.getActualGas());
     }
 
     @Then("I call estimateGas with transferFrom function without approval")
@@ -564,8 +614,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     public void dissociateTokensEstimateGas() {
         //associating tokens with the address
         tokenClient.associate(receiverAccount, tokenIds.get(2));
-        networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(3));
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.associate(receiverAccount, tokenIds.get(3));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.DISSOCIATE_TOKENS.getFunctionName())
                 .encodeCallWithArgs(
@@ -579,8 +629,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     public void dissociateNFTEstimateGas() {
         //associating tokens with the address
         tokenClient.associate(receiverAccount, tokenIds.get(4));
-        networkResponse = tokenClient.associate(receiverAccount, tokenIds.get(5));
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.associate(receiverAccount, tokenIds.get(5));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.DISSOCIATE_TOKENS.getFunctionName())
                 .encodeCallWithArgs(
@@ -816,8 +866,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     public void wipeTokenAccountEstimateGas() {
         tokenClient.grantKyc(tokenIds.get(0), receiverAccount.getAccountId());
         accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 10_000_000_000L);
-        networkResponse = tokenClient.transferFungibleToken(tokenIds.get(0), admin, receiverAccount.getAccountId(), 3_000_000_000_0L);
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.transferFungibleToken(tokenIds.get(0), admin, receiverAccount.getAccountId(), 3_000_000_000_0L);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.WIPE_TOKEN_ACCOUNT.getFunctionName())
                 .encodeCallWithArgs(
@@ -844,8 +894,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         tokenClient.grantKyc(tokenIds.get(1), receiverAccount.getAccountId());
         NftId id = new NftId(tokenIds.get(1), firstNftSerialNumber);
         accountClient.approveNft(id, receiverAccount.getAccountId());
-        networkResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
-        verifyTx(networkResponse.getTransactionIdStringNoCheckSum());
+        networkTransactionResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.WIPE_NFT_ACCOUNT.getFunctionName())
                 .encodeCallWithArgs(
@@ -1252,9 +1302,9 @@ public class EstimatePrecompileFeature extends AbstractFeature {
          * 0-expecting a revert
          * 23422-gas estimation is not calculated
          */
-        APPROVE("ceda64c4", 23422),
-        APPROVE_NFT("84d232f5", 23422),
-        APPROVE_ERC("approve", 23422),
+        APPROVE("approveExternal", 729571),
+        APPROVE_NFT("approveNFTExternal", 729569),
+        APPROVE_ERC("approve", 731632),
         ASSOCIATE_TOKEN("associateTokenExternal", 729374),
         ASSOCIATE_TOKENS("associateTokensExternal", 730641),
         BURN_TOKEN("burnTokenExternal", 40247),
@@ -1278,7 +1328,7 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
         REVOKE_KYC_TWICE("282418a3", 0),
-        SET_APPROVAL_FOR_ALL("e31b839c", 23422),
+        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         TRANSFER_ERC("transfer", 23422),
         TRANSFER_FROM("75a85472", 23422),
         TRANSFER_FROM_ERC("transferFrom", 23422),

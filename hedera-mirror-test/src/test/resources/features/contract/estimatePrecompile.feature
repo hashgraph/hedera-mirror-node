@@ -18,10 +18,14 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with dissociate token function for NFT
     Then I call estimateGas with dissociate and associate nested function for fungible token
     Then I call estimateGas with dissociate and associate nested function for NFT
-  #  Then I call estimateGas with approve function
- #   Then I call estimateGas with approveNFT function
- #   Then I call estimateGas with ERC approve function
- #   Then I call estimateGas with setApprovalForAll function
+    Then I call estimateGas with approve function without association
+    Then I call estimateGas with approveNFT function without association
+    Then I call estimateGas with setApprovalForAll function without association
+    Then I associate contracts with the tokens and approve the all nft serials
+    Then I call estimateGas with approve function
+    Then I call estimateGas with approveNFT function
+    Then I call estimateGas with ERC approve function
+    Then I call estimateGas with setApprovalForAll function
 #    Then I call estimateGas with transferFrom function without approval
 #    Then I call estimateGas with ERC transferFrom function without approval
 #    Then I call estimateGas with transferFromNFT function
@@ -70,11 +74,11 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with Unfreeze function for fungible token
     Then I call estimateGas with Unfreeze function for NFT
     Then I call estimateGas with nested Freeze and Unfreeze function for fungible token
-#    Then I call estimateGas with nested Freeze and Unfreeze function for NFT
+    Then I call estimateGas with nested Freeze and Unfreeze function for NFT
     Then I call estimateGas with delete function for Fungible token
     Then I call estimateGas with delete function for NFT
     Then I call estimateGas with delete function for invalid token address
-#    Then I call estimateGas with pause function for fungible token
-#    Then I call estimateGas with pause function for NFT
-#    Then I call estimateGas with unpause function for fungible token
-#    Then I call estimateGas with unpause function for NFT
+    Then I call estimateGas with pause function for fungible token
+    Then I call estimateGas with pause function for NFT
+    Then I call estimateGas with unpause function for fungible token
+    Then I call estimateGas with unpause function for NFT
