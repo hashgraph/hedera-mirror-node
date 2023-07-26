@@ -39,7 +39,6 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -88,8 +87,6 @@ public interface EntityListener {
     default void onNftAllowance(NftAllowance nftAllowance) {}
 
     default void onNodeStake(NodeStake nodeStake) throws ImporterException {}
-
-    default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {}
 
     default void onPrng(Prng prng) {}
 

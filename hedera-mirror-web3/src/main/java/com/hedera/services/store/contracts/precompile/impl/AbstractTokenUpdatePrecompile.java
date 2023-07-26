@@ -25,12 +25,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
 
-    protected final SyntheticTxnFactory syntheticTxnFactory;
-
     protected AbstractTokenUpdatePrecompile(
             PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory) {
-        super(pricingUtils);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(pricingUtils, syntheticTxnFactory);
     }
 
     @Override

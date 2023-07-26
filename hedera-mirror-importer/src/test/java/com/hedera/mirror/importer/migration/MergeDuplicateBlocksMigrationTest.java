@@ -131,7 +131,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
     private Transaction transaction(long timestamp, int index) {
         return domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).index(index))
+                .customize(t -> t.consensusTimestamp(timestamp).index(index).itemizedTransfer(null))
                 .persist();
     }
 }

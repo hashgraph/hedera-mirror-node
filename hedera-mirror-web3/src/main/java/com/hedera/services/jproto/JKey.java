@@ -21,7 +21,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.commons.codec.DecoderException;
 
 /**
@@ -108,7 +107,6 @@ public abstract class JKey {
             return (result);
         }
     }
-
     /**
      * Converts a basic JKey to proto Key.
      *
@@ -125,6 +123,10 @@ public abstract class JKey {
         } else if (jkey.hasECDSAsecp256k1Key()) {
             rv = Key.newBuilder()
                     .setECDSASecp256K1(ByteString.copyFrom(jkey.getECDSASecp256k1Key()))
+                    .build();
+        } else if (jkey.hasContractID()) {
+            rv = Key.newBuilder()
+                    .setContractID(jkey.getContractIDKey().getContractID())
                     .build();
         } else {
             throw new DecoderException("Key type not implemented: key=" + jkey);
@@ -148,6 +150,8 @@ public abstract class JKey {
         } else if (!key.getECDSASecp256K1().isEmpty()) {
             byte[] pubKeyBytes = key.getECDSASecp256K1().toByteArray();
             rv = new JECDSASecp256k1Key(pubKeyBytes);
+        } else if (key.getContractID().getContractNum() != 0) {
+            rv = new JContractIDKey(key.getContractID());
         } else {
             throw new org.apache.commons.codec.DecoderException("Key type not implemented: key=" + key);
         }
@@ -182,6 +186,10 @@ public abstract class JKey {
         return false;
     }
 
+    public boolean hasContractID() {
+        return false;
+    }
+
     public boolean hasKeyList() {
         return false;
     }
@@ -202,27 +210,7 @@ public abstract class JKey {
         return MISSING_ECDSA_SECP256K1_KEY;
     }
 
-    @Override
-    public boolean equals(final Object other) {
-        if (this == other) {
-            return true;
-        }
-        if (other == null || getClass() != other.getClass()) {
-            return false;
-        }
-        try {
-            return Objects.equals(mapJKey(this), mapJKey((JKey) other));
-        } catch (DecoderException ignore) {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        try {
-            return Objects.hashCode(mapJKey(this));
-        } catch (DecoderException ignore) {
-            return Integer.MIN_VALUE;
-        }
+    public JContractIDKey getContractIDKey() {
+        return null;
     }
 }

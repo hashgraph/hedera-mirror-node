@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,17 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-package domain
+package com.hedera.services.store.contracts.precompile.codec;
 
-import (
-	"testing"
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.math.BigInteger;
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestNonFeeTransferTableName(t *testing.T) {
-	assert.Equal(t, "non_fee_transfer", NonFeeTransfer{}.TableName())
-}
+public record ApproveWrapper(
+        TokenID tokenId,
+        AccountID spender,
+        BigInteger amount,
+        BigInteger serialNumber,
+        boolean isFungible,
+        boolean isErcApprove) {}

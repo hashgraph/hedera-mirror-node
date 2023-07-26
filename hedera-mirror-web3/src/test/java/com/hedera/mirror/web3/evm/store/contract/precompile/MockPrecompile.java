@@ -50,7 +50,7 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public RunResult run(final MessageFrame frame, final Store store, final TransactionBody transactionBody) {
+    public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         // Dummy logic to mimic invalid behaviour
         if (Address.ZERO.equals(frame.getSenderAddress())) {
             throw new InvalidTransactionException(ResponseCodeEnum.INVALID_ACCOUNT_ID);

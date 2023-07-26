@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -112,8 +111,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
-
-    private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractActionRepository contractActionRepository;
@@ -874,33 +871,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNonFeeTransfer() {
-        // given
-        NonFeeTransfer nonFeeTransfer1 = domainBuilder
-                .nonFeeTransfer()
-                .customize(n -> n.amount(1L)
-                        .consensusTimestamp(1L)
-                        .entityId(EntityId.of(1L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
-        NonFeeTransfer nonFeeTransfer2 = domainBuilder
-                .nonFeeTransfer()
-                .customize(n -> n.amount(2L)
-                        .consensusTimestamp(2L)
-                        .entityId(EntityId.of(2L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
-
-        // when
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer2);
-        completeFileAndCommit();
-
-        // then
-        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
-    }
-
-    @Test
     void onTopicMessage() {
         // given
         TopicMessage topicMessage = domainBuilder.topicMessage().get();
@@ -982,20 +952,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(0);
+                .returns(0, Transaction::getIndex)
+                .returns(firstTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(1);
+                .returns(1, Transaction::getIndex)
+                .returns(secondTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(2);
+                .returns(2, Transaction::getIndex)
+                .returns(thirdTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }
