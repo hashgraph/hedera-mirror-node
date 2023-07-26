@@ -121,7 +121,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         if (bodyParams instanceof ERCTransferParams transferParams) {
-            final var senderAddress = transferParams.sernderAddress();
+            final var senderAddress = transferParams.senderAddress();
             final var tokenID = transferParams.tokenID();
             final var transferOp =
                     switch (transferParams.functionId()) {
