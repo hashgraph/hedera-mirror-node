@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -57,15 +58,15 @@ import java.util.Optional;
  * <p>
  * Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. Get allowChangedTreasuryToOwnNfts from mirrorNodeEvmProperties
  */
 public class TokenUpdateLogic {
     private final OptionValidator validator;
-    boolean allowChangedTreasuryToOwnNfts;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
-    public TokenUpdateLogic(
-            final /*@AreTreasuryWildcardsEnabled*/ boolean allowChangedTreasuryToOwnNfts, OptionValidator validator) {
+    public TokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.validator = validator;
-        this.allowChangedTreasuryToOwnNfts = allowChangedTreasuryToOwnNfts;
     }
 
     public void updateToken(TokenUpdateTransactionBody op, long now, Store store, HederaTokenStore tokenStore) {
@@ -121,7 +122,7 @@ public class TokenUpdateLogic {
                 }
             }
             var existingTreasury = token.getTreasury().getId().asGrpcAccount();
-            if (!allowChangedTreasuryToOwnNfts && token.getType() == NON_FUNGIBLE_UNIQUE) {
+            if (!mirrorNodeEvmProperties.isAllowTreasuryToOwnNfts() && token.getType() == NON_FUNGIBLE_UNIQUE) {
                 var existingTreasuryBalance = getTokenBalance(existingTreasury, tokenID, store);
                 if (existingTreasuryBalance > 0L) {
                     abortWith(CURRENT_TREASURY_STILL_OWNS_NFTS);

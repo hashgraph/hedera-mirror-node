@@ -125,6 +125,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     private long maxAutoRenewDuration = 10000L;
 
+    @Getter
+    private boolean allowTreasuryToOwnNfts = true;
+
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
     }
