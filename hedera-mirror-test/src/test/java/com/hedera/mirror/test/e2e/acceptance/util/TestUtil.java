@@ -84,6 +84,12 @@ public class TestUtil {
                 .toArray(Address[]::new);
     }
 
+    public static byte[][] asHeadlongByteArray(final List<String> hexStringList) {
+        return hexStringList.stream()
+                .map(hexString -> Bytes.fromHexString(hexString).toArrayUnsafe())
+                .toArray(byte[][]::new);
+    }
+
     public static long[] asLongArray(final List<Long> longList) {
         return longList.stream()
                 .mapToLong(Long::longValue)

@@ -327,26 +327,6 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         }
     }
 
-    function grantTokenKycTwiceExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        HederaTokenService.grantTokenKyc(token, account);
-        responseCode = HederaTokenService.grantTokenKyc(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function revokeTokenKycTwiceExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        HederaTokenService.revokeTokenKyc(token, account);
-        responseCode = HederaTokenService.revokeTokenKyc(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
     function nestedGrantAndRevokeTokenKYCExternal(address token, address account) external
     returns (int64 responseCode)
     {
@@ -390,6 +370,53 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.freezeToken(token, account);
         responseCode = HederaTokenService.freezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function deleteTokenExternal(address token) external
+    returns (int responseCode)
+    {
+        responseCode = HederaTokenService.deleteToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function deleteTokenTwiceExternal(address token) external
+    returns (int responseCode)
+    {
+        HederaTokenService.deleteToken(token);
+        responseCode = HederaTokenService.deleteToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function pauseTokenExternal(address token) external
+    returns (int responseCode)
+    {
+        responseCode = HederaTokenService.pauseToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function unpauseTokenExternal(address token) external
+    returns (int responseCode)
+    {
+        responseCode = HederaTokenService.unpauseToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function nestedPauseUnpauseTokenExternal(address token) external
+    returns (int responseCode)
+    {
+        HederaTokenService.pauseToken(token);
+        responseCode = HederaTokenService.unpauseToken(token);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
