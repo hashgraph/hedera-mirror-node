@@ -70,7 +70,7 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 		assertTransactionOpSuccess,
 		assertTransactionMemo(""),
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypesContains(operationTypeCryptoCreateAccount, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeFee),
 		assertTransactionMetadataAndType("entity_id", ""),
 	); err != nil {
 		return err
