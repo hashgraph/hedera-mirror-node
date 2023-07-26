@@ -317,7 +317,8 @@ public class ServicesConfiguration {
             final ContextOptionValidator contextOptionValidator,
             final AutoCreationLogic autoCreationLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final EncodingFacade encoder) {
+            final EncodingFacade encoder,
+            final EntityAddressSequencer entityAddressSequencer) {
         return new ERCTransferPrecompile(
                 pricingUtils,
                 mirrorNodeEvmProperties,
@@ -325,6 +326,7 @@ public class ServicesConfiguration {
                 contextOptionValidator,
                 autoCreationLogic,
                 syntheticTxnFactory,
+                entityAddressSequencer,
                 encoder);
     }
 

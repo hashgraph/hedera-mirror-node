@@ -32,6 +32,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -106,6 +107,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             ContextOptionValidator contextOptionValidator,
             AutoCreationLogic autoCreationLogic,
             SyntheticTxnFactory syntheticTxnFactory,
+            EntityAddressSequencer entityAddressSequencer,
             EncodingFacade encoder) {
         super(
                 pricingUtils,
@@ -113,7 +115,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 transferLogic,
                 contextOptionValidator,
                 autoCreationLogic,
-                syntheticTxnFactory);
+                syntheticTxnFactory,
+                entityAddressSequencer);
         this.encoder = encoder;
     }
 
