@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
@@ -295,14 +296,16 @@ public class ServicesConfiguration {
             final TransferLogic transferLogic,
             final ContextOptionValidator contextOptionValidator,
             final AutoCreationLogic autoCreationLogic,
-            final SyntheticTxnFactory syntheticTxnFactory) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EntityAddressSequencer entityAddressSequencer) {
         return new TransferPrecompile(
                 pricingUtils,
                 mirrorNodeEvmProperties,
                 transferLogic,
                 contextOptionValidator,
                 autoCreationLogic,
-                syntheticTxnFactory);
+                syntheticTxnFactory,
+                entityAddressSequencer);
     }
 
     @Bean

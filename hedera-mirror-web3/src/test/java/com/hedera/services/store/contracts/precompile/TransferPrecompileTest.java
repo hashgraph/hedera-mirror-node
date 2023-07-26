@@ -226,7 +226,8 @@ class TransferPrecompileTest {
                 transferLogic,
                 contextOptionValidator,
                 autoCreationLogic,
-                syntheticTxnFactory);
+                syntheticTxnFactory,
+                entityAddressSequencer);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
@@ -673,7 +674,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity()))
                 .thenCallRealMethod();
         staticTransferPrecompile
-                .when(() -> addSignedAdjustments(any(), any(), any(), any()))
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -699,7 +700,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity()))
                 .thenCallRealMethod();
         staticTransferPrecompile
-                .when(() -> addSignedAdjustments(any(), any(), any(), any()))
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTransferTokens(POSITIVE_AMOUNTS_TRANSFER_TOKENS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -729,7 +730,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT, identity()))
                 .thenCallRealMethod();
         staticTransferPrecompile
-                .when(() -> addSignedAdjustments(any(), any(), any(), any()))
+                .when(() -> addSignedAdjustments(any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTransferTokens(POSITIVE_NEGATIVE_AMOUNT_TRANSFER_TOKENS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -776,7 +777,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeHbarTransfers(any(), any(), any()))
                 .thenCallRealMethod();
         staticTransferPrecompile
-                .when(() -> addNftExchanges(any(), any(), any(), any(), any()))
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         final var decodedInput = decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity());
         final var hbarTransfers = decodedInput.transferWrapper().hbarTransfers();
@@ -804,7 +805,7 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferNFTs(TRANSFER_NFTS_INPUT, identity()))
                 .thenCallRealMethod();
         staticTransferPrecompile
-                .when(() -> addNftExchanges(any(), any(), any(), any(), any()))
+                .when(() -> addNftExchanges(any(), any(), any(), any(), any(), any()))
                 .thenCallRealMethod();
         staticTransferPrecompile
                 .when(() -> decodeTokenTransfer(any(), any(), any()))

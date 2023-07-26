@@ -48,6 +48,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
+import java.util.Collections;
 import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -433,5 +434,21 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 ByteString.copyFrom(Bytes.of(1).toArray()),
                 txnBody.getContractCall().getFunctionParameters());
+    }
+
+    @Test
+    void createsExpectedCryptoTransfer() {
+        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
+
+        final var result = subject.createCryptoTransfer(
+                List.of(new TokenTransferWrapper(Collections.emptyList(), List.of(fungibleTransfer))));
+        final var txnBody = result.build();
+
+        final var tokenTransfers = txnBody.getCryptoTransfer().getTokenTransfersList();
+        final var expFungibleTransfer = tokenTransfers.get(0);
+        assertEquals(fungible, expFungibleTransfer.getToken());
+        assertEquals(
+                List.of(fungibleTransfer.senderAdjustment(), fungibleTransfer.receiverAdjustment()),
+                expFungibleTransfer.getTransfersList());
     }
 }

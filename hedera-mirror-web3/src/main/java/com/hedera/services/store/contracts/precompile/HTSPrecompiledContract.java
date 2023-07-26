@@ -317,19 +317,19 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
                 break;
+            case AbiConstants.ABI_ID_TRANSFER_TOKENS,
+                    AbiConstants.ABI_ID_TRANSFER_TOKEN,
+                    AbiConstants.ABI_ID_TRANSFER_NFTS,
+                    AbiConstants.ABI_ID_TRANSFER_NFT,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2:
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+                break;
             default:
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-                if (AbiConstants.ABI_ID_TRANSFER_TOKENS == functionId
-                        || AbiConstants.ABI_ID_TRANSFER_TOKEN == functionId
-                        || AbiConstants.ABI_ID_TRANSFER_NFTS == functionId
-                        || AbiConstants.ABI_ID_TRANSFER_NFT == functionId
-                        || AbiConstants.ABI_ID_CRYPTO_TRANSFER == functionId
-                        || AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 == functionId) {
-                    this.transactionBody =
-                            precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
-                } else {
-                    this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
-                }
+                this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
                 break;
         }
         gasRequirement = defaultGas();

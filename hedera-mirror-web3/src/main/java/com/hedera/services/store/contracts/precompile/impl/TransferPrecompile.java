@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
@@ -135,6 +136,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
+    private final EntityAddressSequencer entityAddressSequencer;
 
     public TransferPrecompile(
             final PrecompilePricingUtils pricingUtils,
@@ -142,12 +144,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final TransferLogic transferLogic,
             final ContextOptionValidator contextOptionValidator,
             final AutoCreationLogic autoCreationLogic,
-            final SyntheticTxnFactory syntheticTxnFactory) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EntityAddressSequencer entityAddressSequencer) {
         super(pricingUtils, syntheticTxnFactory);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.transferLogic = transferLogic;
         this.contextOptionValidator = contextOptionValidator;
         this.autoCreationLogic = autoCreationLogic;
+        this.entityAddressSequencer = entityAddressSequencer;
     }
 
     @Override
@@ -179,8 +183,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     @Override
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var entityAddressSequencer =
-                ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getEntityAddressSequencer();
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         initializeHederaTokenStore(store);
@@ -335,7 +337,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var amounts = (long[]) decodedArguments.get(2);
 
         final List<FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        addSignedAdjustments(fungibleTransfers, accountIDs, tokenType, amounts);
+        addSignedAdjustments(fungibleTransfers, accountIDs, tokenType, amounts, aliasResolver);
 
         final var tokenTransferWrappers =
                 Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
@@ -354,7 +356,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var serialNumbers = ((long[]) decodedArguments.get(3));
 
         final List<NftExchange> nftExchanges = new ArrayList<>();
-        addNftExchanges(nftExchanges, senders, receivers, serialNumbers, tokenID);
+        addNftExchanges(nftExchanges, senders, receivers, serialNumbers, tokenID, aliasResolver);
 
         final var tokenTransferWrappers =
                 Collections.singletonList(new TokenTransferWrapper(nftExchanges, NO_FUNGIBLE_TRANSFERS));
@@ -381,10 +383,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final List<AccountID> senders,
             final List<AccountID> receivers,
             final long[] serialNumbers,
-            final TokenID tokenID) {
+            final TokenID tokenID,
+            final UnaryOperator<byte[]> aliasResolver) {
         for (var i = 0; i < senders.size(); i++) {
             var receiver = receivers.get(i);
-            if (receiver.hasAlias()) {
+            final var aliasAddress = resolveAlias(aliasResolver, receiver);
+            if (aliasAddress != null && !isMirror(aliasAddress) && !receiver.hasAlias()) {
                 receiver = generateAccountIDWithAliasCalculatedFrom(receiver);
             }
             final var nftExchange = new NftExchange(serialNumbers[i], tokenID, senders.get(i), receiver);
@@ -396,17 +400,23 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final List<FungibleTokenTransfer> fungibleTransfers,
             final List<AccountID> accountIDs,
             final TokenID tokenType,
-            final long[] amounts) {
+            final long[] amounts,
+            final UnaryOperator<byte[]> aliasResolver) {
         for (int i = 0; i < accountIDs.size(); i++) {
             final var amount = amounts[i];
 
             var accountID = accountIDs.get(i);
-            if (amount > 0 && accountID.hasAlias()) {
+            final var aliasAddress = resolveAlias(aliasResolver, accountID);
+            if (amount > 0 && aliasAddress != null && !isMirror(aliasAddress) && !accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
 
             DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
         }
+    }
+
+    private static byte[] resolveAlias(UnaryOperator<byte[]> aliasResolver, AccountID accountID) {
+        return aliasResolver.apply(EntityIdUtils.asEvmAddress(accountID));
     }
 
     @Override
