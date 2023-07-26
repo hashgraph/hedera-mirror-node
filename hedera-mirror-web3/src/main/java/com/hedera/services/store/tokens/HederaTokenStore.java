@@ -78,10 +78,10 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
  * Provides a managing store for arbitrary tokens.
@@ -211,11 +211,14 @@ public class HederaTokenStore {
         return token;
     }
 
-    public void apply(final TokenID id, final Consumer<Token> change) {
+    public void apply(final TokenID id, final UnaryOperator<Token> change) {
         final var token = store.getToken(asTypedEvmAddress(id), OnMissing.THROW);
         try {
-            change.accept(token);
-            //            backingTokens.put(id, token); TODO: update token?
+            final var changedToken = change.apply(token);
+
+            if (changedToken != null) {
+                store.updateToken(changedToken);
+            }
         } catch (Exception internal) {
             throw new IllegalArgumentException("Token change failed unexpectedly", internal);
         }
@@ -478,34 +481,36 @@ public class HederaTokenStore {
                     newFeeScheduleKey.isPresent(),
                     TOKEN_HAS_NO_FEE_SCHEDULE_KEY);
             if (OK != appliedValidity.get()) {
-                return;
+                return null;
             }
 
             final var ret = checkNftBalances(token, tId, changes);
             if (ret != OK) {
                 appliedValidity.set(ret);
-                return;
+                return null;
             }
 
             token = updateAdminKeyIfAppropriate(token, changes);
-            updateAutoRenewAccountIfAppropriate(token, changes);
-            updateAutoRenewPeriodIfAppropriate(token, changes);
+            token = updateAutoRenewAccountIfAppropriate(token, changes);
+            token = updateAutoRenewPeriodIfAppropriate(token, changes);
 
-            updateKeyOfTypeIfAppropriate(changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey);
-            updateKeyOfTypeIfAppropriate(changes.hasKycKey(), token::setKycKey, changes::getKycKey);
-            updateKeyOfTypeIfAppropriate(changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey);
-            updateKeyOfTypeIfAppropriate(changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey);
-            updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey);
-            updateKeyOfTypeIfAppropriate(
-                    changes.hasFeeScheduleKey(), token::setFeeScheduleKey, changes::getFeeScheduleKey);
+            token = updateKeyOfTypeIfAppropriate(
+                    changes.hasFreezeKey(), token::setFreezeKey, changes::getFreezeKey, token);
+            token = updateKeyOfTypeIfAppropriate(changes.hasKycKey(), token::setKycKey, changes::getKycKey, token);
+            token = updateKeyOfTypeIfAppropriate(
+                    changes.hasPauseKey(), token::setPauseKey, changes::getPauseKey, token);
+            token = updateKeyOfTypeIfAppropriate(
+                    changes.hasSupplyKey(), token::setSupplyKey, changes::getSupplyKey, token);
+            token = updateKeyOfTypeIfAppropriate(changes.hasWipeKey(), token::setWipeKey, changes::getWipeKey, token);
+            token = updateKeyOfTypeIfAppropriate(
+                    changes.hasFeeScheduleKey(), token::setFeeScheduleKey, changes::getFeeScheduleKey, token);
 
-            updateTokenSymbolIfAppropriate(token, changes);
-            updateTokenNameIfAppropriate(token, changes);
-            updateTreasuryIfAppropriate(token, changes);
-            updateMemoIfAppropriate(token, changes);
-            updateExpiryIfAppropriate(token, changes);
-
-            store.updateToken(token);
+            token = updateTokenSymbolIfAppropriate(token, changes);
+            token = updateTokenNameIfAppropriate(token, changes);
+            token = updateTreasuryIfAppropriate(token, changes);
+            token = updateMemoIfAppropriate(token, changes);
+            token = updateExpiryIfAppropriate(token, changes);
+            return token;
         });
         return appliedValidity.get();
     }
@@ -528,12 +533,13 @@ public class HederaTokenStore {
             processAutoRenewAccount(appliedValidity, changes, token);
 
             if (OK != appliedValidity.get()) {
-                return;
+                return null;
             }
 
-            updateAutoRenewAccountIfAppropriate(token, changes);
-            updateAutoRenewPeriodIfAppropriate(token, changes);
-            updateExpiryIfAppropriate(token, changes);
+            token = updateAutoRenewAccountIfAppropriate(token, changes);
+            token = updateAutoRenewPeriodIfAppropriate(token, changes);
+            token = updateExpiryIfAppropriate(token, changes);
+            return token;
         });
         return appliedValidity.get();
     }
@@ -609,61 +615,77 @@ public class HederaTokenStore {
         return updatedToken;
     }
 
-    private void updateAutoRenewAccountIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateAutoRenewAccountIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.hasAutoRenewAccount()) {
             final var account = store.getAccount(asTypedEvmAddress(changes.getAutoRenewAccount()), OnMissing.THROW);
-            token.setAutoRenewAccount(account);
+            updatedToken = token.setAutoRenewAccount(account);
         }
+        return updatedToken;
     }
 
-    private void updateAutoRenewPeriodIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateAutoRenewPeriodIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (token.getAutoRenewAccount() != null) {
             final long changedAutoRenewPeriod = changes.getAutoRenewPeriod().getSeconds();
             if (changedAutoRenewPeriod > 0) {
-                token.setAutoRenewPeriod(changedAutoRenewPeriod);
+                updatedToken = token.setAutoRenewPeriod(changedAutoRenewPeriod);
             }
         }
+        return updatedToken;
     }
 
-    private void updateTokenSymbolIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateTokenSymbolIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.getSymbol().length() > 0) {
-            token.setSymbol(changes.getSymbol());
+            updatedToken = token.setSymbol(changes.getSymbol());
         }
+        return updatedToken;
     }
 
-    private void updateTokenNameIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateTokenNameIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.getName().length() > 0) {
-            token.setName(changes.getName());
+            updatedToken = token.setName(changes.getName());
         }
+        return updatedToken;
     }
 
-    private void updateMemoIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateMemoIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.hasMemo()) {
-            token.setMemo(changes.getMemo().getValue());
+            updatedToken = token.setMemo(changes.getMemo().getValue());
         }
+        return updatedToken;
     }
 
-    private void updateExpiryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateExpiryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         final var expiry = changes.getExpiry().getSeconds();
         if (expiry != 0) {
-            token.setExpiry(expiry);
+            updatedToken = token.setExpiry(expiry);
         }
+        return updatedToken;
     }
 
-    private void updateTreasuryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+    private Token updateTreasuryIfAppropriate(final Token token, final TokenUpdateTransactionBody changes) {
+        Token updatedToken = token;
         if (changes.hasTreasury()
                 && !changes.getTreasury().equals(token.getTreasury().getId().asGrpcAccount())) {
             final var treasuryId = changes.getTreasury();
             final var treasury = store.getAccount(asTypedEvmAddress(treasuryId), OnMissing.THROW);
-            token.setTreasury(treasury);
+            updatedToken = token.setTreasury(treasury);
         }
+        return updatedToken;
     }
 
-    private void updateKeyOfTypeIfAppropriate(
-            final boolean check, final Consumer<JKey> consumer, Supplier<Key> supplier) {
+    private Token updateKeyOfTypeIfAppropriate(
+            final boolean check, final Function<JKey, Token> consumer, Supplier<Key> supplier, Token token) {
+        Token updatedToken = token;
         if (check) {
-            consumer.accept(asFcKeyUnchecked(supplier.get()));
+            updatedToken = consumer.apply(asFcKeyUnchecked(supplier.get()));
         }
+        return updatedToken;
     }
 
     public static boolean affectsExpiryAtMost(final TokenUpdateTransactionBody op) {

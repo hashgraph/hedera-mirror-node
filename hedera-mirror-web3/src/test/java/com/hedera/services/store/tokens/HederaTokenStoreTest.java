@@ -91,7 +91,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import java.util.EnumSet;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,10 +102,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class HederaTokenStoreTest {
     private static final Key key = Key.newBuilder()
-            .setEd25519(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
+            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
             .build();
     private static final Key newKey = Key.newBuilder()
-            .setEd25519(ByteString.copyFromUtf8("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
+            .setEd25519(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
             .build();
 
     private static final int associatedTokensCount = 2;
@@ -120,6 +120,7 @@ class HederaTokenStoreTest {
     private static final AccountID payer = IdUtils.asAccount("0.0.12345");
     private static final AccountID primaryTreasury = IdUtils.asAccount("0.0.9898");
     private static final AccountID treasury = IdUtils.asAccount("0.0.3");
+    private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
     private static final AccountID sponsor = IdUtils.asAccount("0.0.666");
     private static final AccountID counterparty = IdUtils.asAccount("0.0.777");
     private static final AccountID anotherFeeCollector = IdUtils.asAccount("0.0.777");
@@ -130,9 +131,8 @@ class HederaTokenStoreTest {
     private static final String newSymbol = "REALLYSOM";
     private static final String newMemo = "NEWMEMO";
     private static final String newName = "NEWNAME";
-    private static final AccountID newAutoRenewAccount = IdUtils.asAccount("0.0.6");
     private static final AccountID newTreasury = IdUtils.asAccount("0.0.1");
-    private static final long newAutoRenewPeriod = 2_000_000L;
+    private static final long newAutoRenewPeriod = 200_000L;
     private static final EnumSet<KeyType> NO_KEYS = EnumSet.noneOf(KeyType.class);
     private static final EnumSet<KeyType> ALL_KEYS = EnumSet.complementOf(EnumSet.of(KeyType.EMPTY_ADMIN));
     private StoreImpl store;
@@ -140,7 +140,7 @@ class HederaTokenStoreTest {
     private HederaTokenStore subject;
 
     @Mock
-    private Consumer<Token> change;
+    private UnaryOperator<Token> change;
 
     @BeforeEach
     void setup() {
@@ -1070,7 +1070,7 @@ class HederaTokenStoreTest {
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-        willThrow(IllegalStateException.class).given(change).accept(token);
+        willThrow(IllegalStateException.class).given(change).apply(token);
 
         assertThrows(IllegalArgumentException.class, () -> subject.apply(misc, change));
     }
@@ -1563,142 +1563,212 @@ class HederaTokenStoreTest {
 
         assertEquals(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, outcome);
     }
-    //
-    //    @Test
-    //    void updateHappyPathIgnoresZeroExpiry() throws DecoderException {
-    //        var jKey = JKey.mapKey(key);
-    //        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-    //        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-    //        var token = new Token(Id.fromGrpcToken(misc))
-    //                .setExpiry(expiry)
-    //                .setKycKey(jKey)
-    //                .setFreezeKey(jKey)
-    //                .setWipeKey(jKey)
-    //                .setSupplyKey(jKey)
-    //                .setAdminKey(jKey)
-    //                .setType(TokenType.FUNGIBLE_COMMON)
-    //                .setTreasury(treasuryAccount);
-    //        var tokenRelationshipKey = asTokenRelationshipKey(newTreasury, misc);
-    //        var tokenRelationship = new TokenRelationship(token, newTreasuryAccount,
-    // true).setKycGranted(true).setBalance(0L);
-    //        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
-    //                .setExpiry(Timestamp.newBuilder().setSeconds(0))
-    //                .build();
-    //
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-    //        given(store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW)).willReturn(tokenRelationship);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(store, never()).updateToken(any());
-    //    }
-    //
-    //    @Test
-    //    void updateRemovesAdminKeyWhenAppropos() throws DecoderException {
-    //        var jKey = JKey.mapKey(key);
-    //        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-    //        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
-    //        var token = new Token(Id.fromGrpcToken(misc))
-    //                .setExpiry(expiry)
-    //                .setKycKey(jKey)
-    //                .setFreezeKey(jKey)
-    //                .setWipeKey(jKey)
-    //                .setSupplyKey(jKey)
-    //                .setAdminKey(jKey)
-    //                .setType(TokenType.FUNGIBLE_COMMON)
-    //                .setTreasury(treasuryAccount);
-    //        var tokenRelationshipKey = asTokenRelationshipKey(newTreasury, misc);
-    //        var tokenRelationship = new TokenRelationship(token, newTreasuryAccount,
-    // true).setKycGranted(true).setBalance(0L);
-    //        final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), misc, false, false, false);
-    //
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        final var updatedToken = token.setAdminKey(null);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(store).updateToken(updatedToken);
-    //    }
 
-    //    @Test
-    //    void updateHappyPathWorksForEverythingWithNewExpiry() throws DecoderException {
-    //        var jKey = JKey.mapKey(key);
-    //        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
-    //        var token = new Token(Id.fromGrpcToken(misc))
-    //                .setExpiry(expiry)
-    //                .setKycKey(jKey)
-    //                .setFreezeKey(jKey)
-    //                .setWipeKey(jKey)
-    //                .setSupplyKey(jKey)
-    //                .setAdminKey(jKey)
-    //                .setFeeScheduleKey(jKey)
-    //                .setType(TokenType.FUNGIBLE_COMMON)
-    //                .setTreasury(treasuryAccount);
-    //        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
-    //                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
-    //                .setFeeScheduleKey(newKey)
-    //                .build();
-    //
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
-    //        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        final var updatedToken = token.setAdminKey(null);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(store).updateToken(updatedToken);
-    ////        verify(token).setSymbol(newSymbol);
-    ////        verify(token).setName(newName);
-    ////        verify(token).setExpiry(newExpiry);
-    ////        verify(token).setTreasury(EntityId.fromGrpcAccountId(newTreasury));
-    ////        verify(token).setAdminKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    ////        verify(token).setFreezeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    ////        verify(token).setKycKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    ////        verify(token).setSupplyKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    ////        verify(token).setWipeKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    ////        verify(token).setFeeScheduleKey(argThat((JKey k) -> JKey.equalUpToDecodability(k, newFcKey)));
-    //    }
-    //
-    //    @Test
-    //    void updateHappyPathWorksWithNewMemo() {
-    //        givenUpdateTarget(ALL_KEYS, token);
-    //        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(token).setMemo(newMemo);
-    //    }
-    //
-    //    @Test
-    //    void updateHappyPathWorksWithNewMemoForNonfungible() {
-    //        given(token.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-    //        givenUpdateTarget(ALL_KEYS, token);
-    //        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(token).setMemo(newMemo);
-    //    }
-    //
-    //    @Test
-    //    void updateHappyPathWorksWithNewAutoRenewAccount() {
-    //        givenUpdateTarget(ALL_KEYS, token);
-    //        final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true);
-    //
-    //        final var outcome = subject.update(op, CONSENSUS_NOW);
-    //
-    //        assertEquals(OK, outcome);
-    //        verify(token).setAutoRenewAccount(EntityId.fromGrpcAccountId(newAutoRenewAccount));
-    //        verify(token).setAutoRenewPeriod(newAutoRenewPeriod);
-    //    }
+    @Test
+    void updateHappyPathIgnoresZeroExpiry() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var newJkey = JKey.mapKey(newKey);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setType(TokenType.FUNGIBLE_COMMON)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(0))
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setAdminKey(newJkey)
+                .setSymbol(newSymbol)
+                .setName(newName)
+                .setTreasury(newTreasuryAccount)
+                .setFreezeKey(newJkey)
+                .setKycKey(newJkey)
+                .setSupplyKey(newJkey)
+                .setWipeKey(newJkey);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
+
+    @Test
+    void updateRemovesAdminKeyWhenAppropos() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setType(TokenType.FUNGIBLE_COMMON)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(EnumSet.of(KeyType.EMPTY_ADMIN), misc, false, false, false);
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setAdminKey(null);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
+
+    @Test
+    void updateHappyPathWorksForEverythingWithNewExpiry() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var newJkey = JKey.mapKey(newKey);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setFeeScheduleKey(jKey)
+                .setType(TokenType.FUNGIBLE_COMMON)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(ALL_KEYS, misc, true, true, true).toBuilder()
+                .setExpiry(Timestamp.newBuilder().setSeconds(newExpiry))
+                .setFeeScheduleKey(newKey)
+                .build();
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setAdminKey(newJkey)
+                .setSymbol(newSymbol)
+                .setName(newName)
+                .setExpiry(newExpiry)
+                .setTreasury(newTreasuryAccount)
+                .setFreezeKey(newJkey)
+                .setKycKey(newJkey)
+                .setSupplyKey(newJkey)
+                .setWipeKey(newJkey)
+                .setFeeScheduleKey(newJkey);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
+
+    @Test
+    void updateHappyPathWorksWithNewMemo() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setFeeScheduleKey(jKey)
+                .setType(TokenType.FUNGIBLE_COMMON)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setMemo(newMemo);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
+
+    @Test
+    void updateHappyPathWorksWithNewMemoForNonfungible() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setFeeScheduleKey(jKey)
+                .setType(TokenType.NON_FUNGIBLE_UNIQUE)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(NO_KEYS, misc, false, false, false, false, false, false, true);
+
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setMemo(newMemo);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
+
+    @Test
+    void updateHappyPathWorksWithNewAutoRenewAccount() throws DecoderException {
+        var jKey = JKey.mapKey(key);
+        var newJkey = JKey.mapKey(newKey);
+        var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
+        var newTreasuryAccount = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
+        var newAccount = new Account(0L, Id.fromGrpcAccount(newAutoRenewAccount), 0L);
+        var token = new Token(Id.fromGrpcToken(misc))
+                .setExpiry(expiry)
+                .setKycKey(jKey)
+                .setFreezeKey(jKey)
+                .setWipeKey(jKey)
+                .setSupplyKey(jKey)
+                .setAdminKey(jKey)
+                .setFeeScheduleKey(jKey)
+                .setType(TokenType.FUNGIBLE_COMMON)
+                .setTreasury(treasuryAccount);
+        final var op = updateWith(ALL_KEYS, misc, true, true, true, true, true);
+
+        given(mirrorNodeEvmProperties.getMinAutoRenewDuration()).willReturn(1L);
+        given(mirrorNodeEvmProperties.getMaxAutoRenewDuration()).willReturn(1_000_000_000L);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willReturn(token);
+        given(store.getAccount(asTypedEvmAddress(newTreasury), OnMissing.THROW)).willReturn(newTreasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.THROW))
+                .willReturn(newAccount);
+        given(store.getAccount(asTypedEvmAddress(newAutoRenewAccount), OnMissing.DONT_THROW))
+                .willReturn(newAccount);
+
+        final var outcome = subject.update(op, CONSENSUS_NOW);
+
+        final var updatedToken = token.setSymbol(newSymbol)
+                .setName(newName)
+                .setTreasury(newTreasuryAccount)
+                .setAutoRenewAccount(newAccount)
+                .setAutoRenewPeriod(newAutoRenewPeriod)
+                .setAdminKey(newJkey)
+                .setKycKey(newJkey)
+                .setFreezeKey(newJkey)
+                .setWipeKey(newJkey)
+                .setSupplyKey(newJkey);
+
+        assertEquals(OK, outcome);
+        verify(store).updateToken(updatedToken);
+    }
 
     private TokenUpdateTransactionBody updateWith(
             final EnumSet<KeyType> keys,
@@ -1778,9 +1848,7 @@ class HederaTokenStoreTest {
         SUPPLY,
         KYC,
         ADMIN,
-        EMPTY_ADMIN,
-        FEE_SCHEDULE,
-        PAUSE
+        EMPTY_ADMIN
     }
 
     private Duration enduring(final long secs) {
