@@ -158,7 +158,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Given("I create an ecdsa account and associate it to the tokens")
     public void createEcdsaAccountAndAssociateItToTokens() {
-        ecdsaEaId = accountClient.createNewAccount(1_000_000_000, AccountClient.AccountNameEnum.BOB);
+        ecdsaEaId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
         for (TokenId tokenId : tokenIds) {
             tokenClient.associate(ecdsaEaId, tokenId);
         }

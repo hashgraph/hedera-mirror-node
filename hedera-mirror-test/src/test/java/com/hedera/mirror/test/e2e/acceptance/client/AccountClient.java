@@ -167,15 +167,6 @@ public class AccountClient extends AbstractNetworkClient {
         return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null, keyType);
     }
 
-    public ExpandedAccountId createNewECDSAAccount(long initialBalance) {
-        PrivateKey newAccountPrivateKey = PrivateKey.generateECDSA();
-        AccountId newAccountId = newAccountPrivateKey.getPublicKey().toAccountId(0, 0);
-        sendCryptoTransfer(newAccountId, Hbar.fromTinybars(initialBalance));
-
-        MirrorAccountResponse accountInfo = sdkClient.getMirrorNodeClient().getAccountDetailsUsingAlias(newAccountId);
-        return new ExpandedAccountId(accountInfo.getAccount(), newAccountPrivateKey.toString());
-    }
-
     public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
         // Get the keyType from the enum
         Key.KeyCase keyType = accountNameEnum.keyType;

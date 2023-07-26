@@ -38,7 +38,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -48,9 +47,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -98,7 +94,7 @@ public class ERCContractFeature extends AbstractFeature {
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;
-    private ExpandedAccountId ECDSAAccount;
+    private ExpandedAccountId ecdsaAccount;
     private FileId fileId;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
@@ -422,9 +418,9 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
     public void isApprovedForAllWithAliasSecondContractCall() {
-        ECDSAAccount = accountClient.createNewAccount(0, BOB);
-        tokenClient.associate(ECDSAAccount, tokenIds.get(1));
-        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ECDSAAccount.getAccountId());
+        ecdsaAccount = accountClient.getAccount(BOB);
+        tokenClient.associate(ecdsaAccount, tokenIds.get(1));
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
 
@@ -436,7 +432,7 @@ public class ERCContractFeature extends AbstractFeature {
                         .getExpandedOperatorAccountId()
                         .getAccountId()
                         .toSolidityAddress())
-                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ecdsaAccount.getAccountId()).getEvmAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -448,10 +444,10 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
     public void allowanceAliasAccountsCall() {
-        tokenClient.associate(ECDSAAccount, tokenIds.get(0));
-        accountClient.approveToken(tokenIds.get(0), ECDSAAccount.getAccountId(), 1_000);
+        tokenClient.associate(ecdsaAccount, tokenIds.get(0));
+        accountClient.approveToken(tokenIds.get(0), ecdsaAccount.getAccountId(), 1_000);
         networkTransactionResponse = tokenClient.transferFungibleToken(tokenIds.get(0), tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                ECDSAAccount.getAccountId(), 500);
+                ecdsaAccount.getAccountId(), 500);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var contractCallGetAllowance = ContractCallRequest.builder()
@@ -461,7 +457,7 @@ public class ERCContractFeature extends AbstractFeature {
                         .getSdkClient()
                         .getExpandedOperatorAccountId()
                         .getAccountId().toSolidityAddress())
-                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ecdsaAccount.getAccountId()).getEvmAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
@@ -477,7 +473,7 @@ public class ERCContractFeature extends AbstractFeature {
         var contractCallGetBalanceOf = ContractCallRequest.builder()
                 .data(BALANCE_OF_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ECDSAAccount.getAccountId()).getEvmAddress()))
+                        + to32BytesString(mirrorClient.getAccountDetailsByAccountId(ecdsaAccount.getAccountId()).getEvmAddress()))
                 .from(contractClient.getClientAddress())
                 .to(contractId.toSolidityAddress())
                 .estimate(false)
