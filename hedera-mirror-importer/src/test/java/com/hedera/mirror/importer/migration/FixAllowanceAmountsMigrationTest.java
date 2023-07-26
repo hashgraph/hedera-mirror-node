@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import java.io.File;
 import lombok.RequiredArgsConstructor;
@@ -108,7 +107,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
     @Value("classpath:db/migration/v1/V1.84.0__allowance_amount.sql")
     private final File migrationSql;
 
-    private final EntityRepository entityRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
     private final String idColumns = "payer_account_id, spender, token_id";
