@@ -104,6 +104,30 @@ type E struct {
 	EntityId EntityId `json:"entity_id"`
 }
 
+func TestEntityIdMarshalJSON(t *testing.T) {
+	var tests = []struct {
+		input    E
+		expected []byte
+	}{
+		{
+			input:    E{},
+			expected: []byte("{\"entity_id\":0}"),
+		},
+		{
+			input:    E{EntityId{EntityNum: 10, EncodedId: 10}},
+			expected: []byte("{\"entity_id\":10}"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input.EntityId.String(), func(t *testing.T) {
+			actual, err := json.Marshal(tt.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func TestEntityIdUnmarshalJSON(t *testing.T) {
 	var tests = []struct {
 		entity   string
@@ -162,6 +186,10 @@ func TestEntityIdUnmarshalJSON(t *testing.T) {
 				EntityNum: 10,
 				EncodedId: 281483566645258,
 			},
+		},
+		{
+			entity:   "null",
+			expected: EntityId{},
 		},
 	}
 

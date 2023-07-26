@@ -39,7 +39,6 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -88,9 +87,6 @@ class TransactionSignatureTest {
     private EntityIdService entityIdService;
 
     @Mock
-    private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
-
-    @Mock
     private TransactionHandler transactionHandler;
 
     @Mock
@@ -128,7 +124,6 @@ class TransactionSignatureTest {
                 entityIdService,
                 entityListener,
                 entityProperties,
-                nonFeeTransferExtractionStrategy,
                 transactionHandlerFactory,
                 syntheticContractLogService,
                 syntheticContractResultService);

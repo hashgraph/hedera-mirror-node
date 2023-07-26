@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -111,6 +112,9 @@ class StoreImplTest {
 
     @Mock
     private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
     private NftRepository nftRepository;

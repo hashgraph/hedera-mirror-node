@@ -18,7 +18,6 @@ package com.hedera.services.utils;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -57,12 +56,9 @@ public final class NewRels {
         if (associatedSoFar.contains(accountId)) {
             return;
         }
-        associateLogic.associate(
-                account.getAccountAddress(), List.of(provisionalToken.getId().asEvmAddress()), store);
-        final var newRelationship = store.getTokenRelationship(
-                new TokenRelationshipKey(
-                        account.getAccountAddress(), provisionalToken.getId().asEvmAddress()),
-                OnMissing.THROW);
+        final var newRelationship = associateLogic
+                .associateWith(account, List.of(provisionalToken), store)
+                .get(0);
         newRelations.add(newRelationship);
         associatedSoFar.add(accountId);
     }

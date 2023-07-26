@@ -20,8 +20,10 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.WipeResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -50,14 +52,16 @@ public abstract class AbstractWipePrecompile extends AbstractWritePrecompile {
 
     final WipeLogic wipeLogic;
 
-    protected AbstractWipePrecompile(PrecompilePricingUtils pricingUtils, WipeLogic wipeLogic) {
-        super(pricingUtils);
+    protected AbstractWipePrecompile(
+            PrecompilePricingUtils pricingUtils, WipeLogic wipeLogic, SyntheticTxnFactory syntheticTxnFactory) {
+        super(pricingUtils, syntheticTxnFactory);
         this.wipeLogic = wipeLogic;
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
 
         final var wipeBody = transactionBody.getTokenWipe();
         final var tokenId = Id.fromGrpcToken(wipeBody.getToken());

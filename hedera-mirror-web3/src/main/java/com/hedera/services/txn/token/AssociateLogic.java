@@ -66,7 +66,7 @@ public class AssociateLogic {
         newTokenRelationships.forEach(store::updateTokenRelationship);
     }
 
-    private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
+    public List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
         int numAssociations = account.getNumAssociations();
         final var proposedTotalAssociations = tokens.size() + numAssociations;
 

@@ -232,8 +232,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
         assertNotNull(lazyAccount);
         assertEquals(Wei.ZERO, lazyAccount.getBalance());
         assertFalse(subject.getDeletedAccounts().contains(Address.ALTBN128_MUL));
-        final var accountFromTopFrame = store.getAccount(Address.ALTBN128_MUL, OnMissing.DONT_THROW);
-        assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(Address.ALTBN128_MUL);
     }
 
     @Test

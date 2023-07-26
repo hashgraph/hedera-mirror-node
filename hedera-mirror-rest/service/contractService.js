@@ -31,7 +31,7 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  EthereumTransaction
+  EthereumTransaction,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -254,7 +254,9 @@ class ContractService extends BaseService {
               'chainId', encode(${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)}, 'hex'),
               'gasPrice', encode(${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)}, 'hex'),
               'maxFeePerGas', encode(${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)}, 'hex'),
-              'maxPriorityFeePerGas', encode(${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)}, 'hex'),
+              'maxPriorityFeePerGas', encode(${EthereumTransaction.getFullName(
+                EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS
+              )}, 'hex'),
               'nonce', ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
               'signatureR', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)}, 'hex'),
               'signatureS', encode(${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)}, 'hex'),
@@ -272,7 +274,9 @@ class ContractService extends BaseService {
       from ${ContractResult.tableName} ${ContractResult.tableAlias}`,
       ContractService.joinContractResultWithEvmAddress,
       `left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias} 
-        on ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)}`,
+        on ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = ${ContractResult.getFullName(
+        ContractResult.TRANSACTION_HASH
+      )}`,
       `left join ${RecordFile.tableName} ${RecordFile.tableAlias}
         on ${RecordFile.getFullName(RecordFile.CONSENSUS_END)} = (
           select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} 
@@ -311,12 +315,17 @@ class ContractService extends BaseService {
     order = orderFilterValues.DESC,
     limit = defaultLimit
   ) {
-    const [query, params] = this.getDetailedContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
+    const [query, params] = this.getDetailedContractResultsByIdAndFiltersQuery(
+      whereConditions,
+      whereParams,
+      order,
+      limit
+    );
     const rows = await super.getRows(query, params, 'getDetailedContractResultsByIdAndFilters');
     return rows.map((cr) => {
       return {
         ...new ContractResult(cr),
-        hash: cr.hash
+        hash: cr.hash,
       };
     });
   }

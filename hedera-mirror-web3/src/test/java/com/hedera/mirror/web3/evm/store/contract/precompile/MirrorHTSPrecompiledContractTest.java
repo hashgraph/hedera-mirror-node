@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -64,6 +65,8 @@ class MirrorHTSPrecompiledContractTest {
     private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
     private static final Pair<Long, Bytes> FAILURE_RESULT = Pair.of(0L, null);
 
+    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
+
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
 
@@ -93,6 +96,9 @@ class MirrorHTSPrecompiledContractTest {
 
     @Mock
     private HederaEvmWorldStateTokenAccount account;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
@@ -191,7 +197,7 @@ class MirrorHTSPrecompiledContractTest {
 
         assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
                 .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
+                .hasMessage(ERROR_MESSAGE);
     }
 
     @Test
@@ -270,7 +276,7 @@ class MirrorHTSPrecompiledContractTest {
     }
 
     @Test
-    void callingNonExistingPrecompileFailsWithNullOutput() {
+    void callingNonExistingPrecompileHalts() {
         // mock precompile signature
         final var functionHash = Bytes.fromHexString("0x11111111");
 
@@ -284,7 +290,6 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
         assertThat(FAILURE_RESULT).isEqualTo(precompileResult);

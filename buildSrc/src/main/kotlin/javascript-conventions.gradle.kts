@@ -30,7 +30,7 @@ plugins {
 // Temporary until we move completely off VMs
 tasks.register<NpmTask>("package") {
     dependsOn(tasks.npmInstall)
-    args.set(listOf("pack", "--silent"))
+    args = listOf("pack", "--silent")
     doLast {
         buildDir.mkdirs()
         fileTree(projectDir).matching { include("*.tgz") }.forEach {
@@ -42,12 +42,12 @@ tasks.register<NpmTask>("package") {
 
 tasks.register<NpmTask>("start") {
     dependsOn(tasks.npmInstall)
-    args.set(listOf("start"))
+    args = listOf("start")
 }
 
 val test = tasks.register<NpmTask>("test") {
     dependsOn(tasks.npmInstall)
-    args.set(listOf("test"))
+    args = listOf("test")
     execOverrides {
         // Gradle is logging all NPM output to stdout, so this change makes it behave like other tasks and not log
         if (gradle.startParameter.logLevel >= LogLevel.LIFECYCLE) {
