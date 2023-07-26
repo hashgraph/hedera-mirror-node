@@ -35,7 +35,10 @@ import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWra
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
@@ -73,8 +76,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.NonNull;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class SyntheticTxnFactory {
+    public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final ContractID HTS_PRECOMPILE_MIRROR_ID = EntityIdUtils.contractIdFromEvmAddress(
+            Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
 
     public static final String AUTO_MEMO = "auto-created account";
     private static final String LAZY_MEMO = "lazy-created account";
@@ -325,6 +333,16 @@ public class SyntheticTxnFactory {
                 .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
                 .toList());
         return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
+    }
+
+    public TransactionBody.Builder createTransactionCall(final long gas, final Bytes functionParameters) {
+        final var builder = ContractCallTransactionBody.newBuilder();
+
+        builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
+        builder.setGas(gas);
+        builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
+
+        return TransactionBody.newBuilder().setContractCall(builder);
     }
 
     /**
