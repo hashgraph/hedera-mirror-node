@@ -46,11 +46,11 @@ const (
 const (
 	andTransactionHashFilter  = " and transaction_hash = @hash"
 	orderByConsensusTimestamp = " order by consensus_timestamp"
-	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
-	// in json.
+	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json.
 	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
+                                            t.itemized_transfer,
                                             t.memo,
                                             t.payer_account_id,
                                             t.result,
@@ -64,15 +64,6 @@ const (
                                               where consensus_timestamp = t.consensus_timestamp and
                                                 (errata is null or errata <> 'DELETE')
                                             ), '[]') as crypto_transfers,
-                                            coalesce((
-                                                  select json_agg(json_build_object(
-                                                      'account_id', entity_id,
-                                                      'amount', amount
-                                                    ) order by entity_id)
-                                                  from non_fee_transfer
-                                                  where consensus_timestamp = t.consensus_timestamp
-                                                    and entity_id is not null
-                                            ), '[]') as non_fee_transfers,
                                             coalesce((
                                               select json_agg(json_build_object(
                                                 'account_id', account_id,
@@ -89,18 +80,18 @@ const (
 var stakingRewardAccountId = domain.MustDecodeEntityId(800)
 
 // transaction maps to the transaction query which returns the required transaction fields, CryptoTransfers json string,
-// and NonFeeTransfers json string.
+// and itemizedTransfers json string.
 type transaction struct {
 	ConsensusTimestamp   int64
+	CryptoTransfers      string
 	EntityId             *domain.EntityId
 	Hash                 []byte
+	ItemizedTransfer     domain.ItemizedTransferSlice `gorm:"type:jsonb"`
 	Memo                 []byte
 	PayerAccountId       domain.EntityId
 	Result               int16
-	Type                 int16
-	CryptoTransfers      string
-	NonFeeTransfers      string
 	StakingRewardPayouts string
+	Type                 int16
 }
 
 func (t transaction) getHashString() string {
@@ -252,27 +243,23 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		nonFeeTransfers := make([]hbarTransfer, 0)
-		if err := json.Unmarshal([]byte(transaction.NonFeeTransfers), &nonFeeTransfers); err != nil {
-			return nil, hErrors.ErrInternalServerError
-		}
-
 		stakingRewardPayouts := make([]hbarTransfer, 0)
 		if err := json.Unmarshal([]byte(transaction.StakingRewardPayouts), &stakingRewardPayouts); err != nil {
 			return nil, hErrors.ErrInternalServerError
 		}
 
 		var feeHbarTransfers []hbarTransfer
+		var itemizedTransfers []hbarTransfer
 		var stakingRewardTransfers []hbarTransfer
-		feeHbarTransfers, nonFeeTransfers, stakingRewardTransfers = categorizeHbarTransfers(
+		feeHbarTransfers, itemizedTransfers, stakingRewardTransfers = categorizeHbarTransfers(
 			cryptoTransfers,
-			nonFeeTransfers,
+			transaction.ItemizedTransfer,
 			stakingRewardPayouts,
 		)
 
 		transactionResult := types.GetTransactionResult(int32(transaction.Result))
 
-		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
+		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, itemizedTransfers, operations)
 		// fee transfers are always successful regardless of the transaction result
 		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
 		// staking reward transfers (both credit and debit) are always successful and marked as crypto transfer
@@ -331,22 +318,25 @@ func (tr *transactionRepository) appendTransferOperations(
 	return operations
 }
 
-func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers, stakingRewardPayouts []hbarTransfer) (
-	feeHbarTransfers, adjustedNonFeeTransfers, stakingRewardTransfers []hbarTransfer,
+func categorizeHbarTransfers(hbarTransfers []hbarTransfer, itemizedTransfer domain.ItemizedTransferSlice, stakingRewardPayouts []hbarTransfer) (
+	feeHbarTransfers, adjustedItemizedTransfers, stakingRewardTransfers []hbarTransfer,
 ) {
 	entityIds := make(map[int64]struct{})
 	for _, transfer := range hbarTransfers {
 		entityIds[transfer.AccountId.EncodedId] = struct{}{}
 	}
 
-	adjustedNonFeeTransfers = make([]hbarTransfer, 0, len(nonFeeTransfers))
-	for _, nonFeeTransfer := range nonFeeTransfers {
-		entityId := nonFeeTransfer.AccountId.EncodedId
-		// skip non fee transfer whose entity id is not in the transaction record's transfer list. One exception is
-		// we always add non fee transfers to the staking reward account if there are staking reward payouts
+	adjustedItemizedTransfers = make([]hbarTransfer, 0, len(itemizedTransfer))
+	for _, transfer := range itemizedTransfer {
+		entityId := transfer.EntityId.EncodedId
+		// skip itemized transfer whose entity id is not in the transaction record's transfer list. One exception is
+		// we always add itemized transfers to the staking reward account if there are staking reward payouts
 		_, exists := entityIds[entityId]
 		if exists || (entityId == stakingRewardAccountId.EncodedId && len(stakingRewardPayouts) != 0) {
-			adjustedNonFeeTransfers = append(adjustedNonFeeTransfers, nonFeeTransfer)
+			adjustedItemizedTransfers = append(adjustedItemizedTransfers, hbarTransfer{
+				AccountId: transfer.EntityId,
+				Amount:    transfer.Amount,
+			})
 		}
 	}
 
@@ -365,8 +355,8 @@ func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers, stakingRewardPayout
 		})
 	}
 
-	nonFeeTransferMap := aggregateHbarTransfers(append(nonFeeTransfers, stakingRewardTransfers...))
-	return getFeeHbarTransfers(hbarTransfers, nonFeeTransferMap), adjustedNonFeeTransfers, stakingRewardTransfers
+	itemizedTransferMap := aggregateHbarTransfers(itemizedTransfer, stakingRewardTransfers)
+	return getFeeHbarTransfers(hbarTransfers, itemizedTransferMap), adjustedItemizedTransfers, stakingRewardTransfers
 }
 
 func IsTransactionResultSuccessful(result int32) bool {
@@ -375,18 +365,22 @@ func IsTransactionResultSuccessful(result int32) bool {
 		result == transactionResultSuccessButMissingExpectedOperation
 }
 
-func aggregateHbarTransfers(hbarTransfers []hbarTransfer) map[int64]int64 {
+func aggregateHbarTransfers(itemTransfer domain.ItemizedTransferSlice, hbarTransfers []hbarTransfer) map[int64]int64 {
+	// aggregate transfers for the same entity id
 	transferMap := make(map[int64]int64)
 
+	for _, transfer := range itemTransfer {
+		transferMap[transfer.EntityId.EncodedId] += transfer.Amount
+	}
+
 	for _, transfer := range hbarTransfers {
-		// in case there are multiple transfers for the same entity, accumulate it
 		transferMap[transfer.AccountId.EncodedId] += transfer.Amount
 	}
 
 	return transferMap
 }
 
-func getFeeHbarTransfers(cryptoTransfers []hbarTransfer, nonFeeTransferMap map[int64]int64) []hbarTransfer {
+func getFeeHbarTransfers(cryptoTransfers []hbarTransfer, itemizedTransferMap map[int64]int64) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
 	accountIds := make([]int64, 0)
 	for _, transfer := range cryptoTransfers {
@@ -403,7 +397,7 @@ func getFeeHbarTransfers(cryptoTransfers []hbarTransfer, nonFeeTransferMap map[i
 	adjusted := make([]hbarTransfer, 0, len(cryptoTransfers))
 	for _, accountId := range accountIds {
 		aggregated := cryptoTransferMap[accountId]
-		amount := aggregated.Amount - nonFeeTransferMap[accountId]
+		amount := aggregated.Amount - itemizedTransferMap[accountId]
 		if amount != 0 {
 			adjusted = append(adjusted, hbarTransfer{
 				AccountId: aggregated.AccountId,

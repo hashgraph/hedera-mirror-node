@@ -47,7 +47,6 @@ import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
-import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -75,7 +74,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.AfterEach;
 import org.springframework.transaction.support.TransactionTemplate;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
@@ -139,9 +137,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected LiveHashRepository liveHashRepository;
 
     @Resource
-    protected NonFeeTransferRepository nonFeeTransferRepository;
-
-    @Resource
     protected RecordItemBuilder recordItemBuilder;
 
     @Resource
@@ -160,11 +155,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     private TransactionTemplate transactionTemplate;
 
     private long nextIndex = 0L;
-
-    @AfterEach
-    void afterEach() {
-        entityProperties.getPersist().setNonFeeTransfers(false);
-    }
 
     private static SignatureMap getDefaultSigMap() {
         String key1 = "11111111111111111111c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e91";

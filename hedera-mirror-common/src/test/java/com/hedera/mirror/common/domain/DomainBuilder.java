@@ -78,8 +78,8 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -643,16 +643,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NonFeeTransfer, NonFeeTransfer.NonFeeTransferBuilder> nonFeeTransfer() {
-        var builder = NonFeeTransfer.builder()
-                .amount(100L)
-                .consensusTimestamp(timestamp())
-                .entityId(entityId(ACCOUNT))
-                .payerAccountId(entityId(ACCOUNT));
-
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
     public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
         var builder = Prng.builder()
                 .consensusTimestamp(timestamp())
@@ -913,6 +903,11 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT))
                 .index(transactionIndex())
                 .initialBalance(10000000L)
+                .itemizedTransfer(List.of(ItemizedTransfer.builder()
+                        .amount(100L)
+                        .entityId(entityId(ACCOUNT))
+                        .isApproval(false)
+                        .build()))
                 .maxFee(100000000L)
                 .memo(bytes(10))
                 .nodeAccountId(entityId(ACCOUNT))

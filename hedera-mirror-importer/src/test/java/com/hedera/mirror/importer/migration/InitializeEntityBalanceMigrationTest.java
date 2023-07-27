@@ -20,10 +20,12 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -155,6 +157,28 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         accountDeleted.setBalance(0L);
         contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+    }
+
+    @Test
+    void migrateWhenNoEntities() {
+        // given
+        setup();
+        entityRepository.deleteAll();
+
+        // when
+        initializeEntityBalanceMigration.doMigrate();
+
+        // then
+        account.setDeleted(false); // We only know for sure that entities in the balance file are not deleted
+        accountDeleted.setDeleted(null);
+        contract.setDeleted(null);
+        assertThat(entityRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields(
+                        "balance", "deleted", "id", "num", "realm", "shard")
+                .containsExactlyInAnyOrder(account, accountDeleted, contract)
+                .allSatisfy(e -> assertThat(e)
+                        .returns(Range.atLeast(0L), Entity::getTimestampRange)
+                        .returns(EntityType.UNKNOWN, Entity::getType));
     }
 
     private void persistAccountBalance(long balance, EntityId entityId, long timestamp) {

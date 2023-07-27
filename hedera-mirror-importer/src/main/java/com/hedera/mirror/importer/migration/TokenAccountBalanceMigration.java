@@ -37,7 +37,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
                 order by consensus_timestamp desc
                 limit 1
             ),
-            token_balance as (
+            token_balance_latest as (
                 select *
                 from token_balance
                 join timestamp_range on snapshot_timestamp = consensus_timestamp
@@ -47,15 +47,23 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
                 from token_transfer tt
                 join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
                 group by account_id, token_id
-            )
-            update token_account t set balance =
+            ),
+            initial_balance as (
+              select tb.account_id, coalesce(ta.associated, true) as associated, tb.token_id,
                 case
-                    when t.associated is false then 0
-                    else coalesce(tt.amount + token_balance.balance, token_balance.balance, 0)
-                end
-            from token_balance
-            left join token_transfer tt on tt.token_id = token_balance.token_id and tt.account_id = token_balance.account_id
-            where t.account_id = token_balance.account_id and t.token_id = token_balance.token_id""";
+                    when ta.associated is false then 0
+                    else coalesce(tt.amount + tb.balance, tb.balance, 0)
+                end as balance
+              from token_balance_latest tb
+              left join token_account ta on ta.account_id = tb.account_id and ta.token_id = tb.token_id
+              left join token_transfer tt on tt.token_id = tb.token_id and tt.account_id = tb.account_id
+            )
+            insert into token_account (account_id, associated, balance, created_timestamp, timestamp_range, token_id)
+            select account_id, associated, balance, 0, '[0,)', token_id
+            from initial_balance
+            on conflict (account_id, token_id) do update
+            set balance = excluded.balance;
+            """;
 
     private final JdbcOperations jdbcOperations;
 

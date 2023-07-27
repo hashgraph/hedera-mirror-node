@@ -291,7 +291,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }),
         TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, false}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
         TRANSFER_NFT_TOKENS(
                 "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
@@ -310,7 +309,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
         DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
         DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
+        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
+        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}),
         ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKEN_WITH_ALIAS("associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKENS(

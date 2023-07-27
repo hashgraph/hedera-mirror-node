@@ -217,7 +217,7 @@ class BackfillBlockMigrationTest extends IntegrationTest {
     }
 
     private Consumer<Transaction.TransactionBuilder> customizeTransaction(long consensusTimestamp, Integer index) {
-        return b -> b.consensusTimestamp(consensusTimestamp).index(index);
+        return b -> b.consensusTimestamp(consensusTimestamp).index(index).itemizedTransfer(null);
     }
 
     private RecordFile persistRecordFile(

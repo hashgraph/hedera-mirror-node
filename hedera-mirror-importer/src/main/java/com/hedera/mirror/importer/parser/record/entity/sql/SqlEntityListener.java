@@ -52,7 +52,6 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
@@ -123,7 +122,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<Nft> nfts;
     private final Collection<NodeStake> nodeStakes;
-    private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
@@ -191,7 +189,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nfts = new ArrayList<>();
         networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
-        nonFeeTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
@@ -372,11 +369,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        nonFeeTransfers.add(nonFeeTransfer);
-    }
-
-    @Override
     public void onPrng(Prng prng) {
         prngs.add(prng);
     }
@@ -504,7 +496,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowances.clear();
             nftAllowanceState.clear();
             nodeStakes.clear();
-            nonFeeTransfers.clear();
             prngs.clear();
             schedules.clear();
             stakingRewardTransfers.clear();
@@ -567,7 +558,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(schedules.values());
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            batchPersister.persist(nonFeeTransfers);
             batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 

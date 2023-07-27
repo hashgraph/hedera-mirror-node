@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -62,6 +63,7 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
     @AfterEach
     void teardown() {
         entityProperties.getPersist().setEntityTransactions(false);
+        entityProperties.getPersist().setItemizedTransfers(true);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -80,6 +82,15 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
         assertThat(entityTransactionRepository.findAll()).isEmpty();
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideRecordItems")
+    void testEntityTransactionsWhenItemizedTransfersDisabled(String name, RecordItem recordItem) {
+        entityProperties.getPersist().setItemizedTransfers(false);
+        parseRecordItemAndCommit(recordItem);
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(getExpectedEntityTransactions(recordItem));
+    }
+
     private Collection<EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem) {
         return getEntities(recordItem).stream()
                 .filter(entityProperties.getPersist()::shouldPersistEntityTransaction)
@@ -89,8 +100,9 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
 
     @SuppressWarnings("deprecation")
     private Set<EntityId> getEntities(RecordItem recordItem) {
-        var entities = getEntities(recordItem.getTransactionBody(), true);
-        entities.addAll(getEntities(recordItem.getTransactionRecord(), false));
+        boolean includeTransfersInBody = entityProperties.getPersist().isItemizedTransfers();
+        var entities = getEntities(recordItem.getTransactionBody(), includeTransfersInBody);
+        entities.addAll(getEntities(recordItem.getTransactionRecord(), true));
         for (var sidecar : recordItem.getSidecarRecords()) {
             entities.addAll(getEntities(sidecar, false));
         }
@@ -123,16 +135,21 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
         return entities;
     }
 
-    private Set<EntityId> getEntities(GeneratedMessageV3 message, boolean excludeTransfers) {
+    private Set<EntityId> getEntities(GeneratedMessageV3 message, boolean includeTransfers) {
+        if (message instanceof SchedulableTransactionBody) {
+            // Don't include any entities in a  SchedulableTransactionBody
+            return Collections.emptySet();
+        }
+
         var entities = new HashSet<EntityId>();
         for (var value : message.getAllFields().values()) {
-            entities.addAll(getEntitiesInner(value, excludeTransfers));
+            entities.addAll(getEntitiesInner(value, includeTransfers));
         }
 
         return entities;
     }
 
-    private Set<EntityId> getEntitiesInner(Object value, boolean excludeTransfers) {
+    private Set<EntityId> getEntitiesInner(Object value, boolean includeTransfers) {
         var entities = new HashSet<EntityId>();
         if (value instanceof AccountID accountId) {
             entities.add(EntityId.of(accountId));
@@ -147,14 +164,14 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
         } else if (value instanceof TopicID topicId) {
             entities.add(EntityId.of(topicId));
         } else if (value instanceof GeneratedMessageV3 message) {
-            if (excludeTransfers && (value instanceof TransferList || value instanceof TokenTransferList)) {
+            if (!includeTransfers && (value instanceof TransferList || value instanceof TokenTransferList)) {
                 return Collections.emptySet();
             }
 
-            entities.addAll(getEntities(message, excludeTransfers));
+            entities.addAll(getEntities(message, includeTransfers));
         } else if (value instanceof Collection<?> collection) {
             for (var element : collection) {
-                entities.addAll(getEntitiesInner(element, excludeTransfers));
+                entities.addAll(getEntitiesInner(element, includeTransfers));
             }
         }
 

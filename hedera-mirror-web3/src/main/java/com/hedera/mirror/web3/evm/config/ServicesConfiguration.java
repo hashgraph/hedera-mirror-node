@@ -56,6 +56,7 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
@@ -424,6 +425,16 @@ public class ServicesConfiguration {
             CreateLogic createLogic) {
         return new TokenCreatePrecompile(
                 precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic);
+    }
+
+    @Bean
+    SetApprovalForAllPrecompile setApprovalForAllPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final ApproveAllowanceChecks approveAllowanceChecks,
+            final ApproveAllowanceLogic approveAllowanceLogic) {
+        return new SetApprovalForAllPrecompile(
+                syntheticTxnFactory, pricingUtils, approveAllowanceChecks, approveAllowanceLogic);
     }
 
     @Bean

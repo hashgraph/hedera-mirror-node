@@ -31,7 +31,7 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -49,7 +49,6 @@ import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 import com.hedera.mirror.importer.parser.contractlog.TransferIndexedContractLog;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.contractresult.TransferContractResult;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
@@ -83,7 +82,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
     private final SyntheticContractLogService syntheticContractLogService;
     private final SyntheticContractResultService syntheticContractResultService;
@@ -142,7 +140,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
-            processNonFeeTransfers(consensusTimestamp, recordItem);
+            processItemizedTransfers(recordItem, transaction);
         }
 
         // Errata records can fail with FAIL_INVALID but still have items in the record committed to state.
@@ -205,36 +203,36 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
-     * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
+     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to create
+     * an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
-    private void processNonFeeTransfers(long consensusTimestamp, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isNonFeeTransfers()) {
+    private void processItemizedTransfers(RecordItem recordItem, Transaction transaction) {
+        if (!entityProperties.getPersist().isItemizedTransfers()) {
             return;
         }
 
         var body = recordItem.getTransactionBody();
-        var transactionRecord = recordItem.getTransactionRecord();
-        for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
-            if (aa.getAmount() != 0) {
-                var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
-                if (EntityId.isEmpty(entityId)) {
-                    log.error(
-                            RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
-                            recordItem.getConsensusTimestamp());
-                    continue;
-                }
+        if (!body.hasCryptoTransfer()) {
+            return;
+        }
 
-                NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
-                nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setConsensusTimestamp(consensusTimestamp);
-                nonFeeTransfer.setEntityId(entityId);
-                nonFeeTransfer.setIsApproval(aa.getIsApproval());
-                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                entityListener.onNonFeeTransfer(nonFeeTransfer);
-                recordItem.addEntityId(entityId);
+        var transfers = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
+        for (var aa : transfers) {
+            var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
+            if (EntityId.isEmpty(entityId)) {
+                log.error(
+                        RECOVERABLE_ERROR + "Invalid itemizedTransfer entity id at {}",
+                        recordItem.getConsensusTimestamp());
+                continue;
             }
+
+            var itemizedTransfer = new ItemizedTransfer();
+            itemizedTransfer.setAmount(aa.getAmount());
+            itemizedTransfer.setEntityId(entityId);
+            itemizedTransfer.setIsApproval(aa.getIsApproval());
+            transaction.addItemizedTransfer(itemizedTransfer);
+            recordItem.addEntityId(entityId);
         }
     }
 

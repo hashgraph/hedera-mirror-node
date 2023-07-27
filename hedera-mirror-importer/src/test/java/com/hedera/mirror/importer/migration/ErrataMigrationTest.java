@@ -251,8 +251,10 @@ public class ErrataMigrationTest extends IntegrationTest {
             long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer, boolean senderIsPayer) {
         var transaction = domainBuilder
                 .transaction()
-                .customize(t ->
-                        t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
+                .customize(t -> t.consensusTimestamp(consensusTimestamp)
+                        .result(result)
+                        .type(type.getProtoId())
+                        .itemizedTransfer(null))
                 .persist();
         long amount = 100000L;
         long payer = transaction.getPayerAccountId().getId() + 1000L;
