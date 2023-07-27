@@ -35,6 +35,7 @@ spec:
       hostname: testnet.mirrornode.hedera.com
     importer:
       env:
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BUCKETNAME: "hedera-testnet-streams-2023-07"
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
