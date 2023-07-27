@@ -529,6 +529,10 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             PrecompilePricingUtils precompilePricingUtils) {
         return new UpdateTokenExpiryInfoPrecompile(
-                tokenUpdateLogic, mirrorNodeEvmProperties, contextOptionValidator, syntheticTxnFactory, precompilePricingUtils);
+                tokenUpdateLogic,
+                mirrorNodeEvmProperties,
+                contextOptionValidator,
+                syntheticTxnFactory,
+                precompilePricingUtils);
     }
 }
