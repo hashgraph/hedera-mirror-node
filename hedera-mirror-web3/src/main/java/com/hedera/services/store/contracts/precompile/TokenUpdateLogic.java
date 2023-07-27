@@ -58,6 +58,7 @@ import java.util.Optional;
  * <p>
  * Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
+ * 2. Get allowChangedTreasuryToOwnNfts from mirrorNodeEvmProperties
  */
 public class TokenUpdateLogic {
     private final OptionValidator validator;

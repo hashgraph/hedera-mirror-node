@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.grpc.validation;
+package com.hedera.mirror.common.domain.transaction;
 
-import jakarta.validation.Constraint;
-import jakarta.validation.Payload;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Constraint(validatedBy = EndTimeValidator.class)
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface EndTime {
-    String message() default "End time must be after start time";
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
+@Data
+@NoArgsConstructor
+public class ItemizedTransfer {
 
-    Class<?>[] groups() default {};
+    private Long amount;
 
-    Class<? extends Payload>[] payload() default {};
+    private EntityId entityId;
+
+    private Boolean isApproval;
 }

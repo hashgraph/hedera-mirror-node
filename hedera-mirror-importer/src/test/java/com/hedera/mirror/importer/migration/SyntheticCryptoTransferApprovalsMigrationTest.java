@@ -564,7 +564,9 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         long consensus = consensusTimestamp == null ? getTimestampWithinBoundary() : consensusTimestamp;
         return domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(consensus).nftTransfer(nftTransfers))
+                .customize(t -> t.consensusTimestamp(consensus)
+                        .nftTransfer(nftTransfers)
+                        .itemizedTransfer(null))
                 .persist();
     }
 

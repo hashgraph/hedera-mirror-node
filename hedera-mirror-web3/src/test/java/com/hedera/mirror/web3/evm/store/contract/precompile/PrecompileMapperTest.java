@@ -31,9 +31,6 @@ import org.springframework.context.annotation.Import;
 class PrecompileMapperTest {
 
     @Autowired
-    private MockPrecompile mockPrecompile;
-
-    @Autowired
     private PrecompileMapper precompileMapper;
 
     @Test

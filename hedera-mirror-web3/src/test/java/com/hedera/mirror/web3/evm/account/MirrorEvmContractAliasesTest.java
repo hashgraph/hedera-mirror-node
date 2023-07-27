@@ -17,9 +17,7 @@
 package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,12 +28,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -63,9 +59,6 @@ class MirrorEvmContractAliasesTest {
 
     @Mock
     private Store store;
-
-    @Mock
-    private Token token;
 
     @Mock
     private Account account;
@@ -105,41 +98,11 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmWhenAliasIsPresentAndIsPendingRemovalShouldReturnEntityEvmAddress() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
-        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
-
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getId()).thenReturn(id);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
     void resolveForEvmForAccountWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
-        when(store.getAccount(ALIAS, OnMissing.THROW)).thenReturn(account);
-        when(account.getAccountAddress()).thenReturn(Address.wrap(Bytes.wrap(toEvmAddress(entityId))));
+        when(store.getAccount(ALIAS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getId()).thenReturn(id);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
-    void resolveForEvmForTokenWhenAliasesNotPresentShouldReturnEntityEvmAddress() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getId()).thenReturn(id);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
-    }
-
-    @Test
-    void resolveForEvmWhenInvalidAddressShouldFail() {
-        when(store.getToken(ALIAS, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
-        when(store.getAccount(ALIAS, OnMissing.THROW))
-                .thenThrow(new InvalidTransactionException(FAIL_INVALID, "Entity is missing", ""));
-
-        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ALIAS))
-                .isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test

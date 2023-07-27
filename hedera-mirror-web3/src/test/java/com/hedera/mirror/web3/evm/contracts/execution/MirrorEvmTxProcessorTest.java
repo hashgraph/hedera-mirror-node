@@ -44,15 +44,18 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -127,17 +130,19 @@ class MirrorEvmTxProcessorTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
+    private Pair<ResponseCodeEnum, Long> result;
 
     @BeforeEach
     void setup() {
         setupGasCalculator();
         var operationRegistry = new OperationRegistry();
-        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
-        String EVM_VERSION_0_30 = "v0.30";
+        String EVM_VERSION_0_34 = "v0.34";
         Bytes32 chainId = Bytes32.fromHexString("0x0128");
-        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
+        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
         when(evmProperties.chainIdBytes32()).thenReturn(chainId);
+        when(evmProperties.getEvmSpecVersion()).thenReturn(EvmSpecVersion.SHANGHAI);
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessor(
                 worldState,
@@ -158,14 +163,17 @@ class MirrorEvmTxProcessorTest {
 
         DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
+        result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
     @Test
     void assertSuccessExecution() {
         givenValidMockWithoutGetOrCreate();
+        given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+        given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
         var result =
                 mirrorEvmTxProcessor.execute(sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true);

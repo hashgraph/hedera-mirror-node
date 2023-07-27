@@ -49,7 +49,7 @@ public class EntityProperties {
 
         private boolean files = true;
 
-        private boolean nonFeeTransfers = false;
+        private boolean itemizedTransfers = true;
 
         private boolean pendingReward = true;
 
@@ -65,7 +65,7 @@ public class EntityProperties {
 
         private boolean topics = true;
 
-        private boolean topicMessageLookups = true;
+        private boolean topicMessageLookups = false;
 
         private boolean trackBalance = true;
 

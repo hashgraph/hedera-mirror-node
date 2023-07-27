@@ -167,10 +167,6 @@ alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
 create index if not exists node_stake__epoch_day on node_stake (epoch_day);
 
--- non_fee_transfer
-create index if not exists non_fee_transfer__consensus_timestamp
-    on non_fee_transfer (consensus_timestamp);
-
 -- prng
 alter table prng
     add constraint prng__pk primary key (consensus_timestamp, payer_account_id);

@@ -35,6 +35,7 @@ import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -53,6 +54,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @NotBlank
     private String evmVersion = EVM_VERSION;
+
+    @Getter
+    @NotNull
+    private EvmSpecVersion evmSpecVersion = EvmSpecVersion.SHANGHAI;
 
     @Getter
     @NotNull

@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
@@ -26,6 +27,7 @@ import static com.hedera.services.utils.IdUtils.asContract;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
@@ -216,7 +218,17 @@ public class DecodingFacade {
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+        final var resolvedAddress = aliasResolver.apply(addressOrAlias);
+        // The input address was missing, so we return an AccountID with the
+        // missing address as alias; this means that any downstream code that
+        // relies on 0.0.X account numbers will get INVALID_ACCOUNT_ID, but
+        // the AccountID in any synthetic transaction body will have a valid
+        if (!isMirror(resolvedAddress)) {
+            return AccountID.newBuilder()
+                    .setAlias(ByteStringUtils.wrapUnsafely(addressOrAlias))
+                    .build();
+        }
+        return accountIdFromEvmAddress(resolvedAddress);
     }
 
     public static String removeBrackets(final String type) {

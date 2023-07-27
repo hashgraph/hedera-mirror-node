@@ -40,6 +40,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.TokenUpdateWrapper;
@@ -58,6 +60,15 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This class is a modified copy of TokenUpdatePrecompile from hedera-services repo.
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. The run method adds a validation for the update operation that was previously present
+ *     in the AbstractTokenUpdatePrecompile. This adjustment is necessary after the run
+ *     method was removed from the abstract class
+ */
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
 
     private static final String UPDATE_TOKEN_INFO_STRING = "updateTokenInfo(address,";
@@ -108,14 +119,15 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     }
 
     @Override
-    public RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody) {
+    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(updateOp);
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
 
-        initializeHederaTokenStore(store);
-
         final var validity = tokenUpdateLogic.validate(transactionBody);
         validateTrue(validity == OK, validity);
+
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        initializeHederaTokenStore(store);
 
         tokenUpdateLogic.updateToken(
                 transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp(), store, hederaTokenStore);

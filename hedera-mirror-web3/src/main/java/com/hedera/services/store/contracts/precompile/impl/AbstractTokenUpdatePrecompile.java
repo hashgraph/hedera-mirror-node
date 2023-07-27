@@ -18,19 +18,26 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+/**
+ * This class is a modified copy of AbstractTokenUpdatePrecompile from hedera-services repo.
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. The run method is only implemented in the extending precompiles. This approach eliminates
+ *     the necessity for the switch statement currently used in hedera services. Moreover, it facilitates
+ *     more stateless behaviour by avoiding storing of the update type operations in this class
+ */
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
-
-    protected final SyntheticTxnFactory syntheticTxnFactory;
 
     protected AbstractTokenUpdatePrecompile(
             PrecompilePricingUtils pricingUtils, SyntheticTxnFactory syntheticTxnFactory) {
-        super(pricingUtils);
-        this.syntheticTxnFactory = syntheticTxnFactory;
+        super(pricingUtils, syntheticTxnFactory);
     }
 
     @Override

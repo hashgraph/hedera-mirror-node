@@ -28,8 +28,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreeze
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -63,7 +65,9 @@ public class AccessorBasedUsages {
             TokenUnfreezeAccount,
             TokenPause,
             TokenUnpause,
-            TokenGrantKycToAccount);
+            TokenRevokeKycFromAccount,
+            TokenGrantKycToAccount,
+            TokenUpdate);
 
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;
