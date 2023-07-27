@@ -16,18 +16,18 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper;
+import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
-import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -46,13 +46,11 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -133,9 +131,7 @@ public class UpdateTokenExpiryInfoPrecompileTest {
 
         staticUpdateTokenExpiryInfoPrecompile = mockStatic(UpdateTokenExpiryInfoPrecompile.class);
 
-        // syntheticTxnFactory = new SyntheticTxnFactory();
         optionValidator = new ContextOptionValidator(evmProperties);
-
         updateTokenExpiryInfoPrecompile = new UpdateTokenExpiryInfoPrecompile(
                 tokenUpdateLogic, evmProperties, optionValidator, syntheticTxnFactory, precompilePricingUtils);
 
@@ -154,17 +150,11 @@ public class UpdateTokenExpiryInfoPrecompileTest {
 
     @Test
     void updateTokenExpiryInfoHappyPath() {
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        // frame context
         givenFrameContext();
-
-        // givenMinimalContextForSuccessfulCall
         givenMinimalContextForSuccessfulCall();
-
-        // givenUpdateTokenContext
         givenUpdateTokenContext();
 
         given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
@@ -183,6 +173,55 @@ public class UpdateTokenExpiryInfoPrecompileTest {
         assertEquals(successResult, result);
     }
 
+    @Test
+    void updateTokenExpiryInfoV2HappyPath() {
+        // given
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        givenFrameContext();
+        givenMinimalContextForSuccessfulCall();
+        givenUpdateTokenContextV2();
+
+        given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapper))
+                .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+
+        // givenPricingUtilsContext
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, a -> a);
+        final var result = subject.computeInternal(frame);
+
+        // then
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void decodeUpdateExpiryInfoForTokenInput() {
+        staticUpdateTokenExpiryInfoPrecompile.close();
+        final var decodedInput = getTokenUpdateExpiryInfoWrapper(
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.expiry().second() > 0);
+        assertTrue(decodedInput.expiry().autoRenewAccount().getAccountNum() > 0);
+        assertTrue(decodedInput.expiry().autoRenewPeriod() > 0);
+    }
+
+    @Test
+    void decodeUpdateExpiryInfoV2ForTokenInput() {
+        staticUpdateTokenExpiryInfoPrecompile.close();
+        final var decodedInput = getTokenUpdateExpiryInfoWrapper(
+                UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, identity(), SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2);
+
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.expiry().second() > 0);
+        assertTrue(decodedInput.expiry().autoRenewAccount().getAccountNum() > 0);
+        assertTrue(decodedInput.expiry().autoRenewPeriod() > 0);
+    }
+
     private void givenFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -191,7 +230,6 @@ public class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenMinimalContextForSuccessfulCall() {
-        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
@@ -201,6 +239,14 @@ public class UpdateTokenExpiryInfoPrecompileTest {
         staticUpdateTokenExpiryInfoPrecompile
                 .when(() -> getTokenUpdateExpiryInfoWrapper(
                         any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1)))
+                .thenReturn(tokenUpdateExpiryInfoWrapper);
+    }
+
+    private void givenUpdateTokenContextV2() {
+        given(tokenUpdateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
+        staticUpdateTokenExpiryInfoPrecompile
+                .when(() -> getTokenUpdateExpiryInfoWrapper(
+                        any(), any(), eq(SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2)))
                 .thenReturn(tokenUpdateExpiryInfoWrapper);
     }
 }

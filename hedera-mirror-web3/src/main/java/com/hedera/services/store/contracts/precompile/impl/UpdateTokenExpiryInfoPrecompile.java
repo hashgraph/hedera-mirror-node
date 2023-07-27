@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -74,8 +75,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
         final var updateExpiryInfoAbi =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V1;
-                    case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis
-                            .UPDATE_TOKEN_EXPIRY_INFO_V2;
+                    case ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2;
                     default -> throw new IllegalArgumentException("invalid selector to updateExpiryInfo precompile");
                 };
         updateExpiryInfoOp = getTokenUpdateExpiryInfoWrapper(input, aliasResolver, updateExpiryInfoAbi);
@@ -100,7 +100,7 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO);
+        return Set.of(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO, ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2);
     }
 
     private void initializeHederaTokenStore(Store store) {
