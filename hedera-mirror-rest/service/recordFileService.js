@@ -33,17 +33,31 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
-  static HEX_HASH_PREFIX_SIZE = 64;
-
   constructor() {
     super();
   }
+
+  static recordFileBlockDetailsFromTimestampArrayQuery = `select
+      timestamp,
+      (
+        select json_build_object(
+          'consensus_end', ${RecordFile.CONSENSUS_END},
+          'gas_used', ${RecordFile.GAS_USED},
+          'hash', ${RecordFile.HASH},
+          'index', ${RecordFile.INDEX}
+        )
+        from ${RecordFile.tableName}
+        where ${RecordFile.CONSENSUS_END} >= timestamp
+        order by ${RecordFile.CONSENSUS_END}
+        limit 1
+      ) as ${RecordFile.tableName}
+    from (select unnest($1::bigint[]) as timestamp) as tmp`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
     from ${RecordFile.tableName}
     where  ${RecordFile.CONSENSUS_END} >= $1
-    order by ${RecordFile.CONSENSUS_END} asc
+    order by ${RecordFile.CONSENSUS_END}
     limit 1`;
 
   static recordFileBlockDetailsFromIndexQuery = `select
@@ -80,6 +94,25 @@ class RecordFileService extends BaseService {
     );
 
     return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFiles containing the transactions of the given timestamps
+   *
+   * @param {(string|Number|BigInt)[]} timestamps consensus timestamp array
+   * @return {Promise<{}>} A map from the consensus timestamp to its record file
+   */
+  async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
+    const rows = await super.getRows(
+      RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery,
+      [timestamps],
+      'getRecordFileBlockDetailsFromTimestampArray'
+    );
+
+    return rows.reduce((result, row) => {
+      result[`${row.timestamp}`] = row.record_file ? new RecordFile(row.record_file) : null;
+      return result;
+    }, {});
   }
 
   /**

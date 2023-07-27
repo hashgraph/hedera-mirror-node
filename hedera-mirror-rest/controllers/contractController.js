@@ -1002,26 +1002,51 @@ class ContractController extends BaseController {
 
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
-    const rows = await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit);
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultDetailsViewModel(row, row.recordFile, row.ethereumTransaction)),
+      results: [],
       links: {
         next: null,
       },
     };
-
-    if (!_.isEmpty(response.results)) {
-      const lastRow = _.last(response.results);
-      const lastContractResultTimestamp = lastRow.timestamp;
-      response.links.next = utils.getPaginationLink(
-        req,
-        response.results.length !== limit,
-        {
-          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
-        },
-        order
-      );
+    if (rows.length === 0) {
+      return;
     }
+
+    const payerAndTimestampArray = [];
+    const timestampArray = [];
+    rows.forEach((row) => {
+      const {consensusTimestamp, payerAccountId} = row;
+      payerAndTimestampArray.push({
+        consensusTimestamp,
+        payerAccountId,
+      });
+      timestampArray.push(consensusTimestamp);
+    });
+    const [ethereumTransactionMap, recordFileMap] = await Promise.all([
+      ContractService.getEthereumTransactionsByPayerAndTimestampArray(payerAndTimestampArray),
+      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestampArray),
+    ]);
+
+    response.results = rows.map(
+      (row) =>
+        new ContractResultDetailsViewModel(
+          row,
+          recordFileMap[`${row.consensusTimestamp}`],
+          ethereumTransactionMap[`${row.consensusTimestamp}`]
+        )
+    );
+
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow.timestamp;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      {
+        [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
+      order
+    );
 
     res.locals[responseDataLabel] = response;
   };
