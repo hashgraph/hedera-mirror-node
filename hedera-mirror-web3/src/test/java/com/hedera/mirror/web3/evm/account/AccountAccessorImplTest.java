@@ -103,4 +103,11 @@ class AccountAccessorImplTest {
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ECDSA_KEY_ALIAS_ADDRESS);
     }
+
+    @Test
+    void getAddress() {
+        when(mirrorEntityAccess.isExtant(ADDRESS)).thenReturn(true);
+        final var result = accountAccessor.canonicalAddress(ADDRESS);
+        assertThat(result).isEqualTo(ADDRESS);
+    }
 }
