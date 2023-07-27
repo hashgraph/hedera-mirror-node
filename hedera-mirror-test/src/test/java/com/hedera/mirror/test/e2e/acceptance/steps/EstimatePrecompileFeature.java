@@ -149,8 +149,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         estimatePrecompileContractSolidityAddress = deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         newAccountEvmAddress = PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        receiverAccount = accountClient.createNewECDSAAccount(10);
-        secondReceiverAccount = accountClient.createNewECDSAAccount(10);
+        receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+        secondReceiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
     }
 
     @Given("I create erc test contract with {int} balance")
