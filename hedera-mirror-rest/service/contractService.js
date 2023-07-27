@@ -207,6 +207,26 @@ class ContractService extends BaseService {
     [filterKeys.INDEX]: ContractLog.INDEX,
   };
 
+  static ethereumTransactionByPayerAndTimestampArrayQuery = `select
+        t.consensus_timestamp,
+        case when ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} is not null then
+          json_build_object('access_list', encode(${EthereumTransaction.ACCESS_LIST}, 'hex'),
+                'chain_id', encode(${EthereumTransaction.CHAIN_ID}, 'hex'),
+                'gas_price', encode(${EthereumTransaction.GAS_PRICE}, 'hex'),
+                'max_fee_per_gas', encode(${EthereumTransaction.MAX_FEE_PER_GAS}, 'hex'),
+                'max_priority_fee_per_gas', encode(${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, 'hex'),
+                'nonce', ${EthereumTransaction.NONCE},
+                'signature_r', encode(${EthereumTransaction.SIGNATURE_R}, 'hex'),
+                'signature_s', encode(${EthereumTransaction.SIGNATURE_S}, 'hex'),
+                'type', ${EthereumTransaction.TYPE},
+                'recovery_id', ${EthereumTransaction.RECOVERY_ID},
+                'value', encode(${EthereumTransaction.VALUE}, 'hex'))
+        end as ${EthereumTransaction.tableName}
+      from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t
+      left join ${EthereumTransaction.tableName} as ${EthereumTransaction.tableAlias}
+        on t.payer_account_id = ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} and
+          t.consensus_timestamp = ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)}`;
+
   constructor() {
     super();
   }
@@ -533,7 +553,7 @@ class ContractService extends BaseService {
   }
 
   async getEthereumTransactionsByPayerAndTimestampArray(payerAndTimestampArray) {
-    if (payerAndTimestampArray.length === 0) {
+    if (_.isEmpty(payerAndTimestampArray)) {
       return {};
     }
 
@@ -543,26 +563,8 @@ class ContractService extends BaseService {
       payers.push(elem.payerAccountId);
       consensusTimestamps.push(elem.consensusTimestamp);
     });
-
-    const query = `select
-        t.consensus_timestamp,
-        case when e.consensus_timestamp is not null then
-          json_build_object('access_list', encode(access_list, 'hex'),
-                'chain_id', encode(chain_id, 'hex'),
-                'gas_price', encode(gas_price, 'hex'),
-                'max_fee_per_gas', encode(max_fee_per_gas, 'hex'),
-                'max_priority_fee_per_gas', encode(max_priority_fee_per_gas, 'hex'),
-                'nonce', nonce,
-                'signature_r', encode(signature_r, 'hex'),
-                'signature_s', encode(signature_s, 'hex'),
-                'type', type,
-                'recovery_id', recovery_id,
-                'value', encode(value, 'hex'))
-        end as ethereum_transaction
-      from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t
-      left join ethereum_transaction as e on t.payer_account_id = e.payer_account_id and t.consensus_timestamp = e.consensus_timestamp`;
     const rows = await super.getRows(
-      query,
+      ContractService.ethereumTransactionByPayerAndTimestampArrayQuery,
       [payers, consensusTimestamps],
       'getEthereumTransactionsByPayerAndTimestampArray'
     );
