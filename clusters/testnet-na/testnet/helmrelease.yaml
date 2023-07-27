@@ -54,6 +54,9 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      env:
+        HEDERA_MIRROR_REST_STATEPROOF_STREAMS_BUCKETNAME: "hedera-testnet-streams-2023-07"
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
