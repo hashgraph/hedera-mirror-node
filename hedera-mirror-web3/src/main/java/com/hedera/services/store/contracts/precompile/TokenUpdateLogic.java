@@ -26,6 +26,7 @@ import static com.hedera.services.store.tokens.HederaTokenStore.asTokenRelations
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -39,7 +40,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
@@ -206,9 +206,11 @@ public class TokenUpdateLogic {
     private void assertAutoRenewValidity(TokenUpdateTransactionBody op, Token token, Store store) {
         if (op.hasAutoRenewAccount()) {
             final var newAutoRenew = op.getAutoRenewAccount();
+            final var newAutoRenewAccount = store.getAccount(asTypedEvmAddress(newAutoRenew), OnMissing.DONT_THROW);
+            validateTrueOrRevert(!newAutoRenewAccount.isEmptyAccount(), INVALID_AUTORENEW_ACCOUNT);
             validateFalseOrRevert(isDetached(newAutoRenew, store), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 
-            if (!token.getAutoRenewAccount().equals(Account.getEmptyAccount())) {
+            if (token.hasAutoRenewAccount()) {
                 final var existingAutoRenew =
                         token.getAutoRenewAccount().getId().asGrpcAccount();
                 validateFalseOrRevert(isDetached(existingAutoRenew, store), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
