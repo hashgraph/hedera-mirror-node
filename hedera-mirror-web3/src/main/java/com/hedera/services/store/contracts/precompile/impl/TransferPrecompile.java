@@ -100,6 +100,14 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * Copied Precompile from hedera-services. Differences with the original:
+ * 1. Stateless logic
+ * 2. Use abstraction for the state by introducing {@link Store} interface.
+ * 3. Post body logic relies on `CryptoTransferTransactionBody` rather than `CryptoTransferWrapper`.
+ * 4. Reworked `extrapolateDetailsFromSyntheticTxn()` method to match the stateless logic.
+ * 5. Provided implementation for getFunctionSelectors() from {@link Precompile} interface.
+ */
 public class TransferPrecompile extends AbstractWritePrecompile {
     private static final Function CRYPTO_TRANSFER_FUNCTION =
             new Function("cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT);
