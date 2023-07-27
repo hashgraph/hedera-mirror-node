@@ -1009,6 +1009,7 @@ class ContractController extends BaseController {
         next: null,
       },
     };
+    res.locals[responseDataLabel] = response;
     if (rows.length === 0) {
       return;
     }
@@ -1047,8 +1048,6 @@ class ContractController extends BaseController {
       },
       order
     );
-
-    res.locals[responseDataLabel] = response;
   };
 
   /**
