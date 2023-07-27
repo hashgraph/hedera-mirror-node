@@ -325,29 +325,29 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
-        var timestamp = timestamp();
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowance.builder()
-                .amount(10L)
-                .amountGranted(10L)
-                .createdTimestamp(timestamp)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.atLeast(timestamp));
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
+                .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
             cryptoAllowanceHistory() {
-        var timestamp = timestamp();
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowanceHistory.builder()
-                .amount(10L)
-                .amountGranted(10L)
-                .createdTimestamp(timestamp)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()));
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -820,31 +820,31 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
-        var timestamp = timestamp();
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowance.builder()
-                .amount(10L)
-                .amountGranted(10L)
-                .createdTimestamp(timestamp)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.atLeast(timestamp))
-                .tokenId(entityId(TOKEN).getId());
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
             tokenAllowanceHistory() {
-        var timestamp = timestamp();
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowanceHistory.builder()
-                .amount(10L)
-                .amountGranted(10L)
-                .createdTimestamp(timestamp)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -67,7 +67,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .owner(cryptoOwner.getAccountNum())
                 .payerAccountId(payerAccountId)
                 .spender(recordItemBuilder.accountId().getAccountNum())
-                .createdTimestamp(consensusTimestamp)
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .build();
         when(entityIdService.lookup(cryptoOwner)).thenReturn(Optional.of(EntityId.of(cryptoOwner)));
@@ -97,7 +96,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .owner(tokenOwner.getAccountNum())
                 .payerAccountId(payerAccountId)
                 .spender(recordItemBuilder.accountId().getAccountNum())
-                .createdTimestamp(consensusTimestamp)
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .tokenId(recordItemBuilder.tokenId().getTokenNum())
                 .build();

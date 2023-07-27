@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.FungibleAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -245,7 +246,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
-        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeCryptoAllowance);
+        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeFungibleAllowance);
         if (merged == cryptoAllowance) {
             // Only add the merged object to the collection if it is a crypto allowance grant rather than
             // just a debit to an existing grant.
@@ -386,7 +387,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAllowance(TokenAllowance tokenAllowance) {
-        var merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeTokenAllowance);
+        var merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeFungibleAllowance);
         // Only add the merged object to the collection if it is a token allowance grant rather than
         // just a debit to an existing grant.
         if (merged == tokenAllowance) {
@@ -566,26 +567,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return previous;
     }
 
-    private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
-        // Current is an allowance grant so will override all mutable fields
-        if (current.isHistory()) {
-            if (previous.isHistory()) {
-                previous.setTimestampUpper(current.getTimestampLower());
-                return current;
-            }
-
-            previous.setAmountGranted(current.getAmountGranted());
-            previous.setAmount(current.getAmount());
-            previous.setCreatedTimestamp(current.getCreatedTimestamp());
-            previous.setTimestampRange(current.getTimestampRange());
-            return previous;
-        }
-
-        // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.
-        previous.setAmount(previous.getAmount() + current.getAmount());
-        return previous;
-    }
-
     @SuppressWarnings("java:S3776")
     private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
@@ -726,6 +707,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return dest;
+    }
+
+    private <T extends FungibleAllowance> T mergeFungibleAllowance(T previous, T current) {
+        if (current.isHistory()) {
+            // Current is an allowance grant / revoke so close the previous timestamp range
+            previous.setTimestampUpper(current.getTimestampLower());
+            return current;
+        }
+
+        // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.
+        previous.setAmount(previous.getAmount() + current.getAmount());
+        return previous;
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {
@@ -910,26 +903,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return newTokenAccount;
-    }
-
-    private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
-        // Current is an allowance grant so will override all mutable fields
-        if (current.isHistory()) {
-            if (previous.isHistory()) {
-                previous.setTimestampUpper(current.getTimestampLower());
-                return current;
-            }
-
-            previous.setAmountGranted(current.getAmountGranted());
-            previous.setAmount(current.getAmount());
-            previous.setCreatedTimestamp(current.getCreatedTimestamp());
-            previous.setTimestampRange(current.getTimestampRange());
-            return previous;
-        }
-
-        // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.
-        previous.setAmount(previous.getAmount() + current.getAmount());
-        return previous;
     }
 
     private void onNftTransferList(Transaction transaction) {

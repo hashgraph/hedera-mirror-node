@@ -445,10 +445,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         }
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var cryptoAllowanceDebitFromTransfer = builder.customize(
+                        c -> c.amount(amountTransferred).amountGranted(null).timestampRange(null))
                 .get();
 
         sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
@@ -464,30 +462,26 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onCryptoAllowanceExistingWithApprovedTransfer() {
         // given
-        final var idColumns = "owner, spender";
         var amountGranted = 1000L;
         var amountTransferred = -100L;
-
         var builder = domainBuilder.cryptoAllowance();
         var cryptoAllowanceCreate = builder.customize(
                         c -> c.amountGranted(amountGranted).amount(amountGranted))
                 .persist();
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var cryptoAllowanceDebitFromTransfer = builder.customize(
+                        c -> c.amount(amountTransferred).amountGranted(null).timestampRange(null))
                 .get();
 
+        // when
         sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
         completeFileAndCommit();
 
         // then
         cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred);
-        assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
-        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class)).isEmpty();
     }
 
     // Partial mirror node scenario where the crypto allowance grant does not exist in
@@ -495,96 +489,78 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onCryptoAllowanceAbsentWithApprovedTransfer() {
         // given
-        final var idColumns = "owner, spender";
-        var amountTransferred = -100L;
-        var builder = domainBuilder.cryptoAllowance();
-
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var cryptoAllowanceDebitFromTransfer = domainBuilder
+                .cryptoAllowance()
+                .customize(c -> c.amount(-100L).amountGranted(null).timestampRange(null))
                 .get();
 
+        // when
         sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
         completeFileAndCommit();
 
         // then
-        assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.count()).isZero();
-        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class)).isEmpty();
     }
 
     @ValueSource(ints = {1, 2, 3, 4})
     @ParameterizedTest
     void onCryptoAllowanceHistory(int commitIndex) {
         // given
-        final var idColumns = "owner, spender";
-        final var transferAmount = -99L;
-        var builder = domainBuilder.cryptoAllowance();
-        var cryptoAllowanceCreate = builder.get();
+        var cryptoAllowanceCreate1 = domainBuilder.cryptoAllowance().get();
+        var cryptoAllowanceUpdate1 = cryptoAllowanceCreate1.toBuilder()
+                .amount(-90L)
+                .amountGranted(null)
+                .timestampRange(null)
+                .build();
 
-        var cryptoAllowanceUpdate1 =
-                builder.customize(c -> c.amountGranted(999L).amount(999L)).get();
-        cryptoAllowanceUpdate1.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 1);
-
-        var cryptoAllowanceUpdate2 =
-                builder.customize(c -> c.amountGranted(0L).amount(0L)).get();
-        cryptoAllowanceUpdate2.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 2);
-
-        // Expected merged objects
-        var mergedCreate = TestUtils.clone(cryptoAllowanceCreate);
-        var mergedUpdate1 = TestUtils.merge(cryptoAllowanceCreate, cryptoAllowanceUpdate1);
-        var mergedUpdate2 = TestUtils.merge(mergedUpdate1, cryptoAllowanceUpdate2);
-        mergedCreate.setTimestampUpper(cryptoAllowanceUpdate1.getTimestampLower());
+        long amount = cryptoAllowanceCreate1.getAmount() + 200L;
+        var cryptoAllowanceCreate2 = cryptoAllowanceCreate1.toBuilder()
+                .amount(amount)
+                .amountGranted(amount)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        var cryptoAllowanceRevoke = cryptoAllowanceCreate1.toBuilder()
+                .amount(0)
+                .amountGranted(0L)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
 
         // when
-        sqlEntityListener.onCryptoAllowance(cryptoAllowanceCreate);
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceCreate1);
         if (commitIndex > 1) {
             completeFileAndCommit();
-            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
-            assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate1);
+            assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         }
+        var mergedUpdate1 = cryptoAllowanceCreate1.toBuilder()
+                .amount(cryptoAllowanceCreate1.getAmount() + cryptoAllowanceUpdate1.getAmount())
+                .build();
 
         sqlEntityListener.onCryptoAllowance(cryptoAllowanceUpdate1);
         if (commitIndex > 2) {
             completeFileAndCommit();
             assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
-            assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate);
+            assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         }
+        mergedUpdate1.setTimestampUpper(cryptoAllowanceCreate2.getTimestampLower());
 
-        // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var cryptoAllowanceDebitFromTransfer = builder.customize(c -> c.amount(transferAmount)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
-                .get();
-
-        /*
-         * When commitIndex == 3, the above debit to the previous grant and the following new allowance
-         * grant are present in memory at the same time and both rows cannot be presented to the
-         * database for the upsert process. Therefore, the debit to the previous grant is
-         * not recorded prior to that grant moving to the history table and is therefore lost.
-         * Thus, it will not be reflected in assertions that follow.
-         */
-        if (commitIndex != 3) {
-            mergedUpdate1.setAmount(mergedUpdate1.getAmount() + transferAmount);
-        }
-
-        sqlEntityListener.onCryptoAllowance(cryptoAllowanceDebitFromTransfer);
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceCreate2);
         if (commitIndex > 3) {
             completeFileAndCommit();
-            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
-            assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate);
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate2);
+            assertThat(findHistory(CryptoAllowance.class)).containsExactly(mergedUpdate1);
         }
+        var mergedUpdate2 = cryptoAllowanceCreate2.toBuilder().build();
+        mergedUpdate2.setTimestampUpper(cryptoAllowanceRevoke.getTimestampLower());
 
-        sqlEntityListener.onCryptoAllowance(cryptoAllowanceUpdate2);
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceRevoke);
         completeFileAndCommit();
 
         // then
-        mergedUpdate1.setTimestampUpper(cryptoAllowanceUpdate2.getTimestampLower());
-        assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate2);
-        assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceRevoke);
+        assertThat(findHistory(CryptoAllowance.class)).containsExactlyInAnyOrder(mergedUpdate1, mergedUpdate2);
     }
 
     @Test
@@ -2293,10 +2269,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         }
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var tokenAllowanceDebitFromTransfer = builder.customize(
+                        c -> c.amount(amountTransferred).amountGranted(null).timestampRange(null))
                 .get();
 
         sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
@@ -2322,10 +2296,8 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .persist();
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var tokenAllowanceDebitFromTransfer = builder.customize(
+                        c -> c.amount(amountTransferred).amountGranted(null).timestampRange(null))
                 .get();
 
         sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
@@ -2348,10 +2320,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         var builder = domainBuilder.tokenAllowance();
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(amountTransferred)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
+        var tokenAllowanceDebitFromTransfer = builder.customize(
+                        c -> c.amount(amountTransferred).amountGranted(null).timestampRange(null))
                 .get();
 
         sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
@@ -2367,72 +2337,58 @@ class SqlEntityListenerTest extends IntegrationTest {
     @ParameterizedTest
     void onTokenAllowanceHistory(int commitIndex) {
         // given
-        final var idColumns = "payer_account_id, spender, token_id";
-        final var transferAmount = -99L;
-        var builder = domainBuilder.tokenAllowance();
-        var tokenAllowanceCreate = builder.get();
-
-        var tokenAllowanceUpdate1 =
-                builder.customize(c -> c.amountGranted(999L).amount(999L)).get();
-        tokenAllowanceUpdate1.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 1);
-
-        var tokenAllowanceUpdate2 =
-                builder.customize(c -> c.amountGranted(0L).amount(0L)).get();
-        tokenAllowanceUpdate2.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 2);
-
-        // Expected merged objects
-        var mergedCreate = TestUtils.clone(tokenAllowanceCreate);
-        var mergedUpdate1 = TestUtils.merge(tokenAllowanceCreate, tokenAllowanceUpdate1);
-        var mergedUpdate2 = TestUtils.merge(mergedUpdate1, tokenAllowanceUpdate2);
-        mergedCreate.setTimestampUpper(tokenAllowanceUpdate1.getTimestampLower());
+        var tokenAllowanceCreate1 = domainBuilder.tokenAllowance().get();
+        var tokenAllowanceUpdate1 = tokenAllowanceCreate1.toBuilder()
+                .amount(-80)
+                .amountGranted(null)
+                .timestampRange(null)
+                .build();
+        long amount = tokenAllowanceCreate1.getAmount() + 500;
+        var tokenAllowanceCreate2 = tokenAllowanceCreate1.toBuilder()
+                .amount(amount)
+                .amountGranted(amount)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        var tokenAllowanceRevoke = tokenAllowanceCreate1.toBuilder()
+                .amount(0)
+                .amountGranted(0L)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
 
         // when
-        sqlEntityListener.onTokenAllowance(tokenAllowanceCreate);
+        sqlEntityListener.onTokenAllowance(tokenAllowanceCreate1);
         if (commitIndex > 1) {
             completeFileAndCommit();
-            assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
-            assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate1);
+            assertThat(findHistory(TokenAllowance.class)).isEmpty();
         }
+        var mergedUpdate1 = tokenAllowanceCreate1.toBuilder()
+                .amount(tokenAllowanceCreate1.getAmount() + tokenAllowanceUpdate1.getAmount())
+                .build();
 
         sqlEntityListener.onTokenAllowance(tokenAllowanceUpdate1);
         if (commitIndex > 2) {
             completeFileAndCommit();
             assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
-            assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate);
+            assertThat(findHistory(TokenAllowance.class)).isEmpty();
         }
+        mergedUpdate1.setTimestampUpper(tokenAllowanceCreate2.getTimestampLower());
 
-        // Approved transfer allowance debit as emitted by EntityRecordItemListener
-        var tokenAllowanceDebitFromTransfer = builder.customize(c -> c.amount(transferAmount)
-                        .amountGranted(null)
-                        .createdTimestamp(null)
-                        .timestampRange(null))
-                .get();
-
-        /*
-         * When commitIndex == 3, the above debit to the previous grant and the following new allowance
-         * grant are present in memory at the same time and both rows cannot be presented to the
-         * database for the upsert process. Therefore, the debit to the previous grant is
-         * not recorded prior to that grant moving to the history table and is therefore lost.
-         * Thus, it will not be reflected in assertions that follow.
-         */
-        if (commitIndex != 3) {
-            mergedUpdate1.setAmount(mergedUpdate1.getAmount() + transferAmount);
-        }
-
-        sqlEntityListener.onTokenAllowance(tokenAllowanceDebitFromTransfer);
+        sqlEntityListener.onTokenAllowance(tokenAllowanceCreate2);
         if (commitIndex > 3) {
             completeFileAndCommit();
-            assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
-            assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate);
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate2);
+            assertThat(findHistory(TokenAllowance.class)).containsExactly(mergedUpdate1);
         }
+        var mergedUpdate2 = tokenAllowanceCreate2.toBuilder().build();
+        mergedUpdate2.setTimestampUpper(tokenAllowanceRevoke.getTimestampLower());
 
-        sqlEntityListener.onTokenAllowance(tokenAllowanceUpdate2);
+        sqlEntityListener.onTokenAllowance(tokenAllowanceRevoke);
         completeFileAndCommit();
 
         // then
-        mergedUpdate1.setTimestampUpper(tokenAllowanceUpdate2.getTimestampLower());
-        assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate2);
-        assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceRevoke);
+        assertThat(findHistory(TokenAllowance.class)).containsExactlyInAnyOrder(mergedUpdate1, mergedUpdate2);
     }
 
     @Test

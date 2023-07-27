@@ -6,15 +6,13 @@
 alter table if exists crypto_allowance
     rename column amount to amount_granted;
 alter table if exists crypto_allowance
-    add column if not exists amount            bigint not null default 0,
-    add column if not exists created_timestamp bigint not null default 0;
+    add column if not exists amount bigint not null default 0;
 
 -- Alter crypto_allowance_history
 alter table if exists crypto_allowance_history
     rename column amount to amount_granted;
 alter table if exists crypto_allowance_history
-    add column if not exists amount            bigint not null default 0,
-    add column if not exists created_timestamp bigint not null default 0;
+    add column if not exists amount bigint not null default 0;
 
 create table if not exists crypto_allowance_migration (like crypto_allowance including defaults);
 
@@ -23,8 +21,8 @@ insert into crypto_allowance_migration
 select * from crypto_allowance where amount_granted <> 0;
 
 -- Add a sentinel row with (consensus_end, 0, 0) as (created_timestamp, owner, spender)
-insert into crypto_allowance_migration (amount_granted, created_timestamp, owner, payer_account_id, spender, timestamp_range)
-select 0, consensus_end, 0, 0, 0, int8range(consensus_end, null)
+insert into crypto_allowance_migration (amount_granted, owner, payer_account_id, spender, timestamp_range)
+select 0, 0, 0, 0, int8range(consensus_end, null)
 from record_file
 order by consensus_end desc
 limit 1;
@@ -32,47 +30,20 @@ limit 1;
 alter table crypto_allowance_migration add primary key (owner, spender);
 
 -- Backfill crypto_allowance.created_timestamp
-update crypto_allowance
-set created_timestamp = lower(timestamp_range),
-    amount = amount_granted;
-
-update crypto_allowance_history
-set created_timestamp = lower(timestamp_range),
-    amount = amount_granted;
+update crypto_allowance set amount = amount_granted;
+update crypto_allowance_history set amount = amount_granted;
 
 -- Alter token_allowance
 alter table if exists token_allowance
     rename column amount to amount_granted;
 alter table if exists token_allowance
-    add column if not exists amount            bigint not null default 0,
-    add column if not exists created_timestamp bigint not null default 0;
+    add column if not exists amount bigint not null default 0;
 
 -- Alter token_allowance_history
 alter table if exists token_allowance_history
     rename column amount to amount_granted;
 alter table if exists token_allowance_history
-    add column if not exists amount            bigint not null default 0,
-    add column if not exists created_timestamp bigint not null default 0;
-
--- Backfill token_allowance.created_timestamp
-with min_timestamp as (select min(timestamp) as created_timestamp, owner, spender, token_id
-                       from (select lower(timestamp_range) as timestamp, owner, spender, token_id
-                             from token_allowance
-                             union all
-                             select lower(timestamp_range) as timestamp, owner, spender, token_id
-                             from token_allowance_history) ta
-                       group by owner, spender, token_id),
-     update_history as (
-         update token_allowance_history tah
-             set amount = tah.amount_granted, created_timestamp = mt.created_timestamp
-             from min_timestamp mt
-             where tah.owner = mt.owner and tah.spender = mt.spender and tah.token_id = mt.token_id)
-update token_allowance ta
-set amount = ta.amount_granted, created_timestamp = mt.created_timestamp
-from min_timestamp mt
-where ta.owner = mt.owner
-  and ta.spender = mt.spender
-  and ta.token_id = mt.token_id;
+    add column if not exists amount bigint not null default 0;
 
 -- Backfill token_allowance.amount
 with spent_allowance as (select coalesce(sum(tt.amount), 0) as amount, ta.owner, ta.spender, ta.token_id

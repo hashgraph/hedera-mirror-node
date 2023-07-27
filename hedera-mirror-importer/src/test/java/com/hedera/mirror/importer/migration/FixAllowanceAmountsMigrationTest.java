@@ -104,7 +104,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
 
     private final DomainBuilder domainBuilder;
 
-    @Value("classpath:db/migration/v1/V1.84.0__allowance_amount.sql")
+    @Value("classpath:db/migration/v1/V1.84.1__allowance_amount.sql")
     private final File migrationSql;
 
     private final TokenAllowanceRepository tokenAllowanceRepository;
@@ -137,7 +137,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                     // Migration simply sets amount == amountGranted when no approved transfers apply
                     c.amountGranted(100L).amount(100L);
                     c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.createdTimestamp(1L).timestampRange(Range.atLeast(4L));
+                    c.timestampRange(Range.atLeast(4L));
                 })
                 .get();
 
@@ -146,7 +146,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                     // Migration simply sets amount == amountGranted when no approved transfers apply
                     c.amountGranted(500L).amount(500L);
                     c.tokenId(2L).owner(2L).payerAccountId(PAYER).spender(6L);
-                    c.createdTimestamp(5L).timestampRange(Range.atLeast(5L));
+                    c.timestampRange(Range.atLeast(5L));
                 })
                 .get();
 
@@ -154,7 +154,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                 .customize(c -> {
                     c.amountGranted(10L).amount(10L);
                     c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.createdTimestamp(1L).timestampRange(Range.closedOpen(1L, 2L));
+                    c.timestampRange(Range.closedOpen(1L, 2L));
                 })
                 .get();
 
@@ -162,7 +162,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                 .customize(c -> {
                     c.amountGranted(20L).amount(20L);
                     c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.createdTimestamp(1L).timestampRange(Range.closedOpen(2L, 4L));
+                    c.timestampRange(Range.closedOpen(2L, 4L));
                 })
                 .get();
 
@@ -188,7 +188,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                 .customize(c -> {
                     c.amountGranted(100L).amount(50L);
                     c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.createdTimestamp(1L).timestampRange(Range.atLeast(4L));
+                    c.timestampRange(Range.atLeast(4L));
                 })
                 .get();
 
@@ -196,7 +196,7 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                 .customize(c -> {
                     c.amountGranted(500L).amount(350L);
                     c.tokenId(2L).owner(2L).payerAccountId(PAYER).spender(6L);
-                    c.createdTimestamp(5L).timestampRange(Range.atLeast(5L));
+                    c.timestampRange(Range.atLeast(5L));
                 })
                 .get();
 

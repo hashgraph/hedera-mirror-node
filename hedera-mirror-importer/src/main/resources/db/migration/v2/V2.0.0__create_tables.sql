@@ -183,7 +183,6 @@ create table if not exists crypto_allowance
 (
     amount            bigint    not null,
     amount_granted    bigint    not null,
-    created_timestamp bigint    not null,
     owner             bigint    not null,
     payer_account_id  bigint    not null,
     spender           bigint    not null,
@@ -575,7 +574,6 @@ create table if not exists token_allowance
 (
     amount            bigint    not null,
     amount_granted    bigint    not null,
-    created_timestamp bigint    not null,
     owner             bigint    not null,
     payer_account_id  bigint    not null,
     spender           bigint    not null,
