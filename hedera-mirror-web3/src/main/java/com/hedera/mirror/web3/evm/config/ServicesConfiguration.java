@@ -46,6 +46,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
@@ -500,5 +501,11 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
+    }
+
+    @Bean
+    BalanceOfPrecompile balanceOfPrecompile(
+            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+        return new BalanceOfPrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 }

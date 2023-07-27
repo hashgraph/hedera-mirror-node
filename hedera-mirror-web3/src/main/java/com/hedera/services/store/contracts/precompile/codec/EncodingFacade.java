@@ -158,6 +158,13 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeBalance(final long balance) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_BALANCE)
+                .withBalance(balance)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -174,6 +181,7 @@ public class EncodingFacade {
         private boolean approve;
         private long[] serialNumbers;
         private Address approved;
+        private long balance;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType = switch (functionType) {
@@ -235,6 +243,11 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withBalance(final long balance) {
+            this.balance = balance;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
@@ -248,6 +261,7 @@ public class EncodingFacade {
                         case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
                         case HAPI_GET_APPROVED -> Tuple.of(status, convertBesuAddressToHeadlongAddress(approved));
                         case HAPI_IS_APPROVED_FOR_ALL -> Tuple.of(status, isApprovedForAllStatus);
+                        case ERC_BALANCE -> Tuple.of(BigInteger.valueOf(balance));
                         default -> Tuple.of(status);
                     };
 

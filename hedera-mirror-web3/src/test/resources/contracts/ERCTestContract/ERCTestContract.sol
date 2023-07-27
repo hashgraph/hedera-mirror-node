@@ -27,7 +27,7 @@ contract ERCTestContract {
         return IERC20(token).totalSupply();
     }
 
-    function balanceOf(address token, address account) external view returns (uint256) {
+    function balanceOf(address token, address account) external returns (uint256) {
         return IERC20(token).balanceOf(account);
     }
 

@@ -68,7 +68,8 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
+ * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services
+ * package.
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
@@ -122,7 +123,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
-        if (frame.isStatic()) {
+        if (frame.isStatic() && !isNestedFunctionSelectorForReadOnly(input)) {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
@@ -141,7 +142,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         After the Precompile classes are implemented, this workaround won't be needed. */
 
         // redirect operations
-        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
+        if ((isTokenProxyRedirect(input) || isViewFunction(input))
+                && !isNestedFunctionSelectorForWrite(input)
+                && !isNestedFunctionSelectorForReadOnly(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 
@@ -286,6 +289,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
                             this.transactionBody =
                                     precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                        } else {
+                            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
                         }
                 }
                 break;
@@ -367,6 +372,20 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_ERC_TRANSFER,
                     AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
                     AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isNestedFunctionSelectorForReadOnly(final Bytes input) {
+        RedirectTarget target;
+        try {
+            target = DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            return false;
+        }
+        final var nestedFunctionSelector = target.descriptor();
+        return switch (nestedFunctionSelector) {
+            case AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN -> true;
             default -> false;
         };
     }

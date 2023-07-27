@@ -18,7 +18,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -38,17 +37,14 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final EncodingFacade encoder;
-    protected final EvmEncodingFacade evmEncoder;
     protected final PrecompilePricingUtils pricingUtils;
 
     protected AbstractReadOnlyPrecompile(
             final SyntheticTxnFactory syntheticTxnFactory,
             final EncodingFacade encoder,
-            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.encoder = encoder;
-        this.evmEncoder = evmEncoder;
         this.pricingUtils = pricingUtils;
     }
 
