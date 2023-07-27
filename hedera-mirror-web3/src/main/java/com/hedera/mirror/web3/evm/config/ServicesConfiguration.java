@@ -52,6 +52,7 @@ import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.NamePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
@@ -94,12 +95,12 @@ public class ServicesConfiguration {
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
-            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
+            final BasicFcfsUsagePrices usagePricesProvider, final BasicHbarCentExchange hbarCentExchange) {
         return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicFcfsUsagePrices basicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicFcfsUsagePrices(ratesAndFeesLoader);
     }
 
@@ -110,7 +111,7 @@ public class ServicesConfiguration {
 
     @Bean
     PricedUsageCalculator pricedUsageCalculator(
-            AccessorBasedUsages accessorBasedUsages, OverflowCheckingCalc overflowCheckingCalc) {
+            final AccessorBasedUsages accessorBasedUsages, final OverflowCheckingCalc overflowCheckingCalc) {
         return new PricedUsageCalculator(accessorBasedUsages, overflowCheckingCalc);
     }
 
@@ -136,10 +137,10 @@ public class ServicesConfiguration {
 
     @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
-            HbarCentExchange hbarCentExchange,
-            UsagePricesProvider usagePricesProvider,
-            PricedUsageCalculator pricedUsageCalculator,
-            List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
+            final HbarCentExchange hbarCentExchange,
+            final UsagePricesProvider usagePricesProvider,
+            final PricedUsageCalculator pricedUsageCalculator,
+            final List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
 
@@ -189,7 +190,7 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicHbarCentExchange basicHbarCentExchange(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 
@@ -235,7 +236,7 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    AssociateLogic associateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
 
@@ -246,26 +247,28 @@ public class ServicesConfiguration {
 
     @Bean
     AutoCreationLogic autocreationLogic(
-            FeeCalculator feeCalculator, EvmProperties evmProperties, SyntheticTxnFactory syntheticTxnFactory) {
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            final SyntheticTxnFactory syntheticTxnFactory) {
         return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
     @Bean
     MintPrecompile mintPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            EncodingFacade encodingFacade,
-            SyntheticTxnFactory syntheticTxnFactory,
-            MintLogic mintLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final EncodingFacade encodingFacade,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MintLogic mintLogic) {
         return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, mintLogic);
     }
 
     @Bean
-    MintLogic mintLogic(OptionValidator optionValidator) {
+    MintLogic mintLogic(final OptionValidator optionValidator) {
         return new MintLogic(optionValidator);
     }
 
     @Bean
-    BurnLogic burnLogic(OptionValidator optionValidator) {
+    BurnLogic burnLogic(final OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
     }
 
@@ -275,7 +278,7 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
+    TransferLogic transferLogic(final AutoCreationLogic autoCreationLogic) {
         return new TransferLogic(autoCreationLogic);
     }
 
@@ -356,23 +359,23 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    WipeLogic wipeLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
     }
 
     @Bean
     WipeFungiblePrecompile wipeFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
     @Bean
     WipeNonFungiblePrecompile wipeNonFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
@@ -391,11 +394,19 @@ public class ServicesConfiguration {
 
     @Bean
     TokenCreatePrecompile tokenCreatePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            EncodingFacade encodingFacade,
-            SyntheticTxnFactory syntheticTxnFactory,
-            CreateLogic createLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final EncodingFacade encodingFacade,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final CreateLogic createLogic) {
         return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
+    }
+
+    @Bean
+    NamePrecompile namePrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils precompilePricingUtils) {
+        return new NamePrecompile(syntheticTxnFactory, encoder, precompilePricingUtils);
     }
 
     @Bean
@@ -405,9 +416,9 @@ public class ServicesConfiguration {
 
     @Bean
     DeleteTokenPrecompile deleteTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            DeleteLogic deleteLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DeleteLogic deleteLogic) {
         return new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
     }
 
@@ -418,9 +429,9 @@ public class ServicesConfiguration {
 
     @Bean
     PausePrecompile pausePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            PauseLogic pauseLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
 }

@@ -134,6 +134,13 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeName(final String name) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_NAME)
+                .withName(name)
+                .build();
+    }
+
     public Bytes encodeCreateSuccess(final Address newTokenAddress) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_CREATE)
@@ -173,10 +180,11 @@ public class EncodingFacade {
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
+        private String name;
         private Address approved;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
-            this.tupleType = switch (functionType) {
+            tupleType = switch (functionType) {
                 case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
                 case HAPI_MINT -> mintReturnType;
                 case HAPI_BURN -> burnReturnType;
@@ -225,6 +233,11 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withName(final String name) {
+            this.name = name;
+            return this;
+        }
+
         private FunctionResultBuilder withErcFungibleTransferStatus(final boolean ercFungibleTransferStatus) {
             this.ercFungibleTransferStatus = ercFungibleTransferStatus;
             return this;
@@ -243,6 +256,7 @@ public class EncodingFacade {
                         case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_APPROVE -> Tuple.of(approve);
+                        case ERC_NAME -> Tuple.of(name);
                         case HAPI_APPROVE -> Tuple.of(status, approve);
                         case HAPI_APPROVE_NFT -> Tuple.of(status);
                         case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
@@ -267,15 +281,15 @@ public class EncodingFacade {
 
         private static LogTopic generateLogTopic(final Object param) {
             byte[] array = new byte[] {};
-            if (param instanceof Address address) {
+            if (param instanceof final Address address) {
                 array = address.toArray();
-            } else if (param instanceof BigInteger numeric) {
+            } else if (param instanceof final BigInteger numeric) {
                 array = numeric.toByteArray();
-            } else if (param instanceof Long numeric) {
+            } else if (param instanceof final Long numeric) {
                 array = BigInteger.valueOf(numeric).toByteArray();
-            } else if (param instanceof Boolean bool) {
+            } else if (param instanceof final Boolean bool) {
                 array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
-            } else if (param instanceof Bytes bytes) {
+            } else if (param instanceof final Bytes bytes) {
                 array = bytes.toArray();
             }
 
@@ -334,9 +348,9 @@ public class EncodingFacade {
         }
 
         private Object convertDataItem(final Object param) {
-            if (param instanceof Address address) {
+            if (param instanceof final Address address) {
                 return convertBesuAddressToHeadlongAddress(address);
-            } else if (param instanceof Long numeric) {
+            } else if (param instanceof final Long numeric) {
                 return BigInteger.valueOf(numeric);
             } else {
                 return param;
