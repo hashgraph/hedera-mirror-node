@@ -175,7 +175,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.startBlockNumber`                                        | null                           | The block number that will be set as the downloaded stream files starting index.                                                                                                                                                                                   |
 | `hedera.mirror.importer.verifyHashAfter`                                         | 1970-01-01T00:00:00Z           | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ                                                                                                                  |
 
-
 ### Transaction and Entity Filtering
 
 The mirror node may be configured to only store a subset of data for entities and/or transaction types of interest --
