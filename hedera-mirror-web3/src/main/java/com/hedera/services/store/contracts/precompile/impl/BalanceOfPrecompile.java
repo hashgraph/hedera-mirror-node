@@ -18,12 +18,9 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
-import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
@@ -32,14 +29,12 @@ import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfResult;
-import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -53,26 +48,16 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
     }
 
     @Override
-    public TransactionBody.Builder body(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
-        final var balanceOfWrapper = decodeBalanceOf(input, aliasResolver);
-        final var account = Bytes.of(balanceOfWrapper.account().toByteArray());
-        final var balanceInput = Bytes.wrap(input, account);
-        return super.body(balanceInput, aliasResolver, bodyParams);
-    }
-
-    @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var balanceOp = transactionBody.getContractCall();
-        final var functionParams = balanceOp.getFunctionParameters();
+        final var balanceOp = frame.getInputData().slice(24);
         RedirectTarget target;
         try {
-            target = DescriptorUtils.getRedirectTarget(Bytes.of(functionParams.toByteArray()));
+            target = DescriptorUtils.getRedirectTarget(balanceOp);
         } catch (final Exception e) {
             throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
         }
-        final var accountAddress = decodeAccount(functionParams);
+        final var accountAddress = decodeAccount(target.massagedInput());
         final var tokenAddress = target.token();
         final var tokenRel =
                 store.getTokenRelationship(new TokenRelationshipKey(tokenAddress, accountAddress), OnMissing.THROW);
@@ -80,7 +65,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
         return new BalanceOfResult(balance);
     }
 
-    private Address decodeAccount(ByteString functionParams) {
+    private Address decodeAccount(Bytes functionParams) {
         return null;
     }
 
@@ -101,14 +86,5 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
         final var rawBalanceOfWrapper = EvmBalanceOfPrecompile.decodeBalanceOf(nestedInput);
         return new BalanceOfWrapper<>(
                 convertLeftPaddedAddressToAccountId(rawBalanceOfWrapper.account(), aliasResolver));
-    }
-
-    @Override
-    public long getGasRequirement(
-            long blockTimestamp,
-            Builder transactionBody,
-            Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases) {
-        return super.getGasRequirement(blockTimestamp, transactionBody, store, mirrorEvmContractAliases);
     }
 }
