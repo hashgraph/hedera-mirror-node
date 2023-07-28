@@ -13,7 +13,7 @@ data:
     
     ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
     ZFS_INITIALIZED="${ZFS_INITIALIZED:-}"
-    until [ "${ZFS_INITIALIZED}" != "" ]; do source "${ROOT_MOUNT_DIR}/etc/environment"; echo "Waiting for label "; sleep 10; done
+    until [ "${ZFS_INITIALIZED}" != "" ]; do echo "Waiting for label "; source "${ROOT_MOUNT_DIR}/etc/environment"; sleep 10; done
 
   entrypoint.sh: |
     #!/usr/bin/env bash
