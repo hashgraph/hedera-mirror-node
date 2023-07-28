@@ -46,16 +46,11 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
 
     @Override
     public FeeData usageGiven(Query query, Store store, @Nullable Map<String, Object> queryCtx) {
-        return usageFor(query, query.getTransactionGetRecord().getHeader().getResponseType(), queryCtx);
+        return usageFor(query.getTransactionGetRecord().getHeader().getResponseType());
     }
 
     // removed child records logic
-    private FeeData usageFor(
-            final Query query,
-            final ResponseType stateProofType,
-            @edu.umd.cs.findbugs.annotations.Nullable final Map<String, Object> queryCtx) {
-        final var txnRecord = MISSING_RECORD_STANDIN;
-        var usages = usageEstimator.getTransactionRecordQueryFeeMatrices(txnRecord, stateProofType);
-        return usages;
+    private FeeData usageFor(final ResponseType stateProofType) {
+        return usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, stateProofType);
     }
 }
