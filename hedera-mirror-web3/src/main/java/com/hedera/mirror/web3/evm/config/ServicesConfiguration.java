@@ -19,12 +19,14 @@ package com.hedera.mirror.web3.evm.config;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -50,6 +52,7 @@ import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -147,7 +150,8 @@ public class ServicesConfiguration {
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
             PricedUsageCalculator pricedUsageCalculator,
-            List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
+            List<TxnResourceUsageEstimator> txnResourceUsageEstimators,
+            Set<QueryResourceUsageEstimator> queryResourceUsageEstimators) {
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
 
@@ -500,5 +504,13 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
+    }
+
+    @Bean
+    GetTokenExpiryInfoPrecompile getTokenExpiryInfoPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GetTokenExpiryInfoPrecompile(syntheticTxnFactory, encoder, new EvmEncodingFacade(), pricingUtils);
     }
 }
