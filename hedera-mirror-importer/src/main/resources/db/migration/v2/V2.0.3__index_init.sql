@@ -118,6 +118,10 @@ create index if not exists entity_stake_history__id_lower_timestamp
 create index if not exists entity_stake_history__timestamp_range
     on entity_stake_history using gist (timestamp_range);
 
+-- entity_transaction
+alter table if exists entity_transaction
+    add constraint entity_transaction__pk primary key (entity_id, consensus_timestamp);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);

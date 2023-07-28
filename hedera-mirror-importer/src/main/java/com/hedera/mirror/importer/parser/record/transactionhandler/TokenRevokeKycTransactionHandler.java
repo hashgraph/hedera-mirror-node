@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class TokenRevokeKycTransactionHandler implements TransactionHandler {
+class TokenRevokeKycTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -45,7 +45,7 @@ class TokenRevokeKycTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
@@ -59,5 +59,6 @@ class TokenRevokeKycTransactionHandler implements TransactionHandler {
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());
         entityListener.onTokenAccount(tokenAccount);
+        recordItem.addEntityId(tokenId);
     }
 }

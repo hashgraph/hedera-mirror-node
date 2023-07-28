@@ -30,7 +30,6 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.Key;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -170,7 +169,8 @@ public class AccountClient extends AbstractNetworkClient {
     public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
         // Get the keyType from the enum
         Key.KeyCase keyType = accountNameEnum.keyType;
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
+        return createCryptoAccount(
+                Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
     }
 
     private ExpandedAccountId createCryptoAccount(

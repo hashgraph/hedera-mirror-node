@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -24,20 +23,15 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
-class UtilPrngTransactionHandler implements TransactionHandler {
+class UtilPrngTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
-
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
-    }
 
     @Override
     public TransactionType getType() {
@@ -45,7 +39,7 @@ class UtilPrngTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var range = recordItem.getTransactionBody().getUtilPrng().getRange();
         if (!recordItem.isSuccessful()) {
@@ -58,18 +52,15 @@ class UtilPrngTransactionHandler implements TransactionHandler {
         prng.setPayerAccountId(recordItem.getPayerAccountId().getId());
         prng.setRange(range);
         switch (transactionRecord.getEntropyCase()) {
-            case PRNG_BYTES:
-                prng.setPrngBytes(DomainUtils.toBytes(transactionRecord.getPrngBytes()));
-                break;
-            case PRNG_NUMBER:
-                prng.setPrngNumber(transactionRecord.getPrngNumber());
-                break;
-            default:
+            case PRNG_BYTES -> prng.setPrngBytes(DomainUtils.toBytes(transactionRecord.getPrngBytes()));
+            case PRNG_NUMBER -> prng.setPrngNumber(transactionRecord.getPrngNumber());
+            default -> {
                 log.warn(
                         "Unsupported entropy case {} at consensus timestamp {}",
                         transactionRecord.getEntropyCase(),
                         consensusTimestamp);
                 return;
+            }
         }
 
         entityListener.onPrng(prng);
