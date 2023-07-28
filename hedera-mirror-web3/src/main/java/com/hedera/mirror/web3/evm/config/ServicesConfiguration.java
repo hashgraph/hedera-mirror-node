@@ -25,6 +25,7 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -88,7 +89,6 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -149,6 +149,7 @@ public class ServicesConfiguration {
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
             PricedUsageCalculator pricedUsageCalculator,
+            Set<QueryResourceUsageEstimator> queryResourceUsageEstimators,
             List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
@@ -169,7 +170,7 @@ public class ServicesConfiguration {
                 hbarCentExchange,
                 usagePricesProvider,
                 pricedUsageCalculator,
-                Collections.emptySet(), // TODO
+                queryResourceUsageEstimators,
                 txnUsageEstimators);
     }
 
