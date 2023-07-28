@@ -140,8 +140,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private static final ABIType<Tuple> TRANSFER_NFT_DECODER = TypeFactory.create("(bytes32,bytes32,bytes32,int64)");
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final TransferLogic transferLogic;
-
-    private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
@@ -193,7 +191,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
-        initializeHederaTokenStore(store);
+        final var hederaTokenStore = initializeHederaTokenStore(store);
         final var impliedValidity = extrapolateValidityDetailsFromSyntheticTxn(transactionBody);
         if (impliedValidity != OK) {
             throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
@@ -226,8 +224,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ABI_ID_TRANSFER_NFT);
     }
 
-    private void initializeHederaTokenStore(Store store) {
-        hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
+    private HederaTokenStore initializeHederaTokenStore(Store store) {
+        return new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 
     /**
