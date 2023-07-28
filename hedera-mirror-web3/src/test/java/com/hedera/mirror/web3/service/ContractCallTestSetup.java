@@ -25,6 +25,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -113,6 +114,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY =
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
+
+    protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -120,6 +123,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+    protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
     protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
@@ -139,6 +143,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(ContractCall)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(CryptoTransfer)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
@@ -179,6 +189,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenMint)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build())))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(CryptoTransfer)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
                                             .setGas(852000)
@@ -318,23 +334,38 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
-        final var tokenEntityId =
-                fungibleTokenPersist(ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
-        final var notFrozenFungibleTokenEntityId =
-                fungibleTokenPersist(spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L);
-        final var frozenFungibleTokenEntityId =
-                fungibleTokenPersist(spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L);
-        final var tokenTreasuryEntityId = fungibleTokenPersist(treasuryEntityId, KEY_PROTO, TREASURY_TOKEN_ADDRESS, 0L);
-        final var nftEntityId = nftPersist(NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO);
+
+        final var tokenEntityId = fungibleTokenPersist(
+                ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+        final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
+                spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.PAUSED);
+        final var frozenFungibleTokenEntityId = fungibleTokenPersist(
+                spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+        final var tokenTreasuryEntityId = fungibleTokenPersist(
+                treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.UNPAUSED);
+
+        final var nftEntityId = nftPersist(
+                NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
                 senderEntityId,
                 spenderEntityId,
                 ownerEntityId,
-                KEY_PROTO);
-        final var ethAccount = ethAccountPersist();
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED);
+        final var nftEntityId3 = nftPersist(
+                NFT_TRANSFER_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED);
+
+        final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
+
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -346,15 +377,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
-
+        ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
+
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContarct, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
+        allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }
@@ -394,7 +433,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private EntityId fungibleTokenPersist(
-            final EntityId treasuryId, final byte[] key, final Address tokenAddress, final long tokenExpiration) {
+            final EntityId treasuryId,
+            final byte[] key,
+            final Address tokenAddress,
+            final long tokenExpiration,
+            final TokenPauseStatusEnum pauseStatus) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
@@ -426,7 +469,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .decimals(12)
                         .wipeKey(key)
                         .freezeKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .pauseStatus(pauseStatus)
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR"))
@@ -460,6 +503,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
+    private void ercContractTokenPersist(
+            final Address contractAddress, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatusEnum) {
+        final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
+        domainBuilder
+                .tokenAccount()
+                .customize(e -> e.freezeStatus(freezeStatusEnum)
+                        .accountId(contractEntityId.getEntityNum())
+                        .tokenId(tokenEntityId.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .balance(10L))
+                .persist();
+    }
+
     @Nullable
     private EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
@@ -475,14 +531,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private long ethAccountPersist() {
-        final var ethAccount = 358L;
+    private long ethAccountPersist(long ethAccount, Address evmAddress) {
 
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ethAccount)
                         .num(ethAccount)
-                        .evmAddress(ETH_ADDRESS.toArrayUnsafe())
+                        .evmAddress(evmAddress.toArrayUnsafe())
                         .balance(2000L)
                         .deleted(false))
                 .persist();
@@ -540,7 +595,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final EntityId treasuryId,
-            final byte[] key) {
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus) {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
         final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId(), ACCOUNT);
@@ -571,7 +627,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .supplyType(TokenSupplyTypeEnum.FINITE)
                         .freezeKey(key)
                         .pauseKey(key)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .pauseStatus(pauseStatus)
                         .wipeKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
@@ -611,6 +667,31 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(a -> a.tokenId(nftEntityId.getId())
                         .spender(spenderEntityId.getEntityNum())
                         .owner(senderEntityId.getEntityNum())
+                        .approvedForAll(true)
+                        .payerAccountId(senderEntityId))
+                .persist();
+    }
+
+    private void contractAllowancesPersist(
+            final EntityId senderEntityId,
+            final Address contractAddress,
+            final EntityId tokenEntityId,
+            final EntityId nftEntityId) {
+        final var contractId = fromEvmAddress(contractAddress.toArrayUnsafe());
+        domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .payerAccountId(senderEntityId)
+                        .owner(senderEntityId.getEntityNum())
+                        .spender(contractId.getEntityNum())
+                        .amount(20))
+                .persist();
+
+        domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(nftEntityId.getId())
+                        .owner(senderEntityId.getEntityNum())
+                        .spender(contractId.getEntityNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();

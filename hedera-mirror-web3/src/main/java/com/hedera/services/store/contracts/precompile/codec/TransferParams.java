@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.services.store.contracts.precompile.impl;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hedera.services.ledger.BalanceChange;
-import java.util.List;
+import org.hyperledger.besu.datatypes.Address;
 
-public class ImpliedTransfers {
-
-    private final List<BalanceChange> changes;
-
-    public ImpliedTransfers(List<BalanceChange> changes) {
-        this.changes = changes;
-    }
-
-    public List<BalanceChange> getAllBalanceChanges() {
-        return changes;
-    }
-}
+public record TransferParams(int functionId, Address sernderAddress) implements BodyParams {}
