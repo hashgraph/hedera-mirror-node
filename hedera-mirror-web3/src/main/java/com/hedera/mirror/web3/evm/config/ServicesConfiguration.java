@@ -91,7 +91,6 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -173,7 +172,7 @@ public class ServicesConfiguration {
                 hbarCentExchange,
                 usagePricesProvider,
                 pricedUsageCalculator,
-                Collections.emptySet(), // TODO
+                queryResourceUsageEstimators,
                 txnUsageEstimators);
     }
 
