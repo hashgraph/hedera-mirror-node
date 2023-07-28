@@ -42,11 +42,18 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {ContractStateChange[]} contractStateChanges
    * @param {FileData} fileData
    */
-  constructor(contractResult, recordFile, ethTransaction, contractLogs = null, contractStateChanges = null, fileData = null) {
+  constructor(
+    contractResult,
+    recordFile,
+    ethTransaction,
+    contractLogs = null,
+    contractStateChanges = null,
+    fileData = null
+  ) {
     super(contractResult);
 
-    this.block_hash = utils.addHexPrefix(recordFile.hash);
-    this.block_number = recordFile.index;
+    this.block_hash = utils.addHexPrefix(recordFile?.hash);
+    this.block_number = recordFile?.index ?? null;
     this.hash = utils.toHexStringNonQuantity(contractResult.transactionHash);
     if (!_.isNil(contractLogs)) {
       this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
@@ -75,7 +82,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     // default eth related values
     this.access_list = null;
-    this.block_gas_used = recordFile.gasUsed !== null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;
+    this.block_gas_used = recordFile?.gasUsed != null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;
     this.chain_id = null;
     this.gas_price = null;
     this.max_fee_per_gas = null;
@@ -88,7 +95,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (!_.isNil(ethTransaction)) {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
-      this.amount = typeof ethTransaction.value === 'string' ? BigInt(utils.addHexPrefix(ethTransaction.value)) : toBigIntBE(Buffer.from(ethTransaction.value));
+      this.amount =
+        typeof ethTransaction.value === 'string'
+          ? BigInt(utils.addHexPrefix(ethTransaction.value))
+          : toBigIntBE(Buffer.from(ethTransaction.value));
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
 
       if (!isTransactionSuccessful && _.isEmpty(contractResult.errorMessage)) {
