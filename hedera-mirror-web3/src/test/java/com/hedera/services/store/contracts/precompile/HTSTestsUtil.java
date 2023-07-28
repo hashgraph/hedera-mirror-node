@@ -157,6 +157,9 @@ public class HTSTestsUtil {
     public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
             new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
 
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapperWithInvalidTokenID =
+            new TokenUpdateExpiryInfoWrapper(null, new TokenExpiryWrapper(442L, payer, 555L));
+
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
 
