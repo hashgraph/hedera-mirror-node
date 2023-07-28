@@ -97,7 +97,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForEthCall(functionHash, true);
-        customFeesPersist(feeCase);
+        customFeePersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final var decodeResult = functionEncodeDecoder.decodeResult(functionName, ABI_PATH, callResult);
@@ -144,7 +144,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForEthCall(functionHash, true);
-        customFeesPersist(FRACTIONAL_FEE);
+        customFeePersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final Tuple decodeResult = functionEncodeDecoder

@@ -59,9 +59,9 @@ class CustomFeeHistoryRepositoryTest extends IntegrationTest {
 
     @Test
     void save() {
-        var nftHistory = domainBuilder.customFeeHistory().get();
-        repository.save(nftHistory);
-        assertThat(repository.findAll()).containsExactly(nftHistory);
-        assertThat(repository.findById(nftHistory.getTokenId())).get().isEqualTo(nftHistory);
+        var customFeeHistory = domainBuilder.customFeeHistory().get();
+        repository.save(customFeeHistory);
+        assertThat(repository.findAll()).containsExactly(customFeeHistory);
+        assertThat(repository.findById(customFeeHistory.getTokenId())).get().isEqualTo(customFeeHistory);
     }
 }

@@ -88,8 +88,15 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 -- id corresponding to treasury address 0.0.98
 
 -- custom_fee
+alter table custom_fee
+    add constraint custom_fee__pk primary key (token_id);
 create index if not exists custom_fee__token_timestamp
     on custom_fee (token_id desc, created_timestamp desc);
+
+-- custom_fee_history
+create index if not exists custom_fee_history__token_id_timestamp_range
+    on custom_fee_history (token_id, lower(timestamp_range));
+create index if not exists custom_fee_history__timestamp_range on custom_fee_history using gist (timestamp_range);
 
 -- entity
 alter table entity

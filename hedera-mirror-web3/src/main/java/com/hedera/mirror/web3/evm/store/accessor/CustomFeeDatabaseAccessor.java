@@ -41,11 +41,8 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<Custo
 
     @Override
     public @NonNull Optional<List<CustomFee>> get(@NonNull Long tokenId) {
-        final var customFeesList = customFeeRepository.findByTokenId(tokenId);
-        return Optional.of(customFeesList.stream()
-                .map(this::mapCustomFee)
-                .flatMap(List::stream)
-                .toList());
+        final var customFeeOptional = customFeeRepository.findById(tokenId);
+        return customFeeOptional.isEmpty() ? Optional.empty() : Optional.of(mapCustomFee(customFeeOptional.get()));
     }
 
     private List<CustomFee> mapCustomFee(com.hedera.mirror.common.domain.transaction.CustomFee customFee) {

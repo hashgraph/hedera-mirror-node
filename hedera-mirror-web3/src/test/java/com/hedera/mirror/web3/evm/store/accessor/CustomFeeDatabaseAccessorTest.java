@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +27,7 @@ import com.hedera.mirror.common.domain.transaction.FractionalFee;
 import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee, royaltyFee2);
         customFee.setRoyaltyFees(royaltyFees);
 
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
@@ -124,7 +124,7 @@ class CustomFeeDatabaseAccessorTest {
         var fractionalFees = List.of(fractionalFee, fractionalFee2);
         customFee.setFractionalFees(fractionalFees);
 
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
@@ -153,7 +153,7 @@ class CustomFeeDatabaseAccessorTest {
         var fixedFees = List.of(fixedFee, fixedFee2);
         customFee.setFixedFees(fixedFees);
 
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
@@ -175,7 +175,7 @@ class CustomFeeDatabaseAccessorTest {
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
         final var noCollectorCustomFee = new com.hedera.mirror.common.domain.transaction.CustomFee();
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(List.of(noCollectorCustomFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
         assertThat(customFeeDatabaseAccessor.get(tokenId))
                 .hasValueSatisfying(customFees -> assertThat(customFees).hasSize(0));
     }

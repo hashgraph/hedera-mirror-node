@@ -15,6 +15,7 @@
  */
 
 import EntityId from '../entityId';
+import _ from 'lodash';
 
 /**
  * Custom fee view model
@@ -26,60 +27,58 @@ class CustomFeeViewModel {
    * @param {CustomFee} customFee
    */
   constructor(customFee) {
-    if (!customFee.amount && !customFee.royaltyDenominator) {
-      return;
-    }
-    this.all_collectors_are_exempt = customFee.allCollectorsAreExempt;
-    if (customFee.amountDenominator) {
-      // fractional fee
-      this.amount = {
-        numerator: customFee.amount,
-        denominator: customFee.amountDenominator,
-      };
-
-      this.denominating_token_id = EntityId.parse(customFee.tokenId).toString();
-      this.maximum = customFee.maximumAmount || undefined;
-      this.minimum = customFee.minimumAmount;
-      this.net_of_transfers = customFee.netOfTransfers;
-    } else if (customFee.royaltyDenominator) {
-      // royalty fee
-      this.amount = {
-        numerator: customFee.royaltyNumerator,
-        denominator: customFee.royaltyDenominator,
-      };
-
-      if (customFee.amount) {
-        this.fallback_fee = this._parseFixedFee(customFee);
-      }
-    } else {
-      // fixed fee
-      Object.assign(this, this._parseFixedFee(customFee));
-    }
-
-    this.collector_account_id = EntityId.parse(customFee.collectorAccountId, {isNullable: true}).toString();
+    this.fixed_fees = _.isNil(customFee.fixedFees) ? [] : customFee.fixedFees.map((f) => this._parseFixedFee(f));
+    this.fractional_fees = _.isNil(customFee.fractionalFees)
+      ? []
+      : customFee.fractionalFees?.map((f) => this._parseFractionalFee(f, customFee.tokenId));
+    this.royalty_fees = _.isNil(customFee.royaltyFees)
+      ? []
+      : customFee.royaltyFees?.map((f) => this._parseRoyaltyFee(f));
   }
 
-  hasFee() {
-    return !!this.amount;
-  }
-
-  isFixedFee() {
-    return this.amount.denominator === undefined;
-  }
-
-  isFractionalFee() {
-    return this.amount.denominator !== undefined && this.minimum !== undefined;
-  }
-
-  isRoyaltyFee() {
-    return this.amount.denominator !== undefined && this.minimum === undefined;
-  }
-
-  _parseFixedFee(customFee) {
+  _parseFixedFee(fixedFee) {
     return {
-      amount: customFee.amount,
-      denominating_token_id: EntityId.parse(customFee.denominatingTokenId, {isNullable: true}).toString(),
+      all_collectors_are_exempt: fixedFee.allCollectorsAreExempt ?? false,
+      amount: Number(fixedFee.amount),
+      collector_account_id: EntityId.parse(fixedFee.collectorAccountId, {isNullable: true}).toString(),
+      denominating_token_id: EntityId.parse(fixedFee.denominatingTokenId, {isNullable: true}).toString(),
     };
+  }
+
+  _parseFractionalFee(fractionalFee, tokenId) {
+    return {
+      all_collectors_are_exempt: fractionalFee.allCollectorsAreExempt ?? false,
+      amount: {
+        numerator: Number(fractionalFee.amount),
+        denominator: Number(fractionalFee.amountDenominator),
+      },
+      collector_account_id: EntityId.parse(fractionalFee.collectorAccountId, {isNullable: true}).toString(),
+      denominating_token_id: EntityId.parse(tokenId, {isNullable: true}).toString(),
+      maximum: fractionalFee.maximumAmount ? Number(fractionalFee.maximumAmount) : undefined,
+      minimum: Number(fractionalFee.minimumAmount),
+      net_of_transfers: fractionalFee.netOfTransfers ?? false,
+    };
+  }
+
+  _parseRoyaltyFee(royaltyFee) {
+    const viewModel = {
+      all_collectors_are_exempt: royaltyFee.fallbackFee?.allCollectorsAreExempt ?? false,
+      amount: {
+        denominator: Number(royaltyFee.royaltyDenominator),
+        numerator: Number(royaltyFee.royaltyNumerator),
+      },
+      collector_account_id: EntityId.parse(royaltyFee.fallbackFee?.collectorAccountId, {isNullable: true}).toString(),
+    };
+    if (royaltyFee.fallbackFee?.amount) {
+      viewModel.fallback_fee = {
+        amount: Number(royaltyFee.fallbackFee.amount),
+        denominating_token_id: EntityId.parse(royaltyFee.fallbackFee.denominatingTokenId, {
+          isNullable: true,
+        }).toString(),
+      };
+    }
+
+    return viewModel;
   }
 }
 

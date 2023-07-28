@@ -20,6 +20,7 @@ import * as utils from '../utils';
 import {opsMap} from '../utils';
 import {assertSqlQueryEqual} from './testutils';
 import tokens from '../tokens';
+import _ from 'lodash';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -759,38 +760,36 @@ describe('token formatTokenInfoRow tests', () => {
     max_supply: '9000000',
     supply_type: 'FINITE',
     memo: 'token.memo',
-    custom_fees: [
-      {
-        amount: 55,
-        collector_account_id: 8901,
-        created_timestamp: 10,
-        token_id: '7',
-      },
-      {
-        amount: 59,
-        collector_account_id: 8901,
-        created_timestamp: 10,
-        denominating_token_id: 19502,
-        token_id: '7',
-      },
-      {
-        amount: 66,
-        amount_denominator: 77,
-        collector_account_id: 8902,
-        created_timestamp: 10,
-        maximum_amount: 150,
-        minimum_amount: 43,
-        token_id: '7',
-      },
-      {
-        amount: 83,
-        amount_denominator: 94,
-        collector_account_id: 8903,
-        created_timestamp: 10,
-        minimum_amount: 1,
-        token_id: '7',
-      },
-    ],
+    custom_fee: {
+      created_timestamp: 10,
+      fixed_fees: [
+        {
+          amount: 55,
+          collector_account_id: 8901,
+        },
+        {
+          amount: 59,
+          collector_account_id: 8901,
+          denominating_token_id: 19502,
+        },
+      ],
+      fractional_fees: [
+        {
+          amount: 66,
+          amount_denominator: 77,
+          collector_account_id: 8902,
+          maximum_amount: 150,
+          minimum_amount: 43,
+        },
+        {
+          amount: 83,
+          amount_denominator: 94,
+          collector_account_id: 8903,
+          minimum_amount: 1,
+        },
+      ],
+      token_id: '7',
+    },
   };
 
   const expected = {
@@ -845,11 +844,13 @@ describe('token formatTokenInfoRow tests', () => {
       created_timestamp: '0.000000010',
       fixed_fees: [
         {
+          all_collectors_are_exempt: false,
           amount: 55,
           collector_account_id: '0.0.8901',
           denominating_token_id: null,
         },
         {
+          all_collectors_are_exempt: false,
           amount: 59,
           collector_account_id: '0.0.8901',
           denominating_token_id: '0.0.19502',
@@ -857,6 +858,7 @@ describe('token formatTokenInfoRow tests', () => {
       ],
       fractional_fees: [
         {
+          all_collectors_are_exempt: false,
           amount: {
             numerator: 66,
             denominator: 77,
@@ -865,8 +867,10 @@ describe('token formatTokenInfoRow tests', () => {
           denominating_token_id: '0.0.7',
           maximum: 150,
           minimum: 43,
+          net_of_transfers: false,
         },
         {
+          all_collectors_are_exempt: false,
           amount: {
             numerator: 83,
             denominator: 94,
@@ -874,6 +878,7 @@ describe('token formatTokenInfoRow tests', () => {
           collector_account_id: '0.0.8903',
           denominating_token_id: '0.0.7',
           minimum: 1,
+          net_of_transfers: false,
         },
       ],
     },
@@ -1347,6 +1352,57 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 
 describe('token extractSqlFromTokenInfoRequest tests', () => {
   const getExpectedQuery = (timestampCondition = '') => {
+    let tableCondition;
+    let historyTableCondition;
+    let customFeeQuery = `
+        (select jsonb_build_object(
+           'created_timestamp', created_timestamp::text,
+           'fixed_fees', fixed_fees,
+           'fractional_fees', fractional_fees,
+           'royalty_fees', royalty_fees,
+           'token_id', token_id::text,
+           'timestamp_range', timestamp_range
+        )
+        from custom_fee cf
+        where cf.token_id = $1
+        order by cf.created_timestamp desc
+      ) as custom_fee`;
+
+    if (!_.isEmpty(timestampCondition)) {
+      tableCondition = `lower(cf.timestamp_range) ${timestampCondition}`;
+      historyTableCondition = `lower(cfh.timestamp_range) ${timestampCondition}`;
+      customFeeQuery = `
+        (with cfee as 
+          (select jsonb_build_object(
+                   'created_timestamp', created_timestamp::text,
+                   'fixed_fees', fixed_fees,
+                   'fractional_fees', fractional_fees,
+                   'royalty_fees', royalty_fees,
+                   'token_id', token_id::text,
+                   'timestamp_range', timestamp_range
+          )
+          from custom_fee cf
+          where cf.token_id = $1  ${tableCondition && 'and ' + tableCondition}
+          order by cf.created_timestamp desc
+        ),
+        custom_fee_history as
+          (select jsonb_build_object(
+                  'created_timestamp',created_timestamp::text,
+                  'fixed_fees',fixed_fees,
+                  'fractional_fees',fractional_fees,
+                  'royalty_fees',royalty_fees,
+                  'token_id',token_id::text,
+                  'timestamp_range',timestamp_range) 
+        from custom_fee_history cfh 
+        where cfh.token_id = $1 ${historyTableCondition && 'and ' + historyTableCondition}
+        order by cfh.created_timestamp desc limit 1
+        )
+        select * from cfee
+        union all
+        select * from custom_fee_history 
+        limit 1) as custom_fee`;
+    }
+
     return `select e.auto_renew_account_id,
                    e.auto_renew_period,
                    t.created_timestamp,
@@ -1373,26 +1429,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    treasury_account_id,
                    t.type,
                    wipe_key,
-                   (select jsonb_agg(jsonb_build_object(
-                     'all_collectors_are_exempt', all_collectors_are_exempt,
-                     'amount', amount,
-                     'amount_denominator', amount_denominator,
-                     'collector_account_id', collector_account_id::text,
-                     'created_timestamp', created_timestamp::text,
-                     'denominating_token_id', denominating_token_id::text,
-                     'maximum_amount', maximum_amount,
-                     'minimum_amount', minimum_amount,
-                     'net_of_transfers', net_of_transfers,
-                     'royalty_denominator', royalty_denominator,
-                     'royalty_numerator', royalty_numerator,
-                     'token_id', token_id::text
-                    ) order by collector_account_id, denominating_token_id, amount, royalty_numerator)
-                    from custom_fee cf
-                    where token_id = $1 ${timestampCondition && 'and ' + timestampCondition}
-                    group by cf.created_timestamp
-                    order by cf.created_timestamp desc
-                    limit 1
-                   ) as custom_fees
+                   ${customFeeQuery}
             from token t
             join entity e on e.id = t.token_id
             where token_id = $1`;
@@ -1414,7 +1451,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
 
   [opsMap.lt, opsMap.lte].forEach((op) =>
     test(`Verify query with timestamp and op ${op}`, () => {
-      const expectedQuery = getExpectedQuery(`cf.created_timestamp ${op} $2`);
+      const expectedQuery = getExpectedQuery(`${op} $2`);
       const expectedParams = [encodedTokenId, timestamp];
       const filters = [
         {
@@ -1429,7 +1466,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
   );
 
   test('Verify query with multiple timestamp filters', () => {
-    const expectedQuery = getExpectedQuery('cf.created_timestamp <= $2');
+    const expectedQuery = getExpectedQuery('<= $2');
     const expectedParams = [encodedTokenId, timestamp];
     // honor the last one
     const filters = [

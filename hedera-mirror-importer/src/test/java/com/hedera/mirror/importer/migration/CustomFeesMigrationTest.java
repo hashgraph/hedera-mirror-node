@@ -33,6 +33,7 @@ import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,19 +49,24 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.util.StreamUtils;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(properties = {"spring.flyway.target=1.66.2"})
+@TestPropertySource(properties = {"spring.flyway.target=1.83.2"})
 class CustomFeesMigrationTest extends IntegrationTest {
 
-    private final CustomFeesMigration migration;
     private final CustomFeeRepository customFeeRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
+
+    @Value("classpath:db/migration/v1/V1.83.2__custom_fee_aggregate_history.sql")
+    private final Resource sql;
 
     private static final String REVERT_DDL =
             """
@@ -92,7 +98,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
 
     @Test
     void empty() {
-        migration.doMigrate();
+        runMigration();
         assertThat(customFeeRepository.findAll()).isEmpty();
         assertThat(getHistory()).isEmpty();
     }
@@ -113,7 +119,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
         persistMigrationCustomFees(migrationCustomFees);
 
         // when
-        migration.doMigrate();
+        runMigration();
 
         // then
         var expected = List.of(
@@ -169,7 +175,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
         persistMigrationCustomFees(migrationCustomFees);
 
         // when
-        migration.doMigrate();
+        runMigration();
 
         // then
         var aggregates = List.of(
@@ -213,6 +219,13 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 assertThat(h.getTokenId()).isEqualTo(historyResult.getTokenId());
                 assertThat(h.getTimestampRange()).isEqualTo(historyResult.getTimestampRange());
             });
+        }
+    }
+
+    @SneakyThrows
+    private void runMigration() {
+        try (var is = sql.getInputStream()) {
+            jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
         }
     }
 

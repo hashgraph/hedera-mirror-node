@@ -31,15 +31,18 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByTokenId() {
-        var customFee1 = domainBuilder.customFee().persist();
-        var fixedFee = FixedFee.builder().amount(12L).build();
-        domainBuilder
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
                 .customFee()
-                .customize(c -> c.tokenId(customFee1.getTokenId()).fixedFees(List.of(fixedFee)))
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
                 .persist();
         final var tokenId = customFee1.getTokenId();
 
-        var listAssert = assertThat(customFeeRepository.findByTokenId(tokenId)).hasSize(2);
-        listAssert.anySatisfy(fee -> fee.getFixedFees().get(0).equals(12L));
+        var result = customFeeRepository.findById(tokenId);
+        assertThat(result).isPresent();
+        var fixedFeesResult = result.get().getFixedFees();
+        var listAssert = assertThat(fixedFeesResult).hasSize(1);
+        listAssert.allSatisfy(fee -> fee.getAmount().equals(amount));
     }
 }

@@ -49,50 +49,58 @@
     ],
     "customfees": [
       {
-        "amount": "10",
-        "amount_denominator": "13",
-        "collector_account_id": "0.0.8901",
         "created_timestamp": "1234567899999999001",
-        "maximum_amount": "980",
-        "minimum_amount": "97",
+        "fractional_fees": [
+          {
+            "amount": "10",
+            "amount_denominator": "13",
+            "collector_account_id": "0.0.8901",
+            "maximum_amount": "980",
+            "minimum_amount": "97"
+          }
+        ],
+        "timestamp_range": "[1234567899999999001,1234567899999999006)",
         "token_id": "0.0.1135"
       },
       {
-        "amount": "11",
-        "amount_denominator": "17",
-        "collector_account_id": "0.0.8901",
         "created_timestamp": "1234567899999999007",
-        "maximum_amount": "987",
-        "minimum_amount": "79",
-        "token_id": "0.0.1135"
-      },
-      {
-        "amount": "9",
-        "amount_denominator": "13",
-        "collector_account_id": "0.0.8902",
-        "created_timestamp": "1234567899999999007",
-        "minimum_amount": "1",
-        "token_id": "0.0.1135"
-      },
-      {
-        "amount": "41",
-        "amount_denominator": "131",
-        "collector_account_id": "0.0.8904",
-        "created_timestamp": "1234567899999999007",
-        "minimum_amount": "0",
-        "token_id": "0.0.1135"
-      },
-      {
-        "amount": "12",
-        "collector_account_id": "0.0.8904",
-        "created_timestamp": "1234567899999999007",
-        "denominating_token_id": "0.0.1137",
-        "token_id": "0.0.1135"
-      },
-      {
-        "amount": "13",
-        "collector_account_id": "0.0.8905",
-        "created_timestamp": "1234567899999999007",
+        "fixed_fees": [
+          {
+            "amount": "12",
+            "collector_account_id": "0.0.8904",
+            "denominating_token_id": "0.0.1137"
+          },
+          {
+            "all_collectors_are_exempt": true,
+            "amount": "13",
+            "collector_account_id": "0.0.8905"
+          }
+        ],
+        "fractional_fees": [
+          {
+            "amount": "11",
+            "amount_denominator": "17",
+            "collector_account_id": "0.0.8901",
+            "maximum_amount": "987",
+            "minimum_amount": "79"
+          },
+          {
+            "all_collectors_are_exempt": true,
+            "amount": "9",
+            "amount_denominator": "13",
+            "collector_account_id": "0.0.8902",
+            "minimum_amount": "1"
+          },
+          {
+            "all_collectors_are_exempt": true,
+            "amount": "41",
+            "amount_denominator": "131",
+            "collector_account_id": "0.0.8904",
+            "minimum_amount": "0",
+            "net_of_transfers": true
+          }
+        ],
+        "timestamp_range": "[1234567899999999007,)",
         "token_id": "0.0.1135"
       }
     ]

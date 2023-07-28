@@ -19,4 +19,4 @@ package com.hedera.mirror.web3.repository;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import org.springframework.data.repository.CrudRepository;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long>, CustomFeeRepositoryExtra {}
+public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
