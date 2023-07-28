@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -49,6 +50,20 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+
+/**
+ * This class is a modified copy of UpdateTokenExpiryInfoPrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
+ *  4. Run method returns {@link RunResult}
+ *  5. The run method adds a validation for the update operation that was previously present
+ *     in the AbstractTokenUpdatePrecompile. This adjustment is necessary after the run
+ *     method was removed from the abstract class
+ *  6. Added initializeHederaTokenStore method in order to create a new instance of HederaTokenStore
+ */
 public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
 
     private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
