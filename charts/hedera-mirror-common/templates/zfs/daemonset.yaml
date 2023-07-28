@@ -20,11 +20,11 @@ spec:
       serviceAccount: {{ .Values.zfs.init.serviceAccount.name }}
       containers:
         - image: registry.k8s.io/pause:latest
-          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.zfs.init.image.pullPolicy }}
           name: pause
       initContainers:
         - image: "{{ .Values.zfs.init.image.registry }}/{{ .Values.zfs.init.image.repository }}:{{ .Values.zfs.init.image.tag }}"
-          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.zfs.init.image.pullPolicy }}
           name: init
           command: [ "/scripts/entrypoint.sh" ]
           env:

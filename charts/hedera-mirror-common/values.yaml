@@ -415,13 +415,11 @@ traefik:
 zfs:
   analytics:
     enabled: false
-  # move to zfs.serviceAccount.zfsNode.serviceAccount instead and set create to false once init containers pr resolved in zfs local pv repo
   coordinator:
     diskSize: 300GB
   enabled: false
-  # TODO move under init
   init:
-    diskPrefix: zfs-helm
+    diskPrefix: citus
     image:
       pullPolicy: IfNotPresent
       registry: gcr.io
@@ -429,8 +427,7 @@ zfs:
       tag: slim
     serviceAccount:
       name: zfs-service-account
-      # TODO configure good default or leave empty
-      iAmName: ""
+      iAmName: sa-name@project.iam.gserviceaccount.com
   parameters:
     compression: zstd-6
     fstype: zfs
@@ -454,7 +451,6 @@ zfs:
         key: zfs
         operator: Equal
         value: "true"
-    # will be used once upstream prs are resolved in zfs repo
     additionalVolumes:
       node:
         hostPath:
@@ -465,7 +461,6 @@ zfs:
           defaultMode: 0744
     initContainers:
       disk-initializer:
-        #TODO update image
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
         imagePullPolicy: IfNotPresent
         name: label-wait
@@ -482,7 +477,7 @@ zfs:
             mountPath: /scripts
   zfsPlugin:
     image:
-      registry: docker.io/
-      repository: jesseswirldslabs/zfs-driver
+      registry: gcr.io/
+      repository: mirrornode/zfs-driver
       pullPolicy: Always
-      tag: jesse
+      tag: 2.3.1-HEDERA

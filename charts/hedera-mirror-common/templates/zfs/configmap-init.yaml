@@ -89,7 +89,7 @@ data:
                                    ) | 
                                 sort_by(.index) |
                                 [
-                                  range(1; ( .| max_by(.index)|.index ) + 1  ) as $node_index_range  |
+                                  range(0; ( .| max_by(.index)|.index ) + 1) as $node_index_range  |
                                     . as $nodes | $node_index_range |
                                     . as $i |
                                     if ([$nodes[]|contains( { index: $i })]|any )
@@ -100,7 +100,7 @@ data:
                                     end  
                                 ]')
       # Check if the config map matches the view from the nodes. If it finds entries
-      # in the config map for nodes that don't exist, they are set to null to become 
+      # in the config map for nodes that don't exist or are currrently being drained, they are set to null to become 
       # available slots for future nodes that may replace it
       MERGED_ZONE_CONFIG=$(echo -e "${NODE_NAMES}\n${ZFS_ZONE_NODES}\n${ZONE_CONFIG}" | jq -s \
                       '.[0] as $node_names|
@@ -127,10 +127,10 @@ data:
       # IF this node config is empty create it
       if [[ ! $THIS_NODE_CONFIG ]]
       then
-        INDEX="$(echo "${MERGED_ZONE_CONFIG}" | jq '. | map(. == null) |index(true) // . | length + 1')"
+        INDEX="$(echo "${MERGED_ZONE_CONFIG}" | jq '. | map(. == null) |index(true) // . | length')"
         NODE_ID="${CITUS_ROLE}-${ZONE}-${INDEX}"
         THIS_NODE_CONFIG="{\"nodeName\": \"$NODE_NAME\", \"nodeId\": \"$NODE_ID\"}"
-        MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber -1] = ($THIS_NODE_CONFIG|fromjson)')"
+        MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber] = ($THIS_NODE_CONFIG|fromjson)')"
       fi
         
       MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"]["\($CITUS_ROLE)"]["\($ZONE)"]=($ZONE_CONFIG|fromjson)')"
@@ -216,5 +216,10 @@ data:
       kubectl label node "${NODE_NAME}" openebs.io/nodeid="${NODE_ID}" generated-node-id=true --overwrite
     fi
     
-    echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"
+    source "${ROOT_MOUNT_DIR}/etc/environment"
+    ZFS_INITIALIZED="${ZFS_INITIALIZED:-}"
+    if [[ "${ZFS_INITIALIZED}" == "" ]]; then
+      echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"  
+    fi
+    
     {{- end -}}
