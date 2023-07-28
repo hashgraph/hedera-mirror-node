@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.LONDON_RAW_TX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -85,6 +86,14 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
         var ethereumTransaction = ethereumTransactionParser.decode(Hex.decodeHex(BERLIN_RAW_TX_1));
         validateEthereumTransaction(ethereumTransaction);
         assertThat(ethereumTransaction.getType()).isEqualTo(Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE);
+    }
+
+    @SneakyThrows
+    @Test
+    void unsupportedEthereumTransaction() {
+        assertThrows(
+                InvalidDatasetException.class,
+                () -> ethereumTransactionParser.decode(Hex.decodeHex("33" + BERLIN_RAW_TX_1.substring(2))));
     }
 
     @Override
