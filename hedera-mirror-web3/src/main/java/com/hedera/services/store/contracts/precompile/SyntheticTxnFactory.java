@@ -137,12 +137,11 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     *
-     * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
-     * */
+     * <p>
+     * Differences with the original: 1. Using {@link Id} instead of EntityId as types for the owner and operator
+     */
     public TransactionBody.Builder createFungibleApproval(
-            @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
+            @NonNull final ApproveWrapper approveWrapper, @NonNull final Id ownerId) {
         return createNonfungibleApproval(approveWrapper, ownerId, null);
     }
 
@@ -156,7 +155,7 @@ public class SyntheticTxnFactory {
             final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
         if (approveWrapper.isFungible()) {
-            var tokenAllowance = TokenAllowance.newBuilder()
+            final var tokenAllowance = TokenAllowance.newBuilder()
                     .setTokenId(approveWrapper.tokenId())
                     .setOwner(Objects.requireNonNull(ownerId).asGrpcAccount())
                     .setSpender(approveWrapper.spender())
@@ -248,7 +247,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createApproveAllowanceForAllNFT(
-            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull Id ownerId) {
+            @NonNull final SetApprovalForAllWrapper setApprovalForAllWrapper, @NonNull final Id ownerId) {
 
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
@@ -289,17 +288,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenPause(builder);
     }
 
-    public TransactionBody.Builder createTransactionCall(final long gas, final Bytes functionParameters) {
-        final var builder = ContractCallTransactionBody.newBuilder();
-
-        builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
-        builder.setGas(gas);
-        builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
-
-        return TransactionBody.newBuilder().setContractCall(builder);
-    }
-
-    public TransactionBody.Builder createTokenCreate(TokenCreateWrapper tokenCreateWrapper) {
+    public TransactionBody.Builder createTokenCreate(final TokenCreateWrapper tokenCreateWrapper) {
         final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
         txnBodyBuilder.setName(tokenCreateWrapper.getName());
         txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());

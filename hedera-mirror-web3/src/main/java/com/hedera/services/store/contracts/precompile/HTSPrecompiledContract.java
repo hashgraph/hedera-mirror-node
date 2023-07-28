@@ -125,7 +125,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
-        if (frame.isStatic()) {
+        if (frame.isStatic() && !isNestedFunctionSelectorForRead(input)) {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
@@ -222,7 +222,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
-    @SuppressWarnings({"java:S1301", "java:S3776"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         final int functionId = input.getInt(0);
@@ -271,17 +270,17 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                             OnMissing.THROW)
                                     .getOwner();
                         }
-                        this.precompile =
+                        precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        this.transactionBody = precompile.body(
+                        transactionBody = precompile.body(
                                 input,
                                 aliasResolver,
                                 new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
                         break;
                     case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL:
-                        this.precompile =
+                        precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        this.transactionBody =
+                        transactionBody =
                                 precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
                         break;
                     default:
@@ -298,8 +297,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 }
                 break;
             case AbiConstants.ABI_ID_APPROVE:
-                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-                this.transactionBody = precompile.body(
+                precompile = precompileMapper.lookup(functionId).orElseThrow();
+                transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
                 break;
             case AbiConstants.ABI_ID_APPROVE_NFT:
@@ -315,14 +314,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                         serialNumber.longValue()),
                                 OnMissing.THROW)
                         .getOwner();
-                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-                this.transactionBody = precompile.body(
+                precompile = precompileMapper.lookup(functionId).orElseThrow();
+                transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
                 break;
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL:
-                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-                this.transactionBody =
-                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
+                precompile = precompileMapper.lookup(functionId).orElseThrow();
+                transactionBody = precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
                 break;
             default:
                 precompile = precompileMapper.lookup(functionId).orElseThrow();

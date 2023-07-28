@@ -44,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
@@ -385,23 +386,23 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    WipeLogic wipeLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
     }
 
     @Bean
     WipeFungiblePrecompile wipeFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
     @Bean
     WipeNonFungiblePrecompile wipeNonFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
@@ -420,11 +421,11 @@ public class ServicesConfiguration {
 
     @Bean
     TokenCreatePrecompile tokenCreatePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            EncodingFacade encodingFacade,
-            SyntheticTxnFactory syntheticTxnFactory,
-            OptionValidator validator,
-            CreateLogic createLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final EncodingFacade encodingFacade,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final OptionValidator validator,
+            final CreateLogic createLogic) {
         return new TokenCreatePrecompile(
                 precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic);
     }
@@ -454,9 +455,9 @@ public class ServicesConfiguration {
 
     @Bean
     DeleteTokenPrecompile deleteTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            DeleteLogic deleteLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DeleteLogic deleteLogic) {
         return new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
     }
 
@@ -480,9 +481,9 @@ public class ServicesConfiguration {
 
     @Bean
     FreezeTokenPrecompile freezeTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            FreezeLogic freezeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final FreezeLogic freezeLogic) {
         return new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
     }
 
@@ -493,9 +494,9 @@ public class ServicesConfiguration {
 
     @Bean
     UnfreezeTokenPrecompile unfreezeTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            UnfreezeLogic unfreezeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final UnfreezeLogic unfreezeLogic) {
         return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
     }
 
@@ -506,9 +507,9 @@ public class ServicesConfiguration {
 
     @Bean
     PausePrecompile pausePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            PauseLogic pauseLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
 }
