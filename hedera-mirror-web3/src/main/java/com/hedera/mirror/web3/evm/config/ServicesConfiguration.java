@@ -30,6 +30,7 @@ import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
@@ -41,6 +42,7 @@ import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -171,7 +173,7 @@ public class ServicesConfiguration {
                 hbarCentExchange,
                 usagePricesProvider,
                 pricedUsageCalculator,
-                Collections.emptySet(),
+                Collections.emptySet(), // TODO
                 txnUsageEstimators);
     }
 
@@ -198,6 +200,16 @@ public class ServicesConfiguration {
             final BasicFcfsUsagePrices resourceCosts,
             final AccessorFactory accessorFactory) {
         return new PrecompilePricingUtils(assetsLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+    }
+
+    @Bean
+    CryptoFeeBuilder cryptoFeeBuilder() {
+        return new CryptoFeeBuilder();
+    }
+
+    @Bean
+    GetTxnRecordResourceUsage getTxnRecordResourceUsage(CryptoFeeBuilder cryptoFeeBuilder) {
+        return new GetTxnRecordResourceUsage(cryptoFeeBuilder);
     }
 
     @Bean
