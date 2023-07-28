@@ -53,13 +53,11 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
 
         // typed transactions encode the type in the first byte
         var legacyRlpItemByte = firstRlpItem.asByte();
-        switch (legacyRlpItemByte) {
-            case Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE:
-                return eip2930EthereumTransactionParser;
-            case Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE:
-                return eip1559EthereumTransactionParser;
+        if (legacyRlpItemByte == Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE) {
+            return eip2930EthereumTransactionParser;
+        } else if (legacyRlpItemByte == Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE) {
+            return eip1559EthereumTransactionParser;
         }
-
         throw new InvalidDatasetException("Unsupported Ethereum transaction data type");
     }
 }

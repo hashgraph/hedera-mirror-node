@@ -86,7 +86,7 @@ class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionPa
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getType()).isEqualTo(Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getChainId())).isEqualTo("012a"))
-                .satisfies(t -> assertThat(t.getNonce()).isEqualTo(0L))
+                .satisfies(t -> assertThat(t.getNonce()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getGasPrice())).isEqualTo("a54f4c3c00"))
                 .satisfies(t -> assertThat(t.getMaxPriorityFeePerGas()).isNull())
                 .satisfies(t -> assertThat(t.getMaxFeePerGas()).isNull())
