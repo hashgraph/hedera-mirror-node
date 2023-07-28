@@ -7,23 +7,145 @@ metadata:
   name: {{ .Release.Name }}-zfs-init
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 data:
+  label-wait.sh: |
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    
+    ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
+    ZFS_INITIALIZED="${ZFS_INITIALIZED:-}"
+    until [ "${ZFS_INITIALIZED}" != "" ]; do source "${ROOT_MOUNT_DIR}/etc/environment"; echo "Waiting for label "; sleep 10; done
+
   entrypoint.sh: |
     #!/usr/bin/env bash
-
-    set -euxo pipefail
-
+    
+    set -uxo pipefail
+    
     ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
     DISK_SIZE_COORDINATOR="${DISK_SIZE_COORDINATOR:-75GB}"
     DISK_SIZE_WORKER="${DISK_SIZE_WORKER:-152GB}"
+    K8_NAMESPACE="${K8_NAMESPACE:-common}"
+    DISK_PREFIX="${DISK_PREFIX:-citus}"
 
+    echo "Installing dependencies"
+    apt-get update
+    apt-get install -y kubectl jq
     echo "Getting node metadata"
-    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')"
-    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $4}')"
-    LABELS="$(gcloud compute instances describe "${NODE_NAME}" --zone="${ZONE}" --flatten="metadata.kube-labels[]")"
-    CITUS_ROLE="$(echo "${LABELS}" | grep -o 'citus-role[^, }]*' | sed -n 's/.*citus-role=\(.*\).*/\1/p')"
-    DISK_NAME="${NODE_NAME}-zfs"
-    echo "Setting up disk ${DISK_NAME} for ${CITUS_ROLE}"
+    NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/hostname -H 'Metadata-Flavor: Google' | awk -F'.' '{print $1}')"
+    ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $NF}')"
+    
+    # Configure kubectl
+    APISERVER="https://kubernetes.default.svc"
+    SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+    TOKEN="$(cat ${SERVICEACCOUNT}/token)"
+    CACERT="${SERVICEACCOUNT}/ca.crt"
+    
+    kubectl config set-cluster ctc --server="${APISERVER}" --certificate-authority="${CACERT}"
+    kubectl config set-context ctc --cluster=ctc
+    kubectl config set-credentials user --token="${TOKEN}"
+    kubectl config set-context ctc --user=user
+    kubectl config use-context ctc
+    
+    NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
+    CITUS_ROLE="$(echo "${NODE_LABELS}" | jq -r '.["citus-role"]')"
+    NODE_ID="$(echo "${NODE_LABELS}" | jq -r '.["openebs.io/nodeid"]')"
 
+    ATTEMPT_COUNT=1
+    while [[ "${CITUS_ROLE}" == "null" ]]
+    do
+      if [[ ${ATTEMPT_COUNT} -ge 13 ]]
+      then
+        echo "Timed out waiting for labels please set citus-role"
+        exit 1
+      fi
+      ATTEMPT_COUNT=$((ATTEMPT_COUNT+1))
+      echo "Retrying label GET attempt: ${ATTEMPT_COUNT}"
+      NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
+      CITUS_ROLE="$(echo ${NODE_LABELS} | jq -r '.metadata.labels["citus-role"]')"
+      sleep 10
+    done
+    # Determine correct config for zone
+    CONFIG_MAP_NAME="zfs-node-status"
+    COMMAND_STATUS=1
+    until [[ ${COMMAND_STATUS} -eq 0 ]]; do
+      CONFIG_MAP="$(kubectl get configmap -o json -n ${K8_NAMESPACE} ${CONFIG_MAP_NAME})"
+      MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {"zfs-node-status.json": (.data["zfs-node-status.json"]|fromjson)}}')"
+      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"]["\($CITUS_ROLE)"]["\($ZONE)"] // []')"
+      NODE_LIST="$(kubectl get nodes -o json)"
+      NODE_NAMES="$(echo "${NODE_LIST}" | jq '.items | map(. | {(.metadata.name): {isUpgrade: (.metadata.labels["operation.gke.io/type"] == "drain")}}) | add')"
+      
+      ## This will find all nodes that have been initialized by this script in the past
+      ## and generate its own version of the config map configuration to 
+      ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
+                      --arg ZONE "${ZONE}" \
+                      --arg CITUS_ROLE "${CITUS_ROLE}" \
+                      '.items | map ( . | select(.metadata.labels["topology.kubernetes.io/zone"] == "\($ZONE)" and 
+                                          .metadata.labels["generated-node-id"] == "true" and 
+                                          .metadata.labels["citus-role"] == "\($CITUS_ROLE)")) |
+                                map(. | {
+                                           "nodeName": (.metadata.name), 
+                                           "nodeId": (.metadata.labels["openebs.io/nodeid"]), 
+                                           "index": (.metadata.labels["openebs.io/nodeid"] | match("\\d*$").string | tonumber)
+                                        }
+                                   ) | 
+                                sort_by(.index) |
+                                [
+                                  range(1; ( .| max_by(.index)|.index ) + 1  ) as $node_index_range  |
+                                    . as $nodes | $node_index_range |
+                                    . as $i |
+                                    if ([$nodes[]|contains( { index: $i })]|any )
+                                       then 
+                                       ($nodes|map(select( .index  == $i )))|map(. | {nodeName, nodeId})|.[0] 
+                                    else 
+                                       null
+                                    end  
+                                ]')
+      # Check if the config map matches the view from the nodes. If it finds entries
+      # in the config map for nodes that don't exist, they are set to null to become 
+      # available slots for future nodes that may replace it
+      MERGED_ZONE_CONFIG=$(echo -e "${NODE_NAMES}\n${ZFS_ZONE_NODES}\n${ZONE_CONFIG}" | jq -s \
+                      '.[0] as $node_names|
+                        .[1] as $node_config|
+                        .[2] as $config_map|
+                        [
+                          range(0; [(.[2] |length), (.[1] |length)]|max) as $index_range|
+                          $index_range |
+                            . as $i|
+                            if ($config_map[$i] != $node_config[$i])
+                              then
+                                  if($config_map[$i] != null and $node_names[$config_map[$i].nodeName] != null)
+                                    then 
+                                      $config_map[$i] 
+                                  else 
+                                      $node_config[$i] 
+                                  end
+                            else
+                              $node_config[$i]
+                            end | 
+                            if (. != null and $node_names[.nodeName].isUpgrade) then null else . end
+                        ]')
+      THIS_NODE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" |jq  --arg NODE_NAME "${NODE_NAME}" --arg ZONE "${ZONE}" '.[]?|select(.nodeName == "\($NODE_NAME)")')"
+      # IF this node config is empty create it
+      if [[ ! $THIS_NODE_CONFIG ]]
+      then
+        INDEX="$(echo "${MERGED_ZONE_CONFIG}" | jq '. | map(. == null) |index(true) // . | length + 1')"
+        NODE_ID="${CITUS_ROLE}-${ZONE}-${INDEX}"
+        THIS_NODE_CONFIG="{\"nodeName\": \"$NODE_NAME\", \"nodeId\": \"$NODE_ID\"}"
+        MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber -1] = ($THIS_NODE_CONFIG|fromjson)')"
+      fi
+        
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"]["\($CITUS_ROLE)"]["\($ZONE)"]=($ZONE_CONFIG|fromjson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq '.data["zfs-node-status.json"]=(.data["zfs-node-status.json"]|tojson)')"
+    
+      echo "patching $CONFIG_MAP_NAME with $MODIFIED_CONFIG_MAP"
+      kubectl patch configmap $CONFIG_MAP_NAME \
+      -n $K8_NAMESPACE \
+      --type merge \
+      -p "${MODIFIED_CONFIG_MAP}"
+      COMMAND_STATUS=$?
+    done
+    
+    DISK_NAME="${DISK_PREFIX}-${NODE_ID}-zfs"
+    echo "Setting up disk ${DISK_NAME} for ${CITUS_ROLE} on zfs node ${NODE_ID}"
     if [[ "$CITUS_ROLE" == *"worker"* ]]; then
         DISK_SIZE="${DISK_SIZE_WORKER}"
     else
@@ -43,9 +165,21 @@ data:
         gcloud compute disks resize "${DISK_NAME}" --size="${DISK_SIZE}" --zone="${ZONE}" --quiet
     fi
 
-    if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then
-        echo "Attaching ${DISK_NAME} to ${NODE_NAME}"
-        gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}" --quiet
+    if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then        
+        ATTACH_ATTEMPTS=0
+        COMMAND_STATUS=1
+        until [[ ${COMMAND_STATUS} -eq 0 || ${ATTACH_ATTEMPTS} -ge 13 ]]; do
+          echo "Attaching ${DISK_NAME} to ${NODE_NAME} attempts ${ATTACH_ATTEMPTS}" 
+          gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
+          COMMAND_STATUS=$?
+          ATTACH_ATTEMPTS=$((ATTACH_ATTEMPTS+1))
+          sleep 30
+        done
+    
+        if [[ $COMMAND_STATUS != 0 ]]; then
+          echo "Unable to attach ${DISK_NAME} to ${NODE_NAME} in ${ZONE}";
+          exit 1
+        fi
     else
         echo "${DISK_NAME} is already attached to ${NODE_NAME}"
     fi
@@ -74,4 +208,13 @@ data:
       zpool online -e "${POOL}" /dev/sdb
       zfs list
     EOF
+    
+    CURRENT_NODE_ID="$(echo "${NODE_LABELS}" | jq -r '.["openebs.io/nodeid"]')"
+    if [[ "${CURRENT_NODE_ID}" != "${NODE_ID}" ]]
+    then
+      echo "Labeling node ${NODE_NAME} with openebs.io/nodeid=${NODE_ID}"
+      kubectl label node "${NODE_NAME}" openebs.io/nodeid="${NODE_ID}" generated-node-id=true --overwrite
+    fi
+    
+    echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"
     {{- end -}}

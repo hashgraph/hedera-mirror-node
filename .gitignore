@@ -149,5 +149,6 @@ build
 # Security
 .dccache
 snyk
+**/secret.yaml
 
 hedera-mirror-rest/report.html*
