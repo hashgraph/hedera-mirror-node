@@ -37,12 +37,20 @@ nodes connected to those environments will need to be reset to remain functional
    a new bucket, the importer start date can be set to 1970 to ensure no data is missed.
 
    ```properties
-   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-2023-07
+   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-YYYY-MM
    hedera.mirror.importer.startDate=1970-01-01T00:00:00Z
    ```
 
 4. Start the Importer process and ensure it prints the new bucket on startup and successfully starts syncing.
-5. Restart the remaining mirror node components to clear any cached information.
+5. Update the REST API to the new bucket name if state proofs are enabled.
+
+   ```shell
+   HEDERA_MIRROR_REST_STATEPROOF_STREAMS_BUCKETNAME: "hedera-testnet-streams-YYYY-MM"
+   ```
+
+6. If any of the mirror node monitoring tools is used, ensure any hardcoded entity IDs in their configuration is updated
+   with new entities created after the reset.
+7. Restart the remaining mirror node components to clear any cached information.
 
 ## Retention
 

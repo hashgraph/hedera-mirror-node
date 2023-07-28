@@ -2786,7 +2786,7 @@
         "query": "loki",
         "queryValue": "",
         "refresh": 1,
-        "regex": ".*(?<!usage)",
+        "regex": ".*(Loki|logs)$",
         "skipUrlSync": false,
         "type": "datasource"
       },
