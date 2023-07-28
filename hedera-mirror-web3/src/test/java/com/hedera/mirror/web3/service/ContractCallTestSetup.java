@@ -132,6 +132,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
     protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
+    protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
     protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
@@ -896,5 +897,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     private static RoyaltyFeeWrapper getRoyaltyFee() {
         return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
+    }
+
+    private static TokenExpiryWrapper getTokenExpiry() {
+        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
     }
 }

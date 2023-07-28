@@ -296,8 +296,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
         TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
-        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
 
         private final String name;
         private final Object[] functionParameters;
@@ -354,7 +353,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN});
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN}),
+        UPDATE_TOKEN_EXPIRY(
+                "updateTokenExpiryInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER});
 
         private final String name;
         private final Object[] functionParameters;

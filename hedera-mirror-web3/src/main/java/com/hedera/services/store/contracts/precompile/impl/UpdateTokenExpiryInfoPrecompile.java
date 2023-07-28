@@ -50,7 +50,6 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
-
 /**
  * This class is a modified copy of UpdateTokenExpiryInfoPrecompile from hedera-services repo.
  *
