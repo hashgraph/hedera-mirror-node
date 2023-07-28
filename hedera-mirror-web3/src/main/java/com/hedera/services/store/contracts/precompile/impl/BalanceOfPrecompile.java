@@ -16,13 +16,10 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
@@ -32,13 +29,10 @@ import com.hedera.services.store.contracts.precompile.codec.BalanceOfResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements EvmBalanceOfPrecompile {
@@ -50,23 +44,20 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var balanceOp = frame.getInputData().slice(24);
+        final var balanceOp = frame.getInputData();
         RedirectTarget target;
         try {
             target = DescriptorUtils.getRedirectTarget(balanceOp);
         } catch (final Exception e) {
             throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
         }
-        final var accountAddress = decodeAccount(target.massagedInput());
+        final var accountAddress =
+                DescriptorUtils.addressFromBytes(balanceOp.slice(40).toArray());
         final var tokenAddress = target.token();
         final var tokenRel =
                 store.getTokenRelationship(new TokenRelationshipKey(tokenAddress, accountAddress), OnMissing.THROW);
         final var balance = tokenRel.getBalance();
         return new BalanceOfResult(balance);
-    }
-
-    private Address decodeAccount(Bytes functionParams) {
-        return null;
     }
 
     @Override
@@ -78,13 +69,5 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
     public Bytes getSuccessResultFor(RunResult runResult) {
         final var balanceOfResult = (BalanceOfResult) runResult;
         return encoder.encodeBalance(balanceOfResult.balance());
-    }
-
-    public static BalanceOfWrapper<AccountID> decodeBalanceOf(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = input.slice(24);
-        final var rawBalanceOfWrapper = EvmBalanceOfPrecompile.decodeBalanceOf(nestedInput);
-        return new BalanceOfWrapper<>(
-                convertLeftPaddedAddressToAccountId(rawBalanceOfWrapper.account(), aliasResolver));
     }
 }
