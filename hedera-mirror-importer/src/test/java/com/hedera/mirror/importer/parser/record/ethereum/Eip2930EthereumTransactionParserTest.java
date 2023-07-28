@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String EIP_2930_RAW_TX =
-            "01f86e82012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40080c001a0c85ee8f8f08ac4363dad9185d1798af1252745432298299498b4588de66b3efba005e8e49e8507d42b4147a050e1c5deaf7eac3dc5dc0f51e57fe21a3cbb7624ac";
+            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a04d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714fa03a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58";
 
     @BeforeAll
     static void beforeAll() {
@@ -94,14 +94,14 @@ class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionPa
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getToAddress()))
                         .isEqualTo("000000000000000000000000000000000000052d"))
                 .satisfies(t -> assertThat(t.getValue()).isEqualTo(new BigInteger("2540be400", 16).toByteArray()))
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getCallData())).isEmpty())
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getCallData())).isEqualTo("123456"))
                 .satisfies(
                         t -> assertThat(Hex.encodeHexString(t.getAccessList())).isEmpty())
                 .satisfies(t -> assertThat(t.getRecoveryId()).isEqualTo(1))
                 .satisfies(t -> assertThat(t.getSignatureV()).isNull())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureR()))
-                        .isEqualTo("c85ee8f8f08ac4363dad9185d1798af1252745432298299498b4588de66b3efb"))
+                        .isEqualTo("4d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714f"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS()))
-                        .isEqualTo("05e8e49e8507d42b4147a050e1c5deaf7eac3dc5dc0f51e57fe21a3cbb7624ac"));
+                        .isEqualTo("3a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58"));
     }
 }

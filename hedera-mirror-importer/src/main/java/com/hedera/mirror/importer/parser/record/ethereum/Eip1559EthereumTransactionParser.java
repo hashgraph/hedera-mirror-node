@@ -24,7 +24,7 @@ import jakarta.inject.Named;
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
     public static final int EIP1559_TYPE_BYTE = 2;
-    public static final String EIP2930_TYPE_HEX = "0x02";
+    public static final String EIP1559_TYPE_HEX = "0x02";
     private static final String TRANSACTION_TYPE_NAME = "EIP1559";
     private static final int EIP1559_TYPE_RLP_ITEM_COUNT = 12;
 
