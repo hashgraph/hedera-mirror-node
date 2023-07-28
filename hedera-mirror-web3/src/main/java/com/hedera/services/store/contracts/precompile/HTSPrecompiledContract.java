@@ -61,7 +61,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
@@ -141,7 +140,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         After the Precompile classes are implemented, this workaround won't be needed. */
 
         // redirect operations
-        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
+        if ((isTokenProxyRedirect(input) || isViewFunction(input))
+                && !isNestedFunctionSelectorForWrite(input)
+                && !isSupportedFunction(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 
@@ -333,7 +334,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.mirrorNodeEvmProperties = updater.aliases();
     }
 
-    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
+    private PrecompileContractResult handleReadsFromDynamicContext(
             final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
         if (isTokenProxyRedirect(input)) {
@@ -352,6 +353,14 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return resultFromExecutor == null
                 ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
                 : PrecompileContractResult.success(resultFromExecutor.getRight());
+    }
+
+    private boolean isSupportedFunction(Bytes input) {
+        final var functionSelector = input.getInt(0);
+        return switch (functionSelector) {
+            case AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO -> true;
+            default -> false;
+        };
     }
 
     private boolean isNestedFunctionSelectorForWrite(Bytes input) {

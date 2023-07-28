@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.config;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
@@ -53,6 +54,7 @@ import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
@@ -513,5 +515,13 @@ public class ServicesConfiguration {
             SyntheticTxnFactory syntheticTxnFactory,
             PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
+    }
+
+    @Bean
+    GetTokenExpiryInfoPrecompile getTokenExpiryInfoPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
+        return new GetTokenExpiryInfoPrecompile(syntheticTxnFactory, encoder, new EvmEncodingFacade(), pricingUtils);
     }
 }

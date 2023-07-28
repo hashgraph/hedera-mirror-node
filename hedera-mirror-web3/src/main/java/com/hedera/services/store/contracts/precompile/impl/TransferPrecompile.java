@@ -317,17 +317,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // For fungible there are always at least two operations, so only charge half for each
         // operation
         final long ftTxCost = pricingUtils.getMinimumPriceInTinybars(
-                        customFees
-                                ? PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES
-                                : PrecompilePricingUtils.GasCostType.TRANSFER_FUNGIBLE,
+                        customFees ? GasCostType.TRANSFER_FUNGIBLE_CUSTOM_FEES : GasCostType.TRANSFER_FUNGIBLE,
                         consensusTime)
                 / 2;
         // NFTs are atomic, one line can do it.
         final long nonFungibleTxCost = pricingUtils.getMinimumPriceInTinybars(
-                customFees
-                        ? PrecompilePricingUtils.GasCostType.TRANSFER_NFT_CUSTOM_FEES
-                        : PrecompilePricingUtils.GasCostType.TRANSFER_NFT,
-                consensusTime);
+                customFees ? GasCostType.TRANSFER_NFT_CUSTOM_FEES : GasCostType.TRANSFER_NFT, consensusTime);
         for (final var transfer : transferOp.tokenTransferWrappers()) {
             accumulatedCost += transfer.fungibleTransfers().size() * ftTxCost;
             accumulatedCost += transfer.nftExchanges().size() * nonFungibleTxCost;
@@ -335,9 +330,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         // add the cost for transferring hbars
         // Hbar transfer is similar to fungible tokens so only charge half for each operation
-        final long hbarTxCost =
-                pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
-                        / 2;
+        final long hbarTxCost = pricingUtils.getMinimumPriceInTinybars(GasCostType.TRANSFER_HBAR, consensusTime) / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
         if (isLazyCreationEnabled && numLazyCreates > 0) {
             final var lazyCreationFee = pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
