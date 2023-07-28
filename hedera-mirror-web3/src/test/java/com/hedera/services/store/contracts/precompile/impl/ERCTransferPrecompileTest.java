@@ -32,6 +32,7 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.contracts.precompile.HTSTestsUtil;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -82,9 +83,10 @@ class ERCTransferPrecompileTest {
 
     @Test
     void decodeTransferShouldThrowOnAmountOverflown() {
+        final UnaryOperator<byte[]> identity = identity();
         assertThrows(
                 ArithmeticException.class,
-                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, tokenID, senderAddress, identity()));
+                () -> decodeERCTransfer(TRANSFER_LONG_OVERFLOWN, tokenID, senderAddress, identity));
     }
 
     @Test
@@ -219,9 +221,9 @@ class ERCTransferPrecompileTest {
     @Test
     void decodeTransferFromShouldThrowOnAmountOverflown() {
         final var owner = IdUtils.asAccount("0.0.1450");
-
+        final UnaryOperator<byte[]> identity = identity();
         assertThrows(
                 ArithmeticException.class,
-                () -> decodeERCTransferFrom(TRANSFER_FROM_LONG_OVERFLOWN, tokenID, tokenAccessor, owner, identity()));
+                () -> decodeERCTransferFrom(TRANSFER_FROM_LONG_OVERFLOWN, tokenID, tokenAccessor, owner, identity));
     }
 }
