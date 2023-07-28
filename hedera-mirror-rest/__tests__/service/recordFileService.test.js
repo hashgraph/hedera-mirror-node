@@ -205,10 +205,10 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
 
 describe('RecordFileService.getRecordFileBlockDetailsFromTimestampArray tests', () => {
   test('No match', async () => {
-    const expected = {
-      1: null,
-      2: null,
-    };
+    const expected = new Map([
+      [1, null],
+      [2, null],
+    ]);
     await expect(RecordFileService.getRecordFileBlockDetailsFromTimestampArray([1, 2])).resolves.toEqual(expected);
   });
 
@@ -225,16 +225,16 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestampArray tests', 
       hash: 'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278',
       index: 17,
     };
-    const expected = {
-      1676540001234390000: expectedRecordFile1,
-      1676540001234490000: expectedRecordFile1,
-      '1676540001234500001': expectedRecordFile2,
-    };
+    const expected = new Map([
+      [1676540001234390000n, expectedRecordFile1],
+      [1676540001234490000n, expectedRecordFile1],
+      [1676540001234500001n, expectedRecordFile2],
+    ]);
     await integrationDomainOps.loadRecordFiles(recordFiles);
     await expect(
       RecordFileService.getRecordFileBlockDetailsFromTimestampArray([
         1676540001234390000n,
-        '1676540001234490000',
+        1676540001234490000n,
         1676540001234500001n,
       ])
     ).resolves.toEqual(expected);

@@ -1014,27 +1014,23 @@ class ContractController extends BaseController {
       return;
     }
 
-    const payerAndTimestampArray = [];
-    const timestampArray = [];
+    const payers = [];
+    const timestamps = [];
     rows.forEach((row) => {
-      const {consensusTimestamp, payerAccountId} = row;
-      payerAndTimestampArray.push({
-        consensusTimestamp,
-        payerAccountId,
-      });
-      timestampArray.push(consensusTimestamp);
+      payers.push(row.payerAccountId);
+      timestamps.push(row.consensusTimestamp);
     });
     const [ethereumTransactionMap, recordFileMap] = await Promise.all([
-      ContractService.getEthereumTransactionsByPayerAndTimestampArray(payerAndTimestampArray),
-      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestampArray),
+      ContractService.getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps),
+      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps),
     ]);
 
     response.results = rows.map(
       (row) =>
         new ContractResultDetailsViewModel(
           row,
-          recordFileMap[`${row.consensusTimestamp}`],
-          ethereumTransactionMap[`${row.consensusTimestamp}`]
+          recordFileMap.get(row.consensusTimestamp),
+          ethereumTransactionMap.get(row.consensusTimestamp)
         )
     );
 

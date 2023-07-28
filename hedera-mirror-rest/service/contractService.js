@@ -552,28 +552,31 @@ class ContractService extends BaseService {
     return rows.map((row) => new ContractAction(row));
   }
 
-  async getEthereumTransactionsByPayerAndTimestampArray(payerAndTimestampArray) {
-    if (_.isEmpty(payerAndTimestampArray)) {
-      return {};
+  /**
+   * Get the ethereum transaction matching the payer and timestamp pairs. Note the payers array and timestamps array
+   * should have equal length
+   *
+   * @param payers
+   * @param timestamps
+   * @returns {Promise<{Map}>}
+   */
+  async getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps) {
+    const transactionMap = new Map();
+    if (_.isEmpty(payers) || _.isEmpty(timestamps)) {
+      return transactionMap;
     }
 
-    const payers = [];
-    const consensusTimestamps = [];
-    payerAndTimestampArray.forEach((elem) => {
-      payers.push(elem.payerAccountId);
-      consensusTimestamps.push(elem.consensusTimestamp);
-    });
     const rows = await super.getRows(
       ContractService.ethereumTransactionByPayerAndTimestampArrayQuery,
-      [payers, consensusTimestamps],
+      [payers, timestamps],
       'getEthereumTransactionsByPayerAndTimestampArray'
     );
-    return rows.reduce((result, row) => {
-      result[`${row.consensus_timestamp}`] = row.ethereum_transaction
-        ? new EthereumTransaction(row.ethereum_transaction)
-        : null;
-      return result;
-    }, {});
+
+    rows.forEach((row) => {
+      const ethereumTransaction = row.ethereum_transaction ? new EthereumTransaction(row.ethereum_transaction) : null;
+      transactionMap.set(row.consensus_timestamp, ethereumTransaction);
+    });
+    return transactionMap;
   }
 }
 

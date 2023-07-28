@@ -1481,14 +1481,14 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
 
 describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () => {
   test('Empty', async () => {
-    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([])).resolves.toBeEmpty();
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([], [])).resolves.toBeEmpty();
   });
 
   test('No match', async () => {
-    const expected = {20: null};
-    await expect(
-      ContractService.getEthereumTransactionsByPayerAndTimestampArray([{payerAccountId: 10, consensusTimestamp: 20}])
-    ).resolves.toEqual(expected);
+    const expected = new Map([[20, null]]);
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([10], [20])).resolves.toEqual(
+      expected
+    );
   });
 
   test('All match', async () => {
@@ -1512,47 +1512,45 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
         value: [0xa6],
       },
     ]);
-    const payerAndTimestampArray = [
-      {
-        consensusTimestamp: 1690086061111222333n,
-        payerAccountId: 500,
-      },
-      {
-        consensusTimestamp: 1690086061111222555n,
-        payerAccountId: 600,
-      },
-    ];
-    const expected = {
-      '1690086061111222333': {
-        accessList: null,
-        chainId: '012a',
-        gasPrice: '4a817c80',
-        maxFeePerGas: '56',
-        maxPriorityFeePerGas: null,
-        nonce: 10,
-        recoveryId: 1,
-        signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-        signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-        type: 2,
-        value: 'a0',
-      },
-      '1690086061111222555': {
-        accessList: null,
-        chainId: '012a',
-        gasPrice: '4a817c80',
-        maxFeePerGas: '70',
-        maxPriorityFeePerGas: null,
-        nonce: 6,
-        recoveryId: 1,
-        signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-        signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-        type: 2,
-        value: 'a6',
-      },
-    };
+    const payers = [500, 600];
+    const timestamps = [1690086061111222333n, 1690086061111222555n];
+    const expected = new Map([
+      [
+        1690086061111222333n,
+        {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '56',
+          maxPriorityFeePerGas: null,
+          nonce: 10,
+          recoveryId: 1,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          value: 'a0',
+        },
+      ],
+      [
+        1690086061111222555n,
+        {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '70',
+          maxPriorityFeePerGas: null,
+          nonce: 6,
+          recoveryId: 1,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          value: 'a6',
+        },
+      ],
+    ]);
 
-    await expect(
-      ContractService.getEthereumTransactionsByPayerAndTimestampArray(payerAndTimestampArray)
-    ).resolves.toEqual(expected);
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps)).resolves.toEqual(
+      expected
+    );
   });
 });
