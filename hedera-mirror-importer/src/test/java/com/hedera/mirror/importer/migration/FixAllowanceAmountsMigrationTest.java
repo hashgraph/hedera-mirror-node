@@ -20,24 +20,30 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
-import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -45,170 +51,165 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "spring.flyway.target=1.83.1")
 class FixAllowanceAmountsMigrationTest extends IntegrationTest {
 
+    private static final RowMapper<CryptoAllowance> MIGRATION_TABLE_ROW_MAPPER = rowMapper(CryptoAllowance.class);
+
     private static final EntityId PAYER = EntityId.of("0.0.1001", ACCOUNT);
+
+    private static final String PRE_MIGRATION_ALLOWANCES =
+            """
+                    insert into crypto_allowance (amount, owner, payer_account_id, spender, timestamp_range)
+                      values (50, 2, 1001, 5, '[10,)'), (0, 2, 1001, 6, '[11,)');
+                    insert into crypto_allowance_history (amount, owner, payer_account_id, spender, timestamp_range)
+                      values (60, 2, 1001, 5, '[9, 10)');
+                    insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
+                      values (100, 2, 1001, 5, '[4,)', 101), (500, 2, 1001, 6, '[15,)', 102);
+                    insert into token_allowance_history(amount, owner, payer_account_id, spender, timestamp_range, token_id)
+                      values (10, 2, 1001, 5, '[1,2)', 101), (20, 2, 1001, 5, '[2,4)', 101);
+                    """;
+
+    private static final String PRE_MIGRATION_TOKEN_TRANSFERS =
+            """
+                    insert into token_transfer (account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
+                    values
+                      (2, -10, 2, true, 5, 101), -- older than current grant
+                      (2, -10, 5, true, 5, 101),
+                      (2, -40, 6, true, 5, 101),
+                      (2, -50, 7, false, 5, 101), -- not approved
+                      (2, -150, 16, true, 6, 102),
+                      (2, -200, 17, true, 22, 102); -- some other spender
+                    """;
 
     private static final String REVERT_DDL =
             """
-                    alter table crypto_allowance
-                        drop column created_timestamp,
-                        drop column amount;
-                    alter table crypto_allowance
-                        rename column amount_granted to amount;
-                    alter table crypto_allowance_history
-                        drop column created_timestamp,
-                        drop column amount;
-                    alter table crypto_allowance_history
-                        rename column amount_granted to amount;
-                    alter table token_allowance
-                        drop column created_timestamp,
-                        drop column amount;
-                    alter table token_allowance
-                        rename column amount_granted to amount;
-                    alter table token_allowance_history
-                        drop column created_timestamp,
-                        drop column amount;
-                    alter table token_allowance_history
-                        rename column amount_granted to amount;
+                    alter table crypto_allowance drop column amount;
+                    alter table crypto_allowance rename column amount_granted to amount;
+                    alter table crypto_allowance_history drop column amount;
+                    alter table crypto_allowance_history rename column amount_granted to amount;
+                    alter table token_allowance drop column amount;
+                    alter table token_allowance rename column amount_granted to amount;
+                    alter table token_allowance_history drop column amount;
+                    alter table token_allowance_history rename column amount_granted to amount;
+                    drop table crypto_allowance_migration;
                     """;
 
-    private static final String PRE_TOKEN_ALLOWANCES =
-            """
-                    insert into token_allowance(amount, owner, payer_account_id, spender, timestamp_range, token_id)
-                    values (100, 2, 1001, 5, '[4,)'::int8range, 1);
-                    insert into token_allowance(amount, owner, payer_account_id, spender, timestamp_range, token_id)
-                    values (500, 2, 1001, 6, '[5,)'::int8range, 2);
-                    insert into token_allowance_history(amount, owner, payer_account_id, spender, timestamp_range, token_id)
-                    values (10, 2, 1001, 5, '[1,2)'::int8range, 1);
-                    insert into token_allowance_history(amount, owner, payer_account_id, spender, timestamp_range, token_id)
-                    values (20, 2, 1001, 5, '[2,4)'::int8range, 1);
-                    """;
-
-    private static final String PRE_TOKEN_TRANSFERS =
-            """
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -10, 2, true, 5, 1); -- older than current grant
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -10, 4, true, 5, 1);
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -40, 4, true, 5, 1);
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -50, 4, false, 5, 1); -- not approved
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -150, 6, true, 6, 2);
-                    insert into token_transfer(account_id, amount, consensus_timestamp, is_approval, payer_account_id, token_id)
-                    values (2, -200, 6, true, 22, 2); -- some other spender
-                    """;
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Owner
     private final JdbcOperations jdbcOperations;
 
-    private final DomainBuilder domainBuilder;
-
-    @Value("classpath:db/migration/v1/V1.84.1__allowance_amount.sql")
-    private final File migrationSql;
+    @Value("classpath:db/migration/v1/V1.84.2__allowance_amount.sql")
+    private final Resource migrationSql;
 
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
-    private final String idColumns = "payer_account_id, spender, token_id";
-
     @AfterEach
     void teardown() {
-        runSql(REVERT_DDL);
+        jdbcOperations.update(REVERT_DDL);
     }
 
     @Test
     void empty() {
-        migrate();
+        runMigration();
 
+        // Assert the migration table exists
+        assertThat(findAllCryptoAllowanceInMigrationTable()).isEmpty();
+        assertThat(cryptoAllowanceRepository.findAll()).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         assertThat(tokenAllowanceRepository.findAll()).isEmpty();
-        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
-    @Test
-    void tokenMigrationNoTransfers() {
-        runSql(PRE_TOKEN_ALLOWANCES);
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            false, 100, 500
+            true, 50, 350
+            """)
+    void migrate(boolean hasTokenTransfers, long expectedAmount1, long expectedAmount2) {
+        domainBuilder.recordFile().persist();
+        var last = domainBuilder.recordFile().persist();
+        jdbcOperations.update(PRE_MIGRATION_ALLOWANCES);
+        if (hasTokenTransfers) {
+            jdbcOperations.update(PRE_MIGRATION_TOKEN_TRANSFERS);
+        }
 
-        migrate();
+        runMigration();
 
-        var tokenAllowanceBuilder = domainBuilder.tokenAllowance();
+        var cryptoAllowance1 = CryptoAllowance.builder()
+                .amount(50)
+                .amountGranted(50L)
+                .owner(2)
+                .payerAccountId(PAYER)
+                .spender(5)
+                .timestampRange(Range.atLeast(10L))
+                .build();
+        var cryptoAllowance2 = CryptoAllowance.builder()
+                .amountGranted(0L)
+                .owner(2)
+                .payerAccountId(PAYER)
+                .spender(6)
+                .timestampRange(Range.atLeast(11L))
+                .build();
+        var migrationTableCryptoAllowance =
+                cryptoAllowance1.toBuilder().amount(0).build();
+        var cryptoAllowanceSentinel = CryptoAllowance.builder()
+                .amountGranted(0L)
+                .payerAccountId(EntityId.EMPTY)
+                .timestampRange(Range.atLeast(last.getConsensusEnd()))
+                .build();
+        var cryptoAllowanceHistory = CryptoAllowance.builder()
+                .amountGranted(60L)
+                .owner(2)
+                .payerAccountId(PAYER)
+                .spender(5)
+                .timestampRange(Range.closedOpen(9L, 10L))
+                .build();
+        var tokenAllowance1 = TokenAllowance.builder()
+                .amount(expectedAmount1)
+                .amountGranted(100L)
+                .owner(2)
+                .payerAccountId(PAYER)
+                .spender(5)
+                .timestampRange(Range.atLeast(4L))
+                .tokenId(101)
+                .build();
+        var tokenAllowance2 = TokenAllowance.builder()
+                .amount(expectedAmount2)
+                .amountGranted(500L)
+                .owner(2)
+                .payerAccountId(PAYER)
+                .spender(6L)
+                .tokenId(102)
+                .timestampRange(Range.atLeast(15L))
+                .build();
+        var tokenAllowanceHistory1 = tokenAllowance1.toBuilder()
+                .amount(0)
+                .amountGranted(10L)
+                .timestampRange(Range.closedOpen(1L, 2L))
+                .build();
+        var tokenAllowanceHistory2 = tokenAllowance1.toBuilder()
+                .amount(0)
+                .amountGranted(20L)
+                .timestampRange(Range.closedOpen(2L, 4L))
+                .build();
 
-        var tokenAllowance1 = tokenAllowanceBuilder
-                .customize(c -> {
-                    // Migration simply sets amount == amountGranted when no approved transfers apply
-                    c.amountGranted(100L).amount(100L);
-                    c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.timestampRange(Range.atLeast(4L));
-                })
-                .get();
-
-        var tokenAllowance2 = tokenAllowanceBuilder
-                .customize(c -> {
-                    // Migration simply sets amount == amountGranted when no approved transfers apply
-                    c.amountGranted(500L).amount(500L);
-                    c.tokenId(2L).owner(2L).payerAccountId(PAYER).spender(6L);
-                    c.timestampRange(Range.atLeast(5L));
-                })
-                .get();
-
-        var tokenAllowanceHistory1 = tokenAllowanceBuilder
-                .customize(c -> {
-                    c.amountGranted(10L).amount(10L);
-                    c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.timestampRange(Range.closedOpen(1L, 2L));
-                })
-                .get();
-
-        var tokenAllowanceHistory2 = tokenAllowanceBuilder
-                .customize(c -> {
-                    c.amountGranted(20L).amount(20L);
-                    c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.timestampRange(Range.closedOpen(2L, 4L));
-                })
-                .get();
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrder(cryptoAllowance1, cryptoAllowance2);
+        assertThat(findHistory(CryptoAllowance.class)).containsExactly(cryptoAllowanceHistory);
+        assertThat(findAllCryptoAllowanceInMigrationTable())
+                .containsExactlyInAnyOrder(migrationTableCryptoAllowance, cryptoAllowanceSentinel);
 
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
-        assertThat(findHistory(TokenAllowance.class, idColumns))
+        assertThat(findHistory(TokenAllowance.class))
                 .containsExactlyInAnyOrder(tokenAllowanceHistory1, tokenAllowanceHistory2);
     }
 
-    /*
-     * Token transfers potentially affect the remaining amount of only allowance grants in token_allowances,
-     * not in the history.
-     */
-    @Test
-    void tokenMigrationWithTransfers() {
-        runSql(PRE_TOKEN_ALLOWANCES);
-        runSql(PRE_TOKEN_TRANSFERS);
-
-        migrate();
-
-        var tokenAllowanceBuilder = domainBuilder.tokenAllowance();
-
-        var tokenAllowance1 = tokenAllowanceBuilder
-                .customize(c -> {
-                    c.amountGranted(100L).amount(50L);
-                    c.tokenId(1L).owner(2L).payerAccountId(PAYER).spender(5L);
-                    c.timestampRange(Range.atLeast(4L));
-                })
-                .get();
-
-        var tokenAllowance2 = tokenAllowanceBuilder
-                .customize(c -> {
-                    c.amountGranted(500L).amount(350L);
-                    c.tokenId(2L).owner(2L).payerAccountId(PAYER).spender(6L);
-                    c.timestampRange(Range.atLeast(5L));
-                })
-                .get();
-
-        assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
+    private List<CryptoAllowance> findAllCryptoAllowanceInMigrationTable() {
+        return jdbcOperations.query("select * from crypto_allowance_migration", MIGRATION_TABLE_ROW_MAPPER);
     }
 
     @SneakyThrows
-    private void migrate() {
-        runSql(FileUtils.readFileToString(migrationSql, "UTF-8"));
-    }
-
-    private void runSql(String sql) {
-        jdbcOperations.update(sql);
+    private void runMigration() {
+        try (var is = migrationSql.getInputStream()) {
+            jdbcOperations.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+        }
     }
 }

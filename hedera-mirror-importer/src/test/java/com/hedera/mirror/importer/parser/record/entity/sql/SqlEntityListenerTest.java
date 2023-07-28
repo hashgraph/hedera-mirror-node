@@ -92,7 +92,6 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -419,14 +418,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrder(cryptoAllowance1, cryptoAllowance2);
-        assertThat(findHistory(CryptoAllowance.class, "owner, spender")).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class)).isEmpty();
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
     void onCryptoAllowanceWithApprovedTransfer(int commitIndex) {
         // given
-        final var idColumns = "owner, spender";
         var amountGranted = 1000L;
         var amountTransferred = -100L;
 
@@ -441,7 +439,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 1) {
             completeFileAndCommit();
             assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
-            assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+            assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         }
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
@@ -456,7 +454,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         cryptoAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
-        assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class)).isEmpty();
     }
 
     @Test
@@ -1194,15 +1192,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
-        assertThat(findHistory(NftAllowance.class, "payer_account_id, spender, token_id"))
-                .isEmpty();
+        assertThat(findHistory(NftAllowance.class)).isEmpty();
     }
 
     @ValueSource(ints = {1, 2})
     @ParameterizedTest
     void onNftAllowanceHistory(int commitIndex) {
         // given
-        final String idColumns = "payer_account_id, spender, token_id";
         var builder = domainBuilder.nftAllowance();
         NftAllowance nftAllowanceCreate =
                 builder.customize(c -> c.approvedForAll(true)).get();
@@ -1220,7 +1216,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 1) {
             completeFileAndCommit();
             assertThat(nftAllowanceRepository.findAll()).containsExactly(nftAllowanceCreate);
-            assertThat(findHistory(NftAllowance.class, idColumns)).isEmpty();
+            assertThat(findHistory(NftAllowance.class)).isEmpty();
         }
 
         sqlEntityListener.onNftAllowance(nftAllowanceUpdate1);
@@ -1228,7 +1224,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(nftAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
-        assertThat(findHistory(NftAllowance.class, idColumns)).containsExactly(mergedCreate);
+        assertThat(findHistory(NftAllowance.class)).containsExactly(mergedCreate);
     }
 
     @ValueSource(ints = {1, 2})
@@ -1758,7 +1754,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(token1, token2);
-        assertThat(findHistory(Token.class, "token_id")).isEmpty();
+        assertThat(findHistory(Token.class)).isEmpty();
     }
 
     @Test
@@ -1792,7 +1788,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         var tokenHistory = TestUtils.clone(tokenCreate);
         tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
-        assertThat(findHistory(Token.class, "token_id")).containsExactlyInAnyOrder(tokenHistory);
+        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
     }
 
     @Test
@@ -1832,7 +1828,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         history2.setTimestampLower(tokenUpdate1.getTimestampLower());
         history2.setTimestampUpper(tokenUpdate2.getTimestampLower());
         history2.setTotalSupply(history2.getTotalSupply() - 10);
-        assertThat(findHistory(Token.class, "token_id")).containsExactlyInAnyOrder(history1, history2);
+        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(history1, history2);
     }
 
     @Test
@@ -1858,7 +1854,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         var history = TestUtils.clone(tokenCreate);
         history.setTimestampUpper(tokenDissociateDeleted.getTimestampLower());
-        assertThat(findHistory(Token.class, "token_id")).containsExactly(history);
+        assertThat(findHistory(Token.class)).containsExactly(history);
     }
 
     @Test
@@ -1886,7 +1882,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount1, tokenAccount2);
-        assertThat(findTokenAccountHistory()).isEmpty();
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
     }
 
     @Test
@@ -1930,7 +1926,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                         TokenFreezeStatusEnum.NOT_APPLICABLE,
                         TokenKycStatusEnum.NOT_APPLICABLE,
                         Range.atLeast(10L)));
-        assertThat(findTokenAccountHistory()).containsExactly(associate);
+        assertThat(findHistory(TokenAccount.class)).containsExactly(associate);
     }
 
     @Test
@@ -1975,7 +1971,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 TokenKycStatusEnum.GRANTED,
                 Range.atLeast(15L));
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountMerged);
-        assertThat(findTokenAccountHistory()).containsExactly(expectedTokenAccountAssociate);
+        assertThat(findHistory(TokenAccount.class)).containsExactly(expectedTokenAccountAssociate);
     }
 
     @Test
@@ -2074,7 +2070,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedToken);
-        assertThat(findTokenAccountHistory()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -2120,7 +2116,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).isEmpty();
-        assertThat(findTokenAccountHistory()).isEmpty();
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
     }
 
     @Test
@@ -2225,7 +2221,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
-        assertThat(findTokenAccountHistory()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -2242,15 +2238,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
-        assertThat(findHistory(TokenAllowance.class, "payer_account_id, spender, token_id"))
-                .isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
     void onTokenAllowanceWithApprovedTransfer(int commitIndex) {
         // given
-        final var idColumns = "owner, spender, token_id";
         var amountGranted = 1000L;
         var amountTransferred = -100L;
 
@@ -2265,7 +2259,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 1) {
             completeFileAndCommit();
             assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
-            assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+            assertThat(findHistory(TokenAllowance.class)).isEmpty();
         }
 
         // Approved transfer allowance debit as emitted by EntityRecordItemListener
@@ -2280,13 +2274,12 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
-        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     @Test
     void onTokenAllowanceExistingWithApprovedTransfer() {
         // given
-        final var idColumns = "owner, spender, token_id";
         var amountGranted = 1000L;
         var amountTransferred = -100L;
 
@@ -2307,7 +2300,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAllowanceCreate.setAmount(amountGranted + amountTransferred);
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
-        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     // Partial mirror node scenario where the token allowance grant does not exist in
@@ -2315,7 +2308,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTokenAllowanceAbsentWithApprovedTransfer() {
         // given
-        final var idColumns = "owner, spender, token_id";
         var amountTransferred = -100L;
         var builder = domainBuilder.tokenAllowance();
 
@@ -2330,7 +2322,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(tokenAllowanceRepository.count()).isZero();
-        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     @ValueSource(ints = {1, 2, 3, 4})
@@ -2445,7 +2437,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 1) {
             completeFileAndCommit();
             assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
-            assertThat(findTokenAccountHistory()).isEmpty();
+            assertThat(findHistory(TokenAccount.class)).isEmpty();
             assertThat(tokenTransferRepository.findAll()).isEmpty();
         }
 
@@ -2473,7 +2465,7 @@ class SqlEntityListenerTest extends IntegrationTest {
             completeFileAndCommit();
             tokenAccount.setBalance(tokenTransfer1.getAmount());
             assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
-            assertThat(findTokenAccountHistory()).isEmpty();
+            assertThat(findHistory(TokenAccount.class)).isEmpty();
             assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
         }
 
@@ -2487,7 +2479,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 3) {
             completeFileAndCommit();
             assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
-            assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+            assertThat(findHistory(TokenAccount.class)).containsExactly(tokenAccount);
             assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
         }
 
@@ -2505,7 +2497,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         if (commitIndex > 4) {
             completeFileAndCommit();
             assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
-            assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+            assertThat(findHistory(TokenAccount.class)).containsExactly(tokenAccount);
             assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2);
         }
 
@@ -2524,7 +2516,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
-        assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+        assertThat(findHistory(TokenAccount.class)).containsExactly(tokenAccount);
         assertThat(tokenTransferRepository.findAll())
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
@@ -2635,10 +2627,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
 
         assertThat(recordFileRepository.findAll()).contains(recordFile);
-    }
-
-    private Collection<TokenAccount> findTokenAccountHistory() {
-        return findHistory(TokenAccount.class, "account_id, token_id");
     }
 
     private ContractState getContractState(ContractStateChange contractStateChange, long createdTimestamp) {

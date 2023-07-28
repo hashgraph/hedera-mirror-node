@@ -159,10 +159,10 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
-            NamedParameterJdbcTemplate transferJdbcTemplate,
             MirrorProperties mirrorProperties,
+            NamedParameterJdbcTemplate transferJdbcTemplate,
             TransactionOperations transactionOperations) {
-        super(transferJdbcTemplate, dbProperties.getSchema());
+        super(mirrorProperties.getMigration(), transferJdbcTemplate, dbProperties.getSchema());
         this.mirrorProperties = mirrorProperties;
         this.transferJdbcTemplate = transferJdbcTemplate;
         this.transactionOperations = transactionOperations;
@@ -182,11 +182,6 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     @Override
     protected Long getInitial() {
         return LOWER_BOUND_TIMESTAMP;
-    }
-
-    @Override
-    protected int getSuccessChecksum() {
-        return 1;
     }
 
     @Override

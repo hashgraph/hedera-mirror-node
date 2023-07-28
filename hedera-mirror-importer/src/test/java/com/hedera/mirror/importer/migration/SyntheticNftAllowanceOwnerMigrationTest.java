@@ -40,7 +40,6 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
     private final SyntheticNftAllowanceOwnerMigration migration;
     private final NftAllowanceRepository nftAllowanceRepository;
-    private final String idColumns = "payer_account_id, spender, token_id";
 
     @Test
     void checksum() {
@@ -51,7 +50,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
     void empty() {
         migration.doMigrate();
         assertThat(nftAllowanceRepository.findAll()).isEmpty();
-        assertThat(findHistory(NftAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(NftAllowance.class)).isEmpty();
     }
 
     @Test
@@ -142,7 +141,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         expectedHistory.addAll(nullSenderIdNftAllowancePair.getRight());
         nftAllowancePreMigration.setTimestampUpper(contractResultConsensus);
         expectedHistory.add(nftAllowancePreMigration);
-        assertThat(findHistory(NftAllowance.class, idColumns)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findHistory(NftAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test
@@ -196,12 +195,12 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
         migration.doMigrate();
         var firstPassNftAllowances = nftAllowanceRepository.findAll();
-        var firstPassHistory = findHistory(NftAllowance.class, idColumns);
+        var firstPassHistory = findHistory(NftAllowance.class);
 
         // when
         migration.doMigrate();
         var secondPassNftAllowances = nftAllowanceRepository.findAll();
-        var secondPassHistory = findHistory(NftAllowance.class, idColumns);
+        var secondPassHistory = findHistory(NftAllowance.class);
 
         // then
         assertThat(firstPassNftAllowances).containsExactlyInAnyOrderElementsOf(secondPassNftAllowances);

@@ -122,8 +122,8 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        // contract_result sender_id was added in 1.58.4, but SQL above is now compatible with 1.84.0+
-        return MigrationVersion.fromVersion("1.84.0");
+        // contract_result sender_id was added in 1.58.4, but SQL above is now compatible with 1.84.2+
+        return MigrationVersion.fromVersion("1.84.2");
     }
 
     @Override
