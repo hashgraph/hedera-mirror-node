@@ -37,7 +37,6 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 
     protected final SyntheticTxnFactory syntheticTxnFactory;
     protected final EncodingFacade encoder;
-
     protected final PrecompilePricingUtils pricingUtils;
 
     protected AbstractReadOnlyPrecompile(

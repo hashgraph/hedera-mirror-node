@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.*;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -65,6 +66,9 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private Account accountFromEntity(Entity entity) {
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
+                entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
+                        ? ByteString.copyFrom(entity.getEvmAddress())
+                        : ByteString.EMPTY,
                 entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 entity.getEffectiveExpiration(),

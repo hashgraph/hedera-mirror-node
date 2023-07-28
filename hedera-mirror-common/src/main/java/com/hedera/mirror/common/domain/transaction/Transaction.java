@@ -61,6 +61,10 @@ public class Transaction implements Persistable<Long> {
 
     private Long initialBalance;
 
+    @JsonSerialize(using = ObjectToStringSerializer.class)
+    @Type(JsonBinaryType.class)
+    private List<ItemizedTransfer> itemizedTransfer;
+
     @ToString.Exclude
     private byte[] memo;
 
@@ -93,6 +97,14 @@ public class Transaction implements Persistable<Long> {
     private Long validDurationSeconds;
 
     private Long validStartNs;
+
+    public void addItemizedTransfer(@NonNull ItemizedTransfer itemizedTransfer) {
+        if (this.itemizedTransfer == null) {
+            this.itemizedTransfer = new ArrayList<>();
+        }
+
+        this.itemizedTransfer.add(itemizedTransfer);
+    }
 
     public void addNftTransfer(@NonNull NftTransfer nftTransfer) {
         if (this.nftTransfer == null) {

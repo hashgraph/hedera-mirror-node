@@ -43,6 +43,10 @@ contract ERCTestContract {
         return IERC721(token).isApprovedForAll(owner, operator);
     }
 
+    function setApprovalForAll(address token, address operator, bool approved) public {
+        return IERC721(token).setApprovalForAll(operator, approved);
+    }
+
     function getOwnerOf(address token, uint256 serialNo) external view returns(address){
         return IERC721(token).ownerOf(serialNo);
     }
