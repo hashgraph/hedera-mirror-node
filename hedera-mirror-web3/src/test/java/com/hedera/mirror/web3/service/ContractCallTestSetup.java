@@ -358,7 +358,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, unpausedTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
         nftCustomFeePersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
