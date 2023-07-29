@@ -92,10 +92,7 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
     @Test
     void unsupportedEthereumTransaction() {
         byte[] unsupportedTx = Hex.decodeHex("33" + BERLIN_RAW_TX_1.substring(2));
-        assertThrows(
-                InvalidDatasetException.class,
-                () -> ethereumTransactionParser.decode(unsupportedTx)
-        );
+        assertThrows(InvalidDatasetException.class, () -> ethereumTransactionParser.decode(unsupportedTx));
     }
 
     @Override

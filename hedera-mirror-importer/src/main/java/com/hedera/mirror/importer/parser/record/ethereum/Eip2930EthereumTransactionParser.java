@@ -24,24 +24,22 @@ import jakarta.inject.Named;
 @Named
 public class Eip2930EthereumTransactionParser implements EthereumTransactionParser {
     public static final int EIP2930_TYPE_BYTE = 1;
-    public static final String EIP2930_TYPE_HEX = "0x01";
     private static final String TRANSACTION_TYPE_NAME = "EIP2930";
     private static final int EIP2930_TYPE_RLP_ITEM_COUNT = 11;
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
-        var legacyRlpItem = decoder.next();
-        var legacyRlpItemByte = legacyRlpItem.asByte();
-        if (legacyRlpItemByte != EIP2930_TYPE_BYTE) {
+        var type = decoder.next().asByte();
+        if (type != EIP2930_TYPE_BYTE) {
             throw new InvalidEthereumBytesException(
                     TRANSACTION_TYPE_NAME,
-                    String.format("1st byte was %s but should " + "be %s", legacyRlpItemByte, EIP2930_TYPE_BYTE));
+                    String.format("First byte was %s but should be %s", type, EIP2930_TYPE_BYTE));
         }
 
         var eip2930RlpItem = decoder.next();
         if (!eip2930RlpItem.isList()) {
-            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, "2nd RLPItem was not a list");
+            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, "Second RLPItem was not a list");
         }
 
         var rlpItems = eip2930RlpItem.asRLPList().elements();
@@ -49,8 +47,7 @@ public class Eip2930EthereumTransactionParser implements EthereumTransactionPars
             throw new InvalidEthereumBytesException(
                     TRANSACTION_TYPE_NAME,
                     String.format(
-                            "2nd RLPItem list size was " + "%s but should be %s",
-                            rlpItems.size(), EIP2930_TYPE_RLP_ITEM_COUNT));
+                            "RLP list size was %d but expected %d", rlpItems.size(), EIP2930_TYPE_RLP_ITEM_COUNT));
         }
 
         var ethereumTransaction = EthereumTransaction.builder()
