@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.BOB;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -92,6 +93,7 @@ public class ERCContractFeature extends AbstractFeature {
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;
+    private ExpandedAccountId ecdsaAccount;
     private FileId fileId;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
@@ -409,6 +411,84 @@ public class ERCContractFeature extends AbstractFeature {
                 accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSerials.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @RetryAsserts
+    @Then(
+            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
+    public void isApprovedForAllWithAliasSecondContractCall() {
+        ecdsaAccount = accountClient.getAccount(BOB);
+        tokenClient.associate(ecdsaAccount, tokenIds.get(1));
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ecdsaAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+
+        var contractCallGetIsApproveForAll = ContractCallRequest.builder()
+                .data(IS_APPROVED_FOR_ALL_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress())
+                        + to32BytesString(mirrorClient
+                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                                .getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getIsApproveForAllResponse = mirrorClient.contractsCall(contractCallGetIsApproveForAll);
+        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
+    }
+
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
+    public void allowanceAliasAccountsCall() {
+        tokenClient.associate(ecdsaAccount, tokenIds.get(0));
+        accountClient.approveToken(tokenIds.get(0), ecdsaAccount.getAccountId(), 1_000);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                tokenIds.get(0),
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                ecdsaAccount.getAccountId(),
+                500);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+
+        var contractCallGetAllowance = ContractCallRequest.builder()
+                .data(ALLOWANCE_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(tokenClient
+                                .getSdkClient()
+                                .getExpandedOperatorAccountId()
+                                .getAccountId()
+                                .toSolidityAddress())
+                        + to32BytesString(mirrorClient
+                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                                .getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getAllowanceResponse = mirrorClient.contractsCall(contractCallGetAllowance);
+
+        assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(1000);
+    }
+
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token balance with alias account")
+    public void balanceOfAliasAccountContractCall() {
+        var contractCallGetBalanceOf = ContractCallRequest.builder()
+                .data(BALANCE_OF_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(mirrorClient
+                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                                .getEvmAddress()))
+                .from(contractClient.getClientAddress())
+                .to(contractId.toSolidityAddress())
+                .estimate(false)
+                .build();
+        var getBalanceOfResponse = mirrorClient.contractsCall(contractCallGetBalanceOf);
+
+        assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
     }
 
     private TokenId createNewToken(

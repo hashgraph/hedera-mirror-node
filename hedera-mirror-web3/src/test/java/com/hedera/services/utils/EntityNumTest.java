@@ -84,6 +84,6 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromAccountId(IdUtils.asAccount("1.0.123")));
         assertEquals(
                 new EntityNum(123),
-                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(0, 0, 123)))));
+                EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(123)))));
     }
 }

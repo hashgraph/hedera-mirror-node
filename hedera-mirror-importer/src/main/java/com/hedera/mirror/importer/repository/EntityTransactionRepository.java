@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.services.store.contracts.precompile.impl;
+package com.hedera.mirror.importer.repository;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-import java.util.Collections;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+public interface EntityTransactionRepository
+        extends CrudRepository<EntityTransaction, EntityTransaction.Id>, RetentionRepository {
 
-@ExtendWith(MockitoExtension.class)
-class ImpliedTransfersTest {
-
-    @Test
-    void detectsMissingCustomFees() {
-        final var noCustomFees = new ImpliedTransfers(Collections.emptyList());
-        assertFalse(noCustomFees.hasAssessedCustomFees());
-    }
+    @Modifying
+    @Override
+    @Query("delete from EntityTransaction where consensusTimestamp <= ?1")
+    int prune(long consensusTimestamp);
 }

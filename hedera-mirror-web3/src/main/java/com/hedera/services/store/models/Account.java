@@ -23,6 +23,7 @@ import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAsso
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.EntityNum;
@@ -30,7 +31,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import lombok.Builder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,12 +42,12 @@ import org.hyperledger.besu.datatypes.Address;
  * immutability is required for this model in order to be used seamlessly in the state.
  *
  * Differences with the original:
- *     1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract
- *     2. Added field accountAddress for convenience
- *     3. Changed collection types to SortedMap and SortedSet
- *     4. Added constructors and set methods for creating new instances and achieve immutability
- *     6. Added factory method that returns empty instance
- *     7. Added isEmptyAccount() method
+ * 1. Removed fields like memo, key, isReceiverSigRequired, isSmartContract
+ * 2. Added field accountAddress for convenience
+ * 3. Changed collection types to SortedMap and SortedSet
+ * 4. Added constructors and set methods for creating new instances and achieve immutability
+ * 6. Added factory method that returns empty instance
+ * 7. Added isEmptyAccount() method
  */
 public class Account extends HederaEvmAccount {
     private final Long entityId;
@@ -70,9 +70,9 @@ public class Account extends HederaEvmAccount {
     private final boolean isSmartContract;
     private final JKey key;
 
-    @Builder(toBuilder = true)
     @SuppressWarnings("java:S107")
     public Account(
+            ByteString alias,
             Long entityId,
             Id id,
             long expiry,
@@ -92,6 +92,7 @@ public class Account extends HederaEvmAccount {
             boolean isSmartContract,
             JKey key) {
         super(id.asEvmAddress());
+        setAlias(alias);
         this.entityId = entityId;
         this.id = id;
         this.expiry = expiry;
@@ -119,6 +120,7 @@ public class Account extends HederaEvmAccount {
      */
     public Account(Long entityId, Id id, long balance) {
         this(
+                ByteString.EMPTY,
                 entityId,
                 id,
                 0L,
@@ -157,6 +159,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewOwnedNfts(final Account oldAccount, final long ownedNfts) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -187,6 +190,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNumAssociations(final Account oldAccount, final int numAssociations) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -217,6 +221,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewPositiveBalances(Account oldAccount, int newNumPositiveBalances) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -249,6 +254,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewAutoAssociationMetadata(
             Account oldAccount, int updatedAutoAssociationMetadata) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -279,6 +285,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewIsSmartContract(Account oldAccount, boolean isSmartContract) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -309,6 +316,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewExpiry(Account oldAccount, long expiry) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 expiry,
@@ -339,6 +347,7 @@ public class Account extends HederaEvmAccount {
      */
     private Account createNewAccountWithNewBalance(Account oldAccount, long newBalance) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -370,6 +379,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewCryptoAllowances(
             Account oldAccount, SortedMap<EntityNum, Long> cryptoAllowances) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -401,6 +411,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewFungibleTokenAllowances(
             Account oldAccount, SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -433,6 +444,7 @@ public class Account extends HederaEvmAccount {
     private Account createNewAccountWithNewApproveForAllNfts(
             Account oldAccount, SortedSet<FcTokenAllowanceId> newApproveForAllNfts) {
         return new Account(
+                oldAccount.alias,
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
@@ -459,6 +471,13 @@ public class Account extends HederaEvmAccount {
 
     public int getAlreadyUsedAutomaticAssociations() {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+    }
+
+    public Account setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+        validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        final var updatedAutoAssociationMetadata =
+                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+        return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
     }
 
     public int getAutoAssociationMetadata() {
@@ -489,6 +508,10 @@ public class Account extends HederaEvmAccount {
         return balance;
     }
 
+    public Account setBalance(long balance) {
+        return createNewAccountWithNewBalance(this, balance);
+    }
+
     public boolean isDeleted() {
         return deleted;
     }
@@ -503,14 +526,6 @@ public class Account extends HederaEvmAccount {
 
     public Account setCryptoAllowance(SortedMap<EntityNum, Long> cryptoAllowances) {
         return createNewAccountWithNewCryptoAllowances(this, cryptoAllowances);
-    }
-
-    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
-        return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
-    }
-
-    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
-        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
     }
 
     public long getOwnedNfts() {
@@ -541,8 +556,16 @@ public class Account extends HederaEvmAccount {
         return fungibleTokenAllowances;
     }
 
+    public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+        return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
+    }
+
     public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
         return approveForAllNfts;
+    }
+
+    public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
+        return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
     }
 
     public int getNumAssociations() {
@@ -561,28 +584,17 @@ public class Account extends HederaEvmAccount {
         return numPositiveBalances;
     }
 
-    public long getEthereumNonce() {
-        return ethereumNonce;
-    }
-
     public Account setNumPositiveBalances(int newNumPositiveBalances) {
         return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }
 
-    public Account setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-        validateTrue(isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
-        final var updatedAutoAssociationMetadata =
-                setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
-        return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
+    public long getEthereumNonce() {
+        return ethereumNonce;
     }
 
     public Account decrementUsedAutomaticAssociations() {
         var count = getAlreadyUsedAutomaticAssociations();
         return setAlreadyUsedAutomaticAssociations(--count);
-    }
-
-    public Account setBalance(long balance) {
-        return createNewAccountWithNewBalance(this, balance);
     }
 
     public JKey getKey() {

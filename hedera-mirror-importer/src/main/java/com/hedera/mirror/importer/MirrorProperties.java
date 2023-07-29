@@ -97,7 +97,7 @@ public class MirrorProperties {
                 MAINNET, "hedera-mainnet-streams",
                 // OTHER has no default bucket
                 PREVIEWNET, "hedera-preview-testnet-streams",
-                TESTNET, "hedera-testnet-streams-2023-01");
+                TESTNET, "hedera-testnet-streams-2023-07");
 
         private HederaNetwork() {}
 

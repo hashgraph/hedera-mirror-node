@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
@@ -91,6 +92,7 @@ class TokenRelationshipTest {
                 Collections.emptyList());
 
         account = new Account(
+                ByteString.EMPTY,
                 0L,
                 accountId,
                 defaultLongValue,

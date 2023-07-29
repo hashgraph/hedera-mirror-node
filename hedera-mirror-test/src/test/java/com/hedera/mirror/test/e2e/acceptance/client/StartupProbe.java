@@ -43,6 +43,7 @@ import org.springframework.http.MediaType;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
+import org.springframework.retry.RetryOperations;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
@@ -57,17 +58,6 @@ public class StartupProbe {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final WebClient webClient;
-    private final RetryTemplate retryTemplate = RetryTemplate.builder()
-            .infiniteRetry()
-            .notRetryOn(TimeoutException.class)
-            .fixedBackoff(1000L)
-            .withListener(new RetryListener() {
-                @Override
-                public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
-                    log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
-                }
-            })
-            .build();
 
     public void validateEnvironment(Client client) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
@@ -104,7 +94,8 @@ public class StartupProbe {
 
         try {
             log.info("Subscribing to topic {}", topicId);
-            subscription = retryTemplate.execute(x -> new TopicMessageQuery()
+            var retry = retryOperations(stopwatch);
+            subscription = retry.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .setMaxAttempts(Integer.MAX_VALUE)
                     .setRetryHandler(t -> {
@@ -138,20 +129,16 @@ public class StartupProbe {
     @SneakyThrows
     private TransactionResponse executeTransaction(
             Client client, Stopwatch stopwatch, Supplier<Transaction<?>> transaction) {
-        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction
-                .get()
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+        var retry = retryOperations(stopwatch);
+        return retry.execute(
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
     }
 
     @SneakyThrows
     private <T> T executeQuery(Client client, Stopwatch stopwatch, Supplier<Query<T, ?>> transaction) {
-        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction
-                .get()
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+        var retry = retryOperations(stopwatch);
+        return retry.execute(
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
     }
 
     private void callRestEndpoint(Stopwatch stopwatch, TransactionId transactionId) {
@@ -175,5 +162,18 @@ public class StartupProbe {
                 .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
                 .timeout(startupTimeout.minus(stopwatch.elapsed()))
                 .block();
+    }
+
+    private RetryOperations retryOperations(Stopwatch stopwatch) {
+        return RetryTemplate.builder()
+                .exponentialBackoff(1000, 2.0, 10000)
+                .withTimeout(acceptanceTestProperties.getStartupTimeout().minus(stopwatch.elapsed()))
+                .withListener(new RetryListener() {
+                    @Override
+                    public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
+                        log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
+                    }
+                })
+                .build();
     }
 }

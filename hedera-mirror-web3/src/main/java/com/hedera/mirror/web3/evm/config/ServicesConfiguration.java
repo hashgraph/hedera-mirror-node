@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
@@ -49,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
@@ -56,7 +58,9 @@ import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecomp
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
@@ -287,6 +291,46 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    TransferPrecompile transferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EntityAddressSequencer entityAddressSequencer) {
+        return new TransferPrecompile(
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory,
+                entityAddressSequencer);
+    }
+
+    @Bean
+    ERCTransferPrecompile ercTransferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final EntityAddressSequencer entityAddressSequencer) {
+        return new ERCTransferPrecompile(
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory,
+                entityAddressSequencer,
+                encoder);
+    }
+
+    @Bean
     DissociatePrecompile dissociatePrecompile(
             final PrecompilePricingUtils precompilePricingUtils,
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -420,8 +464,20 @@ public class ServicesConfiguration {
             PrecompilePricingUtils precompilePricingUtils,
             EncodingFacade encodingFacade,
             SyntheticTxnFactory syntheticTxnFactory,
+            OptionValidator validator,
             CreateLogic createLogic) {
-        return new TokenCreatePrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, createLogic);
+        return new TokenCreatePrecompile(
+                precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic);
+    }
+
+    @Bean
+    SetApprovalForAllPrecompile setApprovalForAllPrecompile(
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils pricingUtils,
+            final ApproveAllowanceChecks approveAllowanceChecks,
+            final ApproveAllowanceLogic approveAllowanceLogic) {
+        return new SetApprovalForAllPrecompile(
+                syntheticTxnFactory, pricingUtils, approveAllowanceChecks, approveAllowanceLogic);
     }
 
     @Bean

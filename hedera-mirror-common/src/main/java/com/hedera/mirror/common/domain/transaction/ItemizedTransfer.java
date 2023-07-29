@@ -14,17 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.common.domain.transaction;
 
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, Long>, RetentionRepository {
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
+@Builder
+@Data
+@NoArgsConstructor
+public class ItemizedTransfer {
 
-    @Modifying
-    @Override
-    @Query("delete from NonFeeTransfer where consensusTimestamp <= ?1")
-    int prune(long consensusTimestamp);
+    private Long amount;
+
+    private EntityId entityId;
+
+    private Boolean isApproval;
 }

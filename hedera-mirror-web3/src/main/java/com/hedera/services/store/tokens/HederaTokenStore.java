@@ -89,7 +89,7 @@ public class HederaTokenStore {
     }
 
     private static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
-        return new TokenRelationshipKey(asTypedEvmAddress(accountID), asTypedEvmAddress(tokenID));
+        return new TokenRelationshipKey(asTypedEvmAddress(tokenID), asTypedEvmAddress(accountID));
     }
 
     private ResponseCodeEnum usabilityOf(final AccountID id) {

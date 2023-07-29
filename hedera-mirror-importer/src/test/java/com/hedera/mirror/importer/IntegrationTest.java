@@ -21,7 +21,6 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
@@ -68,9 +67,6 @@ import org.springframework.jdbc.core.RowMapper;
 public abstract class IntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = new ConcurrentHashMap<>();
-    private static final RowMapper<NonFeeTransfer> NON_FEE_TRANSFER_ROW_MAPPER = rowMapper(NonFeeTransfer.class);
-    private static final String SELECT_NON_FEE_TRANSFERS_QUERY = "select * from non_fee_transfer";
-
     protected final Logger log = LogManager.getLogger(getClass());
 
     @Resource
@@ -145,10 +141,6 @@ public abstract class IntegrationTest {
             table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
         }
         return findEntity(historyClass, ids, String.format("%s_history", table));
-    }
-
-    protected List<NonFeeTransfer> findNonFeeTransfers() {
-        return jdbcOperations.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
     }
 
     protected void reset() {

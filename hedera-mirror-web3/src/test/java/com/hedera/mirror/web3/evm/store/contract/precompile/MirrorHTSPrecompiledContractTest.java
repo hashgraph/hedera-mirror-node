@@ -26,10 +26,12 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -95,6 +97,12 @@ class MirrorHTSPrecompiledContractTest {
 
     @Mock
     private HederaEvmWorldStateTokenAccount account;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;

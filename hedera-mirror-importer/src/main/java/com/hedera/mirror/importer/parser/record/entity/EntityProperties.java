@@ -20,6 +20,8 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSEN
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULECREATE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
@@ -45,11 +47,20 @@ public class EntityProperties {
 
         private boolean cryptoTransferAmounts = true;
 
+        /**
+         * A set of entity ids to exclude from entity_transaction table
+         */
+        @NotNull
+        private Set<EntityId> entityTransactionExclusion =
+                Set.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT));
+
+        private boolean entityTransactions = false;
+
         private boolean ethereumTransactions = true;
 
         private boolean files = true;
 
-        private boolean nonFeeTransfers = false;
+        private boolean itemizedTransfers = true;
 
         private boolean pendingReward = true;
 
@@ -89,6 +100,10 @@ public class EntityProperties {
 
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
+
+        public boolean shouldPersistEntityTransaction(EntityId entityId) {
+            return entityTransactions && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
+        }
 
         public boolean shouldPersistTransactionHash(TransactionType transactionType) {
             return transactionHash

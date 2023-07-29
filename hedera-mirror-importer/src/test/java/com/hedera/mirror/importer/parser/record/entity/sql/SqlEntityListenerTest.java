@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -68,6 +67,7 @@ import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
@@ -112,8 +112,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
 
-    private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
-
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
@@ -126,6 +124,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final DomainBuilder domainBuilder;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
+    private final EntityTransactionRepository entityTransactionRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
@@ -967,30 +966,19 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNonFeeTransfer() {
+    void onEntityTransactions() {
         // given
-        NonFeeTransfer nonFeeTransfer1 = domainBuilder
-                .nonFeeTransfer()
-                .customize(n -> n.amount(1L)
-                        .consensusTimestamp(1L)
-                        .entityId(EntityId.of(1L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
-        NonFeeTransfer nonFeeTransfer2 = domainBuilder
-                .nonFeeTransfer()
-                .customize(n -> n.amount(2L)
-                        .consensusTimestamp(2L)
-                        .entityId(EntityId.of(2L, ACCOUNT))
-                        .payerAccountId(TRANSACTION_PAYER))
-                .get();
+        var entityTransaction1 = domainBuilder.entityTransaction().get();
+        var entityTransaction2 = domainBuilder.entityTransaction().get();
 
         // when
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer1);
-        sqlEntityListener.onNonFeeTransfer(nonFeeTransfer2);
+        sqlEntityListener.onEntityTransactions(List.of(entityTransaction1));
+        sqlEntityListener.onEntityTransactions(List.of(entityTransaction2));
         completeFileAndCommit();
 
         // then
-        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrder(entityTransaction1, entityTransaction2);
     }
 
     @Test
@@ -1075,20 +1063,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(0);
+                .returns(0, Transaction::getIndex)
+                .returns(firstTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(1);
+                .returns(1, Transaction::getIndex)
+                .returns(secondTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
                 .get()
                 .isNotNull()
-                .extracting(Transaction::getIndex)
-                .isEqualTo(2);
+                .returns(2, Transaction::getIndex)
+                .returns(thirdTransaction.getItemizedTransfer(), Transaction::getItemizedTransfer);
 
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }

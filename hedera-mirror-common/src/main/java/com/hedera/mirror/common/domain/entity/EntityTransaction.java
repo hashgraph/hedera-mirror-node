@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction.Id;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import java.io.Serial;
+import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,29 +34,48 @@ import org.springframework.data.domain.Persistable;
 @Builder
 @Data
 @Entity
+@IdClass(EntityTransaction.Id.class)
 @NoArgsConstructor
-public class NonFeeTransfer implements Persistable<Long> {
+public class EntityTransaction implements Persistable<Id> {
 
-    private Long amount;
-
-    @Id
+    @Column(updatable = false)
+    @jakarta.persistence.Id
     private Long consensusTimestamp;
 
-    private EntityId entityId;
+    @Column(updatable = false)
+    @jakarta.persistence.Id
+    private Long entityId;
 
-    private Boolean isApproval;
-
+    @Column(updatable = false)
     private EntityId payerAccountId;
+
+    @Column(updatable = false)
+    private Integer result;
+
+    @Column(updatable = false)
+    private Integer type;
 
     @JsonIgnore
     @Override
-    public Long getId() {
-        return consensusTimestamp;
+    public Id getId() {
+        return new Id(consensusTimestamp, entityId);
     }
 
     @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    @AllArgsConstructor
+    @Data
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = -3010905088908209508L;
+
+        private long consensusTimestamp;
+        private long entityId;
     }
 }

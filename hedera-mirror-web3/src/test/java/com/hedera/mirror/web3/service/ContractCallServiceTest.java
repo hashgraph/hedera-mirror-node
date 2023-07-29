@@ -140,7 +140,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
         // getAccountBalance(address)
-        final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000002e6";
+        // Use alias address when applicable as EVM checks alias with highest priority
+        final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
         final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000004e20";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);

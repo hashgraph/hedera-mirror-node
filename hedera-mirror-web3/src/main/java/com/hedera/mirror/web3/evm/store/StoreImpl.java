@@ -112,6 +112,11 @@ public class StoreImpl implements Store {
     public void updateAccount(final Account updatedAccount) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
+
+        final var canonicalAddress = updatedAccount.canonicalAddress();
+        if (canonicalAddress != null && !canonicalAddress.equals(updatedAccount.getAccountAddress())) {
+            accountAccessor.set(canonicalAddress, updatedAccount);
+        }
     }
 
     @Override
@@ -119,7 +124,17 @@ public class StoreImpl implements Store {
         final var topFrame = stackedStateFrames.top();
         final var accountAccessor = topFrame.getAccessor(Account.class);
         try {
+            final var account = accountAccessor.get(accountAddress);
+            if (account.isEmpty()) {
+                return;
+            }
+
             accountAccessor.delete(accountAddress);
+
+            final var canonicalAddress = account.get().canonicalAddress();
+            if (canonicalAddress != accountAddress) {
+                accountAccessor.delete(canonicalAddress);
+            }
         } catch (UpdatableCacheUsageException ex) {
             // ignore, value has been deleted
         }
@@ -128,7 +143,13 @@ public class StoreImpl implements Store {
     @Override
     public void updateTokenRelationship(final TokenRelationship updatedTokenRelationship) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        tokenRelationshipAccessor.set(keyFromRelationship(updatedTokenRelationship), updatedTokenRelationship);
+        final var tokenRelationshipKey = keyFromRelationship(updatedTokenRelationship);
+        tokenRelationshipAccessor.set(tokenRelationshipKey, updatedTokenRelationship);
+
+        final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(updatedTokenRelationship);
+        if (tokenRelationshipKeyWithAlias != tokenRelationshipKey) {
+            tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, updatedTokenRelationship);
+        }
     }
 
     @Override
@@ -201,6 +222,12 @@ public class StoreImpl implements Store {
     private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {
         final var tokenAddress = tokenRelationship.getToken().getId().asEvmAddress();
         final var accountAddress = tokenRelationship.getAccount().getAccountAddress();
+        return new TokenRelationshipKey(tokenAddress, accountAddress);
+    }
+
+    private TokenRelationshipKey keyFromRelationshipWithAlias(TokenRelationship tokenRelationship) {
+        final var tokenAddress = tokenRelationship.getToken().getId().asEvmAddress();
+        final var accountAddress = tokenRelationship.getAccount().canonicalAddress();
         return new TokenRelationshipKey(tokenAddress, accountAddress);
     }
 

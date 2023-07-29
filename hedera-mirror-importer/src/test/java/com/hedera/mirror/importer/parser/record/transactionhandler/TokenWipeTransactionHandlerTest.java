@@ -24,8 +24,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new TokenWipeTransactionHandler(entityListener, entityProperties);
@@ -61,8 +62,15 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionFungible() {
         // Given
         var recordItem = recordItemBuilder.tokenWipe(FUNGIBLE_COMMON).build();
-        var transaction = domainBuilder.transaction().get();
+        var body = recordItem.getTransactionBody().getTokenWipe();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var tokenId = EntityId.of(body.getToken());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         var token = ArgumentCaptor.forClass(Token.class);
+        var accountId = EntityId.of(body.getAccount());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -73,18 +81,26 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
-                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
+                .returns(Range.atLeast(timestamp), Token::getTimestampRange)
+                .returns(transaction.getEntityId().getId(), Token::getTokenId);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, accountId));
     }
 
     @Test
     void updateTransactionNonFungible() {
         // Given
         var recordItem = recordItemBuilder.tokenWipe(NON_FUNGIBLE_UNIQUE).build();
-        var transaction = domainBuilder.transaction().get();
+        var body = recordItem.getTransactionBody().getTokenWipe();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var tokenId = EntityId.of(body.getToken());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         var nft = ArgumentCaptor.forClass(Nft.class);
         var token = ArgumentCaptor.forClass(Token.class);
-        var transactionBody = recordItem.getTransactionBody().getTokenWipe();
+        var accountId = EntityId.of(body.getAccount());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -95,14 +111,17 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
-                .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
+                .returns(Range.atLeast(timestamp), Token::getTimestampRange)
+                .returns(transaction.getEntityId().getId(), Token::getTokenId);
 
         assertThat(nft.getValue())
                 .returns(true, Nft::getDeleted)
-                .returns(transactionBody.getSerialNumbers(0), AbstractNft::getSerialNumber)
-                .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
-                .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
+                .returns(body.getSerialNumbers(0), Nft::getSerialNumber)
+                .returns(Range.atLeast(timestamp), Nft::getTimestampRange)
+                .returns(tokenId.getId(), Nft::getTokenId);
+
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, accountId));
     }
 
     @Test
@@ -117,5 +136,7 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

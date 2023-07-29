@@ -48,7 +48,7 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.83.1")
+@TestPropertySource(properties = "spring.flyway.target=1.84,1")
 class FixAllowanceAmountsMigrationTest extends IntegrationTest {
 
     private static final RowMapper<CryptoAllowance> MIGRATION_TABLE_ROW_MAPPER = rowMapper(CryptoAllowance.class);

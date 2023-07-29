@@ -788,7 +788,6 @@ const addTransaction = async (transaction) => {
   transaction = {
     ...defaultTransaction,
     // transfer which aren't in the defaults
-    non_fee_transfers: [],
     transfers: [],
     ...transaction,
     entity_id: EntityId.parse(transaction.entity_id, {isNullable: true}).getEncodedId(),
@@ -830,13 +829,7 @@ const addTransaction = async (transaction) => {
     payerAccount,
     nodeAccount
   );
-  await insertTransfers(
-    'non_fee_transfer',
-    transaction.consensus_timestamp,
-    transaction.non_fee_transfers,
-    false,
-    payerAccount
-  );
+
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list, payerAccount);
 };
 

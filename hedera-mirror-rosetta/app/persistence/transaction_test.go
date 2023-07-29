@@ -41,21 +41,18 @@ const (
 )
 
 var (
-	firstEntityId               = domain.MustDecodeEntityId(12345)
-	secondEntityId              = domain.MustDecodeEntityId(54321)
-	thirdEntityId               = domain.MustDecodeEntityId(54350)
-	newEntityId                 = domain.MustDecodeEntityId(55000)
-	feeCollectorEntityId        = domain.MustDecodeEntityId(98)
-	firstAccountId              = types.NewAccountIdFromEntityId(firstEntityId)
-	secondAccountId             = types.NewAccountIdFromEntityId(secondEntityId)
-	newAccountId                = types.NewAccountIdFromEntityId(newEntityId)
-	nodeAccountId               = types.NewAccountIdFromEntityId(nodeEntityId)
-	feeCollectorAccountId       = types.NewAccountIdFromEntityId(feeCollectorEntityId)
-	tokenId1                    = domain.MustDecodeEntityId(25636)
-	tokenId2                    = domain.MustDecodeEntityId(26700)
-	tokenId3                    = domain.MustDecodeEntityId(26750) // nft
-	tokenDecimals         int64 = 10
-	tokenInitialSupply    int64 = 50000
+	firstEntityId         = domain.MustDecodeEntityId(12345)
+	secondEntityId        = domain.MustDecodeEntityId(54321)
+	thirdEntityId         = domain.MustDecodeEntityId(54350)
+	newEntityId           = domain.MustDecodeEntityId(55000)
+	feeCollectorEntityId  = domain.MustDecodeEntityId(98)
+	firstAccountId        = types.NewAccountIdFromEntityId(firstEntityId)
+	secondAccountId       = types.NewAccountIdFromEntityId(secondEntityId)
+	newAccountId          = types.NewAccountIdFromEntityId(newEntityId)
+	nodeAccountId         = types.NewAccountIdFromEntityId(nodeEntityId)
+	feeCollectorAccountId = types.NewAccountIdFromEntityId(feeCollectorEntityId)
+	tokenId2              = domain.MustDecodeEntityId(26700)
+	tokenId3              = domain.MustDecodeEntityId(26750) // nft
 )
 
 func TestCategorizeHbarTransfers(t *testing.T) {
@@ -63,7 +60,7 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 	tests := []struct {
 		name                           string
 		hbarTransfers                  []hbarTransfer
-		nonFeeTransfers                []hbarTransfer
+		itemizedTransfer               domain.ItemizedTransferSlice
 		stakingRewardPayouts           []hbarTransfer
 		expectedFeeHbarTransfers       []hbarTransfer
 		expectedNonFeeTransfers        []hbarTransfer
@@ -98,9 +95,9 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{nodeEntityId, 15},
 				{feeCollectorEntityId, 50},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100},
-				{secondEntityId, 100},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100, EntityId: firstEntityId},
+				{Amount: 100, EntityId: secondEntityId},
 			},
 			expectedFeeHbarTransfers: []hbarTransfer{
 				{firstEntityId, -65},
@@ -121,9 +118,9 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{nodeEntityId, 2558345},
 				{feeCollectorEntityId, 496652144},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100000000000},
-				{thirdEntityId, 100000000000},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100000000000, EntityId: firstEntityId},
+				{Amount: 100000000000, EntityId: thirdEntityId},
 			},
 			expectedFeeHbarTransfers: []hbarTransfer{
 				{firstEntityId, -499210447},
@@ -145,9 +142,9 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{feeCollectorEntityId, 50},
 				{stakingRewardAccountId, -100},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100},
-				{secondEntityId, 100},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100, EntityId: firstEntityId},
+				{Amount: 100, EntityId: secondEntityId},
 			},
 			stakingRewardPayouts: []hbarTransfer{{secondEntityId, 100}},
 			expectedFeeHbarTransfers: []hbarTransfer{
@@ -172,11 +169,11 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{nodeEntityId, 15},
 				{feeCollectorEntityId, 50},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100},
-				{secondEntityId, 100},
-				{firstEntityId, -200}, // firstEntityId donates the exact amount of his pending reward
-				{stakingRewardAccountId, 200},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100, EntityId: firstEntityId},
+				{Amount: 100, EntityId: secondEntityId},
+				{Amount: -200, EntityId: firstEntityId}, // firstEntityId donates the exact amount of his pending reward
+				{Amount: 200, EntityId: stakingRewardAccountId},
 			},
 			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
 			expectedFeeHbarTransfers: []hbarTransfer{
@@ -204,11 +201,11 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{feeCollectorEntityId, 50},
 				{stakingRewardAccountId, -60},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100},
-				{secondEntityId, 100},
-				{firstEntityId, -140}, // firstEntityId donates part of his pending reward
-				{stakingRewardAccountId, 140},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100, EntityId: firstEntityId},
+				{Amount: 100, EntityId: secondEntityId},
+				{Amount: -140, EntityId: firstEntityId}, // firstEntityId donates part of his pending reward
+				{Amount: 140, EntityId: stakingRewardAccountId},
 			},
 			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
 			expectedFeeHbarTransfers: []hbarTransfer{
@@ -236,11 +233,11 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{feeCollectorEntityId, 50},
 				{stakingRewardAccountId, 50},
 			},
-			nonFeeTransfers: []hbarTransfer{
-				{firstEntityId, -100},
-				{secondEntityId, 100},
-				{firstEntityId, -250}, // firstEntityId donates more than his pending reward
-				{stakingRewardAccountId, 250},
+			itemizedTransfer: domain.ItemizedTransferSlice{
+				{Amount: -100, EntityId: firstEntityId},
+				{Amount: 100, EntityId: secondEntityId},
+				{Amount: -250, EntityId: firstEntityId}, // firstEntityId donates more than his pending reward
+				{Amount: 250, EntityId: stakingRewardAccountId},
 			},
 			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
 			expectedFeeHbarTransfers: []hbarTransfer{
@@ -265,7 +262,7 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			feeHbarTransfers, adjustedNonFeeTransfers, stakingRewardTransfers := categorizeHbarTransfers(
 				tt.hbarTransfers,
-				tt.nonFeeTransfers,
+				tt.itemizedTransfer,
 				tt.stakingRewardPayouts,
 			)
 			assert.Equal(t, tt.expectedFeeHbarTransfers, feeHbarTransfers)
@@ -525,14 +522,12 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	nonFeeTransfers := []domain.NonFeeTransfer{
-		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
-			PayerAccountId: firstEntityId},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
-			PayerAccountId: firstEntityId},
+	itemizedTransfer := domain.ItemizedTransferSlice{
+		{Amount: -135, EntityId: firstEntityId},
+		{Amount: 135, EntityId: secondEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
-		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
+		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, itemizedTransfer,
 		[]byte("simple transfer"))
 
 	// duplicate transaction
@@ -583,14 +578,12 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
-	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
-			PayerAccountId: firstEntityId},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
-			PayerAccountId: firstEntityId},
+	itemizedTransfer = domain.ItemizedTransferSlice{
+		{Amount: -215, EntityId: firstEntityId},
+		{Amount: 215, EntityId: secondEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
-		[]byte{0xa, 0xb, 0xc}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
+		[]byte{0xa, 0xb, 0xc}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, itemizedTransfer,
 		[]byte{})
 	operations2 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -215}, Type: operationType, Status: resultSuccess},
@@ -752,14 +745,13 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 			PayerAccountId: firstEntityId},
 		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
 	}
-	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, PayerAccountId: firstEntityId}, // with nil entity id
-		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
+	itemizedTransfer = domain.ItemizedTransferSlice{
+		{Amount: -500, EntityId: firstEntityId},
+		{Amount: 500, EntityId: newEntityId},
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,
-		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
+		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, itemizedTransfer, nil)
 
 	operationType = types.OperationTypeCryptoCreateAccount
 	expectedTransaction8 := &types.Transaction{
@@ -791,13 +783,13 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 		{Amount: -100, ConsensusTimestamp: consensusTimestamp, EntityId: stakingRewardAccountId,
 			PayerAccountId: firstEntityId},
 	}
-	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
-		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
+	itemizedTransfer = domain.ItemizedTransferSlice{
+		{Amount: -500, EntityId: firstEntityId},
+		{Amount: 500, EntityId: newEntityId},
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22, transactionHash,
-		domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers, nil)
+		domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, itemizedTransfer, nil)
 	tdomain.NewStakingRewardTransferBuilder(dbClient).
 		AccountId(firstEntityId.EncodedId).
 		Amount(100).

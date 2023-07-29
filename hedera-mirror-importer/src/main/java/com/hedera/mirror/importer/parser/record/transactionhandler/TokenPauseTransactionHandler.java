@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class TokenPauseTransactionHandler implements TransactionHandler {
+class TokenPauseTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -45,7 +45,7 @@ class TokenPauseTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }

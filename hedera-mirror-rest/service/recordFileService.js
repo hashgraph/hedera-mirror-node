@@ -33,17 +33,35 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
-  static HEX_HASH_PREFIX_SIZE = 64;
-
   constructor() {
     super();
   }
+
+  // Citus requires all columns in the json_build_object in group by even though consensus_end is the primary key
+  static recordFileBlockDetailsFromTimestampArrayQuery = `select
+      case when ${RecordFile.CONSENSUS_END} is not null then
+        json_build_object(
+            'consensus_end', ${RecordFile.CONSENSUS_END},
+            'gas_used', ${RecordFile.GAS_USED},
+            'hash', ${RecordFile.HASH},
+            'index', ${RecordFile.INDEX})
+      end as ${RecordFile.tableName},
+      array_agg(timestamp) as timestamps
+    from (select unnest($1::bigint[]) as timestamp) as tmp
+      left join ${RecordFile.tableName} on ${RecordFile.CONSENSUS_END} = (
+        select ${RecordFile.CONSENSUS_END}
+        from ${RecordFile.tableName}
+        where ${RecordFile.CONSENSUS_END} >= timestamp
+        order by ${RecordFile.CONSENSUS_END}
+        limit 1
+      )
+    group by ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
     from ${RecordFile.tableName}
     where  ${RecordFile.CONSENSUS_END} >= $1
-    order by ${RecordFile.CONSENSUS_END} asc
+    order by ${RecordFile.CONSENSUS_END}
     limit 1`;
 
   static recordFileBlockDetailsFromIndexQuery = `select
@@ -80,6 +98,27 @@ class RecordFileService extends BaseService {
     );
 
     return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFiles containing the transactions of the given timestamps
+   *
+   * @param {(string|Number|BigInt)[]} timestamps consensus timestamp array
+   * @return {Promise<Map>} A map from the consensus timestamp to its record file
+   */
+  async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
+    const recordFileMap = new Map();
+    const rows = await super.getRows(
+      RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery,
+      [timestamps],
+      'getRecordFileBlockDetailsFromTimestampArray'
+    );
+
+    rows.forEach((row) => {
+      const recordFile = row.record_file ? new RecordFile(row.record_file) : null;
+      row.timestamps.forEach((timestamp) => recordFileMap.set(timestamp, recordFile));
+    });
+    return recordFileMap;
   }
 
   /**
