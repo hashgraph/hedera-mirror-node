@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String EIP_2930_RAW_TX =
-            "01f87182012a8085a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a04d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714fa03a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58";
+            "01f87382012a82160c85a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a0abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816a0249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53";
 
     @BeforeAll
     static void beforeAll() {
@@ -85,7 +85,7 @@ class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionPa
                 .isNotNull()
                 .returns(Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE, EthereumTransaction::getType)
                 .returns(Hex.decodeHex("012a"), EthereumTransaction::getChainId)
-                .returns(0L, EthereumTransaction::getNonce)
+                .returns(5644L, EthereumTransaction::getNonce)
                 .returns(Hex.decodeHex("a54f4c3c00"), EthereumTransaction::getGasPrice)
                 .returns(null, EthereumTransaction::getMaxPriorityFeePerGas)
                 .returns(null, EthereumTransaction::getMaxFeePerGas)
@@ -97,10 +97,10 @@ class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionPa
                 .returns(1, EthereumTransaction::getRecoveryId)
                 .returns(null, EthereumTransaction::getSignatureV)
                 .returns(
-                        Hex.decodeHex("4d83230d6c19076fa42ef92f88d2cb0ae917b58640cc86f221a2e15b1736714f"),
+                        Hex.decodeHex("abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816"),
                         EthereumTransaction::getSignatureR)
                 .returns(
-                        Hex.decodeHex("3a4643759236b06b6abb31713ad694ab3b7ac5760f183c46f448260b08252b58"),
+                        Hex.decodeHex("249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53"),
                         EthereumTransaction::getSignatureS);
     }
 }
