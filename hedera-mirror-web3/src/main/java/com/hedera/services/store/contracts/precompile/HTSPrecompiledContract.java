@@ -408,7 +408,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
         final var nestedFunctionSelector = target.descriptor();
         return switch (nestedFunctionSelector) {
-            case AbiConstants.ABI_ID_ERC_NAME, AbiConstants.ABI_ID_ERC_SYMBOL -> true;
+            case AbiConstants.ABI_ID_ERC_NAME -> true;
             default -> false;
         };
     }
