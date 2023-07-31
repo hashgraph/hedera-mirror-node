@@ -19,9 +19,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
-import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -29,7 +27,6 @@ import com.hedera.services.store.contracts.precompile.codec.BalanceOfResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,12 +42,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements E
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var balanceOp = frame.getInputData();
-        RedirectTarget target;
-        try {
-            target = DescriptorUtils.getRedirectTarget(balanceOp);
-        } catch (final Exception e) {
-            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-        }
+        final var target = getRedirectTargetFromInput(balanceOp);
         final var accountAddress =
                 DescriptorUtils.addressFromBytes(balanceOp.slice(40).toArray());
         final var tokenAddress = target.token();
