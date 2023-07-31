@@ -21,9 +21,13 @@ import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBL
 import static com.hedera.services.store.tokens.HederaTokenStore.MISSING_TOKEN;
 import static com.hedera.services.store.tokens.HederaTokenStore.asTokenRelationshipKey;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -300,342 +304,326 @@ class TokenUpdateLogicTest {
                 () -> subject.updateToken(op, CONSENSUS_TIME, store, tokenStore),
                 INVALID_ACCOUNT_ID.name());
     }
-    //
-    //    @Test
-    //    void updateTokenFailsWithInvalidFreezeKeyValue() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, true);
-    //        givenContextForSuccessFullCalls();
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(ledgers.tokenRels()).willReturn(tokenRels);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
-    //        given(merkleToken.hasFreezeKey()).willReturn(true);
-    //        given(tokenStore.unfreeze(any(), any())).willReturn(FAIL_INVALID);
-    //        given(ledgers.nfts()).willReturn(nfts);
-    //        given(merkleToken.treasury()).willReturn(treasuryId);
-    //
-    //        // then
-    //        assertThrows(
-    //                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME),
-    // FAIL_INVALID.name());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenHappyPathForNonFungibleToken() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(false, true);
-    //        givenContextForSuccessFullCalls();
-    //        givenLedgers();
-    //        given(accounts.contains(account)).willReturn(true);
-    //        givenHederaStoreContextForNonFungible();
-    //        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
-    //        given(merkleToken.treasury()).willReturn(treasuryId);
-    //        given(transactionBody.getTokenUpdate()).willReturn(op);
-    //        // when
-    //        subject.validate(transactionBody);
-    //        subject.updateToken(op, CONSENSUS_TIME);
-    //        // then
-    //        verify(tokenStore).update(op, CONSENSUS_TIME);
-    //        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenFailsForNonFungibleTokenWithDetachedAutorenewAccount() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(false, true);
-    //        given(accounts.contains(account)).willReturn(true);
-    //        givenContextForUnsuccessFullCalls();
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(transactionBody.getTokenUpdate()).willReturn(op);
-    //        // when
-    //        subject.validate(transactionBody);
-    //        // then
-    //
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenHappyPathForNonFungibleTokenWithMissingAutorenewAccount() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(false, true);
-    //        givenHederaStoreContextForNonFungible();
-    //        givenLedgers();
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
-    //        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(merkleToken.hasAutoRenewAccount()).willReturn(false);
-    //        given(merkleToken.treasury()).willReturn(treasuryId);
-    //        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(transactionBody.getTokenUpdate()).willReturn(op);
-    //
-    //        // when
-    //        subject.validate(transactionBody);
-    //        subject.updateToken(op, CONSENSUS_TIME);
-    //
-    //        // then
-    //        verify(tokenStore).update(op, CONSENSUS_TIME);
-    //        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenKeysHappyPathForNonFungible() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(false, true);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(OK);
-    //        given(transactionBody.getTokenUpdate()).willReturn(op);
-    //        // when
-    //        subject.validate(transactionBody);
-    //        subject.updateTokenKeys(op, CONSENSUS_TIME);
-    //        // then
-    //        verify(tokenStore).update(op, CONSENSUS_TIME);
-    //        verify(sigImpactHistorian).markEntityChanged(nonFungible.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenKeysForNonFungibleFails() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(false, true);
-    //        givenMinimalLedgers();
-    //        given(ledgers.nfts()).willReturn(nfts);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
-    //        // then
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowance() {
-    //        // given
-    //        givenTokenUpdateLogic(false);
-    //        givenValidTransactionBody(false, true);
-    //        givenContextForSuccessFullCalls();
-    //        givenMinimalLedgers();
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(tokenRels.get(any(), any())).willReturn(100L);
-    //        given(ledgers.nfts()).willReturn(nfts);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
-    //        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
-    //        given(merkleToken.treasury()).willReturn(treasuryId);
-    //
-    //        // then
-    //        assertThrows(
-    //                InvalidTransactionException.class,
-    //                () -> subject.updateToken(op, CONSENSUS_TIME),
-    //                CURRENT_TREASURY_STILL_OWNS_NFTS.name());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowanceAndUnsufficientBalance() {
-    //        // given
-    //        givenTokenUpdateLogic(false);
-    //        givenValidTransactionBody(false, true);
-    //        givenContextForSuccessFullCalls();
-    //        givenMinimalLedgers();
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(ledgers.nfts()).willReturn(nfts);
-    //        given(tokenRels.get(any(), any())).willReturn(-1L);
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
-    //        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
-    //        given(merkleToken.tokenType()).willReturn(NON_FUNGIBLE_UNIQUE);
-    //        given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(account));
-    //        // then
-    //
-    //        assertThrows(
-    //                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME),
-    // FAIL_INVALID.name());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoHappyPath() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        given(accounts.contains(account)).willReturn(true);
-    //        givenValidTransactionBody(true, false);
-    //        givenContextForSuccessFullCalls();
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(tokenStore.updateExpiryInfo(op)).willReturn(OK);
-    //        // when
-    //        subject.updateTokenExpiryInfo(op);
-    //        // then
-    //        verify(tokenStore).updateExpiryInfo(op);
-    //        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForInvalidExpirationTime() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        givenContextForSuccessFullCalls();
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(tokenStore.updateExpiryInfo(op)).willReturn(INVALID_EXPIRATION_TIME);
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(ledgers.tokenRels()).willReturn(tokenRels);
-    //        given(ledgers.nfts()).willReturn(nfts);
-    //
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForExpiredAccount() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(validator.expiryStatusGiven(accounts, account)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //
-    //        assertFailsWith(() -> subject.updateTokenExpiryInfo(op), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForMissingAutoRenewAccount() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(accounts.contains(account)).willReturn(false);
-    //
-    //        assertFailsWith(() -> subject.updateTokenExpiryInfo(op), INVALID_AUTORENEW_ACCOUNT);
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoForEmptyExpiry() {
-    //        // given
-    //        final var txnBodyWithEmptyExpiry = TokenUpdateTransactionBody.newBuilder()
-    //                .setToken(fungible)
-    //                .setName("name")
-    //                .setMemo(StringValue.of("memo"))
-    //                .setSymbol("symbol")
-    //                .setTreasury(account)
-    //                .setAutoRenewAccount(account)
-    //                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
-    //                .build();
-    //        givenTokenUpdateLogic(true);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(merkleToken.hasAutoRenewAccount()).willReturn(true);
-    //        given(merkleToken.autoRenewAccount()).willReturn(treasuryId);
-    //        given(validator.expiryStatusGiven(accounts, account)).willReturn(OK);
-    //        given(validator.expiryStatusGiven(accounts, treasury)).willReturn(OK);
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //        given(accounts.contains(account)).willReturn(true);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //
-    // given(tokenStore.resolve(txnBodyWithEmptyExpiry.getToken())).willReturn(txnBodyWithEmptyExpiry.getToken());
-    //        given(tokenStore.updateExpiryInfo(txnBodyWithEmptyExpiry)).willReturn(OK);
-    //        given(ledgers.accounts()).willReturn(accounts);
-    //
-    //        // when
-    //        subject.updateTokenExpiryInfo(txnBodyWithEmptyExpiry);
-    //        // then
-    //        verify(tokenStore).updateExpiryInfo(txnBodyWithEmptyExpiry);
-    //        verify(sigImpactHistorian).markEntityChanged(fungible.getTokenNum());
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForMissingToken() {
-    //        // given
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(MISSING_TOKEN);
-    //
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForDeletedToken() {
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(merkleToken.isDeleted()).willReturn(true);
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForPausedToken() {
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        given(merkleToken.isDeleted()).willReturn(false);
-    //        given(merkleToken.isPaused()).willReturn(true);
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
-    //    }
-    //
-    //    @Test
-    //    void updateTokenExpiryInfoFailsForMissingAdminKey() {
-    //        givenTokenUpdateLogic(true);
-    //        givenValidTransactionBody(true, false);
-    //        given(merkleToken.hasAdminKey()).willReturn(false);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(tokenStore.get(fungible)).willReturn(merkleToken);
-    //        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
-    //        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op));
-    //    }
+
+    @Test
+    void updateTokenFailsWithInvalidFreezeKeyValue() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, true);
+        givenContextForSuccessFullCalls();
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
+        given(token.hasFreezeKey()).willReturn(true);
+        given(tokenStore.unfreeze(any(), any())).willReturn(FAIL_INVALID);
+        given(token.getTreasury()).willReturn(treasuryAccount);
+
+        // then
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME, store, tokenStore),
+                FAIL_INVALID.name());
+    }
+
+    @Test
+    void updateTokenHappyPathForNonFungibleToken() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        givenHederaStoreContextForNonFungible();
+        given(token.getTreasury()).willReturn(treasuryAccount);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(accountId), OnMissing.THROW)).willReturn(account);
+        given(account.getNumTreasuryTitles()).willReturn(3);
+        given(treasuryAccount.getNumTreasuryTitles()).willReturn(3);
+        given(store.getTokenRelationship(any(), any())).willReturn(tokenRelationship);
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME, store, tokenStore);
+        // then
+        verify(tokenStore).update(op, CONSENSUS_TIME);
+    }
+
+    @Test
+    void updateTokenFailsForNonFungibleTokenWithDetachedAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenContextForUnsuccessFullCalls();
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        // then
+
+        assertThrows(
+                InvalidTransactionException.class, () -> subject.updateToken(op, CONSENSUS_TIME, store, tokenStore));
+    }
+
+    @Test
+    void updateTokenHappyPathForNonFungibleTokenWithMissingAutorenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        givenHederaStoreContextForNonFungible();
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.expiryStatusGiven(store, accountId)).willReturn(OK);
+        given(validator.expiryStatusGiven(store, treasury)).willReturn(OK);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(token.hasAutoRenewAccount()).willReturn(false);
+        given(token.getTreasury()).willReturn(treasuryAccount);
+        given(treasuryAccount.getId()).willReturn(Id.fromGrpcAccount(treasury));
+        given(token.getType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        given(store.getTokenRelationship(any(), any())).willReturn(tokenRelationship);
+        given(tokenRelationship.getBalance()).willReturn(100L);
+        given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(treasuryAccount);
+        given(store.getAccount(asTypedEvmAddress(accountId), OnMissing.THROW)).willReturn(account);
+        given(account.getNumTreasuryTitles()).willReturn(3);
+        given(treasuryAccount.getNumTreasuryTitles()).willReturn(3);
+
+        // when
+        subject.validate(transactionBody);
+        subject.updateToken(op, CONSENSUS_TIME, store, tokenStore);
+
+        // then
+        verify(tokenStore).update(op, CONSENSUS_TIME);
+    }
+
+    @Test
+    void updateTokenKeysHappyPathForNonFungible() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        given(token.hasAdminKey()).willReturn(true);
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(OK);
+        given(transactionBody.getTokenUpdate()).willReturn(op);
+        // when
+        subject.validate(transactionBody);
+        subject.updateTokenKeys(op, CONSENSUS_TIME, tokenStore);
+        // then
+        verify(tokenStore).update(op, CONSENSUS_TIME);
+    }
+
+    @Test
+    void updateTokenKeysForNonFungibleFails() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(false, true);
+        given(token.hasAdminKey()).willReturn(true);
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
+        // then
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenKeys(op, CONSENSUS_TIME, tokenStore));
+    }
+
+    @Test
+    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowance() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
+        given(token.getType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(token.getTreasury()).willReturn(treasuryAccount);
+        given(store.getTokenRelationship(any(), any())).willReturn(tokenRelationship);
+        given(tokenRelationship.getBalance()).willReturn(100L);
+
+        // then
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME, store, tokenStore),
+                CURRENT_TREASURY_STILL_OWNS_NFTS.name());
+    }
+
+    @Test
+    void updateTokenForNonFungibleTokenFailsDueToWrongNftAllowanceAndUnsufficientBalance() {
+        // given
+        givenTokenUpdateLogic(false);
+        givenValidTransactionBody(false, true);
+        givenContextForSuccessFullCalls();
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
+        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(FAIL_INVALID);
+        given(token.getType()).willReturn(NON_FUNGIBLE_UNIQUE);
+        given(token.getTreasury()).willReturn(account);
+        given(account.getId()).willReturn(Id.fromGrpcAccount(accountId));
+        given(store.getTokenRelationship(any(), any())).willReturn(tokenRelationship);
+        given(tokenRelationship.getBalance()).willReturn(-1L);
+        // then
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.updateToken(op, CONSENSUS_TIME, store, tokenStore),
+                FAIL_INVALID.name());
+    }
+
+    @Test
+    void updateTokenExpiryInfoHappyPath() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        givenContextForSuccessFullCalls();
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        given(tokenStore.updateExpiryInfo(op)).willReturn(OK);
+        // when
+        subject.updateTokenExpiryInfo(op, store, tokenStore);
+        // then
+        verify(tokenStore).updateExpiryInfo(op);
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForInvalidExpirationTime() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        givenContextForSuccessFullCalls();
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        given(tokenStore.updateExpiryInfo(op)).willReturn(INVALID_EXPIRATION_TIME);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op, store, tokenStore));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForExpiredAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(store, accountId)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+
+        assertFailsWith(
+                () -> subject.updateTokenExpiryInfo(op, store, tokenStore), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingAutoRenewAccount() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        given(store.getAccount(asTypedEvmAddress(accountId), OnMissing.DONT_THROW))
+                .willReturn(account);
+        given(account.isEmptyAccount()).willReturn(true);
+
+        assertFailsWith(() -> subject.updateTokenExpiryInfo(op, store, tokenStore), INVALID_AUTORENEW_ACCOUNT);
+    }
+
+    @Test
+    void updateTokenExpiryInfoForEmptyExpiry() {
+        // given
+        final var txnBodyWithEmptyExpiry = TokenUpdateTransactionBody.newBuilder()
+                .setToken(fungible)
+                .setName("name")
+                .setMemo(StringValue.of("memo"))
+                .setSymbol("symbol")
+                .setTreasury(accountId)
+                .setAutoRenewAccount(accountId)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(2L))
+                .build();
+        givenTokenUpdateLogic(true);
+        given(token.hasAdminKey()).willReturn(true);
+        given(token.hasAutoRenewAccount()).willReturn(true);
+        given(token.getAutoRenewAccount()).willReturn(treasuryAccount);
+        given(validator.expiryStatusGiven(store, accountId)).willReturn(OK);
+        given(validator.expiryStatusGiven(store, treasury)).willReturn(OK);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(txnBodyWithEmptyExpiry.getToken())).willReturn(txnBodyWithEmptyExpiry.getToken());
+        given(tokenStore.updateExpiryInfo(txnBodyWithEmptyExpiry)).willReturn(OK);
+        given(treasuryAccount.getId()).willReturn(Id.fromGrpcAccount(treasury));
+
+        // when
+        subject.updateTokenExpiryInfo(txnBodyWithEmptyExpiry, store, tokenStore);
+        // then
+        verify(tokenStore).updateExpiryInfo(txnBodyWithEmptyExpiry);
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingToken() {
+        // given
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(tokenStore.resolve(op.getToken())).willReturn(MISSING_TOKEN);
+
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op, store, tokenStore));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForDeletedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        given(token.isDeleted()).willReturn(true);
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op, store, tokenStore));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForPausedToken() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        given(token.isDeleted()).willReturn(false);
+        given(token.isPaused()).willReturn(true);
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op, store, tokenStore));
+    }
+
+    @Test
+    void updateTokenExpiryInfoFailsForMissingAdminKey() {
+        givenTokenUpdateLogic(true);
+        givenValidTransactionBody(true, false);
+        given(token.hasAdminKey()).willReturn(false);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(tokenStore.get(fungible)).willReturn(token);
+        given(tokenStore.resolve(op.getToken())).willReturn(op.getToken());
+        assertThrows(InvalidTransactionException.class, () -> subject.updateTokenExpiryInfo(op, store, tokenStore));
+    }
 
     private void givenContextForSuccessFullCalls() {
         given(token.hasAdminKey()).willReturn(true);
-        given(token.getAutoRenewAccount()).willReturn(treasuryAccount);
-        given(treasuryAccount.getId()).willReturn(Id.fromGrpcAccount(treasury));
+        lenient().when(token.getAutoRenewAccount()).thenReturn(account);
+        lenient().when(treasuryAccount.getId()).thenReturn(Id.fromGrpcAccount(treasury));
         given(validator.isValidExpiry(EXPIRY)).willReturn(true);
         given(validator.expiryStatusGiven(store, accountId)).willReturn(OK);
-        given(validator.expiryStatusGiven(store, treasury)).willReturn(OK);
+        lenient().when(validator.expiryStatusGiven(store, treasury)).thenReturn(OK);
     }
-    //
-    //    private void givenContextForUnsuccessFullCalls() {
-    //        given(merkleToken.hasAdminKey()).willReturn(true);
-    //        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
-    //        given(validator.expiryStatusGiven(accounts, account)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-    //    }
+
+    private void givenContextForUnsuccessFullCalls() {
+        given(token.hasAdminKey()).willReturn(true);
+        given(validator.isValidExpiry(EXPIRY)).willReturn(true);
+        given(validator.expiryStatusGiven(store, accountId)).willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+    }
 
     private void givenHederaStoreContextForFungible() {
         given(tokenStore.get(fungible)).willReturn(token);
         given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
         given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(OK);
     }
-    //
-    //    private void givenHederaStoreContextForNonFungible() {
-    //        given(tokenStore.get(nonFungible)).willReturn(merkleToken);
-    //        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
-    //        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(OK);
-    //        given(tokenStore.changeOwnerWildCard(nftId, treasury, account)).willReturn(OK);
-    //    }
+
+    private void givenHederaStoreContextForNonFungible() {
+        given(tokenStore.get(nonFungible)).willReturn(token);
+        given(tokenStore.autoAssociate(any(), any())).willReturn(OK);
+        given(tokenStore.update(op, CONSENSUS_TIME)).willReturn(OK);
+        lenient()
+                .when(tokenStore.changeOwnerWildCard(nftId, treasury, accountId))
+                .thenReturn(OK);
+    }
 
     private void givenValidTransactionBody(boolean isFungible, boolean hasTreasury) {
         var builder = TokenUpdateTransactionBody.newBuilder();
@@ -669,6 +657,9 @@ class TokenUpdateLogicTest {
     }
 
     private void givenTokenUpdateLogic(boolean hasValidNftAllowance) {
+        lenient()
+                .when(store.getAccount(asTypedEvmAddress(accountId), OnMissing.DONT_THROW))
+                .thenReturn(account);
         lenient().when(evmProperties.isAllowTreasuryToOwnNfts()).thenReturn(hasValidNftAllowance);
         subject = new TokenUpdateLogic(evmProperties, validator);
     }

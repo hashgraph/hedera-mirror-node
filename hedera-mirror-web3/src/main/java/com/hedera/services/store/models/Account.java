@@ -16,25 +16,24 @@
 
 package com.hedera.services.store.models;
 
-import com.google.common.base.MoreObjects;
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.jproto.JKey;
-import com.hedera.services.utils.EntityNum;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.hyperledger.besu.datatypes.Address;
-
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+
+import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.jproto.JKey;
+import com.hedera.services.utils.EntityNum;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied Account model from hedera-services.
