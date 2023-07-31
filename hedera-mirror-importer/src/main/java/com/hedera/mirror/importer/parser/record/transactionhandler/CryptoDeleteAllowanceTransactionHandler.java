@@ -30,16 +30,10 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
+class CryptoDeleteAllowanceTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
-
     private final SyntheticContractLogService syntheticContractLogService;
-
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
-    }
 
     @Override
     public TransactionType getType() {
@@ -47,7 +41,7 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!recordItem.isSuccessful()) {
             return;
         }
@@ -69,6 +63,9 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
                 syntheticContractLogService.create(new ApproveAllowanceIndexedContractLog(
                         recordItem, tokenId, ownerId, EntityId.EMPTY, serialNumber));
             }
+
+            recordItem.addEntityId(ownerId);
+            recordItem.addEntityId(tokenId);
         }
     }
 }

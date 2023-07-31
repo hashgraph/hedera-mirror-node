@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -24,6 +25,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new FreezeTransactionHandler();
@@ -56,5 +58,7 @@ class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

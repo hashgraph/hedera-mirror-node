@@ -91,7 +91,7 @@ class HederaTokenStoreTest {
     private HederaTokenStore subject;
 
     private static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
-        return new TokenRelationshipKey(asTypedEvmAddress(accountID), asTypedEvmAddress(tokenID));
+        return new TokenRelationshipKey(asTypedEvmAddress(tokenID), asTypedEvmAddress(accountID));
     }
 
     @BeforeEach

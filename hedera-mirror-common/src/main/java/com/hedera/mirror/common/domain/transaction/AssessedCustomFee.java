@@ -19,12 +19,12 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
@@ -62,18 +62,13 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
-    public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
-        effectivePayerAccountIds = effectivePayerEntityIds.stream()
-                .map(EntityIdConverter.INSTANCE::convertToDatabaseColumn)
-                .toList();
-    }
-
     @Data
     @Embeddable
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Id implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = -636368167561206418L;
 
         private EntityId collectorAccountId;

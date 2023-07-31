@@ -77,4 +77,8 @@ contract ERCTestContract {
     function approve(address token, address spender, uint256 amount) public {
         IERC20(token).approve(spender, amount);
     }
+
+    function transferFromNFT(address token, address from, address to, uint256 tokenId) public {
+        IERC721(token).transferFrom(from, to, tokenId);
+    }
 }
