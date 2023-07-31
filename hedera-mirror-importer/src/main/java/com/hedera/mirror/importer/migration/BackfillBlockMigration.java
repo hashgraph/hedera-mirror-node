@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.annotation.Nonnull;
@@ -25,7 +24,6 @@ import jakarta.inject.Named;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -53,19 +51,14 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
 
     private final RecordFileRepository recordFileRepository;
 
-    @Getter
-    private final TransactionOperations transactionOperations;
-
     @Lazy
     public BackfillBlockMigration(
             DBProperties dbProperties,
-            MirrorProperties mirrorProperties,
             NamedParameterJdbcTemplate jdbcTemplate,
             RecordFileRepository recordFileRepository,
             TransactionOperations transactionOperations) {
-        super(mirrorProperties.getMigration(), jdbcTemplate, dbProperties.getSchema());
+        super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
         this.recordFileRepository = recordFileRepository;
-        this.transactionOperations = transactionOperations;
     }
 
     @Override
@@ -81,6 +74,11 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
     @Override
     protected MigrationVersion getMinimumVersion() {
         return MigrationVersion.fromVersion("1.61.1");
+    }
+
+    @Override
+    protected int getSuccessChecksum() {
+        return 1; // Change this if this migration should be rerun
     }
 
     /**
@@ -103,7 +101,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
 
                     var bloomAggregator = new LogsBloomAggregator();
                     var gasUsedTotal = new AtomicLong(0);
-                    namedParameterJdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
+                    jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
                         bloomAggregator.aggregate(rs.getBytes("bloom"));
                         gasUsedTotal.addAndGet(rs.getLong("gas_used"));
                     });
@@ -113,7 +111,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
                     recordFileRepository.save(recordFile);
 
                     // set transaction index for the transactions in the record file
-                    namedParameterJdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
+                    jdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
 
                     return recordFile.getConsensusEnd();
                 });

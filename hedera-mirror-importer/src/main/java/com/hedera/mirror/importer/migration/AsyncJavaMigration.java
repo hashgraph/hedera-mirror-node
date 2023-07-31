@@ -24,6 +24,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
+import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -32,7 +34,8 @@ import org.springframework.transaction.support.TransactionOperations;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-abstract class AsyncJavaMigration<T> extends RepeatableMigration {
+@RequiredArgsConstructor
+abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL =
             """
@@ -59,18 +62,10 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
             where f.installed_rank = last.installed_rank
             """;
 
-    protected final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    protected final NamedParameterJdbcTemplate jdbcTemplate;
     private final String schema;
+    private final TransactionOperations transactionOperations;
     private final AtomicBoolean complete = new AtomicBoolean(false);
-
-    protected AsyncJavaMigration(
-            Map<String, MigrationProperties> migrationPropertiesMap,
-            NamedParameterJdbcTemplate namedParameterJdbcTemplate,
-            String schema) {
-        super(migrationPropertiesMap);
-        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
-        this.schema = schema;
-    }
 
     @Override
     public Integer getChecksum() {
@@ -89,7 +84,10 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
         return lastChecksum;
     }
 
-    protected abstract TransactionOperations getTransactionOperations();
+    @Override
+    public MigrationVersion getVersion() {
+        return null; // repeatable
+    }
 
     boolean isComplete() {
         return complete.get();
@@ -97,7 +95,7 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
 
     public <O> O queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<O> requiredType) {
         try {
-            return namedParameterJdbcTemplate.queryForObject(sql, paramSource, requiredType);
+            return jdbcTemplate.queryForObject(sql, paramSource, requiredType);
         } catch (EmptyResultDataAccessException ex) {
             return null;
         }
@@ -129,7 +127,7 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
             do {
                 final var previous = last;
                 last = Objects.requireNonNullElse(
-                        getTransactionOperations().execute(t -> migratePartial(previous.get())), Optional.empty());
+                        transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
@@ -153,9 +151,7 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
      *
      * @return The success checksum for the migration
      */
-    protected final int getSuccessChecksum() {
-        return migrationProperties.getChecksum();
-    }
+    protected abstract int getSuccessChecksum();
 
     @Nonnull
     protected abstract Optional<T> migratePartial(T last);
@@ -165,13 +161,13 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
     }
 
     private boolean hasFlywaySchemaHistoryTable() {
-        var exists = namedParameterJdbcTemplate.queryForObject(
+        var exists = jdbcTemplate.queryForObject(
                 CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema), Boolean.class);
         return exists != null && exists;
     }
 
     private void onSuccess() {
         var paramSource = getSqlParamSource().addValue("checksum", getSuccessChecksum());
-        namedParameterJdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
+        jdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
     }
 }

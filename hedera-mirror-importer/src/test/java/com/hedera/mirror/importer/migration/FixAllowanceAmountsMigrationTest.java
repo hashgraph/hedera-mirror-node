@@ -29,7 +29,6 @@ import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -41,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
@@ -50,8 +48,6 @@ import org.springframework.util.StreamUtils;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.84.1")
 class FixAllowanceAmountsMigrationTest extends IntegrationTest {
-
-    private static final RowMapper<CryptoAllowance> MIGRATION_TABLE_ROW_MAPPER = rowMapper(CryptoAllowance.class);
 
     private static final EntityId PAYER = EntityId.of("0.0.1001", ACCOUNT);
 
@@ -89,7 +85,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                     alter table token_allowance rename column amount_granted to amount;
                     alter table token_allowance_history drop column amount;
                     alter table token_allowance_history rename column amount_granted to amount;
-                    drop table crypto_allowance_migration;
                     """;
 
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
@@ -112,7 +107,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
         runMigration();
 
         // Assert the migration table exists
-        assertThat(findAllCryptoAllowanceInMigrationTable()).isEmpty();
         assertThat(cryptoAllowanceRepository.findAll()).isEmpty();
         assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         assertThat(tokenAllowanceRepository.findAll()).isEmpty();
@@ -194,16 +188,10 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
 
         assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrder(cryptoAllowance1, cryptoAllowance2);
         assertThat(findHistory(CryptoAllowance.class)).containsExactly(cryptoAllowanceHistory);
-        assertThat(findAllCryptoAllowanceInMigrationTable())
-                .containsExactlyInAnyOrder(migrationTableCryptoAllowance, cryptoAllowanceSentinel);
 
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
         assertThat(findHistory(TokenAllowance.class))
                 .containsExactlyInAnyOrder(tokenAllowanceHistory1, tokenAllowanceHistory2);
-    }
-
-    private List<CryptoAllowance> findAllCryptoAllowanceInMigrationTable() {
-        return jdbcOperations.query("select * from crypto_allowance_migration", MIGRATION_TABLE_ROW_MAPPER);
     }
 
     @SneakyThrows

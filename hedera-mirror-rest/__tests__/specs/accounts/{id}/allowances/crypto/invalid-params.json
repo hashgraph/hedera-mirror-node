@@ -23,7 +23,6 @@
       {
         "amount": 23,
         "amount_granted": 33,
-        "created_timestamp": 1234567890000000001,
         "owner": 1001,
         "payer_account_id": 1001,
         "spender": 2001,
@@ -32,7 +31,6 @@
       {
         "amount": 34,
         "amount_granted": 44,
-        "created_timestamp": 1234567890000000002,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 3001,
@@ -41,7 +39,6 @@
       {
         "amount": 45,
         "amount_granted": 55,
-        "created_timestamp": 1234567890000000003,
         "owner": 2001,
         "payer_account_id": 2001,
         "spender": 3001,
@@ -50,7 +47,6 @@
       {
         "amount": 56,
         "amount_granted": 66,
-        "created_timestamp": 1234567890000000004,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 4001,
@@ -59,7 +55,6 @@
       {
         "amount": 67,
         "amount_granted": 77,
-        "created_timestamp": 1234567890000000005,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 5001,

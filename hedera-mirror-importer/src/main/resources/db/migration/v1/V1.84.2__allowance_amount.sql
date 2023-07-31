@@ -17,24 +17,6 @@ alter table if exists crypto_allowance_history
 -- Backfill crypto_allowance.amount
 update crypto_allowance set amount = amount_granted;
 
--- Create table to hold data for the async migration
-create table if not exists crypto_allowance_migration (like crypto_allowance including defaults);
-
--- Copy rows to the migration table, note amount is not set so it has the default value 0
-insert into crypto_allowance_migration (amount_granted, owner, payer_account_id, spender, timestamp_range)
-select amount_granted, owner, payer_account_id, spender, timestamp_range
-from crypto_allowance
-where amount_granted <> 0;
-
--- Add a sentinel row with lower timestamp being the last transaction consensus timestamp
-insert into crypto_allowance_migration (amount_granted, owner, payer_account_id, spender, timestamp_range)
-select 0, 0, 0, 0, int8range(consensus_end, null)
-from record_file
-order by consensus_end desc
-limit 1;
-
-alter table crypto_allowance_migration add primary key (owner, spender);
-
 -- Alter token_allowance
 alter table if exists token_allowance
     rename column amount to amount_granted;
