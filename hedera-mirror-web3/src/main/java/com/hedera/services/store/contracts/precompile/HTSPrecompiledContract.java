@@ -293,11 +293,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 aliasResolver,
                                 new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
                     }
-                    case AbiConstants.ABI_ID_ERC_NAME, AbiConstants.ABI_ID_ERC_SYMBOL -> {
-                        precompile =
-                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
-                    }
                     default -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
@@ -305,6 +300,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
                             transactionBody =
                                     precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                        } else {
+                            transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
                         }
                     }
                 }
@@ -413,7 +410,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
         final var nestedFunctionSelector = target.descriptor();
         return switch (nestedFunctionSelector) {
-            case AbiConstants.ABI_ID_ERC_NAME, AbiConstants.ABI_ID_ERC_SYMBOL -> true;
+            case AbiConstants.ABI_ID_ERC_SYMBOL -> true;
             default -> false;
         };
     }
