@@ -47,6 +47,7 @@ import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
@@ -567,5 +568,10 @@ public class ServicesConfiguration {
             final SyntheticTxnFactory syntheticTxnFactory,
             final PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
+    }
+
+    @Bean
+    TokenUpdateLogic tokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
+        return new TokenUpdateLogic(mirrorNodeEvmProperties, validator);
     }
 }
