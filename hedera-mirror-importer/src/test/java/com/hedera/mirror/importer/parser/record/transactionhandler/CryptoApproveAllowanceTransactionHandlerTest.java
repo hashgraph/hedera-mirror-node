@@ -16,20 +16,25 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.data.util.Predicates.negate;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
@@ -37,7 +42,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -137,6 +145,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(null);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -159,6 +169,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(effectiveOwner);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -186,11 +198,14 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         // The implicit entity id is used
         var effectiveOwner = recordItem.getPayerAccountId().getId();
         assertAllowances(effectiveOwner);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @ParameterizedTest
     @MethodSource("provideEntities")
     void updateTransactionWithEmptyOwner(EntityId entityId) {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder
                 .cryptoApproveAllowance()
@@ -209,9 +224,14 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var transaction = domainBuilder.transaction().get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.ofNullable(entityId));
+        var expectedEntityTransactions = super.getExpectedEntityTransactions(recordItem, transaction);
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
+        // then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -241,6 +261,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .thenReturn(Optional.of(ownerEntityId));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(ownerEntityId.getId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private void assertAllowances(Long effectiveOwner) {
@@ -310,6 +332,26 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .setOwner(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getOwner()))
                 .setSpender(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getSpender()))
                 .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId())));
+    }
+
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
+        var entityIds = Stream.concat(
+                Stream.of(
+                        expectedNft.getAccountId(),
+                        expectedNft.getDelegatingSpender(),
+                        expectedNft.getDelegatingSpender()),
+                Stream.of(
+                                expectedCryptoAllowance.getOwner(),
+                                expectedCryptoAllowance.getSpender(),
+                                expectedTokenAllowance.getOwner(),
+                                expectedTokenAllowance.getSpender(),
+                                expectedTokenAllowance.getTokenId(),
+                                expectedNftAllowance.getOwner(),
+                                expectedNftAllowance.getSpender(),
+                                expectedNftAllowance.getTokenId())
+                        .filter(negate(Objects::isNull))
+                        .map(id -> EntityId.of(id, EntityType.ACCOUNT)));
+        return getExpectedEntityTransactions(recordItem, transaction, entityIds.toArray(EntityId[]::new));
     }
 
     private void setTransactionPayer(TransactionBody.Builder builder) {

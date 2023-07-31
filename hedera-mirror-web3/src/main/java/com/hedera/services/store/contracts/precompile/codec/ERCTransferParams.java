@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.services.store.contracts.precompile.impl;
+package com.hedera.services.store.contracts.precompile.codec;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
 
-import java.util.Collections;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-@ExtendWith(MockitoExtension.class)
-class ImpliedTransfersTest {
-
-    @Test
-    void detectsMissingCustomFees() {
-        final var noCustomFees = new ImpliedTransfers(Collections.emptyList());
-        assertFalse(noCustomFees.hasAssessedCustomFees());
-    }
-}
+public record ERCTransferParams(int functionId, Address senderAddress, TokenAccessor tokenAccessor, TokenID tokenID)
+        implements BodyParams {}

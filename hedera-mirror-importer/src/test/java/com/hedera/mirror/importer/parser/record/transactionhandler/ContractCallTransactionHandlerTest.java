@@ -82,6 +82,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(
                         DomainUtils.toBytes(transaction.getFunctionParameters()),
                         ContractResult::getFunctionParameters);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -94,5 +95,6 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(null, ContractResult::getAmount)
                 .returns(null, ContractResult::getGasLimit)
                 .returns(null, ContractResult::getFunctionParameters);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 }
