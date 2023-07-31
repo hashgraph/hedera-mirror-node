@@ -49,7 +49,7 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
         return usageFor(query.getTransactionGetRecord().getHeader().getResponseType());
     }
 
-    // removed child records logic
+    // Removed child records logic
     private FeeData usageFor(final ResponseType stateProofType) {
         return usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, stateProofType);
     }
