@@ -560,6 +560,7 @@ public class ServicesConfiguration {
             PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
+
     @Bean
     TokenUpdateLogic tokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
         return new TokenUpdateLogic(mirrorNodeEvmProperties, validator);
