@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BIG_INTEGER_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
@@ -192,6 +193,7 @@ public class EncodingFacade {
                 case HAPI_ALLOWANCE -> hapiAllowanceOfType;
                 case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> INT_BOOL_TUPLE;
                 case HAPI_APPROVE_NFT -> intTuple;
+                case ERC_BALANCE -> BIG_INTEGER_TUPLE;
                 default -> NOT_SPECIFIED_TYPE;};
 
             this.functionType = functionType;
