@@ -471,5 +471,5 @@ zfs:
     image:
       registry: gcr.io/
       repository: mirrornode/zfs-driver
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       tag: 2.3.1-HEDERA

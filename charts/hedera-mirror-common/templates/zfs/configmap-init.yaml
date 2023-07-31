@@ -49,8 +49,8 @@ data:
     kubectl config use-context ctc
     
     NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
-    CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.["\($ROLE_LABEL)"]')"
-    NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.["\($NODE_ID_LABEL)"]')"
+    CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.[$ROLE_LABEL]')"
+    NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
 
     ATTEMPT_COUNT=1
     while [[ "${CITUS_ROLE}" == "null" ]]
@@ -60,11 +60,11 @@ data:
         echo "Timed out waiting for labels please set ${ROLE_LABEL}"
         exit 1
       fi
+      sleep 10
       ATTEMPT_COUNT=$((ATTEMPT_COUNT+1))
       echo "Retrying label GET attempt: ${ATTEMPT_COUNT}"
       NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
-      CITUS_ROLE="$(echo ${NODE_LABELS} | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.metadata.labels["\($ROLE_LABEL)"]')"
-      sleep 10
+      CITUS_ROLE="$(echo ${NODE_LABELS} | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.metadata.labels[$ROLE_LABEL]')"
     done
     # Determine correct config for zone
     CONFIG_MAP_NAME="zfs-node-status"
@@ -72,38 +72,37 @@ data:
     until [[ ${COMMAND_STATUS} -eq 0 ]]; do
       CONFIG_MAP="$(kubectl get configmap -o json -n ${K8_NAMESPACE} ${CONFIG_MAP_NAME})"
       MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {"zfs-node-status.json": (.data["zfs-node-status.json"]|fromjson)}}')"
-      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"]["\($CITUS_ROLE)"]["\($ZONE)"] // []')"
-      NODE_LIST="$(kubectl get nodes -o json)"
-      NODE_NAMES="$(echo "${NODE_LIST}" | jq '.items | map(. | {(.metadata.name): {isUpgrade: (.metadata.labels["operation.gke.io/type"] == "drain")}}) | add')"
+      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE] // []')"
+      NODE_LIST="$(kubectl get nodes -o json | jq \
+                   --arg ZONE "${ZONE}" \
+                   --arg CITUS_ROLE "${CITUS_ROLE}" \
+                   --arg ROLE_LABEL "${ROLE_LABEL}" \
+                   '.items | map(select(.metadata.labels["topology.kubernetes.io/zone"] == $ZONE and 
+                                        .metadata.labels["generated-node-id"] == "true" and 
+                                        .metadata.labels[$ROLE_LABEL] == $CITUS_ROLE))')"
+      NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.metadata.name): {isUpgrade: (.metadata.labels["operation.gke.io/type"] == "drain")}}) | add')"
       
       ## This will find all nodes that have been initialized by this script in the past
       ## and generate its own version of the config map configuration to 
       ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
-                      --arg ZONE "${ZONE}" \
-                      --arg CITUS_ROLE "${CITUS_ROLE}" \
                       --arg NODE_ID_LABEL "${NODE_ID_LABEL}" \
-                      --arg ROLE_LABEL "${ROLE_LABEL}" \
-                      '.items | map ( . | select(.metadata.labels["topology.kubernetes.io/zone"] == "\($ZONE)" and 
-                                          .metadata.labels["generated-node-id"] == "true" and 
-                                          .metadata.labels["\($ROLE_LABEL)"] == "\($CITUS_ROLE)")) |
-                                map(. | {
-                                           "nodeName": (.metadata.name), 
-                                           "nodeId": (.metadata.labels["\($NODE_ID_LABEL)"]), 
-                                           "index": (.metadata.labels["\($NODE_ID_LABEL)"] | match("\\d*$").string | tonumber)
-                                        }
-                                   ) | 
-                                sort_by(.index) |
-                                [
-                                  range(0; ( .| max_by(.index)|.index ) + 1) as $node_index_range  |
-                                    . as $nodes | $node_index_range |
-                                    . as $i |
-                                    if ([$nodes[]|contains( { index: $i })]|any )
-                                       then 
-                                       ($nodes|map(select( .index  == $i )))|map(. | {nodeName, nodeId})|.[0] 
-                                    else 
-                                       null
-                                    end  
-                                ]')
+                      '. | map({
+                                 "nodeName": (.metadata.name), 
+                                 "nodeId": (.metadata.labels[$NODE_ID_LABEL]), 
+                                 "index": (.metadata.labels[$NODE_ID_LABEL] | match("\\d*$").string | tonumber)
+                               }) | 
+                            sort_by(.index) |
+                              [
+                                range(0; ( .| max_by(.index)|.index ) + 1) as $node_index_range  |
+                                  . as $nodes | $node_index_range |
+                                  . as $i |
+                                  if ([$nodes[]|contains( { index: $i })]|any )
+                                     then 
+                                     ($nodes|map(select( .index  == $i )))|map(. | {nodeName, nodeId})|.[0] 
+                                  else 
+                                     null
+                                  end  
+                              ]')
       # Check if the config map matches the view from the nodes. If it finds entries
       # in the config map for nodes that don't exist or are currrently being drained, they are set to null to become 
       # available slots for future nodes that may replace it
@@ -128,7 +127,7 @@ data:
                             end | 
                             if (. != null and $node_names[.nodeName].isUpgrade) then null else . end
                         ]')
-      THIS_NODE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" |jq  --arg NODE_NAME "${NODE_NAME}" --arg ZONE "${ZONE}" '.[]?|select(.nodeName == "\($NODE_NAME)")')"
+      THIS_NODE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" |jq  --arg NODE_NAME "${NODE_NAME}" --arg ZONE "${ZONE}" '.[]?|select(.nodeName == $NODE_NAME)')"
       # IF this node config is empty create it
       if [[ ! $THIS_NODE_CONFIG ]]
       then
@@ -138,7 +137,7 @@ data:
         MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber] = ($THIS_NODE_CONFIG|fromjson)')"
       fi
         
-      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"]["\($CITUS_ROLE)"]["\($ZONE)"]=($ZONE_CONFIG|fromjson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE]=($ZONE_CONFIG|fromjson)')"
       MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq '.data["zfs-node-status.json"]=(.data["zfs-node-status.json"]|tojson)')"
     
       echo "patching $CONFIG_MAP_NAME with $MODIFIED_CONFIG_MAP"
@@ -171,16 +170,16 @@ data:
     fi
 
     if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then        
-        ATTACH_ATTEMPTS=0
-        COMMAND_STATUS=1
+        echo "Attaching ${DISK_NAME} to ${NODE_NAME}"
+        gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
+        ATTACH_ATTEMPTS=1
+        COMMAND_STATUS=$?
         until [[ ${COMMAND_STATUS} -eq 0 || ${ATTACH_ATTEMPTS} -ge 13 ]]; do
-          echo "Attaching ${DISK_NAME} to ${NODE_NAME} attempts ${ATTACH_ATTEMPTS}" 
+          echo "Unable to attach ${DISK_NAME} to ${NODE_NAME} attempts ${ATTACH_ATTEMPTS}. waiting ..." 
+          sleep 30
           gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
           COMMAND_STATUS=$?
           ATTACH_ATTEMPTS=$((ATTACH_ATTEMPTS+1))
-          if [[ ${COMMAND_STATUS} -ne 0 ]]; then
-            sleep 30
-          fi
         done
     
         if [[ $COMMAND_STATUS != 0 ]]; then
@@ -216,7 +215,7 @@ data:
       zfs list
     EOF
     
-    CURRENT_NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.["\($NODE_ID_LABEL)"]')"
+    CURRENT_NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
     if [[ "${CURRENT_NODE_ID}" != "${NODE_ID}" ]]
     then
       echo "Labeling node ${NODE_NAME} with ${NODE_ID_LABEL}=${NODE_ID}"
@@ -229,4 +228,4 @@ data:
       echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"  
     fi
     
-    {{- end -}}
+{{- end -}}
