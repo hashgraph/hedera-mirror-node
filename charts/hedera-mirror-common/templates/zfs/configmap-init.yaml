@@ -25,6 +25,9 @@ data:
     DISK_SIZE_WORKER="${DISK_SIZE_WORKER:-152GB}"
     K8_NAMESPACE="${K8_NAMESPACE:-common}"
     DISK_PREFIX="${DISK_PREFIX:-citus}"
+    
+    NODE_ID_LABEL="openebs.io/nodeid"
+    ROLE_LABEL="citus-role"
 
     echo "Installing dependencies"
     apt-get update
@@ -46,21 +49,21 @@ data:
     kubectl config use-context ctc
     
     NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
-    CITUS_ROLE="$(echo "${NODE_LABELS}" | jq -r '.["citus-role"]')"
-    NODE_ID="$(echo "${NODE_LABELS}" | jq -r '.["openebs.io/nodeid"]')"
+    CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.["\($ROLE_LABEL)"]')"
+    NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.["\($NODE_ID_LABEL)"]')"
 
     ATTEMPT_COUNT=1
     while [[ "${CITUS_ROLE}" == "null" ]]
     do
       if [[ ${ATTEMPT_COUNT} -ge 13 ]]
       then
-        echo "Timed out waiting for labels please set citus-role"
+        echo "Timed out waiting for labels please set ${ROLE_LABEL}"
         exit 1
       fi
       ATTEMPT_COUNT=$((ATTEMPT_COUNT+1))
       echo "Retrying label GET attempt: ${ATTEMPT_COUNT}"
       NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
-      CITUS_ROLE="$(echo ${NODE_LABELS} | jq -r '.metadata.labels["citus-role"]')"
+      CITUS_ROLE="$(echo ${NODE_LABELS} | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.metadata.labels["\($ROLE_LABEL)"]')"
       sleep 10
     done
     # Determine correct config for zone
@@ -78,13 +81,15 @@ data:
       ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
                       --arg ZONE "${ZONE}" \
                       --arg CITUS_ROLE "${CITUS_ROLE}" \
+                      --arg NODE_ID_LABEL "${NODE_ID_LABEL}" \
+                      --arg ROLE_LABEL "${ROLE_LABEL}" \
                       '.items | map ( . | select(.metadata.labels["topology.kubernetes.io/zone"] == "\($ZONE)" and 
                                           .metadata.labels["generated-node-id"] == "true" and 
-                                          .metadata.labels["citus-role"] == "\($CITUS_ROLE)")) |
+                                          .metadata.labels["\($ROLE_LABEL)"] == "\($CITUS_ROLE)")) |
                                 map(. | {
                                            "nodeName": (.metadata.name), 
-                                           "nodeId": (.metadata.labels["openebs.io/nodeid"]), 
-                                           "index": (.metadata.labels["openebs.io/nodeid"] | match("\\d*$").string | tonumber)
+                                           "nodeId": (.metadata.labels["\($NODE_ID_LABEL)"]), 
+                                           "index": (.metadata.labels["\($NODE_ID_LABEL)"] | match("\\d*$").string | tonumber)
                                         }
                                    ) | 
                                 sort_by(.index) |
@@ -211,11 +216,11 @@ data:
       zfs list
     EOF
     
-    CURRENT_NODE_ID="$(echo "${NODE_LABELS}" | jq -r '.["openebs.io/nodeid"]')"
+    CURRENT_NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.["\($NODE_ID_LABEL)"]')"
     if [[ "${CURRENT_NODE_ID}" != "${NODE_ID}" ]]
     then
-      echo "Labeling node ${NODE_NAME} with openebs.io/nodeid=${NODE_ID}"
-      kubectl label node "${NODE_NAME}" openebs.io/nodeid="${NODE_ID}" generated-node-id=true --overwrite
+      echo "Labeling node ${NODE_NAME} with ${NODE_ID_LABEL}=${NODE_ID}"
+      kubectl label node "${NODE_NAME}" "${NODE_ID_LABEL}=${NODE_ID}" generated-node-id=true --overwrite
     fi
     
     source "${ROOT_MOUNT_DIR}/etc/environment"
