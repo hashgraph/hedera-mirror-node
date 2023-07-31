@@ -41,6 +41,8 @@ select create_distributed_table('entity_stake', 'id', colocate_with => 'entity')
 
 select create_distributed_table('entity_stake_history', 'id', colocate_with => 'entity_stake');
 
+select create_distributed_table('entity_transaction', 'entity_id', colocate_with => 'entity');
+
 select create_distributed_table('ethereum_transaction', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('file_data', 'entity_id', colocate_with => 'entity');

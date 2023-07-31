@@ -1002,28 +1002,48 @@ class ContractController extends BaseController {
 
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
-    const rows = await ContractService.getDetailedContractResultsByIdAndFilters(conditions, params, order, limit);
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultDetailsViewModel(row, row.recordFile, row.ethereumTransaction)),
+      results: [],
       links: {
         next: null,
       },
     };
-
-    if (!_.isEmpty(response.results)) {
-      const lastRow = _.last(response.results);
-      const lastContractResultTimestamp = lastRow.timestamp;
-      response.links.next = utils.getPaginationLink(
-        req,
-        response.results.length !== limit,
-        {
-          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
-        },
-        order
-      );
+    res.locals[responseDataLabel] = response;
+    if (rows.length === 0) {
+      return;
     }
 
-    res.locals[responseDataLabel] = response;
+    const payers = [];
+    const timestamps = [];
+    rows.forEach((row) => {
+      payers.push(row.payerAccountId);
+      timestamps.push(row.consensusTimestamp);
+    });
+    const [ethereumTransactionMap, recordFileMap] = await Promise.all([
+      ContractService.getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps),
+      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps),
+    ]);
+
+    response.results = rows.map(
+      (row) =>
+        new ContractResultDetailsViewModel(
+          row,
+          recordFileMap.get(row.consensusTimestamp),
+          ethereumTransactionMap.get(row.consensusTimestamp)
+        )
+    );
+
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow.timestamp;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      {
+        [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
+      order
+    );
   };
 
   /**

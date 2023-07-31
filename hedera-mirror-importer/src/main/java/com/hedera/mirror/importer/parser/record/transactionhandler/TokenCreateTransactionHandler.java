@@ -77,6 +77,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
                 log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             } else {
                 entity.setAutoRenewAccountId(autoRenewAccountId.getId());
+                recordItem.addEntityId(autoRenewAccountId);
             }
         }
 
@@ -146,7 +147,8 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         var customFees = transactionBody.getCustomFeesList();
-        var autoAssociatedAccounts = tokenFeeScheduleUpdateTransactionHandler.updateCustomFees(transaction, customFees);
+        var autoAssociatedAccounts =
+                tokenFeeScheduleUpdateTransactionHandler.updateCustomFees(customFees, recordItem, transaction);
         autoAssociatedAccounts.add(treasury);
 
         // automatic_token_associations does not exist prior to services 0.18.0
@@ -172,6 +174,8 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             tokenAccount.setTimestampLower(consensusTimestamp);
             tokenAccount.setTokenId(tokenId.getId());
             entityListener.onTokenAccount(tokenAccount);
+
+            recordItem.addEntityId(account);
         });
 
         entityListener.onToken(token);

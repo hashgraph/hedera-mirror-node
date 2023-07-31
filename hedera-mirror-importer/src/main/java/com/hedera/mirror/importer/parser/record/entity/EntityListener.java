@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -44,6 +45,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
+import java.util.Collection;
 
 /**
  * Handlers for items parsed during processing of record stream.
@@ -73,6 +75,8 @@ public interface EntityListener {
     default void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {}
 
     default void onEntity(Entity entity) throws ImporterException {}
+
+    default void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {}
 
     default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {}
 

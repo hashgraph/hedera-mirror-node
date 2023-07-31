@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
@@ -40,19 +39,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
-    }
-
-    @ParameterizedTest
-    @EnumSource(UnsupportedErcContractModificationFunctions.class)
-    void unsupportedErcModificationPrecompileOperationsTest(UnsupportedErcContractModificationFunctions ercFunction) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage("Precompile not supported for non-static frames");
     }
 
     @ParameterizedTest
@@ -118,20 +104,15 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
         DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
         APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),
-        APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L});
-
-        private final String name;
-        private final Object[] functionParameters;
-    }
-
-    @RequiredArgsConstructor
-    public enum UnsupportedErcContractModificationFunctions {
-        TRANSFER("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
-        TRANSFER_FROM("transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
-        TRANSFER_WITH_ALIAS("transfer", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
+        APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
+        TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L}),
+        TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 2L}),
+        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_WITH_ALIAS("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_WITH_ALIAS(
-                "transferFrom", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L});
-
+                "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
+        TRANSFER_FROM_NFT_WITH_ALIAS(
+                "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
         private final String name;
         private final Object[] functionParameters;
     }

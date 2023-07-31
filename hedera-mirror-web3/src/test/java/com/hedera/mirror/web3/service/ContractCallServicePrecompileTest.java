@@ -284,18 +284,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum UnsupportedContractModificationFunctions {
-        CRYPTO_TRANSFER("cryptoTransferExternal", new Object[] {
-            new Object[] {EMPTY_ADDRESS, 0L, false},
-            new Object[] {EMPTY_ADDRESS, new Object[] {EMPTY_ADDRESS, 0L, false}},
-            new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, 0L, false}
-        }),
-        TRANSFER_FROM("transferFromExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_FROM_NFT("transferFromNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_TOKENS("transferTokensExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new long[0]}),
-        TRANSFER_NFT_TOKENS(
-                "transferNFTsExternal", new Object[] {EMPTY_ADDRESS, new Address[0], new Address[0], new long[0]}),
-        TRANSFER_TOKEN("transferTokenExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
-        TRANSFER_NFT_TOKEN("transferNFTExternal", new Object[] {EMPTY_ADDRESS, EMPTY_ADDRESS, EMPTY_ADDRESS, 0L}),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
@@ -354,7 +342,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
-                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER});
+                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
+        TRANSFER_TOKEN(
+                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, SENDER_ADDRESS, 1L}),
+        TRANSFER_TOKENS("transferTokensExternal", new Object[] {
+            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ADDRESS, SENDER_ADDRESS}, new long[] {1L, -1L}
+        }),
+        TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
+            NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ADDRESS}, new long[] {1}
+        }),
+        TRANSFER_NFT_TOKEN(
+                "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM(
+                "transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM_NFT(
+                "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L});
+
         private final String name;
         private final Object[] functionParameters;
     }

@@ -165,8 +165,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 .getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
-        Instant consensusTimestamp =
-                Utility.convertToInstant(recordItem.getTransactionRecord().getConsensusTimestamp());
+        var consensusTimestamp = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
         latencyMetrics
                 .getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
