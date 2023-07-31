@@ -456,7 +456,7 @@ zfs:
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
         imagePullPolicy: IfNotPresent
         name: label-wait
-        command: [ "/scripts/label-wait.sh" ]
+        command: ["/scripts/label-wait.sh"]
         env:
           - name: ROOT_MOUNT_DIR
             value: /node
