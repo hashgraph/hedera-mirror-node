@@ -128,7 +128,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
-        if (frame.isStatic() && isNestedFunctionSelectorForRead(input)) {
+        if (frame.isStatic() && !isNestedFunctionSelectorForRead(input)) {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
