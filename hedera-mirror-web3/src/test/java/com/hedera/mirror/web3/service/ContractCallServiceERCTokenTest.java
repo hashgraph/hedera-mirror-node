@@ -43,7 +43,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ErcContractReadOnlyEstimateGasFunctions.class)
-    void evmReadOnlyPrecompileEstimateGasFunctionsTest(final ErcContractReadOnlyEstimateGasFunctions contractFunc) {
+    void supportedErcReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyEstimateGasFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ERC_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
