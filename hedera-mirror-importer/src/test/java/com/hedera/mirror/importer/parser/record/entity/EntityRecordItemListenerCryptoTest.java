@@ -1188,6 +1188,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
+                // Approved transfer allowance debit emitted to listener must not have resulted in created allowance
+                () -> assertEquals(0, cryptoAllowanceRepository.count()),
                 () -> assertEquals(amounts.length, cryptoTransferRepository.count()),
                 () -> {
                     for (var cryptoTransfer : cryptoTransferRepository.findAll()) {

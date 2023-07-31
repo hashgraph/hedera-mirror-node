@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -72,6 +73,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -114,6 +116,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final long ASSOCIATE_TIMESTAMP = 5L;
     private static final long AUTO_RENEW_PERIOD = 30L;
     private static final long CREATE_TIMESTAMP = 1L;
+    private static final long ALLOWANCE_TIMESTAMP = CREATE_TIMESTAMP + 1L;
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
@@ -146,6 +149,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final JdbcTemplate jdbcTemplate;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionRepository transactionRepository;
@@ -2669,6 +2673,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenTransfersMustHaveCorrectIsApprovalValue() {
+        entityProperties.getPersist().setTrackAllowance(true);
         // given
         createAndAssociateToken(
                 TOKEN_ID,
@@ -2681,6 +2686,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 INITIAL_SUPPLY);
+
+        // approve allowance for fungible token
+        var allowanceAmount = INITIAL_SUPPLY / 4L;
+        var cryptoApproveAllowanceTransaction = buildTransaction(b -> b.getCryptoApproveAllowanceBuilder()
+                .addTokenAllowances(TokenAllowance.newBuilder()
+                        .setTokenId(TOKEN_ID)
+                        .setOwner(PAYER2)
+                        .setSpender(PAYER)
+                        .setAmount(allowanceAmount)));
+        insertAndParseTransaction(ALLOWANCE_TIMESTAMP, cryptoApproveAllowanceTransaction);
+
         TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
         createTokenEntity(tokenId2, FUNGIBLE_COMMON, "MIRROR", 10L, false, false, false);
 
@@ -2724,7 +2740,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .build())
                     .addTransfers(AccountAmount.newBuilder()
                             .setAccountID(PAYER2)
-                            .setAmount(-100)
+                            .setAmount(-100) // Decrement from allowance amount
+                            .setIsApproval(true)
+                            .build())
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(PAYER2)
+                            .setAmount(-900) // Decrement from allowance amount
                             .setIsApproval(true)
                             .build())
                     .addTransfers(AccountAmount.newBuilder()
@@ -2744,6 +2765,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
         assertTokenTransferInRepository(tokenId2, PAYER, TRANSFER_TIMESTAMP, 333);
         assertTokenTransferInRepository(tokenId2, accountId, TRANSFER_TIMESTAMP, -333);
+        assertTokenAllowanceInRepository(
+                TOKEN_ID, PAYER2, PAYER, allowanceAmount, allowanceAmount - 1000L, ALLOWANCE_TIMESTAMP);
     }
 
     @Test
@@ -3535,6 +3558,26 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(timestamp, ContractResult::getConsensusTimestamp)
                 .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
                 .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
+    }
+
+    private void assertTokenAllowanceInRepository(
+            TokenID tokenId,
+            AccountID owner,
+            AccountID spender,
+            long amountGranted,
+            long amount,
+            long allowanceTimestamp) {
+        var expected = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.amountGranted(amountGranted)
+                        .amount(amount)
+                        .tokenId(EntityId.of(tokenId).getId())
+                        .owner(EntityId.of(owner).getId())
+                        .spender(EntityId.of(spender).getId())
+                        .payerAccountId(EntityId.of(spender))
+                        .timestampRange(Range.atLeast(allowanceTimestamp)))
+                .get();
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(expected);
     }
 
     private void createTokenEntity(
