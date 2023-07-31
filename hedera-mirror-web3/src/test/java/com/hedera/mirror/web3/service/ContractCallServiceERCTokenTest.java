@@ -31,7 +31,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ErcContractReadOnlyFunctions.class)
-    void ercReadOnlyPrecompileOperationsTest(ErcContractReadOnlyFunctions ercFunction) {
+    void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -42,8 +42,24 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
+    @EnumSource(ErcContractReadOnlyEstimateGasFunctions.class)
+    void evmReadOnlyPrecompileEstimateGasFunctionsTest(final ErcContractReadOnlyEstimateGasFunctions contractFunc) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(contractFunc.name, ERC_ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
+    @ParameterizedTest
     @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
+    void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters =
@@ -113,6 +129,15 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_NFT_WITH_ALIAS(
                 "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+    @RequiredArgsConstructor
+    public enum ErcContractReadOnlyEstimateGasFunctions {
+        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
+        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS});
+
         private final String name;
         private final Object[] functionParameters;
     }

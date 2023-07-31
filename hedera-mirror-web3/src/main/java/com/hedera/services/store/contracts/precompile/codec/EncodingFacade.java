@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_BURN;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
@@ -134,6 +135,13 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeSymbol(final String symbol) {
+        return functionResultBuilder()
+                .forFunction(FunctionType.ERC_SYMBOL)
+                .withSymbol(symbol)
+                .build();
+    }
+
     public Bytes encodeCreateSuccess(final Address newTokenAddress) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_CREATE)
@@ -173,13 +181,15 @@ public class EncodingFacade {
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
+        private String symbol;
         private Address approved;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
-            this.tupleType = switch (functionType) {
+            tupleType = switch (functionType) {
                 case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
                 case HAPI_MINT -> mintReturnType;
                 case HAPI_BURN -> burnReturnType;
+                case ERC_NAME, ERC_SYMBOL -> STRING_TUPLE;
                 case ERC_TRANSFER, ERC_APPROVE -> BOOLEAN_TUPLE;
                 case HAPI_ALLOWANCE -> hapiAllowanceOfType;
                 case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> INT_BOOL_TUPLE;
@@ -187,6 +197,11 @@ public class EncodingFacade {
                 default -> NOT_SPECIFIED_TYPE;};
 
             this.functionType = functionType;
+            return this;
+        }
+
+        private FunctionResultBuilder withSymbol(final String symbol) {
+            this.symbol = symbol;
             return this;
         }
 
@@ -243,6 +258,7 @@ public class EncodingFacade {
                         case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_APPROVE -> Tuple.of(approve);
+                        case ERC_SYMBOL -> Tuple.of(symbol);
                         case HAPI_APPROVE -> Tuple.of(status, approve);
                         case HAPI_APPROVE_NFT -> Tuple.of(status);
                         case HAPI_ALLOWANCE -> Tuple.of(status, BigInteger.valueOf(allowance));
@@ -267,15 +283,15 @@ public class EncodingFacade {
 
         private static LogTopic generateLogTopic(final Object param) {
             byte[] array = new byte[] {};
-            if (param instanceof Address address) {
+            if (param instanceof final Address address) {
                 array = address.toArray();
-            } else if (param instanceof BigInteger numeric) {
+            } else if (param instanceof final BigInteger numeric) {
                 array = numeric.toByteArray();
-            } else if (param instanceof Long numeric) {
+            } else if (param instanceof final Long numeric) {
                 array = BigInteger.valueOf(numeric).toByteArray();
-            } else if (param instanceof Boolean bool) {
+            } else if (param instanceof final Boolean bool) {
                 array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
-            } else if (param instanceof Bytes bytes) {
+            } else if (param instanceof final Bytes bytes) {
                 array = bytes.toArray();
             }
 
@@ -334,9 +350,9 @@ public class EncodingFacade {
         }
 
         private Object convertDataItem(final Object param) {
-            if (param instanceof Address address) {
+            if (param instanceof final Address address) {
                 return convertBesuAddressToHeadlongAddress(address);
-            } else if (param instanceof Long numeric) {
+            } else if (param instanceof final Long numeric) {
                 return BigInteger.valueOf(numeric);
             } else {
                 return param;
