@@ -32,6 +32,8 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -63,6 +65,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import jakarta.annotation.Nullable;
@@ -137,10 +140,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     *
+     * <p>
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
-     * */
+     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
+     */
     public TransactionBody.Builder createFungibleApproval(
             @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
         return createNonfungibleApproval(approveWrapper, ownerId, null);
@@ -148,10 +151,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     *
+     * <p>
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
-     * */
+     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
+     */
     public TransactionBody.Builder createNonfungibleApproval(
             final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
@@ -180,10 +183,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     *
+     * <p>
      * Differences with the original:
-     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
-     * */
+     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
+     */
     public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
         final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
         builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()
@@ -281,6 +284,47 @@ public class SyntheticTxnFactory {
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateKeys(final TokenUpdateKeysWrapper updateWrapper) {
+        final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
+        return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
+    }
+
+    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(final TokenID tokenID) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(tokenID);
+        return builder;
+    }
+
+    private TransactionBody.Builder checkTokenKeysTypeAndBuild(
+            final List<TokenKeyWrapper> tokenKeys, final TokenUpdateTransactionBody.Builder builder) {
+        tokenKeys.forEach(tokenKeyWrapper -> {
+            final var key = tokenKeyWrapper.key().asGrpc();
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                builder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                builder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                builder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                builder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                builder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                builder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                builder.setPauseKey(key);
+            }
+        });
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 
     public TransactionBody.Builder createPause(final PauseWrapper pauseWrapper) {

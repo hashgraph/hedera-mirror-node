@@ -229,4 +229,9 @@ public class DecodingFacade {
         }
         return accountIdFromEvmAddress(resolvedAddress);
     }
+
+    public static String removeBrackets(final String type) {
+        final var typeWithRemovedOpenBracket = type.replace("(", "");
+        return typeWithRemovedOpenBracket.replace(")", "");
+    }
 }

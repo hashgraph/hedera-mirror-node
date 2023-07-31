@@ -69,6 +69,10 @@ public class JContractIDKey extends JKey {
         return realmNum;
     }
 
+    public long getContractNum() {
+        return contractNum;
+    }
+
     @Override
     public String toString() {
         return "<JContractID: " + shardNum + "." + realmNum + "." + contractNum + ">";
