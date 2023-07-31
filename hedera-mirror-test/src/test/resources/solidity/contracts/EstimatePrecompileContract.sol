@@ -421,4 +421,56 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             revert();
         }
     }
+
+    function updateTokenExpiryInfoExternal(address token, address treasury) external
+    returns (int responseCode)
+    {
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
+            0, treasury, 6666666
+        );
+        responseCode = HederaTokenService.updateTokenExpiryInfo(token, expiry);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function updateTokenInfoExternal(address token, address treasury) external
+    returns (int responseCode)
+    {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[2] = getSingleKey(KeyType.FREEZE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[3] = getSingleKey(KeyType.SUPPLY, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
+            0, treasury, 8000000
+        );
+
+        IHederaTokenService.HederaToken memory tokenInfo = IHederaTokenService.HederaToken(
+            name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
+        );
+
+        responseCode = HederaTokenService.updateTokenInfo(token, tokenInfo);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function updateTokenKeysExternal(address token) external
+    returns (int responseCode)
+    {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[2] = getSingleKey(KeyType.FREEZE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[3] = getSingleKey(KeyType.SUPPLY, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+        keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
+
+        responseCode = HederaTokenService.updateTokenKeys(token, keys);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
 }

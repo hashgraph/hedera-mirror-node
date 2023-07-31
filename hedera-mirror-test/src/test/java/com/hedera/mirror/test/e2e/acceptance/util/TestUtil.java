@@ -78,6 +78,10 @@ public class TestUtil {
         return Tuple.of(asHeadlongAddress(account), amount, isApproval);
     }
 
+    public static Tuple nftAmount(String sender, String receiver, Long serialNumber, boolean isApproval) {
+        return Tuple.of(asHeadlongAddress(sender), asHeadlongAddress(receiver), serialNumber, isApproval);
+    }
+
     public static Address[] asHeadlongAddressArray(final List<String> addressStrings) {
         return addressStrings.stream()
                 .map(addr -> asHeadlongAddress(addr))

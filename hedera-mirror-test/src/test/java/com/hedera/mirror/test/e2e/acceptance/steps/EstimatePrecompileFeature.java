@@ -64,6 +64,7 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asHeadlongAddressArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asHeadlongAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStringRightPad;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
@@ -150,7 +151,7 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         newAccountEvmAddress = PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
-        secondReceiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+        secondReceiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.ALICE);
     }
 
     @Given("I create erc test contract with {int} balance")
@@ -421,12 +422,14 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with transferFrom function without approval")
     public void transferFromEstimateGasWithoutApproval() {
-        validateGasEstimation(
-                ContractMethods.TRANSFER_FROM.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(5_000_000_000_0L)), ContractMethods.TRANSFER_FROM.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_FROM.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("5"));
+
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
     }
 
     @Then("I call estimateGas with ERC transferFrom function without approval")
@@ -440,20 +443,32 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("10"));
 
-        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_FROM_ERC.getActualGas());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(Strings.encode(encodedFunctionCall))
+                .to(ercTestContractSolidityAddress)
+                .estimate(true)
+                .build();
+
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("I call estimateGas with transferFrom function")
     public void transferFromEstimateGas() {
-        tokenClient.associate(receiverAccount, tokenIds.get(0));
-        accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 10_000_000_000_0L);
-        tokenClient.transferFungibleToken(tokenIds.get(0), admin, receiverAccount.getAccountId(), 5_000_000_000_0L);
-        validateGasEstimation(
-                ContractMethods.TRANSFER_FROM.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(5_000_000_000_0L)), ContractMethods.TRANSFER_FROM.getActualGas());
+        networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(0),receiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 10);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_FROM.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("5"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_FROM.getActualGas());
     }
 
     @Then("I call estimateGas with ERC transferFrom function")
@@ -467,20 +482,28 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("5"));
 
-        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_FROM_ERC.getActualGas());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(Strings.encode(encodedFunctionCall))
+                .to(ercTestContractSolidityAddress)
+                .estimate(true)
+                .build();
+        ContractCallResponse msgSenderResponse =
+                mirrorClient.contractsCall(contractCallRequestBody);
+        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+
+        assertTrue(isWithinDeviation(ContractMethods.TRANSFER_FROM_ERC.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     @Then("I call estimateGas with transferFrom function with more than the approved allowance")
     public void transferFromExceedAllowanceEstimateGas() {
-        tokenClient.associate(receiverAccount, tokenIds.get(0));
-        accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 10_000_000_000L);
-        tokenClient.transferFungibleToken(tokenIds.get(0), admin, receiverAccount.getAccountId(), 11_000_000_000_0L);
-        validateGasEstimation(
-                ContractMethods.TRANSFER_FROM.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(55_000_000_000_0L)), ContractMethods.TRANSFER_FROM.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_FROM.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("500"));
+
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
     }
 
     @Then("I call estimateGas with ERC transferFrom function with more than the approved allowance")
@@ -492,77 +515,96 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
-                        new BigInteger("500000000000"));
+                        new BigInteger("500"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall);
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(Strings.encode(encodedFunctionCall))
+                .to(ercTestContractSolidityAddress)
+                .estimate(true)
+                .build();
+
+        assertThatThrownBy(
+                () -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("I call estimateGas with transferFromNFT function")
     public void transferFromNFTEstimateGas() {
         NftId id = new NftId(tokenIds.get(1), firstNftSerialNumber);
-        //already associated line 242
-        //tokenClient.associate(receiverAccount, tokenIds.get(1));
-//        List<Type> random = Arrays.asList(new String(tokenIds.get(1).toSolidityAddress()),
-//                admin.getAccountId().toSolidityAddress(),
-//                receiverAccount.getAccountId().toSolidityAddress(),
-//                Long.toString(firstNftSerialNumber));
 
+        networkTransactionResponse = accountClient.approveNft(id, receiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(1), receiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        //tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
 
-        accountClient.approveNft(id, receiverAccount.getAccountId());
-        networkTransactionResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
-        validateGasEstimation(
-                ContractMethods.TRANSFER_FROM_NFT.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(firstNftSerialNumber)), ContractMethods.TRANSFER_FROM_NFT.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_FROM_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("1"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_FROM_NFT.getActualGas());
     }
 
     @Then("I call estimateGas with transferFromNFT with invalid serial number")
     public void transferFromNFTInvalidSerialEstimateGas() {
-        NftId id = new NftId(tokenIds.get(1), firstNftSerialNumber);
-        tokenClient.associate(receiverAccount, tokenIds.get(1));
-        accountClient.approveNft(id, receiverAccount.getAccountId());
-        networkTransactionResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
-        validateGasEstimation(
-                ContractMethods.TRANSFER_FROM_NFT.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString("1111"), ContractMethods.TRANSFER_FROM_NFT.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_FROM_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("50"));
+        assertContractCallReturnsBadRequest(encodedFunctionCall);
     }
 
     @Then("I call estimateGas with transferToken function")
     public void transferTokenEstimateGas() {
-        validateGasEstimation(
-                ContractMethods.TRANSFER_TOKEN.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString("5"), ContractMethods.TRANSFER_TOKEN.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_TOKEN.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        5L);
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_TOKEN.getActualGas());
     }
 
     @Then("I call estimateGas with transferNFT function")
     public void transferNFTEstimateGas() {
-        validateGasEstimation(
-                ContractMethods.TRANSFER_NFT.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress())
-                        + to32BytesString(receiverAccount.getAccountId().toSolidityAddress())
-                        + to32BytesString(String.valueOf(firstNftSerialNumber)), ContractMethods.TRANSFER_NFT.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        1L);
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_NFT.getActualGas());
     }
 
     @Then("I call estimateGas with ERC transfer function")
     public void ercTransferEstimateGas() {
+        tokenClient.associate(receiverAccount, tokenIds.get(6));
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(6), receiverAccount.getAccountId(), 50L);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         Function function = Function.fromJson(getAbiFunctionAsJsonString(compiledErcTestContractSolidityArtifacts,
                 ContractMethods.TRANSFER_ERC.getFunctionName()));
         ByteBuffer encodedFunctionCall = function
                 .encodeCallWithArgs(
-                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(tokenIds.get(6).toSolidityAddress()),
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("5"));
 
-        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_FROM_ERC.getActualGas());
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(Strings.encode(encodedFunctionCall))
+                .to(ercTestContractSolidityAddress)
+                .estimate(true)
+                .build();
+        ContractCallResponse msgSenderResponse =
+                mirrorClient.contractsCall(contractCallRequestBody);
+        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+
+        assertTrue(isWithinDeviation(ContractMethods.TRANSFER_ERC.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     @Then("I create 2 more fungible tokens")
@@ -640,74 +682,55 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.DISSOCIATE_TOKENS.getActualGas());
     }
 
-    @Then("I call estimateGas with transferTokens function for fungible tokens")
+    @Then("I call estimateGas with transferTokens function")
     public void transferTokensEstimateGas() {
-        //represents the number -10 (Two's compliment)
-        String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6";
-        // The string being constructed represents the function's input in a format that the Ethereum Virtual Machine (EVM) understands.
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.TRANSFER_TOKENS.getFunctionName())
-                .append(to32BytesString(tokenIds.get(0).toSolidityAddress()))
-                .append(to32BytesString("60"))  // Offset for the 'accountIds' array data in the requestData string.
-                .append(to32BytesString("e0"))  // Offset for the 'amounts' array data in the requestData string.
-                .append(to32BytesString("3"))  // Length of 'accountIds' array: 3.
-                .append(to32BytesString(admin.getAccountId().toSolidityAddress()))  // Admin's address in the 'accountIds' array.
-                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress()))  // Receiver's address in the 'accountIds' array.
-                .append(to32BytesString(secondReceiverAccount.getAccountId().toSolidityAddress()))  // Second receiver's address in the 'accountIds' array.
-                .append(to32BytesString("3"))  // Length of 'amounts' array: 3.
-                .append(spendingValue)  // Amount transferred from the admin (-10 tokens).
-                .append(to32BytesString("5"))  // Amount received by the receiver (5 tokens).
-                .append(to32BytesString("5"));  // Amount received by the second receiver (5 tokens).
+        tokenClient.associate(secondReceiverAccount,tokenIds.get(0));
+        networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(0),secondReceiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0), secondReceiverAccount.getAccountId(), 10);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_TOKENS.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddressArray(Arrays.asList(admin.getAccountId().toSolidityAddress(),
+                                receiverAccount.getAccountId().toSolidityAddress(),
+                                secondReceiverAccount.getAccountId().toSolidityAddress())),
+                                new long[]{-6L, 3L, 3L});
 
-        validateGasEstimation(requestData.toString(), ContractMethods.TRANSFER_TOKENS.getActualGas());
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_TOKENS.getActualGas());
     }
 
-    @Then("I call estimateGas with transferTokens function for nfts")
+    @Then("I call estimateGas with transferNFTs function")
     public void transferNFTsEstimateGas() {
-        NetworkTransactionResponse tx = tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
-        assertNotNull(tx.getTransactionId());
-
-        tokenClient.associate(receiverAccount, tokenIds.get(5));
+        tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
+        //tokenClient.associate(receiverAccount, tokenIds.get(5));
         tokenClient.associate(secondReceiverAccount, tokenIds.get(5));
+        tokenClient.grantKyc(tokenIds.get(5), admin.getAccountId());
+        tokenClient.grantKyc(tokenIds.get(5), receiverAccount.getAccountId());
+        tokenClient.grantKyc(tokenIds.get(5), secondReceiverAccount.getAccountId());
+        accountClient.approveNftAllSerials(tokenIds.get(5), receiverAccount.getAccountId());
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(5), secondReceiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.TRANSFER_NFTS.getFunctionName())
-                .append(to32BytesString(tokenIds.get(5).toSolidityAddress()))
-                .append(to32BytesString("80"))  // Offset for the 'sender' array data.
-                .append(to32BytesString("c0"))  // Offset for the 'receiver' array data.
-                .append(to32BytesString("120"))  // Offset for the 'serialNumber' array data.
-                .append(to32BytesString("1"))  // Length of 'sender' array: 1.
-                .append(to32BytesString(admin.getAccountId().toSolidityAddress()))
-                .append(to32BytesString("2"))  // Length of 'receiver' array: 2.
-                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress()))  // First receiver's address in the 'receiver' array.
-                .append(to32BytesString(secondReceiverAccount.getAccountId().toSolidityAddress()))  // Second receiver's address in the 'receiver' array.
-                .append(to32BytesString("2"))  // Length of 'serialNumber' array: 2.
-                .append(to32BytesString("1"))  // First serial number in the 'serialNumber' array: 1.
-                .append(to32BytesString("2"));  // Second serial number in the 'serialNumber' array: 2.
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.TRANSFER_NFTS.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(5).toSolidityAddress()),
+                        asHeadlongAddressArray(Arrays.asList(admin.getAccountId().toSolidityAddress())),
+                        asHeadlongAddressArray(Arrays.asList(receiverAccount.getAccountId().toSolidityAddress(),
+                                secondReceiverAccount.getAccountId().toSolidityAddress())),
+                        new long[]{1, 2});
 
-        validateGasEstimation(requestData.toString(), ContractMethods.TRANSFER_NFTS.getActualGas());
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.TRANSFER_NFTS.getActualGas());
     }
 
     @Then("I call estimateGas with cryptoTransfer function for hbars")
     public void cryptoTransferHbarEstimateGas() {
-        //amount equals to -10 (Two's compliment)
-        String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6";
-
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.CRYPTO_TRANSFER.getFunctionName())
-                .append(to32BytesString("40")) // Offset for the 'transferList' parameter
-                .append(to32BytesString("140")) // Offset for the 'tokenTransferList' parameter
-                .append(to32BytesString("20")) // Length of the 'transferList' array
-                .append(to32BytesString("2")) // Number of elements in the 'transferList' array
-                .append(to32BytesString(admin.getAccountId().toSolidityAddress())) // AccountID of the first element in 'transferList'
-                .append(spendingValue)
-                .append(to32BytesString("0"))
-                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress())) // AccountID of the second element in 'transferList'
-                .append(to32BytesString("a")) // Amount of the second element in 'transferList' (10 in decimal)
-                .append(to32BytesString("0"))
-                .append(to32BytesString("0")); // Length of 'tokenTransferList' array
-
-        validateGasEstimation(requestData.toString(), ContractMethods.CRYPTO_TRANSFER.getActualGas());
+        var senderTransfer = accountAmount(admin.getAccountId().toSolidityAddress(), -10L, false);
+        var receiverTransfer = accountAmount(receiverAccount.getAccountId().toSolidityAddress(), 10L, false);
+        var args = Tuple.of((Object) new Tuple []{senderTransfer, receiverTransfer});
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CRYPTO_TRANSFER_HBARS.getFunctionName())
+                .encodeCallWithArgs(args, EMPTY_TUPLE_ARRAY);
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CRYPTO_TRANSFER_HBARS.getActualGas());
     }
 
     private TokenTransferListBuilder tokenTransferList() {
@@ -716,65 +739,61 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with cryptoTransfer function for nft")
     public void cryptoTransferNFTEstimateGas() {
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.CRYPTO_TRANSFER.getFunctionName())
-                .append(to32BytesString("40")) // Offset to start of 'cryptoTransfers' struct data
-                .append(to32BytesString("80")) // Offset to start of 'tokenTransferList' array data
-                .append(to32BytesString("20")) // Length of 'cryptoTransfers.transfers' array
-                .append(to32BytesString("0")) // Length of 'cryptoTransfers.nftTransfers' array
-                .append(to32BytesString("1")) // Length of 'tokenTransferList' array: 1
-                .append(to32BytesString("20")) // Offset to start of 'tokenTransferList[0]' struct data
-                .append(to32BytesString(tokenIds.get(5).toSolidityAddress())) // 'tokenTransferList[0].token' address value
-                .append(to32BytesString("60")) // Offset to start of 'tokenTransferList[0].transfers' array data
-                .append(to32BytesString("80")) // Offset to start of 'tokenTransferList[0].nftTransfers' array data
-                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers' array (empty in this case)
-                .append(to32BytesString("1")) // Length of 'tokenTransferList[0].nftTransfers' array: 1
-                .append(to32BytesString(admin.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].nftTransfers[0].senderAccountID' address value
-                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].nftTransfers[0].receiverAccountID' address value
-                .append(to32BytesString("2")) // 'tokenTransferList[0].nftTransfers[0].serialNumber' value
-                .append(to32BytesString("0"));
-
-        validateGasEstimation(requestData.toString(), ContractMethods.CRYPTO_TRANSFER.getActualGas());
+        var tokenTransferList = (Object) new Tuple[]{tokenTransferList()
+                .forToken(tokenIds.get(1).toSolidityAddress())
+                .withNftTransfers(
+                        nftAmount(admin.getAccountId().toSolidityAddress(),
+                                receiverAccount.getAccountId().toSolidityAddress(),
+                                1L,
+                                false))
+                .build()};
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CRYPTO_TRANSFER_NFT.getFunctionName())
+                .encodeCallWithArgs(Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CRYPTO_TRANSFER_NFT.getActualGas());
     }
 
     @Then("I call estimateGas with cryptoTransfer function for fungible tokens")
     public void cryptoTransferFungibleEstimateGas() {
-        var json = getAbiFunctionAsJsonString(compiledEstimatePrecompileSolidityArtifacts, "cryptoTransferExternal");
-        Function f2 = Function.fromJson(json);
-        var args2 = (Object) new Tuple[]{tokenTransferList()
+        tokenClient.grantKyc(tokenIds.get(0),receiverAccount.getAccountId());
+        networkTransactionResponse = tokenClient.transferFungibleToken(tokenIds.get(0),admin,receiverAccount.getAccountId(),5L);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+
+        var tokenTransferList = (Object) new Tuple[]{tokenTransferList()
                 .forToken(tokenIds.get(0).toSolidityAddress())
                 .withAccountAmounts(
-                        accountAmount(admin.getAccountId().toSolidityAddress(), -5L, false),
-                        accountAmount(receiverAccount.getAccountId().toSolidityAddress(), 5L, false))
+                        accountAmount(secondReceiverAccount.getAccountId().toSolidityAddress(), 5L, false),
+                        accountAmount(admin.getAccountId().toSolidityAddress(), -5L, false))
                 .build()};
-        ByteBuffer two = f2.encodeCallWithArgs(Tuple.of((Object) EMPTY_TUPLE_ARRAY), args2);
-        var headLongBody2 = Strings.encode(two);
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CRYPTO_TRANSFER.getFunctionName())
+                .encodeCallWithArgs(Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
 
 
-        //amount equals to -5 (Two's compliment)
-        String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb";
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CRYPTO_TRANSFER.getActualGas());
 
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.CRYPTO_TRANSFER.getFunctionName())
-                .append(to32BytesString("40")) // Offset to start of 'cryptoTransfers' struct data
-                .append(to32BytesString("80")) // Offset to start of 'tokenTransferList' array data
-                .append(to32BytesString("20")) // Length of 'cryptoTransfers.transfers' array
-                .append(to32BytesString("0")) // Length of 'cryptoTransfers.nftTransfers' array
-                .append(to32BytesString("1")) // Length of 'tokenTransferList' array: 1
-                .append(to32BytesString("20")) // Offset to start of 'tokenTransferList[0]' struct data
-                .append(to32BytesString(tokenIds.get(0).toSolidityAddress())) // 'tokenTransferList[0].token' address value
-                .append(to32BytesString("60")) // Offset to start of 'tokenTransferList[0].transfers' array data
-                .append(to32BytesString("140")) // Offset to start of 'tokenTransferList[0].nftTransfers' array data (empty in this case)
-                .append(to32BytesString("2")) // Length of 'tokenTransferList[0].transfers' array: 2
-                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[0].accountID' address value
-                .append(to32BytesString("5")) // 'tokenTransferList[0].transfers[0].amount' value
-                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[0].serialNumbers' array
-                .append(to32BytesString(admin.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[1].accountID' address value
-                .append(spendingValue) // 'tokenTransferList[0].transfers[1].amount' value (-5)
-                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[1].serialNumbers' array
-                .append(to32BytesString("0")); // Length of 'tokenTransferList[0].nftTransfers' array (empty in this case)
-
-        validateGasEstimation(requestData.toString(), ContractMethods.CRYPTO_TRANSFER.getActualGas());
+//        //amount equals to -5 (Two's compliment)
+//        String spendingValue = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffb";
+//
+//        StringBuilder requestData = new StringBuilder();
+//        requestData.append(ContractMethods.CRYPTO_TRANSFER.getFunctionName())
+//                .append(to32BytesString("40")) // Offset to start of 'cryptoTransfers' struct data
+//                .append(to32BytesString("80")) // Offset to start of 'tokenTransferList' array data
+//                .append(to32BytesString("20")) // Length of 'cryptoTransfers.transfers' array
+//                .append(to32BytesString("0")) // Length of 'cryptoTransfers.nftTransfers' array
+//                .append(to32BytesString("1")) // Length of 'tokenTransferList' array: 1
+//                .append(to32BytesString("20")) // Offset to start of 'tokenTransferList[0]' struct data
+//                .append(to32BytesString(tokenIds.get(0).toSolidityAddress())) // 'tokenTransferList[0].token' address value
+//                .append(to32BytesString("60")) // Offset to start of 'tokenTransferList[0].transfers' array data
+//                .append(to32BytesString("140")) // Offset to start of 'tokenTransferList[0].nftTransfers' array data (empty in this case)
+//                .append(to32BytesString("2")) // Length of 'tokenTransferList[0].transfers' array: 2
+//                .append(to32BytesString(receiverAccount.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[0].accountID' address value
+//                .append(to32BytesString("5")) // 'tokenTransferList[0].transfers[0].amount' value
+//                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[0].serialNumbers' array
+//                .append(to32BytesString(admin.getAccountId().toSolidityAddress())) // 'tokenTransferList[0].transfers[1].accountID' address value
+//                .append(spendingValue) // 'tokenTransferList[0].transfers[1].amount' value (-5)
+//                .append(to32BytesString("0")) // Length of 'tokenTransferList[0].transfers[1].serialNumbers' array
+//                .append(to32BytesString("0")); // Length of 'tokenTransferList[0].nftTransfers' array (empty in this case)
+//
+//        validateGasEstimation(requestData.toString(), ContractMethods.CRYPTO_TRANSFER.getActualGas());
     }
 
     @Then("I call estimateGas with mintToken function for fungible token")
@@ -807,13 +826,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         1L,
                         asLongArray(new ArrayList<>()));
 
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.BURN_TOKEN.getFunctionName())
-                .append(to32BytesString(tokenIds.get(0).toSolidityAddress()))
-                .append(to32BytesString("1")) // The 'amount' parameter: 1
-                .append(to32BytesString("60")) // Offset for the start of 'serialNumbers' array data
-                .append(to32BytesString("0")); // Length of 'serialNumbers' array: 0
-
         validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.BURN_TOKEN.getActualGas());
     }
 
@@ -825,34 +837,35 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                         0L,
                         asLongArray(List.of(1L)));
 
-        StringBuilder requestData = new StringBuilder();
-        requestData.append(ContractMethods.BURN_TOKEN.getFunctionName())
-                .append(to32BytesString(tokenIds.get(1).toSolidityAddress()))
-                .append(to32BytesString("0")) // The 'amount' parameter: 0 (in hexadecimal)
-                .append(to32BytesString("60")) // Offset for the start of 'serialNumbers' array data
-                .append(to32BytesString("1")) // Length of 'serialNumbers' array: 1 (in hexadecimal)
-                .append(to32BytesString("1")); // First (and only) element in 'serialNumbers' array: 1 (in hexadecimal)
-
         validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.BURN_TOKEN.getActualGas());
     }
 
     @Then("I call estimateGas with CreateFungibleToken function")
     public void createFungibleTokenEstimateGas() {
-        validateGasEstimation(ContractMethods.CREATE_FUNGIBLE_TOKEN.getFunctionName()
-                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CREATE_FUNGIBLE_TOKEN.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas());
     }
 
     @Then("I call estimateGas with CreateNFT function")
     public void createNFTEstimateGas() {
-        validateGasEstimation(ContractMethods.CREATE_NFT.getFunctionName()
-                + to32BytesString(admin.getAccountId().toSolidityAddress()), ContractMethods.CREATE_NFT.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CREATE_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CREATE_NFT.getActualGas());
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
     public void createFungibleTokenWithCustomFeesEstimateGas() {
-        validateGasEstimation(ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getFunctionName()
-                + to32BytesString(admin.getAccountId().toSolidityAddress())
-                + to32BytesString(tokenIds.get(0).toSolidityAddress()), ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas());
     }
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
@@ -860,6 +873,14 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         validateGasEstimation(ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getFunctionName()
                 + to32BytesString(admin.getAccountId().toSolidityAddress())
                 + to32BytesString(tokenIds.get(0).toSolidityAddress()), ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas());
+
+
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas());
     }
 
     @Then("I call estimateGas with WipeTokenAccount function")
@@ -1130,22 +1151,51 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.UNPAUSE_TOKEN.getActualGas());
     }
 
-    @Then("I call estimateGas for pause, unpause fungible token nested call")
+    @Then("I call estimateGas for nested pause and unpause function")
     public void pauseUnpauseFungibleTokenNestedCallEstimateGas() {
-        tokenClient.unpause(tokenIds.get(0));
-        validateGasEstimation(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getFunctionName()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress()),
-                ContractMethods.UNPAUSE_TOKEN.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getActualGas());
     }
 
-    @Then("I call estimateGas for pause, unpause NFT nested call")
+    @Then("I call estimateGas for nested pause, unpause NFT function")
     public void pauseUnpauseNFTNestedCallEstimateGas() {
-        tokenClient.unpause(tokenIds.get(1));
-        validateGasEstimation(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getFunctionName()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(admin.getAccountId().toSolidityAddress()),
-                ContractMethods.UNPAUSE_TOKEN.getActualGas());
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getActualGas());
+    }
+
+    @Then("I call estimateGas with updateTokenExpiryInfo function")
+    public void updateTokenExpiryInfoEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.UPDATE_TOKEN_EXPIRY.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.UPDATE_TOKEN_EXPIRY.getActualGas());
+    }
+
+    @Then("I call estimateGas with updateTokenInfo function")
+    public void updateTokenInfoEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.UPDATE_TOKEN_INFO.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.UPDATE_TOKEN_INFO.getActualGas());
+    }
+
+    @Then("I call estimateGas with updateTokenKeys function")
+    public void updateTokenKeysEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(ContractMethods.UPDATE_TOKEN_KEYS.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall), ContractMethods.UPDATE_TOKEN_INFO.getActualGas());
     }
 
     public void assertContractCallReturnsBadRequest(ByteBuffer encodedFunctionCall) {
@@ -1308,18 +1358,19 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         ASSOCIATE_TOKEN("associateTokenExternal", 729374),
         ASSOCIATE_TOKENS("associateTokensExternal", 730641),
         BURN_TOKEN("burnTokenExternal", 40247),
-        CREATE_FUNGIBLE_TOKEN("25a92819", 23422),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("8ba74da0", 23422),
-        CREATE_NFT("d85f74c1", 23422),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenPublic", 11590398),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesPublic", 23422),
+        CREATE_NFT("createNonFungibleTokenPublic", 11574020),
         CREATE_NFT_WITH_CUSTOM_FEES("0488c939", 23422),
-        CRYPTO_TRANSFER("a6218810", 23422),
+        CRYPTO_TRANSFER("cryptoTransferExternal", 23422),
+        CRYPTO_TRANSFER_HBARS("cryptoTransferExternal", 29698),
+        CRYPTO_TRANSFER_NFT("cryptoTransferExternal", 57934),
         DELETE_TOKEN("deleteTokenExternal", 39095),
         DELETE_TOKEN_TWICE("deleteTokenTwiceExternal", 23422),
         DISSOCIATE_AND_ASSOCIATE("dissociateAndAssociateTokenExternal", 1434814),
         DISSOCIATE_TOKEN("dissociateTokenExternal", 729428),
         DISSOCIATE_TOKENS("dissociateTokensExternal", 730641),
         FREEZE_TOKEN("freezeTokenTwiceExternal", 54526),
-        FREEZE_TOKEN_TWICE("17f96caa", 0),
         GRANT_KYC("grantTokenKycExternal", 39311),
         MINT_TOKEN("mintTokenExternal", 40700),
         MINT_NFT("mintTokenExternal", 732250),
@@ -1327,22 +1378,24 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         NESTED_FREEZE_UNFREEZE("nestedFreezeUnfreezeTokenExternal", 54548),
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
-        REVOKE_KYC_TWICE("282418a3", 0),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         TRANSFER_ERC("transfer", 23422),
-        TRANSFER_FROM("75a85472", 23422),
-        TRANSFER_FROM_ERC("transferFrom", 23422),
-        TRANSFER_FROM_NFT("9bc4d354", 23422),
-        TRANSFER_NFT("bafa6a91", 23422),
-        TRANSFER_NFTS("1ba978fc", 23422),
-        TRANSFER_TOKEN("4fd6ce0a", 23422),
-        TRANSFER_TOKENS("aa835c63", 23422),
+        TRANSFER_FROM("transferFromExternal", 40822),
+        TRANSFER_FROM_ERC("transferFrom", 39511),
+        TRANSFER_FROM_NFT("transferFromNFTExternal", 54938),
+        TRANSFER_NFT("transferNFTExternal", 53751),
+        TRANSFER_NFTS("transferNFTsExternal", 57015),
+        TRANSFER_TOKEN("transferTokenExternal", 39666),
+        TRANSFER_TOKENS("transferTokensExternal", 42480),
         UNFREEZE_TOKEN("unfreezeTokenExternal", 39323),
         WIPE_TOKEN_ACCOUNT("wipeTokenAccountExternal", 39496),
         WIPE_NFT_ACCOUNT("wipeTokenAccountNFTExternal", 40394),
         PAUSE_TOKEN("pauseTokenExternal", 39112),
         UNPAUSE_TOKEN("unpauseTokenExternal", 39112),
-        PAUSE_UNPAUSE_NESTED_TOKEN("013e1a64", 23422);
+        UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", 23422),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", 23422),
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 23422),
+        PAUSE_UNPAUSE_NESTED_TOKEN("nestedPauseUnpauseTokenExternal", 54237),;
 
         private final String functionName;
         private final int actualGas;
