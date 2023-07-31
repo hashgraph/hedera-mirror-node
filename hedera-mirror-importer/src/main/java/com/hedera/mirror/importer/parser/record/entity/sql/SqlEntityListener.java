@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
@@ -113,6 +114,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CustomFee> customFees;
     private final Collection<TokenTransfer> deletedTokenDissociateTransfers;
     private final Collection<Entity> entities;
+    private final Collection<EntityTransaction> entityTransactions;
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
@@ -179,6 +181,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         customFees = new ArrayList<>();
         deletedTokenDissociateTransfers = new ArrayList<>();
         entities = new ArrayList<>();
+        entityTransactions = new ArrayList<>();
         ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
@@ -317,6 +320,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             entities.add(entity);
         }
         entityIdService.notify(entity);
+    }
+
+    @Override
+    public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
+        this.entityTransactions.addAll(entityTransactions);
     }
 
     @Override
@@ -478,6 +486,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             customFees.clear();
             entities.clear();
             entityState.clear();
+            entityTransactions.clear();
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
@@ -523,6 +532,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractStateChanges);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
+            batchPersister.persist(entityTransactions);
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);

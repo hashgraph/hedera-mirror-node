@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -56,6 +56,7 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         var transaction = domainBuilder.transaction().get();
         var liveHash = ArgumentCaptor.forClass(LiveHash.class);
         var transactionBody = recordItem.getTransactionBody().getCryptoAddLiveHash();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -65,6 +66,7 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         assertThat(liveHash.getValue())
                 .returns(transaction.getConsensusTimestamp(), LiveHash::getConsensusTimestamp)
                 .returns(transactionBody.getLiveHash().getHash().toByteArray(), LiveHash::getLivehash);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -73,11 +75,13 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
         entityProperties.getPersist().setClaims(false);
         var recordItem = recordItemBuilder.cryptoAddLiveHash().build();
         var transaction = domainBuilder.transaction().get();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

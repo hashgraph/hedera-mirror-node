@@ -202,3 +202,41 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     expect(block).toBeNull();
   });
 });
+
+describe('RecordFileService.getRecordFileBlockDetailsFromTimestampArray tests', () => {
+  test('No match', async () => {
+    const expected = new Map([
+      [1, null],
+      [2, null],
+    ]);
+    await expect(RecordFileService.getRecordFileBlockDetailsFromTimestampArray([1, 2])).resolves.toEqual(expected);
+  });
+
+  test('All match', async () => {
+    const expectedRecordFile1 = {
+      consensusEnd: 1676540001234490000n,
+      gasUsed: 0,
+      hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
+      index: 16,
+    };
+    const expectedRecordFile2 = {
+      consensusEnd: 1676540001234600000n,
+      gasUsed: 0,
+      hash: 'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278',
+      index: 17,
+    };
+    const expected = new Map([
+      [1676540001234390000n, expectedRecordFile1],
+      [1676540001234490000n, expectedRecordFile1],
+      [1676540001234500001n, expectedRecordFile2],
+    ]);
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+    await expect(
+      RecordFileService.getRecordFileBlockDetailsFromTimestampArray([
+        1676540001234390000n,
+        1676540001234490000n,
+        1676540001234500001n,
+      ])
+    ).resolves.toEqual(expected);
+  });
+});
