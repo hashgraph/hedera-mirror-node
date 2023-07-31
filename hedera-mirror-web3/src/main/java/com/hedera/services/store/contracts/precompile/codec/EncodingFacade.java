@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_BURN;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
@@ -189,6 +190,7 @@ public class EncodingFacade {
                 case HAPI_MINT -> mintReturnType;
                 case HAPI_BURN -> burnReturnType;
                 case ERC_TRANSFER, ERC_APPROVE -> BOOLEAN_TUPLE;
+                case ERC_NAME -> STRING_TUPLE;
                 case HAPI_ALLOWANCE -> hapiAllowanceOfType;
                 case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> INT_BOOL_TUPLE;
                 case HAPI_APPROVE_NFT -> intTuple;
