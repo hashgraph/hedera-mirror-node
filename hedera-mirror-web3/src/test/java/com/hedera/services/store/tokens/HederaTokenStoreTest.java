@@ -142,6 +142,10 @@ class HederaTokenStoreTest {
     @Mock
     private UnaryOperator<Token> change;
 
+    private static TokenRelationshipKey asTokenRelationshipKey(AccountID accountID, TokenID tokenID) {
+        return new TokenRelationshipKey(asTypedEvmAddress(tokenID), asTypedEvmAddress(accountID));
+    }
+
     @BeforeEach
     void setup() {
         mirrorNodeEvmProperties = mock(MirrorNodeEvmProperties.class);

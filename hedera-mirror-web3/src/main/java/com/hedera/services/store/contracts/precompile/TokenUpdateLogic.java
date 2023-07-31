@@ -90,6 +90,7 @@ public class TokenUpdateLogic {
      * @param now                        the current consensus time
      * @param mergeUnsetMemoFromExisting whether to preserve the token's memo if the transaction memo is unset
      */
+    @SuppressWarnings("java:S3776")
     public void updateToken(
             TokenUpdateTransactionBody op,
             long now,

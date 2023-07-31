@@ -45,6 +45,12 @@ import org.springframework.validation.annotation.Validated;
 public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
+    private boolean allowTreasuryToOwnNfts = true;
+
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
+
+    @Getter
     @Positive
     private long estimateGasIterationThreshold = 4200L;
 
@@ -71,6 +77,13 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private long htsDefaultGasCost = 10000;
 
     @Getter
+    private boolean limitTokenAssociations = false;
+
+    @Getter
+    @Min(1)
+    private long maxAutoRenewDuration = 10000L;
+
+    @Getter
     @Min(1)
     private int maxBatchSizeBurn = 10;
 
@@ -94,11 +107,27 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
+    @Min(1)
+    private int maxMemoUtf8Bytes = 100;
+
+    @Getter
     private int maxNftMetadataBytes = 100;
 
     @Getter
     @Min(1)
+    private int maxTokenNameUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
     private int maxTokensPerAccount = 1000;
+
+    @Getter
+    @Min(1)
+    private int maxTokenSymbolUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
+    private long minAutoRenewDuration = 1000L;
 
     @Getter
     @NotNull
@@ -108,35 +137,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
-
-    @NotNull
-    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
-
-    @Getter
-    private boolean limitTokenAssociations = false;
-
-    @Getter
-    @Min(1)
-    private int maxMemoUtf8Bytes = 100;
-
-    @Getter
-    @Min(1)
-    private int maxTokenSymbolUtf8Bytes = 10;
-
-    @Getter
-    @Min(1)
-    private int maxTokenNameUtf8Bytes = 10;
-
-    @Getter
-    @Min(1)
-    private long minAutoRenewDuration = 1000L;
-
-    @Getter
-    @Min(1)
-    private long maxAutoRenewDuration = 10000L;
-
-    @Getter
-    private boolean allowTreasuryToOwnNfts = true;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
