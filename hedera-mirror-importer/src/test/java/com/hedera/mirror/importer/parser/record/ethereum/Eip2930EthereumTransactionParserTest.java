@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.ethereum;
 
-import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.LONDON_RAW_TX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -29,44 +28,54 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
+class Eip2930EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
+    public static final String EIP_2930_RAW_TX =
+            "01f87382012a82160c85a54f4c3c00832dc6c094000000000000000000000000000000000000052d8502540be40083123456c001a0abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816a0249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53";
 
     @BeforeAll
     static void beforeAll() {
-        ethereumTransactionParser = new Eip1559EthereumTransactionParser();
+        ethereumTransactionParser = new Eip2930EthereumTransactionParser();
     }
 
     @SneakyThrows
     @Override
     public byte[] getTransactionBytes() {
-        return Hex.decodeHex(LONDON_RAW_TX);
+        return Hex.decodeHex(EIP_2930_RAW_TX);
+    }
+
+    @SneakyThrows
+    @Test
+    void decodeEip2930Transaction() {
+        var ethereumTransaction = ethereumTransactionParser.decode(Hex.decodeHex(EIP_2930_RAW_TX));
+        validateEthereumTransaction(ethereumTransaction);
+        assertThat(ethereumTransaction.getType()).isEqualTo(1);
     }
 
     @Test
-    void decodeLegacyType() {
-        var ethereumTransactionBytes = RLPEncoder.sequence(Integers.toBytes(1), new Object[] {});
-
-        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, First byte was 1 but should be 2");
-    }
-
-    @Test
-    void decodeNonListRlpItem() {
-        var ethereumTransactionBytes = RLPEncoder.sequence(Integers.toBytes(2), Integers.toBytes(1));
-
-        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, Second RLPItem was not a list");
-    }
-
-    @Test
-    void decodeIncorrectRlpItemListSize() {
+    void decodeEip1559Type() {
         var ethereumTransactionBytes = RLPEncoder.sequence(Integers.toBytes(2), new Object[] {});
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, RLP list size was 0 but expected 12");
+                .hasMessage("Unable to decode EIP2930 ethereum transaction bytes, First byte was 2 but should be 1");
+    }
+
+    @Test
+    void decodeNonListRlpItem() {
+        var ethereumTransactionBytes = RLPEncoder.sequence(Integers.toBytes(1), Integers.toBytes(1));
+
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidEthereumBytesException.class)
+                .hasMessage("Unable to decode EIP2930 ethereum transaction bytes, Second RLPItem was not a list");
+    }
+
+    @Test
+    void decodeIncorrectRlpItemListSize() {
+        var ethereumTransactionBytes = RLPEncoder.sequence(Integers.toBytes(1), new Object[] {});
+
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidEthereumBytesException.class)
+                .hasMessage("Unable to decode EIP2930 ethereum transaction bytes, RLP list size was 0 but expected 11");
     }
 
     @SneakyThrows
@@ -74,24 +83,24 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
     protected void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
         assertThat(ethereumTransaction)
                 .isNotNull()
-                .returns(Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE, EthereumTransaction::getType)
+                .returns(Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE, EthereumTransaction::getType)
                 .returns(Hex.decodeHex("012a"), EthereumTransaction::getChainId)
-                .returns(2L, EthereumTransaction::getNonce)
-                .returns(null, EthereumTransaction::getGasPrice)
-                .returns(Hex.decodeHex("2f"), EthereumTransaction::getMaxPriorityFeePerGas)
-                .returns(Hex.decodeHex("2f"), EthereumTransaction::getMaxFeePerGas)
-                .returns(98_304L, EthereumTransaction::getGasLimit)
-                .returns(Hex.decodeHex("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181"), EthereumTransaction::getToAddress)
-                .returns(Hex.decodeHex("0de0b6b3a7640000"), EthereumTransaction::getValue)
+                .returns(5644L, EthereumTransaction::getNonce)
+                .returns(Hex.decodeHex("a54f4c3c00"), EthereumTransaction::getGasPrice)
+                .returns(null, EthereumTransaction::getMaxPriorityFeePerGas)
+                .returns(null, EthereumTransaction::getMaxFeePerGas)
+                .returns(3_000_000L, EthereumTransaction::getGasLimit)
+                .returns(Hex.decodeHex("000000000000000000000000000000000000052d"), EthereumTransaction::getToAddress)
+                .returns(Hex.decodeHex("02540be400"), EthereumTransaction::getValue)
                 .returns(Hex.decodeHex("123456"), EthereumTransaction::getCallData)
                 .returns(Hex.decodeHex(""), EthereumTransaction::getAccessList)
                 .returns(1, EthereumTransaction::getRecoveryId)
                 .returns(null, EthereumTransaction::getSignatureV)
                 .returns(
-                        Hex.decodeHex("df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"),
+                        Hex.decodeHex("abb9e9c510716df2988cf626734ee50dcd9f41d30d638220712b5fe33fe4c816"),
                         EthereumTransaction::getSignatureR)
                 .returns(
-                        Hex.decodeHex("1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"),
+                        Hex.decodeHex("249a72e1479b61e00d4f20308577bb63167d71b26138ee5229ca1cb3c49a2e53"),
                         EthereumTransaction::getSignatureS);
     }
 }
