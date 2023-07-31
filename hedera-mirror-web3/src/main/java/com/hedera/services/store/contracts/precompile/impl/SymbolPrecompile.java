@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -27,6 +29,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenSymbolResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,10 +59,20 @@ public class SymbolPrecompile extends AbstractReadOnlyPrecompile {
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         requireNonNull(transactionBody, "`body` method should be called before `run`");
 
-        final var target = DescriptorUtils.getRedirectTarget(frame.getInputData());
+        final var target = getRedirectTarget(frame);
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var token = store.getToken(target.token(), OnMissing.THROW);
 
         return new TokenSymbolResult(token.getSymbol());
+    }
+
+    private static RedirectTarget getRedirectTarget(final MessageFrame frame) {
+        final RedirectTarget target;
+        try {
+            target = DescriptorUtils.getRedirectTarget(frame.getInputData());
+        } catch (final Exception e) {
+            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        }
+        return target;
     }
 }
