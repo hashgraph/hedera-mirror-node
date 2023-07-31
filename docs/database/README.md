@@ -37,7 +37,7 @@ nodes connected to those environments will need to be reset to remain functional
    a new bucket, the importer start date can be set to 1970 to ensure no data is missed.
 
    ```properties
-   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-2023-01
+   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-2023-07
    hedera.mirror.importer.startDate=1970-01-01T00:00:00Z
    ```
 
