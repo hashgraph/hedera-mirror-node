@@ -103,9 +103,14 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         var expectedNodeStakes = List.of(
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakingPeriod),
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod));
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(applicationEventPublisher).publishEvent(any(NodeStakeUpdatedEvent.class));
@@ -131,6 +136,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
                 .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -140,15 +147,22 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .nodeStakeUpdate()
                 .transactionBody(Builder::clearNodeStake)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verifyNoInteractions(applicationEventPublisher);
         verify(entityListener).onNetworkStake(any());
         verify(entityListener, never()).onNodeStake(any());
         verify(consensusNodeService, never()).refresh();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

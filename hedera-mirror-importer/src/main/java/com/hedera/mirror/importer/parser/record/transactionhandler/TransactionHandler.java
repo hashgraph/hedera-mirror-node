@@ -34,7 +34,9 @@ public interface TransactionHandler {
     /**
      * @return main entity associated with this transaction
      */
-    EntityId getEntity(RecordItem recordItem);
+    default EntityId getEntity(RecordItem recordItem) {
+        return null;
+    }
 
     /**
      * @return the transaction type associated with this handler

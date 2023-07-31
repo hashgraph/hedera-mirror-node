@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FEE_NOT_SET;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,12 +60,18 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     void updateTransactionFixedFee() {
         // Given
         var recordItem = recordItemBuilder.tokenFeeScheduleUpdate().build();
-        var transaction = domainBuilder.transaction().get();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var body = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
+        var tokenId = EntityId.of(body.getTokenId());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         var customFee = ArgumentCaptor.forClass(CustomFee.class);
-        var transactionBody = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
-        var customFeeProto = transactionBody.getCustomFees(0);
+        var customFeeProto = body.getCustomFees(0);
         var fixedFee = customFeeProto.getFixedFee();
-        long consensusTimestamp = transaction.getConsensusTimestamp();
+        var feeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
+        var feeTokenId = EntityId.of(customFeeProto.getFixedFee().getDenominatingTokenId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -77,30 +83,39 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(customFeeProto.getAllCollectorsAreExempt(), CustomFee::isAllCollectorsAreExempt)
                 .returns(fixedFee.getAmount(), CustomFee::getAmount)
                 .returns(null, CustomFee::getAmountDenominator)
-                .returns(EntityId.of(customFeeProto.getFeeCollectorAccountId()), CustomFee::getCollectorAccountId)
-                .returns(EntityId.of(fixedFee.getDenominatingTokenId()), CustomFee::getDenominatingTokenId)
+                .returns(feeCollectorId, CustomFee::getCollectorAccountId)
+                .returns(feeTokenId, CustomFee::getDenominatingTokenId)
                 .returns(null, CustomFee::getMaximumAmount)
                 .returns(0L, CustomFee::getMinimumAmount)
                 .returns(null, CustomFee::getNetOfTransfers)
                 .returns(null, CustomFee::getRoyaltyDenominator)
                 .returns(null, CustomFee::getRoyaltyNumerator)
-                .returns(consensusTimestamp, c -> c.getId().getCreatedTimestamp())
-                .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+                .returns(timestamp, c -> c.getId().getCreatedTimestamp())
+                .returns(tokenId, c -> c.getId().getTokenId());
+
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId, feeTokenId));
     }
 
     @Test
     void updateTransactionFractionalFee() {
         // Given
+        var customFeeProto = recordItemBuilder.customFee(FRACTIONAL_FEE).build();
         var recordItem = recordItemBuilder
                 .tokenFeeScheduleUpdate()
-                .transactionBody(b -> b.clearCustomFees().addCustomFees(recordItemBuilder.customFee(FRACTIONAL_FEE)))
+                .transactionBody(b -> b.clearCustomFees().addCustomFees(customFeeProto))
                 .build();
-        var transaction = domainBuilder.transaction().get();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var body = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
+        var tokenId = EntityId.of(body.getTokenId());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         var customFee = ArgumentCaptor.forClass(CustomFee.class);
-        var transactionBody = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
-        var customFeeProto = transactionBody.getCustomFees(0);
+        var feeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
         var fractionalFee = customFeeProto.getFractionalFee();
-        long consensusTimestamp = transaction.getConsensusTimestamp();
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -112,31 +127,40 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(customFeeProto.getAllCollectorsAreExempt(), CustomFee::isAllCollectorsAreExempt)
                 .returns(fractionalFee.getFractionalAmount().getNumerator(), CustomFee::getAmount)
                 .returns(fractionalFee.getFractionalAmount().getDenominator(), CustomFee::getAmountDenominator)
-                .returns(EntityId.of(customFeeProto.getFeeCollectorAccountId()), CustomFee::getCollectorAccountId)
+                .returns(feeCollectorId, CustomFee::getCollectorAccountId)
                 .returns(null, CustomFee::getDenominatingTokenId)
                 .returns(fractionalFee.getMaximumAmount(), CustomFee::getMaximumAmount)
                 .returns(fractionalFee.getMinimumAmount(), CustomFee::getMinimumAmount)
                 .returns(fractionalFee.getNetOfTransfers(), CustomFee::getNetOfTransfers)
                 .returns(null, CustomFee::getRoyaltyDenominator)
                 .returns(null, CustomFee::getRoyaltyNumerator)
-                .returns(consensusTimestamp, c -> c.getId().getCreatedTimestamp())
+                .returns(timestamp, c -> c.getId().getCreatedTimestamp())
                 .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId));
     }
 
     @Test
     void updateTransactionRoyaltyFee() {
         // Given
+        var customFeeProto = recordItemBuilder.customFee(ROYALTY_FEE).build();
         var recordItem = recordItemBuilder
                 .tokenFeeScheduleUpdate()
-                .transactionBody(b -> b.clearCustomFees().addCustomFees(recordItemBuilder.customFee(ROYALTY_FEE)))
+                .transactionBody(b -> b.clearCustomFees().addCustomFees(customFeeProto))
                 .build();
-        var transaction = domainBuilder.transaction().get();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var body = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
+        var tokenId = EntityId.of(body.getTokenId());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
         var customFee = ArgumentCaptor.forClass(CustomFee.class);
-        var transactionBody = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
-        var customFeeProto = transactionBody.getCustomFees(0);
         var royaltyFee = customFeeProto.getRoyaltyFee();
         var fallbackFee = royaltyFee.getFallbackFee();
-        long consensusTimestamp = transaction.getConsensusTimestamp();
+        var feeCollectorId = EntityId.of(customFeeProto.getFeeCollectorAccountId());
+        var feeTokenId = EntityId.of(fallbackFee.getDenominatingTokenId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -148,15 +172,18 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(customFeeProto.getAllCollectorsAreExempt(), CustomFee::isAllCollectorsAreExempt)
                 .returns(fallbackFee.getAmount(), CustomFee::getAmount)
                 .returns(null, CustomFee::getAmountDenominator)
-                .returns(EntityId.of(customFeeProto.getFeeCollectorAccountId()), CustomFee::getCollectorAccountId)
-                .returns(EntityId.of(fallbackFee.getDenominatingTokenId()), CustomFee::getDenominatingTokenId)
+                .returns(feeCollectorId, CustomFee::getCollectorAccountId)
+                .returns(feeTokenId, CustomFee::getDenominatingTokenId)
                 .returns(null, CustomFee::getMaximumAmount)
                 .returns(0L, CustomFee::getMinimumAmount)
                 .returns(null, CustomFee::getNetOfTransfers)
                 .returns(royaltyFee.getExchangeValueFraction().getDenominator(), CustomFee::getRoyaltyDenominator)
                 .returns(royaltyFee.getExchangeValueFraction().getNumerator(), CustomFee::getRoyaltyNumerator)
-                .returns(consensusTimestamp, c -> c.getId().getCreatedTimestamp())
-                .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+                .returns(timestamp, c -> c.getId().getCreatedTimestamp())
+                .returns(tokenId, c -> c.getId().getTokenId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, feeCollectorId, feeTokenId));
     }
 
     @Test
@@ -188,6 +215,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .returns(null, CustomFee::getRoyaltyNumerator)
                 .returns(transaction.getConsensusTimestamp(), c -> c.getId().getCreatedTimestamp())
                 .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -204,6 +233,8 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -218,5 +249,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
 
         // Then
         verify(entityListener, never()).onCustomFee(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [ graphql, grpc, importer, monitor, rest, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
+        project: [ common, graphql, grpc, importer, monitor, rest, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
         schema: [ v1, v2 ]
         exclude:
+          - project: common
+            schema: v2
           - project: monitor
             schema: v2
           - project: rest:check-state-proof
@@ -52,7 +54,7 @@ jobs:
           require_tests: "false"
 
       - name: Upload artifact
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.schema == 'v1'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.project != 'common' && matrix.schema == 'v1'
         uses: actions/upload-artifact@v3
         with:
           name: hedera-mirror-${{matrix.project}}

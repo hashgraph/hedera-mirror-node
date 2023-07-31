@@ -72,9 +72,11 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             // Allow clearing of the autoRenewAccount by allowing it to be set to 0
             entityIdService
                     .lookup(transactionBody.getAutoRenewAccountId())
-                    .map(EntityId::getId)
                     .ifPresentOrElse(
-                            entity::setAutoRenewAccountId,
+                            accountId -> {
+                                entity.setAutoRenewAccountId(accountId.getId());
+                                recordItem.addEntityId(accountId);
+                            },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
                                     recordItem.getConsensusTimestamp()));
@@ -107,7 +109,9 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
+            entity.setProxyAccountId(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         updateStakingInfo(recordItem, entity);
@@ -128,9 +132,10 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                 entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
                 break;
             case STAKED_ACCOUNT_ID:
-                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(accountId.getId());
                 entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
+                recordItem.addEntityId(accountId);
                 break;
         }
 

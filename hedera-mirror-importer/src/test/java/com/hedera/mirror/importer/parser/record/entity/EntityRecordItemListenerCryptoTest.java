@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.importer.TestUtils.toEntityTransaction;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,6 +89,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -114,7 +117,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void before() {
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setTransactionBytes(false);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @Test
@@ -123,17 +132,41 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var consensusTimestamp = recordItemBuilder.timestamp();
         var expectedNfts = new ArrayList<Nft>();
         var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
-        RecordItem recordItem = recordItemBuilder
+        var recordItem = recordItemBuilder
                 .cryptoApproveAllowance()
                 .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
                 .record(r -> r.setConsensusTimestamp(consensusTimestamp))
                 .build();
+        var body = recordItem.getTransactionBody().getCryptoApproveAllowance();
+        var entityIds = body.getCryptoAllowancesList().stream()
+                .flatMap(cryptoAllowance -> Stream.of(cryptoAllowance.getOwner(), cryptoAllowance.getSpender())
+                        .map(EntityId::of))
+                .collect(Collectors.toList());
+        entityIds.addAll(body.getNftAllowancesList().stream()
+                .flatMap(nftAllowance -> Stream.of(
+                        EntityId.of(nftAllowance.getDelegatingSpender()),
+                        EntityId.of(nftAllowance.getOwner()),
+                        EntityId.of(nftAllowance.getSpender()),
+                        EntityId.of(nftAllowance.getTokenId())))
+                .toList());
+        entityIds.addAll(body.getTokenAllowancesList().stream()
+                .flatMap(nftAllowance -> Stream.of(
+                        EntityId.of(nftAllowance.getOwner()),
+                        EntityId.of(nftAllowance.getSpender()),
+                        EntityId.of(nftAllowance.getTokenId())))
+                .toList());
+        entityIds.add(EntityId.of(recordItem.getTransactionBody().getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(recordItem, entityIds.toArray(EntityId[]::new))
+                .values();
 
         // when
         parseRecordItemAndCommit(recordItem);
 
         // then
         assertAllowances(recordItem, expectedNfts);
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
@@ -956,34 +989,52 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void cryptoTransferWithPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
-        Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(RecordItem.builder()
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
+                .build();
+        var entityIds = record.getTransferList().getAccountAmountsList().stream()
+                .map(aa -> EntityId.of(aa.getAccountID()))
+                .collect(Collectors.toList());
+        entityIds.add(EntityId.of(transactionBody.getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values();
+
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
     void cryptoTransferWithoutPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(false);
         // make the transfers
-        Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(RecordItem.builder()
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
+                .build();
+        var expectedEntityTransactions = toEntityTransactions(
+                recordItem, EntityId.of(transactionBody.getNodeAccountID()), recordItem.getPayerAccountId());
+        for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
+            var accountId = EntityId.of(aa.getAccountID());
+            expectedEntityTransactions.putIfAbsent(accountId.getId(), toEntityTransaction(accountId, recordItem));
+        }
+
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -991,6 +1042,30 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertCryptoTransfers(0),
                 () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions.values());
+    }
+
+    @Test
+    void cryptoTransferWithEntityTransactionDisabled() {
+        entityProperties.getPersist().setEntityTransactions(false);
+        // make the transfers
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEntities(),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll()).isEmpty();
     }
 
     @Test

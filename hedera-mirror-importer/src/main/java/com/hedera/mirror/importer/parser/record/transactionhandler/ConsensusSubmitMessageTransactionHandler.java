@@ -31,15 +31,10 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
+class ConsensusSubmitMessageTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CONSENSUSSUBMITMESSAGE;
-    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -48,7 +43,25 @@ class ConsensusSubmitMessageTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public TransactionType getType() {
+        return TransactionType.CONSENSUSSUBMITMESSAGE;
+    }
+
+    /**
+     * Add common entity ids for a ConsensusSubmitMessage transaction. Note the main entity id (the topic id the message
+     * is submitted to) is skipped since it's already tracked in topic_message table
+     *
+     * @param transaction
+     * @param recordItem
+     */
+    @Override
+    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
+        recordItem.addEntityId(transaction.getNodeAccountId());
+        recordItem.addEntityId(transaction.getPayerAccountId());
+    }
+
+    @Override
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTopics() || !recordItem.isSuccessful()) {
             return;
         }

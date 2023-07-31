@@ -69,7 +69,7 @@ dependencies {
         api("commons-io:commons-io:2.13.0")
         api("io.cucumber:cucumber-bom:7.13.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.56.1")
+        api("io.grpc:grpc-bom:1.57.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.1")
         api("io.projectreactor:reactor-core-micrometer:1.0.8")
         api("io.swagger:swagger-annotations:1.6.11")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.109")
+        api("software.amazon.awssdk:bom:2.20.115")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

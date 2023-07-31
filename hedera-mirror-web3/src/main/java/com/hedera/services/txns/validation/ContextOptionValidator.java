@@ -17,15 +17,26 @@
 package com.hedera.services.txns.validation;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_NAME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_SYMBOL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NAME_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
+import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
 
 /**
  * Copied Logic type from hedera-services. Unnecessary methods are deleted.
@@ -72,6 +83,15 @@ public class ContextOptionValidator implements OptionValidator {
         return then.isAfter(now);
     }
 
+    @Override
+    public boolean isValidAutoRenewPeriod(final Duration autoRenewPeriod) {
+        final long duration = autoRenewPeriod.getSeconds();
+
+        return duration >= mirrorNodeEvmProperties.getMinAutoRenewDuration()
+                && duration <= mirrorNodeEvmProperties.getMaxAutoRenewDuration();
+    }
+
+    @Override
     public ResponseCodeEnum expiryStatusGiven(final Store store, final AccountID id) {
         var account = store.getAccount(asTypedEvmAddress(id), OnMissing.THROW);
         if (!mirrorNodeEvmProperties.shouldAutoRenewSomeEntityType()) {
@@ -94,6 +114,57 @@ public class ContextOptionValidator implements OptionValidator {
             return OK;
         }
         return expiryStatusForNominallyDetached(isContract);
+    }
+
+    @Override
+    public ResponseCodeEnum tokenSymbolCheck(final String symbol) {
+        return tokenStringCheck(
+                symbol,
+                mirrorNodeEvmProperties.getMaxTokenSymbolUtf8Bytes(),
+                MISSING_TOKEN_SYMBOL,
+                TOKEN_SYMBOL_TOO_LONG);
+    }
+
+    @Override
+    public ResponseCodeEnum tokenNameCheck(final String name) {
+        return tokenStringCheck(
+                name, mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes(), MISSING_TOKEN_NAME, TOKEN_NAME_TOO_LONG);
+    }
+
+    private ResponseCodeEnum tokenStringCheck(
+            final String s, final int maxLen, final ResponseCodeEnum onMissing, final ResponseCodeEnum onTooLong) {
+        final int numUtf8Bytes = StringUtils.getBytesUtf8(s).length;
+        if (numUtf8Bytes == 0) {
+            return onMissing;
+        }
+        if (numUtf8Bytes > maxLen) {
+            return onTooLong;
+        }
+        if (s.contains("\u0000")) {
+            return INVALID_ZERO_BYTE_IN_STRING;
+        }
+        return OK;
+    }
+
+    @Override
+    public ResponseCodeEnum memoCheck(final String cand) {
+        return rawMemoCheck(StringUtils.getBytesUtf8(cand));
+    }
+
+    @Override
+    public ResponseCodeEnum rawMemoCheck(final byte[] utf8Cand) {
+        return rawMemoCheck(utf8Cand, Arrays.contains(utf8Cand, (byte) 0));
+    }
+
+    @Override
+    public ResponseCodeEnum rawMemoCheck(final byte[] utf8Cand, final boolean hasZeroByte) {
+        if (utf8Cand.length > mirrorNodeEvmProperties.getMaxMemoUtf8Bytes()) {
+            return MEMO_TOO_LONG;
+        } else if (hasZeroByte) {
+            return INVALID_ZERO_BYTE_IN_STRING;
+        } else {
+            return OK;
+        }
     }
 
     private ResponseCodeEnum expiryStatusForNominallyDetached(final boolean isContract) {
