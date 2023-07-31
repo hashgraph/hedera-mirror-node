@@ -406,7 +406,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final byte[] key,
             final Address tokenAddress,
             final long tokenExpiration,
-            TokenPauseStatusEnum pauseStatus) {
+            final TokenPauseStatusEnum pauseStatus) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
