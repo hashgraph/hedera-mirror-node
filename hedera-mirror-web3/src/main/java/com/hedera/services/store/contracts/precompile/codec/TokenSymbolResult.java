@@ -15,5 +15,7 @@
  */
 
 package com.hedera.services.store.contracts.precompile.codec;
-
+/**
+ * Record to hold the result of the token symbol call.
+ * */
 public record TokenSymbolResult(String symbol) implements RunResult {}
