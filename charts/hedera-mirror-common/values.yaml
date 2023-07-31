@@ -435,14 +435,6 @@ zfs:
     recordsize: 32k
   worker:
     diskSize: 3200GB
-  zfsController:
-    nodeSelector:
-      csi-type: zfs
-    tolerations:
-      - effect: NoSchedule
-        key: zfs
-        operator: Equal
-        value: "true"
   zfsNode:
     nodeSelector:
       csi-type: zfs
