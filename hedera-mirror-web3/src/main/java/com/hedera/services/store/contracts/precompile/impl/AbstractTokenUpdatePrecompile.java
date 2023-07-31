@@ -44,10 +44,4 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
         return pricingUtils.getMinimumPriceInTinybars(UPDATE, consensusTime);
     }
-
-    protected enum UpdateType {
-        UPDATE_TOKEN_KEYS,
-        UPDATE_TOKEN_INFO,
-        UPDATE_TOKEN_EXPIRY
-    }
 }

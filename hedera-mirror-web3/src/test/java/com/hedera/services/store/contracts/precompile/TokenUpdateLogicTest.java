@@ -37,7 +37,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.StringValue;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
