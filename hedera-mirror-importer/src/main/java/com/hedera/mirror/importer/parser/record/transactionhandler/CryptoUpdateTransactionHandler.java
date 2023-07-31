@@ -69,7 +69,9 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
+            entity.setProxyAccountId(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         if (transactionBody.hasReceiverSigRequiredWrapper()) {
@@ -99,9 +101,10 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
                 entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
                 break;
             case STAKED_ACCOUNT_ID:
-                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(accountId.getId());
                 entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
+                recordItem.addEntityId(accountId);
                 break;
         }
 

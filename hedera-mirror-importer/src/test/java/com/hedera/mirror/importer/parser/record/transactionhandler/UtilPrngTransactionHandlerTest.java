@@ -54,6 +54,11 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // given
         int range = 8;
         var recordItem = recordItemBuilder.prng(range).build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
         int randomNumber = recordItem.getTransactionRecord().getPrngNumber();
         var expected = Prng.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
@@ -63,11 +68,13 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -75,6 +82,11 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // given
         int range = 0;
         var recordItem = recordItemBuilder.prng(range).build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
         byte[] randomBytes = recordItem.getTransactionRecord().getPrngBytes().toByteArray();
         var expected = Prng.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
@@ -84,11 +96,13 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -98,12 +112,19 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .prng(1)
                 .status(ResponseCodeEnum.DUPLICATE_TRANSACTION)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -113,11 +134,18 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .prng(1)
                 .record(TransactionRecord.Builder::clearEntropy)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

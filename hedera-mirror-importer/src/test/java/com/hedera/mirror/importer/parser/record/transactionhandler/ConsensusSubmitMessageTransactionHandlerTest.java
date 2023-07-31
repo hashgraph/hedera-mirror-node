@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         return new ConsensusSubmitMessageTransactionHandler(entityListener, entityProperties);
@@ -48,6 +50,11 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
         return EntityType.TOPIC;
     }
 
+    @Override
+    protected boolean isSkipMainEntityTransaction() {
+        return true;
+    }
+
     @Test
     void updateTransaction() {
         // Given
@@ -56,6 +63,8 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
         var topicMessage = ArgumentCaptor.forClass(TopicMessage.class);
         var transactionBody = recordItem.getTransactionBody().getConsensusSubmitMessage();
         var receipt = recordItem.getTransactionRecord().getReceipt();
+        var expectedEntityTransactions =
+                toEntityTransactions(recordItem, transaction.getNodeAccountId(), transaction.getPayerAccountId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -75,6 +84,7 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
                 .returns((int) receipt.getTopicRunningHashVersion(), TopicMessage::getRunningHashVersion)
                 .returns(receipt.getTopicSequenceNumber(), TopicMessage::getSequenceNumber)
                 .returns(transaction.getEntityId(), TopicMessage::getTopicId);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
@@ -83,11 +93,14 @@ class ConsensusSubmitMessageTransactionHandlerTest extends AbstractTransactionHa
         entityProperties.getPersist().setTopics(false);
         var recordItem = recordItemBuilder.consensusSubmitMessage().build();
         var transaction = domainBuilder.transaction().get();
+        var expectedEntityTransactions =
+                toEntityTransactions(recordItem, transaction.getNodeAccountId(), transaction.getPayerAccountId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

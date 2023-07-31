@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
@@ -50,6 +51,7 @@ import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
@@ -59,6 +61,7 @@ import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
@@ -288,6 +291,46 @@ public class ServicesConfiguration {
     @Bean
     TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
         return new TransferLogic(autoCreationLogic);
+    }
+
+    @Bean
+    TransferPrecompile transferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EntityAddressSequencer entityAddressSequencer) {
+        return new TransferPrecompile(
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory,
+                entityAddressSequencer);
+    }
+
+    @Bean
+    ERCTransferPrecompile ercTransferPrecompile(
+            final PrecompilePricingUtils pricingUtils,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final TransferLogic transferLogic,
+            final ContextOptionValidator contextOptionValidator,
+            final AutoCreationLogic autoCreationLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final EntityAddressSequencer entityAddressSequencer) {
+        return new ERCTransferPrecompile(
+                pricingUtils,
+                mirrorNodeEvmProperties,
+                transferLogic,
+                contextOptionValidator,
+                autoCreationLogic,
+                syntheticTxnFactory,
+                entityAddressSequencer,
+                encoder);
     }
 
     @Bean
