@@ -24,7 +24,9 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenNameResult;
@@ -35,6 +37,17 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+/**
+ * This class is a modified copy of NamePrecompile from hedera-services repo.
+ * <p>
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
+ *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
+ *  4. Run method accepts Store argument in order to achieve stateless behaviour and returns {@link RunResult}
+ *  5. Token's symbol is retrieved from Store instead of WorldLedgers
+ *  6. RedirectTarget is used in order to get the token from the Input bytes.
+ */
 public class NamePrecompile extends AbstractReadOnlyPrecompile {
 
     public NamePrecompile(

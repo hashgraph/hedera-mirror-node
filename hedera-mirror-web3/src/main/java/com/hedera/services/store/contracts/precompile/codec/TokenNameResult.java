@@ -16,4 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
+/**
+ * Record to hold the result of a token name precompile call.
+ */
 public record TokenNameResult(String name) implements RunResult {}
