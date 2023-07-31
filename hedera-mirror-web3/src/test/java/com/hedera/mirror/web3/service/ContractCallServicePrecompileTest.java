@@ -353,7 +353,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN}),
+        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN}),
         UPDATE_TOKEN_EXPIRY(
                 "updateTokenExpiryInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER});
 

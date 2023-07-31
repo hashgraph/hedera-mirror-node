@@ -116,18 +116,23 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private boolean limitTokenAssociations = false;
 
     @Getter
+    @Min(1)
     private int maxMemoUtf8Bytes = 100;
 
     @Getter
+    @Min(1)
     private int maxTokenSymbolUtf8Bytes = 10;
 
     @Getter
+    @Min(1)
     private int maxTokenNameUtf8Bytes = 10;
 
     @Getter
+    @Min(1)
     private long minAutoRenewDuration = 1000L;
 
     @Getter
+    @Min(1)
     private long maxAutoRenewDuration = 10000L;
 
     @Getter

@@ -1657,6 +1657,10 @@ public class Token {
         return createNewTokenWithAutoRenewAccount(this, autoRenewAccount);
     }
 
+    public boolean hasAutoRenewAccount() {
+        return autoRenewAccount != null;
+    }
+
     public long getTotalSupply() {
         return totalSupply;
     }
