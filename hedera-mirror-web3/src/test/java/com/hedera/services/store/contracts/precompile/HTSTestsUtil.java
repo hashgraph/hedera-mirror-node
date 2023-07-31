@@ -31,10 +31,12 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfA
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.services.store.contracts.precompile.codec.*;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
@@ -133,12 +135,14 @@ public class HTSTestsUtil {
     public static final List<ByteString> newMetadata =
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     public static final MintWrapper nftMint = MintWrapper.forNonFungible(nonFungible, newMetadata);
+    public static final UnpauseWrapper fungibleUnpause = new UnpauseWrapper(fungible);
     public static final WipeWrapper fungibleWipe = WipeWrapper.forFungible(fungible, account, AMOUNT);
     public static final WipeWrapper nonFungibleWipe = WipeWrapper.forNonFungible(nonFungible, account, targetSerialNos);
     public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
             "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
     public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
             "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000007fffffffffffffff00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+    public static final PauseWrapper fungiblePause = new PauseWrapper(fungible);
     public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
     public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
     public static final Address senderAddr = Address.ALTBN128_PAIRING;
@@ -192,8 +196,13 @@ public class HTSTestsUtil {
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper tokensTransferList =
             new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer, transfer));
+
+    public static final TokenTransferWrapper tokensTransferList2 =
+            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList2));
     public static final FungibleTokenTransfer transferToAlias1SenderOnly =
             new FungibleTokenTransfer(-AMOUNT, false, token, sender, null);
     public static final FungibleTokenTransfer transferToAlias1ReceiverOnly =
@@ -238,17 +247,19 @@ public class HTSTestsUtil {
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_EMPTY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(Collections.emptyList()), Collections.emptyList());
     public static final List<HbarTransfer> hbarTransfers =
-            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(-AMOUNT, false, sender, null));
+            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList2));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_NFT_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.singletonList(nftsTransferList));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), List.of(tokensTransferList, nftsTransferList));
     public static final List<HbarTransfer> hbarTransfersAliased = List.of(
-            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(-AMOUNT, false, sender, null));
+            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfersAliased), Collections.emptyList());
     public static final List<HbarTransfer> twoHbarTransfers = List.of(

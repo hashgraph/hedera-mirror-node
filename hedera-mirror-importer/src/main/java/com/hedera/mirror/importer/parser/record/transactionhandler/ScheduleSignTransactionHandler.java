@@ -22,7 +22,8 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.inject.Named;
 
 @Named
-class ScheduleSignTransactionHandler implements TransactionHandler {
+class ScheduleSignTransactionHandler extends AbstractTransactionHandler {
+
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getScheduleSign().getScheduleID());

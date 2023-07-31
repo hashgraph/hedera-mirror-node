@@ -163,6 +163,7 @@ public class DomainUtils {
 
     /**
      * Pad a byte array with leading zeros to a given length.
+     *
      * @param bytes
      * @param length
      */
@@ -179,6 +180,10 @@ public class DomainUtils {
         var leftPaddedBytes = new byte[length];
         System.arraycopy(bytes, 0, leftPaddedBytes, paddingSize, bytes.length);
         return leftPaddedBytes;
+    }
+
+    public static long now() {
+        return convertToNanosMax(Instant.now());
     }
 
     /**

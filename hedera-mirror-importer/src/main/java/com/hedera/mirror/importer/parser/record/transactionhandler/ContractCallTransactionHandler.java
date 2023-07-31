@@ -28,7 +28,8 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class ContractCallTransactionHandler implements TransactionHandler {
+class ContractCallTransactionHandler extends AbstractTransactionHandler {
+
     private final EntityIdService entityIdService;
 
     /**

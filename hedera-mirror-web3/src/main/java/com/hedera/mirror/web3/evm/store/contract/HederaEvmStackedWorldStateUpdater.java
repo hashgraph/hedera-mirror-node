@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -98,13 +99,13 @@ public class HederaEvmStackedWorldStateUpdater
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void trackLazilyCreatedAccount(final Address address) {
-        persistAccount(address, 0L, Wei.ZERO);
         final UpdateTrackingAccount newMutable = new UpdateTrackingAccount<>(address, null);
         track(newMutable);
     }
 
     private void persistAccount(Address address, long nonce, Wei balance) {
         final var accountModel = new com.hedera.services.store.models.Account(
+                ByteString.EMPTY,
                 0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
@@ -183,6 +184,10 @@ public class HederaEvmStackedWorldStateUpdater
 
     public Store getStore() {
         return store;
+    }
+
+    public EntityAddressSequencer getEntityAddressSequencer() {
+        return entityAddressSequencer;
     }
 
     private boolean isMissingTarget(final Address alias) {

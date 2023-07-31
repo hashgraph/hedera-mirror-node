@@ -284,6 +284,16 @@ create table if not exists entity_stake_history
 ) partition by range (id);
 comment on table entity_stake_history is 'Network entity stake historical state';
 
+create table if not exists entity_transaction
+(
+  consensus_timestamp bigint not null,
+  entity_id           bigint not null,
+  payer_account_id    bigint not null,
+  result              smallint not null,
+  type                smallint not null
+) partition by range (consensus_timestamp);
+comment on table entity_transaction is 'Network entity transaction lookup table';
+
 create table if not exists ethereum_transaction
 (
     access_list              bytea    null,
@@ -415,17 +425,6 @@ create table if not exists node_stake
     staking_period      bigint not null
 );
 comment on table node_stake is 'Node staking information';
-
--- non_fee_transfer
-create table if not exists non_fee_transfer
-(
-    amount              bigint  not null,
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    entity_id           bigint  null,
-    payer_account_id    bigint  not null
-) partition by range (consensus_timestamp);
-comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
 -- prng
 create table if not exists prng
@@ -644,6 +643,7 @@ create table if not exists transaction
     errata                     errata_type null,
     index                      integer     null,
     initial_balance            bigint               default 0,
+    itemized_transfer          jsonb       null,
     max_fee                    bigint,
     memo                       bytea,
     nft_transfer               jsonb       null,

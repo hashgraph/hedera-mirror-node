@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.importer.TestUtils.toEntityTransaction;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,8 +41,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -87,6 +89,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -114,7 +117,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void before() {
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setTransactionBytes(false);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @Test
@@ -123,17 +132,41 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var consensusTimestamp = recordItemBuilder.timestamp();
         var expectedNfts = new ArrayList<Nft>();
         var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
-        RecordItem recordItem = recordItemBuilder
+        var recordItem = recordItemBuilder
                 .cryptoApproveAllowance()
                 .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
                 .record(r -> r.setConsensusTimestamp(consensusTimestamp))
                 .build();
+        var body = recordItem.getTransactionBody().getCryptoApproveAllowance();
+        var entityIds = body.getCryptoAllowancesList().stream()
+                .flatMap(cryptoAllowance -> Stream.of(cryptoAllowance.getOwner(), cryptoAllowance.getSpender())
+                        .map(EntityId::of))
+                .collect(Collectors.toList());
+        entityIds.addAll(body.getNftAllowancesList().stream()
+                .flatMap(nftAllowance -> Stream.of(
+                        EntityId.of(nftAllowance.getDelegatingSpender()),
+                        EntityId.of(nftAllowance.getOwner()),
+                        EntityId.of(nftAllowance.getSpender()),
+                        EntityId.of(nftAllowance.getTokenId())))
+                .toList());
+        entityIds.addAll(body.getTokenAllowancesList().stream()
+                .flatMap(nftAllowance -> Stream.of(
+                        EntityId.of(nftAllowance.getOwner()),
+                        EntityId.of(nftAllowance.getSpender()),
+                        EntityId.of(nftAllowance.getTokenId())))
+                .toList());
+        entityIds.add(EntityId.of(recordItem.getTransactionBody().getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(recordItem, entityIds.toArray(EntityId[]::new))
+                .values();
 
         // when
         parseRecordItemAndCommit(recordItem);
 
         // then
         assertAllowances(recordItem, expectedNfts);
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
@@ -956,34 +989,52 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void cryptoTransferWithPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         // make the transfers
-        Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(RecordItem.builder()
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
+                .build();
+        var entityIds = record.getTransferList().getAccountAmountsList().stream()
+                .map(aa -> EntityId.of(aa.getAccountID()))
+                .collect(Collectors.toList());
+        entityIds.add(EntityId.of(transactionBody.getNodeAccountID()));
+        entityIds.add(recordItem.getPayerAccountId());
+        var expectedEntityTransactions = toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values();
+
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @Test
     void cryptoTransferWithoutPersistence() {
         entityProperties.getPersist().setCryptoTransferAmounts(false);
         // make the transfers
-        Transaction transaction = cryptoTransferTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
-
-        parseRecordItemAndCommit(RecordItem.builder()
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
+                .build();
+        var expectedEntityTransactions = toEntityTransactions(
+                recordItem, EntityId.of(transactionBody.getNodeAccountID()), recordItem.getPayerAccountId());
+        for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
+            var accountId = EntityId.of(aa.getAccountID());
+            expectedEntityTransactions.putIfAbsent(accountId.getId(), toEntityTransaction(accountId, recordItem));
+        }
+
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -991,6 +1042,30 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertCryptoTransfers(0),
                 () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions.values());
+    }
+
+    @Test
+    void cryptoTransferWithEntityTransactionDisabled() {
+        entityProperties.getPersist().setEntityTransactions(false);
+        // make the transfers
+        var transaction = cryptoTransferTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = transactionRecordSuccess(transactionBody);
+        var recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEntities(),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record));
+        assertThat(entityTransactionRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -1001,16 +1076,20 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID);
 
-        parseRecordItemAndCommit(RecordItem.builder()
+        var recordItem = RecordItem.builder()
                 .transactionRecord(record)
                 .transaction(transaction)
-                .build());
+                .build();
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertCryptoTransfers(3),
-                () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
                 () -> assertTransactionAndRecord(transactionBody, record));
     }
 
@@ -1049,7 +1128,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
-                () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
                 () -> assertThat(tokenTransferRepository.findAll())
                         .hasSize(1)
                         .first()
@@ -1123,7 +1205,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoTransferWithAlias() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         Entity entity = domainBuilder.entity().persist();
         var newAccount =
                 AccountID.newBuilder().setAccountNum(domainBuilder.id()).build();
@@ -1150,16 +1232,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord recordTransfer = transactionRecordSuccess(
                 transactionBody, builder -> groupCryptoTransfersByAccountId(builder, List.of()));
-
-        parseRecordItemsAndCommit(List.of(
-                RecordItem.builder()
-                        .transactionRecord(recordCreate)
-                        .transaction(accountCreateTransaction)
-                        .build(),
-                RecordItem.builder()
-                        .transactionRecord(recordTransfer)
-                        .transaction(transaction)
-                        .build()));
+        var recordItem1 = RecordItem.builder()
+                .transactionRecord(recordCreate)
+                .transaction(accountCreateTransaction)
+                .build();
+        var recordItem2 = RecordItem.builder()
+                .transactionRecord(recordTransfer)
+                .transaction(transaction)
+                .build();
+        parseRecordItemsAndCommit(List.of(recordItem1, recordItem2));
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
@@ -1167,11 +1248,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertCryptoTransfers(6)
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1))
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2)),
-                () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
-                () -> assertThat(findNonFeeTransfers())
-                        .extracting(NonFeeTransfer::getEntityId)
-                        .extracting(EntityId::getEntityNum)
+                () -> assertThat(transactionRepository.findById(recordItem1.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .isNull(),
+                () -> assertThat(transactionRepository.findById(recordItem2.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .map(transfer ->
+                                ((ItemizedTransfer) transfer).getEntityId().getId())
+                        .asList()
                         .contains(newAccount.getAccountNum(), entity.getNum()));
     }
 
@@ -1180,7 +1268,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Entity contract = domainBuilder.entity().persist();
         assertThat(entityRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
 
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
 
         long transferAmount = 123;
         var transfer1 = accountAliasAmount(DomainUtils.fromBytes(contract.getEvmAddress()), transferAmount)
@@ -1197,13 +1285,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
-                () -> assertThat(findNonFeeTransfers()).allSatisfy(nonFeeTransfer -> {
-                    assertThat(nonFeeTransfer.getEntityId()).isEqualTo(contract.toEntityId());
-                    assertThat(nonFeeTransfer.getAmount()).isEqualTo(transferAmount);
-                    assertThat(nonFeeTransfer.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId());
-                }));
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .hasSize(1)
+                        .allSatisfy(transfer -> {
+                            assertThat(((ItemizedTransfer) transfer).getEntityId())
+                                    .isEqualTo(contract.toEntityId());
+                            assertThat(((ItemizedTransfer) transfer).getAmount())
+                                    .isEqualTo(transferAmount);
+                        }));
     }
 
     private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
@@ -1217,7 +1310,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // given
         // both accounts have alias, and only account2's alias is in db
         entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
 
         Entity account1 = domainBuilder.entity().get();
         Entity account2 = domainBuilder.entity().persist();
@@ -1235,20 +1328,24 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 transactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
         List<EntityId> expectedEntityIds = List.of(account2.toEntityId());
-
-        // when
-        parseRecordItemAndCommit(RecordItem.builder()
+        var recordItem = RecordItem.builder()
                 .transactionRecord(transactionRecord)
                 .transaction(transaction)
-                .build());
+                .build();
+        // when
+        parseRecordItemAndCommit(recordItem);
 
         // then
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, transactionRecord),
-                () -> assertThat(findNonFeeTransfers())
-                        .extracting(NonFeeTransfer::getEntityId)
+                () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
+                        .get()
+                        .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .asList()
+                        .map(transfer -> ((ItemizedTransfer) transfer).getEntityId())
+                        .asList()
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds));
     }
 

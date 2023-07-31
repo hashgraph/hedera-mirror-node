@@ -45,8 +45,8 @@ import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
-import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -131,10 +131,10 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected EntityHistoryRepository entityHistoryRepository;
 
     @Resource
-    protected LiveHashRepository liveHashRepository;
+    protected EntityTransactionRepository entityTransactionRepository;
 
     @Resource
-    protected NonFeeTransferRepository nonFeeTransferRepository;
+    protected LiveHashRepository liveHashRepository;
 
     @Resource
     protected RecordItemBuilder recordItemBuilder;

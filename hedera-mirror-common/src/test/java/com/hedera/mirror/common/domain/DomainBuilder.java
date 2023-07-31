@@ -48,6 +48,7 @@ import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.entity.EntityStakeHistory;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -77,8 +78,8 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -227,7 +228,7 @@ public class DomainBuilder {
         id.setConsensusTimestamp(timestamp());
         var builder = AssessedCustomFee.builder()
                 .amount(100L)
-                .effectivePayerAccountIds(List.of(entityId(ACCOUNT).getId()))
+                .effectivePayerAccountIds(List.of(id(), id()))
                 .id(id)
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenId(entityId(TOKEN));
@@ -470,6 +471,16 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<EntityTransaction, EntityTransaction.EntityTransactionBuilder> entityTransaction() {
+        var builder = EntityTransaction.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(entityId(ACCOUNT))
+                .type(TransactionType.CRYPTOCREATEACCOUNT.getProtoId())
+                .result(ResponseCodeEnum.SUCCESS_VALUE);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
             boolean hasInitCode) {
         var builder = EthereumTransaction.builder()
@@ -629,16 +640,6 @@ public class DomainBuilder {
                 .stakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .stakeRewarded(stake - TINYBARS_IN_ONE_HBAR)
                 .stakingPeriod(timestamp());
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
-    public DomainWrapper<NonFeeTransfer, NonFeeTransfer.NonFeeTransferBuilder> nonFeeTransfer() {
-        var builder = NonFeeTransfer.builder()
-                .amount(100L)
-                .consensusTimestamp(timestamp())
-                .entityId(entityId(ACCOUNT))
-                .payerAccountId(entityId(ACCOUNT));
-
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -902,6 +903,11 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT))
                 .index(transactionIndex())
                 .initialBalance(10000000L)
+                .itemizedTransfer(List.of(ItemizedTransfer.builder()
+                        .amount(100L)
+                        .entityId(entityId(ACCOUNT))
+                        .isApproval(false)
+                        .build()))
                 .maxFee(100000000L)
                 .memo(bytes(10))
                 .nodeAccountId(entityId(ACCOUNT))

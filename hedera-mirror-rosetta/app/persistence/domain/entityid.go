@@ -75,6 +75,10 @@ func (e *EntityId) String() string {
 	return fmt.Sprintf("%d.%d.%d", e.ShardNum, e.RealmNum, e.EntityNum)
 }
 
+func (e EntityId) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", e.EncodedId)), nil
+}
+
 func (e *EntityId) UnmarshalJSON(data []byte) error {
 	str := tools.SafeUnquote(string(data))
 
@@ -82,7 +86,7 @@ func (e *EntityId) UnmarshalJSON(data []byte) error {
 	var err error
 	if strings.Contains(str, ".") {
 		entityId, err = EntityIdFromString(str)
-	} else {
+	} else if str != "null" {
 		var encodedId int64
 		encodedId, err = strconv.ParseInt(str, 10, 64)
 		if err != nil {

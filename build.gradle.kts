@@ -34,7 +34,6 @@ extra.apply {
     set("protobufVersion", "3.23.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("spring-security.version", "6.1.2")
     set("testcontainersSpringBootVersion", "3.0.0-RC8")
     set("vertxVersion", "4.4.4")
 }
@@ -60,7 +59,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:20.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.40.0")
-        api("com.hedera.hashgraph:sdk:2.25.0")
+        api("com.hedera.hashgraph:sdk:2.26.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
@@ -94,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.103")
+        api("software.amazon.awssdk:bom:2.20.109")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
