@@ -178,7 +178,7 @@ data:
           gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
           COMMAND_STATUS=$?
           ATTACH_ATTEMPTS=$((ATTACH_ATTEMPTS+1))
-          if [[ ${COMMAND_STATUS} -ne 0 ]]; do
+          if [[ ${COMMAND_STATUS} -ne 0 ]]; then
             sleep 30
           fi
         done
