@@ -46,7 +46,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
  *  4. Run method accepts Store argument in order to achieve stateless behaviour and returns {@link RunResult}
  *  5. Token's symbol is retrieved from Store instead of WorldLedgers
- *  6. RedirectTarget is used in order to get the token from the Input bytes.
+ *  6. RedirectTarget is used in order to get the token from the Input Bytes.
  */
 public class SymbolPrecompile extends AbstractReadOnlyPrecompile {
 
