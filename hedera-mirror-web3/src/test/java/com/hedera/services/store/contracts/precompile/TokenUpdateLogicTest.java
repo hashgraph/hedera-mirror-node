@@ -71,7 +71,6 @@ class TokenUpdateLogicTest {
     private static final NftId nftId =
             new NftId(nonFungible.getShardNum(), nonFungible.getRealmNum(), nonFungible.getTokenNum(), -1);
     private static final Timestamp EXPIRY = Timestamp.getDefaultInstance();
-    private static final EntityId treasuryId = EntityId.of(treasury);
 
     @Mock
     private OptionValidator validator;
