@@ -396,6 +396,20 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         };
     }
 
+    private boolean isNestedFunctionSelectorForRead(final Bytes input) {
+        final RedirectTarget target;
+        try {
+            target = DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            return false;
+        }
+        final var nestedFunctionSelector = target.descriptor();
+        return switch (nestedFunctionSelector) {
+            case AbiConstants.ABI_ID_ERC_NAME, AbiConstants.ABI_ID_ERC_SYMBOL -> true;
+            default -> false;
+        };
+    }
+
     private long defaultGas() {
         return evmProperties.getHtsDefaultGasCost();
     }
