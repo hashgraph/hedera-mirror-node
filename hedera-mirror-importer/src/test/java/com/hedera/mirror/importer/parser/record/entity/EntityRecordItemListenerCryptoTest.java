@@ -34,6 +34,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance.Id;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -1187,6 +1188,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
+                // Approved transfer allowance debit emitted to listener must not have resulted in created allowance
+                () -> assertEquals(0, cryptoAllowanceRepository.count()),
                 () -> assertEquals(amounts.length, cryptoTransferRepository.count()),
                 () -> {
                     for (var cryptoTransfer : cryptoTransferRepository.findAll()) {
@@ -1199,6 +1202,84 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                                     .isEqualTo(isApprovals[i]);
                         }
                     }
+                });
+    }
+
+    @Test
+    void cryptoTransferUpdatesAllowanceAmount() {
+        entityProperties.getPersist().setTrackAllowance(true);
+        var allowanceAmountGranted = 1000L;
+
+        var payerAccount = EntityId.of(PAYER);
+
+        // Persist the now pre-existing crypto allowance to be debited by the approved transfers below
+        var cryptoAllowance = domainBuilder
+                .cryptoAllowance()
+                .customize(ca -> {
+                    ca.amountGranted(allowanceAmountGranted).amount(allowanceAmountGranted);
+                    ca.spender(payerAccount.getId());
+                })
+                .persist();
+
+        var ownerAccountId =
+                AccountID.newBuilder().setAccountNum(cryptoAllowance.getOwner()).build();
+        var spenderAccountId = AccountID.newBuilder()
+                .setAccountNum(cryptoAllowance.getSpender())
+                .build();
+
+        var cryptoTransfers = List.of(
+                AccountAmount.newBuilder()
+                        .setAmount(-100)
+                        .setAccountID(ownerAccountId)
+                        .setIsApproval(true)
+                        .build(),
+                AccountAmount.newBuilder()
+                        .setAmount(-200)
+                        .setAccountID(ownerAccountId)
+                        .setIsApproval(true)
+                        .build(),
+                AccountAmount.newBuilder()
+                        .setAmount(-500)
+                        .setAccountID(recordItemBuilder.accountId()) // Some other owner
+                        .setIsApproval(true)
+                        .build());
+
+        Transaction transaction = buildTransaction(
+                r -> r.getCryptoTransferBuilder().getTransfersBuilder().addAllAccountAmounts(cryptoTransfers));
+
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        var recordCryptoTransfers = cryptoTransfers.stream()
+                .map(transfer -> transfer.toBuilder().setIsApproval(false).build())
+                .collect(Collectors.toList());
+        TransactionRecord record = buildTransactionRecordWithNoTransactions(
+                builder -> builder.getTransferListBuilder().addAllAccountAmounts(recordCryptoTransfers),
+                transactionBody,
+                ResponseCodeEnum.SUCCESS.getNumber());
+
+        var recordItem = RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, cryptoAllowanceRepository.count()),
+                () -> assertEquals(cryptoTransfers.size(), cryptoTransferRepository.count()),
+                () -> {
+                    var cryptoAllowanceId = new Id();
+                    cryptoAllowanceId.setOwner(EntityId.of(ownerAccountId).getId());
+                    cryptoAllowanceId.setSpender(EntityId.of(spenderAccountId).getId());
+
+                    var cryptoAllowanceDbOpt = cryptoAllowanceRepository.findById(cryptoAllowanceId);
+                    assertThat(cryptoAllowanceDbOpt).isNotEmpty();
+
+                    var cryptoAllowanceDb = cryptoAllowanceDbOpt.get();
+                    assertThat(cryptoAllowanceDb.getAmountGranted()).isEqualTo(allowanceAmountGranted);
+                    var amountTransferred = cryptoTransfers.get(0).getAmount()
+                            + cryptoTransfers.get(1).getAmount();
+                    assertThat(cryptoAllowanceDb.getAmount()).isEqualTo(allowanceAmountGranted + amountTransferred);
                 });
     }
 

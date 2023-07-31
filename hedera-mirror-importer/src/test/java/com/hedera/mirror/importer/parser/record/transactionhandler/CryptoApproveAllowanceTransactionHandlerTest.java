@@ -54,20 +54,15 @@ import org.mockito.Mock;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private long consensusTimestamp;
-
-    private CryptoAllowance expectedCryptoAllowance;
-
-    private Nft expectedNft;
-
-    private NftAllowance expectedNftAllowance;
-
-    private TokenAllowance expectedTokenAllowance;
-
-    private EntityId payerAccountId;
-
     @Mock
     protected SyntheticContractResultService syntheticContractResultService;
+
+    private long consensusTimestamp;
+    private CryptoAllowance expectedCryptoAllowance;
+    private Nft expectedNft;
+    private NftAllowance expectedNftAllowance;
+    private TokenAllowance expectedTokenAllowance;
+    private EntityId payerAccountId;
 
     @BeforeEach
     void beforeEach() {
@@ -75,6 +70,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         payerAccountId = EntityId.of(recordItemBuilder.accountId());
         var cryptoOwner = recordItemBuilder.accountId();
         expectedCryptoAllowance = CryptoAllowance.builder()
+                .amountGranted(100L)
                 .amount(100L)
                 .owner(cryptoOwner.getAccountNum())
                 .payerAccountId(payerAccountId)
@@ -103,6 +99,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .build();
         var tokenOwner = recordItemBuilder.accountId();
         expectedTokenAllowance = TokenAllowance.builder()
+                .amountGranted(200L)
                 .amount(200L)
                 .owner(tokenOwner.getAccountNum())
                 .payerAccountId(payerAccountId)

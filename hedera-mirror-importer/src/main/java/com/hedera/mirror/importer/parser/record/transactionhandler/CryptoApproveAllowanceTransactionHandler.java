@@ -97,6 +97,7 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandle
 
             var cryptoAllowance = new CryptoAllowance();
             var spender = EntityId.of(cryptoApproval.getSpender());
+            cryptoAllowance.setAmountGranted(cryptoApproval.getAmount());
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
             cryptoAllowance.setOwner(ownerAccountId.getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
@@ -218,6 +219,7 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandle
             var tokenId = EntityId.of(tokenApproval.getTokenId());
 
             var tokenAllowance = new TokenAllowance();
+            tokenAllowance.setAmountGranted(tokenApproval.getAmount());
             tokenAllowance.setAmount(tokenApproval.getAmount());
             tokenAllowance.setOwner(ownerAccountId.getId());
             tokenAllowance.setPayerAccountId(payerAccountId);

@@ -38,7 +38,6 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
     private final SyntheticTokenAllowanceOwnerMigration migration;
     private final TokenAllowanceRepository tokenAllowanceRepository;
-    private final String idColumns = "payer_account_id, spender, token_id";
 
     @Test
     void checksum() {
@@ -49,7 +48,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
     void empty() {
         migration.doMigrate();
         assertThat(tokenAllowanceRepository.findAll()).isEmpty();
-        assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     @Test
@@ -135,7 +134,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         expectedHistory.addAll(correctTokenAllowancePair.getRight());
         tokenAllowancePreMigration.setTimestampUpper(contractResultConsensus);
         expectedHistory.add(tokenAllowancePreMigration);
-        assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findHistory(TokenAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test
@@ -187,12 +186,12 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
         migration.doMigrate();
         var firstPassTokenAllowances = tokenAllowanceRepository.findAll();
-        var firstPassHistory = findHistory(TokenAllowance.class, idColumns);
+        var firstPassHistory = findHistory(TokenAllowance.class);
 
         // when
         migration.doMigrate();
         var secondPassTokenAllowances = tokenAllowanceRepository.findAll();
-        var secondPassHistory = findHistory(TokenAllowance.class, idColumns);
+        var secondPassHistory = findHistory(TokenAllowance.class);
 
         // then
         assertThat(firstPassTokenAllowances).containsExactlyInAnyOrderElementsOf(secondPassTokenAllowances);
@@ -218,10 +217,10 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         var rangeUpdate1 = Range.closedOpen(range.lowerEndpoint() - 2, range.lowerEndpoint() - 1);
         var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
 
-        var update1 = builder.customize(t -> t.amount(999L).timestampRange(rangeUpdate1))
+        var update1 = builder.customize(t -> t.amount(999L).amountGranted(999L).timestampRange(rangeUpdate1))
                 .get();
-        var update2 =
-                builder.customize(t -> t.amount(0).timestampRange(rangeUpdate2)).get();
+        var update2 = builder.customize(t -> t.amount(0).amountGranted(0L).timestampRange(rangeUpdate2))
+                .get();
         saveHistory(update1);
         saveHistory(update2);
 
@@ -242,6 +241,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         domainBuilder
                 .tokenAllowanceHistory()
                 .customize(c -> c.amount(tokenAllowance.getAmount())
+                        .amountGranted(tokenAllowance.getAmountGranted())
                         .owner(tokenAllowance.getOwner())
                         .payerAccountId(tokenAllowance.getPayerAccountId())
                         .spender(tokenAllowance.getSpender())

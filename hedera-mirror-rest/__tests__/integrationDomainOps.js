@@ -1075,20 +1075,25 @@ const addContractStateChange = async (contractStateChangeInput) => {
   await insertDomainObject('contract_state_change', Object.keys(contractStateChange), contractStateChange);
 };
 
-const addCryptoAllowance = async (cryptoAllowanceInput) => {
-  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'timestamp_range'];
+const defaultCryptoAllowance = {
+  amount: 0,
+  amount_granted: 0,
+  owner: 1000,
+  payer_account_id: 101,
+  spender: 2000,
+  timestamp_range: '[0,)',
+};
 
+const cryptoAllowanceFields = Object.keys(defaultCryptoAllowance);
+
+const addCryptoAllowance = async (cryptoAllowanceInput) => {
   const cryptoAllowance = {
-    amount: 0,
-    owner: 1000,
-    payer_account_id: 101,
-    spender: 2000,
-    timestamp_range: '[0,)',
+    ...defaultCryptoAllowance,
     ...cryptoAllowanceInput,
   };
 
   const table = getTableName('crypto_allowance', cryptoAllowance);
-  await insertDomainObject(table, insertFields, cryptoAllowance);
+  await insertDomainObject(table, cryptoAllowanceFields, cryptoAllowance);
 };
 
 const addCryptoTransaction = async (cryptoTransfer) => {
@@ -1321,21 +1326,26 @@ const addTokenAccount = async (tokenAccount) => {
   );
 };
 
-const addTokenAllowance = async (tokenAllowance) => {
-  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'token_id', 'timestamp_range'];
+const defaultTokenAllowance = {
+  amount: 0,
+  amount_granted: 0,
+  owner: 1000,
+  payer_account_id: 1000,
+  spender: 2000,
+  token_id: 3000,
+  timestamp_range: '[0,)',
+};
 
+const tokenAllowanceFields = Object.keys(defaultTokenAllowance);
+
+const addTokenAllowance = async (tokenAllowance) => {
   tokenAllowance = {
-    amount: 0,
-    owner: 1000,
-    payer_account_id: 1000,
-    spender: 2000,
-    token_id: 3000,
-    timestamp_range: '[0,)',
+    ...defaultTokenAllowance,
     ...tokenAllowance,
   };
 
   const table = getTableName('token_allowance', tokenAllowance);
-  await insertDomainObject(table, insertFields, tokenAllowance);
+  await insertDomainObject(table, tokenAllowanceFields, tokenAllowance);
 };
 
 const addTokenBalance = async (tokenBalance) => {
