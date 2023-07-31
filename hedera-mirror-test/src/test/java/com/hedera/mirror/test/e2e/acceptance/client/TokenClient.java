@@ -316,6 +316,17 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
+    public NetworkTransactionResponse grantKyc(TokenId tokenId, ContractId contractId) throws InvalidProtocolBufferException {
+        TokenGrantKycTransaction tokenGrantKycTransaction = new TokenGrantKycTransaction()
+                .setAccountId(AccountId.fromBytes(contractId.toBytes()))
+                .setTokenId(tokenId)
+                .setTransactionMemo(getMemo("Grant kyc for token"));
+
+        var response = executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction);
+        log.info("Granted KYC for account {} with token {} via {}", contractId, tokenId, response.getTransactionId());
+        return response;
+    }
+
     public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId) {
         TokenRevokeKycTransaction tokenRevokeKycTransaction = new TokenRevokeKycTransaction()
                 .setAccountId(accountId)

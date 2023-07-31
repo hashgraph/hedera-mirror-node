@@ -583,15 +583,15 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     }
 
     @Then("I call estimateGas with ERC transfer function")
-    public void ercTransferEstimateGas() {
-        tokenClient.associate(receiverAccount, tokenIds.get(6));
-        networkTransactionResponse = accountClient.approveToken(tokenIds.get(6), receiverAccount.getAccountId(), 50L);
+    public void ercTransferEstimateGas() throws InvalidProtocolBufferException {
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 50L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
+        tokenClient.grantKyc(tokenIds.get(0), deployedErcTesteContract.contractId());
         Function function = Function.fromJson(getAbiFunctionAsJsonString(compiledErcTestContractSolidityArtifacts,
                 ContractMethods.TRANSFER_ERC.getFunctionName()));
         ByteBuffer encodedFunctionCall = function
                 .encodeCallWithArgs(
-                        asHeadlongAddress(tokenIds.get(6).toSolidityAddress()),
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("5"));
 

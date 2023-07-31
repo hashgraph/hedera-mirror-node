@@ -36,7 +36,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with transferFromNFT with invalid serial number
     Then I call estimateGas with transferToken function
     Then I call estimateGas with transferNFT function
-    #Then I call estimateGas with ERC transfer function
+    Then I call estimateGas with ERC transfer function
     Then I create 2 more fungible tokens
     Then I create 2 more NFTs
     Then I call estimateGas with associateTokens function for fungible tokens
@@ -63,7 +63,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with GrantKYC function for fungible token
     Then I call estimateGas with GrantKYC function for NFT
     Then I create fungible and non-fungible token without KYC status
-    Then I call estimateGas with ERC transfer function
     Then I call estimateGas with GrantKYC function for fungible token without KYC status
     Then I call estimateGas with GrantKYC function for NFT without KYC status
     Then I call estimateGas with RevokeTokenKYC function for fungible token
