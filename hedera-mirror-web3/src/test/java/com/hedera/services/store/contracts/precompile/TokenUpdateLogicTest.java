@@ -37,7 +37,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.StringValue;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -71,7 +70,6 @@ class TokenUpdateLogicTest {
     private static final NftId nftId =
             new NftId(nonFungible.getShardNum(), nonFungible.getRealmNum(), nonFungible.getTokenNum(), -1);
     private static final Timestamp EXPIRY = Timestamp.getDefaultInstance();
-    private static final EntityId treasuryId = EntityId.of(treasury);
 
     @Mock
     private OptionValidator validator;
