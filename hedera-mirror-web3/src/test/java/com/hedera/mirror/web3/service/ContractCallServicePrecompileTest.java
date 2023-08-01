@@ -275,6 +275,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }),
         GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
             false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
+            1000L, FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY, 1800L
         });
 
         private final String name;
@@ -340,7 +343,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createFungibleTokenWithCustomFeesExternal",
                 new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER}),
         CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
-        GET_TOKEN_EXPIRY("getTokenExpiryInfoExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
