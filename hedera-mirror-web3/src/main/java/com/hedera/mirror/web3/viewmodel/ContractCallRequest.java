@@ -46,7 +46,7 @@ public class ContractCallRequest {
     private String from;
 
     @Min(21_000)
-    @Max(15_000_000)
+    @Max(30_000_000)
     private long gas = 15_000_000L;
 
     @Min(0)
