@@ -40,7 +40,6 @@ public class BatchUpserter extends BatchInserter {
     private final String createTempIndexSql;
     private final String finalTableName;
     private final String upsertSql;
-    private final String setTempBuffersSql;
     private final String truncateSql;
     private final Timer upsertMetric;
 
@@ -53,7 +52,6 @@ public class BatchUpserter extends BatchInserter {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
         createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
-        setTempBuffersSql = String.format("set temp_buffers = '%dMB'", properties.getTempTableBufferSize());
         truncateSql = String.format("truncate table %s restart identity cascade", tableName);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
@@ -85,10 +83,6 @@ public class BatchUpserter extends BatchInserter {
     }
 
     private void createTempTable(Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(setTempBuffersSql)) {
-            preparedStatement.executeUpdate();
-        }
-
         // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
         try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
             preparedStatement.executeUpdate();
