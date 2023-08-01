@@ -91,7 +91,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .extracting(FixedFee::getCollectorAccountId)
                 .containsOnly(EntityId.of(customFeeProto.getFeeCollectorAccountId()));
         listAssert
-                .extracting(FixedFee::getAllCollectorsAreExempt)
+                .extracting(FixedFee::isAllCollectorsAreExempt)
                 .containsOnly(customFeeProto.getAllCollectorsAreExempt());
         listAssert
                 .extracting(FixedFee::getDenominatingTokenId)
@@ -134,14 +134,14 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .extracting(FractionalFee::getCollectorAccountId)
                 .containsOnly(EntityId.of(customFeeProto.getFeeCollectorAccountId()));
         listAssert
-                .extracting(FractionalFee::getAllCollectorsAreExempt)
+                .extracting(FractionalFee::isAllCollectorsAreExempt)
                 .containsOnly(customFeeProto.getAllCollectorsAreExempt());
         listAssert
                 .extracting(FractionalFee::getAmountDenominator)
                 .containsOnly(fractionalFee.getFractionalAmount().getDenominator());
         listAssert.extracting(FractionalFee::getMaximumAmount).containsOnly(fractionalFee.getMaximumAmount());
         listAssert.extracting(FractionalFee::getMinimumAmount).containsOnly(fractionalFee.getMinimumAmount());
-        listAssert.extracting(FractionalFee::getNetOfTransfers).containsOnly(fractionalFee.getNetOfTransfers());
+        listAssert.extracting(FractionalFee::isNetOfTransfers).containsOnly(fractionalFee.getNetOfTransfers());
     }
 
     @Test
@@ -176,7 +176,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .extracting(RoyaltyFee::getCollectorAccountId)
                 .containsOnly(EntityId.of(customFeeProto.getFeeCollectorAccountId()));
         listAssert
-                .extracting(RoyaltyFee::getAllCollectorsAreExempt)
+                .extracting(RoyaltyFee::isAllCollectorsAreExempt)
                 .containsOnly(customFeeProto.getAllCollectorsAreExempt());
         listAssert
                 .extracting(RoyaltyFee::getRoyaltyNumerator)

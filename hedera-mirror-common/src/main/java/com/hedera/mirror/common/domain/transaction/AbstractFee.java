@@ -28,11 +28,11 @@ import lombok.experimental.SuperBuilder;
 @Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class FixedFee extends AbstractFee {
+public abstract class AbstractFee {
 
-    private long amount;
+    private boolean allCollectorsAreExempt;
 
     @JsonSerialize(using = EntityIdSerializer.class)
     @JsonDeserialize(using = EntityIdDeserializer.class)
-    private EntityId denominatingTokenId;
+    private EntityId collectorAccountId;
 }

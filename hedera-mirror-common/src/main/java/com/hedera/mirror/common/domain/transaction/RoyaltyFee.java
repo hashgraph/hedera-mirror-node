@@ -16,26 +16,18 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // for Builder
-@Builder
 @Data
 @NoArgsConstructor
-public class RoyaltyFee {
-
-    private Boolean allCollectorsAreExempt;
-
-    private EntityId collectorAccountId;
+@SuperBuilder(toBuilder = true)
+public class RoyaltyFee extends AbstractFee {
 
     private FixedFee fallbackFee;
 
-    private Long royaltyDenominator;
+    private long royaltyDenominator;
 
-    private Long royaltyNumerator;
+    private long royaltyNumerator;
 }

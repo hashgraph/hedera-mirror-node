@@ -3582,8 +3582,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                                 .setDenominator(fractionalFee.getAmountDenominator()))
                         .setMaximumAmount(maximumAmount)
                         .setMinimumAmount(fractionalFee.getMinimumAmount())
-                        .setNetOfTransfers(fractionalFee.getNetOfTransfers()));
-                protoCustomFee.setAllCollectorsAreExempt(fractionalFee.getAllCollectorsAreExempt());
+                        .setNetOfTransfers(fractionalFee.isNetOfTransfers()));
+                protoCustomFee.setAllCollectorsAreExempt(fractionalFee.isAllCollectorsAreExempt());
                 protoCustomFee.setFeeCollectorAccountId(convertAccountId(fractionalFee.getCollectorAccountId()));
                 protoCustomFees.add(protoCustomFee.build());
             }
@@ -3601,7 +3601,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 }
 
                 protoCustomFee.setRoyaltyFee(protoRoyaltyFee);
-                protoCustomFee.setAllCollectorsAreExempt(royaltyFee.getAllCollectorsAreExempt());
+                protoCustomFee.setAllCollectorsAreExempt(royaltyFee.isAllCollectorsAreExempt());
                 protoCustomFee.setFeeCollectorAccountId(convertAccountId(royaltyFee.getCollectorAccountId()));
                 protoCustomFees.add(protoCustomFee.build());
             }
@@ -3610,7 +3610,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             for (var fixedFee : customFee.getFixedFees()) {
                 if (fixedFee.getCollectorAccountId() != null) {
                     var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
-                    protoCustomFee.setAllCollectorsAreExempt(fixedFee.getAllCollectorsAreExempt());
+                    protoCustomFee.setAllCollectorsAreExempt(fixedFee.isAllCollectorsAreExempt());
                     protoCustomFee.setFeeCollectorAccountId(convertAccountId(fixedFee.getCollectorAccountId()));
                     protoCustomFee.setFixedFee(convertFixedFee(fixedFee, customFee.getTokenId()));
                     protoCustomFees.add(protoCustomFee.build());

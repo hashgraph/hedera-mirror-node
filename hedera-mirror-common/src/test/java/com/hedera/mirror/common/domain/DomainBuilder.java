@@ -77,10 +77,13 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.CustomFeeHistory;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.FixedFee;
+import com.hedera.mirror.common.domain.transaction.FractionalFee;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -357,19 +360,75 @@ public class DomainBuilder {
 
     public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder<?, ?>> customFee() {
         var timestamp = timestamp();
+        var tokenId = entityId(TOKEN);
+        var collector = entityId(ACCOUNT);
+        var fixedFeeBuilder = FixedFee.builder()
+                .allCollectorsAreExempt(true)
+                .amount(id())
+                .collectorAccountId(collector)
+                .denominatingTokenId(tokenId);
+        var fixedFee = fixedFeeBuilder.amount(id()).build();
+        var fractionalFee = FractionalFee.builder()
+                .allCollectorsAreExempt(true)
+                .amountDenominator(id())
+                .amount(id())
+                .collectorAccountId(collector)
+                .maximumAmount(id())
+                .minimumAmount(1L)
+                .netOfTransfers(true)
+                .build();
+        var fallBackFee = fixedFeeBuilder.amount(id()).build();
+        var royaltyFee = RoyaltyFee.builder()
+                .allCollectorsAreExempt(true)
+                .collectorAccountId(collector)
+                .fallbackFee(fallBackFee)
+                .royaltyNumerator(id())
+                .royaltyDenominator(id())
+                .build();
         var builder = CustomFee.builder()
                 .createdTimestamp(timestamp)
-                .tokenId(entityId(TOKEN).getId())
-                .timestampRange(Range.atLeast(timestamp));
+                .tokenId(tokenId.getId())
+                .timestampRange(Range.atLeast(timestamp))
+                .fixedFees(List.of(fixedFee))
+                .fractionalFees(List.of(fractionalFee))
+                .royaltyFees(List.of(royaltyFee));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
         long timestamp = timestamp();
+        var tokenId = entityId(TOKEN);
+        var collector = entityId(ACCOUNT);
+        var fixedFeeBuilder = FixedFee.builder()
+                .allCollectorsAreExempt(true)
+                .amount(id())
+                .collectorAccountId(collector)
+                .denominatingTokenId(tokenId);
+        var fixedFee = fixedFeeBuilder.amount(id()).build();
+        var fractionalFee = FractionalFee.builder()
+                .allCollectorsAreExempt(true)
+                .amountDenominator(id())
+                .amount(id())
+                .collectorAccountId(collector)
+                .maximumAmount(id())
+                .minimumAmount(1L)
+                .netOfTransfers(true)
+                .build();
+        var fallBackFee = fixedFeeBuilder.amount(id()).build();
+        var royaltyFee = RoyaltyFee.builder()
+                .allCollectorsAreExempt(true)
+                .collectorAccountId(collector)
+                .fallbackFee(fallBackFee)
+                .royaltyNumerator(id())
+                .royaltyDenominator(id())
+                .build();
         var builder = CustomFeeHistory.builder()
                 .createdTimestamp(timestamp)
-                .tokenId(id())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()));
+                .tokenId(tokenId.getId())
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .fixedFees(List.of(fixedFee))
+                .fractionalFees(List.of(fractionalFee))
+                .royaltyFees(List.of(royaltyFee));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

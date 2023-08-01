@@ -138,7 +138,7 @@ class CustomFeeDatabaseAccessorTest {
                 assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getAmountDenominator());
                 assertThat(resultFractionalFee.getMaximumAmount()).isEqualTo(domainFee.getMaximumAmount());
                 assertThat(resultFractionalFee.getMinimumAmount()).isEqualTo(domainFee.getMinimumAmount());
-                assertThat(resultFractionalFee.getNetOfTransfers()).isEqualTo(domainFee.getNetOfTransfers());
+                assertThat(resultFractionalFee.getNetOfTransfers()).isEqualTo(domainFee.isNetOfTransfers());
                 assertThat(resultFractionalFee.getFeeCollector()).isEqualTo(collectorAddress);
             });
         }

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
@@ -82,5 +83,12 @@ public abstract class AbstractCustomFee implements History {
         }
 
         this.royaltyFees.add(royaltyFee);
+    }
+
+    @JsonIgnore
+    public boolean isEmptyFee() {
+        return (this.fixedFees == null || this.fixedFees.isEmpty())
+                && (this.fractionalFees == null || this.fractionalFees.isEmpty())
+                && (this.royaltyFees == null || this.royaltyFees.isEmpty());
     }
 }

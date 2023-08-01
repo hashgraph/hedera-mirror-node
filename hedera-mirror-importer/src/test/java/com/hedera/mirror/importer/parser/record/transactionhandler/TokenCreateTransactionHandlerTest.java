@@ -128,7 +128,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .extracting(FixedFee::getCollectorAccountId)
                 .containsOnly(EntityId.of(customFeeProto.getFeeCollectorAccountId()));
         listAssert
-                .extracting(FixedFee::getAllCollectorsAreExempt)
+                .extracting(FixedFee::isAllCollectorsAreExempt)
                 .containsOnly(customFeeProto.getAllCollectorsAreExempt());
         listAssert
                 .extracting(FixedFee::getDenominatingTokenId)

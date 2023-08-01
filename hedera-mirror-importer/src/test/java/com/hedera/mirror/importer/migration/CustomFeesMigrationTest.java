@@ -326,7 +326,10 @@ class CustomFeesMigrationTest extends IntegrationTest {
                     : domainBuilder
                             .customFee()
                             .customize(c -> c.createdTimestamp(migrationCustomFee.id.createdTimestamp)
-                                    .tokenId(migrationCustomFee.id.tokenId))
+                                    .tokenId(migrationCustomFee.id.tokenId)
+                                    .fixedFees(null)
+                                    .fractionalFees(null)
+                                    .royaltyFees(null))
                             .get();
 
             if (migrationCustomFee.denominatingTokenId != null && migrationCustomFee.royaltyDenominator == null) {

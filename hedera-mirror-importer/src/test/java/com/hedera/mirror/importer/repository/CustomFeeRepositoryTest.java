@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.importer.converter.CustomFeeConverter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ import org.springframework.jdbc.core.RowMapper;
 class CustomFeeRepositoryTest extends AbstractRepositoryTest {
 
     private final CustomFeeRepository customFeeRepository;
-    private static final RowMapper<CustomFee> ROW_MAPPER = rowMapper(CustomFee.class);
+    private static final RowMapper<CustomFee> ROW_MAPPER = CustomFeeConverter.INSTANCE.rowMapper;
 
     @Test
     void prune() {

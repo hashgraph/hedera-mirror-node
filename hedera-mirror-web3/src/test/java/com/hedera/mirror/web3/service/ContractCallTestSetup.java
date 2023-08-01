@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
@@ -33,7 +32,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.FixedFee;
 import com.hedera.mirror.common.domain.transaction.FractionalFee;
 import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
@@ -51,11 +49,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.nio.file.Path;
-import java.sql.PreparedStatement;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.ToLongFunction;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
@@ -208,13 +205,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private void nftCustomFeePersist(EntityId senderEntityId, EntityId nftEntityId) {
-        var fee = domainBuilder
+        domainBuilder
                 .customFee()
-                .customize(f -> f.createdTimestamp(2L).tokenId(nftEntityId.getId()))
-                .get();
-        fee.addFractionalFee(
-                FractionalFee.builder().collectorAccountId(senderEntityId).build());
-        customFeePersist(fee);
+                .customize(f -> f.createdTimestamp(2L)
+                        .tokenId(nftEntityId.getId())
+                        .fractionalFees(List.of(FractionalFee.builder()
+                                .collectorAccountId(senderEntityId)
+                                .build())))
+                .persist();
     }
 
     private void fileDataPersist() {
@@ -589,13 +587,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         var timeStamp = System.currentTimeMillis();
         switch (feeCase) {
             case ROYALTY_FEE -> {
-                var fee = domainBuilder
-                        .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId())
-                                .createdTimestamp(timeStamp)
-                                .build())
-                        .get();
-                fee.addRoyaltyFee(RoyaltyFee.builder()
+                var royaltyFee = RoyaltyFee.builder()
                         .royaltyDenominator(10L)
                         .royaltyNumerator(20L)
                         .fallbackFee(FixedFee.builder()
@@ -603,35 +595,42 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 .collectorAccountId(collectorAccountId)
                                 .denominatingTokenId(tokenEntityId)
                                 .build())
-                        .build());
-                customFeePersist(fee);
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.tokenId(tokenEntityId.getId())
+                                .createdTimestamp(timeStamp)
+                                .royaltyFees(List.of(royaltyFee)))
+                        .persist();
             }
             case FRACTIONAL_FEE -> {
-                var fee = domainBuilder
-                        .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId()).createdTimestamp(timeStamp))
-                        .get();
-                fee.addFractionalFee(FractionalFee.builder()
+                var fractionalFee = FractionalFee.builder()
                         .amount(100L)
                         .amountDenominator(10L)
                         .minimumAmount(1L)
                         .maximumAmount(1000L)
                         .netOfTransfers(true)
                         .collectorAccountId(collectorAccountId)
-                        .build());
-                customFeePersist(fee);
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.tokenId(tokenEntityId.getId())
+                                .createdTimestamp(timeStamp)
+                                .fractionalFees(List.of(fractionalFee)))
+                        .persist();
             }
             case FIXED_FEE -> {
-                var fee = domainBuilder
-                        .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId()).createdTimestamp(timeStamp))
-                        .get();
-                fee.addFixedFee(FixedFee.builder()
+                var fixedFee = FixedFee.builder()
                         .amount(100L)
                         .denominatingTokenId(tokenEntityId)
                         .collectorAccountId(collectorAccountId)
-                        .build());
-                customFeePersist(fee);
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.tokenId(tokenEntityId.getId())
+                                .createdTimestamp(timeStamp)
+                                .fixedFees(List.of(fixedFee)))
+                        .persist();
             }
             default -> domainBuilder
                     .customFee()
@@ -656,24 +655,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
-    }
-
-    @SneakyThrows
-    private void customFeePersist(CustomFee fee) {
-        var jsonFixedFees = OBJECT_MAPPER.writeValueAsString(fee.getFixedFees());
-        var jsonFractionalFees = OBJECT_MAPPER.writeValueAsString(fee.getFractionalFees());
-        var jsonRoyaltyFees = OBJECT_MAPPER.writeValueAsString(fee.getRoyaltyFees());
-        jdbcTemplate.update(c -> {
-            PreparedStatement preparedStatement = c.prepareStatement(
-                    "insert into custom_fee (created_timestamp, fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id) "
-                            + "values (?, ?::JSONB, ?::JSONB, ?::JSONB, ?::int8range, ?)");
-            preparedStatement.setLong(1, fee.getCreatedTimestamp());
-            preparedStatement.setString(2, jsonFixedFees);
-            preparedStatement.setString(3, jsonFractionalFees);
-            preparedStatement.setString(4, jsonRoyaltyFees);
-            preparedStatement.setString(5, PostgreSQLGuavaRangeType.INSTANCE.asString(fee.getTimestampRange()));
-            preparedStatement.setLong(6, fee.getTokenId());
-            return preparedStatement;
-        });
     }
 }

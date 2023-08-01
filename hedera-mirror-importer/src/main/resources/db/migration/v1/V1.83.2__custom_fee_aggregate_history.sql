@@ -89,8 +89,10 @@ create table if not exists custom_fee_history
 (
   like custom_fee including constraints including defaults
 );
-alter table custom_fee_history
-  add primary key (token_id, created_timestamp);
+
+create index if not exists custom_fee_history__token_id_timestamp_range
+    on custom_fee_history (token_id, lower(timestamp_range));
+create index if not exists custom_fee_history__timestamp_range on custom_fee_history using gist (timestamp_range);
 
 insert into custom_fee_history (created_timestamp, fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id)
 select * from custom_fee_temp where upper(timestamp_range) is not null;

@@ -77,7 +77,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Long, List<Custo
                             requireNonNullElse(f.getAmountDenominator(), 0L),
                             requireNonNullElse(f.getMinimumAmount(), 0L),
                             requireNonNullElse(f.getMaximumAmount(), 0L),
-                            requireNonNullElse(f.getNetOfTransfers(), false),
+                            requireNonNullElse(f.isNetOfTransfers(), false),
                             collector);
                     var constructed = new CustomFee();
                     constructed.setFractionalFee(fractionFee);

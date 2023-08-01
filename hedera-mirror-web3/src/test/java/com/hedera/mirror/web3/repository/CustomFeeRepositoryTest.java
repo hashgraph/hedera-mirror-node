@@ -42,7 +42,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
         var result = customFeeRepository.findById(tokenId);
         assertThat(result).isPresent();
         var fixedFeesResult = result.get().getFixedFees();
-        var listAssert = assertThat(fixedFeesResult).hasSize(1);
-        listAssert.allSatisfy(fee -> fee.getAmount().equals(amount));
+        assertThat(fixedFeesResult).hasSize(1);
+        assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
     }
 }

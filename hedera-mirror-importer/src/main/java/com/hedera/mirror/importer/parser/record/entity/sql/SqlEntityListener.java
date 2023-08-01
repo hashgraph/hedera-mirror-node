@@ -110,6 +110,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractStateChange> contractStateChanges;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
+    private final Collection<CustomFee> customFees;
     private final Collection<TokenTransfer> deletedTokenDissociateTransfers;
     private final Collection<Entity> entities;
     private final Collection<EthereumTransaction> ethereumTransactions;
@@ -177,6 +178,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractStateChanges = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
+        customFees = new ArrayList<>();
         deletedTokenDissociateTransfers = new ArrayList<>();
         entities = new ArrayList<>();
         ethereumTransactions = new ArrayList<>();
@@ -302,7 +304,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCustomFee(CustomFee customFee) throws ImporterException {
-        customFeeState.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
+        var merged = customFeeState.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
+        customFees.add(merged);
     }
 
     @Override
@@ -484,6 +487,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
+            customFees.clear();
             entities.clear();
             entityState.clear();
             ethereumTransactions.clear();
@@ -531,6 +535,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
             batchPersister.persist(cryptoTransfers);
+            batchPersister.persist(customFees);
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
@@ -543,7 +548,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(transactionSignatures);
 
             // insert operations with conflict management
-            batchPersister.persist(customFeeState.values());
             batchPersister.persist(contracts);
             batchPersister.persist(contractStates.values());
             batchPersister.persist(cryptoAllowances);
@@ -594,17 +598,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private CustomFee mergeCustomFee(CustomFee previous, CustomFee current) {
-        if (current.getFixedFees() != null) {
-            current.getFixedFees().forEach(previous::addFixedFee);
-        }
-        if (current.getFractionalFees() != null) {
-            current.getFractionalFees().forEach(previous::addFractionalFee);
-        }
-        if (current.getRoyaltyFees() != null) {
-            current.getRoyaltyFees().forEach(previous::addRoyaltyFee);
-        }
-        previous.setTimestampLower(current.getTimestampLower());
-        return previous;
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 
     private ContractState mergeContractState(ContractState previous, ContractState current) {

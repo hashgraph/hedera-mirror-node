@@ -16,30 +16,22 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // for Builder
-@Builder
 @Data
 @NoArgsConstructor
-public class FractionalFee {
+@SuperBuilder(toBuilder = true)
+public class FractionalFee extends AbstractFee {
 
-    private Boolean allCollectorsAreExempt;
+    private long amount;
 
-    private Long amount;
-
-    private Long amountDenominator;
-
-    private EntityId collectorAccountId;
+    private long amountDenominator;
 
     private Long maximumAmount;
 
-    private Long minimumAmount;
+    private long minimumAmount;
 
-    private Boolean netOfTransfers;
+    private boolean netOfTransfers;
 }

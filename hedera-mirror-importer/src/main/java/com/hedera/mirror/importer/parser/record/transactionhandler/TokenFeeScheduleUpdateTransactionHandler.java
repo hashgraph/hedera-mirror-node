@@ -67,22 +67,27 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
      * Handles custom fees. Returns the list of collectors automatically associated with the newly created token if the
      * custom fees are from a token create transaction
      *
-     * @param customFeeList protobuf custom fee list
+     * @param protoCustomFees protobuf custom fee list
      * @return A list of collectors automatically associated with the token if it's a token create transaction
      */
     Set<EntityId> updateCustomFees(
-            Transaction transaction, Collection<com.hederahashgraph.api.proto.java.CustomFee> customFeeList) {
+            Transaction transaction, Collection<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees) {
         var autoAssociatedAccounts = new HashSet<EntityId>();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
+        var customFee = new CustomFee();
+        customFee.setTokenId(tokenId.getId());
+        customFee.setCreatedTimestamp(consensusTimestamp);
+        customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
 
-        for (var protoCustomFee : customFeeList) {
+        // For empty custom fees, add a single row with only the timestamp and tokenId.
+        if (protoCustomFees.isEmpty()) {
+            entityListener.onCustomFee(customFee);
+            return autoAssociatedAccounts;
+        }
+
+        for (var protoCustomFee : protoCustomFees) {
             var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
-            var customFee = new CustomFee();
-            customFee.setTokenId(tokenId.getId());
-            customFee.setCreatedTimestamp(consensusTimestamp);
-            customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
-
             var feeCase = protoCustomFee.getFeeCase();
             boolean chargedInAttachedToken;
 
@@ -125,16 +130,11 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             if (transaction.getType() == TOKENCREATION.getProtoId() && chargedInAttachedToken) {
                 autoAssociatedAccounts.add(collector);
             }
-
-            entityListener.onCustomFee(customFee);
         }
 
-        // For empty custom fees, add a single row with only the timestamp and tokenId.
-        if (customFeeList.isEmpty()) {
-            var customFee = new CustomFee();
-            customFee.setTokenId(tokenId.getId());
-            customFee.setCreatedTimestamp(consensusTimestamp);
-            customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
+        // If the fee is empty do not persist it. The protoCustomFees did not contain a parseable fee, only recoverable
+        // error(s).
+        if (!customFee.isEmptyFee()) {
             entityListener.onCustomFee(customFee);
         }
         return autoAssociatedAccounts;
