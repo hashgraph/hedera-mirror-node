@@ -49,12 +49,10 @@ public class BatchUpserter extends BatchInserter {
             CommonParserProperties properties,
             UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
-        String createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
-        String createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
-        String setTempBuffersSql = String.format("set temp_buffers = '%dMB'", properties.getTempTableBufferSize());
-        String truncateSql = String.format("truncate table %s restart identity cascade", tableName);
-        tempTableSql =
-                StringUtils.joinWith(";\n", setTempBuffersSql, createTempTableSql, createTempIndexSql, truncateSql);
+        var createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
+        var createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
+        var truncateSql = String.format("truncate table %s restart identity cascade", tableName);
+        tempTableSql = StringUtils.joinWith(";\n", createTempTableSql, createTempIndexSql, truncateSql);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
         log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
