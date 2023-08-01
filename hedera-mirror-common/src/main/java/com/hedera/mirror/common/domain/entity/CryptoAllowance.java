@@ -23,7 +23,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @jakarta.persistence.Entity
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 public class CryptoAllowance extends AbstractCryptoAllowance {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

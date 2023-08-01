@@ -21,6 +21,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.codec.DecoderException;
 
 /**
@@ -107,6 +108,7 @@ public abstract class JKey {
             return (result);
         }
     }
+
     /**
      * Converts a basic JKey to proto Key.
      *
@@ -212,5 +214,29 @@ public abstract class JKey {
 
     public JContractIDKey getContractIDKey() {
         return null;
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+        try {
+            return Objects.equals(mapJKey(this), mapJKey((JKey) other));
+        } catch (DecoderException ignore) {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        try {
+            return Objects.hashCode(mapJKey(this));
+        } catch (DecoderException ignore) {
+            return Integer.MIN_VALUE;
+        }
     }
 }

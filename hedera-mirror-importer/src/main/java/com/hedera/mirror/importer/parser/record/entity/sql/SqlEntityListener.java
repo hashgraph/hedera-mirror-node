@@ -35,6 +35,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.FungibleAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -285,8 +286,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
-        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeCryptoAllowance);
-        cryptoAllowances.add(merged);
+        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeFungibleAllowance);
+        if (merged == cryptoAllowance) {
+            // Only add the merged object to the collection if it is a crypto allowance grant rather than
+            // just a debit to an existing grant.
+            cryptoAllowances.add(merged);
+        }
     }
 
     @Override
@@ -422,9 +427,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAllowance(TokenAllowance tokenAllowance) {
-        TokenAllowance merged =
-                tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeTokenAllowance);
-        tokenAllowances.add(merged);
+        var merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeFungibleAllowance);
+        // Only add the merged object to the collection if it is a token allowance grant rather than
+        // just a debit to an existing grant.
+        if (merged == tokenAllowance) {
+            tokenAllowances.add(merged);
+        }
     }
 
     @Override
@@ -599,11 +607,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return previous;
     }
 
-    private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
-        previous.setTimestampUpper(current.getTimestampLower());
-        return current;
-    }
-
     @SuppressWarnings("java:S3776")
     private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
@@ -744,6 +747,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return dest;
+    }
+
+    private <T extends FungibleAllowance> T mergeFungibleAllowance(T previous, T current) {
+        if (current.isHistory()) {
+            // Current is an allowance grant / revoke so close the previous timestamp range
+            previous.setTimestampUpper(current.getTimestampLower());
+            return current;
+        }
+
+        // Current must be an approved transfer and previous can be either so should accumulate the amounts regardless.
+        previous.setAmount(previous.getAmount() + current.getAmount());
+        return previous;
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {
@@ -928,11 +943,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return newTokenAccount;
-    }
-
-    private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
-        previous.setTimestampUpper(current.getTimestampLower());
-        return current;
     }
 
     private void onNftTransferList(Transaction transaction) {
