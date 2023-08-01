@@ -158,8 +158,9 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration i
             return;
         }
 
-        if ((streamFile.getHapiVersion()).isGreaterThan(HAPI_VERSION_0_37_0) && lastVersion.get() == null) {
-            var latestFile = recordFileRepository.findLatestWithOffset(1).get();
+        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0) && lastVersion.get() == null) {
+            var lastRecordFile = recordFileRepository.findLatestWithOffset(1);
+            var latestFile = lastRecordFile.orElse(null);
             if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0)) {
                 lastVersion.set(streamFile.getHapiVersion());
                 doMigrate();
