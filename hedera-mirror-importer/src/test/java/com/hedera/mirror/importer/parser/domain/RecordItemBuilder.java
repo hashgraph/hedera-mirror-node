@@ -29,10 +29,12 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties.PersistProperties;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -45,6 +47,8 @@ import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -69,6 +73,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -88,17 +93,23 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
@@ -132,8 +143,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -165,6 +178,9 @@ public class RecordItemBuilder {
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
+    @Getter
+    private final PersistProperties persistProperties = new PersistProperties();
+
     private Instant now = Instant.now();
 
     {
@@ -175,6 +191,22 @@ public class RecordItemBuilder {
 
     public Supplier<Builder<?>> lookup(TransactionType type) {
         return builders.get(type);
+    }
+
+    public Builder<ConsensusCreateTopicTransactionBody.Builder> consensusCreateTopic() {
+        var transactionBody = ConsensusCreateTopicTransactionBody.newBuilder()
+                .setAdminKey(key())
+                .setAutoRenewAccount(accountId())
+                .setAutoRenewPeriod(duration(3600))
+                .setMemo(text(16))
+                .setSubmitKey(key());
+        return new Builder<>(TransactionType.CONSENSUSCREATETOPIC, transactionBody)
+                .receipt(r -> r.setTopicID(topicId()));
+    }
+
+    public Builder<ConsensusDeleteTopicTransactionBody.Builder> consensusDeleteTopic() {
+        var transactionBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId());
+        return new Builder<>(TransactionType.CONSENSUSDELETETOPIC, transactionBody);
     }
 
     public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
@@ -521,6 +553,12 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.FILECREATE, builder).receipt(b -> b.setFileID(fileId()));
     }
 
+    public Builder<FileDeleteTransactionBody.Builder> fileDelete() {
+        var fileId = fileId();
+        var builder = FileDeleteTransactionBody.newBuilder().setFileID(fileId);
+        return new Builder<>(TransactionType.FILEDELETE, builder).receipt(b -> b.setFileID(fileId));
+    }
+
     public Builder<FileUpdateTransactionBody.Builder> fileUpdate() {
         var builder = FileUpdateTransactionBody.newBuilder()
                 .setContents(bytes(100))
@@ -589,7 +627,30 @@ public class RecordItemBuilder {
                 .setPayerAccountID(accountId())
                 .setExpirationTime(timestamp())
                 .setWaitForExpiry(true);
-        return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+        return new Builder<>(TransactionType.SCHEDULECREATE, builder).receipt(r -> r.setScheduleID(scheduleId()));
+    }
+
+    public Builder<ScheduleDeleteTransactionBody.Builder> scheduleDelete() {
+        var builder = ScheduleDeleteTransactionBody.newBuilder().setScheduleID(scheduleId());
+        return new Builder<>(TransactionType.SCHEDULEDELETE, builder);
+    }
+
+    public Builder<ScheduleSignTransactionBody.Builder> scheduleSign() {
+        var builder = ScheduleSignTransactionBody.newBuilder().setScheduleID(scheduleId());
+        return new Builder<>(TransactionType.SCHEDULESIGN, builder);
+    }
+
+    public Builder<SystemDeleteTransactionBody.Builder> systemDelete() {
+        var builder = SystemDeleteTransactionBody.newBuilder()
+                .setFileID(fileId())
+                .setExpirationTime(
+                        TimestampSeconds.newBuilder().setSeconds(Instant.now().getEpochSecond() + id()));
+        return new Builder<>(TransactionType.SYSTEMDELETE, builder);
+    }
+
+    public Builder<SystemUndeleteTransactionBody.Builder> systemUndelete() {
+        var builder = SystemUndeleteTransactionBody.newBuilder().setFileID(fileId());
+        return new Builder<>(TransactionType.SYSTEMUNDELETE, builder);
     }
 
     public Builder<TokenAssociateTransactionBody.Builder> tokenAssociate() {
@@ -692,6 +753,7 @@ public class RecordItemBuilder {
 
     public Builder<TokenCreateTransactionBody.Builder> tokenCreate() {
         var tokenId = tokenId();
+        var treasury = accountId();
         var transactionBody = TokenCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
                 .setAutoRenewAccount(accountId())
@@ -705,13 +767,18 @@ public class RecordItemBuilder {
                 .setPauseKey(key())
                 .setSupplyKey(key())
                 .setSymbol(text(4))
-                .setTreasury(accountId())
+                .setTreasury(treasury)
                 .addCustomFees(customFee(FIXED_FEE))
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
                 .receipt(r -> r.setTokenID(tokenId))
                 .record(r -> r.addAutomaticTokenAssociations(
-                        TokenAssociation.newBuilder().setAccountId(accountId()).setTokenId(tokenId)));
+                        TokenAssociation.newBuilder().setAccountId(treasury).setTokenId(tokenId)));
+    }
+
+    public Builder<TokenDeleteTransactionBody.Builder> tokenDelete() {
+        var builder = TokenDeleteTransactionBody.newBuilder().setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENDELETION, builder);
     }
 
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
@@ -902,6 +969,8 @@ public class RecordItemBuilder {
         private final AccountID payerAccountId;
         private final RecordItem.RecordItemBuilder recordItemBuilder;
 
+        private Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
+
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
             this.recordItemBuilder = RecordItem.builder().hapiVersion(RecordFile.HAPI_VERSION_NOT_SET);
@@ -932,10 +1001,16 @@ public class RecordItemBuilder {
                     .collect(Collectors.toList());
 
             return recordItemBuilder
+                    .entityTransactionPredicate(entityTransactionPredicate)
                     .transactionRecordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
                     .build();
+        }
+
+        public Builder<T> entityTransactionPredicate(Predicate<EntityId> entityTransactionPredicate) {
+            this.entityTransactionPredicate = entityTransactionPredicate;
+            return this;
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {

@@ -52,6 +52,7 @@ public final class TokenListChecks {
         return new HashSet<>(tokens).size() < tokens.size();
     }
 
+    @SuppressWarnings("java:S107")
     public static ResponseCodeEnum checkKeys(
             final boolean hasAdminKey,
             final Key adminKey,

@@ -38,6 +38,7 @@ class TransactionTest {
                       "errata": "INSERT",
                       "index":4,
                       "initial_balance": 5,
+                      "itemized_transfer": %s,
                       "memo": "BgcI",
                       "max_fee": 9,
                       "nft_transfer": %s,
@@ -54,10 +55,37 @@ class TransactionTest {
                       "valid_start_ns": 31
                     }
                     """;
+    private static final String EXPECTED_ITEMIZED_TRANSFER_VALUE =
+            """
+                    "[{\\"amount\\":-200,\\"entity_id\\":50,\\"is_approval\\":true},{\\"amount\\":200,\\"entity_id\\":51,\\"is_approval\\":false}]"
+                    """;
     private static final String EXPECTED_NFT_TRANSFER_VALUE =
             """
                     "[{\\"is_approval\\":false,\\"receiver_account_id\\":10,\\"sender_account_id\\":11,\\"serial_number\\":12,\\"token_id\\":13},{\\"is_approval\\":true,\\"receiver_account_id\\":14,\\"sender_account_id\\":15,\\"serial_number\\":16,\\"token_id\\":17}]"
                     """;
+
+    @Test
+    void addItemizedTransfer() {
+        var transaction = Transaction.builder().build();
+        assertThat(transaction.getItemizedTransfer()).isNull();
+
+        var domainBuilder = new DomainBuilder();
+        var itemizedTransfer1 = ItemizedTransfer.builder()
+                .amount(domainBuilder.id())
+                .entityId(domainBuilder.entityId(EntityType.ACCOUNT))
+                .isApproval(false)
+                .build();
+        transaction.addItemizedTransfer(itemizedTransfer1);
+        assertThat(transaction.getItemizedTransfer()).containsExactly(itemizedTransfer1);
+
+        var itemizedTransfer2 = ItemizedTransfer.builder()
+                .amount(domainBuilder.id())
+                .entityId(domainBuilder.entityId(EntityType.ACCOUNT))
+                .isApproval(true)
+                .build();
+        transaction.addItemizedTransfer(itemizedTransfer2);
+        assertThat(transaction.getItemizedTransfer()).containsExactly(itemizedTransfer1, itemizedTransfer2);
+    }
 
     @Test
     void addNftTransfer() {
@@ -78,6 +106,20 @@ class TransactionTest {
     void toJson() throws Exception {
         // given
         var transaction = getTransaction();
+        var itemizedTransfer1 = ItemizedTransfer.builder()
+                .amount(-200L)
+                .entityId(EntityId.of(50, EntityType.ACCOUNT))
+                .isApproval(true)
+                .build();
+        transaction.addItemizedTransfer(itemizedTransfer1);
+
+        var itemizedTransfer2 = ItemizedTransfer.builder()
+                .amount(200L)
+                .entityId(EntityId.of(51, EntityType.ACCOUNT))
+                .isApproval(false)
+                .build();
+        transaction.addItemizedTransfer(itemizedTransfer2);
+
         var nftTransfer1 = new NftTransfer();
         nftTransfer1.setIsApproval(false);
         nftTransfer1.setReceiverAccountId(EntityId.of(10L, EntityType.ACCOUNT));
@@ -98,12 +140,13 @@ class TransactionTest {
         String actual = OBJECT_MAPPER.writeValueAsString(transaction);
 
         // then
-        String expected = String.format(EXPECTED_JSON_TEMPLATE, EXPECTED_NFT_TRANSFER_VALUE);
+        String expected =
+                String.format(EXPECTED_JSON_TEMPLATE, EXPECTED_ITEMIZED_TRANSFER_VALUE, EXPECTED_NFT_TRANSFER_VALUE);
         JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 
     @Test
-    void toJsonNullNftTransfer() throws Exception {
+    void toJsonNullItemizedTransferAndNullNftTransfer() throws Exception {
         // given
         var transaction = getTransaction();
 
@@ -111,7 +154,7 @@ class TransactionTest {
         String actual = OBJECT_MAPPER.writeValueAsString(transaction);
 
         // then
-        String expected = String.format(EXPECTED_JSON_TEMPLATE, "null");
+        String expected = String.format(EXPECTED_JSON_TEMPLATE, "null", "null");
         JSONAssert.assertEquals(expected, actual, JSONCompareMode.STRICT);
     }
 

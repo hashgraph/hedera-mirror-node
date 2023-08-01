@@ -441,6 +441,7 @@ public class HederaTokenStore {
                 Duration.newBuilder().setSeconds(secs).build());
     }
 
+    @SuppressWarnings("java:S1172")
     public ResponseCodeEnum update(final TokenUpdateTransactionBody changes, final long now) {
         final var tId = resolve(changes.getToken());
         if (tId == MISSING_TOKEN) {
