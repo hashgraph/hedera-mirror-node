@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.84.2'
+      version: '0.85.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -35,7 +35,6 @@ spec:
       hostname: testnet.mirrornode.hedera.com
     importer:
       env:
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BUCKETNAME: "hedera-testnet-streams-2023-07"
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
@@ -56,9 +55,6 @@ spec:
       enabled: false
     redis:
       enabled: false
-    rest:
-      env:
-        HEDERA_MIRROR_REST_STATEPROOF_STREAMS_BUCKETNAME: "hedera-testnet-streams-2023-07"
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
