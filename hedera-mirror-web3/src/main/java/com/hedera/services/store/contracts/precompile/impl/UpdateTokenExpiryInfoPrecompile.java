@@ -22,7 +22,6 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -65,7 +64,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
 
-    private TokenUpdateExpiryInfoWrapper updateExpiryInfoOp;
     private HederaTokenStore hederaTokenStore;
     private final ContextOptionValidator contextOptionValidator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -92,16 +90,16 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
                     case ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2 -> SystemContractAbis.UPDATE_TOKEN_EXPIRY_INFO_V2;
                     default -> throw new IllegalArgumentException("invalid selector to updateExpiryInfo precompile");
                 };
-        updateExpiryInfoOp = getTokenUpdateExpiryInfoWrapper(input, aliasResolver, updateExpiryInfoAbi);
+        final var updateExpiryInfoOp = getTokenUpdateExpiryInfoWrapper(input, aliasResolver, updateExpiryInfoAbi);
         return syntheticTxnFactory.createTokenUpdateExpiryInfo(updateExpiryInfoOp);
     }
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        Objects.requireNonNull(updateExpiryInfoOp);
-        validateTrue(updateExpiryInfoOp.tokenID() != null, INVALID_TOKEN_ID);
-
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updateExpiryInfoOp = transactionBody.getTokenUpdate();
+        Objects.requireNonNull(updateExpiryInfoOp);
+
         initializeHederaTokenStore(store);
 
         final var validity = tokenUpdateLogic.validate(transactionBody);

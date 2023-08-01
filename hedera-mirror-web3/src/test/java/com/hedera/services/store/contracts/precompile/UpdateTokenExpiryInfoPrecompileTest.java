@@ -17,10 +17,8 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapperWithInvalidTokenID;
 import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +57,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UpdateTokenExpiryInfoPrecompileTest {
+class UpdateTokenExpiryInfoPrecompileTest {
 
     @Mock
     private MirrorNodeEvmProperties evmProperties;
@@ -184,30 +182,6 @@ public class UpdateTokenExpiryInfoPrecompileTest {
 
         // then
         assertEquals(successResult, result);
-    }
-
-    @Test
-    void updateTokenExpiryInfoFailsWithInvalidTokenID() {
-        // given
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        givenFrameContext();
-        givenMinimalContextForSuccessfulCall();
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
-        staticUpdateTokenExpiryInfoPrecompile
-                .when(() -> getTokenUpdateExpiryInfoWrapper(any(), any(), any()))
-                .thenReturn(tokenUpdateExpiryInfoWrapperWithInvalidTokenID);
-        given(syntheticTxnFactory.createTokenUpdateExpiryInfo(tokenUpdateExpiryInfoWrapperWithInvalidTokenID))
-                .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
-        // when
-        subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a);
-        final var result = subject.computeInternal(frame);
-
-        // then
-        assertEquals(invalidTokenIdResult, result);
     }
 
     @Test
