@@ -77,8 +77,7 @@ data:
                    --arg ZONE "${ZONE}" \
                    --arg CITUS_ROLE "${CITUS_ROLE}" \
                    --arg ROLE_LABEL "${ROLE_LABEL}" \
-                   '.items | map(select(.metadata.labels["topology.kubernetes.io/zone"] == $ZONE and 
-                                        .metadata.labels["generated-node-id"] == "true" and 
+                   '.items | map(select(.metadata.labels["topology.kubernetes.io/zone"] == $ZONE and
                                         .metadata.labels[$ROLE_LABEL] == $CITUS_ROLE))')"
       NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.metadata.name): {isUpgrade: (.metadata.labels["operation.gke.io/type"] == "drain")}}) | add')"
       
@@ -86,14 +85,15 @@ data:
       ## and generate its own version of the config map configuration to 
       ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
                       --arg NODE_ID_LABEL "${NODE_ID_LABEL}" \
-                      '. | map({
+                      '. | map(select(.metadata.labels["generated-node-id"] == "true")) |
+                           map({
                                  "nodeName": (.metadata.name), 
                                  "nodeId": (.metadata.labels[$NODE_ID_LABEL]), 
                                  "index": (.metadata.labels[$NODE_ID_LABEL] | match("\\d*$").string | tonumber)
                                }) | 
                             sort_by(.index) |
                               [
-                                range(0; ( .| max_by(.index)|.index ) + 1) as $node_index_range  |
+                                range(0; ( .| max_by(.index)|.index ) + 1) as $node_index_range |
                                   . as $nodes | $node_index_range |
                                   . as $i |
                                   if ([$nodes[]|contains( { index: $i })]|any )
@@ -155,7 +155,7 @@ data:
     else
         DISK_SIZE="${DISK_SIZE_COORDINATOR}"
     fi
-
+    
     ACTUAL_SIZE=$(gcloud compute disks list --filter="name:${DISK_NAME}" --format="value(sizeGb)")
     if [[ -z "${ACTUAL_SIZE}" ]]; then
         echo "Creating ${DISK_NAME} for ${CITUS_ROLE} with size ${DISK_SIZE}"
@@ -227,5 +227,5 @@ data:
     if [[ "${ZFS_INITIALIZED}" == "" ]]; then
       echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"  
     fi
-    
+
 {{- end -}}
