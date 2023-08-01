@@ -92,7 +92,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 success = true;
                 Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
                 parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
                 throw e;
             } finally {
@@ -109,15 +109,15 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             return false;
         }
 
-        var last = streamFileRepository.findLatest();
+        var lastRecordFile = streamFileRepository.findLatest();
 
         var lastRepo = lastFromDb.get();
 
-        if (last.isEmpty()) {
+        if (lastRecordFile.isEmpty()) {
             return true;
         }
 
-        var lastStreamFile = last.get();
+        var lastStreamFile = lastRecordFile.get();
         var name = streamFile.getName();
 
         if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
