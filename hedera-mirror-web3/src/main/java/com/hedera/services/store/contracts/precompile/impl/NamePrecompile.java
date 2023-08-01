@@ -18,9 +18,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
-import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -29,7 +26,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenNameResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Set;
@@ -44,7 +40,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
  *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
  *  4. Run method accepts Store argument in order to achieve stateless behaviour and returns {@link RunResult}
- *  5. Token's symbol is retrieved from Store instead of WorldLedgers
+ *  5. Token's name is retrieved from Store instead of WorldLedgers
  *  6. RedirectTarget is used in order to get the token from the Input bytes.
  */
 public class NamePrecompile extends AbstractReadOnlyPrecompile {
@@ -72,19 +68,9 @@ public class NamePrecompile extends AbstractReadOnlyPrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var redirectTarget = getRedirectTarget(frame);
+        final var redirectTarget = extractRedirectTarget(frame);
         final var token = store.getToken(redirectTarget.token(), OnMissing.THROW);
 
         return new TokenNameResult(token.getName());
-    }
-
-    private static RedirectTarget getRedirectTarget(final MessageFrame frame) {
-        final RedirectTarget target;
-        try {
-            target = DescriptorUtils.getRedirectTarget(frame.getInputData());
-        } catch (final Exception e) {
-            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-        }
-        return target;
     }
 }
