@@ -224,6 +224,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
+    @SuppressWarnings({"java:S1301", "java:S3776"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         final int functionId = input.getInt(0);
@@ -270,43 +271,43 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                             OnMissing.THROW)
                                     .getOwner();
                         }
-                        precompile =
+                        this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        transactionBody = precompile.body(
+                        this.transactionBody = precompile.body(
                                 input,
                                 aliasResolver,
                                 new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
                     }
                     case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
-                        precompile =
+                        this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        transactionBody =
+                        this.transactionBody =
                                 precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
                     }
                     case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
-                        precompile =
+                        this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        transactionBody = precompile.body(
+                        this.transactionBody = precompile.body(
                                 input.slice(24),
                                 aliasResolver,
                                 new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
                     }
                     default -> {
-                        precompile =
+                        this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                            transactionBody =
+                            this.transactionBody =
                                     precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                         } else {
-                            transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+                            this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
                         }
                     }
                 }
             }
             case AbiConstants.ABI_ID_APPROVE -> {
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
             }
             case AbiConstants.ABI_ID_APPROVE_NFT -> {
@@ -322,13 +323,14 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                         serialNumber.longValue()),
                                 OnMissing.THROW)
                         .getOwner();
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
             }
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
             }
             case AbiConstants.ABI_ID_TRANSFER_TOKENS,
                     AbiConstants.ABI_ID_TRANSFER_TOKEN,
@@ -336,29 +338,30 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_TRANSFER_NFT,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
             }
             default -> {
-                precompile = precompileMapper.lookup(functionId).orElseThrow();
-                transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
             }
         }
         gasRequirement = defaultGas();
     }
 
     void prepareFields(final MessageFrame frame) {
-        updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        this.updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
-        senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-        store = updater.getStore();
-        mirrorNodeEvmProperties = updater.aliases();
+        this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        this.store = updater.getStore();
+        this.mirrorNodeEvmProperties = updater.aliases();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
