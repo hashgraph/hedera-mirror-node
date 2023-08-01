@@ -31,7 +31,6 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
