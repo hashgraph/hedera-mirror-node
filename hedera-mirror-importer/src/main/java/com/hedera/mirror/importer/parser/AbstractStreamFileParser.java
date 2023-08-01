@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,6 +32,8 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
+    protected final AtomicReference<T> last;
+    protected final AtomicReference<T> lastFromDb;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
@@ -44,6 +47,9 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             MeterRegistry meterRegistry,
             ParserProperties parserProperties,
             StreamFileRepository<T, Long> streamFileRepository) {
+
+        this.last = new AtomicReference<>();
+        this.lastFromDb = new AtomicReference<>();
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
         this.streamFileRepository = streamFileRepository;
@@ -105,6 +111,8 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         var last = streamFileRepository.findLatest();
 
+        var lastRepo = lastFromDb.get();
+
         if (last.isEmpty()) {
             return true;
         }
@@ -126,6 +134,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                     name, expectedHash, actualHash, getClass().getSimpleName());
         }
 
+        lastFromDb.compareAndSet(lastRepo, lastStreamFile);
         return true;
     }
 }

@@ -32,6 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -57,11 +58,21 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 @Tag("migration")
 class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
+    public static final long START_TIMESTAMP = 1568415600193620000L;
+    private static final long END_TIMESTAMP = 1568528100472477002L;
+
     private final SyntheticCryptoTransferApprovalMigration migration;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TransactionRepository transactionRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
+    private static final RecordFile RECORD_FILE = RecordFile.builder()
+            .consensusStart(START_TIMESTAMP)
+            .consensusEnd(END_TIMESTAMP)
+            .hapiVersionMajor(0)
+            .hapiVersionMinor(39)
+            .hapiVersionPatch(1)
+            .build();
 
     private AtomicLong count = new AtomicLong(100000);
 
@@ -175,6 +186,35 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
         // when
         migration.migrateAsync();
+
+        var secondPassCryptoTransfers = cryptoTransferRepository.findAll();
+        var secondPassNftTransfers = transactionRepository.findAll();
+        var secondPassTokenTransfers = tokenTransferRepository.findAll();
+
+        // then
+        assertThat(firstPassCryptoTransfers).containsExactlyInAnyOrderElementsOf(secondPassCryptoTransfers);
+        assertThat(firstPassNftTransfers).containsExactlyInAnyOrderElementsOf(secondPassNftTransfers);
+        assertThat(firstPassTokenTransfers).containsExactlyInAnyOrderElementsOf(secondPassTokenTransfers);
+    }
+
+    @Test
+    void onEndRepeatMigration() {
+        // given
+        migrate();
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(38).hapiVersionPatch(9))
+                .persist();
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(39).hapiVersionPatch(0))
+                .persist();
+        var firstPassCryptoTransfers = cryptoTransferRepository.findAll();
+        var firstPassNftTransfers = transactionRepository.findAll();
+        var firstPassTokenTransfers = tokenTransferRepository.findAll();
+
+        // when
+        migration.onEnd(RECORD_FILE);
 
         var secondPassCryptoTransfers = cryptoTransferRepository.findAll();
         var secondPassNftTransfers = transactionRepository.findAll();

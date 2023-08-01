@@ -37,7 +37,6 @@ import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.Level;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -47,7 +46,6 @@ import reactor.core.publisher.Flux;
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
-    private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -66,7 +64,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             RecordStreamFileListener recordStreamFileListener,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, streamFileRepository);
-        this.last = new AtomicReference<>();
+
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -176,9 +174,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         var lastInMemory = last.get();
         var lastRecordFile = lastInMemory;
         var recordFileRepository = (RecordFileRepository) streamFileRepository;
-
+        var lastFromRepo = lastFromDb.get();
         if (lastRecordFile == null) {
-            lastRecordFile = recordFileRepository.findLatest().orElse(null);
+            lastRecordFile = lastFromRepo;
         }
 
         if (lastRecordFile != null && lastRecordFile.getVersion() < VERSION && recordFile.getVersion() >= VERSION) {
@@ -192,5 +190,6 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         }
 
         last.compareAndSet(lastInMemory, recordFile);
+        // Need to set items to null, setting it is causing some RecordParser tests to fail.
     }
 }

@@ -17,15 +17,25 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
+import java.util.concurrent.atomic.AtomicReference;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
-public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
+public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration implements RecordStreamFileListener {
+    // 779
+    public static final Version HAPI_VERSION_0_37_0 = new Version(0, 37, 0);
+    private static final AtomicReference<Version> lastVersion = new AtomicReference<>();
+    private final RecordFileRepository recordFileRepository;
 
     private static final String UPDATE_NFT_ALLOWANCE_OWNER_SQL =
             """
@@ -107,9 +117,13 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public SyntheticNftAllowanceOwnerMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
+    public SyntheticNftAllowanceOwnerMigration(
+            @Owner JdbcTemplate jdbcTemplate,
+            MirrorProperties mirrorProperties,
+            RecordFileRepository recordFileRepository) {
         super(mirrorProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
+        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
@@ -129,4 +143,25 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration {
         jdbcTemplate.execute(UPDATE_NFT_ALLOWANCE_OWNER_SQL);
         log.info("Updated nft allowance owners in {}", stopwatch);
     }
+
+    @Override
+    public void onStart() throws ImporterException {}
+
+    @Override
+    public void onEnd(RecordFile streamFile) throws ImporterException {
+        if (streamFile == null) {
+            return;
+        }
+
+        if ((streamFile.getHapiVersion()).isGreaterThan(HAPI_VERSION_0_37_0) && lastVersion.get() == null) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1).get();
+            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0)) {
+                lastVersion.set(streamFile.getHapiVersion());
+                doMigrate();
+            }
+        }
+    }
+
+    @Override
+    public void onError() {}
 }

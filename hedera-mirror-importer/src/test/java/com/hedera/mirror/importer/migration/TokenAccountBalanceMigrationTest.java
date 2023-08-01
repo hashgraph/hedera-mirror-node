@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
@@ -258,6 +259,25 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                         .returns(true, TokenAccount::getAssociated)
                         .returns(0L, TokenAccount::getCreatedTimestamp)
                         .returns(Range.atLeast(0L), TokenAccount::getTimestampRange));
+        assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void reRunMigrate() {
+        // given
+        setup();
+
+        // when
+        tokenAccountBalanceMigration.reRunMigration(new InitializeBalanceEvent(this));
+
+        // then
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
         assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 

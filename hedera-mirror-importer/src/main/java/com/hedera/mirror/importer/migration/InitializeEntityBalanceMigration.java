@@ -18,9 +18,11 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcOperations;
 
 @Named
@@ -86,5 +88,13 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
         var stopwatch = Stopwatch.createStarted();
         int count = jdbcOperations.update(INITIALIZE_ENTITY_BALANCE_SQL);
         log.info("Initialized {} entities balance in {}", count, stopwatch);
+    }
+
+    @EventListener
+    public void reRunMigration(InitializeBalanceEvent event) {
+        log.info(
+                "Re-running the InitializeEntityBalanceMigration on InitializeBalanceEvent created at {}",
+                event.getTimestamp());
+        doMigrate();
     }
 }

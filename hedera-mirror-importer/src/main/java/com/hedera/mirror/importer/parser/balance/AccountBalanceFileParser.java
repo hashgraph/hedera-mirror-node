@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final BatchPersister batchPersister;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final BalanceStreamFileListener streamFileListener;
@@ -53,10 +55,12 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             MeterRegistry meterRegistry,
             BalanceParserProperties parserProperties,
             StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
+            ApplicationEventPublisher applicationEventPublisher,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
             BalanceStreamFileListener streamFileListener) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.batchPersister = batchPersister;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.streamFileListener = streamFileListener;
     }
@@ -84,6 +88,11 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
         long count = 0L;
+        var lastBalanceFile = last.get();
+        // If no account balance file has been processed since last startup.
+        if (lastBalanceFile == null && lastFromDb.get() == null) {
+            applicationEventPublisher.publishEvent(new InitializeBalanceEvent(this));
+        }
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
@@ -121,5 +130,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
         streamFileListener.onEnd(accountBalanceFile);
         streamFileRepository.save(accountBalanceFile);
+
+        last.compareAndSet(lastBalanceFile, accountBalanceFile);
     }
 }

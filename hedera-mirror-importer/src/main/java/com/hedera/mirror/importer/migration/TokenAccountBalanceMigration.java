@@ -18,9 +18,11 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcOperations;
 
 @Named
@@ -88,5 +90,11 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
         var stopwatch = Stopwatch.createStarted();
         int count = jdbcOperations.update(UPDATE_TOKEN_ACCOUNT_SQL);
         log.info("Migrated {} token account balances in {}", count, stopwatch);
+    }
+
+    @EventListener
+    public void reRunMigration(InitializeBalanceEvent event) {
+        log.info("Running this on InitializeBalanceEvent created at {}", event.getTimestamp());
+        doMigrate();
     }
 }

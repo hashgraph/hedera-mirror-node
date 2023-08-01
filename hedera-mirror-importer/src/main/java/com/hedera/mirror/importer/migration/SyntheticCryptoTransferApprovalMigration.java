@@ -17,8 +17,12 @@
 package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.time.Duration;
@@ -27,16 +31,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long> {
+public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long>
+        implements RecordStreamFileListener {
 
+    public static final Version HAPI_VERSION_0_38_10 = new Version(0, 38, 10);
+    private static final AtomicReference<Version> lastVersion = new AtomicReference<>();
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
@@ -140,6 +149,33 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             update token_transfer set is_approval = true where consensus_timestamp = :consensus_timestamp and token_id = :token_id and account_id = :sender
             """;
 
+    private final RecordFileRepository recordFileRepository;
+
+    @Override
+    public void onStart() throws ImporterException {
+        // Not Applicable
+    }
+
+    @Override
+    public void onEnd(RecordFile streamFile) throws ImporterException {
+        if (streamFile == null) {
+            return;
+        }
+
+        if ((streamFile.getHapiVersion()).isGreaterThan(HAPI_VERSION_0_38_10) && lastVersion.get() == null) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1).get();
+            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)) {
+                lastVersion.set(streamFile.getHapiVersion());
+                migrateAsync();
+            }
+        }
+    }
+
+    @Override
+    public void onError() {
+        // Not Applicable
+    }
+
     private enum TRANSFER_TYPE {
         CRYPTO_TRANSFER,
         NFT_TRANSFER,
@@ -157,10 +193,12 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             DBProperties dbProperties,
             NamedParameterJdbcTemplate transferJdbcTemplate,
             MirrorProperties mirrorProperties,
-            TransactionOperations transactionOperations) {
+            TransactionOperations transactionOperations,
+            RecordFileRepository recordFileRepository) {
         super(transferJdbcTemplate, dbProperties.getSchema(), transactionOperations);
         this.transferJdbcTemplate = transferJdbcTemplate;
         this.mirrorProperties = mirrorProperties;
+        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
