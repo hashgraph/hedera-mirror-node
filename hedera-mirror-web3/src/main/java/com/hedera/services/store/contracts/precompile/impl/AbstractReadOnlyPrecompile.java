@@ -18,6 +18,9 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectTarget;
+import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -25,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -71,5 +75,15 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
             final HederaEvmContractAliases mirrorEvmContractAliases) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST, store);
+    }
+
+    protected static RedirectTarget extractRedirectTarget(final MessageFrame frame) {
+        final RedirectTarget target;
+        try {
+            target = DescriptorUtils.getRedirectTarget(frame.getInputData());
+        } catch (final Exception e) {
+            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        }
+        return target;
     }
 }
