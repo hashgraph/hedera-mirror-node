@@ -107,7 +107,7 @@ allprojects {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
             property("sonar.projectKey", "hedera-mirror-node")
-            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
+            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5,e6")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
             property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
@@ -118,6 +118,8 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
             property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
             property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
+            property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
         }
     }
 }
