@@ -38,7 +38,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
@@ -93,9 +92,6 @@ class PubSubRecordItemListenerTest {
 
     @Mock(strictness = LENIENT)
     private AddressBookService addressBookService;
-
-    @Mock
-    private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
 
     @Mock
     private PubSubTemplate pubSubTemplate;
@@ -168,11 +164,7 @@ class PubSubRecordItemListenerTest {
         var responseFuture = mock(CompletableFuture.class);
         doReturn(responseFuture).when(pubSubTemplate).publish(any(), any(), any());
         pubSubRecordItemListener = new PubSubRecordItemListener(
-                pubSubProperties,
-                pubSubTemplate,
-                addressBookService,
-                nonFeeTransferExtractionStrategy,
-                transactionHandlerFactory);
+                pubSubProperties, pubSubTemplate, addressBookService, transactionHandlerFactory);
     }
 
     @SuppressWarnings("unchecked")
@@ -254,9 +246,6 @@ class PubSubRecordItemListenerTest {
                 .transactionRecord(DEFAULT_RECORD)
                 .transaction(transaction)
                 .build();
-        when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(
-                        recordItem.getTransactionBody(), recordItem.getTransactionRecord()))
-                .thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
         // when
         pubSubRecordItemListener.onItem(recordItem);

@@ -50,14 +50,14 @@ alter table if exists contract_result
 create index if not exists contract_result__hash
     on contract_result using hash (transaction_hash);
 
-create index if not exists contract_result__id_payer_timestamp
-    on contract_result (contract_id, payer_account_id, consensus_timestamp);
+create index if not exists contract_result__id_sender_timestamp
+    on contract_result (contract_id, sender_id, consensus_timestamp);
 
 create index if not exists contract_result__id_timestamp
     on contract_result (contract_id, consensus_timestamp);
 
-create index if not exists contract_result__payer_timestamp
-    on contract_result (payer_account_id, consensus_timestamp);
+create index if not exists contract_result__sender_timestamp
+    on contract_result (sender_id, consensus_timestamp);
 
 -- contract_state
 alter table if exists contract_state
@@ -119,6 +119,16 @@ create index if not exists entity_history__id_lower_timestamp on entity_history 
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
 
+-- entity_stake_history
+create index if not exists entity_stake_history__id_lower_timestamp
+    on entity_stake_history (id, lower(timestamp_range));
+create index if not exists entity_stake_history__timestamp_range
+    on entity_stake_history using gist (timestamp_range);
+
+-- entity_transaction
+alter table if exists entity_transaction
+    add constraint entity_transaction__pk primary key (entity_id, consensus_timestamp);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
@@ -163,12 +173,10 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 create index if not exists nft_allowance_history__owner_spender_token_lower_timestamp
     on nft_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
+-- node_stake
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
-
--- non_fee_transfer
-create index if not exists non_fee_transfer__consensus_timestamp
-    on non_fee_transfer (consensus_timestamp);
+create index if not exists node_stake__epoch_day on node_stake (epoch_day);
 
 -- prng
 alter table prng

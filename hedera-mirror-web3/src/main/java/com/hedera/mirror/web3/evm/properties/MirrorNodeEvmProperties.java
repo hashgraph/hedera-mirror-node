@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.properties;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -26,12 +27,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,8 +44,11 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
 
+    @Getter
+    private boolean allowTreasuryToOwnNfts = true;
+
     @NotNull
-    private HederaChainId chainId = HederaChainId.TESTNET;
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
 
     @Getter
     @Positive
@@ -56,6 +63,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @NotNull
+    private EvmSpecVersion evmSpecVersion = EvmSpecVersion.SHANGHAI;
+
+    @Getter
+    @NotNull
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
 
@@ -66,12 +77,25 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private long htsDefaultGasCost = 10000;
 
     @Getter
+    private boolean limitTokenAssociations = false;
+
+    @Getter
+    @Min(1)
+    private long maxAutoRenewDuration = 10000L;
+
+    @Getter
     @Min(1)
     private int maxBatchSizeBurn = 10;
 
     @Getter
     @Min(1)
     private int maxBatchSizeMint = 10;
+
+    @Getter
+    @Min(1)
+    private int maxBatchSizeWipe = 10;
+
+    private int maxCustomFeesAllowed = 10;
 
     // maximum iteration count for estimate gas' search algorithm
     @Getter
@@ -83,11 +107,27 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
+    @Min(1)
+    private int maxMemoUtf8Bytes = 100;
+
+    @Getter
     private int maxNftMetadataBytes = 100;
 
     @Getter
     @Min(1)
+    private int maxTokenNameUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
     private int maxTokensPerAccount = 1000;
+
+    @Getter
+    @Min(1)
+    private int maxTokenSymbolUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
+    private long minAutoRenewDuration = 1000L;
 
     @Getter
     @NotNull
@@ -97,6 +137,18 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
+
+    public boolean shouldAutoRenewAccounts() {
+        return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
+    }
+
+    public boolean shouldAutoRenewContracts() {
+        return autoRenewTargetTypes.contains(EntityType.CONTRACT);
+    }
+
+    public boolean shouldAutoRenewSomeEntityType() {
+        return !autoRenewTargetTypes.isEmpty();
+    }
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
@@ -120,7 +172,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Bytes32 chainIdBytes32() {
-        return Bytes32.fromHexString(chainId.getChainId());
+        return network.getChainId();
     }
 
     @Override
@@ -138,25 +190,19 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return maxGasRefundPercentage;
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum HederaNetwork {
-        MAINNET(unhex("00")),
-        TESTNET(unhex("01")),
-        PREVIEWNET(unhex("02")),
-        OTHER(unhex("03"));
-
-        private final byte[] ledgerId;
+    public int maxCustomFeesAllowed() {
+        return maxCustomFeesAllowed;
     }
 
     @Getter
     @RequiredArgsConstructor
-    public enum HederaChainId {
-        MAINNET("0x0127"),
-        TESTNET("0x0128"),
-        PREVIEWNET("0x0129"),
-        OTHER("0x12A");
+    public enum HederaNetwork {
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127")),
+        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128")),
+        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129")),
+        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"));
 
-        private final String chainId;
+        private final byte[] ledgerId;
+        private final Bytes32 chainId;
     }
 }

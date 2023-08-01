@@ -62,6 +62,7 @@ const filterKeys = {
   TOPIC_ID: 'topic.id',
   TRANSACTION_INDEX: 'transaction.index',
   TRANSACTION_TYPE: 'transactiontype',
+  TRANSACTIONS: 'transactions',
   HASH_OR_NUMBER: 'hashOrNumber',
   SLOT: 'slot',
 };
@@ -152,7 +153,7 @@ const networks = {
 const defaultBucketNames = {
   [networks.DEMO]: 'hedera-demo-streams',
   [networks.MAINNET]: 'hedera-mainnet-streams',
-  [networks.TESTNET]: 'hedera-testnet-streams-2023-01',
+  [networks.TESTNET]: 'hedera-testnet-streams-2023-07',
   [networks.PREVIEWNET]: 'hedera-preview-testnet-streams',
   [networks.OTHER]: null,
 };

@@ -55,6 +55,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
+    private static final String BYTES = "6080";
 
     @Resource
     private WebTestClient webClient;
@@ -225,6 +226,44 @@ class ContractControllerTest {
     }
 
     @Test
+    void exceedingDataCallSizeOnEstimate() {
+        final var request = request();
+        request.setData("0x" + BYTES.repeat(4000));
+        request.setEstimate(true);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("data field must not exceed call size limit"));
+    }
+
+    @Test
+    void exceedingDataCreateSizeOnEstimate() {
+        final var request = request();
+
+        request.setTo(null);
+        request.setData("0x" + BYTES.repeat(20000));
+        request.setEstimate(true);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string"));
+    }
+
+    @Test
     void callWithMalformedJsonBody() {
         webClient
                 .post()
@@ -374,6 +413,9 @@ class ContractControllerTest {
 
     @Test
     void transferSuccess() {
+        final var request = request();
+        request.setData(null);
+
         webClient
                 .post()
                 .uri(CALL_URI)
@@ -409,6 +451,7 @@ class ContractControllerTest {
         request.setGasPrice(78282329L);
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);
+        request.setData("0x1079023a");
         return request;
     }
 

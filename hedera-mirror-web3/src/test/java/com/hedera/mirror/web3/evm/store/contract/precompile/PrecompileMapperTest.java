@@ -31,9 +31,6 @@ import org.springframework.context.annotation.Import;
 class PrecompileMapperTest {
 
     @Autowired
-    private MockPrecompile mockPrecompile;
-
-    @Autowired
     private PrecompileMapper precompileMapper;
 
     @Test
@@ -52,7 +49,7 @@ class PrecompileMapperTest {
 
     @Test
     void unsupportedPrecompileThrowsException() {
-        int functionSelector = 0x189a554c;
+        int functionSelector = 0x2cccc36f;
 
         assertThatThrownBy(() -> precompileMapper.lookup(functionSelector))
                 .isInstanceOf(UnsupportedOperationException.class);

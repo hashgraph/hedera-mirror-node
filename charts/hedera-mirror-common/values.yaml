@@ -413,24 +413,23 @@ traefik:
     type: ClusterIP
 
 zfs:
+  analytics:
+    enabled: false
   coordinator:
-    diskSize: 128GB
+    diskSize: 300GB
   enabled: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: gcr.io
+    repository: google.com/cloudsdktool/google-cloud-cli
+    tag: slim
   parameters:
     compression: zstd-6
     fstype: zfs
     poolname: zfspv-pool
     recordsize: 32k
   worker:
-    diskSize: 256GB
-  zfsController:
-    nodeSelector:
-      csi-type: zfs
-    tolerations:
-      - effect: NoSchedule
-        key: zfs
-        operator: Equal
-        value: "true"
+    diskSize: 3200GB
   zfsNode:
     nodeSelector:
       csi-type: zfs

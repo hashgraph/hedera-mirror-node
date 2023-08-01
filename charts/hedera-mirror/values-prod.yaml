@@ -112,20 +112,22 @@ rosetta:
 
 stackgres:
   coordinator:
-    instances: 3
+    instances: 2
     resources:
-      cpu: 4000m
-      memory: 26Gi
+      cpu: 3700m
+      memory: 24Gi
     persistentVolume:
       size: 256Gi
+      storageClass: zfs
   worker:
     instances: 3
     replicasPerInstance: 2
     resources:
-      cpu: 4000m
-      memory: 26Gi
+      cpu: 3700m
+      memory: 24Gi
     persistentVolume:
-      size: 256Gi
+      size: 3000Gi
+      storageClass: zfs
 
 web3:
   alertmanager:

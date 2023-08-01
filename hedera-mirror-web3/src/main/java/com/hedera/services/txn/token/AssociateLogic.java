@@ -66,7 +66,7 @@ public class AssociateLogic {
         newTokenRelationships.forEach(store::updateTokenRelationship);
     }
 
-    private List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
+    public List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
         int numAssociations = account.getNumAssociations();
         final var proposedTotalAssociations = tokens.size() + numAssociations;
 
@@ -81,7 +81,7 @@ public class AssociateLogic {
 
             validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 
-            final var newRel = new TokenRelationship(token, updatedAccount);
+            final var newRel = new TokenRelationship(token, updatedAccount, true);
             numAssociations++;
             newModelRels.add(newRel);
         }

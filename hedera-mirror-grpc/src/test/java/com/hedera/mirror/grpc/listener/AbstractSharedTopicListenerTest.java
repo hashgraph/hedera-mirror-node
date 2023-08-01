@@ -16,10 +16,11 @@
 
 package com.hedera.mirror.grpc.listener;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
+
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.DisplayName;
@@ -44,10 +45,8 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
         listenerProperties.setMaxBufferSize(maxBufferSize);
         listenerProperties.setPrefetch(prefetch);
 
-        TopicMessageFilter filterFast = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(topicId)
-                .build();
+        TopicMessageFilter filterFast =
+                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
 
         // create a fast subscriber to keep the shared flux open. the fast subscriber should receive all messages
         var stepVerifierFast = topicListener
@@ -58,17 +57,15 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
                 .thenCancel()
                 .verifyLater();
 
-        TopicMessageFilter filterSlow = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(topicId)
-                .build();
+        TopicMessageFilter filterSlow =
+                TopicMessageFilter.builder().startTime(0).topicId(topicId).build();
 
         // send the messages in two batches and wait 2 * polling interval between. Limit the first batch to
         // maxBufferSize messages so it definitely won't cause overflow with the SharedPollingTopicListener.
         // The wait also gives the subscriber threads chance to consume messages in slow environment.
         Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(maxBufferSize, future);
         Flux<TopicMessage> secondBatch =
-                domainBuilder.topicMessages(numMessages - maxBufferSize, future.plusSeconds(1));
+                domainBuilder.topicMessages(numMessages - maxBufferSize, future + NANOS_PER_SECOND);
 
         // the slow subscriber
         topicListener

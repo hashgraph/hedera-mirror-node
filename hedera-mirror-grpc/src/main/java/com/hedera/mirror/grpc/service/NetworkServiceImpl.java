@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
@@ -57,6 +58,8 @@ public class NetworkServiceImpl implements NetworkService {
     private final AddressBookRepository addressBookRepository;
     private final AddressBookEntryRepository addressBookEntryRepository;
     private final NodeStakeRepository nodeStakeRepository;
+
+    @Qualifier("readOnly")
     private final TransactionOperations transactionOperations;
 
     @Override

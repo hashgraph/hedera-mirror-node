@@ -50,7 +50,7 @@ import org.springframework.util.CollectionUtils;
 @CustomLog
 @Named
 @Value
-public class SDKClient implements AutoCloseable {
+public class SDKClient implements Cleanable {
 
     private final Client client;
     private final ExpandedAccountId defaultOperator;
@@ -76,6 +76,7 @@ public class SDKClient implements AutoCloseable {
         this.client = createClient();
         client.setGrpcDeadline(sdkProperties.getGrpcDeadline())
                 .setMaxAttempts(sdkProperties.getMaxAttempts())
+                .setMaxNodeReadmitTime(Duration.ofSeconds(60L))
                 .setMaxNodesPerTransaction(sdkProperties.getMaxNodesPerTransaction());
         startupProbe.validateEnvironment(client);
         validateClient();
@@ -90,17 +91,18 @@ public class SDKClient implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public void clean() {
         var createdAccountId = expandedOperatorAccountId.getAccountId();
         var operatorId = defaultOperator.getAccountId();
 
         if (!operatorId.equals(createdAccountId)) {
             try {
-                new AccountDeleteTransaction()
+                var response = new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
                         .setTransferAccountId(operatorId)
-                        .execute(client);
-                log.info("Deleted temporary operator account {}", createdAccountId);
+                        .execute(client)
+                        .getReceipt(client);
+                log.info("Deleted temporary operator account {} via {}", createdAccountId, response.transactionId);
             } catch (Exception e) {
                 log.warn("Unable to delete temporary operator account {}", createdAccountId, e);
             }
@@ -111,6 +113,11 @@ public class SDKClient implements AutoCloseable {
         } catch (TimeoutException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public int getOrder() {
+        return LOWEST_PRECEDENCE;
     }
 
     private Client createClient() throws InterruptedException {
@@ -145,7 +152,8 @@ public class SDKClient implements AutoCloseable {
     private ExpandedAccountId getOperatorAccount() {
         try {
             if (acceptanceTestProperties.isCreateOperatorAccount()) {
-                PrivateKey privateKey = PrivateKey.generateED25519();
+                // Use the same operator key in case we need to later manually update/delete any created entities.
+                PrivateKey privateKey = defaultOperator.getPrivateKey();
                 PublicKey publicKey = privateKey.getPublicKey();
                 var accountId = new AccountCreateTransaction()
                         .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))

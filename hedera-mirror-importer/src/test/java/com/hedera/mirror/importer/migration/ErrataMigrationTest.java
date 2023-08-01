@@ -151,7 +151,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         errataMigration.doMigrate();
 
         assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
-        assertThat(contractResultRepository.count()).isEqualTo(1L);
+        assertThat(contractResultRepository.count()).isEqualTo(13L);
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
         assertErrataTransactions(ErrataType.INSERT, 113);
         assertErrataTransactions(ErrataType.DELETE, 0);
@@ -177,7 +177,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 566);
         assertErrataTransfers(ErrataType.DELETE, 6);
-        assertThat(contractResultRepository.count()).isEqualTo(1L);
+        assertThat(contractResultRepository.count()).isEqualTo(13L);
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
     }
 
@@ -251,8 +251,10 @@ public class ErrataMigrationTest extends IntegrationTest {
             long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer, boolean senderIsPayer) {
         var transaction = domainBuilder
                 .transaction()
-                .customize(t ->
-                        t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
+                .customize(t -> t.consensusTimestamp(consensusTimestamp)
+                        .result(result)
+                        .type(type.getProtoId())
+                        .itemizedTransfer(null))
                 .persist();
         long amount = 100000L;
         long payer = transaction.getPayerAccountId().getId() + 1000L;

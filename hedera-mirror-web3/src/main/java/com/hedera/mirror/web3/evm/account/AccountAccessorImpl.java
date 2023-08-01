@@ -16,32 +16,25 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-
-import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import jakarta.inject.Named;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Named
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
-    private final MirrorEntityAccess mirrorEntityAccess;
-    private final EntityRepository entityRepository;
+
+    private final Store store;
+    private final HederaEvmEntityAccess mirrorEntityAccess;
+    private final MirrorEvmContractAliases aliases;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        final var addressBytes = addressOrAlias.toArrayUnsafe();
-        if (!isMirror(addressBytes)) {
-            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-            if (entityFoundByAlias.isPresent()) {
-                return addressOrAlias;
-            }
+        if (aliases.isInUse(addressOrAlias)) {
+            return addressOrAlias;
         }
 
         return getAddressOrAlias(addressOrAlias);
@@ -53,15 +46,15 @@ public class AccountAccessorImpl implements AccountAccessor {
     }
 
     public Address getAddressOrAlias(final Address address) {
-        final ByteString alias;
-        if (!mirrorEntityAccess.isExtant(address)) {
+        if (mirrorEntityAccess.isExtant(address)) {
             return address;
         }
-        alias = mirrorEntityAccess.alias(address);
-
-        if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
-            return Address.wrap(Bytes.wrap(alias.toByteArray()));
+        // An EIP-1014 address is always canonical
+        if (!aliases.isMirror(address)) {
+            return address;
         }
-        return address;
+
+        final var account = store.getAccount(address, OnMissing.DONT_THROW);
+        return account.canonicalAddress();
     }
 }

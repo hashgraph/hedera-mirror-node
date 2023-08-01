@@ -22,9 +22,10 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.SubType.*;
 
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
@@ -43,21 +44,6 @@ import java.util.Map;
 public class PrecompilePricingUtils {
 
     public static final JKey EMPTY_KEY;
-
-    static {
-        EMPTY_KEY = asFcKeyUnchecked(
-                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
-    }
-
-    static class CanonicalOperationsUnloadableException extends RuntimeException {
-
-        static final long serialVersionUID = 1L;
-
-        public CanonicalOperationsUnloadableException(final Exception e) {
-            super("Canonical prices for precompiles are not available", e);
-        }
-    }
-
     /**
      * If we lack an entry (because of a bad data load), return a value that cannot reasonably be paid. In this case $1
      * Million Dollars.
@@ -67,17 +53,23 @@ public class PrecompilePricingUtils {
     private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
             .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
             .build();
-    private final BasicHbarCentExchange exchange;
-    private final FeeCalculator feeCalculator;
-    private final BasicFcfsUsagePrices resourceCosts;
-    private final AccessorFactory accessorFactory;
+
+    static {
+        EMPTY_KEY = asFcKeyUnchecked(
+                Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
+    }
+
     final Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
+    private final HbarCentExchange exchange;
+    private final FeeCalculator feeCalculator;
+    private final UsagePricesProvider resourceCosts;
+    private final AccessorFactory accessorFactory;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
-            final BasicHbarCentExchange exchange,
+            final HbarCentExchange exchange,
             final FeeCalculator feeCalculator,
-            final BasicFcfsUsagePrices resourceCosts,
+            final UsagePricesProvider resourceCosts,
             final AccessorFactory accessorFactory) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
@@ -114,7 +106,11 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(final TransactionBody.Builder txBody, final Timestamp timestamp, final Store store) {
+    public long gasFeeInTinybars(
+            final TransactionBody.Builder txBody,
+            final Timestamp timestamp,
+            final Store store,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
         final var signedTxn = SignedTransaction.newBuilder()
                 .setBodyBytes(txBody.build().toByteString())
                 .setSigMap(SignatureMap.getDefaultInstance())
@@ -123,7 +119,7 @@ public class PrecompilePricingUtils {
                 .setSignedTransactionBytes(signedTxn.toByteString())
                 .build();
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
-        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp, mirrorEvmContractAliases);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
@@ -146,7 +142,8 @@ public class PrecompilePricingUtils {
             final long blockTimestamp,
             final Precompile precompile,
             final TransactionBody.Builder transactionBody,
-            final Store store) {
+            final Store store,
+            final HederaEvmContractAliases mirrorEvmContractAliases) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -156,9 +153,10 @@ public class PrecompilePricingUtils {
                         .setTransactionValidStart(timestamp)
                         .build()),
                 timestamp,
-                store);
+                store,
+                mirrorEvmContractAliases);
 
-        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
         // convert to gas cost
@@ -203,6 +201,15 @@ public class PrecompilePricingUtils {
         GasCostType(final HederaFunctionality functionality, final SubType subtype) {
             this.functionality = functionality;
             this.subtype = subtype;
+        }
+    }
+
+    static class CanonicalOperationsUnloadableException extends RuntimeException {
+
+        static final long serialVersionUID = 1L;
+
+        public CanonicalOperationsUnloadableException(final Exception e) {
+            super("Canonical prices for precompiles are not available", e);
         }
     }
 }

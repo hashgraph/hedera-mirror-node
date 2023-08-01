@@ -4,19 +4,19 @@
 
 The table below documents the database indexes with the usage in APIs / services.
 
-| Table           | Indexed Columns                                    | Component   | Service                                              | Description                                                                                                                            |
-|-----------------|----------------------------------------------------|-------------|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| contract_result | consensus_timestamp                                | REST API    | `/api/v1/contracts/results`                          | Used to query contract results with timestamp filter                                                                                   |
-| contract_result | contract_id, payer_account_id, consensus_timestamp | REST API    | `/api/v1/contracts/:idOrAddress/results?from=:from`  | Used to query a specific contract's results with from filter                                                                           |
-| contract_result | contract_id, consensus_timestamp                   | REST API    | `/api/v1/contracts/:idOrAddress/results`             | Used to query a specific contract's results with optional timestamp filter                                                             |
-| contract_result | payer_account_id, consensus_timestamp              | REST API    | `/api/v1/contracts/results?from=:from`               | Used to query contract results with from address filter                                                                                |
-| nft             | account_id, spender, token_id, serial_number       | REST API    | `/api/v1/accounts/:accountIdOrAlias/nfts`            | Used to query nft allowance granted by the owner account, optionally filtered by spender, token ID and/or serial number                |
-| nft_transfer    | consensus_timestamp                                | REST API    | `/api/v1/transactions/:id`                           | Used to join `nft_transfer` and the `tlist` CTE on `consensus_timestamp` equality                                                      |
-| nft_transfer    | token_id, serial_number, consensus_timestamp       | REST API    | `/api/v1/tokens/:id/nfts/:serialNumber/transactions` | Used to query the transfer consensus timestamps of a NFT (token_id, serial_number) with optional timestamp filter                      |
-| nft_transfer    | consensus_timestamp                                | Rosetta API | `/account/balance`                                   | Used to calculate an account's nft token balance including serial numbers at a block                                                   |
-| nft_transfer    | consensus_timestamp                                | Rosetta API | `/block`                                             | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
-| nft_transfer    | consensus_timestamp                                | Rosetta API | `/block/transaction`                                 | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
-| transaction     | type, consensus_timestamp                          | REST API    | `/api/v1/transactions?type=:type&order=:order`       | Used to retrieve transactions filtered by `type` and sorted by `consensus_timestamp` to facilitate faster by-type transaction requests |
+| Table           | Indexed Columns                              | Component   | Service                                              | Description                                                                                                                            |
+|-----------------|----------------------------------------------|-------------|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| contract_result | consensus_timestamp                          | REST API    | `/api/v1/contracts/results`                          | Used to query contract results with timestamp filter                                                                                   |
+| contract_result | contract_id, sender_id, consensus_timestamp  | REST API    | `/api/v1/contracts/:idOrAddress/results?from=:from`  | Used to query a specific contract's results with `from` filter                                                                         |
+| contract_result | contract_id, consensus_timestamp             | REST API    | `/api/v1/contracts/:idOrAddress/results`             | Used to query a specific contract's results with optional timestamp filter                                                             |
+| contract_result | sender_id, consensus_timestamp               | REST API    | `/api/v1/contracts/results?from=:from`               | Used to query contract results with `from` address filter                                                                              |
+| nft             | account_id, spender, token_id, serial_number | REST API    | `/api/v1/accounts/:accountIdOrAlias/nfts`            | Used to query nft allowance granted by the owner account, optionally filtered by spender, token ID and/or serial number                |
+| nft_transfer    | consensus_timestamp                          | REST API    | `/api/v1/transactions/:id`                           | Used to join `nft_transfer` and the `tlist` CTE on `consensus_timestamp` equality                                                      |
+| nft_transfer    | token_id, serial_number, consensus_timestamp | REST API    | `/api/v1/tokens/:id/nfts/:serialNumber/transactions` | Used to query the transfer consensus timestamps of a NFT (token_id, serial_number) with optional timestamp filter                      |
+| nft_transfer    | consensus_timestamp                          | Rosetta API | `/account/balance`                                   | Used to calculate an account's nft token balance including serial numbers at a block                                                   |
+| nft_transfer    | consensus_timestamp                          | Rosetta API | `/block`                                             | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
+| nft_transfer    | consensus_timestamp                          | Rosetta API | `/block/transaction`                                 | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
+| transaction     | type, consensus_timestamp                    | REST API    | `/api/v1/transactions?type=:type&order=:order`       | Used to retrieve transactions filtered by `type` and sorted by `consensus_timestamp` to facilitate faster by-type transaction requests |
 
 ## Reset
 
@@ -37,12 +37,20 @@ nodes connected to those environments will need to be reset to remain functional
    a new bucket, the importer start date can be set to 1970 to ensure no data is missed.
 
    ```properties
-   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-2023-01
+   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-YYYY-MM
    hedera.mirror.importer.startDate=1970-01-01T00:00:00Z
    ```
 
 4. Start the Importer process and ensure it prints the new bucket on startup and successfully starts syncing.
-5. Restart the remaining mirror node components to clear any cached information.
+5. Update the REST API to the new bucket name if state proofs are enabled.
+
+   ```shell
+   HEDERA_MIRROR_REST_STATEPROOF_STREAMS_BUCKETNAME: "hedera-testnet-streams-YYYY-MM"
+   ```
+
+6. If any of the mirror node monitoring tools is used, ensure any hardcoded entity IDs in their configuration is updated
+   with new entities created after the reset.
+7. Restart the remaining mirror node components to clear any cached information.
 
 ## Retention
 
@@ -198,13 +206,12 @@ transactions in the balance and record streams. These issues should only appear 
   transactions.
 * Solution: Fixed in Hedera Services [v0.34.2](https://github.com/hashgraph/hedera-services/releases/tag/v0.34.2) on
   February 17, 2023. Fixed in Mirror Node in v0.74.3 by a migration that adds the missing transactions.
-  
+
 ## Database migration from V1 to V2
 
-[Citus](https://github.com/citusdata/citus) is the database engine to use with the V2 schema.
-
-The following table is the recommended configuration for a production Citus cluster. Note the storage size is an
-estimation for all mainnet data since OA till 04/2023.
+[Citus](https://github.com/citusdata/citus) is the database engine to use with the V2 schema. The following table is the
+recommended configuration for a production Citus cluster. Note the storage size is an estimation for all mainnet data
+since open access until April 2023.
 
 | Node Type   | Count | vCPU | Memory | Disk Storage |
 |-------------|-------|------|--------|--------------|
@@ -213,14 +220,13 @@ estimation for all mainnet data since OA till 04/2023.
 
 Following are the prerequisites and steps for migrating V1 data to V2.
 
-1. Create a Citus cluster with enough resources (Disk, CPU and memory).
-2. Populate correct values for OLD_DB config in the 
-   [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config) to point to the 
-   existing database instance.
-3. Populate correct values for NEW_DB config in the migration.config to point to the new citus DB.
-4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
-   update it in the FLYWAY_URL field in the migration.config file. The default is set to the macosx version.
-5. Update the flyway.url field in the flyway.conf file to point to the citus db location.
-6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
-7. Stop the [Importer](/docs/importer/README.md) process.
-8. Update the Importer to point to the new Citus DB and start it.
+1. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, an e2-custom-6-32768 can be used.
+2. Ensure the source and target schemas are compatible by deploying the same version to both.
+3. Create a VM with a disk big enough to contain the source data and checkout the source code to it.
+4. Populate correct values for the source and target configuration in the
+   [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config).
+5. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
+   update it in the `FLYWAY_URL` field in the `migration.config` file. The default is set to the linux version.
+6. Stop the [Importer](/docs/importer/README.md) process.
+7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
+8. Update the mirror node configuration to point to the new Citus DB and start it.

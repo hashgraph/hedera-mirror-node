@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -29,19 +28,16 @@ import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
-class NodeStakeUpdateTransactionHandler implements TransactionHandler {
+class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
-
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return null;
-    }
 
     @Override
     public TransactionType getType() {
@@ -49,7 +45,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         if (!recordItem.isSuccessful()) {
             var status = recordItem.getTransactionRecord().getReceipt().getStatus();
@@ -87,13 +83,12 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
         var nodeStakesProtos = transactionBody.getNodeStakeList();
         if (nodeStakesProtos.isEmpty()) {
+            log.warn("NodeStakeUpdateTransaction has empty node stake list");
             return;
         }
 
-        consensusNodeService.refresh();
-
         for (var nodeStakeProto : nodeStakesProtos) {
-            NodeStake nodeStake = new NodeStake();
+            var nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);
             nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
@@ -106,5 +101,8 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
         }
+
+        applicationEventPublisher.publishEvent(new NodeStakeUpdatedEvent(this));
+        consensusNodeService.refresh();
     }
 }

@@ -16,18 +16,28 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.FcTokenAllowanceId;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
 public class StoreImpl implements Store {
@@ -63,6 +73,16 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public Token loadPossiblyPausedToken(final Address tokenAddress) {
+        final var token = getToken(tokenAddress, OnMissing.DONT_THROW);
+
+        validateTrue(!token.isEmptyToken(), INVALID_TOKEN_ID);
+        validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
+
+        return token;
+    }
+
+    @Override
     public TokenRelationship getTokenRelationship(
             final TokenRelationshipKey tokenRelationshipKey, final OnMissing throwIfMissing) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
@@ -92,14 +112,29 @@ public class StoreImpl implements Store {
     public void updateAccount(final Account updatedAccount) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         accountAccessor.set(updatedAccount.getAccountAddress(), updatedAccount);
+
+        final var canonicalAddress = updatedAccount.canonicalAddress();
+        if (canonicalAddress != null && !canonicalAddress.equals(updatedAccount.getAccountAddress())) {
+            accountAccessor.set(canonicalAddress, updatedAccount);
+        }
     }
 
     @Override
     public void deleteAccount(final Address accountAddress) {
         final var topFrame = stackedStateFrames.top();
-        final var accountAccessor = topFrame.getAccessor(com.hedera.services.store.models.Account.class);
+        final var accountAccessor = topFrame.getAccessor(Account.class);
         try {
+            final var account = accountAccessor.get(accountAddress);
+            if (account.isEmpty()) {
+                return;
+            }
+
             accountAccessor.delete(accountAddress);
+
+            final var canonicalAddress = account.get().canonicalAddress();
+            if (canonicalAddress != accountAddress) {
+                accountAccessor.delete(canonicalAddress);
+            }
         } catch (UpdatableCacheUsageException ex) {
             // ignore, value has been deleted
         }
@@ -108,7 +143,13 @@ public class StoreImpl implements Store {
     @Override
     public void updateTokenRelationship(final TokenRelationship updatedTokenRelationship) {
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        tokenRelationshipAccessor.set(keyFromRelationship(updatedTokenRelationship), updatedTokenRelationship);
+        final var tokenRelationshipKey = keyFromRelationship(updatedTokenRelationship);
+        tokenRelationshipAccessor.set(tokenRelationshipKey, updatedTokenRelationship);
+
+        final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(updatedTokenRelationship);
+        if (tokenRelationshipKeyWithAlias != tokenRelationshipKey) {
+            tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, updatedTokenRelationship);
+        }
     }
 
     @Override
@@ -118,12 +159,21 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public void updateUniqueToken(final UniqueToken updatedUniqueToken) {
+        final var uniqueTokenAccessor = stackedStateFrames.top().getAccessor(UniqueToken.class);
+        uniqueTokenAccessor.set(updatedUniqueToken.getNftId(), updatedUniqueToken);
+    }
+
+    @Override
     public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW)
-                        .getAccount()
-                        .getId()
-                        .num()
-                > 0;
+        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW).hasAssociation();
+    }
+
+    @Override
+    public boolean hasApprovedForAll(Address ownerAddress, AccountID operatorId, TokenID tokenId) {
+        final Set<FcTokenAllowanceId> approvedForAll =
+                getAccount(ownerAddress, OnMissing.THROW).getApproveForAllNfts();
+        return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));
     }
 
     @Override
@@ -138,9 +188,46 @@ public class StoreImpl implements Store {
         stackedStateFrames.push();
     }
 
+    /**
+     * Returns a {@link Token} model with loaded unique tokens
+     *
+     * @param token         the token model, on which to load the unique tokens
+     * @param serialNumbers the serial numbers to load
+     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is missing, deleted, or
+     *                                                                                expired and pending removal
+     */
+    public Token loadUniqueTokens(final Token token, final List<Long> serialNumbers) {
+        final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
+        for (final long serialNumber : serialNumbers) {
+            final var uniqueToken = loadUniqueToken(token.getId(), serialNumber);
+            loadedUniqueTokens.put(serialNumber, uniqueToken);
+        }
+
+        return token.setLoadedUniqueTokens(loadedUniqueTokens);
+    }
+
+    /**
+     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can
+     * be used to implement business logic in a transaction.
+     *
+     * @param tokenId   TokenId of the NFT
+     * @param serialNum Serial number of the NFT
+     * @return The {@link UniqueToken} model of the requested unique token
+     */
+    private UniqueToken loadUniqueToken(final Id tokenId, final Long serialNum) {
+        final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNum);
+        return getUniqueToken(nftId, OnMissing.THROW);
+    }
+
     private TokenRelationshipKey keyFromRelationship(TokenRelationship tokenRelationship) {
         final var tokenAddress = tokenRelationship.getToken().getId().asEvmAddress();
         final var accountAddress = tokenRelationship.getAccount().getAccountAddress();
+        return new TokenRelationshipKey(tokenAddress, accountAddress);
+    }
+
+    private TokenRelationshipKey keyFromRelationshipWithAlias(TokenRelationship tokenRelationship) {
+        final var tokenAddress = tokenRelationship.getToken().getId().asEvmAddress();
+        final var accountAddress = tokenRelationship.getAccount().canonicalAddress();
         return new TokenRelationshipKey(tokenAddress, accountAddress);
     }
 

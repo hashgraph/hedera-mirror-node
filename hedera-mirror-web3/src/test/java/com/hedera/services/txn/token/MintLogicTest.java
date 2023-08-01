@@ -55,7 +55,7 @@ class MintLogicTest {
     private final Id id = new Id(1, 2, 3);
     private final TokenID grpcId = id.asGrpcToken();
     private final Id treasuryId = new Id(2, 4, 6);
-    private final Account treasury = new Account(treasuryId, 0L);
+    private final Account treasury = new Account(0L, treasuryId, 0L);
 
     @Mock
     private Token token;
@@ -88,7 +88,7 @@ class MintLogicTest {
     @Test
     void followsHappyPath() {
         // setup:
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
 
         givenValidTxnCtx();
         given(store.getToken(id.asEvmAddress(), OnMissing.THROW)).willReturn(token);
@@ -114,7 +114,7 @@ class MintLogicTest {
 
     @Test
     void followsUniqueHappyPath() {
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
         final var consensusTimestamp = Instant.now();
 
         givenValidUniqueTxnCtx();

@@ -58,7 +58,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
-import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -113,19 +112,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         }
     }
 
-    @After
-    public void cleanup() {
-        for (TokenId tokenId : tokenIds) {
-            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-            try {
-                tokenClient.delete(admin, tokenId);
-            } catch (Exception e) {
-                log.warn("Error cleaning up token {} and associations error: {}", tokenId, e);
-            }
-        }
-        tokenIds.clear();
-    }
-
     @Given("I successfully create and verify a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
         createContract(compiledSolidityArtifact.getBytecode());
@@ -172,7 +158,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Given("I create an ecdsa account and associate it to the tokens")
     public void createEcdsaAccountAndAssociateItToTokens() {
-        ecdsaEaId = accountClient.createNewECDSAAccount(1_000_000_000);
+        ecdsaEaId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
         for (TokenId tokenId : tokenIds) {
             tokenClient.associate(ecdsaEaId, tokenId);
         }

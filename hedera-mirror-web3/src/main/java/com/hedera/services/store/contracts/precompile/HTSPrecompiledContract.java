@@ -24,10 +24,13 @@ import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -36,9 +39,18 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
+import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
+import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
+import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
+import com.hedera.services.store.contracts.precompile.codec.TransferParams;
+import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
@@ -55,9 +67,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
- * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally,
- * it implements an adapter interface which is used by {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}.
- * In this way once we start consuming libraries like smart-contract-service it would be easier to
+ * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
+ * adapter interface which is used by
+ * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
+ * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
@@ -71,6 +84,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final PrecompileMapper precompileMapper;
     private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private Store store;
+    private HederaEvmContractAliases mirrorNodeEvmProperties;
     private Precompile precompile;
     private long gasRequirement = 0L;
     private TransactionBody.Builder transactionBody;
@@ -127,7 +141,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
         This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
         After the Precompile classes are implemented, this workaround won't be needed. */
-        if (isTokenProxyRedirect(input) || isViewFunction(input)) {
+
+        // redirect operations
+        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 
@@ -145,12 +161,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now, transactionBody, store);
+        gasRequirement = precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties);
         final Bytes result = computeInternal(frame);
 
         return result == null
-                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompiledContract.PrecompileContractResult.success(result);
+                ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
+                : PrecompileContractResult.success(result);
     }
 
     public boolean unqualifiedDelegateDetected(MessageFrame frame) {
@@ -185,7 +201,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame);
-            final var precompileResultWrapper = precompile.run(frame, store, transactionBody.build());
+            final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
         } catch (final InvalidTransactionException e) {
@@ -203,36 +219,132 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
+    @SuppressWarnings({"java:S1301", "java:S3776"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+
         final int functionId = input.getInt(0);
-
-        if (AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN == functionId) {
-            RedirectTarget target;
-            try {
-                target = DescriptorUtils.getRedirectTarget(input);
-            } catch (final Exception e) {
-                throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        switch (functionId) {
+            case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
+                RedirectTarget target;
+                try {
+                    target = DescriptorUtils.getRedirectTarget(input);
+                } catch (final Exception e) {
+                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+                }
+                var isExplicitRedirectCall = target.massagedInput() != null;
+                if (isExplicitRedirectCall) {
+                    input = target.massagedInput();
+                }
+                var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+                var nestedFunctionSelector = target.descriptor();
+                switch (nestedFunctionSelector) {
+                        // cases will be added with the addition of precompiles using redirect operations
+                    case AbiConstants.ABI_ID_ERC_APPROVE -> {
+                        final var isFungibleToken =
+                                /* For implicit redirect call scenarios, at this point in the logic it has already been
+                                 * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
+                                 *
+                                 * Explicit redirect calls, however, verify the existence of the token in RedirectPrecompile.run(), so only
+                                 * call ledgers.typeOf() if the token exists.
+                                 *  */
+                                (!isExplicitRedirectCall
+                                                || !store.getToken(target.token(), OnMissing.DONT_THROW)
+                                                        .isEmptyToken())
+                                        && store.getToken(target.token(), OnMissing.THROW)
+                                                .isFungibleCommon();
+                        Id ownerId = null;
+                        if (!isFungibleToken) {
+                            final var approveDecodedNftInfo =
+                                    ApprovePrecompile.decodeTokenIdAndSerialNum(input.slice(24), tokenId);
+                            final var serialNumber = approveDecodedNftInfo.serialNumber();
+                            ownerId = store.getUniqueToken(
+                                            new NftId(
+                                                    tokenId.getShardNum(),
+                                                    tokenId.getRealmNum(),
+                                                    tokenId.getTokenNum(),
+                                                    serialNumber.longValue()),
+                                            OnMissing.THROW)
+                                    .getOwner();
+                        }
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody = precompile.body(
+                                input,
+                                aliasResolver,
+                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
+                    }
+                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody =
+                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
+                    }
+                    case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody = precompile.body(
+                                input.slice(24),
+                                aliasResolver,
+                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
+                    }
+                    default -> {
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
+                                || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
+                            this.transactionBody =
+                                    precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+                        }
+                    }
+                }
             }
-            final var isExplicitRedirectCall = target.massagedInput() != null;
-            if (isExplicitRedirectCall) {
-                input = target.massagedInput();
+            case AbiConstants.ABI_ID_APPROVE -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
             }
-            final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
-
-            final var nestedFunctionSelector = target.descriptor();
-
-            this.precompile = precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-
-            if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
-                    || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                this.transactionBody = precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
+            case AbiConstants.ABI_ID_APPROVE_NFT -> {
+                final var approveDecodedNftInfo =
+                        ApprovePrecompile.decodeTokenIdAndSerialNum(input, TokenID.getDefaultInstance());
+                final var tokenID = approveDecodedNftInfo.tokenId();
+                final var serialNumber = approveDecodedNftInfo.serialNumber();
+                final var ownerId = store.getUniqueToken(
+                                new NftId(
+                                        tokenID.getShardNum(),
+                                        tokenID.getRealmNum(),
+                                        tokenID.getTokenNum(),
+                                        serialNumber.longValue()),
+                                OnMissing.THROW)
+                        .getOwner();
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
             }
-
-        } else {
-            this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-            this.transactionBody = precompile.body(input, aliasResolver, null);
+            case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
+            }
+            case AbiConstants.ABI_ID_TRANSFER_TOKENS,
+                    AbiConstants.ABI_ID_TRANSFER_TOKEN,
+                    AbiConstants.ABI_ID_TRANSFER_NFTS,
+                    AbiConstants.ABI_ID_TRANSFER_NFT,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+            }
+            case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
+            }
+            default -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
+            }
         }
-
         gasRequirement = defaultGas();
     }
 
@@ -242,6 +354,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
         this.store = updater.getStore();
+        this.mirrorNodeEvmProperties = updater.aliases();
     }
 
     private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
@@ -261,11 +374,33 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             resultFromExecutor = executor.computeCosted();
         }
         return resultFromExecutor == null
-                ? PrecompiledContract.PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompiledContract.PrecompileContractResult.success(resultFromExecutor.getRight());
+                ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
+                : PrecompileContractResult.success(resultFromExecutor.getRight());
+    }
+
+    private boolean isNestedFunctionSelectorForWrite(Bytes input) {
+        RedirectTarget target;
+        try {
+            target = DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            return false;
+        }
+        final var nestedFunctionSelector = target.descriptor();
+        return switch (nestedFunctionSelector) {
+            case AbiConstants.ABI_ID_ERC_APPROVE,
+                    AbiConstants.ABI_ID_ERC_TRANSFER,
+                    AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
+                    AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
+            default -> false;
+        };
     }
 
     private long defaultGas() {
         return evmProperties.getHtsDefaultGasCost();
+    }
+
+    @VisibleForTesting
+    Precompile getPrecompile() {
+        return precompile;
     }
 }

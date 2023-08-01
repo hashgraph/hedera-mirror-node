@@ -32,7 +32,8 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001,
+        "payer_account_id": 5000,
+        "sender_id": 6001,
         "transaction_hash": "0x181202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_index": 1,
         "transaction_nonce": 0
@@ -49,7 +50,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "payer_account_id": 5000,
+        "sender_id": 8001,
         "transaction_hash": "0x981202030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_index": 1,
         "transaction_nonce": 0
@@ -66,7 +68,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "payer_account_id": 5000,
+        "sender_id": 8001,
         "transaction_hash": "0x985702030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_index": 2,
         "transaction_nonce": 0
@@ -83,7 +86,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001,
+        "payer_account_id": 5000,
+        "sender_id": 8001,
         "transaction_hash": "0x995602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_index": 2,
         "transaction_nonce": 0
@@ -100,13 +104,29 @@
         "index": 17,
         "consensus_start": 987654000123456,
         "consensus_end": 987654100123456,
-        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "gas_used": 400000
       },
       {
         "index": 18,
         "consensus_start": 997654000123456,
         "consensus_end": 997654100123456,
         "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c62"
+      }
+    ],
+    "ethereumtransactions": [
+      {
+        "consensus_timestamp": "987654000123457",
+        "hash": "0x985702030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "chain_id": "0x012a",
+        "max_fee_per_gas": "0x40",
+        "max_priority_fee_per_gas": "0x15",
+        "payer_account_id": 5000,
+        "signature_r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+        "signature_s": "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+        "recovery_id": 1,
+        "nonce": 4,
+        "value": ["0x23"]
       }
     ]
   },
@@ -118,20 +138,37 @@
   "responseJson": {
     "results": [
       {
+        "access_list": "0x",
         "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "amount": 35,
+        "block_gas_used": 400000,
+        "block_hash": "0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+        "block_number": 17,
         "bloom": "0x0505",
         "call_result": "0x0606",
+        "chain_id": "0x12a",
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
         "error_message": null,
+        "failed_initcode": null,
         "from": "0x0000000000000000000000000000000000001f41",
         "function_parameters": "0x0707",
         "gas_limit": 987654,
+        "gas_price": "0x4a817c80",
         "gas_used": 123,
         "hash": "0x985702030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "max_fee_per_gas": "0x40",
+        "max_priority_fee_per_gas": "0x15",
+        "nonce": 4,
+        "r": "0xb5c21ab4dfd336e30ac2106cad4aa8888b1873a99bce35d50f64d2ec2cc5f6d9",
+        "result": "SUCCESS",
+        "s": "0x1092806a99727a20c31836959133301b65a2bfa980f9795522d21a254e629110",
+        "status": "0x1",
         "timestamp": "987654.000123457",
-        "to": "0x0000000000000000000000000000000000001389"
+        "to": "0x0000000000000000000000000000000000001389",
+        "transaction_index": 2,
+        "type": 2,
+        "v": 1
       }
     ],
     "links": {

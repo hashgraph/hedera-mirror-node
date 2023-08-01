@@ -17,11 +17,12 @@
 package com.hedera.mirror.grpc.service;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcProperties;
-import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
@@ -76,7 +77,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .filter(t -> t.compareTo(topicContext.getLast()) > 0); // Ignore duplicates
 
         if (filter.getEndTime() != null) {
-            flux = flux.takeWhile(t -> t.getConsensusTimestampInstant().isBefore(filter.getEndTime()));
+            flux = flux.takeWhile(t -> t.getConsensusTimestamp() < filter.getEndTime());
         }
 
         if (filter.hasLimit()) {
@@ -96,8 +97,10 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 .switchIfEmpty(
                         grpcProperties.isCheckTopicExists()
                                 ? Mono.error(new EntityNotFoundException(topicId))
-                                : Mono.just(
-                                        Entity.builder().type(EntityType.TOPIC).build()))
+                                : Mono.just(Entity.builder()
+                                        .memo("")
+                                        .type(EntityType.TOPIC)
+                                        .build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));
     }
@@ -111,10 +114,8 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         TopicMessage last = topicContext.getLast();
         long limit =
                 filter.hasLimit() ? filter.getLimit() - topicContext.getCount().get() : 0;
-        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
-
-        TopicMessageFilter newFilter =
-                filter.toBuilder().limit(limit).startTime(startTime).build();
+        long startTime = last != null ? last.getConsensusTimestamp() + 1 : filter.getStartTime();
+        var newFilter = filter.toBuilder().limit(limit).startTime(startTime).build();
 
         return topicListener
                 .listen(newFilter)
@@ -158,9 +159,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         }
 
         TopicMessageFilter newFilter = topicContext.getFilter().toBuilder()
-                .endTime(current.getConsensusTimestampInstant())
+                .endTime(current.getConsensusTimestamp())
                 .limit(numMissingMessages)
-                .startTime(last.getConsensusTimestampInstant().plusNanos(1))
+                .startTime(last.getConsensusTimestamp() + 1)
                 .build();
 
         log.info(
@@ -179,7 +180,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         private final AtomicLong count;
         private final TopicMessageFilter filter;
         private final AtomicReference<TopicMessage> last;
-        private final Instant startTime;
+        private final long startTime;
         private final Stopwatch stopwatch;
         private final EntityId topicId;
 
@@ -187,7 +188,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
             this.count = new AtomicLong(0L);
             this.filter = filter;
             this.last = new AtomicReference<>();
-            this.startTime = Instant.now();
+            this.startTime = DomainUtils.now();
             this.stopwatch = Stopwatch.createStarted();
             this.topicId = filter.getTopicId();
         }
@@ -201,11 +202,13 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 return false;
             }
 
-            if (filter.getEndTime().isBefore(startTime)) {
+            if (filter.getEndTime() < startTime) {
                 return true;
             }
 
-            return filter.getEndTime().plus(grpcProperties.getEndTimeInterval()).isBefore(Instant.now());
+            return Instant.ofEpochSecond(0, filter.getEndTime())
+                    .plus(grpcProperties.getEndTimeInterval())
+                    .isBefore(Instant.now());
         }
 
         boolean isNext(TopicMessage topicMessage) {

@@ -17,14 +17,13 @@
 package com.hedera.mirror.grpc.listener;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.inject.Named;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Data;
@@ -41,18 +40,15 @@ import reactor.util.retry.Retry;
 @Named
 public class SharedPollingTopicListener extends SharedTopicListener {
 
-    private final InstantToLongConverter instantToLongConverter;
     private final TopicMessageRepository topicMessageRepository;
     private final Flux<TopicMessage> topicMessages;
 
     public SharedPollingTopicListener(
             ListenerProperties listenerProperties,
             ObservationRegistry observationRegistry,
-            TopicMessageRepository topicMessageRepository,
-            InstantToLongConverter instantToLongConverter) {
+            TopicMessageRepository topicMessageRepository) {
         super(listenerProperties);
         this.topicMessageRepository = topicMessageRepository;
-        this.instantToLongConverter = instantToLongConverter;
 
         Scheduler scheduler = Schedulers.newSingle("shared-poll", true);
         Duration interval = listenerProperties.getInterval();
@@ -118,7 +114,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         }
 
         void onStart(Subscription subscription) {
-            lastConsensusTimestamp.set(instantToLongConverter.convert(Instant.now()));
+            lastConsensusTimestamp.set(DomainUtils.now());
             log.info(
                     "Starting to poll every {}ms",
                     listenerProperties.getInterval().toMillis());

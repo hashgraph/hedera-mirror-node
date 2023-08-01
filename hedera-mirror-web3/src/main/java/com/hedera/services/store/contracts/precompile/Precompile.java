@@ -22,6 +22,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
@@ -49,12 +50,16 @@ public interface Precompile {
     TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
-    long getMinimumFeeInTinybars(Timestamp consensusTime);
+    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
 
     // Change the world state through the given frame
-    RunResult run(MessageFrame frame, Store store, TransactionBody transactionBody);
+    RunResult run(MessageFrame frame, TransactionBody transactionBody);
 
-    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, Store store);
+    long getGasRequirement(
+            long blockTimestamp,
+            TransactionBody.Builder transactionBody,
+            Store store,
+            HederaEvmContractAliases mirrorEvmContractAliases);
 
     Set<Integer> getFunctionSelectors();
 

@@ -29,8 +29,10 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -43,7 +45,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
+import java.util.Map;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,12 +61,17 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Mock(strictness = LENIENT)
     protected EthereumTransactionParser ethereumTransactionParser;
 
+    @AfterEach
+    void cleanup() {
+        entityProperties.getPersist().setTrackNonce(true);
+    }
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         doReturn(domainBuilder.ethereumTransaction(true).get())
                 .when(ethereumTransactionParser)
                 .decode(any());
-        return new EthereumTransactionHandler(entityProperties, entityListener, ethereumTransactionParser);
+        return new EthereumTransactionHandler(entityListener, entityProperties, ethereumTransactionParser);
     }
 
     @Override
@@ -115,8 +124,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
                 .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
 
-        var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
@@ -139,6 +151,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .onEntity(argThat(e -> e.getId() == senderId
                         && e.getTimestampRange() == null
                         && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -151,12 +165,17 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .ethereumTransaction(create)
                 .record(x -> x.getContractCreateResultBuilder().clearSenderId())
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
 
-        var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
         verify(entityListener).onEthereumTransaction(any());
         verify(entityListener, never()).onEntity(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -172,8 +191,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         var recordItem = recordItemBuilder.ethereumTransaction(create).build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
 
-        var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
@@ -183,25 +205,34 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(emptyBytes, EthereumTransaction::getMaxFeePerGas)
                 .returns(emptyBytes, EthereumTransaction::getMaxPriorityFeePerGas)
                 .returns(emptyBytes, EthereumTransaction::getValue);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void updateTransactionSkipNonceOnFailure(boolean create) {
-        var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
+    void updateTransactionSkipNonceOnFailure(boolean hasInitCodeInBody) {
+        var ethereumTransaction =
+                domainBuilder.ethereumTransaction(hasInitCodeInBody).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         var recordItem = recordItemBuilder
-                .ethereumTransaction(create)
+                .ethereumTransaction(!hasInitCodeInBody)
                 .record(x -> x.clearContractCreateResult().clearContractCallResult())
                 .status(ResponseCodeEnum.WRONG_NONCE)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
-        var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
         verify(entityListener).onEthereumTransaction(any());
         verify(entityListener, never()).onEntity(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -215,8 +246,12 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
                 .status(ResponseCodeEnum.INSUFFICIENT_GAS)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
-        var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
@@ -226,31 +261,63 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .onEntity(argThat(e -> e.getId() == senderId
                         && e.getTimestampRange() == null
                         && e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+    }
+
+    @Test
+    void updateTransactionEntityNonceNotUpdated() {
+        boolean create = true;
+        entityProperties.getPersist().setTrackNonce(false);
+        var fileId = EntityId.of(999L, EntityType.FILE);
+
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
+                .record(x -> x.setEthereumHash(ETHEREUM_HASH))
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
+                .build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener, never()).onEntity(any());
     }
 
     @Test
     void updateTransactionInvalid() {
         var recordItem = recordItemBuilder.ethereumTransaction(true).build();
-        var transaction = new Transaction();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
+        var expectedEntityTransactions = super.getExpectedEntityTransactions(recordItem, transaction);
+
         doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
         assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem))
                 .isInstanceOf(InvalidDatasetException.class);
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
     void updateTransactionDisabled() {
         entityProperties.getPersist().setEthereumTransactions(false);
         var recordItem = recordItemBuilder.ethereumTransaction(true).build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
+        var expectedEntityTransactions = super.getExpectedEntityTransactions(recordItem, transaction);
 
-        transactionHandler.updateTransaction(new Transaction(), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // verify parse and listener are never called
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
         verify(ethereumTransactionParser, never()).decode(any());
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @SuppressWarnings("java:S2699")
@@ -261,5 +328,16 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {
         return create ? record.getContractCreateResult() : record.getContractCallResult();
+    }
+
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
+        var record = recordItem.getTransactionRecord();
+        return getExpectedEntityTransactions(
+                recordItem,
+                transaction,
+                EntityId.of(record.getContractCallResult().getSenderId()),
+                EntityId.of(record.getContractCreateResult().getSenderId()),
+                EntityId.of(
+                        recordItem.getTransactionBody().getEthereumTransaction().getCallData()));
     }
 }

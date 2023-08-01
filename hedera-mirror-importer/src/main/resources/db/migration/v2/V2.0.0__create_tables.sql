@@ -4,7 +4,7 @@
 -------------------
 
 -- Create enums for tables
-create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
+create type entity_type as enum ('UNKNOWN', 'ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
 create type errata_type as enum ('INSERT', 'DELETE');
 create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 create type token_supply_type as enum ('INFINITE', 'FINITE');
@@ -181,11 +181,12 @@ comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (
-    amount           bigint    not null,
-    owner            bigint    not null,
-    payer_account_id bigint    not null,
-    spender          bigint    not null,
-    timestamp_range  int8range not null
+    amount            bigint    not null,
+    amount_granted    bigint    not null,
+    owner             bigint    not null,
+    payer_account_id  bigint    not null,
+    spender           bigint    not null,
+    timestamp_range   int8range not null
 ) partition by range (owner);
 comment on table crypto_allowance is 'Hbar allowances delegated by owner to spender';
 
@@ -255,7 +256,7 @@ create table if not exists entity
     stake_period_start               bigint  default -1    null,
     submit_key                       bytea                 null,
     timestamp_range                  int8range             not null,
-    type                             entity_type           not null
+    type                             entity_type           not null default 'UNKNOWN'
 ) partition by range (id);
 comment on table entity is 'Network entity with state';
 
@@ -267,15 +268,32 @@ comment on table entity_history is 'Network entity historical state';
 
 create table if not exists entity_stake
 (
-    decline_reward_start boolean not null,
-    end_stake_period     bigint  not null,
-    id                   bigint  not null,
-    pending_reward       bigint  not null,
-    staked_node_id_start bigint  not null,
-    staked_to_me         bigint  not null,
-    stake_total_start    bigint  not null
+    decline_reward_start boolean   not null,
+    end_stake_period     bigint    not null,
+    id                   bigint    not null,
+    pending_reward       bigint    not null,
+    staked_node_id_start bigint    not null,
+    staked_to_me         bigint    not null,
+    stake_total_start    bigint    not null,
+    timestamp_range      int8range not null
 ) partition by range (id);
 comment on table entity_stake is 'Network entity stake state';
+
+create table if not exists entity_stake_history
+(
+    like entity_stake including defaults
+) partition by range (id);
+comment on table entity_stake_history is 'Network entity stake historical state';
+
+create table if not exists entity_transaction
+(
+  consensus_timestamp bigint not null,
+  entity_id           bigint not null,
+  payer_account_id    bigint not null,
+  result              smallint not null,
+  type                smallint not null
+) partition by range (consensus_timestamp);
+comment on table entity_transaction is 'Network entity transaction lookup table';
 
 create table if not exists ethereum_transaction
 (
@@ -408,17 +426,6 @@ create table if not exists node_stake
     staking_period      bigint not null
 );
 comment on table node_stake is 'Node staking information';
-
--- non_fee_transfer
-create table if not exists non_fee_transfer
-(
-    amount              bigint  not null,
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    entity_id           bigint  null,
-    payer_account_id    bigint  not null
-) partition by range (consensus_timestamp);
-comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
 -- prng
 create table if not exists prng
@@ -564,12 +571,13 @@ comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
 (
-    amount           bigint    not null,
-    owner            bigint    not null,
-    payer_account_id bigint    not null,
-    spender          bigint    not null,
-    timestamp_range  int8range not null,
-    token_id         bigint    not null
+    amount            bigint    not null,
+    amount_granted    bigint    not null,
+    owner             bigint    not null,
+    payer_account_id  bigint    not null,
+    spender           bigint    not null,
+    timestamp_range   int8range not null,
+    token_id          bigint    not null
 ) partition by range (owner);
 comment on table token_allowance is 'Token allowances delegated by owner to spender';
 
@@ -637,6 +645,7 @@ create table if not exists transaction
     errata                     errata_type null,
     index                      integer     null,
     initial_balance            bigint               default 0,
+    itemized_transfer          jsonb       null,
     max_fee                    bigint,
     memo                       bytea,
     nft_transfer               jsonb       null,

@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.grpc.retriever;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import reactor.core.publisher.Flux;
 

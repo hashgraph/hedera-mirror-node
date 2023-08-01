@@ -16,13 +16,10 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
@@ -44,7 +41,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     final Map<Address, Address> pendingAliases = new HashMap<>();
     final Set<Address> pendingRemovals = new HashSet<>();
 
-    private final MirrorEntityAccess mirrorEntityAccess;
+    final Store store;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
@@ -77,7 +74,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromEntityAccess(addressOrAlias));
+        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromStore(addressOrAlias));
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
@@ -90,19 +87,17 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         return Optional.empty();
     }
 
-    private Address resolveFromEntityAccess(Address addressOrAlias) {
-        final var entity = mirrorEntityAccess
-                .findEntity(addressOrAlias)
-                .orElseThrow(() -> new EntityNotFoundException("No such contract or token: " + addressOrAlias));
+    private Address resolveFromStore(Address addressOrAlias) {
+        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
 
-        if (entity.getType() != EntityType.TOKEN && entity.getType() != EntityType.CONTRACT) {
-            throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
+        if (account.isEmptyAccount()) {
+            return Address.ZERO;
+        } else {
+            final var resolvedAddress = account.getId().asEvmAddress();
+
+            link(addressOrAlias, resolvedAddress);
+            return resolvedAddress;
         }
-
-        final var resolvedAddress = Address.wrap(Bytes.wrap(toEvmAddress(entity.toEntityId())));
-        link(addressOrAlias, resolvedAddress);
-
-        return resolvedAddress;
     }
 
     public boolean isInUse(final Address address) {

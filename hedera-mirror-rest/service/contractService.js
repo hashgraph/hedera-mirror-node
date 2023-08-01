@@ -31,7 +31,7 @@ import {
   ContractStateChange,
   Entity,
   RecordFile,
-  Transaction,
+  EthereumTransaction,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -207,16 +207,34 @@ class ContractService extends BaseService {
     [filterKeys.INDEX]: ContractLog.INDEX,
   };
 
+  static ethereumTransactionByPayerAndTimestampArrayQuery = `select
+        t.consensus_timestamp,
+        case when ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} is not null then
+          json_build_object('access_list', encode(${EthereumTransaction.ACCESS_LIST}, 'hex'),
+                'chain_id', encode(${EthereumTransaction.CHAIN_ID}, 'hex'),
+                'gas_price', encode(${EthereumTransaction.GAS_PRICE}, 'hex'),
+                'max_fee_per_gas', encode(${EthereumTransaction.MAX_FEE_PER_GAS}, 'hex'),
+                'max_priority_fee_per_gas', encode(${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, 'hex'),
+                'nonce', ${EthereumTransaction.NONCE},
+                'signature_r', encode(${EthereumTransaction.SIGNATURE_R}, 'hex'),
+                'signature_s', encode(${EthereumTransaction.SIGNATURE_S}, 'hex'),
+                'type', ${EthereumTransaction.TYPE},
+                'recovery_id', ${EthereumTransaction.RECOVERY_ID},
+                'value', encode(${EthereumTransaction.VALUE}, 'hex'))
+        end as ${EthereumTransaction.tableName}
+      from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t
+      left join ${EthereumTransaction.tableName} as ${EthereumTransaction.tableAlias}
+        on t.payer_account_id = ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} and
+          t.consensus_timestamp = ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)}`;
+
   constructor() {
     super();
   }
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
-    const transactionWhereClauses = [];
 
     const query = [
-      `with ${ContractService.entityCTE}`,
       ContractService.contractResultsWithEvmAddressQuery,
       ContractService.joinContractResultWithEvmAddress,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
@@ -532,6 +550,33 @@ class ContractService extends BaseService {
 
     const rows = await super.getRows(query, params, 'getContractActions');
     return rows.map((row) => new ContractAction(row));
+  }
+
+  /**
+   * Get the ethereum transaction matching the payer and timestamp pairs. Note the payers array and timestamps array
+   * should have equal length
+   *
+   * @param payers
+   * @param timestamps
+   * @returns {Promise<{Map}>}
+   */
+  async getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps) {
+    const transactionMap = new Map();
+    if (_.isEmpty(payers) || _.isEmpty(timestamps)) {
+      return transactionMap;
+    }
+
+    const rows = await super.getRows(
+      ContractService.ethereumTransactionByPayerAndTimestampArrayQuery,
+      [payers, timestamps],
+      'getEthereumTransactionsByPayerAndTimestampArray'
+    );
+
+    rows.forEach((row) => {
+      const ethereumTransaction = row.ethereum_transaction ? new EthereumTransaction(row.ethereum_transaction) : null;
+      transactionMap.set(row.consensus_timestamp, ethereumTransaction);
+    });
+    return transactionMap;
   }
 }
 

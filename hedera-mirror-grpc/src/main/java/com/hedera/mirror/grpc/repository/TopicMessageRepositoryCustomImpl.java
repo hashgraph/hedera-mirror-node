@@ -16,8 +16,7 @@
 
 package com.hedera.mirror.grpc.repository;
 
-import com.hedera.mirror.grpc.converter.InstantToLongConverter;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
@@ -43,7 +42,6 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
     private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
 
     private final EntityManager entityManager;
-    private final InstantToLongConverter converter;
 
     @Override
     public Stream<TopicMessage> findByFilter(TopicMessageFilter filter) {
@@ -52,12 +50,11 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         Root<TopicMessage> root = query.from(TopicMessage.class);
 
         Predicate predicate = cb.and(
-                cb.equal(root.get("topicId"), filter.getTopicId().getId()),
-                cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), converter.convert(filter.getStartTime())));
+                cb.equal(root.get("topicId"), filter.getTopicId()),
+                cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), filter.getStartTime()));
 
         if (filter.getEndTime() != null) {
-            predicate = cb.and(
-                    predicate, cb.lessThan(root.get(CONSENSUS_TIMESTAMP), converter.convert(filter.getEndTime())));
+            predicate = cb.and(predicate, cb.lessThan(root.get(CONSENSUS_TIMESTAMP), filter.getEndTime()));
         }
 
         query = query.select(root).where(predicate).orderBy(cb.asc(root.get(CONSENSUS_TIMESTAMP)));

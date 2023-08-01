@@ -19,19 +19,23 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import com.google.common.collect.Streams;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -50,6 +54,7 @@ import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -67,6 +72,7 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -78,10 +84,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -89,6 +97,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.ObjectAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -106,6 +115,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final long ASSOCIATE_TIMESTAMP = 5L;
     private static final long AUTO_RENEW_PERIOD = 30L;
     private static final long CREATE_TIMESTAMP = 1L;
+    private static final long ALLOWANCE_TIMESTAMP = CREATE_TIMESTAMP + 1L;
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
@@ -138,6 +148,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final JdbcTemplate jdbcTemplate;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionRepository transactionRepository;
@@ -353,7 +364,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR, one effective payer
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(12300L);
-        assessedCustomFee3.setEffectivePayerEntityIds(List.of(FEE_PAYER_1));
+        assessedCustomFee3.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId()));
         assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee3.setPayerAccountId(PAYER_ACCOUNT_ID);
 
@@ -361,7 +372,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         AssessedCustomFee assessedCustomFee4 = new AssessedCustomFee();
         assessedCustomFee4.setAmount(8790L);
         assessedCustomFee4.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee4.setEffectivePayerEntityIds(List.of(FEE_PAYER_1, FEE_PAYER_2));
+        assessedCustomFee4.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId(), FEE_PAYER_2.getId()));
         assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee4.setPayerAccountId(PAYER_ACCOUNT_ID);
         List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4);
@@ -410,7 +421,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @BeforeEach
     void before() {
+        entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setTokens(true);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setEntityTransactions(false);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -1515,14 +1532,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0)))
                 .get()
-                .returns(burnTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(-amount).toArray(), ContractLog::getData);
+                .returns(burnTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(-amount).toArray(), from(ContractLog::getData));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(burnTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(burnTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -1611,14 +1638,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0)))
                 .get()
-                .returns(burnTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), ContractLog::getTopic3);
+                .returns(burnTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(burnTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(burnTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -1712,14 +1749,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0)))
                 .get()
-                .returns(mintTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(amount).toArray(), ContractLog::getData);
+                .returns(mintTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(amount).toArray(), from(ContractLog::getData));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(mintTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -1815,14 +1862,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0)))
                 .get()
-                .returns(mintTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), ContractLog::getTopic3);
+                .returns(mintTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(mintTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -2353,6 +2410,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // token transfer
+        var expectedEntityTransactions =
+                Streams.stream(entityTransactionRepository.findAll()).collect(Collectors.toList());
         var transaction = tokenTransferTransaction();
         var transferList = TokenTransferList.newBuilder()
                 .setToken(TOKEN_ID)
@@ -2368,7 +2427,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .build())
                 .build();
         long transferTimestamp = 40L;
-        insertAndParseTransaction(
+        var recordItem = insertAndParseTransaction(
                 transferTimestamp, transaction, builder -> builder.addTokenTransferLists(transferList));
 
         // then
@@ -2396,14 +2455,36 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
         assertThat(contractLogRepository.findById(new ContractLog.Id(transferTimestamp, 0)))
                 .get()
-                .returns(transferTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(RECEIVER.getAccountNum()).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), ContractLog::getTopic3);
+                .returns(transferTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(RECEIVER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(transferTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(transferTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
+
+        var entityIds = Lists.newArrayList(
+                EntityId.of(recordItem.getTransactionBody().getNodeAccountID()),
+                recordItem.getPayerAccountId(),
+                EntityId.of(PAYER),
+                EntityId.of(RECEIVER),
+                EntityId.of(TOKEN_ID));
+        expectedEntityTransactions.addAll(toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values());
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions);
     }
 
     @ParameterizedTest
@@ -2594,6 +2675,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenTransfersMustHaveCorrectIsApprovalValue() {
+        entityProperties.getPersist().setTrackAllowance(true);
         // given
         createAndAssociateToken(
                 TOKEN_ID,
@@ -2606,6 +2688,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 INITIAL_SUPPLY);
+
+        // approve allowance for fungible token
+        var allowanceAmount = INITIAL_SUPPLY / 4L;
+        var cryptoApproveAllowanceTransaction = buildTransaction(b -> b.getCryptoApproveAllowanceBuilder()
+                .addTokenAllowances(TokenAllowance.newBuilder()
+                        .setTokenId(TOKEN_ID)
+                        .setOwner(PAYER2)
+                        .setSpender(PAYER)
+                        .setAmount(allowanceAmount)));
+        insertAndParseTransaction(ALLOWANCE_TIMESTAMP, cryptoApproveAllowanceTransaction);
+
         TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
         createTokenEntity(tokenId2, FUNGIBLE_COMMON, "MIRROR", 10L, false, false, false);
 
@@ -2649,7 +2742,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .build())
                     .addTransfers(AccountAmount.newBuilder()
                             .setAccountID(PAYER2)
-                            .setAmount(-100)
+                            .setAmount(-100) // Decrement from allowance amount
+                            .setIsApproval(true)
+                            .build())
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(PAYER2)
+                            .setAmount(-900) // Decrement from allowance amount
                             .setIsApproval(true)
                             .build())
                     .addTransfers(AccountAmount.newBuilder()
@@ -2669,6 +2767,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
         assertTokenTransferInRepository(tokenId2, PAYER, TRANSFER_TIMESTAMP, 333);
         assertTokenTransferInRepository(tokenId2, accountId, TRANSFER_TIMESTAMP, -333);
+        assertTokenAllowanceInRepository(
+                TOKEN_ID, PAYER2, PAYER, allowanceAmount, allowanceAmount - 1000L, ALLOWANCE_TIMESTAMP);
     }
 
     @Test
@@ -2703,14 +2803,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(wipeTimestamp, 0)))
                 .get()
-                .returns(wipeTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(-transferAmount).toArray(), ContractLog::getData);
+                .returns(wipeTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(-transferAmount).toArray(), from(ContractLog::getData));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(wipeTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(wipeTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -2794,14 +2904,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(wipeTimestamp, 0)))
                 .get()
-                .returns(wipeTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(PAYER_ACCOUNT_ID, ContractLog::getPayerAccountId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getContractId)
-                .returns(EntityId.of(TOKEN_ID), ContractLog::getRootContractId)
-                .returns(TRANSFER_SIGNATURE, ContractLog::getTopic0)
-                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), ContractLog::getTopic1)
-                .returns(Bytes.ofUnsignedLong(0).toArray(), ContractLog::getTopic2)
-                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), ContractLog::getTopic3);
+                .returns(wipeTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER2.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getTopic3));
+
+        assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(wipeTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(wipeTimestamp, from(ContractResult::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID).getId(), from(ContractResult::getContractId))
+                .returns(PAYER_ACCOUNT_ID, from(ContractResult::getSenderId))
+                .returns(Bytes.fromHexString("a9059cbb").toArray(), from(ContractResult::getFunctionParameters));
     }
 
     @Test
@@ -2964,6 +3084,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         String symbol2 = "MIRROR";
         createTokenEntity(tokenId2, FUNGIBLE_COMMON, symbol2, 10L, false, false, false);
 
+        var existingEntityTransactions = Streams.stream(entityTransactionRepository.findAll())
+                .collect(Collectors.toMap(EntityTransaction::getId, Function.identity()));
+
         AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
 
         // token transfer
@@ -3018,7 +3141,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // when
         AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
-        insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
+        var recordItem = insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
             builder.addAllTokenTransferLists(transferLists).addAllAssessedCustomFees(protoAssessedCustomFees);
             if (hasAutoTokenAssociations) {
                 builder.addAutomaticTokenAssociations(autoTokenAssociation);
@@ -3042,6 +3165,31 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         if (isPrecompile) {
             assertContractResult(TRANSFER_TIMESTAMP, contractFunctionResultAtomic.get());
         }
+
+        var entityIds = Lists.newArrayList(
+                recordItem.getPayerAccountId(),
+                EntityId.of(recordItem.getTransactionBody().getNodeAccountID()),
+                EntityId.of(accountId),
+                EntityId.of(PAYER),
+                EntityId.of(TOKEN_ID),
+                EntityId.of(tokenId2));
+        assessedCustomFees.forEach(assessedCustomFee -> {
+            entityIds.add(assessedCustomFee.getId().getCollectorAccountId());
+            entityIds.add(assessedCustomFee.getTokenId());
+            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
+        });
+        if (isPrecompile) {
+            entityIds.add(EntityId.of(CONTRACT_ID));
+            entityIds.add(EntityId.of(CREATED_CONTRACT_ID));
+        }
+        var expectedEntityTransactions = new HashMap<>(existingEntityTransactions);
+        toEntityTransactions(
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                .values()
+                .forEach(e -> expectedEntityTransactions.put(e.getId(), e));
+
+        assertThat(entityTransactionRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(expectedEntityTransactions.values());
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
@@ -3065,14 +3213,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
     }
 
-    private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
-        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
+    private RecordItem insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
+        return insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
     }
 
-    private void insertAndParseTransaction(
+    private RecordItem insertAndParseTransaction(
             long consensusTimestamp, Transaction transaction, Consumer<TransactionRecord.Builder> customBuilder) {
-        parseRecordItemAndCommit(getRecordItem(consensusTimestamp, transaction, customBuilder));
+        var recordItem = getRecordItem(consensusTimestamp, transaction, customBuilder);
+        parseRecordItemAndCommit(recordItem);
         assertTransactionInRepository(ResponseCodeEnum.SUCCESS, consensusTimestamp, null);
+        return recordItem;
     }
 
     private com.hedera.mirror.common.domain.token.NftTransfer domainNftTransfer(
@@ -3443,6 +3593,26 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .returns(timestamp, ContractResult::getConsensusTimestamp)
                 .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
                 .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
+    }
+
+    private void assertTokenAllowanceInRepository(
+            TokenID tokenId,
+            AccountID owner,
+            AccountID spender,
+            long amountGranted,
+            long amount,
+            long allowanceTimestamp) {
+        var expected = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.amountGranted(amountGranted)
+                        .amount(amount)
+                        .tokenId(EntityId.of(tokenId).getId())
+                        .owner(EntityId.of(owner).getId())
+                        .spender(EntityId.of(spender).getId())
+                        .payerAccountId(EntityId.of(spender))
+                        .timestampRange(Range.atLeast(allowanceTimestamp)))
+                .get();
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(expected);
     }
 
     private void createTokenEntity(

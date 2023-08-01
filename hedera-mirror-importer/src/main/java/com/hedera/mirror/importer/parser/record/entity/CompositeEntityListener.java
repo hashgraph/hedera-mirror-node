@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -39,13 +40,13 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import jakarta.inject.Named;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.RequiredArgsConstructor;
@@ -119,6 +120,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
+        onEach(EntityListener::onEntityTransactions, entityTransactions);
+    }
+
+    @Override
     public void onEthereumTransaction(EthereumTransaction ethereumTransaction) {
         onEach(EntityListener::onEthereumTransaction, ethereumTransaction);
     }
@@ -151,11 +157,6 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNodeStake(NodeStake nodeStake) throws ImporterException {
         onEach(EntityListener::onNodeStake, nodeStake);
-    }
-
-    @Override
-    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
     }
 
     @Override

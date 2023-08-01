@@ -16,14 +16,18 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.IdUtils.asContract;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
@@ -31,7 +35,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,23 +43,25 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Singleton
 public class DecodingFacade {
+    public static final List<NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
+    public static final List<FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
+    public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
+    public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
+    public static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
+    public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
+    public static final String HEDERA_TOKEN_STRUCT =
+            "(string,string,address,string,bool,uint32,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String HEDERA_TOKEN_STRUCT_V2 =
+            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
+    public static final String HEDERA_TOKEN_STRUCT_V3 =
+            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY_V2 + ")";
     private static final int WORD_LENGTH = 32;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int ADDRESS_BYTES_LENGTH = 20;
-
-    public static final List<NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
-    public static final List<FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
-
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
     public static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
-    public static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
-    public static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
-    public static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
-    public static final String HEDERA_TOKEN_STRUCT_V2 =
-            "(string,string,address,string,bool,int64,bool," + TOKEN_KEY + ARRAY_BRACKETS + "," + EXPIRY + ")";
     public static final String HEDERA_TOKEN_STRUCT_DECODER = "(string,string,bytes32,string,bool,int64,bool,"
             + TOKEN_KEY_DECODER
             + ARRAY_BRACKETS
@@ -75,12 +80,11 @@ public class DecodingFacade {
             final var keyType = (int) tokenKeyTuple.get(0);
             final Tuple keyValueTuple = tokenKeyTuple.get(1);
             final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
-            final var contractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
+            final var contractId = asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(1), aliasResolver));
             final var ed25519 = (byte[]) keyValueTuple.get(2);
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId =
-                    EntityIdUtils.asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
+                    asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
                     new KeyValueWrapper(
@@ -213,6 +217,16 @@ public class DecodingFacade {
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
-        return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+        final var resolvedAddress = aliasResolver.apply(addressOrAlias);
+        // The input address was missing, so we return an AccountID with the
+        // missing address as alias; this means that any downstream code that
+        // relies on 0.0.X account numbers will get INVALID_ACCOUNT_ID, but
+        // the AccountID in any synthetic transaction body will have a valid
+        if (!isMirror(resolvedAddress)) {
+            return AccountID.newBuilder()
+                    .setAlias(ByteStringUtils.wrapUnsafely(addressOrAlias))
+                    .build();
+        }
+        return accountIdFromEvmAddress(resolvedAddress);
     }
 }

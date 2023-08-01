@@ -16,31 +16,27 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.entity.EntityType.*;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.web3.repository.NftAllowanceRepository;
-import com.hedera.mirror.web3.repository.NftRepository;
-import com.hedera.mirror.web3.repository.TokenAccountRepository;
-import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
-import java.util.Optional;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -70,6 +66,10 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private Account accountFromEntity(Entity entity) {
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
+                entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
+                        ? ByteString.copyFrom(entity.getEvmAddress())
+                        : ByteString.EMPTY,
+                entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 entity.getEffectiveExpiration(),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
@@ -84,7 +84,9 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 tokenAssociationsCounts.getFirst(),
                 tokenAssociationsCounts.getSecond(),
                 0,
-                Optional.ofNullable(entity.getEthereumNonce()).orElse(0L));
+                Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
+                entity.getType().equals(CONTRACT),
+                parseJkey(entity.getKey()));
     }
 
     private long getOwnedNfts(Long accountId) {
@@ -136,5 +138,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         }
 
         return new Pair<>(all, positive);
+    }
+
+    private JKey parseJkey(byte[] keyBytes) {
+        try {
+            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
+        } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
+            return null;
+        }
     }
 }

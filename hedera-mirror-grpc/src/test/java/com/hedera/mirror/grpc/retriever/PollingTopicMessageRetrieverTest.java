@@ -18,15 +18,15 @@ package com.hedera.mirror.grpc.retriever;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.domain.DomainBuilder;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import jakarta.annotation.Resource;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,22 +36,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     private static final EntityId TOPIC_ID = EntityId.of(100L, EntityType.TOPIC);
     private static final Duration WAIT = Duration.ofSeconds(10L);
 
-    @Autowired
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private PollingTopicMessageRetriever pollingTopicMessageRetriever;
-
-    @Resource
-    private RetrieverProperties retrieverProperties;
+    private final ReactiveDomainBuilder domainBuilder;
+    private final PollingTopicMessageRetriever pollingTopicMessageRetriever;
+    private final RetrieverProperties retrieverProperties;
+    private final long now = DomainUtils.now();
 
     private long unthrottledMaxPolls;
-
     private Duration unthrottledPollingFrequency;
 
     @BeforeEach
@@ -74,10 +70,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void notEnabled(boolean throttled) {
         retrieverProperties.setEnabled(false);
         domainBuilder.topicMessage().block();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttled).map(TopicMessage::getSequenceNumber))
@@ -92,10 +86,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void noMessages(boolean throttled) {
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttled).map(TopicMessage::getSequenceNumber))
@@ -109,10 +101,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ValueSource(booleans = {true, false})
     void lessThanPageSize(boolean throttle) {
         domainBuilder.topicMessage().block();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
@@ -130,10 +120,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         domainBuilder.topicMessage().block();
         domainBuilder.topicMessage().block();
 
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
@@ -150,10 +138,10 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     void limitEqualPageSize(boolean throttle) {
         int maxPageSize = overrideMaxPageSize(throttle, 2);
 
-        domainBuilder.topicMessages(4, Instant.now()).blockLast();
+        domainBuilder.topicMessages(4, now).blockLast();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
+                .startTime(0)
                 .limit(2L)
                 .topicId(TOPIC_ID)
                 .build();
@@ -177,10 +165,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         domainBuilder.topicMessage().block();
         domainBuilder.topicMessage().block();
 
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
@@ -195,11 +181,9 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void startTimeBefore(boolean throttle) {
-        domainBuilder.topicMessages(10, Instant.now()).blockLast();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        domainBuilder.topicMessages(10, now).blockLast();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
@@ -212,9 +196,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void startTimeEquals(boolean throttle) {
-        Instant now = Instant.now();
         domainBuilder.topicMessage(t -> t.consensusTimestamp(now)).block();
-        TopicMessageFilter filter =
+        var filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
@@ -228,9 +211,8 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void startTimeAfter(boolean throttle) {
-        Instant now = Instant.now();
-        domainBuilder.topicMessage(t -> t.consensusTimestamp(now.minusNanos(1))).block();
-        TopicMessageFilter filter =
+        domainBuilder.topicMessage(t -> t.consensusTimestamp(now - 1L)).block();
+        var filter =
                 TopicMessageFilter.builder().startTime(now).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() -> pollingTopicMessageRetriever.retrieve(filter, throttle))
@@ -243,13 +225,19 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void topicId(boolean throttle) {
-        domainBuilder.topicMessage(t -> t.topicId(0)).block();
-        domainBuilder.topicMessage(t -> t.topicId(1)).block();
-        domainBuilder.topicMessage(t -> t.topicId(2)).block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)))
+                .block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)))
+                .block();
+        domainBuilder
+                .topicMessage(t -> t.topicId(EntityId.of(3L, EntityType.TOPIC)))
+                .block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(EntityId.of(1L, EntityType.TOPIC))
+                .startTime(0)
+                .topicId(EntityId.of(2L, EntityType.TOPIC))
                 .build();
 
         StepVerifier.withVirtualTime(() ->
@@ -268,11 +256,9 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
         retrieverProperties.setMaxPageSize(1);
         retrieverProperties.setTimeout(Duration.ofMillis(10));
 
-        domainBuilder.topicMessages(10, Instant.now()).blockLast();
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        domainBuilder.topicMessages(10, now).blockLast();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         StepVerifier.withVirtualTime(() ->
                         pollingTopicMessageRetriever.retrieve(filter, throttle).map(TopicMessage::getSequenceNumber))
@@ -288,14 +274,10 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @Test
     void unthrottledShouldKeepPolling() {
         retrieverProperties.getUnthrottled().setMaxPolls(20);
-
-        Instant now = Instant.now();
         Flux<TopicMessage> firstBatch = domainBuilder.topicMessages(5, now);
-        Flux<TopicMessage> secondBatch = domainBuilder.topicMessages(5, now.plusNanos(5));
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
-                .topicId(TOPIC_ID)
-                .build();
+        Flux<TopicMessage> secondBatch = domainBuilder.topicMessages(5, now + 5);
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().startTime(0).topicId(TOPIC_ID).build();
 
         // in unthrottled mode, the retriever should query the db for up to MaxPolls + 1 times when no limit is set,
         // regardless of whether a db query returns less rows than MaxPageSize

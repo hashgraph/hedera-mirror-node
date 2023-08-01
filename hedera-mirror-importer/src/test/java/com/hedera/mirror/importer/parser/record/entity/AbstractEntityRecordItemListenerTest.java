@@ -47,8 +47,8 @@ import com.hedera.mirror.importer.repository.CustomFeeHistoryRepository;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
-import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -139,10 +139,10 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected EntityHistoryRepository entityHistoryRepository;
 
     @Resource
-    protected LiveHashRepository liveHashRepository;
+    protected EntityTransactionRepository entityTransactionRepository;
 
     @Resource
-    protected NonFeeTransferRepository nonFeeTransferRepository;
+    protected LiveHashRepository liveHashRepository;
 
     @Resource
     protected RecordItemBuilder recordItemBuilder;
@@ -435,7 +435,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeclineReward(false);
         entity.setDeleted(deleted);
-        entity.setEthereumNonce(0L);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
         entity.setTimestampLower(modifiedTimestamp);
@@ -443,6 +442,11 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setSubmitKey(submitKeyBytes);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
+
+        if (entity.getType() == EntityType.ACCOUNT) {
+            entity.setEthereumNonce(0L);
+        }
+
         return entity;
     }
 

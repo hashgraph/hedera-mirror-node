@@ -18,7 +18,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
@@ -26,7 +28,6 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicId;
-import com.hedera.hashgraph.sdk.TopicInfo;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -36,6 +37,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -69,6 +71,7 @@ public class TopicFeature {
     private PrivateKey submitKey;
     private Instant testInstantReference;
     private List<TransactionReceipt> publishedTransactionReceipts;
+    private NetworkTransactionResponse networkTransactionResponse;
 
     @Given("I successfully create a new topic id")
     public void createNewTopic() {
@@ -78,7 +81,7 @@ public class TopicFeature {
         PublicKey submitPublicKey = submitKey.getPublicKey();
         log.trace("Topic creation PrivateKey : {}, PublicKey : {}", submitKey, submitPublicKey);
 
-        NetworkTransactionResponse networkTransactionResponse =
+        networkTransactionResponse =
                 topicClient.createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), submitPublicKey);
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
@@ -92,7 +95,7 @@ public class TopicFeature {
     public void createNewOpenTopic() {
         testInstantReference = Instant.now();
 
-        NetworkTransactionResponse networkTransactionResponse =
+        networkTransactionResponse =
                 topicClient.createTopic(topicClient.getSdkClient().getExpandedOperatorAccountId(), null);
         assertNotNull(networkTransactionResponse.getReceipt());
         TopicId topicId = networkTransactionResponse.getReceipt().topicId;
@@ -104,16 +107,33 @@ public class TopicFeature {
 
     @When("I successfully update an existing topic")
     public void updateTopic() {
-        TransactionReceipt receipt = topicClient.updateTopic(consensusTopicId).getReceipt();
-
-        assertNotNull(receipt);
+        networkTransactionResponse = topicClient.updateTopic(consensusTopicId);
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I successfully delete the topic")
     public void deleteTopic() {
-        TransactionReceipt receipt = topicClient.deleteTopic(consensusTopicId).getReceipt();
+        networkTransactionResponse = topicClient.deleteTopic(consensusTopicId);
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
 
-        assertNotNull(receipt);
+    @And("the mirror node should successfully observe the transaction")
+    public void verifyMirrorTransactionSuccessful() {
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+
+        var transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+        var mirrorTransaction = transactions.get(0);
+
+        assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getName()).isNotNull();
+        assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        assertThat(mirrorTransaction.getValidStartTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getValidStartTimestamp())
+                .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
     @Given("I provide a topic id {string}")
@@ -278,14 +298,6 @@ public class TopicFeature {
 
         topicMessageQuery.setStartTime(startTime);
         subscriptionResponse = subscribeWithBackgroundMessageEmission();
-    }
-
-    @Then("the network should successfully observe the topic")
-    public void verifyTopicOnNetwork() {
-        TopicInfo topicInfo = topicClient.getTopicInfo(consensusTopicId);
-        assertNotNull(topicInfo, "topicInfo is null");
-        assertNotEquals("", topicInfo.topicMemo, "topicMemo is not empty");
-        assertThat(topicInfo.sequenceNumber).isGreaterThanOrEqualTo(messageSubscribeCount);
     }
 
     @Then("the network should successfully observe these messages")

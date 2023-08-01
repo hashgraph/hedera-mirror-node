@@ -16,13 +16,15 @@
 
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.isOfEcdsaPublicAddressSize;
+import static com.hedera.services.utils.EntityIdUtils.isOfEvmAddressSize;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asContract;
+import static com.hedera.services.utils.IdUtils.asToken;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +37,7 @@ import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.common.utility.CommonUtils;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +47,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class EntityIdUtilsTest {
+
+    public static final ByteString ECDSA_PUBLIC_KEY =
+            ByteString.fromHex("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
+    public static final ByteString ECDSA_WRONG_PUBLIC_KEY =
+            ByteString.fromHex("3a2103af80b90d145da28c583359beb47b217511e443e7a64dfdb27d");
+    public static final ByteString EVM_ADDRESS = ByteString.fromHex("ebb9a1be370150759408cd7af48e9eda2b8ead57");
+    public static final ByteString WRONG_EVM_ADDRESS = ByteString.fromHex("ebb9a1be3701cd7af48e9eda2b8ead57");
 
     @Test
     void asSolidityAddressBytesWorksProperly() {
@@ -55,7 +65,7 @@ class EntityIdUtilsTest {
 
         final var result = asEvmAddress(id);
 
-        final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }
@@ -70,7 +80,7 @@ class EntityIdUtilsTest {
 
         final var result = asEvmAddress(id);
 
-        final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
+        final var expectedBytes = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
         assertArrayEquals(expectedBytes, result);
     }
@@ -110,9 +120,9 @@ class EntityIdUtilsTest {
         };
         final var num = Longs.fromByteArray(numBytes);
         final byte[] expected = {
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
-            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
-            (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
+            (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
             (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
         };
@@ -124,22 +134,22 @@ class EntityIdUtilsTest {
                 .setEvmAddress(ByteString.copyFrom(create2AddressBytes))
                 .build();
 
-        final var actual = asEvmAddress(shard, realm, num);
+        final var actual = asEvmAddress(num);
         final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
         final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
-        final var typedContract = EntityIdUtils.asTypedEvmAddress(equivContract);
-        final var anotherActual = asEvmAddress(equivContract);
-        final var create2Actual = asEvmAddress(create2Contract);
+        final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
+        final var create2Actual = EntityIdUtils.asEvmAddress(create2Contract);
+        final var actualHex = EntityIdUtils.asHexedEvmAddress(equivAccount);
 
         assertArrayEquals(expected, actual);
         assertArrayEquals(expected, anotherActual);
         assertArrayEquals(expected, typedActual.toArray());
         assertArrayEquals(expected, typedToken.toArray());
-        assertArrayEquals(expected, typedContract.toArray());
         assertArrayEquals(create2AddressBytes, create2Actual);
-        assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
-        assertEquals(equivContract, contractIdFromEvmAddress(actual));
-        assertEquals(equivToken, tokenIdFromEvmAddress(actual));
+        assertEquals(CommonUtils.hex(expected), actualHex);
+        assertEquals(asAccount(String.format("%d.%d.%d", 0, 0, num)), EntityIdUtils.accountIdFromEvmAddress(actual));
+        assertEquals(asContract(String.format("%d.%d.%d", 0, 0, num)), contractIdFromEvmAddress(actual));
+        assertEquals(asToken(String.format("%d.%d.%d", 0, 0, num)), tokenIdFromEvmAddress(actual));
     }
 
     @ParameterizedTest
@@ -179,5 +189,35 @@ class EntityIdUtilsTest {
     @Test
     void idFromEntityIdNullHandling() {
         assertThat(EntityIdUtils.idFromEntityId(null)).isNull();
+    }
+
+    @Test
+    void isOfEvmAddressSizeWorks() {
+        assertThat(isOfEvmAddressSize(EVM_ADDRESS)).isTrue();
+        assertThat(isOfEvmAddressSize(WRONG_EVM_ADDRESS)).isFalse();
+    }
+
+    @Test
+    void isOfEcdsaPublicAddressSizeWorks() {
+        assertThat(isOfEcdsaPublicAddressSize(ECDSA_PUBLIC_KEY)).isTrue();
+        assertThat(isOfEcdsaPublicAddressSize(ECDSA_WRONG_PUBLIC_KEY)).isFalse();
+    }
+
+    @Test
+    void asSolidityAddressHexWorksProperly() {
+        final var id = new Id(1, 2, 3);
+
+        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(id));
+    }
+
+    @Test
+    void asSolidityAddressHexWorksProperlyForAccount() {
+        final var accountId = AccountID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setAccountNum(3)
+                .build();
+
+        assertEquals("0000000000000000000000000000000000000003", EntityIdUtils.asHexedEvmAddress(accountId));
     }
 }

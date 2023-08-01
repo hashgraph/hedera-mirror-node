@@ -18,10 +18,9 @@ package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,20 +35,20 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     private static final String JSON =
             """
-            {
-              "@type":"TopicMessage",
-              "chunk_num":1,
-              "chunk_total":2,
-              "consensus_timestamp":1594401417000000000,
-              "message":"AQID",
-              "payer_account_id":4294968296,
-              "running_hash":"BAUG",
-              "running_hash_version":2,
-              "sequence_number":1,
-              "topic_id":1001,
-              "valid_start_timestamp":1594401416000000000
-            }""";
-    private static final Duration WAIT = Duration.ofSeconds(10L);
+                    {
+                      "@type":"TopicMessage",
+                      "chunk_num":1,
+                      "chunk_total":2,
+                      "consensus_timestamp":1594401417000000000,
+                      "message":"AQID",
+                      "payer_account_id":4294968296,
+                      "running_hash":"BAUG",
+                      "running_hash_version":2,
+                      "sequence_number":1,
+                      "topic_id":1001,
+                      "valid_start_timestamp":1594401416000000000
+                    }""";
+    private static final Duration WAIT = Duration.ofSeconds(1L);
     private static boolean INITIALIZED = false;
     private final NotifyingTopicListener topicListener;
     private final JdbcTemplate jdbcTemplate;
@@ -84,24 +83,25 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         TopicMessage topicMessage = TopicMessage.builder()
                 .chunkNum(1)
                 .chunkTotal(2)
-                .consensusTimestamp(Instant.ofEpochSecond(1594401417))
+                .consensusTimestamp(1594401417000000000L)
                 .message(new byte[] {1, 2, 3})
-                .payerAccountId(4294968296L)
+                .payerAccountId(EntityId.of(4294968296L, EntityType.ACCOUNT))
                 .runningHash(new byte[] {4, 5, 6})
                 .runningHashVersion(2)
                 .sequenceNumber(1L)
-                .topicId(1001)
-                .validStartTimestamp(Instant.ofEpochSecond(1594401416))
+                .topicId(EntityId.of(1001L, EntityType.TOPIC))
+                .validStartTimestamp(1594401416000000000L)
                 .build();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .startTime(Instant.EPOCH)
+                .startTime(0)
                 .topicId(EntityId.of(1001L, EntityType.TOPIC))
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
                 .thenAwait(WAIT)
                 .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage)
                 .thenCancel()
                 .verify(WAIT);
@@ -109,8 +109,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Test
     void jsonError() {
-        TopicMessageFilter filter =
-                TopicMessageFilter.builder().startTime(Instant.EPOCH).build();
+        TopicMessageFilter filter = TopicMessageFilter.builder().startTime(0).build();
 
         // Parsing errors will be logged and ignored and the message will be lost
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))

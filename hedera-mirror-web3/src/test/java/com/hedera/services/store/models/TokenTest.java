@@ -17,7 +17,7 @@
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -54,6 +54,8 @@ class TokenTest {
     private final long defaultLongValue = 0;
     private final int defaultIntValue = 0;
     private Account treasuryAccount = new Account(
+            ByteString.EMPTY,
+            0L,
             treasuryId,
             defaultLongValue,
             defaultLongValue,
@@ -68,8 +70,12 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false,
+            null);
     private Account nonTreasuryAccount = new Account(
+            ByteString.EMPTY,
+            0L,
             nonTreasuryId,
             defaultLongValue,
             defaultLongValue,
@@ -84,7 +90,9 @@ class TokenTest {
             numAssociations,
             numPositiveBalances,
             defaultIntValue,
-            0L);
+            0L,
+            false,
+            null);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -93,6 +101,7 @@ class TokenTest {
     @BeforeEach
     void setUp() {
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -116,6 +125,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0L,
                 false,
                 "the mother",
                 "bitcoin",
@@ -126,8 +136,9 @@ class TokenTest {
                 Collections.emptyList());
 
         treasuryRel = new TokenRelationship(
-                subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, 0);
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, false, false, false, true, 0);
+                subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, false, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, 0, false, false, false, false, true, false, 0);
     }
 
     @Test
@@ -197,7 +208,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithNoKeys() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, false, 0);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -209,11 +221,13 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, true, true, false, false, false, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, 0, true, true, false, false, false, false, 0);
 
         // given:
 
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -237,6 +251,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0L,
                 true,
                 "the mother",
                 "bitcoin",
@@ -255,7 +270,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, false, 0);
 
         // given:
         subject = subject.setFreezeKey(someKey);
@@ -293,7 +309,7 @@ class TokenTest {
 
     @Test
     void burnsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 2, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(subject, treasuryAccount, 2, false, false, false, false, true, true, 0);
         subject = subject.setSupplyKey(someKey);
         // treasuryRel = treasuryRel.initBalance(2);
         subject.getLoadedUniqueTokens()
@@ -324,7 +340,7 @@ class TokenTest {
 
     @Test
     void mintsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 0, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(subject, treasuryAccount, 0, false, false, false, false, true, true, 0);
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
@@ -403,6 +419,7 @@ class TokenTest {
 
         // negative total supply
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -426,6 +443,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0L,
                 true,
                 "the mother",
                 "bitcoin",
@@ -545,6 +563,7 @@ class TokenTest {
     @SuppressWarnings("java:S5778")
     void uniqueMintFailsAsExpected() {
         subject = new Token(
+                0L,
                 tokenId,
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -568,6 +587,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0L,
                 true,
                 "the mother",
                 "bitcoin",
@@ -592,6 +612,7 @@ class TokenTest {
     @Test
     void reflectionObjectHelpersWork() {
         final var otherToken = new Token(
+                0L,
                 new Id(1, 2, 3),
                 new ArrayList<>(),
                 new ArrayList<>(),
@@ -615,6 +636,7 @@ class TokenTest {
                 false,
                 false,
                 expiry,
+                0L,
                 true,
                 "the mother",
                 "bitcoin",

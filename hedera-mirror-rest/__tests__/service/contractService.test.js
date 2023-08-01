@@ -35,7 +35,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-        with entity as (select evm_address,id from entity)
         select
             cr.amount,
             cr.bloom,
@@ -73,7 +72,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-    with entity as (select evm_address,id from entity)
     select
         cr.amount,
         cr.bloom,
@@ -111,7 +109,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-    with entity as (select evm_address,id from entity)
     select
         cr.amount,
         cr.bloom,
@@ -150,7 +147,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       5
     );
     const expected = `
-    with  entity as (select evm_address,id from entity)
     select
         cr.amount,
         cr.bloom,
@@ -1480,5 +1476,81 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
     );
 
     expect(res.length).toEqual(1);
+  });
+});
+
+describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () => {
+  test('Empty', async () => {
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([], [])).resolves.toBeEmpty();
+  });
+
+  test('No match', async () => {
+    const expected = new Map([[20, null]]);
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([10], [20])).resolves.toEqual(
+      expected
+    );
+  });
+
+  test('All match', async () => {
+    await integrationDomainOps.loadEthereumTransactions([
+      {
+        consensus_timestamp: 1690086061111222333n,
+        chain_id: [0x1, 0x2a],
+        hash: '0x3df8d8a9891a3f94dc07c70509c4a25f0069795365ba9de8c43e214d80f48fa8',
+        max_fee_per_gas: '0x56',
+        nonce: 10,
+        payer_account_id: 500,
+        value: [0xa0],
+      },
+      {
+        consensus_timestamp: 1690086061111222555n,
+        chain_id: [0x1, 0x2a],
+        hash: '0xd96ea0ca4474b1f92c73af999eb81b1a3df71e3c750124fbf940da5fd0ff87ab',
+        max_fee_per_gas: '0x70',
+        nonce: 6,
+        payer_account_id: 600,
+        value: [0xa6],
+      },
+    ]);
+    const payers = [500, 600];
+    const timestamps = [1690086061111222333n, 1690086061111222555n];
+    const expected = new Map([
+      [
+        1690086061111222333n,
+        {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '56',
+          maxPriorityFeePerGas: null,
+          nonce: 10,
+          recoveryId: 1,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          value: 'a0',
+        },
+      ],
+      [
+        1690086061111222555n,
+        {
+          accessList: null,
+          chainId: '012a',
+          gasPrice: '4a817c80',
+          maxFeePerGas: '70',
+          maxPriorityFeePerGas: null,
+          nonce: 6,
+          recoveryId: 1,
+          signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+          signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          type: 2,
+          value: 'a6',
+        },
+      ],
+    ]);
+
+    await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps)).resolves.toEqual(
+      expected
+    );
   });
 });

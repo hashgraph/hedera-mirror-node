@@ -21,6 +21,7 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
+import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.Transaction;
@@ -42,6 +43,7 @@ import org.springframework.http.MediaType;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
+import org.springframework.retry.RetryOperations;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
@@ -56,19 +58,7 @@ public class StartupProbe {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final WebClient webClient;
-    private final RetryTemplate retryTemplate = RetryTemplate.builder()
-            .infiniteRetry()
-            .notRetryOn(TimeoutException.class)
-            .fixedBackoff(1000L)
-            .withListener(new RetryListener() {
-                @Override
-                public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
-                    log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
-                }
-            })
-            .build();
 
-    @SneakyThrows
     public void validateEnvironment(Client client) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         var stopwatch = Stopwatch.createStarted();
@@ -80,20 +70,32 @@ public class StartupProbe {
 
         log.info("Creating a topic to confirm node connectivity");
         var transactionId = executeTransaction(client, stopwatch, () -> new TopicCreateTransaction()).transactionId;
-
-        var topicId = executeQuery(
-                        client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionId))
-                .topicId;
-
+        var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
+        var topicId = executeQuery(client, stopwatch, () -> receiptQuery).topicId;
         log.info("Created topic {} successfully", topicId);
-        callRestEndpoint(stopwatch, transactionId);
 
+        callRestEndpoint(stopwatch, transactionId);
+        long startTime;
+
+        // Submit a topic message and ensure it's seen by mirror node within 30s to ensure the importer is caught up
+        do {
+            startTime = System.currentTimeMillis();
+            submitMessage(client, stopwatch, topicId);
+        } while (System.currentTimeMillis() - startTime > 30_000);
+
+        log.info("Startup probe successful");
+    }
+
+    @SneakyThrows
+    private void submitMessage(Client client, Stopwatch stopwatch, TopicId topicId) {
         var messageLatch = new CountDownLatch(1);
+        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
         SubscriptionHandle subscription = null;
 
         try {
-            log.info("Subscribing to the topic");
-            subscription = retryTemplate.execute(x -> new TopicMessageQuery()
+            log.info("Subscribing to topic {}", topicId);
+            var retry = retryOperations(stopwatch);
+            subscription = retry.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .setMaxAttempts(Integer.MAX_VALUE)
                     .setRetryHandler(t -> {
@@ -112,11 +114,11 @@ public class StartupProbe {
             executeQuery(client, stopwatch, () -> new TransactionReceiptQuery().setTransactionId(transactionIdMessage));
             log.info("Waiting for the mirror node to publish the topic message");
 
-            if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
-                log.info("Startup probe successful");
-            } else {
+            if (!messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
                 throw new TimeoutException("Timer expired while waiting on message latch");
             }
+
+            log.info("Received the topic message");
         } finally {
             if (subscription != null) {
                 subscription.unsubscribe();
@@ -127,20 +129,16 @@ public class StartupProbe {
     @SneakyThrows
     private TransactionResponse executeTransaction(
             Client client, Stopwatch stopwatch, Supplier<Transaction<?>> transaction) {
-        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction
-                .get()
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+        var retry = retryOperations(stopwatch);
+        return retry.execute(
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
     }
 
     @SneakyThrows
     private <T> T executeQuery(Client client, Stopwatch stopwatch, Supplier<Query<T, ?>> transaction) {
-        var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        return retryTemplate.execute(r -> transaction
-                .get()
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+        var retry = retryOperations(stopwatch);
+        return retry.execute(
+                r -> transaction.get().setMaxAttempts(Integer.MAX_VALUE).execute(client, Duration.ofSeconds(30L)));
     }
 
     private void callRestEndpoint(Stopwatch stopwatch, TransactionId transactionId) {
@@ -164,5 +162,18 @@ public class StartupProbe {
                 .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
                 .timeout(startupTimeout.minus(stopwatch.elapsed()))
                 .block();
+    }
+
+    private RetryOperations retryOperations(Stopwatch stopwatch) {
+        return RetryTemplate.builder()
+                .exponentialBackoff(1000, 2.0, 10000)
+                .withTimeout(acceptanceTestProperties.getStartupTimeout().minus(stopwatch.elapsed()))
+                .withListener(new RetryListener() {
+                    @Override
+                    public <T, E extends Throwable> void onError(RetryContext r, RetryCallback<T, E> c, Throwable t) {
+                        log.warn("Retry attempt #{} with error: {}", r.getRetryCount(), t.getMessage());
+                    }
+                })
+                .build();
     }
 }

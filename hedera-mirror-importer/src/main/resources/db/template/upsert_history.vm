@@ -1,14 +1,27 @@
 ## @formatter:off
-## The inner join then left join is a workaround for citus
-with current as (
-  select e.*
+
+## Updates from non-history rows
+with non_history as (
+  select $existingColumnsAs, t.*
   from $finalTable e
   join $tempTable t on $idJoin
-  where upper(t.timestamp_range) is null
-), existing as (
+  where t.timestamp_range is null
+)
+insert into $finalTable ($insertColumns)
+select $coalesceColumns
+from non_history
+#if($skipPartialUpdate)
+where coalesce(e_created_timestamp, created_timestamp) is not null
+#end
+on conflict ($conflictColumns)
+do update set $updateColumns;
+
+## Updates from history rows
+with existing as (
   select $existingColumnsAs, t.*
   from $tempTable t
-  left join current e on $idJoin
+  left join $finalTable e on $idJoin
+  where t.timestamp_range is not null
 ), existing_history as (
   insert into $historyTable ($insertColumns)
   select distinct on ($conflictColumns) $existingColumns
@@ -20,7 +33,7 @@ temp_history as (
   insert into $historyTable ($insertColumns)
   select distinct $coalesceColumns
   from existing
-  where timestamp_range is not null and upper(timestamp_range) is not null
+  where upper(timestamp_range) is not null
 #if($skipPartialUpdate)
   and coalesce(e_created_timestamp, created_timestamp) is not null
 #end
@@ -28,9 +41,9 @@ temp_history as (
 insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from existing
-where (e_timestamp_range is not null and timestamp_range is null) or (timestamp_range is not null and upper(timestamp_range) is null)
+where timestamp_range is not null and upper(timestamp_range) is null
 #if($skipPartialUpdate)
 and coalesce(e_created_timestamp, created_timestamp) is not null
 #end
 on conflict ($conflictColumns)
-do update set $updateColumns
+do update set $updateColumns;

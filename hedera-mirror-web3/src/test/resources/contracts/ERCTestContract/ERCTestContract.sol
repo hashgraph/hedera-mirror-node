@@ -43,6 +43,10 @@ contract ERCTestContract {
         return IERC721(token).isApprovedForAll(owner, operator);
     }
 
+    function setApprovalForAll(address token, address operator, bool approved) public {
+        return IERC721(token).setApprovalForAll(operator, approved);
+    }
+
     function getOwnerOf(address token, uint256 serialNo) external view returns(address){
         return IERC721(token).ownerOf(serialNo);
     }
@@ -72,5 +76,9 @@ contract ERCTestContract {
 
     function approve(address token, address spender, uint256 amount) public {
         IERC20(token).approve(spender, amount);
+    }
+
+    function transferFromNFT(address token, address from, address to, uint256 tokenId) public {
+        IERC721(token).transferFrom(from, to, tokenId);
     }
 }

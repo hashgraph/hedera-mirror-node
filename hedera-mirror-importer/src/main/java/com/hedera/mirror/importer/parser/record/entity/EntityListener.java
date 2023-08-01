@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -39,12 +40,12 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
+import java.util.Collection;
 
 /**
  * Handlers for items parsed during processing of record stream.
@@ -75,6 +76,8 @@ public interface EntityListener {
 
     default void onEntity(Entity entity) throws ImporterException {}
 
+    default void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {}
+
     default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {}
 
     default void onFileData(FileData fileData) throws ImporterException {}
@@ -88,8 +91,6 @@ public interface EntityListener {
     default void onNftAllowance(NftAllowance nftAllowance) {}
 
     default void onNodeStake(NodeStake nodeStake) throws ImporterException {}
-
-    default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {}
 
     default void onPrng(Prng prng) {}
 

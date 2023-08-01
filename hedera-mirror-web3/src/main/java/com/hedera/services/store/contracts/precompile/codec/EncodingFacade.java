@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
+import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_BURN;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.hapiAllowanceOfType;
@@ -32,8 +33,6 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,18 +42,17 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 
-@Singleton
 public class EncodingFacade {
     public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
-    @Inject
-    public EncodingFacade() {
-        /* For Dagger2 */
-    }
-
     public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
+    }
+
+    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
+        return com.esaulpaugh.headlong.abi.Address.wrap(
+                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 
     public Bytes encodeGetApproved(final int status, final Address approved) {
@@ -104,6 +102,14 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeBurnSuccess(final long totalSupply) {
+        return functionResultBuilder()
+                .forFunction(HAPI_BURN)
+                .withStatus(SUCCESS.getNumber())
+                .withTotalSupply(totalSupply)
+                .build();
+    }
+
     public Bytes encodeMintFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(HAPI_MINT)
@@ -113,17 +119,9 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeBurnSuccess(final long totalSupply) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
-                .withStatus(SUCCESS.getNumber())
-                .withTotalSupply(totalSupply)
-                .build();
-    }
-
     public Bytes encodeBurnFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
-                .forFunction(FunctionType.HAPI_BURN)
+                .forFunction(HAPI_BURN)
                 .withStatus(status.getNumber())
                 .withTotalSupply(0L)
                 .build();
@@ -258,13 +256,48 @@ public class EncodingFacade {
     }
 
     public static class LogBuilder {
-        private Address logger;
+        final StringBuilder tupleTypes = new StringBuilder("(");
         private final List<Object> data = new ArrayList<>();
         private final List<LogTopic> topics = new ArrayList<>();
-        final StringBuilder tupleTypes = new StringBuilder("(");
+        private Address logger;
 
         public static LogBuilder logBuilder() {
             return new LogBuilder();
+        }
+
+        private static LogTopic generateLogTopic(final Object param) {
+            byte[] array = new byte[] {};
+            if (param instanceof Address address) {
+                array = address.toArray();
+            } else if (param instanceof BigInteger numeric) {
+                array = numeric.toByteArray();
+            } else if (param instanceof Long numeric) {
+                array = BigInteger.valueOf(numeric).toByteArray();
+            } else if (param instanceof Boolean bool) {
+                array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
+            } else if (param instanceof Bytes bytes) {
+                array = bytes.toArray();
+            }
+
+            return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));
+        }
+
+        private static void addTupleType(final Object param, final StringBuilder stringBuilder) {
+            if (param instanceof Address) {
+                stringBuilder.append("address,");
+            } else if (param instanceof BigInteger || param instanceof Long) {
+                stringBuilder.append("uint256,");
+            } else if (param instanceof Boolean) {
+                stringBuilder.append("bool,");
+            }
+        }
+
+        private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+            final byte[] expandedArray = new byte[32];
+
+            System.arraycopy(
+                    bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
+            return expandedArray;
         }
 
         public LogBuilder forLogger(final Address logger) {
@@ -309,45 +342,5 @@ public class EncodingFacade {
                 return param;
             }
         }
-
-        private static LogTopic generateLogTopic(final Object param) {
-            byte[] array = new byte[] {};
-            if (param instanceof Address address) {
-                array = address.toArray();
-            } else if (param instanceof BigInteger numeric) {
-                array = numeric.toByteArray();
-            } else if (param instanceof Long numeric) {
-                array = BigInteger.valueOf(numeric).toByteArray();
-            } else if (param instanceof Boolean bool) {
-                array = new byte[] {(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
-            } else if (param instanceof Bytes bytes) {
-                array = bytes.toArray();
-            }
-
-            return LogTopic.wrap(Bytes.wrap(expandByteArrayTo32Length(array)));
-        }
-
-        private static void addTupleType(final Object param, final StringBuilder stringBuilder) {
-            if (param instanceof Address) {
-                stringBuilder.append("address,");
-            } else if (param instanceof BigInteger || param instanceof Long) {
-                stringBuilder.append("uint256,");
-            } else if (param instanceof Boolean) {
-                stringBuilder.append("bool,");
-            }
-        }
-
-        private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
-            final byte[] expandedArray = new byte[32];
-
-            System.arraycopy(
-                    bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
-            return expandedArray;
-        }
-    }
-
-    static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(@NonNull final Address address) {
-        return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
     }
 }

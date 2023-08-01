@@ -19,7 +19,6 @@ package com.hedera.services.txn.token;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -52,7 +51,7 @@ class BurnLogicTest {
     private final Id id = new Id(1, 2, 3);
     private final TokenID grpcId = id.asGrpcToken();
     private final Id treasuryId = new Id(2, 4, 6);
-    private final Account treasury = new Account(treasuryId, 0);
+    private final Account treasury = new Account(0L, treasuryId, 0);
     private TokenRelationship treasuryRel;
 
     @Mock
@@ -94,7 +93,7 @@ class BurnLogicTest {
     @Test
     void followsHappyPathForCommon() {
         // setup:
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
 
         givenValidTxnCtx();
         given(store.getToken(id.asEvmAddress(), OnMissing.THROW)).willReturn(token);
@@ -123,7 +122,7 @@ class BurnLogicTest {
         final var serials = List.of(1L, 2L);
         final var firstNftId = new NftId(id.shard(), id.realm(), id.num(), 1);
         final var secondNftId = new NftId(id.shard(), id.realm(), id.num(), 2);
-        treasuryRel = new TokenRelationship(token, treasury);
+        treasuryRel = new TokenRelationship(token, treasury, true);
 
         givenValidUniqueTxnCtx();
         given(token.getTreasury()).willReturn(treasury);
@@ -134,10 +133,8 @@ class BurnLogicTest {
                         new TokenRelationshipKey(token.getId().asEvmAddress(), treasury.getAccountAddress()),
                         OnMissing.THROW))
                 .willReturn(treasuryRel);
-        given(store.getUniqueToken(firstNftId, OnMissing.THROW)).willReturn(uniqueToken);
-        given(store.getUniqueToken(secondNftId, OnMissing.THROW)).willReturn(uniqueToken);
         given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        given(token.setLoadedUniqueTokens(anyMap())).willReturn(updatedToken);
+        given(store.loadUniqueTokens(token, serials)).willReturn(updatedToken);
         given(tokenAfterBurn.getTreasury()).willReturn(treasury);
         given(updatedToken.burn(treasuryRel, serials)).willReturn(tokenModificationResult);
         given(tokenModificationResult.token()).willReturn(tokenAfterBurn);

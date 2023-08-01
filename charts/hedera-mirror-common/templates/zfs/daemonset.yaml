@@ -4,28 +4,31 @@ kind: DaemonSet
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
     app: zfs-init
-  name: node-initializer
+  name: {{ .Release.Name }}-zfs-init
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 spec:
   selector:
-    matchLabels:
+    matchLabels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 6 }}
       app: zfs-init
   template:
     metadata:
-      labels:
-        name: node-initializer
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/zfs/configmap.yaml") . | sha256sum }}
+      labels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 8 }}
         app: zfs-init
     spec:
       containers:
-        - image: "gcr.io/google-containers/pause:2.0"
+        - image: registry.k8s.io/pause:latest
+          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
           name: pause
       initContainers:
-        - image: ubuntu:22.04
-          name: node-initializer
+        - image: "{{ .Values.zfs.image.registry }}/{{ .Values.zfs.image.repository }}:{{ .Values.zfs.image.tag }}"
+          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
+          name: init
           command: [ "/scripts/entrypoint.sh" ]
           env:
             - name: ROOT_MOUNT_DIR
-              value: /root
+              value: /node
             - name: DISK_SIZE_COORDINATOR
               value: {{ .Values.zfs.coordinator.diskSize }}
             - name: DISK_SIZE_WORKER
@@ -33,20 +36,21 @@ spec:
           securityContext:
             privileged: true
           volumeMounts:
-            - name: root-mount
-              mountPath: /root
-            - name: node-init-entrypoint
+            - name: node
+              mountPath: /node
+            - name: scripts
               mountPath: /scripts
       nodeSelector: {{ toYaml .Values.zfs.zfsNode.nodeSelector | nindent 8 }}
+      terminationGracePeriodSeconds: 1
       tolerations: {{ toYaml .Values.zfs.zfsNode.tolerations | nindent 8 }}
       volumes:
-        - name: node-init-entrypoint
-          configMap:
-            name: node-init-entrypoint
-            defaultMode: 0744
-        - name: root-mount
+        - name: node
           hostPath:
             path: /
+        - name: scripts
+          configMap:
+            name: {{ .Release.Name }}-zfs-init
+            defaultMode: 0744
   updateStrategy:
     type: RollingUpdate
-  {{- end -}}
+{{- end -}}

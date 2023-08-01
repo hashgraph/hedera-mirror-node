@@ -75,6 +75,8 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
                 .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
                 .returns(transaction.getEntityId().getId(), t -> t.getTokenId());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -111,6 +113,9 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
                     .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Nft::getTimestampRange)
                     .returns(transaction.getEntityId().getId(), AbstractNft::getTokenId);
         }
+
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -136,6 +141,9 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .hasSize(expectedNfts)
                 .extracting(Nft::getSerialNumber)
                 .containsExactly(1L, 2L);
+
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -150,5 +158,7 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

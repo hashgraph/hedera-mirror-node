@@ -478,11 +478,11 @@ const getTokens = async (pgSqlQuery, pgSqlParams) => {
 
 // token balances select columns
 const tokenBalancesSqlQueryColumns = {
-  ACCOUNT_BALANCE: 'tb.balance',
-  ACCOUNT_ID: 'tb.account_id',
-  CONSENSUS_TIMESTAMP: 'tb.consensus_timestamp',
+  ACCOUNT_BALANCE: 'ti.balance',
+  ACCOUNT_ID: 'ti.account_id',
+  CONSENSUS_TIMESTAMP: 'ti.consensus_timestamp',
   ACCOUNT_PUBLICKEY: 'e.public_key',
-  TOKEN_ID: 'tb.token_id',
+  TOKEN_ID: 'ti.token_id',
 };
 
 // token balances query to column maps
@@ -491,22 +491,19 @@ const tokenBalancesFilterColumnMap = {
   [filterKeys.ACCOUNT_ID]: tokenBalancesSqlQueryColumns.ACCOUNT_ID,
 };
 
-const tokenBalancesSelectFields = ['tb.consensus_timestamp', 'tb.account_id', 'tb.balance'];
-const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'), 'from token_balance tb'].join('\n');
-
 /**
  * Extracts SQL query, params, order, and limit
  *
  * @param {string} tokenId encoded token ID
- * @param {string} query initial pg SQL query string
  * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
-const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
+const extractSqlFromTokenBalancesRequest = (tokenId, filters) => {
   let limit = defaultLimit;
   let order = orderFilterValues.DESC;
   let joinEntityClause = '';
   const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
+  const selectFields = ['ti.account_id', 'ti.balance'];
   const params = [tokenId];
   const tsQueryConditions = [];
 
@@ -540,18 +537,28 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
     }
   }
 
-  const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
-  const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
-                   from token_balance tb
+  let tokenInfoTable = 'token_account';
+  if (tsQueryConditions.length) {
+    tokenInfoTable = 'token_balance';
+
+    const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
+    const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
+                   from token_balance ti
                      ${tsQueryWhereClause}
                    order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
                    limit 1`;
-  conditions.push(`tb.consensus_timestamp = (${tsQuery})`);
 
+    selectFields.push('ti.consensus_timestamp');
+    conditions.push(`ti.consensus_timestamp = (${tsQuery})`);
+  } else {
+    selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
+    conditions.push('ti.associated = true');
+  }
   const whereQuery = `where ${conditions.join('\nand ')}`;
   const orderQuery = `order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}`;
   const limitQuery = `limit $${params.push(limit)}`;
-  query = [query, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
+  const baseQuery = ['select', selectFields.join(',\n'), `from ${tokenInfoTable} ti`].join('\n');
+  const query = [baseQuery, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
 
   return utils.buildPgSqlObject(query, params, order, limit);
 };
@@ -573,7 +580,7 @@ const getTokenBalances = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query, acceptedTokenBalancesParameters);
 
-  const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
+  const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenBalances query: ${query} ${utils.JSONStringify(params)}`);
   }
@@ -978,7 +985,6 @@ if (utils.isTestEnv()) {
     nftSelectQuery,
     tokenAccountCte,
     tokenAccountJoinQuery,
-    tokenBalancesSelectQuery,
     tokensSelectQuery,
     validateSerialNumberParam,
     validateTokenInfoFilter,

@@ -16,13 +16,12 @@
 
 package com.hedera.mirror.grpc.listener;
 
-import com.hedera.mirror.grpc.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.inject.Named;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Data;
@@ -71,10 +70,8 @@ public class PollingTopicListener implements TopicListener {
                 ? (int) (filter.getLimit() - context.getCount().get())
                 : Integer.MAX_VALUE;
         int pageSize = Math.min(limit, listenerProperties.getMaxPageSize());
-        Instant startTime = last != null ? last.getConsensusTimestampInstant().plusNanos(1) : filter.getStartTime();
-
-        TopicMessageFilter newFilter =
-                filter.toBuilder().limit(pageSize).startTime(startTime).build();
+        long startTime = last != null ? last.getConsensusTimestamp() + 1 : filter.getStartTime();
+        var newFilter = filter.toBuilder().limit(pageSize).startTime(startTime).build();
 
         return Flux.fromStream(topicMessageRepository.findByFilter(newFilter));
     }

@@ -28,8 +28,8 @@ import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.proto.Key;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -46,27 +46,27 @@ public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
-    private static Runnable CLEANUP = () -> {};
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private final Collection<ExpandedAccountId> accountIds = new CopyOnWriteArrayList<>();
+    private final long initialBalance;
     private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        final long initialBalance = getBalance();
+        initialBalance = getBalance();
         log.info("Operator account {} initial balance is {}", sdkClient.getExpandedOperatorAccountId(), initialBalance);
-
-        CLEANUP = () -> {
-            deleteAccounts();
-            var cost = initialBalance - getBalance();
-            sdkClient.close();
-            log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
-        };
     }
 
-    public static synchronized void cleanup() {
-        CLEANUP.run();
+    @Override
+    public void clean() {
+        log.info("Deleting {} accounts", accountIds.size());
+        accountIds.forEach(this::delete);
+        accountIds.clear();
+        accountMap.clear();
+
+        var cost = initialBalance - getBalance();
+        log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
     }
 
     public synchronized ExpandedAccountId getTokenTreasuryAccount() {
@@ -78,18 +78,15 @@ public class AccountClient extends AbstractNetworkClient {
         return tokenTreasuryAccount;
     }
 
-    private void deleteAccounts() {
-        accountIds.forEach(accountId -> {
-            var accountDeleteTransaction = new AccountDeleteTransaction()
-                    .setAccountId(accountId.getAccountId())
-                    .setTransferAccountId(client.getOperatorAccountId())
-                    .freezeWith(client)
-                    .sign(accountId.getPrivateKey());
-            executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
-            log.info("Deleted account {}", accountId);
-        });
-        accountIds.clear();
-        accountMap.clear();
+    public NetworkTransactionResponse delete(ExpandedAccountId accountId) {
+        var accountDeleteTransaction = new AccountDeleteTransaction()
+                .setAccountId(accountId.getAccountId())
+                .setTransferAccountId(client.getOperatorAccountId())
+                .freezeWith(client)
+                .sign(accountId.getPrivateKey());
+        var response = executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
+        log.info("Deleted account {} via {}", accountId, response.getTransactionId());
+        return response;
     }
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
@@ -164,27 +161,32 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId createNewAccount(long initialBalance) {
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null);
+        // By default, use ALICE's key type if not specified->ED25519
+        Key.KeyCase keyType = AccountNameEnum.ALICE.keyType;
+        return createCryptoAccount(Hbar.fromTinybars(initialBalance), false, null, null, keyType);
     }
 
-    public ExpandedAccountId createNewECDSAAccount(long initialBalance) {
-        PrivateKey newAccountPrivateKey = PrivateKey.generateECDSA();
-        AccountId newAccountId = newAccountPrivateKey.getPublicKey().toAccountId(0, 0);
-        sendCryptoTransfer(newAccountId, Hbar.fromTinybars(initialBalance));
-
-        MirrorAccountResponse accountInfo = sdkClient.getMirrorNodeClient().getAccountDetailsUsingAlias(newAccountId);
-        return new ExpandedAccountId(accountInfo.getAccount(), newAccountPrivateKey.toString());
-    }
-
-    private ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null);
+    public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
+        // Get the keyType from the enum
+        Key.KeyCase keyType = accountNameEnum.keyType;
+        return createCryptoAccount(
+                Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
     }
 
     private ExpandedAccountId createCryptoAccount(
-            Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo) {
-        // 1. Generate a Ed25519 private, public key pair
-        PrivateKey privateKey = PrivateKey.generateED25519();
-        PublicKey publicKey = privateKey.getPublicKey();
+            Hbar initialBalance, boolean receiverSigRequired, KeyList keyList, String memo, Key.KeyCase keyType) {
+        // Depending on keyType, generate an Ed25519 or ECDSA private, public key pair
+        PrivateKey privateKey;
+        PublicKey publicKey;
+        if (keyType == Key.KeyCase.ED25519) {
+            privateKey = PrivateKey.generateED25519();
+            publicKey = privateKey.getPublicKey();
+        } else if (keyType == Key.KeyCase.ECDSA_SECP256K1) {
+            privateKey = PrivateKey.generateECDSA();
+            publicKey = privateKey.getPublicKey();
+        } else {
+            throw new IllegalArgumentException("Unsupported key type: " + keyType);
+        }
 
         log.trace("Private key = {}", privateKey);
         log.trace("Public key = {}", publicKey);
@@ -267,12 +269,13 @@ public class AccountClient extends AbstractNetworkClient {
 
     @RequiredArgsConstructor
     public enum AccountNameEnum {
-        ALICE(false),
-        BOB(false),
-        CAROL(true),
-        DAVE(true);
+        ALICE(false, Key.KeyCase.ED25519),
+        BOB(false, Key.KeyCase.ECDSA_SECP256K1),
+        CAROL(true, Key.KeyCase.ED25519),
+        DAVE(true, Key.KeyCase.ED25519);
 
         private final boolean receiverSigRequired;
+        private final Key.KeyCase keyType;
 
         @Override
         public String toString() {

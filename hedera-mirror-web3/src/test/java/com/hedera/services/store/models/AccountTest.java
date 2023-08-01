@@ -17,7 +17,6 @@
 package com.hedera.services.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -42,6 +41,8 @@ class AccountTest {
     @BeforeEach
     void setUp() {
         subject = new Account(
+                ByteString.EMPTY,
+                0L,
                 subjectId,
                 defaultLongValue,
                 defaultLongValue,
@@ -56,7 +57,9 @@ class AccountTest {
                 numAssociations,
                 numPositiveBalances,
                 numTreasuryTitles,
-                0L);
+                0L,
+                false,
+                null);
     }
 
     @Test
@@ -121,10 +124,5 @@ class AccountTest {
 
         // expect:
         assertEquals(desired, subject.toString());
-    }
-
-    @Test
-    void modificationBuilder() {
-        assertThat(subject.toBuilder().build()).isEqualTo(subject);
     }
 }

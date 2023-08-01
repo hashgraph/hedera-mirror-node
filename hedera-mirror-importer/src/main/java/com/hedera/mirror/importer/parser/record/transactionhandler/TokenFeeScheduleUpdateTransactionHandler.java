@@ -37,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @CustomLog
 @Named
 @RequiredArgsConstructor
-class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
+class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -54,13 +54,13 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenFeeScheduleUpdate();
-        updateCustomFees(transaction, transactionBody.getCustomFeesList());
+        updateCustomFees(transactionBody.getCustomFeesList(), recordItem, transaction);
     }
 
     /**
@@ -71,7 +71,9 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
      * @return A list of collectors automatically associated with the token if it's a token create transaction
      */
     Set<EntityId> updateCustomFees(
-            Transaction transaction, Collection<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees) {
+            Collection<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees,
+            RecordItem recordItem,
+            Transaction transaction) {
         var autoAssociatedAccounts = new HashSet<EntityId>();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
@@ -98,7 +100,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
                             collector,
                             customFee,
                             protoCustomFee.getFixedFee(),
-                            tokenId);
+                            tokenId,
+                            recordItem);
                     break;
                 case FRACTIONAL_FEE:
                     // Only FT can have fractional fee
@@ -117,7 +120,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
                             collector,
                             customFee,
                             protoCustomFee.getRoyaltyFee(),
-                            tokenId);
+                            tokenId,
+                            recordItem);
                     chargedInAttachedToken = false;
                     break;
                 default:
@@ -130,6 +134,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             if (transaction.getType() == TOKENCREATION.getProtoId() && chargedInAttachedToken) {
                 autoAssociatedAccounts.add(collector);
             }
+
+            recordItem.addEntityId(collector);
         }
 
         // If the fee is empty do not persist it. The protoCustomFees did not contain a parseable fee, only recoverable
@@ -153,7 +159,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             EntityId collector,
             CustomFee customFee,
             com.hederahashgraph.api.proto.java.FixedFee protoFixedFee,
-            EntityId tokenId) {
+            EntityId tokenId,
+            RecordItem recordItem) {
         var fixedFee = new com.hedera.mirror.common.domain.transaction.FixedFee();
         customFee.addFixedFee(fixedFee);
         fixedFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
@@ -163,6 +170,7 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             var denominatingTokenId = EntityId.of(protoFixedFee.getDenominatingTokenId());
             denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
             fixedFee.setDenominatingTokenId(denominatingTokenId);
+            recordItem.addEntityId(denominatingTokenId);
             return denominatingTokenId.equals(tokenId);
         }
 
@@ -208,7 +216,8 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
             EntityId collector,
             CustomFee customFee,
             com.hederahashgraph.api.proto.java.RoyaltyFee protoRoyaltyFee,
-            EntityId tokenId) {
+            EntityId tokenId,
+            RecordItem recordItem) {
         var royaltyFee = new com.hedera.mirror.common.domain.transaction.RoyaltyFee();
         royaltyFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
         royaltyFee.setCollectorAccountId(collector);
@@ -226,6 +235,7 @@ class TokenFeeScheduleUpdateTransactionHandler implements TransactionHandler {
                         EntityId.of(protoRoyaltyFee.getFallbackFee().getDenominatingTokenId());
                 denominatingTokenId = denominatingTokenId == EntityId.EMPTY ? tokenId : denominatingTokenId;
                 fixedFee.setDenominatingTokenId(denominatingTokenId);
+                recordItem.addEntityId(denominatingTokenId);
             }
 
             royaltyFee.setFallbackFee(fixedFee);
