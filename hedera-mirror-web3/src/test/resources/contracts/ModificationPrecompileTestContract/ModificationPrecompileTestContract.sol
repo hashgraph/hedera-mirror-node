@@ -125,19 +125,19 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function transferFromExternal(address token, address from, address to, int64 amount) external
-    returns (int responseCode)
+    function transferFromExternal(address token, address from, address to, uint256 amount) external
+    returns (int64 responseCode)
     {
-        responseCode = HederaTokenService.transferToken(token, from, to, amount);
+        responseCode = HederaTokenService.transferFrom(token, from, to, amount);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
     }
 
-    function transferFromNFTExternal(address token, address from, address to, int64 serialNumber) external
-    returns (int responseCode)
+    function transferFromNFTExternal(address token, address from, address to, uint256 serialNumber) external
+    returns (int64 responseCode)
     {
-        responseCode = HederaTokenService.transferNFT(token, from, to, serialNumber);
+        responseCode = HederaTokenService.transferFromNFT(token, from, to, serialNumber);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -156,15 +156,6 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     returns (int64 responseCode)
     {
         responseCode = HederaTokenService.freezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
-    function unfreezeTokenExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.unfreezeToken(token, account);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -296,15 +287,6 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function getTokenExpiryInfoExternal(address token) external
-    returns (int responseCode, IHederaTokenService.Expiry memory expiry)
-    {
-        (responseCode, expiry) = HederaTokenService.getTokenExpiryInfo(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
-    }
-
     function updateTokenInfoExternal(address token, IHederaTokenService.HederaToken memory tokenInfo) external
     returns (int responseCode)
     {
@@ -314,18 +296,12 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function getTokenInfoExternal(address token) external
-    returns (int responseCode, IHederaTokenService.TokenInfo memory tokenInfo)
-    {
-        (responseCode, tokenInfo) = HederaTokenService.getTokenInfo(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
+    function getBalanceOfWithDirectRedirect(address token, address account) external returns (bytes memory result) {
+        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert ("Token redirect failed");
         }
-    }
-
-    function getBalanceOfWithDirectRedirect(address token, address account) external
-    {
-        HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        return result;
     }
 
     function callNotExistingPrecompile(address token) public {
