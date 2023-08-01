@@ -84,8 +84,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V3 = Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
 
-    private TokenUpdateWrapper updateOp;
-
     private HederaTokenStore hederaTokenStore;
 
     private final ContextOptionValidator contextOptionValidator;
@@ -109,19 +107,21 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         final var functionId = ((FunctionParam) bodyParams).functionId();
-        updateOp = switch (functionId) {
-            case ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(input, aliasResolver);
-            case ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(input, aliasResolver);
-            case ABI_ID_UPDATE_TOKEN_INFO_V3 -> decodeUpdateTokenInfoV3(input, aliasResolver);
-            default -> null;};
+        final var updateOp =
+                switch (functionId) {
+                    case ABI_ID_UPDATE_TOKEN_INFO -> decodeUpdateTokenInfo(input, aliasResolver);
+                    case ABI_ID_UPDATE_TOKEN_INFO_V2 -> decodeUpdateTokenInfoV2(input, aliasResolver);
+                    case ABI_ID_UPDATE_TOKEN_INFO_V3 -> decodeUpdateTokenInfoV3(input, aliasResolver);
+                    default -> null;
+                };
 
         return syntheticTxnFactory.createTokenUpdate(updateOp);
     }
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
+        final var updateOp = transactionBody.getTokenUpdate();
         Objects.requireNonNull(updateOp);
-        validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
 
         final var validity = tokenUpdateLogic.validate(transactionBody);
         validateTrue(validity == OK, validity);

@@ -119,13 +119,13 @@ public class TokenUpdatePrecompileTest {
     private AccessorFactory accessorFactory;
 
     @Mock
-    MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Mock
-    OptionValidator validator;
+    private OptionValidator validator;
 
     @Mock
-    HederaTokenStore tokenStore;
+    private HederaTokenStore tokenStore;
 
     @Mock
     private ContextOptionValidator contextOptionValidator;

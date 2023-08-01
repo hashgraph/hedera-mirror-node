@@ -335,7 +335,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
 
-        final var unpausedTokenEntityId = fungibleTokenPersist(
+        fungibleTokenPersist(
                 senderEntityId,
                 KEY_PROTO,
                 UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
