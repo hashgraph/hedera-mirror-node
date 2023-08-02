@@ -42,6 +42,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Differences with the original:
  *  1. Implements a modified {@link Precompile} interface
  *  2. Removed class fields and adapted constructor in order to achieve stateless behaviour
+ *  3. The run method does not handle any signature verification and is modified to obtain
+ *     the update type function from the MessageFrame input data parameter. It will not be
+ *     be overridden in the extending classes
  */
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
 
