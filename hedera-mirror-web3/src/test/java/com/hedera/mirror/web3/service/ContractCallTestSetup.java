@@ -108,6 +108,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(0, 0, 1042, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
@@ -335,6 +336,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
 
+        fungibleTokenPersist(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY,
+                1000000000000L,
+                TokenPauseStatusEnum.PAUSED);
         final var tokenEntityId = fungibleTokenPersist(
                 ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
         final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(

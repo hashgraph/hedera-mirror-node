@@ -275,6 +275,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }),
         GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
             false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        }),
+        GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
+            1000L, FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY, 1800L
         });
 
         private final String name;
