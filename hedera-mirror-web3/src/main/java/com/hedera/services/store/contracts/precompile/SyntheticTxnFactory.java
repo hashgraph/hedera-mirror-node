@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
@@ -67,6 +68,7 @@ import com.hederahashgraph.api.proto.java.TokenTransferList.Builder;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import jakarta.annotation.Nullable;
@@ -456,5 +458,38 @@ public class SyntheticTxnFactory {
         return a.getSerialNumber() == b.getSerialNumber()
                 && a.getSenderAccountID().equals(b.getSenderAccountID())
                 && a.getReceiverAccountID().equals(b.getReceiverAccountID());
+    }
+
+    public TransactionBody.Builder createTokenUpdate(final TokenUpdateWrapper updateWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(updateWrapper.tokenID());
+
+        if (updateWrapper.name() != null) {
+            builder.setName(updateWrapper.name());
+        }
+        if (updateWrapper.symbol() != null) {
+            builder.setSymbol(updateWrapper.symbol());
+        }
+        if (updateWrapper.memo() != null) {
+            builder.setMemo(StringValue.of(updateWrapper.memo()));
+        }
+        if (updateWrapper.treasury() != null) {
+            builder.setTreasury(updateWrapper.treasury());
+        }
+
+        if (updateWrapper.expiry().second() != 0) {
+            builder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(updateWrapper.expiry().second())
+                    .build());
+        }
+        if (updateWrapper.expiry().autoRenewAccount() != null) {
+            builder.setAutoRenewAccount(updateWrapper.expiry().autoRenewAccount());
+        }
+        if (updateWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
     }
 }
