@@ -70,6 +70,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     }
 
     @Override
+    @SuppressWarnings("java:S131")
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         final var updateOp = transactionBody.getTokenUpdate();
         Objects.requireNonNull(updateOp);
