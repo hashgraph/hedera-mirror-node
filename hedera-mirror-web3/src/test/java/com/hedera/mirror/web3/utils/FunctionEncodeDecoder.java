@@ -78,6 +78,7 @@ public class FunctionEncodeDecoder {
             "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
     private static final String ADDRESS_ARRAY_OF_ADDRESSES_ARRAY_OF_INT64 = "(address,address[],int64[])";
     public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
+    public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
 
@@ -211,6 +212,25 @@ public class FunctionEncodeDecoder {
                             .toList()
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]),
                     parameters[2]);
+            case ADDRESS_ARRAY_OF_KEYS -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream((Object[]) parameters[1])
+                            .map(e -> (Object[]) e)
+                            //                            .map(e -> new TokenKeyWrapper((int) e[0], null)) //
+                            // (KeyValueWrapper) e[1]
+                            .map(e -> {
+                                final var keyParams = ((Object[]) e[1]);
+                                return Tuple.of(
+                                        BigInteger.valueOf((int) e[0]),
+                                        Tuple.of(
+                                                keyParams[0],
+                                                convertAddress((Address) keyParams[1]),
+                                                keyParams[2],
+                                                keyParams[3],
+                                                convertAddress((Address) keyParams[4])));
+                            })
+                            .toList()
+                            .toArray(new Tuple[((Object[]) parameters[1]).length]));
             default -> Tuple.EMPTY;
         };
     }

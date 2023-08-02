@@ -87,7 +87,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updateOp = transactionBody.getTokenUpdate();
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var hederaTokenStore = new HederaTokenStore(optionValidator, evmProperties, store); // ?
+        final var hederaTokenStore = new HederaTokenStore(optionValidator, evmProperties, store);
 
         final var validity = tokenUpdateLogic.validate(transactionBody);
         validateTrue(validity == OK, validity);

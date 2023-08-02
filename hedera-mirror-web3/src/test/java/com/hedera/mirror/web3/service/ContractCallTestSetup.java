@@ -108,6 +108,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
+    protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
@@ -122,6 +123,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static final byte[] NEW_ECDSA_KEY = new byte[] {
+        2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
+        68, -87, -110, -13, -115, 74, 86, 90
+    };
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
     protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
@@ -335,6 +340,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
 
+        final var unpausedTokenEntityId = fungibleTokenPersist(
+                senderEntityId,
+                KEY_PROTO,
+                UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.UNPAUSED);
         final var tokenEntityId = fungibleTokenPersist(
                 ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
         final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
