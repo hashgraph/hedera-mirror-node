@@ -41,10 +41,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * This class is a modified copy of AbstractTokenUpdatePrecompile from hedera-services repo.
  * Differences with the original:
  *  1. Implements a modified {@link Precompile} interface
- *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
- *  3. The run method is only implemented in the extending precompiles. This approach eliminates
- *     the necessity for the switch statement currently used in hedera services. Moreover, it facilitates
- *     more stateless behaviour by avoiding storing of the update type operations in this class
+ *  2. Removed class fields and adapted constructor in order to achieve stateless behaviour
  */
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
 
