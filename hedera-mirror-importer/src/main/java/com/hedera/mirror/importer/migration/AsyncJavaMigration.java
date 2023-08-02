@@ -119,10 +119,11 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
     }
 
     protected void migrateAsync() {
-        long count = 0;
-        var last = Optional.of(getInitial());
-        var stopwatch = Stopwatch.createStarted();
         log.info("Starting asynchronous migration");
+
+        long count = 0;
+        var stopwatch = Stopwatch.createStarted();
+        var last = Optional.of(getInitial());
         long minutes = 1L;
 
         try {
@@ -132,9 +133,10 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
                         getTransactionOperations().execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
-                if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
+                long elapsed = stopwatch.elapsed(TimeUnit.MINUTES);
+                if (elapsed >= minutes) {
                     log.info("Completed iteration {} with last value: {}", count, last.orElse(null));
-                    minutes++;
+                    minutes = elapsed + 1;
                 }
             } while (last.isPresent());
 

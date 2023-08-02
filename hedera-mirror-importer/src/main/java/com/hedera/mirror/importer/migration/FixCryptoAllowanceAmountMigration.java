@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.migration;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.DBProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.time.Duration;
@@ -28,6 +29,7 @@ import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
+import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
@@ -43,14 +45,44 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Profile("!v2")
 public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> {
 
-    // Process at most 7 days worth approved crypto transfer in each iteration
-    static final long INTERVAL = Duration.ofDays(7).toNanos();
+    // Process at most 1 day worth approved crypto transfers in each iteration
+    static final long INTERVAL = Duration.ofDays(1).toNanos();
 
     private static final String DROP_MIGRATION_TABLE_SQL = "drop table if exists crypto_allowance_migration";
 
     private static final String GET_END_TIMESTAMP_SQL =
             """
             select (select lower(timestamp_range) from crypto_allowance_migration where owner = 0 and spender = 0)
+            """;
+
+    private static final String INIT_MIGRATION_TABLE_SQL =
+            """
+            begin;
+
+            create table crypto_allowance_migration (like crypto_allowance, primary key (owner, spender));
+
+            -- Run the following two inserts in the same statement so data in record_file table and crypto_allowance
+            -- table is consistent
+            with sentinel as (
+              insert into crypto_allowance_migration (amount, amount_granted, owner, payer_account_id, spender, timestamp_range)
+              select 0, 0, 0, 0, 0, int8range(consensus_end, null)
+              from record_file
+              order by consensus_end desc
+              limit 1
+            )
+            insert into crypto_allowance_migration (amount, amount_granted, owner, payer_account_id, spender, timestamp_range)
+            select
+              amount_granted - amount, -- the spent amount tracked by importer as of consensus_end
+              amount_granted,
+              owner,
+              payer_account_id,
+              spender,
+              timestamp_range
+            from crypto_allowance
+            -- don't need to fix either allowance with 0 remaining amount or allowance revoke
+            where amount <> 0 and amount_granted <> 0;
+
+            commit;
             """;
 
     private static final String MERGE_AMOUNT_SQL =
@@ -72,11 +104,14 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
     private static final String UPDATE_MIGRATION_AMOUNT_SQL =
             """
             with approved_debit as (
-              select sum(amount) as amount_spent, entity_id as owner, payer_account_id as spender
-              from crypto_transfer
-              where amount < 0 and consensus_timestamp > :fromTimestamp and consensus_timestamp <= :toTimestamp
+              select sum(t.amount) as amount_spent, entity_id as owner, t.payer_account_id as spender
+              from crypto_transfer t
+              join crypto_allowance_migration m
+              -- join and make sure don't include approve transfers not using this allowance
+                on m.owner = t.entity_id and m.spender = t.payer_account_id and lower(m.timestamp_range) < t.consensus_timestamp
+              where t.amount < 0 and consensus_timestamp > :fromTimestamp and consensus_timestamp <= :toTimestamp
                 and is_approval is true
-              group by entity_id, payer_account_id
+              group by t.entity_id, t.payer_account_id
             )
             update crypto_allowance_migration m
             set amount = amount + amount_spent
@@ -94,29 +129,44 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
     @Getter(lazy = true)
     private final long earliestTimestamp = earliestTimestamp();
 
-    private final JdbcTemplate jdbcTemplate;
+    private final EntityProperties entityProperties;
 
-    @Getter(lazy = true)
-    private final boolean migrationTableExists = migrationTableExists();
+    private final JdbcTemplate jdbcTemplate;
 
     @Getter(lazy = true)
     private final TransactionOperations transactionOperations = transactionOperations();
 
     @Lazy
     public FixCryptoAllowanceAmountMigration(
-            DBProperties dbProperties, MirrorProperties mirrorProperties, @Owner JdbcTemplate jdbcTemplate) {
+            DBProperties dbProperties,
+            EntityProperties entityProperties,
+            MirrorProperties mirrorProperties,
+            @Owner JdbcTemplate jdbcTemplate) {
         super(mirrorProperties.getMigration(), new NamedParameterJdbcTemplate(jdbcTemplate), dbProperties.getSchema());
+        this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     protected Long getInitial() {
         if (!isMigrationTableExists()) {
-            return 0L;
+            log.info("Create and initialize table crypto_allowance_migration");
+            jdbcTemplate.execute(INIT_MIGRATION_TABLE_SQL);
         }
 
         var endTimestamp = jdbcTemplate.queryForObject(GET_END_TIMESTAMP_SQL, Long.class);
+        // If db is empty, the migration table won't have a sentinel row, thus endTimestamp is null, return 0 instead
         return endTimestamp != null ? endTimestamp : 0L;
+    }
+
+    @Override
+    public String getDescription() {
+        return "Fix crypto allowance amount";
+    }
+
+    @Override
+    protected MigrationVersion getMinimumVersion() {
+        return MigrationVersion.fromVersion("1.84.2"); // The version crypto_allowance_migration is created
     }
 
     @Nonnull
@@ -124,16 +174,18 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
     protected Optional<Long> migratePartial(Long last) {
         long minTimestamp = getEarliestTimestamp();
         if (last == 0 || last < minTimestamp) {
-            log.info("Nothing to backfill with last timestamp {} and earliest timestamp - {}", last, minTimestamp);
+            log.info("Nothing to backfill with last timestamp {} and earliest timestamp {}", last, minTimestamp);
 
-            if (isMigrationTableExists()) {
-                jdbcTemplate.execute(DROP_MIGRATION_TABLE_SQL);
-            }
+            jdbcTemplate.execute(DROP_MIGRATION_TABLE_SQL);
             return Optional.empty();
         }
 
         long fromExclusive = Math.max(minTimestamp, last - INTERVAL);
         var parameters = new MapSqlParameterSource("fromTimestamp", fromExclusive).addValue("toTimestamp", last);
+        log.info(
+                "Aggregate approved crypto transfer amounts in consensus timestamp range ({}, {}]",
+                fromExclusive,
+                last);
         namedParameterJdbcTemplate.update(UPDATE_MIGRATION_AMOUNT_SQL, parameters);
 
         if (fromExclusive == minTimestamp) {
@@ -149,13 +201,17 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
     }
 
     @Override
-    public String getDescription() {
-        return "Backfill crypto allowance amount";
-    }
+    protected boolean skipMigration(Configuration configuration) {
+        if (super.skipMigration(configuration)) {
+            return true;
+        }
 
-    @Override
-    protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.84.2"); // The version crypto_allowance_migration is created
+        if (!entityProperties.getPersist().isTrackAllowance()) {
+            log.info("Skipping migration since track allowance is disabled");
+            return true;
+        }
+
+        return false;
     }
 
     private long earliestTimestamp() {
@@ -177,7 +233,7 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
         }
     }
 
-    private boolean migrationTableExists() {
+    private boolean isMigrationTableExists() {
         try {
             jdbcTemplate.execute("select 'crypto_allowance_migration'::regclass");
             return true;
