@@ -55,6 +55,49 @@ contract ERCTestContract {
         return IERC721Metadata(token).tokenURI(tokenId);
     }
 
+    //Read operations NonStatic
+
+    function nameNonStatic(address token) public returns (string memory) {
+        return IERC20Metadata(token).name();
+    }
+
+    function symbolNonStatic(address token) public returns (string memory) {
+        return IERC20Metadata(token).symbol();
+    }
+
+    function decimalsNonStatic(address token) public returns (uint8) {
+        return IERC20Metadata(token).decimals();
+    }
+
+    function totalSupplyNonStatic(address token) external returns (uint256) {
+        return IERC20(token).totalSupply();
+    }
+
+    function balanceOfNonStatic(address token, address account) external returns (uint256) {
+        return IERC20(token).balanceOf(account);
+    }
+
+    function allowanceNonStatic(address token, address owner, address spender) external returns (uint256) {
+        return IERC20(token).allowance(owner, spender);
+    }
+
+    function getApprovedNonStatic(address token, uint256 tokenId) external returns (address) {
+        return IERC721(token).getApproved(tokenId);
+    }
+
+    function isApprovedForAllNonStatic(address token, address owner, address operator) public returns (bool) {
+        return IERC721(token).isApprovedForAll(owner, operator);
+    }
+
+    function getOwnerOfNonStatic(address token, uint256 serialNo) external returns(address){
+        return IERC721(token).ownerOf(serialNo);
+    }
+
+    function tokenURINonStatic(address token, uint256 tokenId) public returns (string memory) {
+        return IERC721Metadata(token).tokenURI(tokenId);
+    }
+
+
     //Modification operations
 
     function transfer(address token, address recipient, uint256 amount) public {
