@@ -26,6 +26,7 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.ethereum_transaction';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.event_file';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.file_data';
+update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.network_freeze';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.nft_allowance';
