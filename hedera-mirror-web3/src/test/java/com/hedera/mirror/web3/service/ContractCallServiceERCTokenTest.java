@@ -142,7 +142,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         private final Object[] functionParameters;
     }
 
-    static Stream<Arguments> ercContractFunctionArgumentsProvider() {
+    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
                 .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
     }
