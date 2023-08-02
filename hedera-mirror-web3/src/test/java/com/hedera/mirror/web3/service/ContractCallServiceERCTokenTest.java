@@ -42,9 +42,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ErcContractReadOnlyFunctionsWithEstimateSupport.class)
-    void supportedErcReadOnlyPrecompileOperationsTest(
-            final ErcContractReadOnlyFunctionsWithEstimateSupport contractFunc) {
+    @EnumSource(ErcContractReadOnlyFunctions.class)
+    void supportedErcReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ERC_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
@@ -80,6 +79,19 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
+    }
+
+    @Test
+    void metadataOfEstimateGas() {
+        final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ERC_ABI_PATH, NFT_ADDRESS, 1L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -130,28 +142,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_NFT_WITH_ALIAS(
                 "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
-        private final String name;
-        private final Object[] functionParameters;
-    }
-
-    @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctionsWithEstimateSupport {
-        GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}),
-        IS_APPROVE_FOR_ALL("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}),
-        IS_APPROVE_FOR_ALL_WITH_ALIAS("isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}),
-        ALLOWANCE_OF("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}),
-        ALLOWANCE_OF_WITH_ALIAS("allowance", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS}),
-        GET_APPROVED("getApproved", new Object[] {NFT_ADDRESS, 1L}),
-        ERC_DECIMALS("decimals", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
-        TOTAL_SUPPLY("totalSupply", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
-        ERC_SYMBOL("symbol", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
-        BALANCE_OF("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
-        BALANCE_OF_WITH_ALIAS("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}),
-        ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
-        OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}),
-        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L});
-
         private final String name;
         private final Object[] functionParameters;
     }
