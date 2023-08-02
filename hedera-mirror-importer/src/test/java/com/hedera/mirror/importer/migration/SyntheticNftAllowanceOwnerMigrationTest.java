@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance.NftAllowanceBuilder;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import java.util.ArrayList;
@@ -84,35 +85,17 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         var ownerAccountId = 38L;
         var spender = 39L;
         var tokenId = 44L;
-        var nftAllowancePreMigration = domainBuilder
-                .nftAllowance()
-                .customize(t -> t.owner(ownerAccountId)
-                        .payerAccountId(EntityId.of(ownerAccountId, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(1676546171829734003L))
-                        .tokenId(tokenId))
-                .persist();
+        var nftAllowancePreMigration = getCollidedNftAllowance(spender, tokenId, ownerAccountId, 1676546171829734003L);
 
         // An nft allowance that has a contract result, once migrated it will have the same primary key fields as the
         // above nft allowance.
         var ownerPreMigration = 1322L;
         var contractResultConsensus = 1676546391434923004L;
-        var collidedNftAllowance = domainBuilder
-                .nftAllowance()
-                .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(contractResultConsensus))
-                        .tokenId(tokenId))
-                .persist();
+        var collidedNftAllowance =
+                getCollidedNftAllowance(spender, tokenId, ownerPreMigration, contractResultConsensus);
 
         // The contract result for the collided nft allowance
-        domainBuilder
-                .contractResult()
-                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .consensusTimestamp(contractResultConsensus))
-                .persist();
+        persistContractResultCollidedNftAllowance(ownerAccountId, ownerPreMigration, contractResultConsensus);
 
         // An nft allowance with a contract result that has a null sender id should not be migrated
         var nullSenderIdNftAllowancePair = generateNftAllowanceWithNullSenderId(incorrectOwnerAccountId);
@@ -121,6 +104,52 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
+        assertContractResultSenderId(
+                contractResultSenderId,
+                incorrectNftAllowancePair,
+                unaffectedNftAllowancePair,
+                correctNftAllowancePair,
+                newNftAllowance,
+                ownerAccountId,
+                nftAllowancePreMigration,
+                contractResultConsensus,
+                collidedNftAllowance,
+                nullSenderIdNftAllowancePair);
+    }
+
+    private NftAllowance getCollidedNftAllowance(
+            long spender, long tokenId, long ownerPreMigration, long contractResultConsensus) {
+        return domainBuilder
+                .nftAllowance()
+                .customize(t -> t.owner(ownerPreMigration)
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(contractResultConsensus))
+                        .tokenId(tokenId))
+                .persist();
+    }
+
+    private void persistContractResultCollidedNftAllowance(
+            long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .consensusTimestamp(contractResultConsensus))
+                .persist();
+    }
+
+    private void assertContractResultSenderId(
+            EntityId contractResultSenderId,
+            Pair<NftAllowance, List<NftAllowance>> incorrectNftAllowancePair,
+            Pair<NftAllowance, List<NftAllowance>> unaffectedNftAllowancePair,
+            Pair<NftAllowance, List<NftAllowance>> correctNftAllowancePair,
+            NftAllowance newNftAllowance,
+            long ownerAccountId,
+            NftAllowance nftAllowancePreMigration,
+            long contractResultConsensus,
+            NftAllowance collidedNftAllowance,
+            Pair<NftAllowance, List<NftAllowance>> nullSenderIdNftAllowancePair) {
         var expected = new ArrayList<>(List.of(incorrectNftAllowancePair.getLeft()));
         // The owner should be set to the contract result sender id
         expected.forEach(t -> t.setOwner(contractResultSenderId.getId()));
@@ -147,6 +176,101 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
     @Test
     void repeatableMigration() {
         // given
+        setup();
+
+        migration.doMigrate();
+        var firstPassNftAllowances = nftAllowanceRepository.findAll();
+        var firstPassHistory = findHistory(NftAllowance.class);
+
+        // when
+        migration.doMigrate();
+        var secondPassNftAllowances = nftAllowanceRepository.findAll();
+        var secondPassHistory = findHistory(NftAllowance.class);
+
+        // then
+        assertThat(firstPassNftAllowances).containsExactlyInAnyOrderElementsOf(secondPassNftAllowances);
+        assertThat(firstPassHistory).containsExactlyInAnyOrderElementsOf(secondPassHistory);
+    }
+
+    @Test
+    void reRunOnEndMigration() {
+        // given
+        // Nft allowance and nft allowance history entries that have the incorrect owner
+        var contractResultSenderId = EntityId.of("0.0.2001", CONTRACT);
+        long incorrectOwnerAccountId = 1001L;
+        var incorrectNftAllowancePair = generateNftAllowance(contractResultSenderId, incorrectOwnerAccountId);
+
+        // An nft allowance can occur through HAPI and absent a corresponding Contract Result.
+        // This nft allowance and it's history should be unaffected by the migration
+        var unaffectedNftAllowancePair = generateNftAllowance(null, null);
+
+        // This problem has already been fixed. So there are nft allowances with the correct owner.
+        // This nft allowance and it's history should be unaffected by the migration
+        var correctContractResultSenderId = EntityId.of("0.0.3001", CONTRACT);
+        var correctNftAllowancePair =
+                generateNftAllowance(correctContractResultSenderId, correctContractResultSenderId.getId());
+
+        // A nft allowance that has no history and the correct owner, it should not be affected by the migration.
+        var newNftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(new EntityId(0L, 0L, newNftAllowance.getOwner(), CONTRACT))
+                        .consensusTimestamp(newNftAllowance.getTimestampLower()))
+                .persist();
+
+        // An nft allowance that has no contract result, but has primary key values that will end up matching those of
+        // a migrated nft allowance.
+        var ownerAccountId = 38L;
+        var spender = 39L;
+        var tokenId = 44L;
+        var nftAllowancePreMigration = getCollidedNftAllowance(spender, tokenId, ownerAccountId, 1676546171829734003L);
+
+        // An nft allowance that has a contract result, once migrated it will have the same primary key fields as the
+        // above nft allowance.
+        var ownerPreMigration = 1322L;
+        var contractResultConsensus = 1676546391434923004L;
+        var collidedNftAllowance =
+                getCollidedNftAllowance(spender, tokenId, ownerPreMigration, contractResultConsensus);
+
+        // The contract result for the collided nft allowance
+        persistContractResultCollidedNftAllowance(ownerAccountId, ownerPreMigration, contractResultConsensus);
+
+        // An nft allowance with a contract result that has a null sender id should not be migrated
+        var nullSenderIdNftAllowancePair = generateNftAllowanceWithNullSenderId(incorrectOwnerAccountId);
+
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(36).hapiVersionPatch(10))
+                .persist();
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(0))
+                .persist();
+
+        // when
+        migration.onEnd(RecordFile.builder()
+                .consensusStart(1568415600193620000L)
+                .consensusEnd(1568528100472477002L)
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(37)
+                .hapiVersionPatch(1)
+                .build());
+
+        // then
+        assertContractResultSenderId(
+                contractResultSenderId,
+                incorrectNftAllowancePair,
+                unaffectedNftAllowancePair,
+                correctNftAllowancePair,
+                newNftAllowance,
+                ownerAccountId,
+                nftAllowancePreMigration,
+                contractResultConsensus,
+                collidedNftAllowance,
+                nullSenderIdNftAllowancePair);
+    }
+
+    private void setup() {
         var contractResultSenderId = EntityId.of("0.0.2001", CONTRACT);
         long incorrectOwnerAccountId = 1001L;
         generateNftAllowance(contractResultSenderId, incorrectOwnerAccountId);
@@ -164,47 +288,15 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         var ownerAccountId = 3491438L;
         var spender = 3491439L;
         var tokenId = 3491444L;
-        domainBuilder
-                .nftAllowance()
-                .customize(t -> t.owner(ownerAccountId)
-                        .payerAccountId(EntityId.of(ownerAccountId, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(1676546171829734003L))
-                        .tokenId(tokenId))
-                .persist();
+        getCollidedNftAllowance(spender, tokenId, ownerAccountId, 1676546171829734003L);
 
         var ownerPreMigration = 1322L;
         var contractResultConsensus = 1676546391434923004L;
-        domainBuilder
-                .nftAllowance()
-                .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(contractResultConsensus))
-                        .tokenId(tokenId))
-                .persist();
+        getCollidedNftAllowance(spender, tokenId, ownerPreMigration, contractResultConsensus);
 
-        domainBuilder
-                .contractResult()
-                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .consensusTimestamp(contractResultConsensus))
-                .persist();
+        persistContractResultCollidedNftAllowance(ownerAccountId, ownerPreMigration, contractResultConsensus);
 
         generateNftAllowanceWithNullSenderId(incorrectOwnerAccountId);
-
-        migration.doMigrate();
-        var firstPassNftAllowances = nftAllowanceRepository.findAll();
-        var firstPassHistory = findHistory(NftAllowance.class);
-
-        // when
-        migration.doMigrate();
-        var secondPassNftAllowances = nftAllowanceRepository.findAll();
-        var secondPassHistory = findHistory(NftAllowance.class);
-
-        // then
-        assertThat(firstPassNftAllowances).containsExactlyInAnyOrderElementsOf(secondPassNftAllowances);
-        assertThat(firstPassHistory).containsExactlyInAnyOrderElementsOf(secondPassHistory);
     }
 
     /**

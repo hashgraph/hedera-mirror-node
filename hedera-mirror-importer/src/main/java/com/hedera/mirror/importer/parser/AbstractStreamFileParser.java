@@ -109,15 +109,15 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             return false;
         }
 
-        var lastRecordFile = streamFileRepository.findLatest();
+        var lastStreamFileFromDB = streamFileRepository.findLatest();
 
         var lastRepo = lastFromDb.get();
 
-        if (lastRecordFile.isEmpty()) {
+        if (lastStreamFileFromDB.isEmpty()) {
             return true;
         }
 
-        var lastStreamFile = lastRecordFile.get();
+        var lastStreamFile = lastStreamFileFromDB.get();
         var name = streamFile.getName();
 
         if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
@@ -135,6 +135,9 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         }
 
         lastFromDb.compareAndSet(lastRepo, lastStreamFile);
+        if (lastFromDb.get() != null) {
+            lastFromDb.get().setItems(null);
+        }
         return true;
     }
 }

@@ -190,6 +190,5 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         }
 
         last.compareAndSet(lastInMemory, recordFile);
-        // Need to set items to null, setting it is causing some RecordParser tests to fail.
     }
 }
