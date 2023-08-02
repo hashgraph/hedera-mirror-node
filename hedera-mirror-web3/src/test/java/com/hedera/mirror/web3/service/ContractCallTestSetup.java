@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -62,6 +63,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
@@ -112,10 +114,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY = toAddress(EntityId.of(0, 0, 1052, TOKEN));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY =
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051, TOKEN));
+    protected static final Address NFT_ADDRESS_GET_KEY = toAddress(EntityId.of(0, 0, 1053, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -230,6 +234,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .setGas(852000)
                                             .build())
                                     .build())))
+            .build();
+
+    protected static Key key = Key.newBuilder()
+            .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
 
     @Autowired
@@ -349,6 +357,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
         final var tokenTreasuryEntityId = fungibleTokenPersist(
                 treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.UNPAUSED);
+        final var tokenGetKeyEntityId = fungibleTokenPersist(
+                senderEntityId, key.toByteArray(), FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 9999999999999L, TokenPauseStatusEnum.PAUSED);
 
         final var nftEntityId = nftPersist(
                 NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
@@ -366,6 +376,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 ownerEntityId,
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED);
+        final var nftEntityId4 = nftPersist(
+                NFT_ADDRESS_GET_KEY,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                key.toByteArray(),
+                TokenPauseStatusEnum.PAUSED);
 
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 

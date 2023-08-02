@@ -34,12 +34,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @ParameterizedTest
-    @EnumSource(ContractReadFunctions.class)
+    @EnumSource(
+            value = ContractReadFunctions.class,
+            mode = Mode.EXCLUDE,
+            names = {"GET_CUSTOM_FEES_FOR_TOKEN"})
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
@@ -139,21 +143,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .isEqualTo(convertAddress(SENDER_ALIAS));
             }
         }
-    }
-
-    @ParameterizedTest
-    @EnumSource(FeeCase.class)
-    void customFeesEthEstimateGas(FeeCase feeCase) {
-        final var functionName = "getCustomFeesForToken";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @ParameterizedTest
@@ -274,27 +263,28 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_TYPE_FOR_NFT("getType", new Address[] {NFT_ADDRESS}, new Long[] {1L}),
         GET_TOKEN_DEFAULT_FREEZE("getTokenDefaultFreeze", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
         GET_TOKEN_DEFAULT_FREEZE_FOR_NFT("getTokenDefaultFreeze", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_ADMIN_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_ADMIN_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 1L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_FREEZE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 4L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_FREEZE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 4L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_WIPE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 8L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_WIPE_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 8L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_SUPPLY_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 16L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_SUPPLY_KEY("getTokenKeyPublic", new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 16L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_KYC_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 2L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_KYC_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS_GET_KEY, 2L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_FEE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 32L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
+        GET_TOKEN_FEE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS_GET_KEY, 32L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
         }),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
-            false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        });
+        GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS_GET_KEY, 64L}, new Object[] {
+            false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+        }),
+        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {});
 
         private final String name;
         private final Object[] functionParameters;
