@@ -54,10 +54,7 @@ import org.apache.tuweni.bytes.Bytes;
  * This class is a modified copy of TokenUpdatePrecompile from hedera-services repo.
  * Differences with the original:
  *  1. Implements a modified {@link Precompile} interface
- *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
- *  3. The run method adds a validation for the update operation that was previously present
- *     in the AbstractTokenUpdatePrecompile. This adjustment is necessary after the run
- *     method was removed from the abstract class
+ *  2. Removed class fields and adapted constructor in order to achieve stateless behaviour
  */
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
 

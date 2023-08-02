@@ -18,10 +18,11 @@ package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.MappedSuperclass;
+import java.io.Serial;
 import java.io.Serializable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,11 +32,14 @@ import lombok.experimental.SuperBuilder;
 @IdClass(AbstractTokenAllowance.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @Upsertable(history = true)
-public abstract class AbstractTokenAllowance implements History {
+public abstract class AbstractTokenAllowance implements FungibleAllowance {
 
+    @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else coalesce(e_{0}, 0) + coalesce({0}, 0) end")
     private long amount;
+
+    private Long amountGranted;
 
     @jakarta.persistence.Id
     private long owner;
@@ -62,6 +66,7 @@ public abstract class AbstractTokenAllowance implements History {
     @Data
     public static class Id implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = 4078820027811154183L;
 
         private long owner;

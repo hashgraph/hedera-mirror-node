@@ -27,21 +27,19 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
  * Stateless writer to upsert rows into PostgreSQL using COPY into a temp table then insert and update into final table
  */
-@Log4j2
+@CustomLog
 public class BatchUpserter extends BatchInserter {
 
-    private final String createTempTableSql;
-    private final String createTempIndexSql;
     private final String finalTableName;
+    private final String tempTableSql;
     private final String upsertSql;
-    private final String setTempBuffersSql;
-    private final String truncateSql;
     private final Timer upsertMetric;
 
     public BatchUpserter(
@@ -51,12 +49,13 @@ public class BatchUpserter extends BatchInserter {
             CommonParserProperties properties,
             UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
-        createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
-        createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
-        setTempBuffersSql = String.format("set temp_buffers = '%dMB'", properties.getTempTableBufferSize());
-        truncateSql = String.format("truncate table %s restart identity cascade", tableName);
+        var createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
+        var createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
+        var truncateSql = String.format("truncate table %s restart identity cascade", tableName);
+        tempTableSql = StringUtils.joinWith(";\n", createTempTableSql, createTempIndexSql, truncateSql);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
+        log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
         upsertMetric = Timer.builder("hedera.mirror.importer.parse.upsert")
                 .description("Time to insert transaction information from temp to final table")
                 .tag("table", finalTableName)
@@ -85,22 +84,8 @@ public class BatchUpserter extends BatchInserter {
     }
 
     private void createTempTable(Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(setTempBuffersSql)) {
-            preparedStatement.executeUpdate();
-        }
-
-        // create temporary table without constraints to allow for upsert logic to determine missing data vs nulls
-        try (PreparedStatement preparedStatement = connection.prepareStatement(createTempTableSql)) {
-            preparedStatement.executeUpdate();
-        }
-
-        try (PreparedStatement preparedStatement = connection.prepareStatement(createTempIndexSql)) {
-            preparedStatement.executeUpdate();
-        }
-
-        // ensure table is empty in case of batching
-        try (PreparedStatement preparedStatement = connection.prepareStatement(truncateSql)) {
-            preparedStatement.executeUpdate();
+        try (var preparedStatement = connection.prepareStatement(tempTableSql)) {
+            preparedStatement.execute();
         }
 
         log.trace("Created temp table {}", tableName);
@@ -110,8 +95,8 @@ public class BatchUpserter extends BatchInserter {
         var startTime = System.nanoTime();
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(upsertSql)) {
-            int count = preparedStatement.executeUpdate();
-            log.debug("Inserted {} rows from {} table to {} table", count, tableName, finalTableName);
+            preparedStatement.execute();
+            log.debug("Upserted data from table {} to table {}", tableName, finalTableName);
         } finally {
             upsertMetric.record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         }

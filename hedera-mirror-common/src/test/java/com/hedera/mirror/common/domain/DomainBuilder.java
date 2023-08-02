@@ -80,6 +80,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -93,6 +94,7 @@ import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -326,22 +328,28 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowance.builder()
-                .amount(10)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
             cryptoAllowanceHistory() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowanceHistory.builder()
-                .amount(10)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -543,6 +551,18 @@ public class DomainBuilder {
 
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
         var builder = LiveHash.builder().consensusTimestamp(timestamp()).livehash(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NetworkFreeze, NetworkFreeze.NetworkFreezeBuilder<?, ?>> networkFreeze() {
+        var builder = NetworkFreeze.builder()
+                .consensusTimestamp(timestamp())
+                .endTime(timestamp())
+                .fileHash(bytes(48))
+                .fileId(entityId(FILE))
+                .payerAccountId(entityId(ACCOUNT))
+                .startTime(timestamp())
+                .type(FreezeType.FREEZE_UPGRADE_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -815,25 +835,31 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowance.builder()
-                .amount(10L)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
             tokenAllowanceHistory() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowanceHistory.builder()
-                .amount(10L)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

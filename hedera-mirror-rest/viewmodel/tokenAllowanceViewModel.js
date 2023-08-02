@@ -28,7 +28,6 @@ class TokenAllowanceViewModel extends BaseAllowanceViewModel {
    */
   constructor(tokenAllowance) {
     super(tokenAllowance);
-    this.amount_granted = tokenAllowance.amount;
     this.token_id = EntityId.parse(tokenAllowance.tokenId).toString();
   }
 }

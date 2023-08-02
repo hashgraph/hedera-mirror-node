@@ -69,7 +69,7 @@ dependencies {
         api("commons-io:commons-io:2.13.0")
         api("io.cucumber:cucumber-bom:7.13.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.56.1")
+        api("io.grpc:grpc-bom:1.57.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.1")
         api("io.projectreactor:reactor-core-micrometer:1.0.8")
         api("io.swagger:swagger-annotations:1.6.11")
@@ -90,10 +90,10 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.4")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
+        api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.109")
+        api("software.amazon.awssdk:bom:2.20.115")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
@@ -107,7 +107,7 @@ allprojects {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
             property("sonar.projectKey", "hedera-mirror-node")
-            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
+            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5,e6")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
             property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
@@ -118,6 +118,8 @@ allprojects {
             property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
             property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
             property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
+            property("sonar.issue.ignore.multicriteria.e6.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e6.ruleKey", "java:S2970")
         }
     }
 }
