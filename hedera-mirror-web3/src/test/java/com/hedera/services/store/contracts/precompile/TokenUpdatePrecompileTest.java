@@ -40,9 +40,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -122,12 +120,6 @@ class TokenUpdatePrecompileTest {
     private MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Mock
-    private OptionValidator validator;
-
-    @Mock
-    private HederaTokenStore tokenStore;
-
-    @Mock
     private ContextOptionValidator contextOptionValidator;
 
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
@@ -172,6 +164,7 @@ class TokenUpdatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFrameContext();
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(frame.getInputData()).willReturn(UPDATE_FUNGIBLE_TOKEN_INPUT);
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);
@@ -196,6 +189,7 @@ class TokenUpdatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFrameContext();
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(frame.getInputData()).willReturn(UPDATE_FUNGIBLE_TOKEN_INPUT_V2);
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);
@@ -220,6 +214,7 @@ class TokenUpdatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFrameContext();
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(frame.getInputData()).willReturn(UPDATE_FUNGIBLE_TOKEN_INPUT_V3);
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);

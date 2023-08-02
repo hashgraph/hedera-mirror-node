@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
@@ -31,33 +30,25 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.TokenUpdateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
-import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
-import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * This class is a modified copy of TokenUpdatePrecompile from hedera-services repo.
@@ -83,24 +74,13 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V3 = Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
 
-    private HederaTokenStore hederaTokenStore;
-
-    private final ContextOptionValidator contextOptionValidator;
-
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-
-    private final TokenUpdateLogic tokenUpdateLogic;
-
     public TokenUpdatePrecompile(
             PrecompilePricingUtils pricingUtils,
             TokenUpdateLogic tokenUpdateLogic,
             SyntheticTxnFactory syntheticTxnFactory,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
             ContextOptionValidator contextOptionValidator) {
-        super(pricingUtils, syntheticTxnFactory);
-        this.tokenUpdateLogic = tokenUpdateLogic;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-        this.contextOptionValidator = contextOptionValidator;
+        super(tokenUpdateLogic, mirrorNodeEvmProperties, contextOptionValidator, pricingUtils, syntheticTxnFactory);
     }
 
     @Override
@@ -114,33 +94,14 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                     default -> null;
                 };
 
+        Objects.requireNonNull(updateOp, "Unable to decode function input");
+
         return syntheticTxnFactory.createTokenUpdate(updateOp);
-    }
-
-    @Override
-    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        final var updateOp = transactionBody.getTokenUpdate();
-        Objects.requireNonNull(updateOp);
-
-        final var validity = tokenUpdateLogic.validate(transactionBody);
-        validateTrue(validity == OK, validity);
-
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        initializeHederaTokenStore(store);
-
-        tokenUpdateLogic.updateToken(
-                transactionBody.getTokenUpdate(), frame.getBlockValues().getTimestamp(), store, hederaTokenStore);
-
-        return new EmptyRunResult();
     }
 
     @Override
     public Set<Integer> getFunctionSelectors() {
         return Set.of(ABI_ID_UPDATE_TOKEN_INFO, ABI_ID_UPDATE_TOKEN_INFO_V2, ABI_ID_UPDATE_TOKEN_INFO_V3);
-    }
-
-    private void initializeHederaTokenStore(Store store) {
-        hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 
     /**
