@@ -17,37 +17,27 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
-import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
-import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.ContextOptionValidator;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
  * This class is a modified copy of UpdateTokenExpiryInfoPrecompile from hedera-services repo.
@@ -56,18 +46,8 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *  1. Implements a modified {@link Precompile} interface
  *  2. Removed class fields and adapted constructors in order to achieve stateless behaviour
  *  3. Body method is modified to accept {@link BodyParams} argument in order to achieve stateless behaviour
- *  4. Run method returns {@link RunResult}
- *  5. The run method adds a validation for the update operation that was previously present
- *     in the AbstractTokenUpdatePrecompile. This adjustment is necessary after the run
- *     method was removed from the abstract class
- *  6. Added initializeHederaTokenStore method in order to create a new instance of HederaTokenStore
  */
 public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompile {
-
-    private HederaTokenStore hederaTokenStore;
-    private final ContextOptionValidator contextOptionValidator;
-    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-    private final TokenUpdateLogic tokenUpdateLogic;
 
     public UpdateTokenExpiryInfoPrecompile(
             TokenUpdateLogic tokenUpdateLogic,
@@ -75,10 +55,12 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
             ContextOptionValidator contextOptionValidator,
             SyntheticTxnFactory syntheticTxnFactory,
             PrecompilePricingUtils precompilePricingUtils) {
-        super(precompilePricingUtils, syntheticTxnFactory);
-        this.tokenUpdateLogic = tokenUpdateLogic;
-        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
-        this.contextOptionValidator = contextOptionValidator;
+        super(
+                tokenUpdateLogic,
+                mirrorNodeEvmProperties,
+                contextOptionValidator,
+                precompilePricingUtils,
+                syntheticTxnFactory);
     }
 
     @Override
@@ -95,28 +77,8 @@ public class UpdateTokenExpiryInfoPrecompile extends AbstractTokenUpdatePrecompi
     }
 
     @Override
-    public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var updateExpiryInfoOp = transactionBody.getTokenUpdate();
-        Objects.requireNonNull(updateExpiryInfoOp);
-
-        initializeHederaTokenStore(store);
-
-        final var validity = tokenUpdateLogic.validate(transactionBody);
-        validateTrue(validity == OK, validity);
-
-        tokenUpdateLogic.updateTokenExpiryInfo(transactionBody.getTokenUpdate(), store, hederaTokenStore);
-
-        return new EmptyRunResult();
-    }
-
-    @Override
     public Set<Integer> getFunctionSelectors() {
         return Set.of(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO, ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2);
-    }
-
-    private void initializeHederaTokenStore(Store store) {
-        hederaTokenStore = new HederaTokenStore(contextOptionValidator, mirrorNodeEvmProperties, store);
     }
 
     public static TokenUpdateExpiryInfoWrapper getTokenUpdateExpiryInfoWrapper(

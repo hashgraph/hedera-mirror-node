@@ -221,6 +221,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenUpdateTokenContext() {
+        given(frame.getInputData()).willReturn(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT);
         given(tokenUpdateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         staticUpdateTokenExpiryInfoPrecompile
                 .when(() -> getTokenUpdateExpiryInfoWrapper(
@@ -229,6 +230,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
     }
 
     private void givenUpdateTokenContextV2() {
+        given(frame.getInputData()).willReturn(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2);
         given(tokenUpdateLogic.validate(any())).willReturn(ResponseCodeEnum.OK);
         staticUpdateTokenExpiryInfoPrecompile
                 .when(() -> getTokenUpdateExpiryInfoWrapper(
