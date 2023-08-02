@@ -40,7 +40,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTest(ContractReadFunctions contractFunc) {
+    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -52,14 +52,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestWithNonStaticFrame(ContractReadFunctions contractFunc) {
+    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @ParameterizedTest
@@ -93,7 +97,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(FeeCase.class)
-    void customFees(FeeCase feeCase) {
+    void customFeesEthCall(FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -135,6 +139,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .isEqualTo(convertAddress(SENDER_ALIAS));
             }
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(FeeCase.class)
+    void customFeesEthEstimateGas(FeeCase feeCase) {
+        final var functionName = "getCustomFeesForToken";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
+        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @ParameterizedTest
