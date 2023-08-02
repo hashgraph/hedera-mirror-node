@@ -23,35 +23,40 @@
     ],
     "cryptoAllowances": [
       {
-        "amount": 33,
+        "amount": 23,
+        "amount_granted": 33,
         "owner": 1001,
         "payer_account_id": 1001,
         "spender": 2001,
         "timestamp_range": "[1234567890000000001,)"
       },
       {
-        "amount": 44,
+        "amount": 34,
+        "amount_granted": 44,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 3001,
         "timestamp_range": "[1234567890000000002,)"
       },
       {
-        "amount": 55,
+        "amount": 45,
+        "amount_granted": 55,
         "owner": 2001,
         "payer_account_id": 2001,
         "spender": 3001,
         "timestamp_range": "[1234567890000000003,)"
       },
       {
-        "amount": 66,
+        "amount": 56,
+        "amount_granted": 66,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 4001,
         "timestamp_range": "[1234567890000000004,)"
       },
       {
-        "amount": 9223372036854775807,
+        "amount": 9223372036854775797,
+        "amount_granted": 9223372036854775807,
         "owner": 1001,
         "payer_account_id": 2001,
         "spender": 5001,
@@ -71,6 +76,7 @@
   "responseJson": {
     "allowances": [
       {
+        "amount": 9223372036854775797,
         "amount_granted": 9223372036854775807,
         "owner": "0.0.1001",
         "spender": "0.0.5001",
@@ -80,6 +86,7 @@
         }
       },
       {
+        "amount": 56,
         "amount_granted": 66,
         "owner": "0.0.1001",
         "spender": "0.0.4001",
@@ -89,6 +96,7 @@
         }
       },
       {
+        "amount": 34,
         "amount_granted": 44,
         "owner": "0.0.1001",
         "spender": "0.0.3001",
@@ -98,6 +106,7 @@
         }
       },
       {
+        "amount": 23,
         "amount_granted": 33,
         "owner": "0.0.1001",
         "spender": "0.0.2001",

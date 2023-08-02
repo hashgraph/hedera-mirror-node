@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.fees.calculation;
+package com.hedera.mirror.common.domain.entity;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.Query;
-import java.util.Map;
-import org.jetbrains.annotations.Nullable;
+import com.hedera.mirror.common.domain.History;
 
-public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
-    @Override
-    public boolean applicableTo(final Query query) {
-        return false;
-    }
+public interface FungibleAllowance extends History {
 
-    @Override
-    public FeeData usageGiven(Query query, Store store, @Nullable Map<String, Object> queryCtx) {
-        return null;
-    }
+    long getAmount();
+
+    void setAmount(long amount);
 }

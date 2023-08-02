@@ -26,9 +26,11 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
@@ -40,6 +42,7 @@ import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
 import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -90,7 +93,6 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -151,6 +153,7 @@ public class ServicesConfiguration {
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
             PricedUsageCalculator pricedUsageCalculator,
+            Set<QueryResourceUsageEstimator> queryResourceUsageEstimators,
             List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
@@ -171,7 +174,7 @@ public class ServicesConfiguration {
                 hbarCentExchange,
                 usagePricesProvider,
                 pricedUsageCalculator,
-                Collections.emptySet(),
+                queryResourceUsageEstimators,
                 txnUsageEstimators);
     }
 
@@ -198,6 +201,16 @@ public class ServicesConfiguration {
             final BasicFcfsUsagePrices resourceCosts,
             final AccessorFactory accessorFactory) {
         return new PrecompilePricingUtils(assetsLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+    }
+
+    @Bean
+    CryptoFeeBuilder cryptoFeeBuilder() {
+        return new CryptoFeeBuilder();
+    }
+
+    @Bean
+    GetTxnRecordResourceUsage getTxnRecordResourceUsage(CryptoFeeBuilder cryptoFeeBuilder) {
+        return new GetTxnRecordResourceUsage(cryptoFeeBuilder);
     }
 
     @Bean
