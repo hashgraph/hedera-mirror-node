@@ -80,6 +80,8 @@ public class FunctionEncodeDecoder {
     public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
+    public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
+            "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -214,7 +216,21 @@ public class FunctionEncodeDecoder {
                             .toList()
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]),
                     parameters[2]);
+            case TRANSFER_LIST_TOKEN_TRANSFER_LIST -> Tuple.of(
+                    Tuple.of((Object) new Tuple[] {}), encodeCryptoTransfer(parameters));
             default -> Tuple.EMPTY;
+        };
+    }
+
+    private Tuple[] encodeCryptoTransfer(Object[] parameters) {
+        return new Tuple[] {
+            Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    new Tuple[] {
+                        Tuple.of(convertAddress((Address) parameters[1]), -(Long) parameters[3], false),
+                        Tuple.of(convertAddress((Address) parameters[2]), parameters[3], false)
+                    },
+                    new Tuple[] {})
         };
     }
 
