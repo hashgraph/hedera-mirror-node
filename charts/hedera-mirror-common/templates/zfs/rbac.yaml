@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: label-reader
+  name: zfs-label-reader
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 rules:
   - apiGroups: [""]
@@ -14,7 +14,7 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: label-reader
+  name: zfs-label-reader
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 subjects:
   - kind: ServiceAccount
@@ -22,14 +22,14 @@ subjects:
     namespace: {{ include "hedera-mirror-common.namespace" . }}
 roleRef:
   kind: ClusterRole
-  name: label-reader
+  name: zfs-label-reader
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: configmap-updater
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 rules:
   - apiGroups: [""]
@@ -40,7 +40,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: configmap-updater
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 subjects:
   - kind: ServiceAccount
@@ -48,6 +48,6 @@ subjects:
     namespace: {{ include "hedera-mirror-common.namespace" . }}
 roleRef:
   kind: Role
-  name: configmap-updater
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
   apiGroup: rbac.authorization.k8s.io
 {{- end -}}

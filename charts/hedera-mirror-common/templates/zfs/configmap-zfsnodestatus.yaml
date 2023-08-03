@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: zfs-node-status
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-node-status
   namespace: {{ include "hedera-mirror-common.namespace" . }}
 data:
   zfs-node-status.json: |
