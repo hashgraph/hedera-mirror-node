@@ -17,37 +17,29 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
-import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     private static final Function TOKEN_UPDATE_KEYS_FUNCTION =
@@ -59,9 +51,6 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             + DecodingFacade.TOKEN_KEY_DECODER
             + ARRAY_BRACKETS
             + ")");
-    private final TokenUpdateLogic tokenUpdateLogic;
-    private final OptionValidator optionValidator;
-    private final MirrorNodeEvmProperties evmProperties;
 
     public TokenUpdateKeysPrecompile(
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -69,10 +58,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             final TokenUpdateLogic tokenUpdateLogic,
             OptionValidator optionValidator,
             MirrorNodeEvmProperties evmProperties) {
-        super(pricingUtils, syntheticTxnFactory);
-        this.tokenUpdateLogic = tokenUpdateLogic;
-        this.optionValidator = optionValidator;
-        this.evmProperties = evmProperties;
+        super(tokenUpdateLogic, evmProperties, optionValidator, pricingUtils, syntheticTxnFactory);
     }
 
     @Override
@@ -80,21 +66,6 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
         final var updateOp = decodeUpdateTokenKeys(input, aliasResolver);
         return syntheticTxnFactory.createTokenUpdateKeys(updateOp);
-    }
-
-    @Override
-    public RunResult run(final MessageFrame frame, TransactionBody transactionBody) {
-        Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
-        final var updateOp = transactionBody.getTokenUpdate();
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var hederaTokenStore = new HederaTokenStore(optionValidator, evmProperties, store);
-
-        final var validity = tokenUpdateLogic.validate(transactionBody);
-        validateTrue(validity == OK, validity);
-        /* --- Execute the transaction and capture its results --- */
-        tokenUpdateLogic.updateTokenKeys(updateOp, frame.getBlockValues().getTimestamp(), hederaTokenStore);
-
-        return new EmptyRunResult();
     }
 
     @Override

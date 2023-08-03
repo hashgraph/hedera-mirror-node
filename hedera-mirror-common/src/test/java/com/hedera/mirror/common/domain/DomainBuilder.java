@@ -80,6 +80,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -93,6 +94,7 @@ import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -549,6 +551,18 @@ public class DomainBuilder {
 
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
         var builder = LiveHash.builder().consensusTimestamp(timestamp()).livehash(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NetworkFreeze, NetworkFreeze.NetworkFreezeBuilder<?, ?>> networkFreeze() {
+        var builder = NetworkFreeze.builder()
+                .consensusTimestamp(timestamp())
+                .endTime(timestamp())
+                .fileHash(bytes(48))
+                .fileId(entityId(FILE))
+                .payerAccountId(entityId(ACCOUNT))
+                .startTime(timestamp())
+                .type(FreezeType.FREEZE_UPGRADE_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

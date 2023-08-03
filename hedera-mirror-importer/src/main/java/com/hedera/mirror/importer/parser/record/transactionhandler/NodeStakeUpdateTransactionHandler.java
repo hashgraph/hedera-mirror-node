@@ -58,7 +58,7 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
         long stakeTotal = transactionBody.getNodeStakeList().stream()
-                .map(com.hederahashgraph.api.proto.java.NodeStake::getStake)
+                .map(nodeStake -> nodeStake.getStakeRewarded() + nodeStake.getStakeNotRewarded())
                 .reduce(0L, Long::sum);
 
         NetworkStake networkStake = new NetworkStake();

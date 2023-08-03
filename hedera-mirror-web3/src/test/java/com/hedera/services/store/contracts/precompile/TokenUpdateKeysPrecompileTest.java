@@ -34,7 +34,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
@@ -56,7 +55,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -220,7 +218,7 @@ class TokenUpdateKeysPrecompileTest {
     void computeCallsSuccessfullyUpdateKeysForFungibleToken() {
         // given
         givenFrameContext();
-        given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(frame.getInputData()).willReturn(UPDATE_FUNGIBLE_TOKEN_KEYS);
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);

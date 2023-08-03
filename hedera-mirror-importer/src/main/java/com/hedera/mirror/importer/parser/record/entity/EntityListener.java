@@ -40,6 +40,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -83,6 +84,8 @@ public interface EntityListener {
     default void onFileData(FileData fileData) throws ImporterException {}
 
     default void onLiveHash(LiveHash liveHash) throws ImporterException {}
+
+    default void onNetworkFreeze(NetworkFreeze networkFreeze) {}
 
     default void onNetworkStake(NetworkStake networkStake) throws ImporterException {}
 

@@ -66,6 +66,7 @@ import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
@@ -572,6 +573,17 @@ public class ServicesConfiguration {
     @Bean
     TokenUpdateLogic tokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
         return new TokenUpdateLogic(mirrorNodeEvmProperties, validator);
+    }
+
+    @Bean
+    TokenUpdatePrecompile tokenUpdatePrecompile(
+            PrecompilePricingUtils pricingUtils,
+            TokenUpdateLogic tokenUpdateLogic,
+            SyntheticTxnFactory syntheticTxnFactory,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            ContextOptionValidator contextOptionValidator) {
+        return new TokenUpdatePrecompile(
+                pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
     }
 
     @Bean
