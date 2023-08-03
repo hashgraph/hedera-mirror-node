@@ -473,4 +473,58 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             revert();
         }
     }
+
+    function getTokenExpiryInfoExternal(address token) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.getTokenExpiryInfo(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function isTokenExternal(address token) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.isToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getTokenKeyExternal(address token, uint keyType) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.getTokenKey(token, keyType);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function allowanceExternal(address token, address owner, address spender) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.allowance(token, owner, spender);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function getApprovedExternal(address token, uint256 serialNumber) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.getApproved(token, serialNumber);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
+    function isApprovedForAllExternal(address token, address owner, address operator) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = HederaTokenService.isApprovedForAll(token, owner, operator);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
 }

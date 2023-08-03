@@ -70,7 +70,8 @@ public class FileClient extends AbstractNetworkClient {
         FileAppendTransaction fileAppendTransaction = new FileAppendTransaction()
                 .setFileId(fileId)
                 .setContents(contents)
-                .setTransactionMemo(memo);
+                .setTransactionMemo(memo)
+                .setChunkSize(4096);
 
         var response = executeTransactionAndRetrieveReceipt(fileAppendTransaction);
         log.info("Appended {} B to file {} via {}", contents.length, fileId, response.getTransactionId());

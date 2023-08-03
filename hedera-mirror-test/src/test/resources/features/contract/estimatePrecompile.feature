@@ -47,7 +47,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with transferNFTs function
     Then I call estimateGas with cryptoTransfer function for hbars
     Then I call estimateGas with cryptoTransfer function for nft
-  #  Then I call estimateGas with cryptoTransfer function for fungible tokens
+#    Then I call estimateGas with cryptoTransfer function for fungible tokens
     Then I call estimateGas with mintToken function for fungible token
     Then I call estimateGas with mintToken function for NFT
     Then I call estimateGas with burnToken function for fungible token
@@ -85,5 +85,20 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas for nested pause and unpause function
     Then I call estimateGas for nested pause, unpause NFT function
 #   Then I call estimateGas with updateTokenExpiryInfo function
-#    Then I call estimateGas with updateTokenInfo function
+    Then I call estimateGas with updateTokenInfo function
 #    Then I call estimateGas with updateTokenKeys function
+#    Then I call estimateGas with getTokenExpiryInfo function
+    Then I call estimateGas with isToken function
+    Then I call estimateGas with getTokenKey function for supply
+    Then I call estimateGas with getTokenKey function for KYC
+    Then I call estimateGas with getTokenKey function for freeze
+    Then I call estimateGas with getTokenKey function for admin
+    Then I call estimateGas with getTokenKey function for wipe
+    Then I call estimateGas with getTokenKey function for fee
+    Then I call estimateGas with getTokenKey function for pause
+    #Then I call estimateGas with allowance function for fungible token
+#    Then I call estimateGas with allowance function for NFT
+#    Then I call estimateGas with getApproved function for NFT
+#    Then I call estimateGas with getApproved function for fungible token
+#    Then I call estimateGas with isApprovedForALl function
+    Then I call estimateGas with name function

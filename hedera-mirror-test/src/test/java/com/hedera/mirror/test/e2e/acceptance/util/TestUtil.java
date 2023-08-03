@@ -68,13 +68,13 @@ public class TestUtil {
         return output.toString();
     }
 
-    public static Address asHeadlongAddress(final String address) {
+    public static Address asHeadlongAddress(String address) {
         final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
-    public static Tuple accountAmount(final String account, final Long amount, final boolean isApproval) {
+    public static Tuple accountAmount(String account, Long amount, boolean isApproval) {
         return Tuple.of(asHeadlongAddress(account), amount, isApproval);
     }
 
@@ -82,13 +82,13 @@ public class TestUtil {
         return Tuple.of(asHeadlongAddress(sender), asHeadlongAddress(receiver), serialNumber, isApproval);
     }
 
-    public static Address[] asHeadlongAddressArray(final List<String> addressStrings) {
+    public static Address[] asHeadlongAddressArray(List<String> addressStrings) {
         return addressStrings.stream()
                 .map(addr -> asHeadlongAddress(addr))
                 .toArray(Address[]::new);
     }
 
-    public static byte[][] asHeadlongByteArray(final List<String> hexStringList) {
+    public static byte[][] asHeadlongByteArray(List<String> hexStringList) {
         return hexStringList.stream()
                 .map(hexString -> Bytes.fromHexString(hexString).toArrayUnsafe())
                 .toArray(byte[][]::new);
