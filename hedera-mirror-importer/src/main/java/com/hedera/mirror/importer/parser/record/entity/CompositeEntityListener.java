@@ -40,6 +40,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -62,7 +63,8 @@ public class CompositeEntityListener implements EntityListener {
     private final List<EntityListener> entityListeners;
 
     private <T> void onEach(BiConsumer<EntityListener, T> consumer, T t) {
-        for (EntityListener entityListener : entityListeners) {
+        for (int i = 0; i < entityListeners.size(); ++i) {
+            var entityListener = entityListeners.get(i);
             if (entityListener.isEnabled()) {
                 consumer.accept(entityListener, t);
             }
@@ -137,6 +139,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         onEach(EntityListener::onLiveHash, liveHash);
+    }
+
+    @Override
+    public void onNetworkFreeze(NetworkFreeze networkFreeze) {
+        onEach(EntityListener::onNetworkFreeze, networkFreeze);
     }
 
     @Override
