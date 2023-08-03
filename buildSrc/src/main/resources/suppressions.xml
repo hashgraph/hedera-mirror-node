@@ -20,12 +20,7 @@
         <cpe>cpe:/a:grpc:grpc</cpe>
     </suppress>
     <suppress>
-        <notes>Issue is in spring-web and will only be fixed by Spring in their next major release.</notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-web@.*$</packageUrl>
-        <cve>CVE-2016-1000027</cve>
-    </suppress>
-    <suppress>
-        <notes>No snakeyaml release available with a fix yet</notes>
-        <cve>CVE-2022-1471</cve>
+      <notes>Upgraded to protobufjs 7.2.4 with the fix, but it's still erroneously marked as vulnerable.</notes>
+      <cve>CVE-2023-36665</cve>
     </suppress>
 </suppressions>

@@ -143,6 +143,10 @@ create index if not exists file_data__id_timestamp
 alter table live_hash
     add constraint live_hash__pk primary key (consensus_timestamp);
 
+-- network_freeze
+alter table if exists network_freeze
+    add constraint network_freeze__pk primary key (consensus_timestamp, payer_account_id);
+
 -- network_stake
 alter table if exists network_stake
     add constraint network_stake__pk primary key (consensus_timestamp);
@@ -156,7 +160,7 @@ create index if not exists nft__allowance on nft (account_id, spender, token_id,
 
 -- nft history
 create index if not exists nft_history__token_serial_lower_timestamp
-  on nft_history (token_id, serial_number, lower(timestamp_range));
+    on nft_history (token_id, serial_number, lower(timestamp_range));
 create index if not exists nft_history__timestamp_range on nft_history using gist (timestamp_range);
 
 -- nft_allowance

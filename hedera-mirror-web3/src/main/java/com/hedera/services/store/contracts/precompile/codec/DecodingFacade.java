@@ -85,6 +85,7 @@ public class DecodingFacade {
             final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
             final var delegatableContractId =
                     asContract(convertLeftPaddedAddressToAccountId(keyValueTuple.get(4), aliasResolver));
+
             tokenKeys.add(new TokenKeyWrapper(
                     keyType,
                     new KeyValueWrapper(
@@ -228,5 +229,10 @@ public class DecodingFacade {
                     .build();
         }
         return accountIdFromEvmAddress(resolvedAddress);
+    }
+
+    public static String removeBrackets(final String type) {
+        final var typeWithRemovedOpenBracket = type.replace("(", "");
+        return typeWithRemovedOpenBracket.replace(")", "");
     }
 }

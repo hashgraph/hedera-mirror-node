@@ -49,7 +49,7 @@ class PrecompileMapperTest {
 
     @Test
     void unsupportedPrecompileThrowsException() {
-        int functionSelector = 0x2cccc36f;
+        int functionSelector = 0x6fc3cbaf;
 
         assertThatThrownBy(() -> precompileMapper.lookup(functionSelector))
                 .isInstanceOf(UnsupportedOperationException.class);
