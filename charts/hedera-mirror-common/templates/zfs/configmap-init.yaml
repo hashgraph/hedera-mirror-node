@@ -172,8 +172,8 @@ data:
     if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then        
         echo "Attaching ${DISK_NAME} to ${NODE_NAME}"
         gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
-        ATTACH_ATTEMPTS=1
         COMMAND_STATUS=$?
+        ATTACH_ATTEMPTS=1
         until [[ ${COMMAND_STATUS} -eq 0 || ${ATTACH_ATTEMPTS} -ge 13 ]]; do
           echo "Unable to attach ${DISK_NAME} to ${NODE_NAME} attempts ${ATTACH_ATTEMPTS}. waiting ..." 
           sleep 30
