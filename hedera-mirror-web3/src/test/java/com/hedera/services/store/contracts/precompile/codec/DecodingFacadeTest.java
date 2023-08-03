@@ -28,6 +28,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -117,5 +118,14 @@ class DecodingFacadeTest {
                 decodeFunctionCall(TRANSFER_NFTS_INPUT, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
         final var decodedInput = decodeAccountIds(decodedArguments.get(1), identity());
         assertEquals(1143, decodedInput.get(0).getAccountNum());
+    }
+
+    @Test
+    void removeBracketsTest() {
+        String input = "(test)";
+        String expectedOutput = "test";
+        String actualOutput = removeBrackets(input);
+
+        assertEquals(expectedOutput, actualOutput);
     }
 }

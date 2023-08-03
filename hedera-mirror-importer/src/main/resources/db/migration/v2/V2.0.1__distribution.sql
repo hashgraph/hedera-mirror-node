@@ -47,6 +47,8 @@ select create_distributed_table('ethereum_transaction', 'payer_account_id', colo
 
 select create_distributed_table('file_data', 'entity_id', colocate_with => 'entity');
 
+select create_distributed_table('network_freeze', 'payer_account_id', colocate_with => 'entity');
+
 select create_distributed_table('nft', 'token_id', colocate_with => 'entity');
 
 select create_distributed_table('nft_history', 'token_id', colocate_with => 'nft');

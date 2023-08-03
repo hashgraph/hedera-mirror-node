@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.store.tokens.HederaTokenStore.asTokenRelationshipKey;
 import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
