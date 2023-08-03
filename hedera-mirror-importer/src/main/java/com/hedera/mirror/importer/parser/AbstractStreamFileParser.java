@@ -33,7 +33,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
     protected final AtomicReference<T> last;
-    protected final AtomicReference<T> lastFromDb;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
@@ -49,7 +48,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             StreamFileRepository<T, Long> streamFileRepository) {
 
         this.last = new AtomicReference<>();
-        this.lastFromDb = new AtomicReference<>();
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
         this.streamFileRepository = streamFileRepository;

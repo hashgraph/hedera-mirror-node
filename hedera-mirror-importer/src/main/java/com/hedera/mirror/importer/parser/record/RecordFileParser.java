@@ -174,9 +174,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         var lastInMemory = last.get();
         var lastRecordFile = lastInMemory;
         var recordFileRepository = (RecordFileRepository) streamFileRepository;
-        var lastFromRepo = lastFromDb.get();
+
         if (lastRecordFile == null) {
-            lastRecordFile = lastFromRepo;
+            lastRecordFile = recordFileRepository.findLatest().orElse(null);
         }
 
         if (lastRecordFile != null && lastRecordFile.getVersion() < VERSION && recordFile.getVersion() >= VERSION) {
