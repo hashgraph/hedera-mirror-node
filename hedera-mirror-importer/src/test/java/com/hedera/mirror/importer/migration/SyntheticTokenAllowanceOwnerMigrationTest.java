@@ -112,59 +112,6 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                 collidedTokenAllowance);
     }
 
-    private void persistContractResultForCollidedTokenAllowance(
-            long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
-        domainBuilder
-                .contractResult()
-                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .consensusTimestamp(contractResultConsensus))
-                .persist();
-    }
-
-    private TokenAllowance getCollidedTokenAllowance(
-            long spender, long tokenId, long ownerPreMigration, long contractResultConsensus) {
-        return domainBuilder
-                .tokenAllowance()
-                .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(contractResultConsensus))
-                        .tokenId(tokenId))
-                .persist();
-    }
-
-    private void assertContractResultSender(
-            EntityId contractResultSenderId,
-            Pair<TokenAllowance, List<TokenAllowance>> incorrectTokenAllowancePair,
-            Pair<TokenAllowance, List<TokenAllowance>> unaffectedTokenAllowancePair,
-            Pair<TokenAllowance, List<TokenAllowance>> correctTokenAllowancePair,
-            TokenAllowance newTokenAllowance,
-            long ownerAccountId,
-            TokenAllowance tokenAllowancePreMigration,
-            long contractResultConsensus,
-            TokenAllowance collidedTokenAllowance) {
-        var expected = new ArrayList<>(List.of(incorrectTokenAllowancePair.getLeft()));
-        // The owner should be set to the contract result sender id
-        expected.forEach(t -> t.setOwner(contractResultSenderId.getId()));
-        expected.add(unaffectedTokenAllowancePair.getLeft());
-        expected.add(correctTokenAllowancePair.getLeft());
-        expected.add(newTokenAllowance);
-        collidedTokenAllowance.setOwner(ownerAccountId);
-        expected.add(collidedTokenAllowance);
-        assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-
-        // The history of the token allowance should also be updated with the corrected owner
-        var expectedHistory = new ArrayList<>(incorrectTokenAllowancePair.getRight());
-        // The owner should be set to the contract result sender id
-        expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
-        expectedHistory.addAll(unaffectedTokenAllowancePair.getRight());
-        expectedHistory.addAll(correctTokenAllowancePair.getRight());
-        tokenAllowancePreMigration.setTimestampUpper(contractResultConsensus);
-        expectedHistory.add(tokenAllowancePreMigration);
-        assertThat(findHistory(TokenAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
-    }
-
     @Test
     void repeatableMigration() {
         // given
@@ -280,6 +227,59 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
                 tokenAllowancePreMigration,
                 contractResultConsensus,
                 collidedTokenAllowance);
+    }
+
+    private void persistContractResultForCollidedTokenAllowance(
+            long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .consensusTimestamp(contractResultConsensus))
+                .persist();
+    }
+
+    private TokenAllowance getCollidedTokenAllowance(
+            long spender, long tokenId, long ownerPreMigration, long contractResultConsensus) {
+        return domainBuilder
+                .tokenAllowance()
+                .customize(t -> t.owner(ownerPreMigration)
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(contractResultConsensus))
+                        .tokenId(tokenId))
+                .persist();
+    }
+
+    private void assertContractResultSender(
+            EntityId contractResultSenderId,
+            Pair<TokenAllowance, List<TokenAllowance>> incorrectTokenAllowancePair,
+            Pair<TokenAllowance, List<TokenAllowance>> unaffectedTokenAllowancePair,
+            Pair<TokenAllowance, List<TokenAllowance>> correctTokenAllowancePair,
+            TokenAllowance newTokenAllowance,
+            long ownerAccountId,
+            TokenAllowance tokenAllowancePreMigration,
+            long contractResultConsensus,
+            TokenAllowance collidedTokenAllowance) {
+        var expected = new ArrayList<>(List.of(incorrectTokenAllowancePair.getLeft()));
+        // The owner should be set to the contract result sender id
+        expected.forEach(t -> t.setOwner(contractResultSenderId.getId()));
+        expected.add(unaffectedTokenAllowancePair.getLeft());
+        expected.add(correctTokenAllowancePair.getLeft());
+        expected.add(newTokenAllowance);
+        collidedTokenAllowance.setOwner(ownerAccountId);
+        expected.add(collidedTokenAllowance);
+        assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        // The history of the token allowance should also be updated with the corrected owner
+        var expectedHistory = new ArrayList<>(incorrectTokenAllowancePair.getRight());
+        // The owner should be set to the contract result sender id
+        expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
+        expectedHistory.addAll(unaffectedTokenAllowancePair.getRight());
+        expectedHistory.addAll(correctTokenAllowancePair.getRight());
+        tokenAllowancePreMigration.setTimestampUpper(contractResultConsensus);
+        expectedHistory.add(tokenAllowancePreMigration);
+        assertThat(findHistory(TokenAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     /**

@@ -16,21 +16,16 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
-import org.springframework.data.util.Version;
 
 abstract class RepeatableMigration extends MirrorBaseJavaMigration {
 
     private static final MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
 
     protected final MigrationProperties migrationProperties;
-    private static final AtomicReference<Version> lastVersion = new AtomicReference<>();
 
     protected RepeatableMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
         String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
@@ -55,16 +50,5 @@ abstract class RepeatableMigration extends MirrorBaseJavaMigration {
         }
 
         return super.skipMigration(configuration);
-    }
-
-    protected boolean shouldRerun(RecordFile streamFile, Version version, RecordFileRepository repository) {
-        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(version) && lastVersion.get() == null) {
-            var latestFile = repository.findLatestWithOffset(1).orElse(null);
-            if (latestFile != null && latestFile.getHapiVersion().isLessThan(version)) {
-                lastVersion.set(streamFile.getHapiVersion());
-                return true;
-            }
-        }
-        return false;
     }
 }

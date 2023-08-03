@@ -135,7 +135,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     private AccountBalanceFile publishInitializeAccountBalanceEvent() {
         var lastBalanceFile = last.get();
         // If no account balance file has been processed since last startup.
-        if (lastBalanceFile == null && lastFromDb.get() == null) {
+        if (lastBalanceFile == null) {
             applicationEventPublisher.publishEvent(new InitializeBalanceEvent(this));
         }
         return lastBalanceFile;

@@ -153,8 +153,11 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration imp
             return;
         }
 
-        if (shouldRerun(streamFile, HAPI_VERSION_0_37_0, recordFileRepository)) {
-            doMigrate();
+        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0)) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1).orElse(null);
+            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0)) {
+                doMigrate();
+            }
         }
     }
 

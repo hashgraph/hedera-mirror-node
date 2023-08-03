@@ -108,13 +108,14 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         if (!parserProperties.isEnabled()) {
             return false;
         }
-
         var lastStreamFileFromDB = streamFileRepository.findLatest();
-
-        var lastRepo = lastFromDb.get();
 
         if (lastStreamFileFromDB.isEmpty()) {
             return true;
+        }
+
+        if (last.get() == null) {
+            last.set(lastStreamFileFromDB.get());
         }
 
         var lastStreamFile = lastStreamFileFromDB.get();
@@ -134,10 +135,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                     name, expectedHash, actualHash, getClass().getSimpleName());
         }
 
-        lastFromDb.compareAndSet(lastRepo, lastStreamFile);
-        if (lastFromDb.get() != null) {
-            lastFromDb.get().setItems(null);
-        }
         return true;
     }
 }

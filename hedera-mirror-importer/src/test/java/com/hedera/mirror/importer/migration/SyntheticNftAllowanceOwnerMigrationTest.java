@@ -117,62 +117,6 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
                 nullSenderIdNftAllowancePair);
     }
 
-    private NftAllowance getCollidedNftAllowance(
-            long spender, long tokenId, long ownerPreMigration, long contractResultConsensus) {
-        return domainBuilder
-                .nftAllowance()
-                .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .spender(spender)
-                        .timestampRange(Range.atLeast(contractResultConsensus))
-                        .tokenId(tokenId))
-                .persist();
-    }
-
-    private void persistContractResultCollidedNftAllowance(
-            long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
-        domainBuilder
-                .contractResult()
-                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
-                        .consensusTimestamp(contractResultConsensus))
-                .persist();
-    }
-
-    private void assertContractResultSenderId(
-            EntityId contractResultSenderId,
-            Pair<NftAllowance, List<NftAllowance>> incorrectNftAllowancePair,
-            Pair<NftAllowance, List<NftAllowance>> unaffectedNftAllowancePair,
-            Pair<NftAllowance, List<NftAllowance>> correctNftAllowancePair,
-            NftAllowance newNftAllowance,
-            long ownerAccountId,
-            NftAllowance nftAllowancePreMigration,
-            long contractResultConsensus,
-            NftAllowance collidedNftAllowance,
-            Pair<NftAllowance, List<NftAllowance>> nullSenderIdNftAllowancePair) {
-        var expected = new ArrayList<>(List.of(incorrectNftAllowancePair.getLeft()));
-        // The owner should be set to the contract result sender id
-        expected.forEach(t -> t.setOwner(contractResultSenderId.getId()));
-        expected.add(unaffectedNftAllowancePair.getLeft());
-        expected.add(correctNftAllowancePair.getLeft());
-        expected.add(newNftAllowance);
-        collidedNftAllowance.setOwner(ownerAccountId);
-        expected.add(collidedNftAllowance);
-        expected.add(nullSenderIdNftAllowancePair.getLeft());
-        assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-
-        // The history of the nft allowance should also be updated with the corrected owner
-        var expectedHistory = new ArrayList<>(incorrectNftAllowancePair.getRight());
-        // The owner should be set to the contract result sender id
-        expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
-        expectedHistory.addAll(unaffectedNftAllowancePair.getRight());
-        expectedHistory.addAll(correctNftAllowancePair.getRight());
-        expectedHistory.addAll(nullSenderIdNftAllowancePair.getRight());
-        nftAllowancePreMigration.setTimestampUpper(contractResultConsensus);
-        expectedHistory.add(nftAllowancePreMigration);
-        assertThat(findHistory(NftAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
-    }
-
     @Test
     void repeatableMigration() {
         // given
@@ -268,6 +212,62 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
                 contractResultConsensus,
                 collidedNftAllowance,
                 nullSenderIdNftAllowancePair);
+    }
+
+    private NftAllowance getCollidedNftAllowance(
+            long spender, long tokenId, long ownerPreMigration, long contractResultConsensus) {
+        return domainBuilder
+                .nftAllowance()
+                .customize(t -> t.owner(ownerPreMigration)
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .spender(spender)
+                        .timestampRange(Range.atLeast(contractResultConsensus))
+                        .tokenId(tokenId))
+                .persist();
+    }
+
+    private void persistContractResultCollidedNftAllowance(
+            long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
+        domainBuilder
+                .contractResult()
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .consensusTimestamp(contractResultConsensus))
+                .persist();
+    }
+
+    private void assertContractResultSenderId(
+            EntityId contractResultSenderId,
+            Pair<NftAllowance, List<NftAllowance>> incorrectNftAllowancePair,
+            Pair<NftAllowance, List<NftAllowance>> unaffectedNftAllowancePair,
+            Pair<NftAllowance, List<NftAllowance>> correctNftAllowancePair,
+            NftAllowance newNftAllowance,
+            long ownerAccountId,
+            NftAllowance nftAllowancePreMigration,
+            long contractResultConsensus,
+            NftAllowance collidedNftAllowance,
+            Pair<NftAllowance, List<NftAllowance>> nullSenderIdNftAllowancePair) {
+        var expected = new ArrayList<>(List.of(incorrectNftAllowancePair.getLeft()));
+        // The owner should be set to the contract result sender id
+        expected.forEach(t -> t.setOwner(contractResultSenderId.getId()));
+        expected.add(unaffectedNftAllowancePair.getLeft());
+        expected.add(correctNftAllowancePair.getLeft());
+        expected.add(newNftAllowance);
+        collidedNftAllowance.setOwner(ownerAccountId);
+        expected.add(collidedNftAllowance);
+        expected.add(nullSenderIdNftAllowancePair.getLeft());
+        assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        // The history of the nft allowance should also be updated with the corrected owner
+        var expectedHistory = new ArrayList<>(incorrectNftAllowancePair.getRight());
+        // The owner should be set to the contract result sender id
+        expectedHistory.forEach(t -> t.setOwner(contractResultSenderId.getId()));
+        expectedHistory.addAll(unaffectedNftAllowancePair.getRight());
+        expectedHistory.addAll(correctNftAllowancePair.getRight());
+        expectedHistory.addAll(nullSenderIdNftAllowancePair.getRight());
+        nftAllowancePreMigration.setTimestampUpper(contractResultConsensus);
+        expectedHistory.add(nftAllowancePreMigration);
+        assertThat(findHistory(NftAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     private void setup() {
