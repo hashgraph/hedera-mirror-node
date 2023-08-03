@@ -18,9 +18,14 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
 import static com.hedera.services.fees.calculation.utils.AccessorBasedUsages.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.AUTO_MEMO;
 import static com.hedera.services.store.contracts.precompile.codec.Association.multiAssociation;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,15 +40,16 @@ import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -432,7 +438,7 @@ class SyntheticTxnFactoryTest {
         assertTrue(result.hasContractCall());
         assertEquals(1, txnBody.getContractCall().getGas());
         assertEquals(
-                EntityIdUtils.contractIdFromEvmAddress(
+                contractIdFromEvmAddress(
                         Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
                 txnBody.getContractCall().getContractID());
         assertEquals(
@@ -663,6 +669,53 @@ class SyntheticTxnFactoryTest {
 
         final var txnBody = result.build();
         assertEquals(0, txnBody.getCryptoTransfer().getTokenTransfersCount());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCallForFungible() {
+        // given
+        final var adminKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var tokenUpdateWrapper = createFungibleTokenUpdateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(112, multiKey), new TokenKeyWrapper(1, adminKey)));
+        final var result = subject.createTokenUpdate(tokenUpdateWrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        assertEquals(HTSTestsUtil.fungible, txnBody.getToken());
+
+        assertEquals("fungible", txnBody.getName());
+        assertEquals("G", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("G token memo", txnBody.getMemo().getValue());
+        assertEquals(1, txnBody.getExpiry().getSeconds());
+        assertEquals(2, txnBody.getAutoRenewPeriod().getSeconds());
+        assertTrue(txnBody.hasAutoRenewAccount());
+    }
+
+    @Test
+    void createsExpectedTokenUpdateCallForNonFungible() {
+        // given
+        final var ComplexKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var wrapper = createNonFungibleTokenUpdateWrapperWithKeys(List.of(
+                new TokenKeyWrapper(112, multiKey),
+                new TokenKeyWrapper(2, ComplexKey),
+                new TokenKeyWrapper(4, ComplexKey),
+                new TokenKeyWrapper(8, ComplexKey)));
+
+        // when
+        final var result = subject.createTokenUpdate(wrapper);
+        final var txnBody = result.build().getTokenUpdate();
+
+        // then
+
+        assertEquals(0, txnBody.getExpiry().getSeconds());
+        assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
+        assertFalse(txnBody.hasAutoRenewAccount());
     }
 
     @Test
