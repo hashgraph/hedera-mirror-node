@@ -114,18 +114,31 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY = toAddress(EntityId.of(0, 0, 1052, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
+            toAddress(EntityId.of(0, 0, 1052, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY =
+            toAddress(EntityId.of(0, 0, 1054, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY =
+            toAddress(EntityId.of(0, 0, 1055, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
+            toAddress(EntityId.of(0, 0, 1056, TOKEN));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047, TOKEN));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY =
             toAddress(EntityId.of(0, 0, 1067, TOKEN));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051, TOKEN));
-    protected static final Address NFT_ADDRESS_GET_KEY = toAddress(EntityId.of(0, 0, 1053, TOKEN));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
+            toAddress(EntityId.of(0, 0, 1053, TOKEN));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1057, TOKEN));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1058, TOKEN));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
+            toAddress(EntityId.of(0, 0, 1059, TOKEN));
     protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257, CONTRACT));
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
     protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
@@ -236,8 +249,18 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                     .build())))
             .build();
 
-    protected static Key key = Key.newBuilder()
+    protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
+            .build();
+
+    protected static Key keyWithEd25519 =
+            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
+
+    protected static Key keyWithECDSASecp256K1 =
+            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
+
+    protected static Key keyWithDelegatableContractId = Key.newBuilder()
+            .setDelegatableContractId(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
 
     @Autowired
@@ -357,8 +380,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
         final var tokenTreasuryEntityId = fungibleTokenPersist(
                 treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.UNPAUSED);
-        final var tokenGetKeyEntityId = fungibleTokenPersist(
-                senderEntityId, key.toByteArray(), FUNGIBLE_TOKEN_ADDRESS_GET_KEY, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+        final var tokenGetKeyContractAddressEntityId = fungibleTokenPersist(
+                senderEntityId,
+                keyWithContractId.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
+        final var tokenGetKeyEcdsaEntityId = fungibleTokenPersist(
+                senderEntityId,
+                keyWithECDSASecp256K1.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
+        final var tokenGetKeyEd25519EntityId = fungibleTokenPersist(
+                senderEntityId,
+                keyWithEd25519.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
+        final var tokenGetKeyDelegatableContractIdEntityId = fungibleTokenPersist(
+                senderEntityId,
+                keyWithDelegatableContractId.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
 
         final var nftEntityId = nftPersist(
                 NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
@@ -377,11 +422,32 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED);
         final var nftEntityId4 = nftPersist(
-                NFT_ADDRESS_GET_KEY,
+                NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
-                key.toByteArray(),
+                keyWithContractId.toByteArray(),
+                TokenPauseStatusEnum.PAUSED);
+        final var nftEntityId5 = nftPersist(
+                NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithEd25519.toByteArray(),
+                TokenPauseStatusEnum.PAUSED);
+        final var nftEntityId6 = nftPersist(
+                NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithECDSASecp256K1.toByteArray(),
+                TokenPauseStatusEnum.PAUSED);
+        final var nftEntityId7 = nftPersist(
+                NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithDelegatableContractId.toByteArray(),
                 TokenPauseStatusEnum.PAUSED);
 
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
