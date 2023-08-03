@@ -34,6 +34,7 @@ import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceU
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -150,6 +151,11 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
+        return new TokenUpdateResourceUsage(estimatorFactory);
+    }
+
+    @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
@@ -168,6 +174,9 @@ public class ServicesConfiguration {
             }
             if (estimator.toString().contains("TokenDelete")) {
                 txnUsageEstimators.put(HederaFunctionality.TokenDelete, List.of(estimator));
+            }
+            if (estimator.toString().contains("TokenUpdate")) {
+                txnUsageEstimators.put(HederaFunctionality.TokenUpdate, List.of(estimator));
             }
         }
 
