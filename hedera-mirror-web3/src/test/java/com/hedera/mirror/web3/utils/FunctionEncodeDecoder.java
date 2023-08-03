@@ -220,8 +220,6 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[0]),
                     Arrays.stream((Object[]) parameters[1])
                             .map(e -> (Object[]) e)
-                            //                            .map(e -> new TokenKeyWrapper((int) e[0], null)) //
-                            // (KeyValueWrapper) e[1]
                             .map(e -> {
                                 final var keyParams = ((Object[]) e[1]);
                                 return Tuple.of(
