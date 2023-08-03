@@ -40,13 +40,17 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -74,6 +78,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenCreatePrecompile extends AbstractWritePrecompile {
@@ -203,17 +208,20 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final EncodingFacade encoder;
     private final OptionValidator validator;
     private final CreateLogic createLogic;
+    private final FeeCalculator feeCalculator;
 
     public TokenCreatePrecompile(
             final PrecompilePricingUtils pricingUtils,
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final OptionValidator validator,
-            final CreateLogic createLogic) {
+            final CreateLogic createLogic,
+            final FeeCalculator feeCalculator) {
         super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
         this.createLogic = createLogic;
         this.validator = validator;
+        this.feeCalculator = feeCalculator;
     }
 
     @Override
@@ -292,6 +300,28 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     @Override
     public Bytes getFailureResultFor(ResponseCodeEnum status) {
         return encoder.encodeCreateFailure(status);
+    }
+
+    @Override
+    public void handleSentHbars(final MessageFrame frame) {
+        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var timestampSeconds = frame.getBlockValues().getTimestamp();
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(timestampSeconds).build();
+        final var gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
+        final var tinybarsRequirement = frame.getGasPrice().intValue()
+                + (frame.getGasPrice().intValue() / 5)
+                - getMinimumFeeInTinybars(timestamp, null) * gasPriceInTinybars;
+
+        validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
+
+        final var sender = store.getAccount(frame.getSenderAddress(), OnMissing.THROW);
+        final var updatedSender = sender.setBalance(sender.getBalance() - tinybarsRequirement);
+        final var recipient = store.getAccount(frame.getRecipientAddress(), OnMissing.THROW);
+        final var updatedRecipient = recipient.setBalance(recipient.getBalance() + tinybarsRequirement);
+
+        store.updateAccount(updatedSender);
+        store.updateAccount(updatedRecipient);
     }
 
     /**

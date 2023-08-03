@@ -512,9 +512,10 @@ public class ServicesConfiguration {
             EncodingFacade encodingFacade,
             SyntheticTxnFactory syntheticTxnFactory,
             OptionValidator validator,
-            CreateLogic createLogic) {
+            CreateLogic createLogic,
+            FeeCalculator feeCalculator) {
         return new TokenCreatePrecompile(
-                precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic);
+                precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic, feeCalculator);
     }
 
     @Bean

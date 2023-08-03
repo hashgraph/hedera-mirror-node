@@ -215,8 +215,8 @@ class TokenCreatePrecompileTest {
         final var precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var syntheticTxnFactory = new SyntheticTxnFactory();
-        tokenCreatePrecompile =
-                new TokenCreatePrecompile(precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic);
+        tokenCreatePrecompile = new TokenCreatePrecompile(
+                precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic, feeCalculator);
         final var precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
 
         subject = new HTSPrecompiledContract(
