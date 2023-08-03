@@ -71,6 +71,7 @@ import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NetworkFreezeRepository;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -128,6 +129,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NetworkFreezeRepository networkFreezeRepository;
     private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
@@ -1020,6 +1022,21 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(liveHashRepository.findAll()).containsExactly(liveHash);
+    }
+
+    @Test
+    void onNetworkFreeze() {
+        // given
+        var networkFreeze1 = domainBuilder.networkFreeze().get();
+        var networkFreeze2 = domainBuilder.networkFreeze().get();
+
+        // when
+        sqlEntityListener.onNetworkFreeze(networkFreeze1);
+        sqlEntityListener.onNetworkFreeze(networkFreeze2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(networkFreezeRepository.findAll()).containsExactlyInAnyOrder(networkFreeze1, networkFreeze2);
     }
 
     @Test

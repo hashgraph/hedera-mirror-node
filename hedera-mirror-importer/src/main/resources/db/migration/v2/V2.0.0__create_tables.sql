@@ -181,12 +181,12 @@ comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (
-    amount            bigint    not null,
-    amount_granted    bigint    not null,
-    owner             bigint    not null,
-    payer_account_id  bigint    not null,
-    spender           bigint    not null,
-    timestamp_range   int8range not null
+    amount           bigint    not null,
+    amount_granted   bigint    not null,
+    owner            bigint    not null,
+    payer_account_id bigint    not null,
+    spender          bigint    not null,
+    timestamp_range  int8range not null
 ) partition by range (owner);
 comment on table crypto_allowance is 'Hbar allowances delegated by owner to spender';
 
@@ -287,11 +287,11 @@ comment on table entity_stake_history is 'Network entity stake historical state'
 
 create table if not exists entity_transaction
 (
-  consensus_timestamp bigint not null,
-  entity_id           bigint not null,
-  payer_account_id    bigint not null,
-  result              smallint not null,
-  type                smallint not null
+    consensus_timestamp bigint   not null,
+    entity_id           bigint   not null,
+    payer_account_id    bigint   not null,
+    result              smallint not null,
+    type                smallint not null
 ) partition by range (consensus_timestamp);
 comment on table entity_transaction is 'Network entity transaction lookup table';
 
@@ -355,6 +355,18 @@ create table if not exists live_hash
     livehash            bytea,
     consensus_timestamp bigint not null
 );
+
+create table if not exists network_freeze
+(
+    consensus_timestamp bigint   not null,
+    end_time            bigint,
+    file_hash           bytea    not null,
+    file_id             bigint,
+    payer_account_id    bigint   not null,
+    start_time          bigint   not null,
+    type                smallint not null
+) partition by range (consensus_timestamp);
+comment on table network_freeze is 'System transaction to freeze the network';
 
 create table if not exists network_stake
 (
@@ -571,13 +583,13 @@ comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
 (
-    amount            bigint    not null,
-    amount_granted    bigint    not null,
-    owner             bigint    not null,
-    payer_account_id  bigint    not null,
-    spender           bigint    not null,
-    timestamp_range   int8range not null,
-    token_id          bigint    not null
+    amount           bigint    not null,
+    amount_granted   bigint    not null,
+    owner            bigint    not null,
+    payer_account_id bigint    not null,
+    spender          bigint    not null,
+    timestamp_range  int8range not null,
+    token_id         bigint    not null
 ) partition by range (owner);
 comment on table token_allowance is 'Token allowances delegated by owner to spender';
 
