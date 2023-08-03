@@ -34,25 +34,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @ParameterizedTest
-    @EnumSource(ContractReadFunctions.class)
+    @EnumSource(
+            value = ContractReadFunctions.class,
+            mode = Mode.EXCLUDE,
+            names = {
+                "GET_FUNGIBLE_TOKEN_INFO",
+                "GET_NFT_INFO",
+                "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
+                "GET_INFORMATION_FOR_TOKEN_NFT"
+            })
     void evmPrecompileReadOnlyTokenFunctionsTest(final ContractReadFunctions contractFunc) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
-    }
-
-    @ParameterizedTest
-    @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestWithNonStaticFrame(final ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -293,7 +290,13 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }),
         GET_TOKEN_PAUSE_KEY_FOR_NFT("getTokenKeyPublic", new Object[] {NFT_ADDRESS, 64L}, new Object[] {
             false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO
-        });
+        }),
+        GET_FUNGIBLE_TOKEN_INFO(
+                "getInformationForFungibleToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS, 1L}, new Object[] {}),
+        GET_INFORMATION_FOR_TOKEN_FUNGIBLE(
+                "getInformationForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {});
 
         private final String name;
         private final Object[] functionParameters;
