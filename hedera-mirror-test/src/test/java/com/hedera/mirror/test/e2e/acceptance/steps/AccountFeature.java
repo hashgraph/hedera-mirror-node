@@ -224,11 +224,6 @@ public class AccountFeature extends AbstractFeature {
         verifyMirrorAPIApprovedCryptoAllowanceResponse(approvedAmount, transferAmount);
     }
 
-    @And("the mirror node REST API should confirm the approved allowance of {long} tℏ was again debited by {long} tℏ")
-    public void verifyMirrorAPICryptoAllowanceAmount2Response(long approvedAmount, long transferAmount) {
-        verifyMirrorAPIApprovedCryptoAllowanceResponse(approvedAmount, transferAmount + transferAmount);
-    }
-
     private void verifyMirrorAPIApprovedCryptoAllowanceResponse(long approvedAmount, long transferAmount) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
