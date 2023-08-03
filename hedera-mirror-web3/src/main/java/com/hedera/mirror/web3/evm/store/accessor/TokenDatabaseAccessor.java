@@ -93,7 +93,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
                 TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
-                entity.getCreatedTimestamp() != null ? entity.getCreatedTimestamp() : 0L,
+                entity.getCreatedTimestamp() != null
+                        ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
+                        : 0L,
                 false,
                 entity.getMemo(),
                 databaseToken.getName(),

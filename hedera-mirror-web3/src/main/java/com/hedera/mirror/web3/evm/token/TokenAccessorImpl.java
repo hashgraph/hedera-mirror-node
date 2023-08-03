@@ -249,8 +249,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 token.getTotalSupply(),
                 token.getMaxSupply(),
                 token.getDecimals(),
-                // expiry is already in seconds
-                token.getExpiry());
+                expirationTimeSeconds(token));
         evmTokenInfo.setAutoRenewPeriod(token.getAutoRenewPeriod());
         evmTokenInfo.setDefaultFreezeStatus(token.isFrozenByDefault());
         evmTokenInfo.setCustomFees(getCustomFees(address));
@@ -263,6 +262,20 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         return Optional.of(evmTokenInfo);
+    }
+
+    private Long expirationTimeSeconds(Token token) {
+        Long createdTimestamp = token.getCreatedTimestamp();
+        Long autoRenewPeriod = token.getAutoRenewPeriod();
+        Long expirationTimestamp = token.getExpiry();
+
+        if (expirationTimestamp != null) {
+            return expirationTimestamp;
+        } else if (createdTimestamp != null && autoRenewPeriod != null) {
+            return createdTimestamp + autoRenewPeriod;
+        } else {
+            return 0L;
+        }
     }
 
     @SuppressWarnings("unchecked")
