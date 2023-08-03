@@ -107,7 +107,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
             "0xd27be6cd00000000000000000000000000000000000000000000000000000000000008d3000000000000000000000000000000000000000000000000000000000bf7edc700000000000000000000000000000000000000000000000000000000000008d00000000000000000000000000000000000000000000000000000000000000008");
 
     private HTSPrecompiledContract subject;
-    private UpdateTokenExpiryInfoPrecompile updateTokenExpiryInfoPrecompile;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> staticUpdateTokenExpiryInfoPrecompile;
 
     @BeforeEach
@@ -118,7 +117,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         staticUpdateTokenExpiryInfoPrecompile = mockStatic(UpdateTokenExpiryInfoPrecompile.class);
 
         optionValidator = new ContextOptionValidator(evmProperties);
-        updateTokenExpiryInfoPrecompile = new UpdateTokenExpiryInfoPrecompile(
+        final var updateTokenExpiryInfoPrecompile = new UpdateTokenExpiryInfoPrecompile(
                 tokenUpdateLogic, evmProperties, optionValidator, syntheticTxnFactory, precompilePricingUtils);
 
         precompileMapper = new PrecompileMapper(Set.of(updateTokenExpiryInfoPrecompile));
