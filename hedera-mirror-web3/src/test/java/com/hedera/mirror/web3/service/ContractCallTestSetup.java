@@ -295,7 +295,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
-    protected long gasUsedAfterExecution(CallServiceParameters serviceParameters) {
+    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         return processor
                 .execute(
                         serviceParameters.getSender(),
@@ -404,7 +404,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         feeSchedulesPersist();
     }
 
-    private void nftCustomFeePersist(EntityId senderEntityId, EntityId nftEntityId) {
+    private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
         domainBuilder
                 .customFee()
                 .customize(f -> f.collectorAccountId(senderEntityId)
@@ -428,8 +428,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                         .build())
                 .build();
-        var timeStamp = System.currentTimeMillis();
-        var entityId = new EntityId(0L, 0L, 112L, EntityType.FILE);
+        final var timeStamp = System.currentTimeMillis();
+        final var entityId = new EntityId(0L, 0L, 112L, EntityType.FILE);
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
@@ -537,7 +537,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private long ethAccountPersist(long ethAccount, Address evmAddress) {
+    private long ethAccountPersist(final long ethAccount, final Address evmAddress) {
 
         domainBuilder
                 .entity()
@@ -646,7 +646,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .createdTimestamp(1475067194949034022L)
                         .serialNumber(1)
                         .spender(spenderEntityId)
-                        .metadata(new byte[] {1, 2, 3})
+                        .metadata("NFT_METADATA_URI".getBytes())
                         .accountId(ownerEntity)
                         .timestampRange(Range.atLeast(1475067194949034022L))
                         .tokenId(nftEntityId.getId()))
@@ -884,9 +884,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void customFeesPersist(final FeeCase feeCase) {
-        var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
-        var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
-        var timeStamp = System.currentTimeMillis();
+        final var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
+        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
+        final var timeStamp = System.currentTimeMillis();
         switch (feeCase) {
             case ROYALTY_FEE -> domainBuilder
                     .customFee()
