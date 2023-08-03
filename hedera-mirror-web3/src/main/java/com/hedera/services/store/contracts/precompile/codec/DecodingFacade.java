@@ -147,7 +147,7 @@ public class DecodingFacade {
         for (final var transfer : abiTransfers) {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            if (amount > 0 && !accountID.hasAlias()) {
+            if (accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
