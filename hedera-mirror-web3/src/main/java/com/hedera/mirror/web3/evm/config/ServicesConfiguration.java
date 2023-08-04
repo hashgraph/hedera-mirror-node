@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
@@ -234,6 +235,12 @@ public class ServicesConfiguration {
     GetApprovedPrecompile getApprovedPrecompile(
             SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
         return new GetApprovedPrecompile(syntheticTxnFactory, encoder, pricingUtils);
+    }
+
+    @Bean
+    AllowancePrecompile allowancePrecompile(
+            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+        return new AllowancePrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 
     @Bean
