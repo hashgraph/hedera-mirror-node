@@ -92,9 +92,7 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
 
     @EventListener
     public void reRunMigration(InitializeBalanceEvent event) {
-        log.info(
-                "Re-running the InitializeEntityBalanceMigration on InitializeBalanceEvent created at {}",
-                event.getTimestamp());
+        log.info("Re-running the InitializeEntityBalanceMigration on InitializeBalanceEvent");
         doMigrate();
     }
 }
