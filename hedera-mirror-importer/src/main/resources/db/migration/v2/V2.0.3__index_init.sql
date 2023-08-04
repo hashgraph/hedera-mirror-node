@@ -74,6 +74,10 @@ create index if not exists contract_state_change__id_slot_timestamp
 -- crypto_allowance
 alter table if exists crypto_allowance
     add constraint crypto_allowance__pk primary key (owner, spender);
+create index if not exists crypto_allowance__active
+    on crypto_allowance (owner, spender) where amount_granted > 0;
+
+-- crypto_allowance_history
 create index if not exists crypto_allowance_history__timestamp_range
     on crypto_allowance_history using gist (timestamp_range);
 create index if not exists crypto_allowance_history_owner_spender_lower_timestamp
@@ -225,6 +229,10 @@ create index if not exists token_account_history__account_token_lower_timestamp
 -- token_allowance
 alter table if exists token_allowance
     add constraint token_allowance__pk primary key (owner, spender, token_id);
+create index if not exists token_allowance__active
+    on token_allowance (owner, spender, token_id) where amount_granted > 0;
+
+-- token_allowance_history
 create index if not exists token_allowance_history__timestamp_range on token_allowance_history using gist (timestamp_range);
 create index if not exists token_allowance_history__owner_spender_token_lower_timestamp
     on token_allowance_history (owner, spender, token_id, lower(timestamp_range));

@@ -21,10 +21,12 @@ import * as utils from '../../utils';
 
 const {default: defaultLimit} = getResponseLimit();
 
+const amountGrantedFilter = 'amount_granted > 0';
 const ownerIdFilter = 'owner = $1';
+
 describe('extractCryptoAllowancesQuery', () => {
   const defaultExpected = {
-    conditions: [ownerIdFilter],
+    conditions: [ownerIdFilter, amountGrantedFilter],
     params: [1],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
@@ -63,7 +65,6 @@ describe('extractCryptoAllowancesQuery', () => {
       expected: {
         ...defaultExpected,
         order: constants.orderFilterValues.ASC,
-        conditions: [ownerIdFilter],
       },
     },
     {
@@ -80,7 +81,7 @@ describe('extractCryptoAllowancesQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [ownerIdFilter, 'spender in ($2)'],
+        conditions: [ownerIdFilter, 'spender in ($2)', amountGrantedFilter],
         params: [3, '1000'],
       },
     },
@@ -108,7 +109,7 @@ describe('extractCryptoAllowancesQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [ownerIdFilter, 'spender in ($2,$3,$4)'],
+        conditions: [ownerIdFilter, 'spender in ($2,$3,$4)', amountGrantedFilter],
         params: [3, '1000', '1001', '1002'],
       },
     },
@@ -153,6 +154,7 @@ describe('extractCryptoAllowancesQuery', () => {
           'spender < $4',
           'spender <= $5',
           'spender in ($6)',
+          amountGrantedFilter,
         ],
         params: [3, '200', '202', '3000', '3005', '1000'],
       },
