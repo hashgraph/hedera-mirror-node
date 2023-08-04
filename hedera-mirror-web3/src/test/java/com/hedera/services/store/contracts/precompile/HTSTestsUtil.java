@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.IdUtils;
@@ -153,6 +154,11 @@ public class HTSTestsUtil {
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
+            new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapperWithInvalidTokenID =
+            new TokenUpdateExpiryInfoWrapper(null, new TokenExpiryWrapper(442L, payer, 555L));
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
