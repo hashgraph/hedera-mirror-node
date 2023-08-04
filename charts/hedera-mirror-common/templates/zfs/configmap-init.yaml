@@ -25,6 +25,7 @@ data:
     DISK_SIZE_WORKER="${DISK_SIZE_WORKER:-152GB}"
     K8S_NAMESPACE="${K8S_NAMESPACE:-common}"
     DISK_PREFIX="${DISK_PREFIX:-citus}"
+    CONFIG_MAP_NAME="{{ include "hedera-mirror-common.fullname" . }}-zfs-node-status"
     
     NODE_ID_LABEL="openebs.io/nodeid"
     ROLE_LABEL="citus-role"
@@ -35,20 +36,7 @@ data:
     echo "Getting node metadata"
     NODE_NAME="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/hostname -H 'Metadata-Flavor: Google' | awk -F'.' '{print $1}')"
     ZONE="$(curl -sS http://metadata.google.internal/computeMetadata/v1/instance/zone -H 'Metadata-Flavor: Google' | awk -F  "/" '{print $NF}')"
-    
-    # Configure kubectl
-    APISERVER="https://kubernetes.default.svc"
-    SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
-    TOKEN="$(cat ${SERVICEACCOUNT}/token)"
-    CACERT="${SERVICEACCOUNT}/ca.crt"
-    
-    kubectl config set-cluster ctc --server="${APISERVER}" --certificate-authority="${CACERT}"
-    kubectl config set-context ctc --cluster=ctc
-    kubectl config set-credentials user --token="${TOKEN}"
-    kubectl config set-context ctc --user=user
-    kubectl config use-context ctc
-    
-    NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
+    NODE_LABELS="$(kubectl get node ${NODE_NAME} -o jsonpath='{.metadata.labels}')"
     CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.[$ROLE_LABEL]')"
     NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
 
@@ -63,33 +51,28 @@ data:
       sleep 10
       ATTEMPT_COUNT=$((ATTEMPT_COUNT+1))
       echo "Retrying label GET attempt: ${ATTEMPT_COUNT}"
-      NODE_LABELS="$(kubectl get node ${NODE_NAME} -o json | jq '.metadata.labels')"
-      CITUS_ROLE="$(echo ${NODE_LABELS} | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.metadata.labels[$ROLE_LABEL]')"
+      NODE_LABELS="$(kubectl get node ${NODE_NAME} -o jsonpath='{.metadata.labels}')"
+      CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.[$ROLE_LABEL]')"
+      NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
     done
     # Determine correct config for zone
-    CONFIG_MAP_NAME="zfs-node-status"
     COMMAND_STATUS=1
     until [[ ${COMMAND_STATUS} -eq 0 ]]; do
       CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
       MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {"zfs-node-status.json": (.data["zfs-node-status.json"]|fromjson)}}')"
       ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE] // []')"
-      NODE_LIST="$(kubectl get nodes -o json | jq \
-                   --arg ZONE "${ZONE}" \
-                   --arg CITUS_ROLE "${CITUS_ROLE}" \
-                   --arg ROLE_LABEL "${ROLE_LABEL}" \
-                   '.items | map(select(.metadata.labels["topology.kubernetes.io/zone"] == $ZONE and
-                                        .metadata.labels[$ROLE_LABEL] == $CITUS_ROLE))')"
-      NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.metadata.name): {isUpgrade: (.metadata.labels["operation.gke.io/type"] == "drain")}}) | add')"
+      NODE_LIST="$(kubectl get nodes -o jsonpath='{.items[*].metadata.labels}' -lcsi-type=zfs,topology.kubernetes.io/zone=${ZONE},${ROLE_LABEL}=${CITUS_ROLE} | jq -s)"
+      NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.["kubernetes.io/hostname"]): {isUpgrade: (.["operation.gke.io/type"] == "drain")}}) | add')"
       
       ## This will find all nodes that have been initialized by this script in the past
       ## and generate its own version of the config map configuration to 
       ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
                       --arg NODE_ID_LABEL "${NODE_ID_LABEL}" \
-                      '. | map(select(.metadata.labels["generated-node-id"] == "true")) |
+                      '. | map(select(.["generated-node-id"] == "true")) |
                            map({
-                                 "nodeName": (.metadata.name), 
-                                 "nodeId": (.metadata.labels[$NODE_ID_LABEL]), 
-                                 "index": (.metadata.labels[$NODE_ID_LABEL] | match("\\d*$").string | tonumber)
+                                 "nodeName": (.["kubernetes.io/hostname"]), 
+                                 "nodeId": (.[$NODE_ID_LABEL]), 
+                                 "index": (.[$NODE_ID_LABEL] | match("\\d*$").string | tonumber)
                                }) | 
                             sort_by(.index) |
                               [
@@ -169,7 +152,7 @@ data:
         gcloud compute disks resize "${DISK_NAME}" --size="${DISK_SIZE}" --zone="${ZONE}" --quiet
     fi
 
-    if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then        
+    if (! gcloud compute instances describe "${NODE_NAME}" --zone "${ZONE}" --format '(disks[].source)' | grep "${DISK_NAME}" > /dev/null); then
         echo "Attaching ${DISK_NAME} to ${NODE_NAME}"
         gcloud compute instances attach-disk "${NODE_NAME}" --device-name=sdb --disk "${DISK_NAME}" --zone "${ZONE}"
         COMMAND_STATUS=$?
