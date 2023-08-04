@@ -1528,6 +1528,12 @@ func TestGetFrozenTransactionBodyBytes(t *testing.T) {
 	assert.Equal(t, expected, bytes)
 }
 
+func TestNewConstructionAPIServiceThrowsWithUnrecognizedNetwork(t *testing.T) {
+	client, err := NewConstructionAPIService(nil, onlineBaseService, &config.Config{Network: "unknown"}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, client)
+}
+
 func TestUnmarshallTransactionFromHexString(t *testing.T) {
 	for _, signed := range []bool{false, true} {
 		transactions := []interfaces.Transaction{
