@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.token;
 
 import jakarta.persistence.Entity;
 import lombok.Data;
@@ -25,6 +25,6 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class CustomFeeHistory extends AbstractCustomFee {
+public class CustomFee extends AbstractCustomFee {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

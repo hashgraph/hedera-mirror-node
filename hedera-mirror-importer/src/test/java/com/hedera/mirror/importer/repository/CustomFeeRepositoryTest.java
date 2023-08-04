@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.importer.converter.CustomFeeConverter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import org.springframework.jdbc.core.RowMapper;
 class CustomFeeRepositoryTest extends AbstractRepositoryTest {
 
     private final CustomFeeRepository customFeeRepository;
-    private static final RowMapper<CustomFee> ROW_MAPPER = CustomFeeConverter.INSTANCE.rowMapper;
+    private static final RowMapper<CustomFee> ROW_MAPPER = CustomFeeConverter.rowMapper;
 
     @Test
     void prune() {
@@ -38,7 +38,7 @@ class CustomFeeRepositoryTest extends AbstractRepositoryTest {
         var customFee2 = domainBuilder.customFee().persist();
         var customFee3 = domainBuilder.customFee().persist();
 
-        customFeeRepository.prune(customFee2.getCreatedTimestamp());
+        customFeeRepository.prune(customFee2.getTimestampUpper());
 
         assertThat(customFeeRepository.findAll()).containsExactly(customFee3);
     }

@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.token;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies.SnakeCaseStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hedera.mirror.common.converter.EntityIdDeserializer;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -23,11 +30,12 @@ import lombok.experimental.SuperBuilder;
 @Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class RoyaltyFee extends AbstractFee {
+@JsonNaming(value = SnakeCaseStrategy.class)
+public class FallbackFee {
 
-    private FixedFee fallbackFee;
+    private Long amount;
 
-    private long royaltyDenominator;
-
-    private long royaltyNumerator;
+    @JsonSerialize(using = EntityIdSerializer.class)
+    @JsonDeserialize(using = EntityIdDeserializer.class)
+    private EntityId denominatingTokenId;
 }

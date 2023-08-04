@@ -22,9 +22,11 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.FixedFee;
-import com.hedera.mirror.common.domain.transaction.FractionalFee;
-import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import java.util.List;
 import java.util.Optional;
@@ -55,32 +57,34 @@ class CustomFeeDatabaseAccessorTest {
 
     private final EntityId denominatingTokenId = new EntityId(11L, 12L, 13L, EntityType.TOKEN);
 
-    private com.hedera.mirror.common.domain.transaction.CustomFee customFee;
+    private CustomFee customFee;
 
     @BeforeEach
     void setup() {
-        customFee = new com.hedera.mirror.common.domain.transaction.CustomFee();
+        customFee = new CustomFee();
     }
 
     @Test
     void royaltyFee() {
-        var fixedFeeBuilderBuilder =
-                FixedFee.builder().collectorAccountId(collectorId).denominatingTokenId(denominatingTokenId);
-        var fallbackFee = fixedFeeBuilderBuilder.amount(20L).build();
-        var fallbackFee2 = fixedFeeBuilderBuilder.amount(21L).build();
+        var fallbackFeeBuilder = FallbackFee.builder().denominatingTokenId(denominatingTokenId);
+        var fallbackFee = fallbackFeeBuilder.amount(20L).build();
+        var fallbackFee2 = fallbackFeeBuilder.amount(21L).build();
 
-        var royaltyFeeBuilder = RoyaltyFee.builder();
+        var royaltyFeeBuilder = RoyaltyFee.builder().collectorAccountId(collectorId);
         var royaltyFee = royaltyFeeBuilder
-                .royaltyDenominator(10L)
-                .royaltyNumerator(15L)
+                .amount(15L)
+                .denominator(10L)
                 .fallbackFee(fallbackFee)
                 .build();
         var royaltyFee2 = royaltyFeeBuilder
-                .royaltyDenominator(11L)
-                .royaltyNumerator(16L)
+                .amount(16L)
+                .denominator(11L)
                 .fallbackFee(fallbackFee2)
                 .build();
-        var royaltyFees = List.of(royaltyFee, royaltyFee2);
+        // RoyaltyFee without fallback fee will not be included in the results from customFeeDatabaseAccessor.
+        var royaltyFee3 =
+                royaltyFeeBuilder.amount(17L).denominator(12L).fallbackFee(null).build();
+        var royaltyFees = List.of(royaltyFee, royaltyFee2, royaltyFee3);
         customFee.setRoyaltyFees(royaltyFees);
 
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
@@ -88,13 +92,13 @@ class CustomFeeDatabaseAccessorTest {
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var listAssert = assertThat(results).hasSize(2);
-        for (var domainFee : royaltyFees) {
+        for (var domainFee : List.of(royaltyFee, royaltyFee2)) {
             listAssert.anySatisfy(fee -> {
                 assertThat(fee.getFixedFee()).isNull();
                 assertThat(fee.getFractionalFee()).isNull();
                 var resultRoyaltyFee = fee.getRoyaltyFee();
-                assertThat(resultRoyaltyFee.getDenominator()).isEqualTo(domainFee.getRoyaltyDenominator());
-                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getRoyaltyNumerator());
+                assertThat(resultRoyaltyFee.getDenominator()).isEqualTo(domainFee.getDenominator());
+                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getAmount());
                 assertThat(resultRoyaltyFee.getAmount())
                         .isEqualTo(domainFee.getFallbackFee().getAmount());
                 assertThat(resultRoyaltyFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
@@ -109,14 +113,14 @@ class CustomFeeDatabaseAccessorTest {
         var fractionalFeeBuilder = FractionalFee.builder().collectorAccountId(collectorId);
         var fractionalFee = fractionalFeeBuilder
                 .amount(20L)
-                .amountDenominator(2L)
+                .denominator(2L)
                 .maximumAmount(100L)
                 .minimumAmount(5L)
                 .netOfTransfers(true)
                 .build();
         var fractionalFee2 = fractionalFeeBuilder
                 .amount(21L)
-                .amountDenominator(3L)
+                .denominator(3L)
                 .maximumAmount(101L)
                 .minimumAmount(6L)
                 .netOfTransfers(false)
@@ -135,7 +139,7 @@ class CustomFeeDatabaseAccessorTest {
                 assertThat(fee.getRoyaltyFee()).isNull();
                 var resultFractionalFee = fee.getFractionalFee();
                 assertThat(resultFractionalFee.getNumerator()).isEqualTo(domainFee.getAmount());
-                assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getAmountDenominator());
+                assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getDenominator());
                 assertThat(resultFractionalFee.getMaximumAmount()).isEqualTo(domainFee.getMaximumAmount());
                 assertThat(resultFractionalFee.getMinimumAmount()).isEqualTo(domainFee.getMinimumAmount());
                 assertThat(resultFractionalFee.getNetOfTransfers()).isEqualTo(domainFee.isNetOfTransfers());
@@ -174,7 +178,7 @@ class CustomFeeDatabaseAccessorTest {
 
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
-        final var noCollectorCustomFee = new com.hedera.mirror.common.domain.transaction.CustomFee();
+        final var noCollectorCustomFee = new CustomFee();
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
         assertThat(customFeeDatabaseAccessor.get(tokenId))
                 .hasValueSatisfying(customFees -> assertThat(customFees).hasSize(0));

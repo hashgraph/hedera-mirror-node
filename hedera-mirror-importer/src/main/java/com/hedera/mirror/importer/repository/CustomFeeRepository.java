@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -25,6 +25,6 @@ public interface CustomFeeRepository extends CrudRepository<CustomFee, Long>, Re
 
     @Modifying
     @Override
-    @Query(nativeQuery = true, value = "delete from custom_fee where created_timestamp <= ?1")
+    @Query(nativeQuery = true, value = "delete from custom_fee where timestamp_range << int8range(?1, null)")
     int prune(long consensusTimestamp);
 }

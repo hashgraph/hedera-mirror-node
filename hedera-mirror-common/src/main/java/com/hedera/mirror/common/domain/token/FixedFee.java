@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -28,11 +28,13 @@ import lombok.experimental.SuperBuilder;
 @Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public abstract class AbstractFee {
-
-    private boolean allCollectorsAreExempt;
+public class FixedFee extends AbstractFee {
 
     @JsonSerialize(using = EntityIdSerializer.class)
     @JsonDeserialize(using = EntityIdDeserializer.class)
-    private EntityId collectorAccountId;
+    private EntityId denominatingTokenId;
+
+    public boolean isChargedInToken(EntityId tokenId) {
+        return tokenId.equals(denominatingTokenId);
+    }
 }

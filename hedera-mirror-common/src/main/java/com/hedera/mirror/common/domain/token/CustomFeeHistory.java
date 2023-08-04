@@ -14,24 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.token;
 
+import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
+@Entity
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class FractionalFee extends AbstractFee {
-
-    private long amount;
-
-    private long amountDenominator;
-
-    private Long maximumAmount;
-
-    private long minimumAmount;
-
-    private boolean netOfTransfers;
+public class CustomFeeHistory extends AbstractCustomFee {
+    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

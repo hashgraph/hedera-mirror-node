@@ -26,6 +26,8 @@ import static org.mockito.Mockito.verify;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -33,8 +35,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.FixedFee;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -129,7 +129,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(transactionBody.getWipeKey().toByteArray(), Token::getWipeKey);
 
         assertThat(customFee.getValue())
-                .returns(transaction.getConsensusTimestamp(), CustomFee::getCreatedTimestamp)
+                .returns(transaction.getConsensusTimestamp(), CustomFee::getTimestampLower)
                 .returns(Range.atLeast(transaction.getConsensusTimestamp()), CustomFee::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), CustomFee::getTokenId)
                 .returns(null, CustomFee::getFractionalFees)

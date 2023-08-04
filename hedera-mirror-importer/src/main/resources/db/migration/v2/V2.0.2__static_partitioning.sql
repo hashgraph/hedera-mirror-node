@@ -13,7 +13,8 @@ select partman.create_parent('public.contract_state_change', 'consensus_timestam
 select partman.create_parent('public.crypto_allowance', 'owner', 'native', '1000000', p_premake := 1);
 select partman.create_parent('public.crypto_allowance_history', 'owner', 'native', '1000000', p_premake := 1);
 select partman.create_parent('public.crypto_transfer', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.custom_fee', 'created_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
+select partman.create_parent('public.custom_fee', 'token_id', 'native', '1000000', p_premake := 1);
+select partman.create_parent('public.custom_fee_history', 'token_id', 'native', '1000000', p_premake := 1);
 select partman.create_parent('public.entity', 'id', 'native', '1000000', p_premake := 1);
 select partman.create_parent('public.entity_history', 'id', 'native', '1000000', p_premake := 1);
 select partman.create_parent('public.entity_stake', 'id', 'native', '1000000', p_premake := 1);

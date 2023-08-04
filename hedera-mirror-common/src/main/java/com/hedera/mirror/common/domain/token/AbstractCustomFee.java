@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -23,7 +23,6 @@ import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import java.util.ArrayList;
@@ -33,6 +32,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
+import org.springframework.util.CollectionUtils;
 
 @Data
 @MappedSuperclass
@@ -40,12 +40,6 @@ import org.hibernate.annotations.Type;
 @SuperBuilder(toBuilder = true)
 @Upsertable(history = true)
 public abstract class AbstractCustomFee implements History {
-
-    @Column(updatable = false)
-    private long createdTimestamp;
-
-    @Id
-    private Long tokenId;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @Type(JsonBinaryType.class)
@@ -60,6 +54,9 @@ public abstract class AbstractCustomFee implements History {
     private List<RoyaltyFee> royaltyFees;
 
     private Range<Long> timestampRange;
+
+    @Id
+    private Long tokenId;
 
     public void addFixedFee(@NonNull FixedFee fixedFee) {
         if (this.fixedFees == null) {
@@ -87,8 +84,8 @@ public abstract class AbstractCustomFee implements History {
 
     @JsonIgnore
     public boolean isEmptyFee() {
-        return (this.fixedFees == null || this.fixedFees.isEmpty())
-                && (this.fractionalFees == null || this.fractionalFees.isEmpty())
-                && (this.royaltyFees == null || this.royaltyFees.isEmpty());
+        return CollectionUtils.isEmpty(this.fixedFees)
+                && CollectionUtils.isEmpty(this.fractionalFees)
+                && CollectionUtils.isEmpty(this.royaltyFees);
     }
 }

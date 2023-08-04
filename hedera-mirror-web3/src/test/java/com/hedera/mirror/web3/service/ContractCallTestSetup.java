@@ -36,14 +36,15 @@ import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.FixedFee;
-import com.hedera.mirror.common.domain.transaction.FractionalFee;
-import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -408,8 +409,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     private void nftCustomFeePersist(EntityId senderEntityId, EntityId nftEntityId) {
         domainBuilder
                 .customFee()
-                .customize(f -> f.createdTimestamp(2L)
-                        .tokenId(nftEntityId.getId())
+                .customize(f -> f.tokenId(nftEntityId.getId())
                         .fractionalFees(List.of(FractionalFee.builder()
                                 .collectorAccountId(senderEntityId)
                                 .build())))
@@ -889,57 +889,50 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected void customFeePersist(final FeeCase feeCase) {
         var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
         var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
-        var timeStamp = System.currentTimeMillis();
         switch (feeCase) {
             case ROYALTY_FEE -> {
                 var royaltyFee = RoyaltyFee.builder()
-                        .royaltyDenominator(10L)
-                        .royaltyNumerator(20L)
-                        .fallbackFee(FixedFee.builder()
+                        .amount(20L)
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
+                        .fallbackFee(FallbackFee.builder()
                                 .amount(100L)
-                                .collectorAccountId(collectorAccountId)
                                 .denominatingTokenId(tokenEntityId)
                                 .build())
                         .build();
                 domainBuilder
                         .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId())
-                                .createdTimestamp(timeStamp)
-                                .royaltyFees(List.of(royaltyFee)))
+                        .customize(f -> f.royaltyFees(List.of(royaltyFee)).tokenId(tokenEntityId.getId()))
                         .persist();
             }
             case FRACTIONAL_FEE -> {
                 var fractionalFee = FractionalFee.builder()
                         .amount(100L)
-                        .amountDenominator(10L)
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
                         .minimumAmount(1L)
                         .maximumAmount(1000L)
                         .netOfTransfers(true)
-                        .collectorAccountId(collectorAccountId)
                         .build();
                 domainBuilder
                         .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId())
-                                .createdTimestamp(timeStamp)
-                                .fractionalFees(List.of(fractionalFee)))
+                        .customize(f -> f.fractionalFees(List.of(fractionalFee)).tokenId(tokenEntityId.getId()))
                         .persist();
             }
             case FIXED_FEE -> {
                 var fixedFee = FixedFee.builder()
                         .amount(100L)
-                        .denominatingTokenId(tokenEntityId)
                         .collectorAccountId(collectorAccountId)
+                        .denominatingTokenId(tokenEntityId)
                         .build();
                 domainBuilder
                         .customFee()
-                        .customize(f -> f.tokenId(tokenEntityId.getId())
-                                .createdTimestamp(timeStamp)
-                                .fixedFees(List.of(fixedFee)))
+                        .customize(f -> f.fixedFees(List.of(fixedFee)).tokenId(tokenEntityId.getId()))
                         .persist();
             }
             default -> domainBuilder
                     .customFee()
-                    .customize(f -> f.tokenId(tokenEntityId.getId()).createdTimestamp(timeStamp))
+                    .customize(f -> f.tokenId(tokenEntityId.getId()))
                     .persist();
         }
     }

@@ -17,7 +17,8 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.crypto_allowance';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.crypto_allowance_history';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.crypto_transfer';
-update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.custom_fee';
+update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.custom_fee';
+update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.custom_fee_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.entity';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.entity_history';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.entity_stake';

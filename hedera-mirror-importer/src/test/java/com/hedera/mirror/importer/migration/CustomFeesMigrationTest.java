@@ -23,10 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.FixedFee;
-import com.hedera.mirror.common.domain.transaction.FractionalFee;
-import com.hedera.mirror.common.domain.transaction.RoyaltyFee;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -53,19 +55,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StreamUtils;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(properties = {"spring.flyway.target=1.83.2"})
+@TestPropertySource(properties = {"spring.flyway.target=1.84.2"})
 class CustomFeesMigrationTest extends IntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.83.2__custom_fee_aggregate_history.sql")
+    @Value("classpath:db/migration/v1/V1.85.2__custom_fee_aggregate_history.sql")
     private final Resource sql;
 
     private static final String REVERT_DDL =
@@ -94,6 +98,64 @@ class CustomFeesMigrationTest extends IntegrationTest {
     void setup() {
         jdbcTemplate.execute(REVERT_DDL);
         assertThat(ObjectToStringSerializer.INSTANCE).isNotNull();
+    }
+
+    @Test
+    void multipleFeesMigration() {
+        // given
+        var initialTimestamp = 1638304200979990000L;
+        var updateTimestamp = 1638304434160161000L;
+        long tokenId = 603008;
+        long collectorAccountOne = 603009;
+        long collectorAccountTwo = 603011;
+        long collectorAccountThree = 603013;
+        long denominatingTokenId = 603006;
+        var id = new MigrationCustomFee.Id(initialTimestamp, tokenId);
+        var initial = MigrationCustomFee.builder()
+                .id(id)
+                .allCollectorsAreExempt(false)
+                .minimumAmount(0L)
+                .build();
+        var updateId = new MigrationCustomFee.Id(updateTimestamp, tokenId);
+        var updateOne = MigrationCustomFee.builder()
+                .id(updateId)
+                .allCollectorsAreExempt(false)
+                .minimumAmount(0L)
+                .amount(100L)
+                .collectorAccountId(collectorAccountOne)
+                .build();
+        var updateTwo = MigrationCustomFee.builder()
+                .id(updateId)
+                .allCollectorsAreExempt(false)
+                .minimumAmount(0L)
+                .amount(10L)
+                .collectorAccountId(collectorAccountTwo)
+                .denominatingTokenId(denominatingTokenId)
+                .build();
+        var updateThree = MigrationCustomFee.builder()
+                .id(updateId)
+                .allCollectorsAreExempt(false)
+                .minimumAmount(0L)
+                .amount(1L)
+                .amountDenominator(10L)
+                .collectorAccountId(collectorAccountThree)
+                .netOfTransfers(false)
+                .build();
+
+        persistMigrationCustomFees(List.of(initial, updateOne, updateTwo, updateThree));
+
+        // when
+        runMigration();
+
+        // then
+        var expected = toAggregateCustomFees(List.of(updateOne, updateTwo, updateThree));
+        expected.forEach(e -> e.setTimestampRange(Range.atLeast(updateTimestamp)));
+        assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        var history = getHistory();
+        var expectedHistory = toAggregateCustomFees(List.of(initial));
+        expectedHistory.forEach(h -> h.setTimestampRange(Range.closedOpen(initialTimestamp, updateTimestamp)));
+        assertThat(history).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test
@@ -136,7 +198,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateAggregateToSingleCustomFee() {
+    void aggregateToSingleCustomFee() {
         // given
         var fixedFee = getFixedFee();
         var fixedFee2 = getFixedFee();
@@ -144,9 +206,10 @@ class CustomFeesMigrationTest extends IntegrationTest {
         var fractionalFee2 = getFractionalFee();
         var royaltyFee = getRoyaltyFee();
         var royaltyFee2 = getRoyaltyFee();
+        var emptyFee = getEmptyFee();
 
-        // Set all token ids and createdTimestamps to the same value, they will then be aggregated into a single custom
-        // fee
+        // Set all token ids and createdTimestamps to the same value,
+        // they will then be aggregated into a single custom fee
         fixedFee2.id.tokenId = fixedFee.id.tokenId;
         fixedFee2.id.createdTimestamp = fixedFee.id.createdTimestamp;
         fractionalFee.id.tokenId = fixedFee.id.tokenId;
@@ -157,6 +220,10 @@ class CustomFeesMigrationTest extends IntegrationTest {
         royaltyFee.id.createdTimestamp = fixedFee.id.createdTimestamp;
         royaltyFee2.id.tokenId = fixedFee.id.tokenId;
         royaltyFee2.id.createdTimestamp = fixedFee.id.createdTimestamp;
+        // Royalty Fee without Fallback Fee
+        royaltyFee2.amount = null;
+        emptyFee.id.tokenId = fixedFee.id.tokenId;
+        emptyFee.id.createdTimestamp = fixedFee.id.createdTimestamp;
 
         var fixedFees = new MigrationCustomFeeData(fixedFee);
         var fixedFees2 = new MigrationCustomFeeData(fixedFee2);
@@ -164,6 +231,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
         var fractionalFees2 = new MigrationCustomFeeData(fractionalFee2);
         var royaltyFees = new MigrationCustomFeeData(royaltyFee);
         var royaltyFees2 = new MigrationCustomFeeData(royaltyFee2);
+        var emptyFees = new MigrationCustomFeeData(emptyFee);
 
         var migrationCustomFees = new ArrayList<MigrationCustomFee>();
         migrationCustomFees.addAll(fixedFees.migrationCustomFees);
@@ -172,6 +240,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
         migrationCustomFees.addAll(fractionalFees2.migrationCustomFees);
         migrationCustomFees.addAll(royaltyFees.migrationCustomFees);
         migrationCustomFees.addAll(royaltyFees2.migrationCustomFees);
+        migrationCustomFees.addAll(emptyFees.migrationCustomFees);
         persistMigrationCustomFees(migrationCustomFees);
 
         // when
@@ -193,7 +262,6 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
                 assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
                 assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                assertThat(fee.getCreatedTimestamp()).isEqualTo(result.getCreatedTimestamp());
                 assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
                 assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
             });
@@ -215,7 +283,6 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 assertThat(h.getFractionalFees())
                         .containsExactlyInAnyOrderElementsOf(historyResult.getFractionalFees());
                 assertThat(h.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(historyResult.getRoyaltyFees());
-                assertThat(h.getCreatedTimestamp()).isEqualTo(historyResult.getCreatedTimestamp());
                 assertThat(h.getTokenId()).isEqualTo(historyResult.getTokenId());
                 assertThat(h.getTimestampRange()).isEqualTo(historyResult.getTimestampRange());
             });
@@ -224,14 +291,19 @@ class CustomFeesMigrationTest extends IntegrationTest {
 
     @SneakyThrows
     private void runMigration() {
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionTemplate = new TransactionTemplate(transactionManager);
         try (var is = sql.getInputStream()) {
-            jdbcTemplate.update(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+            String migrationSql = StreamUtils.copyToString(is, StandardCharsets.UTF_8);
+            transactionTemplate.executeWithoutResult(s -> {
+                jdbcTemplate.update(migrationSql);
+            });
         }
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getEmptyFee() {
         var id = new MigrationCustomFee.Id(domainBuilder.timestamp(), domainBuilder.id());
-        return MigrationCustomFee.builder().id(id).allCollectorsAreExempt(false).minimumAmount(0L);
+        return MigrationCustomFee.builder().id(id).minimumAmount(0L);
     }
 
     private MigrationCustomFee.MigrationCustomFeeBuilder getFixedFee() {
@@ -281,8 +353,11 @@ class CustomFeesMigrationTest extends IntegrationTest {
             var rangeUpdate1 = Range.closedOpen(createdTimestamp, range.lowerEndpoint() - 1);
             var rangeUpdate2 = Range.closedOpen(range.lowerEndpoint() - 1, range.lowerEndpoint());
             var currentMigrationCustomFee = builder.build();
-            var updateCollectorAccountId1 = domainBuilder.id();
-            var updateCollectorAccountId2 = domainBuilder.id();
+            // Empty fees can have null collectorAccountIds.
+            var updateCollectorAccountId1 =
+                    currentMigrationCustomFee.collectorAccountId == null ? null : domainBuilder.id();
+            var updateCollectorAccountId2 =
+                    currentMigrationCustomFee.collectorAccountId == null ? null : domainBuilder.id();
             var migrationCustomFeeUpdate1 = builder.id(new Id(rangeUpdate1.lowerEndpoint(), builder.id.tokenId))
                     .collectorAccountId(updateCollectorAccountId1)
                     .build();
@@ -325,25 +400,30 @@ class CustomFeesMigrationTest extends IntegrationTest {
                     ? mappedFee
                     : domainBuilder
                             .customFee()
-                            .customize(c -> c.createdTimestamp(migrationCustomFee.id.createdTimestamp)
-                                    .tokenId(migrationCustomFee.id.tokenId)
+                            .customize(c -> c.tokenId(migrationCustomFee.id.tokenId)
                                     .fixedFees(null)
                                     .fractionalFees(null)
                                     .royaltyFees(null))
                             .get();
 
-            if (migrationCustomFee.denominatingTokenId != null && migrationCustomFee.royaltyDenominator == null) {
+            if (migrationCustomFee.collectorAccountId != null
+                    && migrationCustomFee.amount != null
+                    && migrationCustomFee.royaltyDenominator == null
+                    && migrationCustomFee.amountDenominator == null) {
                 customFee.addFixedFee(FixedFee.builder()
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                         .amount(migrationCustomFee.amount)
                         .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
-                        .denominatingTokenId(EntityId.of(migrationCustomFee.denominatingTokenId, TOKEN))
+                        .denominatingTokenId(
+                                migrationCustomFee.denominatingTokenId == null
+                                        ? null
+                                        : EntityId.of(migrationCustomFee.denominatingTokenId, TOKEN))
                         .build());
             }
             if (migrationCustomFee.amountDenominator != null) {
                 customFee.addFractionalFee(FractionalFee.builder()
                         .amount(migrationCustomFee.amount)
-                        .amountDenominator(migrationCustomFee.amountDenominator)
+                        .denominator(migrationCustomFee.amountDenominator)
                         .maximumAmount(migrationCustomFee.maximumAmount)
                         .minimumAmount(migrationCustomFee.minimumAmount)
                         .netOfTransfers(migrationCustomFee.netOfTransfers)
@@ -353,16 +433,14 @@ class CustomFeesMigrationTest extends IntegrationTest {
             }
             if (migrationCustomFee.royaltyDenominator != null) {
                 var royaltyFee = RoyaltyFee.builder()
-                        .royaltyDenominator(migrationCustomFee.royaltyDenominator)
-                        .royaltyNumerator(migrationCustomFee.royaltyNumerator)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
-                        .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt);
+                        .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
+                        .amount(migrationCustomFee.royaltyNumerator)
+                        .denominator(migrationCustomFee.royaltyDenominator)
+                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT));
                 if (migrationCustomFee.getAmount() != null) {
-                    royaltyFee.fallbackFee(FixedFee.builder()
+                    royaltyFee.fallbackFee(FallbackFee.builder()
                             .amount(migrationCustomFee.amount)
                             .denominatingTokenId(EntityId.of(migrationCustomFee.denominatingTokenId, TOKEN))
-                            .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
-                            .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                             .build());
                 }
                 customFee.addRoyaltyFee(royaltyFee.build());
@@ -428,17 +506,16 @@ class CustomFeesMigrationTest extends IntegrationTest {
     }
 
     private List<CustomFee> getHistory() {
-        String sql = "select * from custom_fee_history order by token_id, timestamp_range asc";
+        String sql =
+                "select token_id, fixed_fees, fractional_fees, royalty_fees, timestamp_range from custom_fee_history order by token_id, timestamp_range asc";
         List<CustomFee> customFees = new ArrayList<>();
         jdbcTemplate.query(sql, rs -> {
-            long createdTimestamp = rs.getLong(1);
-            long token_id = rs.getLong(2);
-            List<FixedFee> fixedFees = convertFixedFees(rs.getObject(3, PGobject.class));
-            List<FractionalFee> fractionalFees = convertFractionalFees(rs.getObject(4, PGobject.class));
-            List<RoyaltyFee> royaltyFees = convertRoyaltyFees(rs.getObject(5, PGobject.class));
-            var timestampRange = convertRange(rs.getObject(6, PGobject.class));
+            long token_id = rs.getLong(1);
+            List<FixedFee> fixedFees = convertFixedFees(rs.getObject(2, PGobject.class));
+            List<FractionalFee> fractionalFees = convertFractionalFees(rs.getObject(3, PGobject.class));
+            List<RoyaltyFee> royaltyFees = convertRoyaltyFees(rs.getObject(4, PGobject.class));
+            var timestampRange = convertRange(rs.getObject(5, PGobject.class));
             customFees.add(CustomFee.builder()
-                    .createdTimestamp(createdTimestamp)
                     .tokenId(token_id)
                     .fixedFees(fixedFees)
                     .fractionalFees(fractionalFees)
@@ -459,11 +536,16 @@ class CustomFeesMigrationTest extends IntegrationTest {
         var jsonArray = new JSONArray(pgobject.getValue());
         for (int i = 0; i < jsonArray.length(); i++) {
             var item = jsonArray.getJSONObject(i);
+            var amount = item.getString("amount");
+            var denominatingTokenId = item.getString("denominating_token_id");
             fixedFees.add(FixedFee.builder()
                     .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .amount(item.getLong("amount"))
+                    .amount(amount == "null" ? null : Long.valueOf(amount))
                     .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
-                    .denominatingTokenId(EntityId.of(item.getLong("denominating_token_id"), TOKEN))
+                    .denominatingTokenId(
+                            denominatingTokenId == "null"
+                                    ? null
+                                    : EntityId.of(item.getLong("denominating_token_id"), TOKEN))
                     .build());
         }
         return fixedFees;
@@ -481,7 +563,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
             fractionalFees.add(FractionalFee.builder()
                     .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
                     .amount(item.getLong("amount"))
-                    .amountDenominator(item.getLong("amount_denominator"))
+                    .denominator(item.getLong("denominator"))
                     .netOfTransfers(item.getBoolean("net_of_transfers"))
                     .maximumAmount(item.getLong("maximum_amount"))
                     .minimumAmount(item.getLong("minimum_amount"))
@@ -502,16 +584,14 @@ class CustomFeesMigrationTest extends IntegrationTest {
             var item = jsonArray.getJSONObject(i);
             var builder = RoyaltyFee.builder()
                     .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
-                    .royaltyDenominator(item.getLong("royalty_denominator"))
-                    .royaltyNumerator(item.getLong("royalty_numerator"));
+                    .amount(item.getLong("amount"))
+                    .denominator(item.getLong("denominator"))
+                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT));
 
-            if (item.has("fallback_fee")) {
+            if (!item.getString("fallback_fee").equals("null")) {
                 var fallBackFee = item.getJSONObject("fallback_fee");
-                builder.fallbackFee(FixedFee.builder()
-                        .allCollectorsAreExempt(fallBackFee.getBoolean("all_collectors_are_exempt"))
+                builder.fallbackFee(FallbackFee.builder()
                         .amount(fallBackFee.getLong("amount"))
-                        .collectorAccountId(EntityId.of(fallBackFee.getLong("collector_account_id"), ACCOUNT))
                         .denominatingTokenId(EntityId.of(fallBackFee.getLong("denominating_token_id"), TOKEN))
                         .build());
             }

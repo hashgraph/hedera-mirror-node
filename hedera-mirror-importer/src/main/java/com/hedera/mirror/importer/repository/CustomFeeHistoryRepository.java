@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.transaction.CustomFeeHistory;
+import com.hedera.mirror.common.domain.token.CustomFeeHistory;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;

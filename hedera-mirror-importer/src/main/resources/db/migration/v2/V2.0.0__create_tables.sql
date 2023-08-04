@@ -211,19 +211,18 @@ comment on table crypto_transfer is 'Crypto account Hbar transfers';
 -- custom_fee
 create table if not exists custom_fee
 (
-    created_timestamp bigint    not null,
     fixed_fees        jsonb,
     fractional_fees   jsonb,
     royalty_fees      jsonb,
     timestamp_range   int8range not null,
     token_id          bigint    not null
-) partition by range (created_timestamp);
+) partition by range (token_id);
 comment on table custom_fee is 'HTS Custom fees';
 
 create table if not exists custom_fee_history
 (
     like custom_fee including defaults
-) partition by range (created_timestamp);
+) partition by range (token_id);
 comment on table custom_fee_history is 'HTS Custom fees history state';
 
 -- entity

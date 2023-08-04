@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -46,7 +47,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
@@ -155,7 +155,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static CustomFee deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
-        customFee.setCreatedTimestamp(consensusTimestamp);
         customFee.setTokenId(tokenId.getId());
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
         return customFee;
@@ -163,71 +162,69 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static CustomFee nonEmptyCustomFee(long consensusTimestamp, EntityId tokenId, TokenType tokenType) {
         var customFee = new CustomFee();
-        customFee.setCreatedTimestamp(consensusTimestamp);
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
         customFee.setTokenId(tokenId.getId());
         EntityId treasury = PAYER_ACCOUNT_ID;
 
-        var fixedFee1 = new com.hedera.mirror.common.domain.transaction.FixedFee();
+        var fixedFee1 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee1.setAllCollectorsAreExempt(false);
         fixedFee1.setAmount(11L);
         fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
-        fixedFee1.setAllCollectorsAreExempt(false);
         customFee.addFixedFee(fixedFee1);
 
-        var fixedFee2 = new com.hedera.mirror.common.domain.transaction.FixedFee();
+        var fixedFee2 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee2.setAllCollectorsAreExempt(false);
         fixedFee2.setAmount(12L);
         fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-        fixedFee2.setAllCollectorsAreExempt(false);
         customFee.addFixedFee(fixedFee2);
 
-        var fixedFee3 = new com.hedera.mirror.common.domain.transaction.FixedFee();
+        var fixedFee3 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee3.setAllCollectorsAreExempt(true);
         fixedFee3.setAmount(13L);
         fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fixedFee3.setDenominatingTokenId(tokenId);
-        fixedFee3.setAllCollectorsAreExempt(true);
         customFee.addFixedFee(fixedFee3);
 
         if (tokenType == FUNGIBLE_COMMON) {
             // fractional fees only apply for fungible tokens
-            var fractionalFee1 = new com.hedera.mirror.common.domain.transaction.FractionalFee();
+            var fractionalFee1 = new com.hedera.mirror.common.domain.token.FractionalFee();
+            fractionalFee1.setAllCollectorsAreExempt(false);
             fractionalFee1.setAmount(14L);
-            fractionalFee1.setAmountDenominator(31L);
             fractionalFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            fractionalFee1.setDenominator(31L);
             fractionalFee1.setMinimumAmount(1L);
             fractionalFee1.setMaximumAmount(100L);
             fractionalFee1.setNetOfTransfers(true);
-            fractionalFee1.setAllCollectorsAreExempt(false);
             customFee.addFractionalFee(fractionalFee1);
 
-            var fractionalFee2 = new com.hedera.mirror.common.domain.transaction.FractionalFee();
+            var fractionalFee2 = new com.hedera.mirror.common.domain.token.FractionalFee();
+            fractionalFee2.setAllCollectorsAreExempt(true);
             fractionalFee2.setAmount(15L);
-            fractionalFee2.setAmountDenominator(32L);
             fractionalFee2.setCollectorAccountId(treasury);
+            fractionalFee2.setDenominator(32L);
             fractionalFee2.setMinimumAmount(10L);
             fractionalFee2.setMaximumAmount(110L);
             fractionalFee2.setNetOfTransfers(false);
-            fractionalFee2.setAllCollectorsAreExempt(true);
             customFee.addFractionalFee(fractionalFee2);
         } else {
             // royalty fees only apply for non-fungible tokens
-            var royaltyFee1 = new com.hedera.mirror.common.domain.transaction.RoyaltyFee();
-            royaltyFee1.setRoyaltyNumerator(14L);
-            royaltyFee1.setRoyaltyDenominator(31L);
-            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            var royaltyFee1 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee1.setAllCollectorsAreExempt(false);
+            royaltyFee1.setAmount(14L);
+            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            royaltyFee1.setDenominator(31L);
             customFee.addRoyaltyFee(royaltyFee1);
 
             // with fallback fee
-            var royaltyFee2 = new com.hedera.mirror.common.domain.transaction.RoyaltyFee();
-            royaltyFee2.setRoyaltyNumerator(15L);
-            royaltyFee2.setRoyaltyDenominator(32L);
-            royaltyFee2.setCollectorAccountId(treasury);
+            var royaltyFee2 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee2.setAllCollectorsAreExempt(true);
-            // fallback fee in form of fixed fee
-            var fallBackFee = new com.hedera.mirror.common.domain.transaction.FixedFee();
+            royaltyFee2.setAmount(15L);
+            royaltyFee2.setCollectorAccountId(treasury);
+            royaltyFee2.setDenominator(32L);
+            royaltyFee2.setAllCollectorsAreExempt(true);
+            var fallBackFee = new com.hedera.mirror.common.domain.token.FallbackFee();
             fallBackFee.setAmount(103L);
-            fallBackFee.setCollectorAccountId(treasury);
             fallBackFee.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
             royaltyFee2.setFallbackFee(fallBackFee);
             customFee.addRoyaltyFee(royaltyFee2);
@@ -964,7 +961,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // then
         assertEntity(expectedEntity);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
-        newCustomFee.setCreatedTimestamp(CREATE_TIMESTAMP);
         deletedDbCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
         assertCustomFeesInDb(List.of(newCustomFee), List.of(deletedDbCustomFee));
     }
@@ -3548,7 +3544,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 if (result.getRoyaltyFees() != null) {
                     assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
                 }
-                assertThat(fee.getCreatedTimestamp()).isEqualTo(result.getCreatedTimestamp());
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
                 assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
                 assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
             });
@@ -3566,7 +3562,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 if (result.getRoyaltyFees() != null) {
                     assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
                 }
-                assertThat(fee.getCreatedTimestamp()).isEqualTo(result.getCreatedTimestamp());
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
                 assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
                 assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
             });
@@ -3749,7 +3745,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
                         .setFractionalAmount(Fraction.newBuilder()
                                 .setNumerator(fractionalFee.getAmount())
-                                .setDenominator(fractionalFee.getAmountDenominator()))
+                                .setDenominator(fractionalFee.getDenominator()))
                         .setMaximumAmount(maximumAmount)
                         .setMinimumAmount(fractionalFee.getMinimumAmount())
                         .setNetOfTransfers(fractionalFee.isNetOfTransfers()));
@@ -3763,11 +3759,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
                 RoyaltyFee.Builder protoRoyaltyFee = RoyaltyFee.newBuilder()
                         .setExchangeValueFraction(Fraction.newBuilder()
-                                .setNumerator(royaltyFee.getRoyaltyNumerator())
-                                .setDenominator(royaltyFee.getRoyaltyDenominator()));
+                                .setNumerator(royaltyFee.getAmount())
+                                .setDenominator(royaltyFee.getDenominator()));
                 if (royaltyFee.getFallbackFee() != null) {
+                    var amount = royaltyFee.getFallbackFee().getAmount();
+                    var denominatingTokenId = royaltyFee.getFallbackFee().getDenominatingTokenId();
                     protoRoyaltyFee.setFallbackFee(
-                            convertFixedFee(royaltyFee.getFallbackFee(), customFee.getTokenId()));
+                            convertFixedFee(amount, denominatingTokenId, customFee.getTokenId()));
                 }
 
                 protoCustomFee.setRoyaltyFee(protoRoyaltyFee);
@@ -3782,7 +3780,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
                     protoCustomFee.setAllCollectorsAreExempt(fixedFee.isAllCollectorsAreExempt());
                     protoCustomFee.setFeeCollectorAccountId(convertAccountId(fixedFee.getCollectorAccountId()));
-                    protoCustomFee.setFixedFee(convertFixedFee(fixedFee, customFee.getTokenId()));
+                    protoCustomFee.setFixedFee(convertFixedFee(
+                            fixedFee.getAmount(), fixedFee.getDenominatingTokenId(), customFee.getTokenId()));
                     protoCustomFees.add(protoCustomFee.build());
                 }
             }
@@ -3791,10 +3790,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         return protoCustomFees;
     }
 
-    private FixedFee.Builder convertFixedFee(
-            com.hedera.mirror.common.domain.transaction.FixedFee fixedFee, long tokenId) {
-        FixedFee.Builder protoFixedFee = FixedFee.newBuilder().setAmount(fixedFee.getAmount());
-        EntityId denominatingTokenId = fixedFee.getDenominatingTokenId();
+    private FixedFee.Builder convertFixedFee(Long amount, EntityId denominatingTokenId, long tokenId) {
+        FixedFee.Builder protoFixedFee = FixedFee.newBuilder().setAmount(amount);
         if (denominatingTokenId != null) {
             if (denominatingTokenId.equals(tokenId)) {
                 protoFixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());

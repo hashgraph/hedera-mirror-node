@@ -90,8 +90,6 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 -- custom_fee
 alter table custom_fee
     add constraint custom_fee__pk primary key (token_id);
-create index if not exists custom_fee__token_timestamp
-    on custom_fee (token_id desc, created_timestamp desc);
 
 -- custom_fee_history
 create index if not exists custom_fee_history__token_id_timestamp_range
