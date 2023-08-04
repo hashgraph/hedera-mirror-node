@@ -19,4 +19,4 @@ package com.hedera.services.store.contracts.precompile.codec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.function.Predicate;
 
-public record TransferParams(int functionId, Predicate<AccountID> setExistsLambda) implements BodyParams {}
+public record TransferParams(int functionId, Predicate<AccountID> exists) implements BodyParams {}
