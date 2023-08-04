@@ -53,6 +53,7 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
@@ -119,6 +120,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
+    private final Collection<NetworkFreeze> networkFreezes;
     private final Collection<NetworkStake> networkStakes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<Nft> nfts;
@@ -187,9 +189,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
+        networkFreezes = new ArrayList<>();
+        networkStakes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
         nfts = new ArrayList<>();
-        networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
@@ -351,6 +354,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onNetworkFreeze(NetworkFreeze networkFreeze) {
+        networkFreezes.add(networkFreeze);
+    }
+
+    @Override
     public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
         networkStakes.add(networkStake);
     }
@@ -502,6 +510,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
+            networkFreezes.clear();
             networkStakes.clear();
             nftState.clear();
             nfts.clear();
@@ -548,6 +557,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
+            batchPersister.persist(networkFreezes);
             batchPersister.persist(networkStakes);
             batchPersister.persist(nodeStakes);
             batchPersister.persist(prngs);

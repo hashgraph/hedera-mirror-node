@@ -97,6 +97,7 @@ import java.util.function.UnaryOperator;
  * </ol>
  */
 public class HederaTokenStore {
+
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
     public static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
     private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;

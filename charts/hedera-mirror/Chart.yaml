@@ -29,11 +29,11 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 11.5.2
+    version: 11.8.1
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 17.10.2
+    version: 17.14.5
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
