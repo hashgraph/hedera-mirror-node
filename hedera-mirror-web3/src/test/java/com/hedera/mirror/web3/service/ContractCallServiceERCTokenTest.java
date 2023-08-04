@@ -41,10 +41,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
-        if (ercFunction == ErcContractReadOnlyFunctions.TOKEN_URI) {
-            assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
-            return;
-        }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
@@ -113,7 +109,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
         OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {OWNER_ADDRESS}),
         EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
-        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L}, null);
+        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L}, new String[] {"NFT_METADATA_URI"});
 
         private final String name;
         private final Object[] functionParameters;
