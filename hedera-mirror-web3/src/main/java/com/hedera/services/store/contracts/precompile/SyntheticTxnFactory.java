@@ -33,6 +33,7 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
@@ -488,6 +489,26 @@ public class SyntheticTxnFactory {
         if (updateWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateExpiryInfo(final TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(expiryInfoWrapper.tokenID());
+
+        if (expiryInfoWrapper.expiry().second() != 0) {
+            builder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(expiryInfoWrapper.expiry().second())
+                    .build());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewAccount() != null) {
+            builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
         }
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);

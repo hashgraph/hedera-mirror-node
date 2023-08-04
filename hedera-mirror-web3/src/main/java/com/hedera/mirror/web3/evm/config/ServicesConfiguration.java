@@ -34,6 +34,7 @@ import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceU
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.services.fees.calculation.token.txns.TokenUpdateResourceUsage;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -68,6 +69,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -150,6 +152,11 @@ public class ServicesConfiguration {
     }
 
     @Bean
+    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
+        return new TokenUpdateResourceUsage(estimatorFactory);
+    }
+
+    @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
             HbarCentExchange hbarCentExchange,
             UsagePricesProvider usagePricesProvider,
@@ -168,6 +175,9 @@ public class ServicesConfiguration {
             }
             if (estimator.toString().contains("TokenDelete")) {
                 txnUsageEstimators.put(HederaFunctionality.TokenDelete, List.of(estimator));
+            }
+            if (estimator.toString().contains("TokenUpdate")) {
+                txnUsageEstimators.put(HederaFunctionality.TokenUpdate, List.of(estimator));
             }
         }
 
@@ -574,5 +584,20 @@ public class ServicesConfiguration {
             ContextOptionValidator contextOptionValidator) {
         return new TokenUpdatePrecompile(
                 pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
+    }
+
+    @Bean
+    UpdateTokenExpiryInfoPrecompile updateTokenExpiryInfoPrecompile(
+            TokenUpdateLogic tokenUpdateLogic,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            ContextOptionValidator contextOptionValidator,
+            SyntheticTxnFactory syntheticTxnFactory,
+            PrecompilePricingUtils precompilePricingUtils) {
+        return new UpdateTokenExpiryInfoPrecompile(
+                tokenUpdateLogic,
+                mirrorNodeEvmProperties,
+                contextOptionValidator,
+                syntheticTxnFactory,
+                precompilePricingUtils);
     }
 }
