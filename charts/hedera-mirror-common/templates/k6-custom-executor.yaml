@@ -5,11 +5,11 @@ metadata:
   name: k6-custom-executor
   namespace: {{ .Values.testkube.namespace }}
 spec:
-  command: ["k6", "run"]
+  command: [ "k6", "run" ]
   executor_type: container
   features:
     - artifacts
-  image: loadimpact/k6:0.42.0
+  image: loadimpact/k6:0.45.0
   types:
     - k6-custom/script
 {{- end }}
