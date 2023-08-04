@@ -29,7 +29,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
@@ -268,7 +267,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         setup();
 
         // when
-        tokenAccountBalanceMigration.reRunMigration(new InitializeBalanceEvent(this));
+        tokenAccountBalanceMigration.reRunMigration();
 
         // then
         assertThat(tokenAccountRepository.findAll())

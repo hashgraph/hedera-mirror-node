@@ -22,8 +22,8 @@ import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Named
 public class TokenAccountBalanceMigration extends RepeatableMigration {
@@ -92,9 +92,9 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
         log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
 
-    @EventListener
-    public void reRunMigration(InitializeBalanceEvent event) {
-        log.info("Running this on InitializeBalanceEvent created at {}", event.getTimestamp());
+    @TransactionalEventListener(classes = InitializeBalanceEvent.class)
+    public void reRunMigration() {
+        log.info("Running TokenAccountBalanceMigration on InitializeBalanceEvent");
         doMigrate();
     }
 }

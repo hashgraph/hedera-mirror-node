@@ -29,7 +29,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -188,7 +187,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         setup();
 
         // when
-        initializeEntityBalanceMigration.reRunMigration(new InitializeBalanceEvent(this));
+        initializeEntityBalanceMigration.reRunMigration();
 
         // then
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);

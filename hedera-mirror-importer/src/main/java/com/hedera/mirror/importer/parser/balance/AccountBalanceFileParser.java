@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -89,7 +88,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
         long count = 0L;
-        AccountBalanceFile lastBalanceFile = publishInitializeAccountBalanceEvent();
+        publishInitializeAccountBalanceEvent();
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
@@ -128,16 +127,13 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         streamFileListener.onEnd(accountBalanceFile);
         streamFileRepository.save(accountBalanceFile);
 
-        last.compareAndSet(lastBalanceFile, accountBalanceFile);
+        last.set(accountBalanceFile);
     }
 
-    @Nullable
-    private AccountBalanceFile publishInitializeAccountBalanceEvent() {
-        var lastBalanceFile = last.get();
+    private void publishInitializeAccountBalanceEvent() {
         // If no account balance file has been processed since last startup.
-        if (lastBalanceFile == null) {
+        if (last.get() == null) {
             applicationEventPublisher.publishEvent(new InitializeBalanceEvent(this));
         }
-        return lastBalanceFile;
     }
 }

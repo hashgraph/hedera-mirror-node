@@ -22,8 +22,8 @@ import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Named
 public class InitializeEntityBalanceMigration extends RepeatableMigration {
@@ -90,7 +90,7 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
         log.info("Initialized {} entities balance in {}", count, stopwatch);
     }
 
-   @TransactionalEventListener(classes = InitializeBalanceEvent.class)
+    @TransactionalEventListener(classes = InitializeBalanceEvent.class)
     public void reRunMigration() {
         log.info("Re-running the InitializeEntityBalanceMigration on InitializeBalanceEvent");
         doMigrate();

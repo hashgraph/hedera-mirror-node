@@ -24,6 +24,7 @@ import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.util.Version;
@@ -33,6 +34,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration implements RecordStreamFileListener {
     // 10158
     public static final Version HAPI_VERSION_0_37_0 = new Version(0, 37, 0);
+    private static final AtomicBoolean reRanMigration = new AtomicBoolean(false);
     private final RecordFileRepository recordFileRepository;
 
     private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
@@ -146,25 +148,17 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration i
     }
 
     @Override
-    public void onStart() throws ImporterException {
-        // Not Applicable
-    }
-
-    @Override
     public void onEnd(RecordFile streamFile) throws ImporterException {
         if (streamFile == null) {
             return;
         }
-        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0)) {
-            var latestFile = recordFileRepository.findLatestWithOffset(1).orElse(null);
+        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0) && !reRanMigration.get()) {
+            var lastRecordFile = recordFileRepository.findLatestWithOffset(1);
+            var latestFile = lastRecordFile.orElse(null);
             if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0)) {
                 doMigrate();
+                reRanMigration.set(true);
             }
         }
-    }
-
-    @Override
-    public void onError() {
-        // Not Applicable
     }
 }

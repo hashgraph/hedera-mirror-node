@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -44,6 +45,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         implements RecordStreamFileListener {
 
     public static final Version HAPI_VERSION_0_38_10 = new Version(0, 38, 10);
+    private static final AtomicBoolean reRanMigration = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
@@ -150,27 +152,19 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    public void onStart() throws ImporterException {
-        // Not Applicable
-    }
-
-    @Override
     public void onEnd(RecordFile streamFile) throws ImporterException {
         if (streamFile == null) {
             return;
         }
 
-        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_38_10)) {
-            var latestFile = recordFileRepository.findLatestWithOffset(1);
-            if (latestFile.filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)).isPresent()) {
+        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_38_10) && !reRanMigration.get()) {
+            var lastRecordFile = recordFileRepository.findLatestWithOffset(1);
+            var latestFile = lastRecordFile.orElse(null);
+            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)) {
                 migrateAsync();
+                reRanMigration.set(true);
             }
         }
-    }
-
-    @Override
-    public void onError() {
-        // Not Applicable
     }
 
     private enum TRANSFER_TYPE {
