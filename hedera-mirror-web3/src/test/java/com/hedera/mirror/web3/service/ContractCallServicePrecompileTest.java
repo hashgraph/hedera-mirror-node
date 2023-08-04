@@ -377,7 +377,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
         GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
         GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
-            1000L, FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY, 1800L
+            1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
         });
         private final String name;
         private final Object[] functionParameters;
