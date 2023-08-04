@@ -114,6 +114,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         if (last.get() == null) {
             last.set(lastStreamFileFromDB.get());
+            last.get().setItems(null);
         }
 
         var lastStreamFile = lastStreamFileFromDB.get();
