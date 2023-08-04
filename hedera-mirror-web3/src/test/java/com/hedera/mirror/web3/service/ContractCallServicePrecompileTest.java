@@ -375,7 +375,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
                 new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
-        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {});
+        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ADDRESS});
 
         private final String name;
         private final Object[] functionParameters;

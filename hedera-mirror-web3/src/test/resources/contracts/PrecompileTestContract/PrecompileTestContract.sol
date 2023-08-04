@@ -127,4 +127,9 @@ contract PrecompileTestContract is HederaTokenService {
         return key;
     }
 
+    function htsGetApproved(address token, uint256 serialNumber) public returns (address approved) {
+        int _responseCode;
+        (_responseCode, approved) = HederaTokenService.getApproved(token, serialNumber);
+    }
+
 }
