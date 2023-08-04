@@ -380,7 +380,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         HTS_ALLOWANCE(
                 "htsAllowance",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS},
-                new Object[] {13L});
+                new Object[] {13L}),
+        HTS_IS_APPROVED_FOR_ALL(
+                "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
+                });
 
         private final String name;
         private final Object[] functionParameters;
