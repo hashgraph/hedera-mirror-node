@@ -16,18 +16,11 @@
 
 package com.hedera.mirror.test.e2e.acceptance.props;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // for builder
-@SuperBuilder
 @Data
-@NoArgsConstructor
-public class MirrorTransfer {
-    private String account;
+public class MirrorTokenAllowance extends MirrorTransferAllowance {
+    private String tokenId;
     private long amount;
-    private boolean isApproval;
+    private long amountGranted;
 }

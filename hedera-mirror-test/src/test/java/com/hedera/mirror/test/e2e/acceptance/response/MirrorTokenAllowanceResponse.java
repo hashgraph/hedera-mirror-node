@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAllowance;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransferAllowance;
+import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE) // for builder
-@SuperBuilder
 @Data
-@NoArgsConstructor
-public class MirrorTransfer {
-    private String account;
-    private long amount;
-    private boolean isApproval;
+public class MirrorTokenAllowanceResponse extends MirrorTransferAllowance {
+    List<MirrorTokenAllowance> allowances;
 }
