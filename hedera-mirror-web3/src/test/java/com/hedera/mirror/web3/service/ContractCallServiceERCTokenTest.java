@@ -20,21 +20,27 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @ParameterizedTest
-    @EnumSource(ErcContractReadOnlyFunctions.class)
-    void ercReadOnlyPrecompileOperationsTest(ErcContractReadOnlyFunctions ercFunction) {
+    @MethodSource("ercContractFunctionArgumentsProvider")
+    void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
+        final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
+                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
+
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
@@ -42,10 +48,12 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ErcContractModificationFunctions.class)
-    void supportedErcModificationPrecompileOperationsTest(ErcContractModificationFunctions ercFunction) {
+    @MethodSource("ercContractFunctionArgumentsProvider")
+    void supportedErcReadOnlyPrecompileOperationsTest(
+            final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
+        final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
+                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
@@ -57,12 +65,20 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
-    @Test
-    void metadataOf() {
-        final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ERC_ABI_PATH, NFT_ADDRESS, 1L);
-        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
+    @ParameterizedTest
+    @EnumSource(ErcContractModificationFunctions.class)
+    void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @Test
@@ -92,11 +108,16 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         BALANCE_OF_WITH_ALIAS("balanceOf", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Long[] {12L}),
         ERC_NAME("name", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new String[] {"Hbars"}),
         OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 1L}, new Address[] {OWNER_ADDRESS}),
-        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO});
+        EMPTY_OWNER_OF("getOwnerOf", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
+        TOKEN_URI("tokenURI", new Object[] {NFT_ADDRESS, 1L}, new String[] {"NFT_METADATA_URI"});
 
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
+
+        public String getName(final boolean isStatic) {
+            return isStatic ? name : name + "NonStatic";
+        }
     }
 
     @RequiredArgsConstructor
@@ -115,5 +136,10 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
         private final String name;
         private final Object[] functionParameters;
+    }
+
+    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
+        return Arrays.stream(ErcContractReadOnlyFunctions.values())
+                .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
     }
 }
