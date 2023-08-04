@@ -8,6 +8,9 @@ Feature: EstimateGas Contract Base Coverage Feature
     Given I successfully create and verify a non fungible token for estimateGas precompile tests
     Given I mint and verify a new nft
     And I set lower deviation at 5% and upper deviation at 20%
+    #Then I call estimateGas with updateTokenExpiryInfo function
+#    Then I call estimateGas with updateTokenInfo function
+#    Then I call estimateGas with updateTokenKeys function
     Then I call estimateGas with associate function for fungible token
     Then I call estimateGas with associate function for NFT
     Then I call estimateGas with dissociate token function without association for fungible token
@@ -84,10 +87,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with unpause function for NFT
     Then I call estimateGas for nested pause and unpause function
     Then I call estimateGas for nested pause, unpause NFT function
-#   Then I call estimateGas with updateTokenExpiryInfo function
-    Then I call estimateGas with updateTokenInfo function
-#    Then I call estimateGas with updateTokenKeys function
-#    Then I call estimateGas with getTokenExpiryInfo function
+    Then I call estimateGas with getTokenExpiryInfo function
     Then I call estimateGas with isToken function
     Then I call estimateGas with getTokenKey function for supply
     Then I call estimateGas with getTokenKey function for KYC
@@ -98,7 +98,21 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with getTokenKey function for pause
     #Then I call estimateGas with allowance function for fungible token
 #    Then I call estimateGas with allowance function for NFT
+    Then I call estimateGas with ERC allowance function for fungible token
 #    Then I call estimateGas with getApproved function for NFT
 #    Then I call estimateGas with getApproved function for fungible token
-#    Then I call estimateGas with isApprovedForALl function
-    Then I call estimateGas with name function
+#    Then I call estimateGas with isApprovedForAll function
+    Then I call estimateGas with name function for fungible token
+    Then I call estimateGas with name function for NFT
+    Then I call estimateGas with symbol function for fungible token
+    Then I call estimateGas with symbol function for NFT
+    Then I call estimateGas with decimals function for fungible token
+    Then I call estimateGas with totalSupply function for fungible token
+    Then I call estimateGas with totalSupply function for fungible token
+    Then I call estimateGas with decimals function for fungible token
+    Then I call estimateGas with totalSupply function for fungible token
+    Then I call estimateGas with totalSupply function for NFT
+    Then I call estimateGas with balanceOf function for fungible token
+    Then I call estimateGas with balanceOf function for NFT
+    Then I call estimateGas with ownerOf function for NFT
+    Then I call estimateGas with tokenURI function for NFT
