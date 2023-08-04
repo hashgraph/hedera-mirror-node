@@ -444,18 +444,17 @@ zfs:
         operator: Equal
         value: "true"
     additionalVolumes:
-      node:
+      - name: node
         hostPath:
           path: /
-      scripts:
+      - name: scripts
         configMap:
           name: mirror-zfs-init
           defaultMode: 0744
     initContainers:
-      disk-initializer:
+      - name: label-wait
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
         imagePullPolicy: IfNotPresent
-        name: label-wait
         command: ["/scripts/label-wait.sh"]
         env:
           - name: ROOT_MOUNT_DIR
