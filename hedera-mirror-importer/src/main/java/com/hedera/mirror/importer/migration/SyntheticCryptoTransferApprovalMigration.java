@@ -161,8 +161,8 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         }
 
         if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_38_10)) {
-            var latestFile = recordFileRepository.findLatestWithOffset(1).orElse(null);
-            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1);
+            if (latestFile.filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)).isPresent()) {
                 migrateAsync();
             }
         }
