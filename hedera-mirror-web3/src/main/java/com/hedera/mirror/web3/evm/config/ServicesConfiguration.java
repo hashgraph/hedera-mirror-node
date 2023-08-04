@@ -70,6 +70,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -584,6 +585,21 @@ public class ServicesConfiguration {
             ContextOptionValidator contextOptionValidator) {
         return new TokenUpdatePrecompile(
                 pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
+    }
+
+    @Bean
+    UpdateTokenExpiryInfoPrecompile updateTokenExpiryInfoPrecompile(
+            TokenUpdateLogic tokenUpdateLogic,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            ContextOptionValidator contextOptionValidator,
+            SyntheticTxnFactory syntheticTxnFactory,
+            PrecompilePricingUtils precompilePricingUtils) {
+        return new UpdateTokenExpiryInfoPrecompile(
+                tokenUpdateLogic,
+                mirrorNodeEvmProperties,
+                contextOptionValidator,
+                syntheticTxnFactory,
+                precompilePricingUtils);
     }
 
     @Bean

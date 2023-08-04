@@ -31,6 +31,7 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import jakarta.inject.Named;
 import java.io.FileInputStream;
@@ -80,6 +81,7 @@ public class FunctionEncodeDecoder {
     public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
+    private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
     public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
@@ -193,6 +195,8 @@ public class FunctionEncodeDecoder {
                     encodeToken((TokenCreateWrapper) parameters[0]),
                     encodeFixedFee((FixedFeeWrapper) parameters[1]),
                     encodeRoyaltyFee((RoyaltyFeeWrapper) parameters[2]));
+            case ADDRESS_EXPIRY -> Tuple.of(
+                    convertAddress((Address) parameters[0]), encodeTokenExpiry((TokenExpiryWrapper) parameters[1]));
             case TRIPLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     Arrays.stream(((Address[]) parameters[1]))
@@ -329,5 +333,12 @@ public class FunctionEncodeDecoder {
                                     ? EntityIdUtils.asTypedEvmAddress(royaltyFeeWrapper.feeCollector())
                                     : Address.ZERO))
         };
+    }
+
+    private Tuple encodeTokenExpiry(TokenExpiryWrapper tokenExpiryWrapper) {
+        return Tuple.of(
+                tokenExpiryWrapper.second(),
+                convertAddress(EntityIdUtils.asTypedEvmAddress(tokenExpiryWrapper.autoRenewAccount())),
+                tokenExpiryWrapper.autoRenewPeriod());
     }
 }

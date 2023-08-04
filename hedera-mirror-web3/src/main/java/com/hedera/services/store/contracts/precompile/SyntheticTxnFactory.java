@@ -33,6 +33,7 @@ import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.SetApprovalForAllWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.codec.UnpauseWrapper;
@@ -148,10 +149,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     * <p>
+     *
      * Differences with the original:
-     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
-     */
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
     public TransactionBody.Builder createFungibleApproval(
             @NonNull final ApproveWrapper approveWrapper, @NonNull Id ownerId) {
         return createNonfungibleApproval(approveWrapper, ownerId, null);
@@ -159,10 +160,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     * <p>
+     *
      * Differences with the original:
-     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
-     */
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
     public TransactionBody.Builder createNonfungibleApproval(
             final ApproveWrapper approveWrapper, @Nullable final Id ownerId, @Nullable final Id operatorId) {
         final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
@@ -191,10 +192,10 @@ public class SyntheticTxnFactory {
 
     /**
      * Copied Logic type from hedera-services.
-     * <p>
+     *
      * Differences with the original:
-     * 1. Using {@link Id} instead of EntityId as types for the owner and operator
-     */
+     *  1. Using {@link Id} instead of EntityId as types for the owner and operator
+     * */
     public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final Id owner) {
         final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
         builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder()
@@ -531,6 +532,26 @@ public class SyntheticTxnFactory {
         if (updateWrapper.expiry().autoRenewPeriod() != 0) {
             builder.setAutoRenewPeriod(
                     Duration.newBuilder().setSeconds(updateWrapper.expiry().autoRenewPeriod()));
+        }
+
+        return TransactionBody.newBuilder().setTokenUpdate(builder);
+    }
+
+    public TransactionBody.Builder createTokenUpdateExpiryInfo(final TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+        final var builder = TokenUpdateTransactionBody.newBuilder();
+        builder.setToken(expiryInfoWrapper.tokenID());
+
+        if (expiryInfoWrapper.expiry().second() != 0) {
+            builder.setExpiry(Timestamp.newBuilder()
+                    .setSeconds(expiryInfoWrapper.expiry().second())
+                    .build());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewAccount() != null) {
+            builder.setAutoRenewAccount(expiryInfoWrapper.expiry().autoRenewAccount());
+        }
+        if (expiryInfoWrapper.expiry().autoRenewPeriod() != 0) {
+            builder.setAutoRenewPeriod(
+                    Duration.newBuilder().setSeconds(expiryInfoWrapper.expiry().autoRenewPeriod()));
         }
 
         return TransactionBody.newBuilder().setTokenUpdate(builder);
