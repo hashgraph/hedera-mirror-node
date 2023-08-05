@@ -78,6 +78,7 @@ public class FunctionEncodeDecoder {
     private static final String TOKEN_FIXED_FEE_FRACTIONAL_FEE =
             "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
     private static final String ADDRESS_ARRAY_OF_ADDRESSES_ARRAY_OF_INT64 = "(address,address[],int64[])";
+    private static final String UINT32_ADDRESS_UINT32 = "((uint32,address,uint32))";
     public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
@@ -218,6 +219,8 @@ public class FunctionEncodeDecoder {
                             .toList()
                             .toArray(new com.esaulpaugh.headlong.abi.Address[((Address[]) parameters[1]).length]),
                     parameters[2]);
+            case UINT32_ADDRESS_UINT32 -> Tuple.of(
+                    Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
             default -> Tuple.EMPTY;
         };
     }
