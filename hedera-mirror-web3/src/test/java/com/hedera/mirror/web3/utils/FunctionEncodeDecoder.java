@@ -244,6 +244,8 @@ public class FunctionEncodeDecoder {
                             })
                             .toList()
                             .toArray(new Tuple[((Object[]) parameters[1]).length]));
+            case UINT32_ADDRESS_UINT32 -> Tuple.of(
+                    Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
             default -> Tuple.EMPTY;
         };
     }
