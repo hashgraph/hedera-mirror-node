@@ -444,15 +444,15 @@ zfs:
         operator: Equal
         value: "true"
     additionalVolumes:
-      - name: node
+      node:
         hostPath:
           path: /
-      - name: scripts
+      scripts:
         configMap:
           name: "{{ .Release.Name }}-zfs-init"
           defaultMode: 0744
     initContainers:
-      - name: label-wait
+      label-wait:
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
         imagePullPolicy: IfNotPresent
         command: ["/scripts/label-wait.sh"]
