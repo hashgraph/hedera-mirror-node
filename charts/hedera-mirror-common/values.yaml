@@ -449,7 +449,7 @@ zfs:
           path: /
       - name: scripts
         configMap:
-          name: mirror-zfs-init
+          name: "{{ .Release.Name }}-zfs-init"
           defaultMode: 0744
     initContainers:
       - name: label-wait
