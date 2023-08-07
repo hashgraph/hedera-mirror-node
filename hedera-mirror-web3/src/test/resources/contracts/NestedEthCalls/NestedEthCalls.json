@@ -39,11 +39,6 @@
         "internalType": "address",
         "name": "treasury",
         "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "isErc20",
-        "type": "bool"
       }
     ],
     "name": "burnTokenGetTotalSupplyAndBalanceOfTreasury",
@@ -72,11 +67,6 @@
         "internalType": "address",
         "name": "treasury",
         "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "isErc20",
-        "type": "bool"
       }
     ],
     "name": "mintTokenGetTotalSupplyAndBalanceOfTreasury",
