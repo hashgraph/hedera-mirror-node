@@ -670,7 +670,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(hedera_mirror_transaction_size_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type) / sum(rate(hedera_mirror_transaction_size_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type)",
+          "expr": "sum(rate(hedera_mirror_transaction_size_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type) / sum(rate(hedera_mirror_transaction_size_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type) > 0",
           "interval": "1m",
           "legendFormat": "{{ type }}",
           "refId": "B"
