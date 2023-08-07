@@ -399,7 +399,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse transferFungibleToken(
             TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount) {
-        return transferFungibleToken(tokenId, null, sender, recipient, amount, false);
+        return transferFungibleToken(tokenId, sender.getAccountId(), sender, recipient, amount, false);
     }
 
     public NetworkTransactionResponse transferFungibleToken(

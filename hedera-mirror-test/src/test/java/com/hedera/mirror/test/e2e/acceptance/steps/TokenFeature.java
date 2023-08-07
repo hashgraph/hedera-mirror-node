@@ -471,25 +471,21 @@ public class TokenFeature extends AbstractFeature {
         var tokenId = tokenIds.get(tokenIndex);
         var spenderAccountId = senders.get(senderIndex);
         var recipientAccountId = recipients.get(recipientIndex).getAccountId();
+        var ownerAccountId = accountClient.getClient().getOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenId,
-                accountClient.getClient().getOperatorAccountId(),
-                spenderAccountId,
-                recipientAccountId,
-                amount,
-                true);
+                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("the mirror node REST API should confirm the approved transfer of {long} tokens")
     public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount) {
-        var tokenId = tokenIds.get(0).toString();
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
+        var tokenId = tokenIds.get(0).toString();
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
