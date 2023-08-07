@@ -21,6 +21,7 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.AbstractFee;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
@@ -92,49 +93,49 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
         }
 
         for (var protoCustomFee : protoCustomFees) {
-            var allCollectorsAreExempt = protoCustomFee.getAllCollectorsAreExempt();
-            var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
             var feeCase = protoCustomFee.getFeeCase();
-            boolean chargedInAttachedToken;
+            AbstractFee fee;
+            EntityId denominatingTokenId = null;
 
             switch (feeCase) {
                 case FIXED_FEE:
                     var fixedFee = parseFixedFee(protoCustomFee.getFixedFee(), tokenId);
-                    fixedFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
-                    fixedFee.setCollectorAccountId(collector);
                     customFee.addFixedFee(fixedFee);
-                    recordItem.addEntityId(fixedFee.getDenominatingTokenId());
-                    chargedInAttachedToken = fixedFee.isChargedInToken(tokenId);
+                    denominatingTokenId = fixedFee.getDenominatingTokenId();
+                    fee = fixedFee;
                     break;
                 case FRACTIONAL_FEE:
                     // Only FT can have fractional fee
                     var fractionalFee = parseFractionalFee(protoCustomFee.getFractionalFee());
-                    fractionalFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
-                    fractionalFee.setCollectorAccountId(collector);
                     customFee.addFractionalFee(fractionalFee);
-                    chargedInAttachedToken = fractionalFee.isChargedInToken(tokenId);
+                    fee = fractionalFee;
                     break;
                 case ROYALTY_FEE:
                     // Only NFT can have royalty fee, and fee can't be paid in NFT. Thus, though royalty fee has a
                     // fixed fee fallback, the denominating token of the fixed fee can't be the NFT itself.
                     var royaltyFee = parseRoyaltyFee(protoCustomFee.getRoyaltyFee(), tokenId);
-                    royaltyFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
-                    royaltyFee.setCollectorAccountId(collector);
                     customFee.addRoyaltyFee(royaltyFee);
                     var fallbackFee = royaltyFee.getFallbackFee();
                     if (fallbackFee != null && !EntityId.isEmpty(fallbackFee.getDenominatingTokenId())) {
-                        recordItem.addEntityId(fallbackFee.getDenominatingTokenId());
+                        denominatingTokenId = fallbackFee.getDenominatingTokenId();
                     }
-                    chargedInAttachedToken = royaltyFee.isChargedInToken(tokenId);
+
+                    fee = royaltyFee;
                     break;
                 default:
                     log.error(RECOVERABLE_ERROR + "Invalid CustomFee FeeCase at {}: {}", consensusTimestamp, feeCase);
                     continue;
             }
 
+            var allCollectorsAreExempt = protoCustomFee.getAllCollectorsAreExempt();
+            var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
+            fee.setAllCollectorsAreExempt(allCollectorsAreExempt);
+            fee.setCollectorAccountId(collector);
+            recordItem.addEntityId(denominatingTokenId);
+
             // If it's from a token create transaction, and the fee is charged in the attached token, the attached
             // token and the collector should have been auto associated
-            if (transaction.getType() == TOKENCREATION.getProtoId() && chargedInAttachedToken) {
+            if (transaction.getType() == TOKENCREATION.getProtoId() && fee.isChargedInToken(tokenId)) {
                 autoAssociatedAccounts.add(collector);
             }
 
