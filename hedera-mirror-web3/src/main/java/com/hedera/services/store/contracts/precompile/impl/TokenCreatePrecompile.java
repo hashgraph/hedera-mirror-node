@@ -40,7 +40,6 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
@@ -48,8 +47,11 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -303,16 +305,26 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public void handleSentHbars(final MessageFrame frame) {
+    public void handleSentHbars(final MessageFrame frame, final TransactionBody.Builder transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var aliases =
+                (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
         final var timestamp =
                 Timestamp.newBuilder().setSeconds(timestampSeconds).build();
-        final var gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
-        final var tinybarsRequirement = frame.getGasPrice().intValue()
-                + (frame.getGasPrice().intValue() / 5)
-                - getMinimumFeeInTinybars(timestamp, null) * gasPriceInTinybars;
-
+        //        final var gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
+        //        final var calculatedFeeInTinybars = pricingUtils.gasFeeInTinybars(
+        //                transactionBody.setTransactionID(TransactionID.newBuilder()
+        //                                .setTransactionValidStart(timestamp)
+        //                                .build()),
+        //                timestamp,
+        //                store,
+        //                aliases);
+        //        final var tinybarsRequirement = calculatedFeeInTinybars
+        //                + (calculatedFeeInTinybars / 5)
+        //                - getMinimumFeeInTinybars(timestamp, null) * gasPriceInTinybars;
+        final var tinybarsRequirement =
+                pricingUtils.computeGasRequirement(timestampSeconds, this, transactionBody, store, aliases);
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
         final var sender = store.getAccount(frame.getSenderAddress(), OnMissing.THROW);
@@ -322,6 +334,16 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         store.updateAccount(updatedSender);
         store.updateAccount(updatedRecipient);
+    }
+
+    @Override
+    public long getGasRequirement(
+            long blockTimestamp,
+            Builder transactionBody,
+            Store store,
+            HederaEvmContractAliases mirrorEvmContractAliases) {
+        return getMinimumFeeInTinybars(
+                Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build());
     }
 
     /**
