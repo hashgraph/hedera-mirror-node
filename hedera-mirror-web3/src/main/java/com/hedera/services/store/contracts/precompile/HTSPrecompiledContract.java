@@ -335,7 +335,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody =
-                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
