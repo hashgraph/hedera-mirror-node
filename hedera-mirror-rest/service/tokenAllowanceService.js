@@ -24,7 +24,7 @@ import {OrderSpec} from '../sql';
  */
 class TokenAllowanceService extends BaseService {
   static accountTokenAllowanceQuery = `select * from ${TokenAllowance.tableName}`;
-  static amountGrantedCondition = `${TokenAllowance.AMOUNT_GRANTED} > 0`;
+  static amountCondition = `${TokenAllowance.AMOUNT} > 0`;
   static columns = {
     [filterKeys.SPENDER_ID]: TokenAllowance.SPENDER,
     [filterKeys.TOKEN_ID]: TokenAllowance.TOKEN_ID,
@@ -44,7 +44,7 @@ class TokenAllowanceService extends BaseService {
   getSubQuery(filters, params, accountIdCondition, limitClause, orderClause) {
     const conditions = [
       accountIdCondition,
-      TokenAllowanceService.amountGrantedCondition,
+      TokenAllowanceService.amountCondition,
       ...filters.map((filter) => {
         params.push(filter.value);
         const column = TokenAllowanceService.columns[filter.key];

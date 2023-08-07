@@ -38,7 +38,7 @@ describe('getQuery', () => {
       query: defaultQuery,
       expected: {
         sqlQuery:
-          'select * from token_allowance where owner = $1 and amount_granted > 0 order by spender asc, token_id asc limit $2',
+          'select * from token_allowance where owner = $1 and amount > 0 order by spender asc, token_id asc limit $2',
         params: [1, 25],
       },
     },
@@ -47,7 +47,7 @@ describe('getQuery', () => {
       query: {...defaultQuery, order: 'desc'},
       expected: {
         sqlQuery:
-          'select * from token_allowance where owner = $1 and amount_granted > 0 order by spender desc, token_id desc limit $2',
+          'select * from token_allowance where owner = $1 and amount > 0 order by spender desc, token_id desc limit $2',
         params: [1, 25],
       },
     },
@@ -56,7 +56,7 @@ describe('getQuery', () => {
       query: {...defaultQuery, lower: [{key: SPENDER_ID, operator: eq, value: 2}]},
       expected: {
         sqlQuery: `select * from token_allowance
-          where owner = $1 and amount_granted > 0 and spender = $3
+          where owner = $1 and amount > 0 and spender = $3
           order by spender asc, token_id asc
           limit $2`,
         params: [1, 25, 2],
@@ -73,7 +73,7 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `select * from token_allowance
-          where owner = $1 and amount_granted > 0 and spender = $3 and token_id = $4
+          where owner = $1 and amount > 0 and spender = $3 and token_id = $4
           order by spender asc, token_id asc
           limit $2`,
         params: [1, 25, 2, 3],
@@ -91,12 +91,12 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $3 and token_id > $4
+            where owner = $1 and amount > 0 and spender = $3 and token_id > $4
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender > $5
+            where owner = $1 and amount > 0 and spender > $5
             order by spender asc, token_id asc
             limit $2
           )
@@ -118,12 +118,12 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender < $3
+            where owner = $1 and amount > 0 and spender < $3
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $4 and token_id < $5
+            where owner = $1 and amount > 0 and spender = $4 and token_id < $5
             order by spender asc, token_id asc
             limit $2
           )
@@ -144,7 +144,7 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `select * from token_allowance
-          where owner = $1 and amount_granted > 0 and spender > $3 and spender < $4 and token_id = $5
+          where owner = $1 and amount > 0 and spender > $3 and spender < $4 and token_id = $5
           order by spender asc, token_id asc
           limit $2`,
         params: [1, 25, 2, 10, 3],
@@ -165,12 +165,12 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $3 and token_id > $4
+            where owner = $1 and amount > 0 and spender = $3 and token_id > $4
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender > $5 and spender <= $6
+            where owner = $1 and amount > 0 and spender > $5 and spender <= $6
             order by spender asc, token_id asc
             limit $2
           )
@@ -194,12 +194,12 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender >= $3 and spender < $4
+            where owner = $1 and amount > 0 and spender >= $3 and spender < $4
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $5 and token_id < $6
+            where owner = $1 and amount > 0 and spender = $5 and token_id < $6
             order by spender asc, token_id asc
             limit $2
           )
@@ -227,17 +227,17 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $3 and token_id >= $4
+            where owner = $1 and amount > 0 and spender = $3 and token_id >= $4
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender > $5 and spender < $6
+            where owner = $1 and amount > 0 and spender > $5 and spender < $6
             order by spender asc, token_id asc
             limit $2
           ) union all (
             select * from token_allowance
-            where owner = $1 and amount_granted > 0 and spender = $7 and token_id <= $8
+            where owner = $1 and amount > 0 and spender = $7 and token_id <= $8
             order by spender asc, token_id asc
             limit $2
           )

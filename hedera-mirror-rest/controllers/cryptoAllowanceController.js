@@ -29,7 +29,7 @@ const {default: defaultLimit} = getResponseLimit();
 
 class CryptoAllowanceController extends BaseController {
   static ownerCondition = `${CryptoAllowance.OWNER} = $1`;
-  static amountGrantedCondition = `${CryptoAllowance.AMOUNT_GRANTED} > 0`;
+  static amountCondition = `${CryptoAllowance.AMOUNT} > 0`;
 
   /**
    * Extracts SQL where conditions, params, order, and limit from crypto allowances query
@@ -71,7 +71,7 @@ class CryptoAllowanceController extends BaseController {
     }
 
     this.updateQueryFiltersWithInValues(params, conditions, spenderInValues, CryptoAllowance.SPENDER);
-    conditions.push(CryptoAllowanceController.amountGrantedCondition);
+    conditions.push(CryptoAllowanceController.amountCondition);
 
     return {
       conditions,
