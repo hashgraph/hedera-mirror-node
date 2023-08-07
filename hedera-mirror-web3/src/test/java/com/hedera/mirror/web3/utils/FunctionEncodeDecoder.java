@@ -67,6 +67,7 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_ARRAY_OF_ADDRESSES = "(address,address[])";
     private static final String ADDRESS_INT_INTS = "(address,int64,int64[])";
     private static final String ADDRESS_INT_BYTES = "(address,int64,bytes[])";
+    private static final String ADDRESS_INT_BYTES_ADDRESS_BOOL = "(address,int64,bytes[],address,bool)";
     private static final String DOUBLE_ADDRESS_INT64 = "(address,address,int64)";
     private static final String DOUBLE_ADDRESS_INT64S = "(address,address,int64[])";
     private static final String TOKEN_INT64_INT32 =
@@ -221,6 +222,12 @@ public class FunctionEncodeDecoder {
                     parameters[2]);
             case UINT32_ADDRESS_UINT32 -> Tuple.of(
                     Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
+            case ADDRESS_INT_BYTES_ADDRESS_BOOL -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    parameters[1],
+                    parameters[2],
+                    convertAddress((Address) parameters[3]),
+                    parameters[4]);
             default -> Tuple.EMPTY;
         };
     }

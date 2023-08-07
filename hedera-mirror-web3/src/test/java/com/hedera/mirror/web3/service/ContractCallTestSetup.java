@@ -97,6 +97,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
+    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
@@ -281,6 +282,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     protected Path CONTRACT_BYTES_PATH;
 
+    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.bin")
+    protected Path NESTED_ETH_CALLS_BYTES_PATH;
+
+    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.json")
+    protected Path NESTED_ETH_CALLS_ABI_PATH;
+
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     protected Path ABI_PATH;
     // The contract source `ModificationPrecompileTestContract.sol` is in test resources
@@ -362,6 +369,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         precompileContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
+        final var nestedContractId = nestedEthCallContractPresist();
         fileDataPersist();
 
         final var senderEntityId = senderEntityPersist();
@@ -392,7 +400,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
         final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
-                spenderEntityId,
+                treasuryEntityId,
                 KEY_PROTO,
                 NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -511,6 +519,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(treasuryEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -527,6 +537,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContract, tokenEntityId, nftEntityId);
+        allowancesPersist(ownerEntityId, nestedContractId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
@@ -946,6 +957,38 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .contract()
                 .customize(c -> c.id(stateContractId.getId()).runtimeBytecode(stateContractBytes))
                 .persist();
+    }
+
+    private EntityId nestedEthCallContractPresist() {
+        final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_ETH_CALLS_BYTES_PATH);
+        final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var contractEvmAddress = toEvmAddress(contractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(contractEntityId.getId())
+                        .num(contractEntityId.getEntityNum())
+                        .evmAddress(contractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(contractEntityId.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(contractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+        return contractEntityId;
     }
 
     private void precompileContractPersist() {

@@ -84,6 +84,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
+    @EnumSource(NestedCallsContractFunctions.class)
+    void nestedCallsTest(NestedCallsContractFunctions contractFunctions) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunctions.name, NESTED_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        contractCallService.processCall(serviceParameters);
+    }
+
+    @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctionsTest(SupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
@@ -244,6 +254,17 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
+    }
+
+    @RequiredArgsConstructor
+    enum NestedCallsContractFunctions {
+        MINT_TOKEN(
+                "mintTokenGetTotalSupplyAndBalanceOfTreasury",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS, true});
+        //        MINT_NFT("mintTokenGetTotalSupplyAndBalanceOfTreasury", new Object[] {NON_FUNGIBLE_TOKEN, 100L, new
+        // byte[0][0], TREASURY_ADDRESS, false})
+        private final String name;
+        private final Object[] functionParameters;
     }
 
     @RequiredArgsConstructor
