@@ -372,11 +372,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private TransferTransaction getFungibleTokenTransferTransaction(
-            TokenId tokenId, AccountId sender, AccountId recipient, long amount, boolean isApproval) {
+            TokenId tokenId, AccountId owner, AccountId sender, AccountId recipient, long amount, boolean isApproval) {
         var transferTransaction = getTransferTransaction();
 
         if (isApproval) {
-            transferTransaction.addApprovedTokenTransfer(tokenId, sender, Math.negateExact(amount));
+            transferTransaction.addApprovedTokenTransfer(tokenId, owner, Math.negateExact(amount));
         } else {
             transferTransaction.addTokenTransfer(tokenId, sender, Math.negateExact(amount));
         }
@@ -399,13 +399,18 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse transferFungibleToken(
             TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount) {
-        return transferFungibleToken(tokenId, sender, recipient, amount, false);
+        return transferFungibleToken(tokenId, null, sender, recipient, amount, false);
     }
 
     public NetworkTransactionResponse transferFungibleToken(
-            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount, boolean isApproval) {
-        var transaction =
-                getFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, amount, isApproval);
+            TokenId tokenId,
+            AccountId owner,
+            ExpandedAccountId sender,
+            AccountId recipient,
+            long amount,
+            boolean isApproval) {
+        var transaction = getFungibleTokenTransferTransaction(
+                tokenId, owner, sender.getAccountId(), recipient, amount, isApproval);
         var response = executeTransactionAndRetrieveReceipt(transaction, sender);
         log.info(
                 "Transferred {} tokens of {} from {} to {} via {}, isApproval {}",

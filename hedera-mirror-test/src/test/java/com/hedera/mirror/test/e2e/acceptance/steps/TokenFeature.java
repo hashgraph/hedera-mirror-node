@@ -91,7 +91,7 @@ public class TokenFeature extends AbstractFeature {
     @Given("I use named token {string}")
     public void createOrReuseToken(String tokenName) {
         var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
-        tokenIds.add(tokenId); // Compatibility with existing token expressions
+        tokenIds.add(tokenId);
     }
 
     @Given("I successfully create a new token")
@@ -435,11 +435,25 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I delete the allowance on token {int} for sender {int}")
+    public void setFungibleTokenAllowance(Integer tokenIndex, Integer senderIndex) {
+        var tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+        var spenderAccountId = senders.get(getIndexOrDefault(senderIndex));
+        networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId.getAccountId(), 0L);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
     @Then(
             "the mirror node REST API should confirm the approved token (?:(.*) )?allowance of (.*) for sender(?: (.*))?$")
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
             Integer tokenIndex, long approvedAmount, Integer senderIndex) {
         verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, tokenIndex, approvedAmount, senderIndex);
+    }
+
+    @Then("the mirror node REST API should confirm the token allowance deletion")
+    public void verifyMirrorAPIApprovedTokenAllowanceDeletionResponse() {
+        verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, 0, 0L, 0);
     }
 
     @Then(
@@ -458,8 +472,13 @@ public class TokenFeature extends AbstractFeature {
         var spenderAccountId = senders.get(senderIndex);
         var recipientAccountId = recipients.get(recipientIndex).getAccountId();
 
-        networkTransactionResponse =
-                tokenClient.transferFungibleToken(tokenId, spenderAccountId, recipientAccountId, amount, true);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                tokenId,
+                accountClient.getClient().getOperatorAccountId(),
+                spenderAccountId,
+                recipientAccountId,
+                amount,
+                true);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -473,7 +492,7 @@ public class TokenFeature extends AbstractFeature {
         // verify valid set of transactions
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
-        assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTransfers())
+        assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
                 .contains(MirrorTokenTransfer.builder()
                         .tokenId(tokenId)
                         .account(owner)

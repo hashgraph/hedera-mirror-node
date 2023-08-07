@@ -16,12 +16,11 @@ Feature: Account Crypto Allowance Coverage Feature
     And the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender
     Given Sender 0 transfers <transferAmount> tokens 0 from the approved allowance to recipient 0
     Then the mirror node REST API should confirm the debit of <transferAmount> from approved token 0 allowance of <approvedAmount> for sender
-#    Then the mirror node REST API should confirm the approved transfer of <transferAmount> tokens
-#    And the mirror node REST API should confirm the approved allowance of <approvedAmount> was debited by <transferAmount>
-#    When I approve sender 0 to transfer up to <approvedAmount> tokens 0
-#    Then the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender
-#    When I delete the crypto allowance for <spender>
-#    Then the mirror node REST API should confirm the crypto allowance deletion
+    Then the mirror node REST API should confirm the approved transfer of <transferAmount> tokens
+    When I approve sender 0 to transfer up to <approvedAmount> tokens 0
+    Then the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender
+    When I delete the allowance on token 0 for sender 0
+    Then the mirror node REST API should confirm the token allowance deletion
     Examples:
       | tokenName  | approvedAmount | transferAmount |
       | "FUNGIBLE" | 10000          | 100            |
