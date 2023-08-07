@@ -109,7 +109,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address SPENDER_ALIAS = Address.wrap(
             Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743, ACCOUNT));
+    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740, ACCOUNT));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(0, 0, 1042, TOKEN));
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
@@ -366,50 +368,90 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
+        autoRenewAccountPersist();
 
+        fungibleTokenPersist(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                1000000000000L,
+                TokenPauseStatusEnum.PAUSED);
         fungibleTokenPersist(
                 senderEntityId,
                 KEY_PROTO,
                 UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.UNPAUSED);
         final var tokenEntityId = fungibleTokenPersist(
-                ownerEntityId, KEY_PROTO, FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
         final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
-                spenderEntityId, KEY_PROTO, NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.PAUSED);
+                spenderEntityId,
+                KEY_PROTO,
+                NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                0L,
+                TokenPauseStatusEnum.PAUSED);
         final var frozenFungibleTokenEntityId = fungibleTokenPersist(
-                spenderEntityId, KEY_PROTO, FROZEN_FUNGIBLE_TOKEN_ADDRESS, 9999999999999L, TokenPauseStatusEnum.PAUSED);
+                spenderEntityId,
+                KEY_PROTO,
+                FROZEN_FUNGIBLE_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
         final var tokenTreasuryEntityId = fungibleTokenPersist(
-                treasuryEntityId, new byte[0], TREASURY_TOKEN_ADDRESS, 0L, TokenPauseStatusEnum.UNPAUSED);
+                treasuryEntityId,
+                new byte[0],
+                TREASURY_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.UNPAUSED);
         final var tokenGetKeyContractAddressEntityId = fungibleTokenPersist(
                 senderEntityId,
                 keyWithContractId.toByteArray(),
                 FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
         final var tokenGetKeyEcdsaEntityId = fungibleTokenPersist(
                 senderEntityId,
                 keyWithECDSASecp256K1.toByteArray(),
                 FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
         final var tokenGetKeyEd25519EntityId = fungibleTokenPersist(
                 senderEntityId,
                 keyWithEd25519.toByteArray(),
                 FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
         final var tokenGetKeyDelegatableContractIdEntityId = fungibleTokenPersist(
                 senderEntityId,
                 keyWithDelegatableContractId.toByteArray(),
                 FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
 
         final var nftEntityId = nftPersist(
-                NFT_ADDRESS, ownerEntityId, spenderEntityId, ownerEntityId, KEY_PROTO, TokenPauseStatusEnum.PAUSED);
+                NFT_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.PAUSED);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 senderEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -417,6 +459,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.UNPAUSED);
         final var nftEntityId3 = nftPersist(
                 NFT_TRANSFER_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -424,6 +467,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.UNPAUSED);
         final var nftEntityId4 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -431,6 +475,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.PAUSED);
         final var nftEntityId5 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -438,6 +483,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.PAUSED);
         final var nftEntityId6 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -445,6 +491,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.PAUSED);
         final var nftEntityId7 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
                 ownerEntityId,
                 spenderEntityId,
                 ownerEntityId,
@@ -526,15 +573,17 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final EntityId treasuryId,
             final byte[] key,
             final Address tokenAddress,
+            final Address autoRenewAddress,
             final long tokenExpiration,
             final TokenPauseStatusEnum pauseStatus) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
         domainBuilder
                 .entity()
                 .customize(e -> e.id(tokenEntityId.getId())
-                        .autoRenewAccountId(tokenEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
                         .num(tokenEntityId.getEntityNum())
                         .evmAddress(tokenEvmAddress)
                         .type(TOKEN)
@@ -666,6 +715,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @Nullable
+    private EntityId autoRenewAccountPersist() {
+        final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(autoRenewEntityId.getId())
+                        .num(autoRenewEntityId.getEntityNum())
+                        .evmAddress(null)
+                        .alias(toEvmAddress(autoRenewEntityId)))
+                .persist();
+        return autoRenewEntityId;
+    }
+
+    @Nullable
     private EntityId treasureEntityPersist() {
         final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
 
@@ -682,19 +745,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Nullable
     private EntityId nftPersist(
             final Address nftAddress,
+            final Address autoRenewAddress,
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final EntityId treasuryId,
             final byte[] key,
             final TokenPauseStatusEnum pauseStatus) {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
         final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId(), ACCOUNT);
 
         domainBuilder
                 .entity()
                 .customize(e -> e.id(nftEntityId.getId())
-                        .autoRenewAccountId(nftEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
                         .expirationTimestamp(null)
                         .num(nftEntityId.getEntityNum())
                         .evmAddress(nftEvmAddress)
