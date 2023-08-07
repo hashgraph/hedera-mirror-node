@@ -1,0 +1,53 @@
+{{- if .Values.zfs.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: zfs-label-reader
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "update", "patch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: zfs-label-reader
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.zfs.init.serviceAccount.name }}
+    namespace: {{ include "hedera-mirror-common.namespace" . }}
+roleRef:
+  kind: ClusterRole
+  name: zfs-label-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "put", "patch", "update", "watch"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
+  namespace: {{ include "hedera-mirror-common.namespace" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.zfs.init.serviceAccount.name }}
+    namespace: {{ include "hedera-mirror-common.namespace" . }}
+roleRef:
+  kind: Role
+  name: {{ include "hedera-mirror-common.fullname" . }}-zfs-configmap-updater
+  apiGroup: rbac.authorization.k8s.io
+{{- end -}}
