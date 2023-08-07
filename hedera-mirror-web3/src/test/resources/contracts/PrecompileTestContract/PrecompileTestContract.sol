@@ -137,4 +137,9 @@ contract PrecompileTestContract is HederaTokenService {
         (_responseCode, amount) = HederaTokenService.allowance(token, owner, spender);
     }
 
+    function htsIsApprovedForAll(address token, address owner, address operator) public returns (bool approved) {
+        int _responseCode;
+        (_responseCode, approved) = HederaTokenService.isApprovedForAll(token, owner, operator);
+    }
+
 }
