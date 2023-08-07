@@ -181,6 +181,6 @@ class CustomFeeDatabaseAccessorTest {
         final var noCollectorCustomFee = new CustomFee();
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
         assertThat(customFeeDatabaseAccessor.get(tokenId))
-                .hasValueSatisfying(customFees -> assertThat(customFees).hasSize(0));
+                .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
     }
 }

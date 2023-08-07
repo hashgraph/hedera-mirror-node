@@ -46,6 +46,61 @@
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "custom_fees": [
+          {
+            "fractional_fees": [
+              {
+                "amount": 10,
+                "amount_denominator": 13,
+                "collector_account_id": "0.0.8901",
+                "maximum_amount": 980,
+                "minimum_amount": 97
+              }
+            ],
+            "timestamp_range": "[1234567899999999001,1234567899999999006)",
+            "token_id": "0.0.1135"
+          },
+          {
+            "fixed_fees": [
+              {
+                "amount": 12,
+                "collector_account_id": "0.0.8904",
+                "denominating_token_id": "0.0.1137"
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "amount": 13,
+                "collector_account_id": "0.0.8905"
+              }
+            ],
+            "fractional_fees": [
+              {
+                "amount": 11,
+                "amount_denominator": 17,
+                "collector_account_id": "0.0.8901",
+                "maximum_amount": 987,
+                "minimum_amount": 79
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "amount": 9,
+                "amount_denominator": 13,
+                "collector_account_id": "0.0.8902",
+                "minimum_amount": 1
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "amount": 41,
+                "amount_denominator": 131,
+                "collector_account_id": "0.0.8904",
+                "minimum_amount": 0,
+                "net_of_transfers": true
+              }
+            ],
+            "timestamp_range": "[1234567899999999007,)",
+            "token_id": "0.0.1135"
+          }
+        ],
         "fee_schedule_key": [1, 2, 3],
         "type": "FUNGIBLE_COMMON",
         "pause_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96x",
@@ -62,63 +117,6 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "type": "FUNGIBLE_COMMON"
-      }
-    ],
-    "customfees": [
-      {
-        "created_timestamp": "1234567899999999001",
-        "fractional_fees": [
-          {
-            "amount": "10",
-            "amount_denominator": "13",
-            "collector_account_id": "0.0.8901",
-            "maximum_amount": "980",
-            "minimum_amount": "97"
-          }
-        ],
-        "timestamp_range": "[1234567899999999001,1234567899999999006)",
-        "token_id": "0.0.1135"
-      },
-      {
-        "created_timestamp": "1234567899999999007",
-        "fixed_fees": [
-          {
-            "amount": "12",
-            "collector_account_id": "0.0.8904",
-            "denominating_token_id": "0.0.1137"
-          },
-          {
-            "all_collectors_are_exempt": true,
-            "amount": "13",
-            "collector_account_id": "0.0.8905"
-          }
-        ],
-        "fractional_fees": [
-          {
-            "amount": "11",
-            "amount_denominator": "17",
-            "collector_account_id": "0.0.8901",
-            "maximum_amount": "987",
-            "minimum_amount": "79"
-          },
-          {
-            "all_collectors_are_exempt": true,
-            "amount": "9",
-            "amount_denominator": "13",
-            "collector_account_id": "0.0.8902",
-            "minimum_amount": "1"
-          },
-          {
-            "all_collectors_are_exempt": true,
-            "amount": "41",
-            "amount_denominator": "131",
-            "collector_account_id": "0.0.8904",
-            "minimum_amount": "0",
-            "net_of_transfers": true
-          }
-        ],
-        "timestamp_range": "[1234567899999999007,)",
-        "token_id": "0.0.1135"
       }
     ]
   },
@@ -158,7 +156,6 @@
     "type": "FUNGIBLE_COMMON",
     "wipe_key": null,
     "custom_fees": {
-      "created_timestamp": "1234567899.999999007",
       "fixed_fees": [
         {
           "all_collectors_are_exempt": false,

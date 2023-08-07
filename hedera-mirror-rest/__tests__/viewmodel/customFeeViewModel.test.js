@@ -36,7 +36,7 @@ describe('CustomFeeViewModel', () => {
         fixed_fees: [
           {
             all_collectors_are_exempt: true,
-            amount: '15',
+            amount: 15,
             collector_account_id: 8901,
             denominating_token_id: testSpec.dbDenominatingTokenId,
           },

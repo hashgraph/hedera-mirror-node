@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import {filterKeys} from '../constants';
 import FixedFee from './fixedFee.js';
 import FractionalFee from './fractionalFee.js';
 import RoyaltyFee from './royaltyFee.js';
@@ -24,7 +23,6 @@ class CustomFee {
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
-    this.createdTimestamp = customFee.created_timestamp;
     this.fixedFees = (customFee.fixed_fees ?? []).map((n) => new FixedFee(n));
     this.fractionalFees = (customFee.fractional_fees ?? []).map((n) => new FractionalFee(n));
     this.royaltyFees = (customFee.royalty_fees ?? []).map((n) => new RoyaltyFee(n));
@@ -32,39 +30,13 @@ class CustomFee {
     this.tokenId = customFee.token_id;
   }
 
-  static tableAlias = 'cf';
   static tableName = 'custom_fee';
-  static historyTableAlias = 'cfh';
-  static historyTableName = 'custom_fee_history';
 
-  static CREATED_TIMESTAMP = `created_timestamp`;
   static FIXED_FEES = `fixed_fees`;
   static FRACTIONAL_FEES = `fractional_fees`;
   static ROYALTY_FEES = `royalty_fees`;
   static TOKEN_ID = `token_id`;
   static TIMESTAMP_RANGE = 'timestamp_range';
-
-  static FILTER_MAP = {
-    [filterKeys.TIMESTAMP]: CustomFee.getFullName(CustomFee.TIMESTAMP_RANGE),
-  };
-
-  static HISTORY_FILTER_MAP = {
-    [filterKeys.TIMESTAMP]: CustomFee.getHistoryFullName(CustomFee.TIMESTAMP_RANGE),
-  };
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
-
-  static getHistoryFullName(columnName) {
-    return `${this.historyTableAlias}.${columnName}`;
-  }
 }
 
 export default CustomFee;

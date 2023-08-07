@@ -690,43 +690,46 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
 };
 
 const addCustomFee = async (customFee) => {
+  customFee = {
+    all_collectors_are_exempt: true,
+    collector_account_id: '0.0.300',
+    ...customFee,
+  };
+
   customFee.fixed_fees?.forEach((f) => {
-    f.collector_account_id = _.isNil(f.collector_account_id)
-      ? null
-      : EntityId.parse(f.collector_account_id).getEncodedId();
-    f.denominating_token_id = _.isNil(f.denominating_token_id)
-      ? null
-      : EntityId.parse(f.denominating_token_id).getEncodedId();
+    parseCustomFeeEntityIds(f);
   });
   customFee.fractional_fees?.forEach((f) => {
-    f.collector_account_id = _.isNil(f.collector_account_id)
-      ? null
-      : EntityId.parse(f.collector_account_id).getEncodedId();
-    f.denominating_token_id = _.isNil(f.denominating_token_id)
-      ? null
-      : EntityId.parse(f.denominating_token_id).getEncodedId();
+    parseCustomFeeEntityIds(f);
   });
+  customFee.royalty_fees?.forEach((f) => {
+    parseCustomFeeEntityIds(f.fallback_fee);
+  });
+
   const fixed_fees = customFee.fixed_fees ? JSONStringify(customFee.fixed_fees) : null;
   const fractional_fees = customFee.fractional_fees ? JSONStringify(customFee.fractional_fees) : null;
   const royalty_fees = customFee.royalty_fees ? JSONStringify(customFee.royalty_fees) : null;
   const table = getTableName('custom_fee', customFee);
   await pool.query(
-    `insert into ${table} (created_timestamp,
-                             fixed_fees,
+    `insert into ${table} (fixed_fees,
                              fractional_fees,
                              royalty_fees,
                              token_id,
                              timestamp_range)
-     values ($1, $2, $3, $4, $5, $6);`,
+     values ($1, $2, $3, $4, $5);`,
     [
-      customFee.created_timestamp.toString(),
       fixed_fees,
       fractional_fees,
       royalty_fees,
       EntityId.parse(customFee.token_id).getEncodedId(),
-      customFee.timestamp_range || `[${customFee.created_timestamp.toString()},)`,
+      customFee.timestamp_range,
     ]
   );
+};
+
+const parseCustomFeeEntityIds = async (fee) => {
+  fee.collector_account_id = EntityId.parse(fee.collector_account_id, {isNullable: true}).getEncodedId();
+  fee.denominating_token_id = EntityId.parse(fee.denominating_token_id, {isNullable: true}).getEncodedId();
 };
 
 const setAccountBalance = async (balance) => {
@@ -1281,6 +1284,12 @@ const addToken = async (custom) => {
   await insertDomainObject(table, insertFields, token);
 
   if (!token.custom_fees) {
+    // if there is no custom fees schedule for the token, add the default empty fee schedule at created_timestamp
+    await addCustomFee({
+      timestamp_range: `[${token.created_timestamp},)`,
+      token_id: token.token_id,
+    });
+  } else {
     await loadCustomFees(token.custom_fees);
   }
 };

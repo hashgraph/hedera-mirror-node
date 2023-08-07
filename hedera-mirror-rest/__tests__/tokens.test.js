@@ -967,7 +967,6 @@ describe('token formatTokenInfoRow tests', () => {
       key: '050505',
     },
     custom_fees: {
-      created_timestamp: '0.000000010',
       fixed_fees: [
         {
           all_collectors_are_exempt: false,
@@ -1482,46 +1481,40 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
     let historyTableCondition;
     let customFeeQuery = `
         (select jsonb_build_object(
-           'created_timestamp', created_timestamp::text,
            'fixed_fees', fixed_fees,
            'fractional_fees', fractional_fees,
            'royalty_fees', royalty_fees,
-           'token_id', token_id::text,
+           'token_id', token_id,
            'timestamp_range', timestamp_range
         )
-        from custom_fee cf
-        where cf.token_id = $1
-        order by cf.created_timestamp desc
+        from custom_fee
+        where token_id = $1
       ) as custom_fee`;
 
     if (!_.isEmpty(timestampCondition)) {
-      tableCondition = `lower(cf.timestamp_range) ${timestampCondition}`;
-      historyTableCondition = `lower(cfh.timestamp_range) ${timestampCondition}`;
+      tableCondition = `lower(timestamp_range) ${timestampCondition}`;
       customFeeQuery = `
         (with cfee as 
           (select jsonb_build_object(
-                   'created_timestamp', created_timestamp::text,
                    'fixed_fees', fixed_fees,
                    'fractional_fees', fractional_fees,
                    'royalty_fees', royalty_fees,
-                   'token_id', token_id::text,
+                   'token_id', token_id,
                    'timestamp_range', timestamp_range
           )
-          from custom_fee cf
-          where cf.token_id = $1  ${tableCondition && 'and ' + tableCondition}
-          order by cf.created_timestamp desc
+          from custom_fee
+          where token_id = $1  ${tableCondition && 'and ' + tableCondition}
         ),
         custom_fee_history as
           (select jsonb_build_object(
-                  'created_timestamp',created_timestamp::text,
                   'fixed_fees',fixed_fees,
                   'fractional_fees',fractional_fees,
                   'royalty_fees',royalty_fees,
-                  'token_id',token_id::text,
+                  'token_id',token_id,
                   'timestamp_range',timestamp_range) 
-        from custom_fee_history cfh 
-        where cfh.token_id = $1 ${historyTableCondition && 'and ' + historyTableCondition}
-        order by cfh.created_timestamp desc limit 1
+        from custom_fee_history 
+          where token_id = $1  ${tableCondition && 'and ' + tableCondition}
+          order by lower(timestamp_range) desc limit 1
         )
         select * from cfee
         union all

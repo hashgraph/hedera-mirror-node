@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-import Fee from './fee';
-
-class FixedFee extends Fee {
-  /**
-   * Parses fixed_fee from element in custom_fee.fixed_fees jsonb column
-   */
-  constructor(fixedFee) {
-    super(fixedFee);
-    this.amount = fixedFee.amount;
-    this.denominatingTokenId = fixedFee.denominating_token_id;
+class Fee {
+  constructor(fee) {
+    this.allCollectorsAreExempt = fee.all_collectors_are_exempt;
+    this.collectorAccountId = fee.collector_account_id;
   }
 
-  static AMOUNT = `amount`;
-  static DENOMINATING_TOKEN_ID = `denominating_token_id`;
+  static ALL_COLLECTORS_ARE_EXEMPT = 'all_collectors_are_exempt';
+  static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
 }
 
-export default FixedFee;
+export default Fee;

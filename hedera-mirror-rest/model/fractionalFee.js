@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-class FractionalFee {
+import Fee from './fee';
+
+class FractionalFee extends Fee {
   /**
    * Parses fractional_fee from element in custom_fee.fractional_fees jsonb column
    */
   constructor(fractionalFee) {
-    this.allCollectorsAreExempt = fractionalFee.all_collectors_are_exempt;
+    super(fractionalFee);
     this.amount = fractionalFee.amount;
     this.amountDenominator = fractionalFee.amount_denominator;
-    this.collectorAccountId = fractionalFee.collector_account_id;
     this.maximumAmount = fractionalFee.maximum_amount;
     this.minimumAmount = fractionalFee.minimum_amount;
     this.netOfTransfers = fractionalFee.net_of_transfers;
   }
 
-  static ALL_COLLECTORS_ARE_EXEMPT = 'all_collectors_are_exempt';
   static AMOUNT = `amount`;
   static AMOUNT_DENOMINATOR = `amount_denominator`;
-  static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
   static MAXIMUM_AMOUNT = `maximum_amount`;
   static MINIMUM_AMOUNT = `minimum_amount`;
   static NET_OF_TRANSFERS = `net_of_transfers`;
