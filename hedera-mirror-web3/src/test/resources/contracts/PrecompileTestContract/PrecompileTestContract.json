@@ -151,9 +151,9 @@
       {
         "components": [
           {
-            "internalType": "int64",
+            "internalType": "uint32",
             "name": "second",
-            "type": "int64"
+            "type": "uint32"
           },
           {
             "internalType": "address",
@@ -161,9 +161,9 @@
             "type": "address"
           },
           {
-            "internalType": "int64",
+            "internalType": "uint32",
             "name": "autoRenewPeriod",
-            "type": "int64"
+            "type": "uint32"
           }
         ],
         "internalType": "struct IHederaTokenService.Expiry",
