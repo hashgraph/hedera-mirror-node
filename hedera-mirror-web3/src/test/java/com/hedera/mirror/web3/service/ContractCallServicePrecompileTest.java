@@ -378,7 +378,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
         GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
             1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
-        });
+        }),
+        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ADDRESS}),
+        HTS_ALLOWANCE(
+                "htsAllowance",
+                new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS},
+                new Object[] {13L}),
+        HTS_IS_APPROVED_FOR_ALL(
+                "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
+                });
+
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
