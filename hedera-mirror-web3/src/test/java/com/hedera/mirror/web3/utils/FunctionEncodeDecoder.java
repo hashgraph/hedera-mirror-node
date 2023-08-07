@@ -223,10 +223,7 @@ public class FunctionEncodeDecoder {
                     parameters[2]);
             case UINT32_ADDRESS_UINT32 -> Tuple.of(
                     Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
-            case ADDRESS_INT_BYTES_ADDRESS -> Tuple.of(
-                    convertAddress((Address) parameters[0]), parameters[1], parameters[2], convertAddress((Address)
-                            parameters[3]));
-            case ADDRESS_INT_INT64ARRAY_ADDRESS -> Tuple.of(
+            case ADDRESS_INT_BYTES_ADDRESS, ADDRESS_INT_INT64ARRAY_ADDRESS -> Tuple.of(
                     convertAddress((Address) parameters[0]), parameters[1], parameters[2], convertAddress((Address)
                             parameters[3]));
             default -> Tuple.EMPTY;

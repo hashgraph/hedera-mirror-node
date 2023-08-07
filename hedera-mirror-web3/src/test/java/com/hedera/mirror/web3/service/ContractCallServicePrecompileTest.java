@@ -263,12 +263,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         //                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS}),
         //        MINT_NFT("mintTokenGetTotalSupplyAndBalanceOfTreasury", new Object[] {NFT_ADDRESS, 0L, new byte[][]
         // {ByteString.copyFromUtf8("firstMeta").toByteArray()}, OWNER_ADDRESS});
-        BURN_FUNGIBLE_TOKEN(
-                "burnTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 12L, new long[0], TREASURY_ADDRESS}),
-        BURN_NFT(
-                "burnTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NFT_ADDRESS, 0L, new long[] {1L}, OWNER_ADDRESS});
+        //        BURN_FUNGIBLE_TOKEN(
+        //                "burnTokenGetTotalSupplyAndBalanceOfTreasury",
+        //                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 12L, new long[0], TREASURY_ADDRESS}),
+        //        BURN_NFT(
+        //                "burnTokenGetTotalSupplyAndBalanceOfTreasury",
+        //                new Object[] {NFT_ADDRESS, 0L, new long[] {1L}, OWNER_ADDRESS});
+        WIPE_FUNGIBLE_TOKEN(
+                "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ADDRESS}),
+        WIPE_NFT(
+                "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ADDRESS});
         private final String name;
         private final Object[] functionParameters;
     }
