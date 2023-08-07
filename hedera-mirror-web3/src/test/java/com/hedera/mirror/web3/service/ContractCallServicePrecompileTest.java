@@ -189,7 +189,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             assertThat(spender).isEqualTo(convertAddress(SPENDER_ADDRESS));
             assertThat(maxSupply).isEqualTo(2000000000L);
             assertThat(supplyType).isTrue();
-            assertThat(autoRenewAccount).isEqualTo(convertAddress(NFT_ADDRESS));
+            assertThat(autoRenewAccount).isEqualTo(convertAddress(AUTO_RENEW_ACCOUNT_ADDRESS));
         } else {
             int decimals = decodeResult.get(1);
             long totalSupply = tokenInfo.get(1);
@@ -197,7 +197,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             assertThat(totalSupply).isEqualTo(12345L);
             assertThat(maxSupply).isEqualTo(2525L);
             assertThat(supplyType).isFalse();
-            assertThat(autoRenewAccount).isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
+            assertThat(autoRenewAccount).isEqualTo(convertAddress(AUTO_RENEW_ACCOUNT_ADDRESS));
         }
     }
 
@@ -362,7 +362,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
                 new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
-        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {});
+        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
+            1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
+        }),
+        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ADDRESS}),
+        HTS_ALLOWANCE(
+                "htsAllowance",
+                new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS},
+                new Object[] {13L}),
+        HTS_IS_APPROVED_FOR_ALL(
+                "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
+                });
 
         private final String name;
         private final Object[] functionParameters;

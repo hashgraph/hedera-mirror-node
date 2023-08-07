@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.token;
 
-import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -239,7 +238,6 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Optional.empty();
         }
         final var ledgerId = ledgerId();
-        final var expirationTimeInSec = expirationTimeSeconds(token);
         final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                 ledgerId,
                 token.getSupplyType().ordinal(),
@@ -251,7 +249,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 token.getTotalSupply(),
                 token.getMaxSupply(),
                 token.getDecimals(),
-                expirationTimeInSec);
+                token.getExpiry());
         evmTokenInfo.setAutoRenewPeriod(token.getAutoRenewPeriod());
         evmTokenInfo.setDefaultFreezeStatus(token.isFrozenByDefault());
         evmTokenInfo.setCustomFees(getCustomFees(address));
@@ -264,20 +262,6 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         return Optional.of(evmTokenInfo);
-    }
-
-    private Long expirationTimeSeconds(Token token) {
-        Long createdTimestamp = token.getCreatedTimestamp();
-        Long autoRenewPeriod = token.getAutoRenewPeriod();
-        Long expirationTimestamp = token.getExpiry();
-
-        if (expirationTimestamp != null) {
-            return expirationTimestamp / NANOS_PER_SECOND;
-        } else if (createdTimestamp != null && autoRenewPeriod != null) {
-            return createdTimestamp / NANOS_PER_SECOND + autoRenewPeriod;
-        } else {
-            return 0L;
-        }
     }
 
     @SuppressWarnings("unchecked")

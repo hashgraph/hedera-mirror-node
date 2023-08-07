@@ -50,6 +50,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.BurnPrecompile;
@@ -57,7 +58,9 @@ import com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
@@ -228,6 +231,24 @@ public class ServicesConfiguration {
     @Bean
     BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
+    }
+
+    @Bean
+    GetApprovedPrecompile getApprovedPrecompile(
+            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+        return new GetApprovedPrecompile(syntheticTxnFactory, encoder, pricingUtils);
+    }
+
+    @Bean
+    AllowancePrecompile allowancePrecompile(
+            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+        return new AllowancePrecompile(syntheticTxnFactory, encoder, pricingUtils);
+    }
+
+    @Bean
+    IsApprovedForAllPrecompile isApprovedForAllPrecompile(
+            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+        return new IsApprovedForAllPrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 
     @Bean
