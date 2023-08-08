@@ -186,10 +186,12 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
+            RecordFileRepository recordFileRepository,
             MirrorProperties mirrorProperties,
             NamedParameterJdbcTemplate transferJdbcTemplate,
             TransactionOperations transactionOperations) {
         super(mirrorProperties.getMigration(), transferJdbcTemplate, dbProperties.getSchema());
+        this.recordFileRepository = recordFileRepository;
         this.mirrorProperties = mirrorProperties;
         this.transferJdbcTemplate = transferJdbcTemplate;
         this.transactionOperations = transactionOperations;
