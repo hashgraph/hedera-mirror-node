@@ -103,10 +103,11 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration implem
     @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
         firstConsensusTimestamp.compareAndSet(0, streamFile.getConsensusTimestamp());
-        if (firstConsensusTimestamp.get() == streamFile.getConsensusTimestamp()) {
-            if (accountBalanceFileRepository.findNextInRange(0, Long.MAX_VALUE).isEmpty()) {
-                doMigrate();
-            }
+        if (firstConsensusTimestamp.get() == streamFile.getConsensusTimestamp()
+                && accountBalanceFileRepository
+                        .findNextInRange(0, Long.MAX_VALUE)
+                        .isEmpty()) {
+            doMigrate();
         }
     }
 }
