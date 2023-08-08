@@ -20,6 +20,6 @@ import lombok.Data;
 
 @Data
 public class MirrorTokenAccountBalance {
-
+    private String tokenId;
     private long balance;
 }
