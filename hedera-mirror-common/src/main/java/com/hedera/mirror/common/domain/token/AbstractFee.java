@@ -17,11 +17,7 @@
 package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies.SnakeCaseStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.hedera.mirror.common.converter.EntityIdDeserializer;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,8 +33,6 @@ public abstract class AbstractFee {
 
     private Long amount;
 
-    @JsonSerialize(using = EntityIdSerializer.class)
-    @JsonDeserialize(using = EntityIdDeserializer.class)
     private EntityId collectorAccountId;
 
     public abstract boolean isChargedInToken(EntityId tokenId);
