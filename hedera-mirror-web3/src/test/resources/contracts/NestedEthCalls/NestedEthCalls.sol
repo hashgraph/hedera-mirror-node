@@ -47,7 +47,7 @@ contract NestedEthCalls is HederaTokenService {
         }
     }
 
-
+    // Burn fungible/non-fungible token + get token info total supply + get balance of the treasury
     function burnTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, int64[] memory serialNumbers, address treasury) external
     {
         uint256 balanceBeforeBurn = 0;
@@ -84,6 +84,7 @@ contract NestedEthCalls is HederaTokenService {
         }
     }
 
+    // Wipe + get token info total supply + get balance of the account which balance was wiped
     function wipeTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, int64[] memory serialNumbers, address treasury) external
     {
         uint256 balanceBeforeWipe = 0;
@@ -128,6 +129,7 @@ contract NestedEthCalls is HederaTokenService {
         }
     }
 
+    // Pause fungible/non-fungible token + get token info pause status + unpause + get token info pause status
     function pauseTokenGetPauseStatusUnpauseGetPauseStatus(address token) external {
         int responseCode = HederaTokenService.pauseToken(token);
         if (responseCode != HederaResponseCodes.SUCCESS) revert();
@@ -143,6 +145,7 @@ contract NestedEthCalls is HederaTokenService {
         if(retrievedTokenInfo.pauseStatus) revert();
     }
 
+    // Freeze fungible/non-fungible token + get token info freeze status + unfreeze + get token info freeze status
     function freezeTokenGetPauseStatusUnpauseGetPauseStatus(address token, address account) external {
         int responseCode = HederaTokenService.freezeToken(token, account);
         if (responseCode != HederaResponseCodes.SUCCESS) revert();
@@ -159,6 +162,7 @@ contract NestedEthCalls is HederaTokenService {
         if(isFrozen) revert();
     }
 
+    // Associate fungible/non-fungible token transfer (should pass) + dissociate + transfer (should fail)
     function associateTokenDissociateFailTransfer(address token, address from, address to, uint256 amount, uint256 serialNumber) external {
         address[] memory tokens = new address[](1);
         tokens[0] = token;
@@ -181,6 +185,7 @@ contract NestedEthCalls is HederaTokenService {
         }
     }
 
+    // Approve fungible/non-fungible token + allowance
     function approveTokenGetAllowance(address token, address spender, uint256 amount, uint256 serialNumber) external {
         if(amount > 0 && serialNumber == 0) {
             int responseCode = HederaTokenService.approve(token, spender, amount);
@@ -193,6 +198,7 @@ contract NestedEthCalls is HederaTokenService {
         }
     }
 
+    // Approve fungible/non-fungible token + transferFrom with spender + allowance + balance
     function approveTokenTransferFromGetAllowanceGetBalance(address token, address spender, uint256 amount, uint256 serialNumber) external {
         if(amount > 0 && serialNumber == 0) {
             int responseCode = HederaTokenService.approve(token, spender, amount);
