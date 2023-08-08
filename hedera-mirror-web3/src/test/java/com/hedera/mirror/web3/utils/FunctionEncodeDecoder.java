@@ -85,6 +85,8 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
     public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
             "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
+    public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
+
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -225,6 +227,23 @@ public class FunctionEncodeDecoder {
                     Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
             case TRANSFER_LIST_TOKEN_TRANSFER_LIST -> Tuple.of(
                     Tuple.of((Object) new Tuple[] {}), encodeCryptoTransfer(parameters));
+            case ADDRESS_ARRAY_OF_KEYS -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream((Object[]) parameters[1])
+                            .map(e -> (Object[]) e)
+                            .map(e -> {
+                                final var keyParams = ((Object[]) e[1]);
+                                return Tuple.of(
+                                        BigInteger.valueOf((int) e[0]),
+                                        Tuple.of(
+                                                keyParams[0],
+                                                convertAddress((Address) keyParams[1]),
+                                                keyParams[2],
+                                                keyParams[3],
+                                                convertAddress((Address) keyParams[4])));
+                            })
+                            .toList()
+                            .toArray(new Tuple[((Object[]) parameters[1]).length]));
             default -> Tuple.EMPTY;
         };
     }

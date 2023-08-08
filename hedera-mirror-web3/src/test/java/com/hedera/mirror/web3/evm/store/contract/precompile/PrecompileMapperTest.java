@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
@@ -45,13 +44,5 @@ class PrecompileMapperTest {
         int functionSelector = 0x00000000;
         final var result = precompileMapper.lookup(functionSelector);
         assertThat(result).isNotEmpty();
-    }
-
-    @Test
-    void unsupportedPrecompileThrowsException() {
-        int functionSelector = 0x6fc3cbaf;
-
-        assertThatThrownBy(() -> precompileMapper.lookup(functionSelector))
-                .isInstanceOf(UnsupportedOperationException.class);
     }
 }
