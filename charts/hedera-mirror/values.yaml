@@ -268,7 +268,6 @@ stackgres:
       citus.executor_slow_start_interval: "100ms"
       citus.max_cached_conns_per_worker: "4"
       citus.max_shared_pool_size: "380"
-      cron.database_name: "{{ .Values.db.name }}"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       max_connections: "300"
@@ -278,7 +277,7 @@ stackgres:
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
       shared_buffers: "12GB"
-      shared_preload_libraries: pg_cron,pg_partman_bgw
+      shared_preload_libraries: ''
       work_mem: "32MB"
     instances: 1
     resources:
@@ -288,12 +287,10 @@ stackgres:
       size: 5Gi
   enabled: false
   extensions:
+    - name: citus
+      version: "12.0-1"
     - name: btree_gist
       version: stable
-    - name: pg_cron
-      version: stable
-    - name: pg_partman
-      version: "4.7.3"
   nameOverride: citus
   pgbouncer:
     default_pool_size: "1000"
@@ -303,12 +300,11 @@ stackgres:
     max_user_connections: "0"
     pool_mode: session
   podAntiAffinity: true
-  postgresVersion: 14
+  postgresVersion: 15
   prometheus: false
   worker:
     config:
       checkpoint_timeout: "1800"
-      cron.database_name: "{{ .Values.db.name }}"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       max_connections: "400"
@@ -318,7 +314,7 @@ stackgres:
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
       shared_buffers: "12GB"
-      shared_preload_libraries: pg_cron,pg_partman_bgw
+      shared_preload_libraries: ''
       work_mem: "32MB"
     instances: 1
     replicasPerInstance: 1

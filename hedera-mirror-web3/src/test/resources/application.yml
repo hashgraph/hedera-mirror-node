@@ -24,12 +24,12 @@ spring:
       chunkIdInterval: 10000
       chunkTimeInterval: 604800000000000
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
-      cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.web3.db.name}
       db-user: ${hedera.mirror.web3.db.username}
-      partitionIdInterval: "'1000000'"
-      partitionStartDate: "'0 days'"
-      partitionTimeInterval: "'1 year'"
+      partitionIdCount: 1
+      partitionIdInterval: "'.001 seconds'"
+      partitionStartDate: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+      partitionTimeInterval: "'10 years'"
       schema: public
       shardCount: 2
       topicRunningHashV2AddedTimestamp: 0

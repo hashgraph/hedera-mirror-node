@@ -114,12 +114,12 @@ spring:
       api-password: ${hedera.mirror.importer.db.restPassword}
       api-user: ${hedera.mirror.importer.db.restUsername}
       autovacuumFreezeMaxAgeInsertOnly: 100000
-      cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
       partitionTimeInterval: "'1 month'"
-      partitionIdInterval: "'1000000'"
-      partitionStartDate: "'3 years'"
+      partitionIdCount: 1
+      partitionIdInterval: "'.001 seconds'"
+      partitionStartDate: "'4 years'"
       schema: ${hedera.mirror.importer.db.schema}
       shardCount: 16
     user: ${hedera.mirror.importer.db.owner}

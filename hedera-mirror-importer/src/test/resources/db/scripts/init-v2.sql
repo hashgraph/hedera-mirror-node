@@ -23,15 +23,34 @@ alter default privileges in schema public grant select on tables to readonly;
 grant insert, update, delete on all tables in schema public to readwrite;
 alter default privileges in schema public grant insert, update, delete on tables to readwrite;
 
--- Partition privileges
-create extension if not exists pg_cron;
-create schema if not exists partman authorization mirror_node;
-create extension if not exists pg_partman schema partman;
-alter schema partman owner to mirror_node;
-grant all on schema partman to mirror_node;
-grant usage on schema cron to mirror_node;
-grant all on all tables in schema partman to mirror_node;
-grant execute on all functions in schema partman to mirror_node;
-grant execute on all procedures in schema partman to mirror_node;
+-- Owner privileges
 grant all on schema public to mirror_node;
 grant temporary on database mirror_node to mirror_node;
+
+
+-- Create cast UDFs for citus create_time_partitions
+CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
+    LANGUAGE plpgsql AS
+'
+DECLARE
+value timestamptz;
+BEGIN
+select to_timestamp(nanos * 1.0 / 1000000000)
+into value;
+return value;
+END;
+';
+CREATE CAST (bigint AS timestamptz) WITH FUNCTION nanos_to_timestamptz(bigint);
+
+CREATE FUNCTION timestamptz_to_nanos(ts timestamptz) RETURNS bigint
+    LANGUAGE plpgsql AS
+'
+DECLARE
+value bigint;
+BEGIN
+select extract(epoch from ts) * 1000000000
+into value;
+return value;
+END;
+';
+CREATE CAST (timestamptz AS bigint) WITH FUNCTION timestamptz_to_nanos(timestamptz);

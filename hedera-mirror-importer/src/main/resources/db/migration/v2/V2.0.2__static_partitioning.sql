@@ -1,44 +1,149 @@
+-- configure session to ensure partitions are created with bounds in UTC
+SET timezone TO 'UTC';
+
 -------------------
 -- Add non-repeatable partitioning logic to large tables.
 -------------------
-
-select partman.create_parent('public.account_balance', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.assessed_custom_fee', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.contract', 'id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.contract_action', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.contract_log', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.contract_result', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.contract_state', 'contract_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.contract_state_change', 'consensus_timestamp', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.crypto_allowance', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.crypto_allowance_history', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.crypto_transfer', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.custom_fee', 'created_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.entity', 'id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.entity_history', 'id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.entity_stake', 'id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.entity_stake_history', 'id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.entity_transaction', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.ethereum_transaction', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.event_file', 'consensus_end', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.file_data', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.network_freeze', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.nft', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.nft_history', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.nft_allowance', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.nft_allowance_history', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.record_file', 'consensus_end', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.schedule', 'schedule_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.staking_reward_transfer', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.token', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_history', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_account', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_account_history', 'token_id', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_allowance', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_allowance_history', 'owner', 'native', '1000000', p_premake := 1);
-select partman.create_parent('public.token_balance', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.token_transfer', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.topic_message', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.transaction', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.transaction_hash', 'consensus_timestamp', 'native', 'monthly', p_epoch := 'nanoseconds' , p_premake := 1, p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS'));
-select partman.create_parent('public.transaction_signature', 'entity_id', 'native', '1000000', p_premake := 1);
+select create_time_partitions(table_name :='public.account_balance',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.assessed_custom_fee',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.contract', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.contract_action',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.contract_log',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.contract_result',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.contract_state', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.contract_state_change',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.crypto_allowance', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.crypto_allowance_history',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.crypto_transfer',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.custom_fee', partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.entity', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.entity_history', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.entity_stake', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.entity_stake_history',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.entity_transaction',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.ethereum_transaction',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.event_file', partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.file_data', partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.network_freeze',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.nft', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.nft_history', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.nft_allowance', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.nft_allowance_history',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.record_file',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.schedule', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.staking_reward_transfer',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.token', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_history', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_account', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_account_history',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_allowance', partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_allowance_history',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));
+select create_time_partitions(table_name :='public.token_balance',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.token_transfer',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.topic_message',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.transaction',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.transaction_hash',
+                              partition_interval := INTERVAL ${partitionTimeInterval},
+                              start_from := CURRENT_TIMESTAMP-${partitionStartDate}:: interval,
+                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.transaction_signature',
+                              partition_interval := INTERVAL ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at :=  '1970-01-01 00:00:00.000'::timestamptz + ((INTERVAL ${partitionIdInterval}) * ${partitionIdCount}));

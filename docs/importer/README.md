@@ -77,13 +77,12 @@ For local testing the importer can be run using the following command:
 ./gradlew :importer:bootRun --args='--spring.profiles.active=v2'
 ```
 
-## Building the Citus docker images
-Two images are created, manually as needed, and pushed to our [Docker Hub repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
-An enhanced Citus debian base image (amd64) is used to run Citus/Postgres in production and other environments in GCP.
-In addition, a multi-platform alpine linux image is built in order to be used for local testing (arm64 on M-series Macs) and
-Github CI workflows (amd64).
+## Building the Citus docker image
+The citus image is built and then pushed to our [Docker Hub repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
+A multi-platform alpine linux image is built in order to be used for local testing (arm64 on M-series Macs) and
+Github CI workflows (amd64). In production environments, citus is enabled through stackgres SGShardedCluster and doesn't use the custom image. 
 
-`DockerFile`s to build a custom image to be used in v2 is located in the following folder:
+`DockerFile` to build a custom image to be used in v2 testing is located in the following folder:
 ```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2/docker```
 
 ### Docker Hub details
@@ -113,27 +112,7 @@ If you instead see this:
 Error saving credentials: error storing credentials - err: exit status 1, out: `ID hub token does not contain email`
 ```
 You may need to restart Docker Desktop according to this [forum post](https://forums.docker.com/t/id-hub-token-does-not-contain-email/134608/2).
-
-### Debian
-
-The `debian` subdirectory contains the `Dockerfile` which defines the image used in production and other GCP based environments.
-The Debian image is based directly on the Citus Debian image with a couple of additional Postgres extensions installed;
-cron and partman. The resultant image is built only for the amd64 platform architecture. The standard `docker build`
-command can be used to accomplish this.
-
-The database name to be used by citus can be provided using an environment variable as follows:
-
-```console
-docker build --build-arg DB=mirror_node --platform linux/amd64 -t mirrornodeswirldslabs/citus:11.2.0 .
-```
-
-### Alpine
-
-The `alpine` subdirectory contains the `Dockerfile` used to build the Citus image for use for both local development
-on an M-series Mac (arm64) as well in the Github CI workflows (amd64). Thus, this image is built for both platform
-architectures on top of a Postgres alpine base image. Citus and the additional Postgres extensions are compiled from
-source code as part of this docker image build. Citus does not yet provide an image for arm64.
-
+### Build
 The instructions here pertain to building the multi-platform alpine image on an M-series Mac using Docker Desktop. Please refer to
 [Multi-platform images](https://docs.docker.com/build/building/multi-platform/) for an overview on how to use Docker
 Desktop to do this.
@@ -156,7 +135,7 @@ $ docker buildx use mybuilder
 Build the image for both amd64 (Github CI) and arm64 (local testing). Don't forget the '.' at the end of the line. This
 can take some time depending on your internet speed. You will see activity around both arm64 and amd64.
 ```console
-$ docker buildx build --build-arg DB=mirror_node --platform linux/arm64,linux/amd64 -t mirrornodeswirldslabs/citus:11.2.0-alpine .
+$ docker buildx build --build-arg DB=mirror_node --platform linux/arm64,linux/amd64 -t mirrornodeswirldslabs/citus:12.0.0 .
 [+] Building 351.1s (28/28) FINISHED
  => [internal] load .dockerignore                                                                                                                         0.0s
  => => transferring context: 2B                                                                                                                           0.0s
@@ -175,11 +154,7 @@ rather than as a separate step below.
 
 If you did not utilize `--push` with `docker buildx` when building the alpine image, push it now to Docker Hub.
 ```console
-docker push mirrornodeswirldslabs/citus:11.2.0-alpine
-```
-And for debian:
-```console
-docker push mirrornodeswirldslabs/citus:11.2.0
+docker push mirrornodeswirldslabs/citus:12.0.0
 ```
 You can then see that the images have been updated in [the repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
 If you click on the tags you can see the OS/ARCH supported by each.

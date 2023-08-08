@@ -41,7 +41,9 @@ spring:
       username: "" # Redis 5 does not support authentication with a username and will fail if provided
   flyway:
     placeholders:
-      partitionStartDate: "'0 days'"
+      partitionStartDate: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+      partitionTimeInterval: "'10 years'"
+      partitionIdInterval: "'1 second'"
       shardCount: 2
   task:
     scheduling:
