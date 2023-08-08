@@ -418,11 +418,16 @@ zfs:
   coordinator:
     diskSize: 300GB
   enabled: false
-  image:
-    pullPolicy: IfNotPresent
-    registry: gcr.io
-    repository: google.com/cloudsdktool/google-cloud-cli
-    tag: slim
+  init:
+    diskPrefix: citus
+    image:
+      pullPolicy: IfNotPresent
+      registry: gcr.io
+      repository: google.com/cloudsdktool/google-cloud-cli
+      tag: slim
+    serviceAccount:
+      name: zfs-service-account
+      iAmName: sa-name@project.iam.gserviceaccount.com
   parameters:
     compression: zstd-6
     fstype: zfs
@@ -438,3 +443,32 @@ zfs:
         key: zfs
         operator: Equal
         value: "true"
+    additionalVolumes:
+      node:
+        hostPath:
+          path: /
+      scripts:
+        configMap:
+          name: "{{ .Release.Name }}-zfs-init"
+          defaultMode: 0744
+    initContainers:
+      label-wait:
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+        imagePullPolicy: IfNotPresent
+        command: ["/scripts/label-wait.sh"]
+        env:
+          - name: ROOT_MOUNT_DIR
+            value: /node
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: node
+            mountPath: /node
+          - name: scripts
+            mountPath: /scripts
+  zfsPlugin:
+    image:
+      registry: gcr.io/
+      repository: mirrornode/zfs-driver
+      pullPolicy: IfNotPresent
+      tag: 2.3.1-HEDERA

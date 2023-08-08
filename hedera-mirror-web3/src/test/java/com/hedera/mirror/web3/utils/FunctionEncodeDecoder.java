@@ -83,6 +83,8 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
     private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
+    public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
+            "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
     public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
@@ -223,6 +225,8 @@ public class FunctionEncodeDecoder {
                     parameters[2]);
             case UINT32_ADDRESS_UINT32 -> Tuple.of(
                     Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
+            case TRANSFER_LIST_TOKEN_TRANSFER_LIST -> Tuple.of(
+                    Tuple.of((Object) new Tuple[] {}), encodeCryptoTransfer(parameters));
             case ADDRESS_ARRAY_OF_KEYS -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     Arrays.stream((Object[]) parameters[1])
@@ -241,6 +245,18 @@ public class FunctionEncodeDecoder {
                             .toList()
                             .toArray(new Tuple[((Object[]) parameters[1]).length]));
             default -> Tuple.EMPTY;
+        };
+    }
+
+    private Tuple[] encodeCryptoTransfer(Object[] parameters) {
+        return new Tuple[] {
+            Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    new Tuple[] {
+                        Tuple.of(convertAddress((Address) parameters[1]), -(Long) parameters[3], false),
+                        Tuple.of(convertAddress((Address) parameters[2]), parameters[3], false)
+                    },
+                    new Tuple[] {})
         };
     }
 

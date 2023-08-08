@@ -94,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -165,8 +166,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (bodyParams instanceof TransferParams transferParams) {
             final var transferOp =
                     switch (transferParams.functionId()) {
-                        case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(input, aliasResolver);
-                        case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(input, aliasResolver);
+                        case ABI_ID_CRYPTO_TRANSFER -> decodeCryptoTransfer(
+                                input, aliasResolver, transferParams.exists());
+                        case ABI_ID_CRYPTO_TRANSFER_V2 -> decodeCryptoTransferV2(
+                                input, aliasResolver, transferParams.exists());
                         case ABI_ID_TRANSFER_TOKENS -> decodeTransferTokens(input, aliasResolver);
                         case ABI_ID_TRANSFER_TOKEN -> decodeTransferToken(input, aliasResolver);
                         case ABI_ID_TRANSFER_NFTS -> decodeTransferNFTs(input, aliasResolver);
@@ -241,7 +244,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransferV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
         List<HbarTransfer> hbarTransfers = new ArrayList<>();
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
@@ -251,7 +254,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         hbarTransfers = decodeHbarTransfers(aliasResolver, hbarTransfers, hbarTransferTuples);
 
-        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples);
+        decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tokenTransferTuples, exists);
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
@@ -278,14 +281,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransfer(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
         final List<HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple);
+            decodeTokenTransfer(aliasResolver, tokenTransferWrappers, (Tuple[]) tuple, exists);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
@@ -294,7 +297,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public static void decodeTokenTransfer(
             final UnaryOperator<byte[]> aliasResolver,
             final List<TokenTransferWrapper> tokenTransferWrappers,
-            final Tuple[] tokenTransferTuples) {
+            final Tuple[] tokenTransferTuples,
+            final Predicate<AccountID> exists) {
         for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
@@ -303,7 +307,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
             final var abiAdjustments = (Tuple[]) tupleNested.get(1);
             if (abiAdjustments.length > 0) {
-                fungibleTransfers = bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
+                fungibleTransfers = bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver, exists);
             }
             final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
             if (abiNftExchanges.length > 0) {

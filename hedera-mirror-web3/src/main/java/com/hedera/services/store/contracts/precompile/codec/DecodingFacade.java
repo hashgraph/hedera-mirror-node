@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -142,12 +143,15 @@ public class DecodingFacade {
     }
 
     public static List<FungibleTokenTransfer> bindFungibleTransfersFrom(
-            final TokenID tokenType, @NonNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+            final TokenID tokenType,
+            @NonNull final Tuple[] abiTransfers,
+            final UnaryOperator<byte[]> aliasResolver,
+            Predicate<AccountID> exists) {
         final List<FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            if (amount > 0 && !accountID.hasAlias()) {
+            if (amount != 0 && !exists.test(accountID) && !accountID.hasAlias()) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"

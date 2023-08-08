@@ -43,7 +43,13 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @EnumSource(
             value = ContractReadFunctions.class,
             mode = Mode.EXCLUDE,
-            names = {"GET_CUSTOM_FEES_FOR_TOKEN"})
+            names = {
+                "GET_CUSTOM_FEES_FOR_TOKEN",
+                "GET_FUNGIBLE_TOKEN_INFO",
+                "GET_NFT_INFO",
+                "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
+                "GET_INFORMATION_FOR_TOKEN_NFT"
+            })
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
@@ -56,7 +62,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(ContractReadFunctions contractFunc) {
+    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
@@ -72,7 +78,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
-    void evmPrecompileSupportedModificationTokenFunctionsTest(SupportedContractModificationFunctions contractFunc) {
+    void evmPrecompileSupportedModificationTokenFunctionsTest(
+            final SupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
@@ -88,7 +95,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(FeeCase.class)
-    void customFeesEthCall(FeeCase feeCase) {
+    void customFeesEthCall(final FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -134,7 +141,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @CsvSource({"getInformationForFungibleToken,false", "getInformationForNonFungibleToken,true"})
-    void getTokenInfo(String functionName, boolean isNft) {
+    void getTokenInfo(final String functionName, final boolean isNft) {
         final var functionHash = isNft
                 ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
@@ -145,23 +152,23 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final Tuple decodeResult = functionEncodeDecoder
                 .decodeResult(functionName, ABI_PATH, callResult)
                 .get(0);
-        Tuple tokenInfo = decodeResult.get(0);
-        Tuple hederaToken = tokenInfo.get(0);
-        boolean deleted = tokenInfo.get(2);
-        boolean defaultKycStatus = tokenInfo.get(3);
-        boolean pauseStatus = tokenInfo.get(4);
-        Tuple[] fractionalFees = tokenInfo.get(6);
-        String ledgerId = tokenInfo.get(8);
-        String name = hederaToken.get(0);
-        String symbol = hederaToken.get(1);
-        com.esaulpaugh.headlong.abi.Address treasury = hederaToken.get(2);
-        String memo = hederaToken.get(3);
-        boolean supplyType = hederaToken.get(4);
-        long maxSupply = hederaToken.get(5);
-        boolean freezeStatus = hederaToken.get(6);
-        Tuple expiry = hederaToken.get(8);
-        com.esaulpaugh.headlong.abi.Address autoRenewAccount = expiry.get(1);
-        long autoRenewPeriod = expiry.get(2);
+        final Tuple tokenInfo = decodeResult.get(0);
+        final Tuple hederaToken = tokenInfo.get(0);
+        final boolean deleted = tokenInfo.get(2);
+        final boolean defaultKycStatus = tokenInfo.get(3);
+        final boolean pauseStatus = tokenInfo.get(4);
+        final Tuple[] fractionalFees = tokenInfo.get(6);
+        final String ledgerId = tokenInfo.get(8);
+        final String name = hederaToken.get(0);
+        final String symbol = hederaToken.get(1);
+        final com.esaulpaugh.headlong.abi.Address treasury = hederaToken.get(2);
+        final String memo = hederaToken.get(3);
+        final boolean supplyType = hederaToken.get(4);
+        final long maxSupply = hederaToken.get(5);
+        final boolean freezeStatus = hederaToken.get(6);
+        final Tuple expiry = hederaToken.get(8);
+        final com.esaulpaugh.headlong.abi.Address autoRenewAccount = expiry.get(1);
+        final long autoRenewPeriod = expiry.get(2);
 
         assertThat(deleted).isFalse();
         assertThat(defaultKycStatus).isFalse();
@@ -176,11 +183,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThat(autoRenewPeriod).isEqualTo(1800L);
 
         if (isNft) {
-            long serialNum = decodeResult.get(1);
-            com.esaulpaugh.headlong.abi.Address owner = decodeResult.get(2);
-            long creationTime = decodeResult.get(3);
-            byte[] metadata = decodeResult.get(4);
-            com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
+            final long serialNum = decodeResult.get(1);
+            final com.esaulpaugh.headlong.abi.Address owner = decodeResult.get(2);
+            final long creationTime = decodeResult.get(3);
+            final byte[] metadata = decodeResult.get(4);
+            final com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
 
             assertThat(serialNum).isEqualTo(1L);
             assertThat(owner).isEqualTo(convertAddress(OWNER_ADDRESS));
@@ -191,8 +198,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             assertThat(supplyType).isTrue();
             assertThat(autoRenewAccount).isEqualTo(convertAddress(AUTO_RENEW_ACCOUNT_ADDRESS));
         } else {
-            int decimals = decodeResult.get(1);
-            long totalSupply = tokenInfo.get(1);
+            final int decimals = decodeResult.get(1);
+            final long totalSupply = tokenInfo.get(1);
             assertThat(decimals).isEqualTo(12);
             assertThat(totalSupply).isEqualTo(12345L);
             assertThat(maxSupply).isEqualTo(2525L);
@@ -373,7 +380,13 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new Object[] {13L}),
         HTS_IS_APPROVED_FOR_ALL(
                 "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
-                });
+                }),
+        GET_FUNGIBLE_TOKEN_INFO(
+                "getInformationForFungibleToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS, 1L}, new Object[] {}),
+        GET_INFORMATION_FOR_TOKEN_FUNGIBLE(
+                "getInformationForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {});
 
         private final String name;
         private final Object[] functionParameters;
@@ -433,18 +446,36 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
         TRANSFER_TOKEN(
                 "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, SENDER_ADDRESS, 1L}),
+        TRANSFER_TOKEN_WITH_ALIAS(
+                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {
             TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ADDRESS, SENDER_ADDRESS}, new long[] {1L, -1L}
         }),
+        TRANSFER_TOKENS_WITH_ALIAS("transferTokensExternal", new Object[] {
+            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
+        }),
+        CRYPTO_TRANSFER_TOKENS(
+                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 5L}),
+        CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
+                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L}),
         TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
             NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ADDRESS}, new long[] {1}
         }),
+        TRANSFER_NFT_TOKENS_WITH_ALIAS("transferNFTsExternal", new Object[] {
+            NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
+        }),
         TRANSFER_NFT_TOKEN(
                 "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_NFT_TOKEN_WITH_ALIAS(
+                "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         TRANSFER_FROM(
                 "transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM_WITH_ALIAS(
+                "transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L}),
         TRANSFER_FROM_NFT(
                 "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM_NFT_WITH_ALIAS(
+                "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN}),
         UPDATE_TOKEN_EXPIRY(
                 "updateTokenExpiryInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER}),

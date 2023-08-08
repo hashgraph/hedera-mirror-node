@@ -86,6 +86,8 @@ public interface Store {
 
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 
+    boolean exists(AccountID accountID);
+
     enum OnMissing {
         THROW,
         DONT_THROW
