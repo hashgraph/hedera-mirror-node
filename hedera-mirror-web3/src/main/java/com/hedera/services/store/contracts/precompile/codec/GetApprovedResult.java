@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.function.Predicate;
+import org.hyperledger.besu.datatypes.Address;
 
-public record TransferParams(int functionId, Predicate<AccountID> exists) implements BodyParams {}
+public record GetApprovedResult(Address spender) implements RunResult {}
