@@ -17,16 +17,25 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
+import com.hedera.mirror.importer.parser.balance.TokenAccountBalanceEvent;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 @Named
-public class TokenAccountBalanceMigration extends RepeatableMigration {
+public class TokenAccountBalanceMigration extends RepeatableMigration implements BalanceStreamFileListener {
+
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
              with timestamp_range as (
@@ -70,9 +79,15 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
     private final JdbcOperations jdbcOperations;
 
     @Lazy
-    public TokenAccountBalanceMigration(JdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
+    public TokenAccountBalanceMigration(
+            JdbcOperations jdbcOperations,
+            MirrorProperties mirrorProperties,
+            AccountBalanceFileRepository accountBalanceFileRepository,
+            ApplicationEventPublisher applicationEventPublisher) {
         super(mirrorProperties.getMigration());
         this.jdbcOperations = jdbcOperations;
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -92,9 +107,16 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
         log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
 
-    @TransactionalEventListener(classes = InitializeBalanceEvent.class)
+    @TransactionalEventListener(classes = TokenAccountBalanceEvent.class)
     public void reRunMigration() {
         log.info("Running TokenAccountBalanceMigration on InitializeBalanceEvent");
         doMigrate();
+    }
+
+    @Override
+    public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
+        if (accountBalanceFileRepository.count() == 0) {
+            applicationEventPublisher.publishEvent(new TokenAccountBalanceEvent(this));
+        }
     }
 }

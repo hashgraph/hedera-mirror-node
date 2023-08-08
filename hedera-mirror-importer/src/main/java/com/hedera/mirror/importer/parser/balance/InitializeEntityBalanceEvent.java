@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.balance;
 import java.io.Serial;
 import org.springframework.context.ApplicationEvent;
 
-public class InitializeBalanceEvent extends ApplicationEvent {
+public class InitializeEntityBalanceEvent extends ApplicationEvent {
     @Serial
     private static final long serialVersionUID = 1356333318451521316L;
 
@@ -29,7 +29,7 @@ public class InitializeBalanceEvent extends ApplicationEvent {
      * @param source the object on which the event initially occurred or with which the event is associated (never
      *               {@code null})
      */
-    public InitializeBalanceEvent(Object source) {
+    public InitializeEntityBalanceEvent(Object source) {
         super(source);
     }
 }

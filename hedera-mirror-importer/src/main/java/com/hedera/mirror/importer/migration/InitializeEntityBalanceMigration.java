@@ -17,16 +17,24 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.parser.balance.InitializeBalanceEvent;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
+import com.hedera.mirror.importer.parser.balance.InitializeEntityBalanceEvent;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 @Named
-public class InitializeEntityBalanceMigration extends RepeatableMigration {
+public class InitializeEntityBalanceMigration extends RepeatableMigration implements BalanceStreamFileListener {
+
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =
             """
@@ -68,9 +76,15 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
     private final JdbcOperations jdbcOperations;
 
     @Lazy
-    public InitializeEntityBalanceMigration(JdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
+    public InitializeEntityBalanceMigration(
+            JdbcOperations jdbcOperations,
+            MirrorProperties mirrorProperties,
+            AccountBalanceFileRepository accountBalanceFileRepository,
+            ApplicationEventPublisher applicationEventPublisher) {
         super(mirrorProperties.getMigration());
         this.jdbcOperations = jdbcOperations;
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
 
     @Override
@@ -90,9 +104,16 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
         log.info("Initialized {} entities balance in {}", count, stopwatch);
     }
 
-    @TransactionalEventListener(classes = InitializeBalanceEvent.class)
+    @TransactionalEventListener(classes = InitializeEntityBalanceEvent.class)
     public void reRunMigration() {
         log.info("Re-running the InitializeEntityBalanceMigration on InitializeBalanceEvent");
         doMigrate();
+    }
+
+    @Override
+    public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
+        if (accountBalanceFileRepository.count() == 0) {
+            applicationEventPublisher.publishEvent(new InitializeEntityBalanceEvent(this));
+        }
     }
 }
