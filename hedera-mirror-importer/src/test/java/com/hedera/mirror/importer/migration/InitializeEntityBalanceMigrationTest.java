@@ -185,11 +185,16 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     void reRunMigrate() {
         // given
         setup();
+        accountBalanceFileRepository.deleteAll();
+        accountBalanceRepository.deleteAll();
 
         // when
-        initializeEntityBalanceMigration.reRunMigration();
+        initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
 
         // then
+        account.setBalance(0L);
+        accountDeleted.setBalance(0L);
+        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 

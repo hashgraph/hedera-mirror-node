@@ -42,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -54,6 +55,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private final TokenTransferRepository tokenTransferRepository;
+    private final TransactionTemplate transactionTemplate;
 
     private AccountBalanceFile accountBalanceFile;
     private AtomicLong timestamp;
@@ -265,11 +267,16 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     void reRunMigrate() {
         // given
         setup();
+        accountBalanceFileRepository.deleteAll();
 
         // when
-        tokenAccountBalanceMigration.reRunMigration();
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile);
 
         // then
+        tokenAccount.setBalance(0L);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(
                         tokenAccount,
@@ -277,7 +284,6 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                         tokenAccount3,
                         deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
-        assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 
     private void setup() {

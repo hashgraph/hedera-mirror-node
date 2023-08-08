@@ -45,7 +45,7 @@ import org.springframework.transaction.support.TransactionOperations;
 public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long>
         implements RecordStreamFileListener {
 
-    public static final Version HAPI_VERSION_0_38_6 = new Version(0, 38, 6);
+    public static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
     private static final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
@@ -159,11 +159,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             return;
         }
 
-        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_6)
+        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_0)
                 && executed.compareAndSet(false, true)) {
             var latestFile = recordFileRepository.findLatestWithOffset(1);
             if (latestFile
-                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_6))
+                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_0))
                     .isPresent()) {
                 migrateAsync();
             }
