@@ -39,8 +39,8 @@ public class CompositeBalanceStreamFileListener implements BalanceStreamFileList
 
     @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
-        for (var listener : listeners) {
-            listener.onEnd(streamFile);
+        for (int i = 0; i < listeners.size(); i++) {
+            listeners.get(i).onEnd(streamFile);
         }
     }
 
@@ -50,8 +50,8 @@ public class CompositeBalanceStreamFileListener implements BalanceStreamFileList
     }
 
     private void onEach(Consumer<BalanceStreamFileListener> consumer) {
-        for (var listener : listeners) {
-            consumer.accept(listener);
+        for (int i = 0; i < listeners.size(); i++) {
+            consumer.accept(listeners.get(i));
         }
     }
 }

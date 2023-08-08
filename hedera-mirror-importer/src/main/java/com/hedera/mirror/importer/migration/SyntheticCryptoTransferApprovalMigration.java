@@ -46,7 +46,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         implements RecordStreamFileListener {
 
     public static final Version HAPI_VERSION_0_38_10 = new Version(0, 38, 10);
-    private static final AtomicBoolean reRanMigration = new AtomicBoolean(false);
+    private static final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
@@ -158,12 +158,13 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             return;
         }
 
-        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_38_10) && !reRanMigration.get()) {
-            var lastRecordFile = recordFileRepository.findLatestWithOffset(1);
-            var latestFile = lastRecordFile.orElse(null);
-            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10)) {
+        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_10)
+                && executed.compareAndSet(false, true)) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1);
+            if (latestFile
+                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_10))
+                    .isPresent()) {
                 migrateAsync();
-                reRanMigration.set(true);
             }
         }
     }

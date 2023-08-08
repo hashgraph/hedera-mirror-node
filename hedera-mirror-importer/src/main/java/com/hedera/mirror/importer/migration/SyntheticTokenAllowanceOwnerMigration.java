@@ -34,7 +34,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration implements RecordStreamFileListener {
     // 10158
     public static final Version HAPI_VERSION_0_37_0 = new Version(0, 37, 0);
-    private static final AtomicBoolean reRanMigration = new AtomicBoolean(false);
+    private static final AtomicBoolean executed = new AtomicBoolean(false);
     private final RecordFileRepository recordFileRepository;
 
     private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
@@ -152,12 +152,13 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration i
         if (streamFile == null) {
             return;
         }
-        if ((streamFile.getHapiVersion()).isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0) && !reRanMigration.get()) {
-            var lastRecordFile = recordFileRepository.findLatestWithOffset(1);
-            var latestFile = lastRecordFile.orElse(null);
-            if (latestFile != null && latestFile.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0)) {
+        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0)
+                && executed.compareAndSet(false, true)) {
+            var latestFile = recordFileRepository.findLatestWithOffset(1);
+            if (latestFile
+                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0))
+                    .isPresent()) {
                 doMigrate();
-                reRanMigration.set(true);
             }
         }
     }

@@ -115,7 +115,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration implements
 
     @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
-        if (accountBalanceFileRepository.count() == 0) {
+        if (accountBalanceFileRepository.findNextInRange(0, Long.MAX_VALUE).isEmpty()) {
             applicationEventPublisher.publishEvent(new TokenAccountBalanceEvent(this));
         }
     }

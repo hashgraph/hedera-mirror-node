@@ -24,7 +24,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,7 +31,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
-    protected final AtomicReference<T> last;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
@@ -46,8 +44,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             MeterRegistry meterRegistry,
             ParserProperties parserProperties,
             StreamFileRepository<T, Long> streamFileRepository) {
-
-        this.last = new AtomicReference<>();
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
         this.streamFileRepository = streamFileRepository;
@@ -106,18 +102,14 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         if (!parserProperties.isEnabled()) {
             return false;
         }
-        var lastStreamFileFromDB = streamFileRepository.findLatest();
 
-        if (lastStreamFileFromDB.isEmpty()) {
+        var last = streamFileRepository.findLatest();
+
+        if (last.isEmpty()) {
             return true;
         }
 
-        if (last.get() == null) {
-            last.set(lastStreamFileFromDB.get());
-            last.get().setItems(null);
-        }
-
-        var lastStreamFile = lastStreamFileFromDB.get();
+        var lastStreamFile = last.get();
         var name = streamFile.getName();
 
         if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {

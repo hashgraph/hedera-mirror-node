@@ -40,8 +40,8 @@ public class CompositeRecordStreamFileListener implements RecordStreamFileListen
 
     @Override
     public void onEnd(RecordFile streamFile) throws ImporterException {
-        for (var listener : listeners) {
-            listener.onEnd(streamFile);
+        for (int i = 0; i < listeners.size(); i++) {
+            listeners.get(i).onEnd(streamFile);
         }
     }
 
@@ -51,8 +51,8 @@ public class CompositeRecordStreamFileListener implements RecordStreamFileListen
     }
 
     private void onEach(Consumer<RecordStreamFileListener> consumer) {
-        for (var listener : listeners) {
-            consumer.accept(listener);
+        for (int i = 0; i < listeners.size(); i++) {
+            consumer.accept(listeners.get(i));
         }
     }
 }

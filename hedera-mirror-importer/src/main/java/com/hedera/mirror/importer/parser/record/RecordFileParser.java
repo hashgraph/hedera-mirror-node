@@ -37,6 +37,7 @@ import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.Level;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -46,6 +47,7 @@ import reactor.core.publisher.Flux;
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
+    private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -64,7 +66,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             RecordStreamFileListener recordStreamFileListener,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, streamFileRepository);
-
+        this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
