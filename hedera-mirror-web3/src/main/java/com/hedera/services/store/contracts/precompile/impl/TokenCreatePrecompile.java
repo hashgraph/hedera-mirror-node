@@ -40,6 +40,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
@@ -71,6 +72,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -312,28 +314,25 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
         final var timestamp =
                 Timestamp.newBuilder().setSeconds(timestampSeconds).build();
-        //        final var gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
-        //        final var calculatedFeeInTinybars = pricingUtils.gasFeeInTinybars(
-        //                transactionBody.setTransactionID(TransactionID.newBuilder()
-        //                                .setTransactionValidStart(timestamp)
-        //                                .build()),
-        //                timestamp,
-        //                store,
-        //                aliases);
-        //        final var tinybarsRequirement = calculatedFeeInTinybars
-        //                + (calculatedFeeInTinybars / 5)
-        //                - getMinimumFeeInTinybars(timestamp, null) * gasPriceInTinybars;
-        final var tinybarsRequirement =
-                pricingUtils.computeGasRequirement(timestampSeconds, this, transactionBody, store, aliases);
+        final var gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
+        final var calculatedFeeInTinybars = pricingUtils.gasFeeInTinybars(
+                transactionBody.setTransactionID(TransactionID.newBuilder()
+                        .setTransactionValidStart(timestamp)
+                        .build()),
+                timestamp,
+                store,
+                aliases);
+
+        final var tinybarsRequirement = calculatedFeeInTinybars
+                + (calculatedFeeInTinybars / 5)
+                - getMinimumFeeInTinybars(timestamp, transactionBody.build()) * gasPriceInTinybars;
+
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
         final var sender = store.getAccount(frame.getSenderAddress(), OnMissing.THROW);
         final var updatedSender = sender.setBalance(sender.getBalance() - tinybarsRequirement);
-        final var recipient = store.getAccount(frame.getRecipientAddress(), OnMissing.THROW);
-        final var updatedRecipient = recipient.setBalance(recipient.getBalance() + tinybarsRequirement);
 
         store.updateAccount(updatedSender);
-        store.updateAccount(updatedRecipient);
     }
 
     @Override

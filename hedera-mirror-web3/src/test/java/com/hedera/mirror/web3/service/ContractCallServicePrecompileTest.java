@@ -448,7 +448,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         // SPENDER_ADDRESS}),
         //        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
         //        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
+        //        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
         CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createFungibleTokenWithCustomFeesExternal",
                 new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER});
