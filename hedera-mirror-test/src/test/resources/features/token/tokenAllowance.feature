@@ -3,24 +3,23 @@ Feature: Account Crypto Allowance Coverage Feature
 
   @critical @release @acceptance
   Scenario Outline: Validate approval TokenTransfer affect on TokenAllowance amount
-    Given I use named token <tokenName>
-    Given I associate a new sender account with token 0
-    And the mirror node REST API should return the transaction
-    Given I associate a new recipient account with token 0
-    And the mirror node REST API should return the transaction
-    Given I approve sender 0 to transfer up to <approvedAmount> tokens 0
-    Then the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender 0
-    Given I transfer <transferAmount> tokens 0 to recipient 0
-    And the mirror node REST API should return the transaction for token 0 fund flow
-    # This transfer by owner does not debit allowance amount
-    And the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender 0
-    Given Sender 0 transfers <transferAmount> tokens 0 from the approved allowance to recipient 0
-    Then the mirror node REST API should confirm the debit of <transferAmount> from approved token 0 allowance of <approvedAmount> for sender 0
-    Then the mirror node REST API should confirm the approved transfer of <transferAmount> tokens
-    When I approve sender 0 to transfer up to <approvedAmount> tokens 0
-    Then the mirror node REST API should confirm the approved token 0 allowance of <approvedAmount> for sender 0
-    When I delete the allowance on token 0 for sender 0
-    Then the mirror node REST API should confirm the token allowance deletion
+    Given I associate account <spender> with token <tokenName>
+    Then the mirror node REST API should return the transaction
+    And I associate account <recipient> with token <tokenName>
+    Then the mirror node REST API should return the transaction
+    Given I approve <spender> to transfer up to <approvedAmount> of token <tokenName>
+    Then the mirror node REST API should confirm the approved allowance <approvedAmount> of <tokenName> for <spender>
+    # Ensure this transfer by owner does not debit allowance amount
+    Given I transfer <transferAmount> of token <tokenName> to <recipient>
+    Then the mirror node REST API should confirm the transfer of <transferAmount> <tokenName>
+    And the mirror node REST API should confirm the approved allowance <approvedAmount> of <tokenName> for <spender>
+    Given <spender> transfers <transferAmount> of token <tokenName> to <recipient>
+    Then the mirror node REST API should confirm the approved transfer of <transferAmount> <tokenName>
+    And the mirror node REST API should confirm the debit of <transferAmount> from <tokenName> allowance of <approvedAmount> for <spender>
+    Given I approve <spender> to transfer up to <approvedAmount> of token <tokenName>
+    Then the mirror node REST API should confirm the approved allowance <approvedAmount> of <tokenName> for <spender>
+    When I delete the allowance on token <tokenName> for <spender>
+    Then the mirror node REST API should confirm the approved allowance 0 of <tokenName> for <spender>
     Examples:
-      | tokenName  | approvedAmount | transferAmount |
-      | "FUNGIBLE" | 10000          | 100            |
+      | tokenName  | spender | recipient | approvedAmount | transferAmount |
+      | "FUNGIBLE" | "BOB"   | "ALICE"   | 10000          | 100            |
