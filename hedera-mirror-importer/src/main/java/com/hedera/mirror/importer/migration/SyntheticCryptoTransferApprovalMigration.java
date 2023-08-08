@@ -51,7 +51,8 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
     static final long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
-    // This problem was fixed by services release 0.38.10, this is last timestamp before that release
+    // This problem was fixed by services release 0.38.6,protobuf release 0.38.10, this is last timestamp before that
+    // release
     static final long UPPER_BOUND_TIMESTAMP = 1686243920981874002L;
     private static final long TIMESTAMP_INCREMENT =
             Duration.ofDays(1).toNanos(); // 1 day in nanoseconds which will yield 69 async iterations
