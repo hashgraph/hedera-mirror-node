@@ -82,6 +82,8 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_ARRAY_OF_ADDRESSES_ARRAY_OF_INT64 = "(address,address[],int64[])";
     private static final String UINT32_ADDRESS_UINT32 = "((uint32,address,uint32))";
     public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
+    public static final String ADDRESS_ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,address,uint256,uint256)";
+    public static final String ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,uint256,uint256)";
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
     private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
@@ -226,6 +228,17 @@ public class FunctionEncodeDecoder {
             case ADDRESS_INT_BYTES_ADDRESS, ADDRESS_INT_INT64ARRAY_ADDRESS -> Tuple.of(
                     convertAddress((Address) parameters[0]), parameters[1], parameters[2], convertAddress((Address)
                             parameters[3]));
+            case ADDRESS_ADDRESS_ADDRESS_UINT256_UINT256 -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    convertAddress((Address) parameters[1]),
+                    convertAddress((Address) parameters[2]),
+                    parameters[3],
+                    parameters[4]);
+            case ADDRESS_ADDRESS_UINT256_UINT256 -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    convertAddress((Address) parameters[1]),
+                    parameters[2],
+                    parameters[3]);
             default -> Tuple.EMPTY;
         };
     }
