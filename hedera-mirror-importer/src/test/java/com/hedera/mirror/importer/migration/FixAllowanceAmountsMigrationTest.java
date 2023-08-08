@@ -106,7 +106,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
     void empty() {
         runMigration();
 
-        // Assert the migration table exists
         assertThat(cryptoAllowanceRepository.findAll()).isEmpty();
         assertThat(findHistory(CryptoAllowance.class)).isEmpty();
         assertThat(tokenAllowanceRepository.findAll()).isEmpty();
@@ -119,8 +118,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
             true, 50, 350
             """)
     void migrate(boolean hasTokenTransfers, long expectedAmount1, long expectedAmount2) {
-        domainBuilder.recordFile().persist();
-        var last = domainBuilder.recordFile().persist();
         jdbcOperations.update(PRE_MIGRATION_ALLOWANCES);
         if (hasTokenTransfers) {
             jdbcOperations.update(PRE_MIGRATION_TOKEN_TRANSFERS);
@@ -142,13 +139,6 @@ class FixAllowanceAmountsMigrationTest extends IntegrationTest {
                 .payerAccountId(PAYER)
                 .spender(6)
                 .timestampRange(Range.atLeast(11L))
-                .build();
-        var migrationTableCryptoAllowance =
-                cryptoAllowance1.toBuilder().amount(0).build();
-        var cryptoAllowanceSentinel = CryptoAllowance.builder()
-                .amountGranted(0L)
-                .payerAccountId(EntityId.EMPTY)
-                .timestampRange(Range.atLeast(last.getConsensusEnd()))
                 .build();
         var cryptoAllowanceHistory = CryptoAllowance.builder()
                 .amountGranted(60L)
