@@ -660,11 +660,14 @@ abstract contract HederaTokenService {
     /// Redirect for token
     /// @param token The token address
     /// @param encodedFunctionSelector The function selector from the ERC20 interface + the bytes input for the function called
-    function redirectForToken(address token, bytes memory encodedFunctionSelector) external {
-        (bool success, bytes memory data) = precompileAddress.call(
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return response The result of the call that had been encoded and sent for execution.
+    function redirectForToken(address token, bytes memory encodedFunctionSelector) external returns (int responseCode, bytes memory response) {
+        (bool success, bytes memory result) = precompileAddress.call(
             abi.encodeWithSelector(IHederaTokenService.redirectForToken.selector, token, encodedFunctionSelector)
         );
 
-        emit CallResponseEvent(success, data);
+        emit CallResponseEvent(success, result);
+        (responseCode, response) = success ? abi.decode(result, (int32, bytes)) : (HederaResponseCodes.UNKNOWN, bytes(""));
     }
 }

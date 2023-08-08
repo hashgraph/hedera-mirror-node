@@ -11,7 +11,7 @@ import "./KeyHelper.sol";
 contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelper {
 
     string name = "tokenName";
-    string symbol = "tokenSymbol";
+    string symbol = "TKY";
     string memo = "memo";
     int64 initialTotalSupply = 1000;
     int64 maxSupply = 1000;
@@ -426,7 +426,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     returns (int responseCode)
     {
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 6666666
+            0, treasury, 9000
         );
         responseCode = HederaTokenService.updateTokenExpiryInfo(token, expiry);
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -445,7 +445,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 8000000
+            0, treasury, 9000
         );
 
         IHederaTokenService.HederaToken memory tokenInfo = IHederaTokenService.HederaToken(

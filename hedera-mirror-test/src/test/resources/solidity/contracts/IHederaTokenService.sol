@@ -795,7 +795,7 @@ interface IHederaTokenService {
     external returns
     (int64 responseCode, int32 tokenType);
 
-    /// Initiates a Redirect For Token
-    /// @param encodedFunctionSelector The function selector from the ERC20 interface + the bytes input for the function called
-    function redirectForToken(address token, bytes memory encodedFunctionSelector) external;
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    /// @return response The result of the call that had been encoded and sent for execution.
+    function redirectForToken(address token, bytes memory encodedFunctionSelector) external returns (int64 responseCode, bytes memory response);
 }

@@ -114,4 +114,13 @@ contract PrecompileTestContract is HederaTokenService {
         }
         return key;
     }
+
+    function redirectForTokenExternal(address token, bytes memory encodedFunctionSelector) external
+    returns(int responseCode)
+    {
+        (responseCode, ) = this.redirectForToken(token, encodedFunctionSelector);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
 }
