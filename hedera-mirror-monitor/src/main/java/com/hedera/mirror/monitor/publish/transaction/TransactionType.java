@@ -24,6 +24,7 @@ import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusCreateTo
 import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusDeleteTopicTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusSubmitMessageTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.consensus.ConsensusUpdateTopicTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.network.FreezeTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleDeleteTransactionSupplier;
 import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleSignTransactionSupplier;
@@ -55,6 +56,7 @@ public enum TransactionType {
     CONSENSUS_SUBMIT_MESSAGE(ConsensusSubmitMessageTransactionSupplier.class),
     CONSENSUS_UPDATE_TOPIC(ConsensusUpdateTopicTransactionSupplier.class),
     CRYPTO_TRANSFER(CryptoTransferTransactionSupplier.class),
+    FREEZE(FreezeTransactionSupplier.class),
     SCHEDULE_CREATE(ScheduleCreateTransactionSupplier.class),
     SCHEDULE_DELETE(ScheduleDeleteTransactionSupplier.class),
     SCHEDULE_SIGN(ScheduleSignTransactionSupplier.class),

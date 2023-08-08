@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
-import org.hyperledger.besu.datatypes.Address;
+import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.function.Predicate;
 
-public record TransferParams(int functionId, Address sernderAddress) implements BodyParams {}
+public record TransferParams(int functionId, Predicate<AccountID> exists) implements BodyParams {}

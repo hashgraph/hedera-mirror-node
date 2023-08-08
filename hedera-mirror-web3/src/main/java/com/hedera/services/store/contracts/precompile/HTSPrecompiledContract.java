@@ -63,7 +63,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
@@ -71,6 +70,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
  * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
+ *
+ * Differences with the original class:
+ * 1. Use abstraction for the state by introducing {@link Store} interface.
+ * 2. Use workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the need of having separate precompile classes
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
@@ -132,21 +135,20 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             return evmHTSPrecompiledContract.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
         }
+
+        /* Workaround allowing execution of read only precompile methods in a dynamic context (non pure/view).
+        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.*/
+
+        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
+            return handleReadsFromDynamicContext(input, frame);
+        }
+
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
     }
 
     @NonNull
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
-        /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
-        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
-        After the Precompile classes are implemented, this workaround won't be needed. */
-
-        // redirect operations
-        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
-            return handleReadsFromDynamicContext(input, frame);
-        }
-
         if (unqualifiedDelegateDetected(frame)) {
             frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
             return INVALID_DELEGATE;
@@ -333,7 +335,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody =
-                        precompile.body(input, aliasResolver, new TransferParams(functionId, senderAddress));
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
@@ -357,8 +359,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.mirrorNodeEvmProperties = updater.aliases();
     }
 
-    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
-            final Bytes input, @NonNull final MessageFrame frame) {
+    private Pair<Long, Bytes> handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
         if (isTokenProxyRedirect(input)) {
             final var executor =
@@ -368,14 +369,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             if (resultFromExecutor.getRight() == null) {
                 throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
             }
-
         } else if (isViewFunction(input)) {
             final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         }
-        return resultFromExecutor == null
-                ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompileContractResult.success(resultFromExecutor.getRight());
+        return resultFromExecutor;
     }
 
     private boolean isNestedFunctionSelectorForWrite(Bytes input) {

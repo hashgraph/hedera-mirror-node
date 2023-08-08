@@ -13,7 +13,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.25+](https://kubernetes.io)
+- [Kubernetes 1.27+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 

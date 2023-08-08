@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     val springBootVersion: String by rootProject.extra
-    implementation("com.bmuschko:gradle-docker-plugin:9.3.1")
+    implementation("com.bmuschko:gradle-docker-plugin:9.3.2")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.20.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:5.0.0")
