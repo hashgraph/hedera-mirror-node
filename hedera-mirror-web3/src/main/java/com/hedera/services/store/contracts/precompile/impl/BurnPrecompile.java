@@ -123,7 +123,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
 
         final var modifiedToken = tokenModificationResult.token();
         return new BurnResult(
-                TokenType.FUNGIBLE_COMMON == modifiedToken.getType() ? modifiedToken.getTotalSupply() : 0L,
+                modifiedToken.getTotalSupply(),
                 TokenType.NON_FUNGIBLE_UNIQUE == modifiedToken.getType()
                         ? modifiedToken.removedUniqueTokens().stream()
                                 .map(UniqueToken::getSerialNumber)

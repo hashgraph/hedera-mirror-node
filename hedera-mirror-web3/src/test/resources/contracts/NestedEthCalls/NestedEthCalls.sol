@@ -56,7 +56,8 @@ contract NestedEthCalls is HederaTokenService {
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info before burn");
         int totalSupplyBeforeBurn = retrievedTokenInfo.totalSupply;
 
-        (responseCode,) = HederaTokenService.burnToken(token, amount, serialNumbers);
+        int newTotalSupply;
+        (responseCode, newTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to burn token");
 
         (responseCode, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
@@ -64,9 +65,9 @@ contract NestedEthCalls is HederaTokenService {
 
         int totalSupplyAfterBurn = retrievedTokenInfo.totalSupply;
         if(amount > 0 && serialNumbers.length == 0) {
-            if(totalSupplyBeforeBurn - amount != totalSupplyAfterBurn) revert("Total supply mismatch after burn (Fungible)");
+            if((totalSupplyBeforeBurn - amount != totalSupplyAfterBurn)  || (newTotalSupply != totalSupplyAfterBurn)) revert("Total supply mismatch after burn (Fungible)");
         } else {
-            if(totalSupplyBeforeBurn - int256(serialNumbers.length) != totalSupplyAfterBurn) revert("Total supply mismatch after burn (NFT)");
+            if((totalSupplyBeforeBurn - int256(serialNumbers.length) != totalSupplyAfterBurn) || ((newTotalSupply != totalSupplyAfterBurn))) revert("Total supply mismatch after burn (NFT)");
         }
 
         if(amount > 0 && serialNumbers.length == 0) {
@@ -167,9 +168,7 @@ contract NestedEthCalls is HederaTokenService {
                 revert("IERC20: failed to transfer");
             }
         } else {
-
             try IERC721(token).transferFrom(from, to, serialNumber) {
-
             } catch {
                 revert("IERC721: failed to transfer");
             }
