@@ -123,7 +123,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
     @Override
     public Pair<Long, Bytes> computeCosted(
-            Bytes input, MessageFrame frame, ViewGasCalculator viewGasCalculator, TokenAccessor tokenAccessor) {
+            final Bytes input,
+            final MessageFrame frame,
+            final ViewGasCalculator viewGasCalculator,
+            final TokenAccessor tokenAccessor) {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
@@ -171,7 +174,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 : PrecompileContractResult.success(result);
     }
 
-    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
+    public boolean unqualifiedDelegateDetected(final MessageFrame frame) {
         // if the first message frame is not a delegate, it's not a delegate
         if (!isDelegateCall(frame)) {
             return false;
@@ -221,24 +224,23 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
-    @SuppressWarnings({"java:S1301", "java:S3776"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         final int functionId = input.getInt(0);
         switch (functionId) {
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                RedirectTarget target;
+                final RedirectTarget target;
                 try {
                     target = DescriptorUtils.getRedirectTarget(input);
                 } catch (final Exception e) {
                     throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
                 }
-                var isExplicitRedirectCall = target.massagedInput() != null;
+                final var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
                 }
-                var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
-                var nestedFunctionSelector = target.descriptor();
+                final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+                final var nestedFunctionSelector = target.descriptor();
                 switch (nestedFunctionSelector) {
                         // cases will be added with the addition of precompiles using redirect operations
                     case AbiConstants.ABI_ID_ERC_APPROVE -> {
@@ -362,8 +364,9 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private Pair<Long, Bytes> handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
         if (isTokenProxyRedirect(input)) {
-            final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+            final var redirectTarget = DescriptorUtils.getRedirectTarget(input);
+            final var executor = infrastructureFactory.newRedirectExecutor(
+                    redirectTarget.massagedInput(), frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
 
             if (resultFromExecutor.getRight() == null) {
@@ -376,8 +379,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return resultFromExecutor;
     }
 
-    private boolean isNestedFunctionSelectorForWrite(Bytes input) {
-        RedirectTarget target;
+    private boolean isNestedFunctionSelectorForWrite(final Bytes input) {
+        final RedirectTarget target;
         try {
             target = DescriptorUtils.getRedirectTarget(input);
         } catch (final Exception e) {
@@ -387,6 +390,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return switch (nestedFunctionSelector) {
             case AbiConstants.ABI_ID_ERC_APPROVE,
                     AbiConstants.ABI_ID_ERC_TRANSFER,
+                    AbiConstants.ABI_ID_HRC_ASSOCIATE,
+                    AbiConstants.ABI_ID_HRC_DISSOCIATE,
                     AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
                     AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
             default -> false;

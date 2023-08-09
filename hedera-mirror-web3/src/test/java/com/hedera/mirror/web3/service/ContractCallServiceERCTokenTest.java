@@ -81,6 +81,40 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
+    @ParameterizedTest
+    @EnumSource(ErcContractReadOnlyFunctions.class)
+    void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
+        final var functionName = ercFunction.name + "Redirect";
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
+    @ParameterizedTest
+    @EnumSource(ErcContractModificationFunctions.class)
+    void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
+        final var functionName = ercFunction.name + "Redirect";
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
     @Test
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
