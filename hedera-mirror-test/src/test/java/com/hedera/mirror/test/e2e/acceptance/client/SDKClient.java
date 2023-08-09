@@ -68,28 +68,21 @@ public class SDKClient implements Cleanable {
             SdkProperties sdkProperties,
             StartupProbe startupProbe)
             throws InterruptedException, TimeoutException {
-
-        var operatorKeyStr = acceptanceTestProperties.getOperatorKey();
-        var operatorKey =
-                switch (acceptanceTestProperties.getOperatorKeyAlgorithm()) {
-                    case ECDSA -> PrivateKey.fromStringECDSA(operatorKeyStr);
-                    case ED25519 -> PrivateKey.fromStringED25519(operatorKeyStr);
-                };
-        this.defaultOperator = new ExpandedAccountId(acceptanceTestProperties.getOperatorId(), operatorKey);
+        defaultOperator = new ExpandedAccountId(
+                acceptanceTestProperties.getOperatorId(), acceptanceTestProperties.getOperatorKey());
         this.mirrorNodeClient = mirrorNodeClient;
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.sdkProperties = sdkProperties;
         this.client = createClient();
-        this.client
-                .setGrpcDeadline(sdkProperties.getGrpcDeadline())
+        client.setGrpcDeadline(sdkProperties.getGrpcDeadline())
                 .setMaxAttempts(sdkProperties.getMaxAttempts())
                 .setMaxNodeReadmitTime(Duration.ofSeconds(60L))
                 .setMaxNodesPerTransaction(sdkProperties.getMaxNodesPerTransaction());
         startupProbe.validateEnvironment(client);
         validateClient();
-        this.expandedOperatorAccountId = getOperatorAccount();
+        expandedOperatorAccountId = getOperatorAccount();
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
-        this.validateNetworkMap = this.client.getNetwork();
+        validateNetworkMap = this.client.getNetwork();
     }
 
     public AccountId getRandomNodeAccountId() {
