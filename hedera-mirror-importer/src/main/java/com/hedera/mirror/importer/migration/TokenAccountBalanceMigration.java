@@ -32,7 +32,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 public class TokenAccountBalanceMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
-    AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
+    private final AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
@@ -107,9 +107,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration implements
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
         firstConsensusTimestamp.compareAndSet(0, streamFile.getConsensusTimestamp());
         if (firstConsensusTimestamp.get() == streamFile.getConsensusTimestamp()
-                && accountBalanceFileRepository
-                        .findNextInRange(0, Long.MAX_VALUE)
-                        .isEmpty()) {
+                && accountBalanceFileRepository.findLatest().isEmpty()) {
             doMigrate();
         }
     }

@@ -25,6 +25,7 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +46,7 @@ import org.springframework.transaction.support.TransactionOperations;
 public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long>
         implements RecordStreamFileListener {
 
-    public static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
+    static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
     private static final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
@@ -158,15 +159,19 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         if (streamFile == null) {
             return;
         }
-
-        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_0)
-                && executed.compareAndSet(false, true)) {
-            var latestFile = recordFileRepository.findLatestWithOffset(1);
-            if (latestFile
-                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_0))
-                    .isPresent()) {
-                migrateAsync();
+        try {
+            if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_0)
+                    && executed.compareAndSet(false, true)) {
+                var latestFile = recordFileRepository.findLatestWithOffset(1);
+                if (latestFile
+                        .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_0))
+                        .isPresent()) {
+                    doMigrate();
+                }
             }
+        } catch (IOException e) {
+            log.error("Error executing the migration again after consensus_timestamp {}", streamFile.getConsensusEnd());
+            throw new RuntimeException(e);
         }
     }
 

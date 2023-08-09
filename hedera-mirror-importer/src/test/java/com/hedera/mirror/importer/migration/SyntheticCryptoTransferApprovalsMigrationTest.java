@@ -58,7 +58,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 @Tag("migration")
 class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
-    public static final long START_TIMESTAMP = 1568415600193620000L;
+    private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
 
     private final SyntheticCryptoTransferApprovalMigration migration;

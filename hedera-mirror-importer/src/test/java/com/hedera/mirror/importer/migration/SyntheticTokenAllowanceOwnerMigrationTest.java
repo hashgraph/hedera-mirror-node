@@ -155,7 +155,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void reRunOnEndMigration() {
+    void onEnd() {
         // given
         // Token allowance and token allowance history entries that have the incorrect owner
         var contractResultSenderId = EntityId.of("0.0.2001", CONTRACT);
