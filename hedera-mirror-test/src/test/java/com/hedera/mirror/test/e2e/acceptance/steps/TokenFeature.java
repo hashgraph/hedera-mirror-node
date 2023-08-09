@@ -108,6 +108,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the approved allowance {long} of {string} for {string}")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
             long approvedAmount, String tokenName, String accountName) {
         var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
@@ -116,6 +117,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the debit of {long} from {string} allowance of {long} for {string}")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
             long debitAmount, String tokenName, long approvedAmount, String accountName) {
         var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
@@ -155,11 +157,13 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the transfer of {long} {string}")
+    @RetryAsserts
     public void verifyMirrorAPITokenTransferResponse(long transferAmount, String tokenName) {
         verifyMirrorAPIApprovedTokenTransferResponse(transferAmount, tokenName, false);
     }
 
     @Then("the mirror node REST API should confirm the approved transfer of {long} {string}")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount, String tokenName) {
         verifyMirrorAPIApprovedTokenTransferResponse(transferAmount, tokenName, true);
     }
@@ -548,18 +552,21 @@ public class TokenFeature extends AbstractFeature {
 
     @Then(
             "the mirror node REST API should confirm the approved token (?:(.*) )?allowance of (.*) for sender(?: (.*))?$")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
             Integer tokenIndex, long approvedAmount, Integer senderIndex) {
         verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, tokenIndex, approvedAmount, senderIndex);
     }
 
     @Then("the mirror node REST API should confirm the token allowance deletion")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceDeletionResponse() {
         verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, 0, 0L, 0);
     }
 
     @Then(
             "the mirror node REST API should confirm the debit of (.*) from approved token (?:(.*) )?allowance of (.*) for sender(?: (.*))?$")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
             long debitAmount, Integer tokenIndex, long approvedAmount, Integer senderIndex) {
         var tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
@@ -582,6 +589,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the approved transfer of {long} tokens")
+    @RetryAsserts
     public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount) {
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
