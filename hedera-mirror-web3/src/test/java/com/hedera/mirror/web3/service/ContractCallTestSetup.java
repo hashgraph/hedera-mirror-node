@@ -150,6 +150,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
+    protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1262, CONTRACT));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
@@ -283,12 +284,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     protected Path ABI_PATH;
+
+    // The contract source `RedirectTestContract.sol` is in test resources
+    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.bin")
+    protected Path REDIRECT_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.json")
+    protected Path REDIRECT_CONTRACT_ABI_PATH;
+
     // The contract source `ModificationPrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
     protected Path MODIFICATION_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
     protected Path MODIFICATION_CONTRACT_ABI_PATH;
+
     // The contract source `ERCTestContract.sol` is in test resources
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
     protected Path ERC_CONTRACT_BYTES_PATH;
