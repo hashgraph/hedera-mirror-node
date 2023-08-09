@@ -28,6 +28,9 @@ import {CryptoAllowanceViewModel} from '../viewmodel';
 const {default: defaultLimit} = getResponseLimit();
 
 class CryptoAllowanceController extends BaseController {
+  static ownerCondition = `${CryptoAllowance.OWNER} = $1`;
+  static amountCondition = `${CryptoAllowance.AMOUNT} > 0`;
+
   /**
    * Extracts SQL where conditions, params, order, and limit from crypto allowances query
    *
@@ -37,7 +40,7 @@ class CryptoAllowanceController extends BaseController {
   extractCryptoAllowancesQuery = (filters, accountId) => {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
-    const conditions = [`${CryptoAllowance.OWNER} = $1`];
+    const conditions = [CryptoAllowanceController.ownerCondition];
     const params = [accountId];
     const spenderInValues = [];
 
@@ -68,6 +71,7 @@ class CryptoAllowanceController extends BaseController {
     }
 
     this.updateQueryFiltersWithInValues(params, conditions, spenderInValues, CryptoAllowance.SPENDER);
+    conditions.push(CryptoAllowanceController.amountCondition);
 
     return {
       conditions,
