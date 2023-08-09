@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
@@ -110,6 +111,20 @@ public class TokenClient extends AbstractNetworkClient {
         return tokenId;
     }
 
+    private NetworkTransactionResponse createToken(TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId) {
+        return createToken(
+                expandedAccountId,
+                tokenNameEnum.symbol,
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                expandedAccountId,
+                1_000_000,
+                TokenSupplyType.INFINITE,
+                1,
+                tokenNameEnum.tokenType,
+                Collections.emptyList());
+    }
+
     public NetworkTransactionResponse createToken(
             ExpandedAccountId expandedAccountId,
             String symbol,
@@ -144,20 +159,6 @@ public class TokenClient extends AbstractNetworkClient {
                     maxSupply,
                     customFees);
         }
-    }
-
-    private NetworkTransactionResponse createToken(TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId) {
-        return createToken(
-                expandedAccountId,
-                tokenNameEnum.symbol,
-                tokenNameEnum.freezeStatus,
-                tokenNameEnum.kycStatus,
-                expandedAccountId,
-                tokenNameEnum.initialSupply,
-                tokenNameEnum.tokenSupplyType,
-                tokenNameEnum.maxSupply,
-                tokenNameEnum.tokenType,
-                tokenNameEnum.customFees);
     }
 
     private TokenCreateTransaction getTokenCreateTransaction(
@@ -566,25 +567,13 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     @RequiredArgsConstructor
+    @Getter
     public enum TokenNameEnum {
-        FUNGIBLE(
-                "FNG",
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                1_000_000,
-                1,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                Collections.emptyList());
+        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON),
+        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE);
 
         private final String symbol;
         private final TokenType tokenType;
-        private final TokenSupplyType tokenSupplyType;
-        private final int initialSupply;
-        private final long maxSupply;
-        private final int freezeStatus;
-        private final int kycStatus;
-        private final List<CustomFee> customFees;
 
         @Override
         public String toString() {
