@@ -86,7 +86,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 success = true;
                 Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
                 parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
                 throw e;
             } finally {

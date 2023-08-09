@@ -96,7 +96,7 @@ public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T ex
         parser.parse(streamFile);
 
         // then
-        assertThat(streamFile.getBytes()).isNotNull();
+        assertParsed(streamFile, false, false);
     }
 
     @Test
