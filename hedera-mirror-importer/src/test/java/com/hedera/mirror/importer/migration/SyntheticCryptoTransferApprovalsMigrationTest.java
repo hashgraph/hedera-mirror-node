@@ -202,7 +202,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // given
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(38).hapiVersionPatch(9))
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(9))
                 .persist();
         domainBuilder
                 .recordFile()
