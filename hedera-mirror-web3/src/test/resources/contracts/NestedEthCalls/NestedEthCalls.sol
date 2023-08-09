@@ -162,9 +162,17 @@ contract NestedEthCalls is HederaTokenService {
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to dissociate tokens");
 
         if(amount > 0 && serialNumber == 0) {
-            IERC20(token).transferFrom(from, to, amount); // should fail
+            try IERC20(token).transferFrom(from, to, amount) returns (bool success) {
+            } catch {
+                revert("IERC20: failed to transfer");
+            }
         } else {
-            IERC721(token).transferFrom(from, to, serialNumber); // shuld fail
+
+            try IERC721(token).transferFrom(from, to, serialNumber) {
+
+            } catch {
+                revert("IERC721: failed to transfer");
+            }
         }
     }
 
