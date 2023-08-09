@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3;
 
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,6 +36,10 @@ import org.springframework.test.context.jdbc.Sql;
 @SpringBootTest
 @Import(IntegrationTestConfiguration.class)
 public abstract class Web3IntegrationTest {
+
+    static {
+        ObjectToStringSerializer.INSTANCE.toString();
+    }
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 

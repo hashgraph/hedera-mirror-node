@@ -140,7 +140,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
         var listAssert =
                 Assertions.assertThat(customFee.getValue().getFractionalFees()).hasSize(1);
         listAssert
-                .extracting(FractionalFee::getAmount)
+                .extracting(FractionalFee::getNumerator)
                 .containsOnly(
                         customFeeProto.getFractionalFee().getFractionalAmount().getNumerator());
         listAssert
@@ -203,7 +203,7 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
                 .extracting(RoyaltyFee::isAllCollectorsAreExempt)
                 .containsOnly(customFeeProto.getAllCollectorsAreExempt());
         listAssert
-                .extracting(RoyaltyFee::getAmount)
+                .extracting(RoyaltyFee::getNumerator)
                 .containsOnly(royaltyFee.getExchangeValueFraction().getNumerator());
         listAssert
                 .extracting(RoyaltyFee::getDenominator)

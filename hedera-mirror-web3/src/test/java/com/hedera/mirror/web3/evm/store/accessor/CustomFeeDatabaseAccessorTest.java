@@ -68,23 +68,15 @@ class CustomFeeDatabaseAccessorTest {
     void royaltyFee() {
         var fallbackFeeBuilder = FallbackFee.builder().denominatingTokenId(denominatingTokenId);
         var fallbackFee = fallbackFeeBuilder.amount(20L).build();
-        var fallbackFee2 = fallbackFeeBuilder.amount(21L).build();
 
         var royaltyFeeBuilder = RoyaltyFee.builder().collectorAccountId(collectorId);
         var royaltyFee = royaltyFeeBuilder
-                .amount(15L)
+                .numerator(15L)
                 .denominator(10L)
                 .fallbackFee(fallbackFee)
                 .build();
-        var royaltyFee2 = royaltyFeeBuilder
-                .amount(16L)
-                .denominator(11L)
-                .fallbackFee(fallbackFee2)
-                .build();
-        // RoyaltyFee without fallback fee will not be included in the results from customFeeDatabaseAccessor.
-        var royaltyFee3 =
-                royaltyFeeBuilder.amount(17L).denominator(12L).fallbackFee(null).build();
-        var royaltyFees = List.of(royaltyFee, royaltyFee2, royaltyFee3);
+        var royaltyFee2 = royaltyFeeBuilder.numerator(16L).denominator(11L).build();
+        var royaltyFees = List.of(royaltyFee, royaltyFee2);
         customFee.setRoyaltyFees(royaltyFees);
 
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
@@ -92,13 +84,13 @@ class CustomFeeDatabaseAccessorTest {
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var listAssert = assertThat(results).hasSize(2);
-        for (var domainFee : List.of(royaltyFee, royaltyFee2)) {
+        for (var domainFee : royaltyFees) {
             listAssert.anySatisfy(fee -> {
                 assertThat(fee.getFixedFee()).isNull();
                 assertThat(fee.getFractionalFee()).isNull();
                 var resultRoyaltyFee = fee.getRoyaltyFee();
                 assertThat(resultRoyaltyFee.getDenominator()).isEqualTo(domainFee.getDenominator());
-                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getAmount());
+                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getNumerator());
                 assertThat(resultRoyaltyFee.getAmount())
                         .isEqualTo(domainFee.getFallbackFee().getAmount());
                 assertThat(resultRoyaltyFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
@@ -112,14 +104,14 @@ class CustomFeeDatabaseAccessorTest {
     void fractionFee() {
         var fractionalFeeBuilder = FractionalFee.builder().collectorAccountId(collectorId);
         var fractionalFee = fractionalFeeBuilder
-                .amount(20L)
+                .numerator(20L)
                 .denominator(2L)
                 .maximumAmount(100L)
                 .minimumAmount(5L)
                 .netOfTransfers(true)
                 .build();
         var fractionalFee2 = fractionalFeeBuilder
-                .amount(21L)
+                .numerator(21L)
                 .denominator(3L)
                 .maximumAmount(101L)
                 .minimumAmount(6L)
@@ -138,7 +130,7 @@ class CustomFeeDatabaseAccessorTest {
                 assertThat(fee.getFixedFee()).isNull();
                 assertThat(fee.getRoyaltyFee()).isNull();
                 var resultFractionalFee = fee.getFractionalFee();
-                assertThat(resultFractionalFee.getNumerator()).isEqualTo(domainFee.getAmount());
+                assertThat(resultFractionalFee.getNumerator()).isEqualTo(domainFee.getNumerator());
                 assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getDenominator());
                 assertThat(resultFractionalFee.getMaximumAmount()).isEqualTo(domainFee.getMaximumAmount());
                 assertThat(resultFractionalFee.getMinimumAmount()).isEqualTo(domainFee.getMinimumAmount());

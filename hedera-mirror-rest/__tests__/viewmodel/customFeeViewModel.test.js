@@ -66,12 +66,12 @@ describe('CustomFeeViewModel', () => {
       fractional_fees: [
         {
           all_collectors_are_exempt: true,
-          amount: 15,
-          amount_denominator: 31,
           collector_account_id: 8901,
+          denominator: 31,
           maximum_amount: 101,
           minimum_amount: 37,
           net_of_transfers: false,
+          numerator: 15,
         },
       ],
       token_id: 10015,
@@ -105,11 +105,11 @@ describe('CustomFeeViewModel', () => {
       fractional_fees: [
         {
           all_collectors_are_exempt: false,
-          amount: 15,
-          amount_denominator: 31,
           collector_account_id: 8901,
+          denominator: 31,
           minimum_amount: 37,
           net_of_transfers: true,
+          numerator: 15,
         },
       ],
       token_id: 10015,
@@ -126,6 +126,7 @@ describe('CustomFeeViewModel', () => {
           },
           collector_account_id: '0.0.8901',
           denominating_token_id: '0.0.10015',
+          maximum: null,
           minimum: 37,
           net_of_transfers: true,
         },
@@ -141,12 +142,10 @@ describe('CustomFeeViewModel', () => {
     const input = new CustomFee({
       royalty_fees: [
         {
-          fallback_fee: {
-            all_collectors_are_exempt: true,
-            collector_account_id: 8901,
-          },
-          royalty_denominator: 31,
-          royalty_numerator: 15,
+          all_collectors_are_exempt: true,
+          collector_account_id: 8901,
+          denominator: 31,
+          numerator: 15,
         },
       ],
     });
@@ -162,6 +161,7 @@ describe('CustomFeeViewModel', () => {
             numerator: 15,
           },
           collector_account_id: '0.0.8901',
+          fallback_fee: null,
         },
       ],
     };
@@ -175,14 +175,14 @@ describe('CustomFeeViewModel', () => {
       const input = new CustomFee({
         royalty_fees: [
           {
+            all_collectors_are_exempt: false,
+            collector_account_id: 8901,
+            denominator: 31,
             fallback_fee: {
               amount: 11,
-              all_collectors_are_exempt: false,
-              collector_account_id: 8901,
               denominating_token_id: testSpec.dbDenominatingTokenId,
             },
-            royalty_denominator: 31,
-            royalty_numerator: 15,
+            numerator: 15,
           },
         ],
       });

@@ -23,9 +23,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.converter.FixedFeeConverter;
-import com.hedera.mirror.importer.converter.FractionalFeeConverter;
-import com.hedera.mirror.importer.converter.RoyaltyFeeConverter;
+import com.hedera.mirror.importer.converter.JsonbToListConverter;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
 import jakarta.persistence.Id;
@@ -113,9 +111,7 @@ public abstract class IntegrationTest {
                 throw new RuntimeException(e);
             }
         });
-        defaultConversionService.addConverter(FixedFeeConverter.INSTANCE);
-        defaultConversionService.addConverter(FractionalFeeConverter.INSTANCE);
-        defaultConversionService.addConverter(RoyaltyFeeConverter.INSTANCE);
+        defaultConversionService.addConverter(new JsonbToListConverter());
 
         DataClassRowMapper<T> dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);

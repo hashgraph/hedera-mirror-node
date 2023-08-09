@@ -91,7 +91,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
             if (f.getCollectorAccountId() != null) {
                 final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
                 final var fractionFee = new FractionalFee(
-                        requireNonNullElse(f.getAmount(), 0L),
+                        requireNonNullElse(f.getNumerator(), 0L),
                         requireNonNullElse(f.getDenominator(), 0L),
                         requireNonNullElse(f.getMinimumAmount(), 0L),
                         requireNonNullElse(f.getMaximumAmount(), 0L),
@@ -114,22 +114,24 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
         var royaltyFees = new ArrayList<CustomFee>();
         if (customFee.getRoyaltyFees() != null) {
             customFee.getRoyaltyFees().forEach(f -> {
-                final var fallbackFee = f.getFallbackFee();
-                if (fallbackFee != null && f.getCollectorAccountId() != null) {
-                    final var denominatingTokenId = fallbackFee.getDenominatingTokenId();
-                    final var denominatingTokenAddress =
-                            denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
-                    final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
-                    final var royaltyFee = new RoyaltyFee(
-                            requireNonNullElse(f.getAmount(), 0L),
-                            requireNonNullElse(f.getDenominator(), 0L),
-                            requireNonNullElse(fallbackFee.getAmount(), 0L),
-                            denominatingTokenAddress,
-                            denominatingTokenId == null,
-                            collector);
-                    var constructed = new CustomFee();
-                    constructed.setRoyaltyFee(royaltyFee);
-                    royaltyFees.add(constructed);
+                if (f.getCollectorAccountId() != null) {
+                    final var fallbackFee = f.getFallbackFee();
+                    if (fallbackFee != null) {
+                        final var denominatingTokenId = fallbackFee.getDenominatingTokenId();
+                        final var denominatingTokenAddress =
+                                denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
+                        final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+                        final var royaltyFee = new RoyaltyFee(
+                                requireNonNullElse(f.getNumerator(), 0L),
+                                requireNonNullElse(f.getDenominator(), 0L),
+                                requireNonNullElse(fallbackFee.getAmount(), 0L),
+                                denominatingTokenAddress,
+                                denominatingTokenId == null,
+                                collector);
+                        var constructed = new CustomFee();
+                        constructed.setRoyaltyFee(royaltyFee);
+                        royaltyFees.add(constructed);
+                    }
                 }
             });
         }

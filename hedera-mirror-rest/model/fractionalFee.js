@@ -22,18 +22,18 @@ class FractionalFee extends Fee {
    */
   constructor(fractionalFee) {
     super(fractionalFee);
-    this.amount = fractionalFee.amount;
-    this.amountDenominator = fractionalFee.amount_denominator;
+    this.denominator = fractionalFee.denominator;
     this.maximumAmount = fractionalFee.maximum_amount;
     this.minimumAmount = fractionalFee.minimum_amount;
     this.netOfTransfers = fractionalFee.net_of_transfers;
+    this.numerator = fractionalFee.numerator;
   }
 
-  static AMOUNT = `amount`;
-  static AMOUNT_DENOMINATOR = `amount_denominator`;
+  static DENOMINATOR = `denominator`;
   static MAXIMUM_AMOUNT = `maximum_amount`;
   static MINIMUM_AMOUNT = `minimum_amount`;
   static NET_OF_TRANSFERS = `net_of_transfers`;
+  static NUMERATOR = `numerator`;
 }
 
 export default FractionalFee;

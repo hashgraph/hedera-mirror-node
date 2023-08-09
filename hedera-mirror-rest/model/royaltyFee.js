@@ -23,14 +23,14 @@ class RoyaltyFee extends Fee {
    */
   constructor(royaltyFee) {
     super(royaltyFee);
+    this.denominator = royaltyFee.denominator;
     this.fallbackFee = royaltyFee.fallback_fee ? new FixedFee(royaltyFee.fallback_fee) : null;
-    this.royaltyDenominator = royaltyFee.royalty_denominator;
-    this.royaltyNumerator = royaltyFee.royalty_numerator;
+    this.numerator = royaltyFee.numerator;
   }
 
   static FALLBACK_FEE = `fallback_fee`;
-  static ROYALTY_DENOMINATOR = `royalty_denominator`;
-  static ROYALTY_NUMERATOR = `royalty_numerator`;
+  static DENOMINATOR = `denominator`;
+  static NUMERATOR = `numerator`;
 }
 
 export default RoyaltyFee;

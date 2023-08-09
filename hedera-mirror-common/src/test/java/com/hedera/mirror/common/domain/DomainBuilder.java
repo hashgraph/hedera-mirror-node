@@ -370,76 +370,22 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder<?, ?>> customFee() {
-        var tokenId = entityId(TOKEN);
-        var collector = entityId(ACCOUNT);
-        var fixedFee = fixedFee()
-                .customize(c -> c.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominatingTokenId(tokenId))
-                .get();
-        var fractionalFee = fractionalFee()
-                .customize(f -> f.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominator(id())
-                        .maximumAmount(id())
-                        .minimumAmount(1L)
-                        .netOfTransfers(true))
-                .get();
-        var fallBackFee = fallbackFee()
-                .customize(f -> f.amount(id()).denominatingTokenId(tokenId))
-                .get();
-        var royaltyFee = royaltyFee()
-                .customize(r -> r.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominator(id())
-                        .fallbackFee(fallBackFee))
-                .get();
         var builder = CustomFee.builder()
-                .tokenId(tokenId.getId())
+                .fixedFees(List.of(fixedFee()))
+                .fractionalFees(List.of(fractionalFee()))
+                .royaltyFees(List.of(royaltyFee()))
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()))
-                .fixedFees(List.of(fixedFee))
-                .fractionalFees(List.of(fractionalFee))
-                .royaltyFees(List.of(royaltyFee));
+                .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
-        var tokenId = entityId(TOKEN);
-        var collector = entityId(ACCOUNT);
-        var fixedFee = fixedFee()
-                .customize(c -> c.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominatingTokenId(tokenId))
-                .get();
-        var fractionalFee = fractionalFee()
-                .customize(f -> f.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominator(id())
-                        .maximumAmount(id())
-                        .minimumAmount(1L)
-                        .netOfTransfers(true))
-                .get();
-        var fallBackFee = fallbackFee()
-                .customize(f -> f.amount(id()).denominatingTokenId(tokenId))
-                .get();
-        var royaltyFee = royaltyFee()
-                .customize(r -> r.allCollectorsAreExempt(true)
-                        .amount(id())
-                        .collectorAccountId(collector)
-                        .denominator(id())
-                        .fallbackFee(fallBackFee))
-                .get();
         var builder = CustomFeeHistory.builder()
-                .tokenId(tokenId.getId())
+                .fixedFees(List.of(fixedFee()))
+                .fractionalFees(List.of(fractionalFee()))
+                .royaltyFees(List.of(royaltyFee()))
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()))
-                .fixedFees(List.of(fixedFee))
-                .fractionalFees(List.of(fractionalFee))
-                .royaltyFees(List.of(royaltyFee));
+                .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -614,25 +560,25 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    private DomainWrapper<FixedFee, FixedFee.FixedFeeBuilder<?, ?>> fixedFee() {
-        var builder = FixedFee.builder()
+    private FixedFee fixedFee() {
+        return FixedFee.builder()
                 .allCollectorsAreExempt(true)
                 .amount(id())
                 .collectorAccountId(entityId(ACCOUNT))
-                .denominatingTokenId(entityId(TOKEN));
-        return new DomainWrapperImpl<>(builder, builder::build);
+                .denominatingTokenId(entityId(TOKEN))
+                .build();
     }
 
-    private DomainWrapper<FractionalFee, FractionalFee.FractionalFeeBuilder<?, ?>> fractionalFee() {
-        var builder = FractionalFee.builder()
+    private FractionalFee fractionalFee() {
+        return FractionalFee.builder()
                 .allCollectorsAreExempt(true)
-                .amount(id())
                 .collectorAccountId(entityId(ACCOUNT))
                 .denominator(id())
                 .maximumAmount(id())
                 .minimumAmount(1L)
-                .netOfTransfers(true);
-        return new DomainWrapperImpl<>(builder, builder::build);
+                .numerator(id())
+                .netOfTransfers(true)
+                .build();
     }
 
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
@@ -803,14 +749,14 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    private DomainWrapper<RoyaltyFee, RoyaltyFee.RoyaltyFeeBuilder<?, ?>> royaltyFee() {
-        var builder = RoyaltyFee.builder()
+    private RoyaltyFee royaltyFee() {
+        return RoyaltyFee.builder()
                 .allCollectorsAreExempt(true)
-                .amount(id())
                 .collectorAccountId(entityId(ACCOUNT))
                 .denominator(id())
-                .fallbackFee(fallbackFee().get());
-        return new DomainWrapperImpl<>(builder, builder::build);
+                .fallbackFee(fallbackFee().get())
+                .numerator(id())
+                .build();
     }
 
     public DomainWrapper<Schedule, Schedule.ScheduleBuilder> schedule() {

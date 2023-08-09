@@ -690,12 +690,6 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
 };
 
 const addCustomFee = async (customFee) => {
-  customFee = {
-    all_collectors_are_exempt: true,
-    collector_account_id: '0.0.300',
-    ...customFee,
-  };
-
   customFee.fixed_fees?.forEach((f) => {
     parseCustomFeeEntityIds(f);
   });
@@ -728,8 +722,15 @@ const addCustomFee = async (customFee) => {
 };
 
 const parseCustomFeeEntityIds = async (fee) => {
+  fee = {
+    all_collectors_are_exempt: true,
+    collector_account_id: '0.0.300',
+    ...fee,
+  };
   fee.collector_account_id = EntityId.parse(fee.collector_account_id, {isNullable: true}).getEncodedId();
-  fee.denominating_token_id = EntityId.parse(fee.denominating_token_id, {isNullable: true}).getEncodedId();
+  if (!_.isNil(fee.denominating_token_id)) {
+    fee.denominating_token_id = EntityId.parse(fee.denominating_token_id).getEncodedId();
+  }
 };
 
 const setAccountBalance = async (balance) => {

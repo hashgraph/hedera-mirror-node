@@ -190,39 +190,39 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             // fractional fees only apply for fungible tokens
             var fractionalFee1 = new com.hedera.mirror.common.domain.token.FractionalFee();
             fractionalFee1.setAllCollectorsAreExempt(false);
-            fractionalFee1.setAmount(14L);
             fractionalFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
             fractionalFee1.setDenominator(31L);
             fractionalFee1.setMinimumAmount(1L);
             fractionalFee1.setMaximumAmount(100L);
             fractionalFee1.setNetOfTransfers(true);
+            fractionalFee1.setNumerator(14L);
             customFee.addFractionalFee(fractionalFee1);
 
             var fractionalFee2 = new com.hedera.mirror.common.domain.token.FractionalFee();
             fractionalFee2.setAllCollectorsAreExempt(true);
-            fractionalFee2.setAmount(15L);
             fractionalFee2.setCollectorAccountId(treasury);
             fractionalFee2.setDenominator(32L);
             fractionalFee2.setMinimumAmount(10L);
             fractionalFee2.setMaximumAmount(110L);
             fractionalFee2.setNetOfTransfers(false);
+            fractionalFee2.setNumerator(15L);
             customFee.addFractionalFee(fractionalFee2);
         } else {
             // royalty fees only apply for non-fungible tokens
             var royaltyFee1 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee1.setAllCollectorsAreExempt(false);
-            royaltyFee1.setAmount(14L);
             royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
             royaltyFee1.setDenominator(31L);
+            royaltyFee1.setNumerator(14L);
             customFee.addRoyaltyFee(royaltyFee1);
 
             // with fallback fee
             var royaltyFee2 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee2.setAllCollectorsAreExempt(true);
-            royaltyFee2.setAmount(15L);
             royaltyFee2.setCollectorAccountId(treasury);
             royaltyFee2.setDenominator(32L);
-            royaltyFee2.setAllCollectorsAreExempt(true);
+            royaltyFee2.setNumerator(15L);
+
             var fallBackFee = new com.hedera.mirror.common.domain.token.FallbackFee();
             fallBackFee.setAmount(103L);
             fallBackFee.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
@@ -3744,7 +3744,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 long maximumAmount = fractionalFee.getMaximumAmount();
                 protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
                         .setFractionalAmount(Fraction.newBuilder()
-                                .setNumerator(fractionalFee.getAmount())
+                                .setNumerator(fractionalFee.getNumerator())
                                 .setDenominator(fractionalFee.getDenominator()))
                         .setMaximumAmount(maximumAmount)
                         .setMinimumAmount(fractionalFee.getMinimumAmount())
@@ -3759,7 +3759,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
                 RoyaltyFee.Builder protoRoyaltyFee = RoyaltyFee.newBuilder()
                         .setExchangeValueFraction(Fraction.newBuilder()
-                                .setNumerator(royaltyFee.getAmount())
+                                .setNumerator(royaltyFee.getNumerator())
                                 .setDenominator(royaltyFee.getDenominator()));
                 if (royaltyFee.getFallbackFee() != null) {
                     var amount = royaltyFee.getFallbackFee().getAmount();

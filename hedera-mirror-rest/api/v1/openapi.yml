@@ -1067,6 +1067,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 010101
                     custom_fees:
+                      created_timestamp: "1234567890.000000001"
                       fixed_fees:
                         - amount: 100
                           collector_account_id: 0.1.5
@@ -1120,6 +1121,7 @@ paths:
                       _type: ProtobufEncoded
                       key: 010101
                     custom_fees:
+                      created_timestamp: "1234567890.000000001"
                       fixed_fees:
                         - amount: 100
                           collector_account_id: 0.1.5
@@ -2336,6 +2338,8 @@ components:
     CustomFees:
       type: object
       properties:
+        created_timestamp:
+          $ref: "#/components/schemas/Timestamp"
         fixed_fees:
           type: array
           items:

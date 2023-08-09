@@ -23,20 +23,21 @@ class CustomFee {
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
+    this.createdTimestamp = customFee.created_timestamp;
     this.fixedFees = (customFee.fixed_fees ?? []).map((n) => new FixedFee(n));
     this.fractionalFees = (customFee.fractional_fees ?? []).map((n) => new FractionalFee(n));
     this.royaltyFees = (customFee.royalty_fees ?? []).map((n) => new RoyaltyFee(n));
-    this.timestampRange = customFee.timestamp_range;
     this.tokenId = customFee.token_id;
   }
 
-  static tableName = 'custom_fee';
+  static tableName = `custom_fee`;
 
+  static CREATED_TIMESTAMP = `created_timestamp`;
   static FIXED_FEES = `fixed_fees`;
   static FRACTIONAL_FEES = `fractional_fees`;
   static ROYALTY_FEES = `royalty_fees`;
   static TOKEN_ID = `token_id`;
-  static TIMESTAMP_RANGE = 'timestamp_range';
+  static TIMESTAMP_RANGE = `timestamp_range`;
 }
 
 export default CustomFee;

@@ -30,6 +30,8 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(toBuilder = true)
 public class FixedFee extends AbstractFee {
 
+    private long amount;
+
     @JsonSerialize(using = EntityIdSerializer.class)
     @JsonDeserialize(using = EntityIdDeserializer.class)
     private EntityId denominatingTokenId;

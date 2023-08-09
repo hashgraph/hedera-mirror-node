@@ -148,7 +148,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        var expected = toAggregateCustomFees(List.of(updateOne, updateTwo, updateThree));
+        var expected = toAggregateCustomFees(List.of(updateTwo, updateOne, updateThree));
         expected.forEach(e -> e.setTimestampRange(Range.atLeast(updateTimestamp)));
         assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
@@ -422,11 +422,11 @@ class CustomFeesMigrationTest extends IntegrationTest {
             }
             if (migrationCustomFee.amountDenominator != null) {
                 customFee.addFractionalFee(FractionalFee.builder()
-                        .amount(migrationCustomFee.amount)
                         .denominator(migrationCustomFee.amountDenominator)
                         .maximumAmount(migrationCustomFee.maximumAmount)
                         .minimumAmount(migrationCustomFee.minimumAmount)
                         .netOfTransfers(migrationCustomFee.netOfTransfers)
+                        .numerator(migrationCustomFee.amount)
                         .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                         .build());
@@ -434,9 +434,9 @@ class CustomFeesMigrationTest extends IntegrationTest {
             if (migrationCustomFee.royaltyDenominator != null) {
                 var royaltyFee = RoyaltyFee.builder()
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
-                        .amount(migrationCustomFee.royaltyNumerator)
                         .denominator(migrationCustomFee.royaltyDenominator)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT));
+                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
+                        .numerator(migrationCustomFee.royaltyNumerator);
                 if (migrationCustomFee.getAmount() != null) {
                     royaltyFee.fallbackFee(FallbackFee.builder()
                             .amount(migrationCustomFee.amount)
@@ -562,12 +562,12 @@ class CustomFeesMigrationTest extends IntegrationTest {
             var item = jsonArray.getJSONObject(i);
             fractionalFees.add(FractionalFee.builder()
                     .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .amount(item.getLong("amount"))
+                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
                     .denominator(item.getLong("denominator"))
-                    .netOfTransfers(item.getBoolean("net_of_transfers"))
                     .maximumAmount(item.getLong("maximum_amount"))
                     .minimumAmount(item.getLong("minimum_amount"))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
+                    .netOfTransfers(item.getBoolean("net_of_transfers"))
+                    .numerator(item.getLong("numerator"))
                     .build());
         }
         return fractionalFees;
@@ -584,9 +584,9 @@ class CustomFeesMigrationTest extends IntegrationTest {
             var item = jsonArray.getJSONObject(i);
             var builder = RoyaltyFee.builder()
                     .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .amount(item.getLong("amount"))
+                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
                     .denominator(item.getLong("denominator"))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT));
+                    .numerator(item.getLong("numerator"));
 
             if (!item.getString("fallback_fee").equals("null")) {
                 var fallBackFee = item.getJSONObject("fallback_fee");

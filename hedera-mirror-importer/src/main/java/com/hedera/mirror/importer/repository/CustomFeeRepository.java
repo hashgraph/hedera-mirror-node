@@ -17,14 +17,6 @@
 package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long>, RetentionRepository {
-
-    @Modifying
-    @Override
-    @Query(nativeQuery = true, value = "delete from custom_fee where timestamp_range << int8range(?1, null)")
-    int prune(long consensusTimestamp);
-}
+public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}

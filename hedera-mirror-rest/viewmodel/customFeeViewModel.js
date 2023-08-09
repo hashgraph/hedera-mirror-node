@@ -26,6 +26,7 @@ class CustomFeeViewModel {
    * @param {CustomFee} customFee
    */
   constructor(customFee) {
+    this.created_timestamp = customFee.createdTimestamp;
     this.fixed_fees = customFee.fixedFees?.map((f) => this._parseFixedFee(f)) ?? [];
     this.fractional_fees = customFee.fractionalFees?.map((f) => this._parseFractionalFee(f, customFee.tokenId)) ?? [];
     this.royalty_fees = customFee.royaltyFees?.map((f) => this._parseRoyaltyFee(f)) ?? [];
@@ -35,7 +36,7 @@ class CustomFeeViewModel {
     return {
       all_collectors_are_exempt: fixedFee.allCollectorsAreExempt ?? false,
       amount: fixedFee.amount,
-      collector_account_id: EntityId.parse(fixedFee.collectorAccountId, {isNullable: true}).toString(),
+      collector_account_id: EntityId.parse(fixedFee.collectorAccountId).toString(),
       denominating_token_id: EntityId.parse(fixedFee.denominatingTokenId, {isNullable: true}).toString(),
     };
   }
@@ -44,19 +45,19 @@ class CustomFeeViewModel {
     return {
       all_collectors_are_exempt: fractionalFee.allCollectorsAreExempt ?? false,
       amount: {
-        numerator: fractionalFee.amount,
-        denominator: fractionalFee.amountDenominator,
+        numerator: fractionalFee.numerator,
+        denominator: fractionalFee.denominator,
       },
-      collector_account_id: EntityId.parse(fractionalFee.collectorAccountId, {isNullable: true}).toString(),
-      denominating_token_id: EntityId.parse(tokenId, {isNullable: true}).toString(),
-      maximum: fractionalFee.maximumAmount,
+      collector_account_id: EntityId.parse(fractionalFee.collectorAccountId).toString(),
+      denominating_token_id: EntityId.parse(tokenId).toString(),
+      maximum: fractionalFee.maximumAmount ?? null,
       minimum: fractionalFee.minimumAmount,
       net_of_transfers: fractionalFee.netOfTransfers ?? false,
     };
   }
 
   _parseRoyaltyFee(royaltyFee) {
-    const fallbackFee = royaltyFee.fallbackFee?.amount
+    const fallback_fee = royaltyFee.fallbackFee?.amount
       ? {
           amount: royaltyFee.fallbackFee.amount,
           denominating_token_id: EntityId.parse(royaltyFee.fallbackFee.denominatingTokenId, {
@@ -65,21 +66,15 @@ class CustomFeeViewModel {
         }
       : null;
 
-    const viewModel = {
-      all_collectors_are_exempt: royaltyFee.fallbackFee?.allCollectorsAreExempt ?? false,
+    return {
+      all_collectors_are_exempt: royaltyFee.allCollectorsAreExempt ?? false,
       amount: {
-        denominator: royaltyFee.royaltyDenominator,
-        numerator: royaltyFee.royaltyNumerator,
+        denominator: royaltyFee.denominator,
+        numerator: royaltyFee.numerator,
       },
-      collector_account_id: EntityId.parse(royaltyFee.fallbackFee?.collectorAccountId, {isNullable: true}).toString(),
+      collector_account_id: EntityId.parse(royaltyFee.collectorAccountId).toString(),
+      fallback_fee,
     };
-
-    return fallbackFee
-      ? {
-          ...viewModel,
-          fallback_fee: fallbackFee,
-        }
-      : viewModel;
   }
 }
 

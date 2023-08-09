@@ -48,11 +48,11 @@
           {
             "fractional_fees": [
               {
-                "amount": 10,
-                "amount_denominator": 13,
                 "collector_account_id": "0.0.8901",
+                "denominator": 13,
                 "maximum_amount": 980,
-                "minimum_amount": 97
+                "minimum_amount": 97,
+                "numerator": 10
               }
             ],
             "timestamp_range": "[1234567899999999001,1234567899999999006)",
@@ -73,55 +73,53 @@
             ],
             "fractional_fees": [
               {
-                "amount": 11,
-                "amount_denominator": 17,
                 "collector_account_id": "0.0.8901",
+                "denominator": 17,
                 "maximum_amount": 987,
-                "minimum_amount": 79
+                "minimum_amount": 79,
+                "numerator": 11
               },
               {
                 "all_collectors_are_exempt": true,
-                "amount": 9,
-                "amount_denominator": 13,
                 "collector_account_id": "0.0.8902",
-                "minimum_amount": 1
+                "denominator": 13,
+                "minimum_amount": 1,
+                "numerator": 9
               },
               {
                 "all_collectors_are_exempt": true,
-                "amount": 41,
-                "amount_denominator": 131,
                 "collector_account_id": "0.0.8904",
+                "denominator": 131,
                 "minimum_amount": 0,
-                "net_of_transfers": true
+                "net_of_transfers": true,
+                "numerator": 41
               }
             ],
             "royalty_fees": [
               {
-                "fallback_fee": {
-                  "all_collectors_are_exempt": false,
-                  "collector_account_id": "0.0.8901"
-                },
-                "royalty_denominator": 17,
-                "royalty_numerator": 11
+                "all_collectors_are_exempt": false,
+                "collector_account_id": "0.0.8901",
+                "denominator": 17,
+                "numerator": 11
               },
               {
+                "all_collectors_are_exempt": true,
+                "collector_account_id": "0.0.8902",
+                "denominator": 13,
                 "fallback_fee": {
-                  "all_collectors_are_exempt": true,
                   "amount": 1300,
-                  "collector_account_id": "0.0.8902",
                   "denominating_token_id": "0.0.1137"
                 },
-                "royalty_denominator": 13,
-                "royalty_numerator": 9
+                "numerator": 9
               },
               {
+                "all_collectors_are_exempt": true,
+                "collector_account_id": "0.0.8904",
+                "denominator": 131,
                 "fallback_fee": {
-                  "all_collectors_are_exempt": true,
-                  "amount": 8,
-                  "collector_account_id": "0.0.8904"
+                  "amount": 8
                 },
-                "royalty_denominator": 131,
-                "royalty_numerator": 41
+                "numerator": 41
               }
             ],
             "timestamp_range": "[1234567899999999007,)",
@@ -183,6 +181,7 @@
     "type": "NON_FUNGIBLE_UNIQUE",
     "wipe_key": null,
     "custom_fees": {
+      "created_timestamp": "1234567899.999999007",
       "fixed_fees": [
         {
           "all_collectors_are_exempt": false,
@@ -204,7 +203,8 @@
             "denominator": 17,
             "numerator": 11
           },
-          "collector_account_id": "0.0.8901"
+          "collector_account_id": "0.0.8901",
+          "fallback_fee": null
         },
         {
           "all_collectors_are_exempt": true,

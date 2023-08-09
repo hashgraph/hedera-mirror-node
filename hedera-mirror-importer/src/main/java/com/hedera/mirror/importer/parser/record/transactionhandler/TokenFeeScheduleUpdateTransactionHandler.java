@@ -176,13 +176,13 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
      */
     private FractionalFee parseFractionalFee(com.hederahashgraph.api.proto.java.FractionalFee protoFractionalFee) {
         var fractionalFee = new FractionalFee();
-        fractionalFee.setAmount(protoFractionalFee.getFractionalAmount().getNumerator());
         fractionalFee.setDenominator(protoFractionalFee.getFractionalAmount().getDenominator());
         long maximumAmount = protoFractionalFee.getMaximumAmount();
         if (maximumAmount != 0) {
             fractionalFee.setMaximumAmount(maximumAmount);
         }
         fractionalFee.setMinimumAmount(protoFractionalFee.getMinimumAmount());
+        fractionalFee.setNumerator(protoFractionalFee.getFractionalAmount().getNumerator());
         fractionalFee.setNetOfTransfers(protoFractionalFee.getNetOfTransfers());
         return fractionalFee;
     }
@@ -195,8 +195,8 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
     private RoyaltyFee parseRoyaltyFee(
             com.hederahashgraph.api.proto.java.RoyaltyFee protoRoyaltyFee, EntityId tokenId) {
         var royaltyFee = new RoyaltyFee();
-        royaltyFee.setAmount(protoRoyaltyFee.getExchangeValueFraction().getNumerator());
         royaltyFee.setDenominator(protoRoyaltyFee.getExchangeValueFraction().getDenominator());
+        royaltyFee.setNumerator(protoRoyaltyFee.getExchangeValueFraction().getNumerator());
 
         if (protoRoyaltyFee.hasFallbackFee()) {
             var fallbackFee = new FallbackFee();

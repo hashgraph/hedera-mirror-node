@@ -980,13 +980,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         switch (feeCase) {
             case ROYALTY_FEE -> {
                 var royaltyFee = RoyaltyFee.builder()
-                        .amount(20L)
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .fallbackFee(FallbackFee.builder()
                                 .amount(100L)
                                 .denominatingTokenId(tokenEntityId)
                                 .build())
+                        .numerator(20L)
                         .build();
                 domainBuilder
                         .customFee()
@@ -995,12 +995,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             }
             case FRACTIONAL_FEE -> {
                 var fractionalFee = FractionalFee.builder()
-                        .amount(100L)
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .minimumAmount(1L)
                         .maximumAmount(1000L)
                         .netOfTransfers(true)
+                        .numerator(100L)
                         .build();
                 domainBuilder
                         .customFee()

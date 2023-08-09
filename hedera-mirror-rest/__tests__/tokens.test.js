@@ -901,17 +901,17 @@ describe('token formatTokenInfoRow tests', () => {
       ],
       fractional_fees: [
         {
-          amount: 66,
-          amount_denominator: 77,
           collector_account_id: 8902,
+          denominator: 77,
           maximum_amount: 150,
           minimum_amount: 43,
+          numerator: 66,
         },
         {
-          amount: 83,
-          amount_denominator: 94,
           collector_account_id: 8903,
+          denominator: 94,
           minimum_amount: 1,
+          numerator: 83,
         },
       ],
       token_id: '7',
@@ -967,6 +967,7 @@ describe('token formatTokenInfoRow tests', () => {
       key: '050505',
     },
     custom_fees: {
+      created_timestamp: '0.000000010',
       fixed_fees: [
         {
           all_collectors_are_exempt: false,
@@ -1003,6 +1004,7 @@ describe('token formatTokenInfoRow tests', () => {
           collector_account_id: '0.0.8903',
           denominating_token_id: '0.0.7',
           minimum: 1,
+          maximum: null,
           net_of_transfers: false,
         },
       ],
@@ -1477,49 +1479,37 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 
 describe('token extractSqlFromTokenInfoRequest tests', () => {
   const getExpectedQuery = (timestampCondition = '') => {
-    let tableCondition;
-    let historyTableCondition;
     let customFeeQuery = `
         (select jsonb_build_object(
+           'created_timestamp', lower(timestamp_range),
            'fixed_fees', fixed_fees,
            'fractional_fees', fractional_fees,
            'royalty_fees', royalty_fees,
-           'token_id', token_id,
-           'timestamp_range', timestamp_range
+           'token_id', token_id
         )
         from custom_fee
         where token_id = $1
       ) as custom_fee`;
 
     if (!_.isEmpty(timestampCondition)) {
-      tableCondition = `lower(timestamp_range) ${timestampCondition}`;
       customFeeQuery = `
-        (with cfee as 
-          (select jsonb_build_object(
-                   'fixed_fees', fixed_fees,
-                   'fractional_fees', fractional_fees,
-                   'royalty_fees', royalty_fees,
-                   'token_id', token_id,
-                   'timestamp_range', timestamp_range
-          )
-          from custom_fee
-          where token_id = $1  ${tableCondition && 'and ' + tableCondition}
-        ),
-        custom_fee_history as
-          (select jsonb_build_object(
-                  'fixed_fees',fixed_fees,
-                  'fractional_fees',fractional_fees,
-                  'royalty_fees',royalty_fees,
-                  'token_id',token_id,
-                  'timestamp_range',timestamp_range) 
-        from custom_fee_history 
-          where token_id = $1  ${tableCondition && 'and ' + tableCondition}
-          order by lower(timestamp_range) desc limit 1
-        )
-        select * from cfee
-        union all
-        select * from custom_fee_history 
-        limit 1) as custom_fee`;
+        (select jsonb_build_object(
+            'created_timestamp', created_timestamp,
+            'fixed_fees', fixed_fees,
+            'fractional_fees', fractional_fees,
+            'royalty_fees', royalty_fees,
+            'token_id', token_id)
+        from (
+            (select *, lower(timestamp_range) as created_timestamp 
+              from custom_fee 
+              where token_id = $1 and lower(timestamp_range) ${timestampCondition})
+            union all 
+            (select *, lower(timestamp_range) as created_timestamp
+              from custom_fee_history 
+              where token_id = $1 and lower(timestamp_range) ${timestampCondition} 
+              order by lower(timestamp_range) desc limit 1) 
+            order by created_timestamp desc limit 1) as feeandhistory
+        ) as custom_fee`;
     }
 
     return `select e.auto_renew_account_id,

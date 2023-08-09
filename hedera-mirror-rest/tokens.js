@@ -34,13 +34,6 @@ import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from '
 
 const {default: defaultLimit} = getResponseLimit();
 
-const customFeeSelect = `select jsonb_build_object(
-      'fixed_fees', ${CustomFee.FIXED_FEES},
-      'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
-      'royalty_fees', ${CustomFee.ROYALTY_FEES},
-      'token_id', ${CustomFee.TOKEN_ID},
-      'timestamp_range', ${CustomFee.TIMESTAMP_RANGE})`;
-
 // select columns
 const sqlQueryColumns = {
   DELETED: 'e.deleted',
@@ -199,6 +192,7 @@ const createCustomFeeObject = (customFee, tokenType) => {
   const viewModel = new CustomFeeViewModel(model);
   const nonFixedFeesField = tokenType === Token.TYPE.FUNGIBLE_COMMON ? 'fractional_fees' : 'royalty_fees';
   const result = {
+    created_timestamp: utils.nsToSecNs(viewModel.created_timestamp),
     fixed_fees: viewModel.fixed_fees,
     [nonFixedFeesField]: viewModel[nonFixedFeesField],
   };
@@ -397,11 +391,8 @@ const transformTimestampFilterOp = (op) => {
 const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
   const conditions = [`${CustomFee.TOKEN_ID} = $1`];
   const params = [tokenId];
+  let customFeeQuery;
 
-  let customFeeQuery = `
-        ${customFeeSelect}
-        from ${CustomFee.tableName}
-        where ${conditions.join(' and ')}`;
   if (filters && filters.length !== 0) {
     // honor the last timestamp filter
     const filter = filters[filters.length - 1];
@@ -411,22 +402,24 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
     // include the history table in the query
     customFeeQuery = `
-        with cfee as (
-          ${customFeeSelect}
-          from ${CustomFee.tableName}
-          where ${conditions.join(' and ')}
-        ),
-        custom_fee_history as (
-          ${customFeeSelect}  
-          from ${CustomFee.tableName}_history
-          where ${conditions.join(' and ')}
-          order by lower(${CustomFee.TIMESTAMP_RANGE}) desc
-          limit 1
-        )
-        select * from cfee
+      ${getCustomFeeSelect(true)}
+      from
+      (
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as ${CustomFee.CREATED_TIMESTAMP}
+         from ${CustomFee.tableName}
+         where ${conditions.join(' and ')})
         union all
-        select * from custom_fee_history
-        limit 1`;
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as ${CustomFee.CREATED_TIMESTAMP}
+         from ${CustomFee.tableName}_history 
+         where ${conditions.join(' and ')} order by lower(${CustomFee.TIMESTAMP_RANGE}) desc limit 1)
+        order by ${CustomFee.CREATED_TIMESTAMP} desc
+        limit 1
+      ) as feeAndHistory`;
+  } else {
+    customFeeQuery = `
+      ${getCustomFeeSelect(false)}
+      from ${CustomFee.tableName}
+      where ${conditions.join(' and ')}`;
   }
 
   const query = [
@@ -441,6 +434,18 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
     query,
     params,
   };
+};
+
+const getCustomFeeSelect = (includeHistory) => {
+  const createdTimestampColumn = includeHistory
+    ? `${CustomFee.CREATED_TIMESTAMP}`
+    : `lower(${CustomFee.TIMESTAMP_RANGE})`;
+  return `select jsonb_build_object(
+          'created_timestamp', ${createdTimestampColumn},
+          'fixed_fees', ${CustomFee.FIXED_FEES},
+          'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
+          'royalty_fees', ${CustomFee.ROYALTY_FEES},
+          'token_id', ${CustomFee.TOKEN_ID})`;
 };
 
 const getTokenInfoRequest = async (req, res) => {

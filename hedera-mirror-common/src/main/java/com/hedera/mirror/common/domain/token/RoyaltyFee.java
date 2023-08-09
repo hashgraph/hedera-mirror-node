@@ -30,6 +30,8 @@ public class RoyaltyFee extends AbstractFee {
 
     private long denominator;
 
+    private long numerator;
+
     public boolean isChargedInToken(EntityId tokenId) {
         return false;
     }

@@ -32,17 +32,6 @@ class CustomFeeRepositoryTest extends AbstractRepositoryTest {
     private static final RowMapper<CustomFee> ROW_MAPPER = rowMapper(CustomFee.class);
 
     @Test
-    void prune() {
-        domainBuilder.customFee().persist();
-        var customFee2 = domainBuilder.customFee().persist();
-        var customFee3 = domainBuilder.customFee().persist();
-
-        customFeeRepository.prune(customFee2.getTimestampUpper());
-
-        assertThat(customFeeRepository.findAll()).containsExactly(customFee3);
-    }
-
-    @Test
     void save() {
         var customFee = domainBuilder.customFee().get();
         customFeeRepository.save(customFee);

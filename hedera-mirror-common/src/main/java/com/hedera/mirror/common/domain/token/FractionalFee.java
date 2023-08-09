@@ -32,6 +32,8 @@ public class FractionalFee extends AbstractFee {
 
     private long minimumAmount;
 
+    private long numerator;
+
     private boolean netOfTransfers;
 
     public boolean isChargedInToken(EntityId tokenId) {

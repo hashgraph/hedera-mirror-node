@@ -35,11 +35,11 @@
           {
             "fractional_fees": [
               {
-                "amount": "10",
-                "amount_denominator": "13",
                 "collector_account_id": "0.0.8901",
+                "denominator": "13",
                 "maximum_amount": "980",
-                "minimum_amount": "97"
+                "minimum_amount": "97",
+                "numerator": "10"
               }
             ],
             "timestamp_range": "[1234567899999999001,1234567899999999006)",
@@ -60,26 +60,26 @@
             ],
             "fractional_fees": [
               {
-                "amount": "11",
-                "amount_denominator": "17",
+                "numerator": "11",
                 "collector_account_id": "0.0.8901",
                 "maximum_amount": "987",
-                "minimum_amount": "79"
+                "minimum_amount": "79",
+                "denominator": "17"
               },
               {
                 "all_collectors_are_exempt": true,
-                "amount": "9",
-                "amount_denominator": "13",
                 "collector_account_id": "0.0.8902",
-                "minimum_amount": "1"
+                "denominator": "13",
+                "minimum_amount": "1",
+                "numerator": "9"
               },
               {
                 "all_collectors_are_exempt": true,
-                "amount": "41",
-                "amount_denominator": "131",
+                "numerator": "41",
                 "collector_account_id": "0.0.8904",
                 "minimum_amount": "0",
-                "net_of_transfers": true
+                "net_of_transfers": true,
+                "denominator": "131"
               }
             ],
             "timestamp_range": "[1234567899999999007,)",
