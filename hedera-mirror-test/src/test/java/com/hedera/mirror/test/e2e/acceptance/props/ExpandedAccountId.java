@@ -29,8 +29,8 @@ public class ExpandedAccountId {
     private final AccountId accountId;
     private final PrivateKey privateKey;
 
-    public ExpandedAccountId(String operatorId, String operatorKey) {
-        this(AccountId.fromString(operatorId), PrivateKey.fromString(operatorKey));
+    public ExpandedAccountId(String operatorId, PrivateKey operatorKey) {
+        this(AccountId.fromString(operatorId), operatorKey);
     }
 
     public ExpandedAccountId(AccountId account) {

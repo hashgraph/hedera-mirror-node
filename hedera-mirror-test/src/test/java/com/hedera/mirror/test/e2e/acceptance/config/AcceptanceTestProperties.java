@@ -85,6 +85,9 @@ public class AcceptanceTestProperties {
     private String operatorKey =
             "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
 
+    @NotNull
+    private SigningAlgorithm operatorKeyAlgorithm = SigningAlgorithm.ED25519;
+
     private boolean retrieveAddressBook = true;
 
     @DurationMin(seconds = 0L)
@@ -95,6 +98,11 @@ public class AcceptanceTestProperties {
         MAINNET,
         OTHER,
         PREVIEWNET,
-        TESTNET,
+        TESTNET
+    }
+
+    public enum SigningAlgorithm {
+        ECDSA,
+        ED25519
     }
 }
