@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.E
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ASSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_HRC_ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
@@ -79,10 +80,10 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         TokenID tokenId = null;
-        Address callerAccountAddress;
+        final Address callerAccountAddress;
         AccountID callerAccountID = null;
 
-        if (bodyParams instanceof HrcParams hrcParams) {
+        if (bodyParams instanceof final HrcParams hrcParams) {
             tokenId = hrcParams.token();
             callerAccountAddress = hrcParams.senderAddress();
             callerAccountID =
@@ -108,6 +109,6 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_ASSOCIATE_TOKEN);
+        return Set.of(ABI_ID_ASSOCIATE_TOKEN, ABI_ID_HRC_ASSOCIATE);
     }
 }

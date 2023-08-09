@@ -7,6 +7,11 @@ import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+interface IHRC {
+    function associate() external returns (uint256 responseCode);
+    function dissociate() external returns (uint256 responseCode);
+}
+
 contract ModificationPrecompileTestContract is HederaTokenService {
 
     function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external
@@ -305,12 +310,22 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function getBalanceOfWithDirectRedirect(address token, address account) external
-    returns (bytes memory result)
+    //Redirect Precompiles
+
+    function associateWithRedirect(address token) external returns (bytes memory result)
     {
-        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IHRC.associate.selector));
         if (response != HederaResponseCodes.SUCCESS) {
-            revert ("Token redirect failed");
+            revert("Tokens association redirect failed");
+        }
+        return result;
+    }
+
+    function dissociateWithRedirect(address token) external returns (bytes memory result)
+    {
+        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IHRC.dissociate.selector));
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert("Tokens dissociation redirect failed");
         }
         return result;
     }

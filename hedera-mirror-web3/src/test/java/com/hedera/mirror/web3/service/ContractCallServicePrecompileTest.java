@@ -50,7 +50,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
                 "GET_INFORMATION_FOR_TOKEN_NFT"
             })
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(ContractReadFunctions contractFunc) {
+    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -428,10 +428,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
         ASSOCIATE_TOKENS_WITH_ALIAS(
                 "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
+        HRC_ASSOCIATE_REDIRECT("associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
         MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
         MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
             NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
         }),
+        HRC_DISSOCIATE_REDIRECT("dissociateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
         DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
         DISSOCIATE_TOKEN_WITH_ALIAS("dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}),
         DISSOCIATE_TOKENS(
