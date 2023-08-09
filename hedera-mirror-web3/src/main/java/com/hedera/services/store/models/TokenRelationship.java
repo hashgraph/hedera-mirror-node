@@ -96,10 +96,21 @@ public class TokenRelationship {
                 token.isFrozenByDefault() && token.hasFreezeKey(),
                 !token.hasKycKey(),
                 false,
-                true,
+                false,
                 false,
                 hasAssociation,
                 0);
+    }
+
+    /**
+     * Constructor for creating new TokenRelationship with AssociatePrecompile
+     * @param token
+     * @param account
+     * @param hasAssociation
+     * @param frozen
+     */
+    public TokenRelationship(Token token, Account account, boolean hasAssociation, boolean frozen) {
+        this(token, account, 0, frozen, true, false, false, false, hasAssociation, 0);
     }
 
     public static TokenRelationship getEmptyTokenRelationship() {

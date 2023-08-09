@@ -20,7 +20,8 @@ contract NestedEthCalls is HederaTokenService {
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info");
         int totalSupplyBeforeMint = retrievedTokenInfo.totalSupply;
 
-        (responseCode,,) = HederaTokenService.mintToken(token, amount, metadata);
+        int newTotalSupply;
+        (responseCode, newTotalSupply,) = HederaTokenService.mintToken(token, amount, metadata);
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to mint token");
 
         (responseCode, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
@@ -28,9 +29,9 @@ contract NestedEthCalls is HederaTokenService {
 
         int totalSupplyAfterMint = retrievedTokenInfo.totalSupply;
         if(amount > 0 && metadata.length == 0) {
-            if(totalSupplyBeforeMint + amount != totalSupplyAfterMint) revert("Total supply mismatch after mint (Fungible)");
+            if((totalSupplyBeforeMint + amount != totalSupplyAfterMint) || (newTotalSupply != totalSupplyAfterMint)) revert("Total supply mismatch after mint (Fungible)");
         } else {
-            if(totalSupplyBeforeMint + int256(metadata.length) != totalSupplyAfterMint) revert("Total supply mismatch after mint (NFT)");
+            if((totalSupplyBeforeMint + int256(metadata.length) != totalSupplyAfterMint) || (newTotalSupply != totalSupplyAfterMint)) revert("Total supply mismatch after mint (NFT)");
         }
 
         if(amount > 0 && metadata.length == 0) {
@@ -161,15 +162,9 @@ contract NestedEthCalls is HederaTokenService {
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to dissociate tokens");
 
         if(amount > 0 && serialNumber == 0) {
-            try IERC20(token).transferFrom(from, to, amount) {
-            } catch {
-                revert("IERC20 transfer failed");
-            }
+            IERC20(token).transferFrom(from, to, amount); // should fail
         } else {
-            try IERC721(token).transferFrom(from, to, serialNumber) {
-            } catch {
-                revert("IERC721 transfer failed");
-            }
+            IERC721(token).transferFrom(from, to, serialNumber); // shuld fail
         }
     }
 
@@ -195,6 +190,7 @@ contract NestedEthCalls is HederaTokenService {
             if(IERC20(token).allowance(address(this), spender) != amount) revert("Allowance mismatch before transfer");
             IERC20(token).transferFrom(address(this), spender, amount);
             if(IERC20(token).balanceOf(spender) != balanceBeforeTransfer + amount) revert("Balance mismatch after transfer");
+            if(IERC20(token).allowance(address(this), spender) != 0) revert("Fungible token allowance mismatch after transfer");
         } else {
             HederaTokenService.transferNFT(token, IERC721(token).ownerOf(serialNumber), address(this), int64(int256(serialNumber)));
             int responseCode = HederaTokenService.approveNFT(token, spender, serialNumber);
@@ -202,6 +198,7 @@ contract NestedEthCalls is HederaTokenService {
             if(IERC721(token).getApproved(serialNumber) != spender) revert("NFT approval mismatch before transfer");
             IERC721(token).transferFrom(address(this), spender, serialNumber);
             if(IERC721(token).ownerOf(serialNumber) != spender) revert("NFT ownership mismatch after transfer");
+            if(IERC721(token).getApproved(serialNumber) == spender) revert("NFT allowance mismatch after transfer");
         }
     }
 
