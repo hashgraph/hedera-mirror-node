@@ -27,7 +27,7 @@ import org.springframework.core.convert.converter.GenericConverter;
 
 public class JsonbToListConverter implements GenericConverter {
 
-    private final ObjectMapper objectMapper = ObjectToStringSerializer.OBJECT_MAPPER;
+    private static final ObjectMapper objectMapper = ObjectToStringSerializer.OBJECT_MAPPER;
 
     @Override
     public Set<ConvertiblePair> getConvertibleTypes() {
@@ -36,17 +36,15 @@ public class JsonbToListConverter implements GenericConverter {
 
     @Override
     public Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
-        if (source instanceof PGobject pgo) {
+        var elementTypeDescriptor = targetType.getElementTypeDescriptor();
+        if (source instanceof PGobject pgo && elementTypeDescriptor != null) {
+            var json = pgo.getValue();
+            var type =
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, elementTypeDescriptor.getType());
             try {
-                var json = pgo.getValue();
-                var type = objectMapper
-                        .getTypeFactory()
-                        .constructCollectionType(
-                                List.class,
-                                targetType.getElementTypeDescriptor().getType());
                 return objectMapper.readValue(json, type);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                return null;
             }
         }
         return null;
