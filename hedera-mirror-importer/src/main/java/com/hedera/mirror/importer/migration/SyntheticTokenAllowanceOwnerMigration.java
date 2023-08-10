@@ -32,7 +32,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration implements RecordStreamFileListener {
-    // 10158
+
     static final Version HAPI_VERSION_0_37_0 = new Version(0, 37, 0);
     private static final AtomicBoolean executed = new AtomicBoolean(false);
     private final RecordFileRepository recordFileRepository;
