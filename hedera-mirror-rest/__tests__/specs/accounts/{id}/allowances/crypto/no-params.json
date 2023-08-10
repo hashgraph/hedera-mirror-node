@@ -22,6 +22,22 @@
     ],
     "cryptoAllowances": [
       {
+        "amount": 0,
+        "amount_granted": 50,
+        "owner": 1001,
+        "payer_account_id": 1001,
+        "spender": 1998,
+        "timestamp_range": "[1234567899999999998,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "payer_account_id": 1001,
+        "spender": 1999,
+        "timestamp_range": "[1234567899999999999,)"
+      },
+      {
         "amount": 23,
         "amount_granted": 33,
         "owner": 1001,
