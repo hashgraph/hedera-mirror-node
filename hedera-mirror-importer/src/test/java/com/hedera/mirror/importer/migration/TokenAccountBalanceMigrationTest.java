@@ -57,7 +57,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionTemplate transactionTemplate;
 
-    private AccountBalanceFile accountBalanceFile2, accountBalanceFile1;
+    private AccountBalanceFile accountBalanceFile;
     private AtomicLong timestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
@@ -85,7 +85,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrate() {
         // given
-        setup(true);
+        setup();
 
         // when
         tokenAccountBalanceMigration.doMigrate();
@@ -104,12 +104,12 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateTokenTransfer() {
         // given
-        setup(true);
+        setup();
 
         // token transfer between the consensusTimestamp of the balance file and the current timestamp
         var balanceUpdatedAfterBalanceFileConsensusTimestamp = 12345L;
         var tokenTransferId = new TokenTransfer.Id(
-                accountBalanceFile2.getConsensusTimestamp() + 1,
+                accountBalanceFile.getConsensusTimestamp() + 1,
                 tokenBalance.getId().getTokenId(),
                 tokenBalance.getId().getAccountId());
         domainBuilder
@@ -120,7 +120,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .persist();
         var secondBalanceUpdate = 222L;
         var tokenTransferId2 = new TokenTransfer.Id(
-                accountBalanceFile2.getConsensusTimestamp() + 2,
+                accountBalanceFile.getConsensusTimestamp() + 2,
                 tokenBalance.getId().getTokenId(),
                 tokenBalance.getId().getAccountId());
         domainBuilder
@@ -148,7 +148,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenNoRecordFile() {
         // given
-        setup(true);
+        setup();
         recordFileRepository.deleteAll();
 
         // when
@@ -171,7 +171,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenNoAccountBalance() {
         // given
-        setup(true);
+        setup();
         accountBalanceFileRepository.deleteAll();
 
         // when
@@ -194,8 +194,8 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenNoTokenBalance() {
         // given
-        setup(true);
-        tokenBalanceRepository.prune(accountBalanceFile2.getConsensusTimestamp());
+        setup();
+        tokenBalanceRepository.prune(accountBalanceFile.getConsensusTimestamp());
 
         // when
         tokenAccountBalanceMigration.doMigrate();
@@ -217,7 +217,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenNoTokenTransfer() {
         // given
-        setup(true);
+        setup();
         tokenTransferRepository.prune(timestamp(Duration.ofSeconds(10)));
 
         // when
@@ -239,7 +239,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Test
     void migrateWhenNoTokenAccount() {
         // given
-        setup(true);
+        setup();
         tokenAccountRepository.deleteAll();
 
         // when
@@ -264,36 +264,13 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void onEndRollback() {
+    void reRunMigrate() {
         // given
-        setup(true);
-        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
-
-        // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
-
-        // then
-        tokenAccount.setBalance(0L);
-        tokenAccount2.setBalance(0L);
-        tokenAccount3.setBalance(0L);
-        deletedEntityTokenAccount4.setBalance(0L);
-        assertThat(tokenAccountRepository.findAll())
-                .containsExactlyInAnyOrder(
-                        tokenAccount,
-                        tokenAccount2,
-                        tokenAccount3,
-                        deletedEntityTokenAccount4,
-                        disassociatedTokenAccount5);
-    }
-
-    @Test
-    void onEndWhenDbIsEmpty() {
-        // given
-        setup(true);
+        setup();
         accountBalanceFileRepository.deleteAll();
 
         // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile);
 
         // then
         tokenAccount.setBalance(0L);
@@ -309,31 +286,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                         disassociatedTokenAccount5);
     }
 
-    @Test
-    void onEnd() {
-        // given
-        setup(true);
-        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
-
-        // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
-
-        // then
-        tokenAccount.setBalance(0L);
-        tokenAccount2.setBalance(0L);
-        tokenAccount3.setBalance(0L);
-        deletedEntityTokenAccount4.setBalance(0L);
-        assertThat(tokenAccountRepository.findAll())
-                .containsExactlyInAnyOrder(
-                        tokenAccount,
-                        tokenAccount2,
-                        tokenAccount3,
-                        deletedEntityTokenAccount4,
-                        disassociatedTokenAccount5);
-    }
-
-    private void setup(Boolean createSecondBalanceFile) {
+    private void setup() {
         var entity1 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
         var accountId1 = EntityId.of(entity1.getId(), ACCOUNT);
         var entity2 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
@@ -375,7 +328,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // First account balance file
         var firstAccountBalanceFileTimestamp = timestamp(Duration.ofMinutes(10));
-        accountBalanceFile1 = domainBuilder
+        domainBuilder
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(firstAccountBalanceFileTimestamp))
                 .persist();
@@ -390,12 +343,10 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // Second account balance file, this file should be used for the token balance migration
         long accountBalanceTimestamp = timestamp(Duration.ofMinutes(10));
-        if (createSecondBalanceFile) {
-            accountBalanceFile2 = domainBuilder
-                    .accountBalanceFile()
-                    .customize(a -> a.consensusTimestamp(accountBalanceTimestamp))
-                    .persist();
-        }
+        accountBalanceFile = domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp))
+                .persist();
 
         var tokenBalanceId = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId1);
         var tokenBalanceId2 = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId2);
