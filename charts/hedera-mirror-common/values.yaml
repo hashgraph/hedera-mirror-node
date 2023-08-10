@@ -339,7 +339,9 @@ promtail:
       - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
     snippets:
       pipelineStages:
-        - docker: {}
+        - cri: {}
+        - multiline:
+            firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|\+\d{4}) '
   enabled: true
   resources:
     limits:
