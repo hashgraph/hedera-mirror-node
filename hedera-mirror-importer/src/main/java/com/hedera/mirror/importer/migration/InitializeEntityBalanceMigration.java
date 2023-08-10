@@ -33,6 +33,7 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration implem
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
+    private final AtomicLong secondConsensusTimestamp = new AtomicLong(0L);
 
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =
             """
@@ -102,9 +103,16 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration implem
 
     @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
-        firstConsensusTimestamp.compareAndSet(0, streamFile.getConsensusTimestamp());
-        if (firstConsensusTimestamp.get() == streamFile.getConsensusTimestamp()
-                && accountBalanceFileRepository.findLatest().isEmpty()) {
+        if (!firstConsensusTimestamp.compareAndSet(0, streamFile.getConsensusTimestamp())) {
+            secondConsensusTimestamp.compareAndSet(0, streamFile.getConsensusTimestamp());
+        }
+
+        if (secondConsensusTimestamp.get() == streamFile.getConsensusTimestamp()
+                && accountBalanceFileRepository
+                                .findLatest()
+                                .map(AccountBalanceFile::getConsensusTimestamp)
+                                .orElse(-1L)
+                        == firstConsensusTimestamp.get()) {
             doMigrate();
         }
     }

@@ -54,7 +54,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final RecordFileRepository recordFileRepository;
 
     private Entity account;
-    private AccountBalanceFile accountBalanceFile1;
+    private AccountBalanceFile accountBalanceFile1, accountBalanceFile2;
     private Entity accountDeleted;
     private Entity contract;
     private RecordFile recordFile2;
@@ -182,11 +182,42 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void reRunMigrate() {
+    void onEndRollback() {
+        // given
+        setup();
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        // when
+        initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
+
+        // then
+        account.setBalance(0L);
+        accountDeleted.setBalance(0L);
+        contract.setBalance(0L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+    }
+
+    @Test
+    void onEndWhenDbIsEmpty() {
         // given
         setup();
         accountBalanceFileRepository.deleteAll();
         accountBalanceRepository.deleteAll();
+
+        // when
+        initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
+
+        // then
+        account.setBalance(0L);
+        accountDeleted.setBalance(0L);
+        contract.setBalance(0L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+    }
+
+    @Test
+    void onEnd() {
+        // given
+        setupForFirstAccountBalanceFile();
 
         // when
         initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
@@ -216,6 +247,37 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     private void setup() {
+        setupForFirstAccountBalanceFile();
+
+        // Second record file
+        recordFile2 = domainBuilder
+                .recordFile()
+                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
+                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
+                .persist();
+        long consensusStart = recordFile2.getConsensusStart();
+        persistCryptoTransfer(10L, account.getId(), null, consensusStart);
+        persistCryptoTransfer(-5L, account.getId(), ErrataType.INSERT, consensusStart + 5L);
+        persistCryptoTransfer(25L, contract.getId(), null, consensusStart + 10L);
+        persistCryptoTransfer(10L, contract.getId(), ErrataType.DELETE, consensusStart + 10L);
+        persistCryptoTransfer(20L, accountDeleted.getId(), null, consensusStart + 15L);
+
+        // Second account balance file
+        long accountBalanceTimestamp2 = timestamp(Duration.ofMinutes(2));
+        accountBalanceFile2 = domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp2))
+                .persist();
+        persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
+        persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
+
+        // Set expected balances
+        account.setBalance(505L);
+        accountDeleted.setBalance(20L);
+        contract.setBalance(25L);
+    }
+
+    private void setupForFirstAccountBalanceFile() {
         account = domainBuilder
                 .entity()
                 .customize(e -> e.balance(0L).deleted(null).createdTimestamp(timestamp(Duration.ofSeconds(1L))))
@@ -257,33 +319,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
                         .createdTimestamp(timestamp(Duration.ofSeconds(1)))
                         .type(CONTRACT))
                 .persist();
-
-        // Second record file
-        recordFile2 = domainBuilder
-                .recordFile()
-                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
-                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
-                .persist();
-        long consensusStart = recordFile2.getConsensusStart();
-        persistCryptoTransfer(10L, account.getId(), null, consensusStart);
-        persistCryptoTransfer(-5L, account.getId(), ErrataType.INSERT, consensusStart + 5L);
-        persistCryptoTransfer(25L, contract.getId(), null, consensusStart + 10L);
-        persistCryptoTransfer(10L, contract.getId(), ErrataType.DELETE, consensusStart + 10L);
-        persistCryptoTransfer(20L, accountDeleted.getId(), null, consensusStart + 15L);
-
-        // Second account balance file
-        long accountBalanceTimestamp2 = timestamp(Duration.ofMinutes(2));
-        domainBuilder
-                .accountBalanceFile()
-                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp2))
-                .persist();
-        persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
-        persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
-
-        // Set expected balances
-        account.setBalance(505L);
-        accountDeleted.setBalance(20L);
-        contract.setBalance(25L);
     }
 
     private long timestamp(Duration delta) {
