@@ -78,7 +78,7 @@ public class PartitionMaintenanceService {
                 LocalDateTime.ofInstant(Instant.ofEpochSecond(0L, partitionInfo.getNextTo()), PARTITION_BOUND_TIMEZONE);
         Duration partitionDuration = Duration.between(start, end);
 
-        // will always premake one timePartition
+        // will always premake one time partition
         boolean makeTimePartition = partitionInfo.isTimePartition()
                 && LocalDateTime.now(PARTITION_BOUND_TIMEZONE)
                         .plus(partitionDuration)
@@ -98,7 +98,7 @@ public class PartitionMaintenanceService {
                 CREATE_TIME_PARTITIONS_SQL, Boolean.class, partitionInfo.getParentTable(), interval, start, end));
 
         if (created && !partitionInfo.isTimePartition()) {
-            // Work around granularity issue of citus partitionInfo names
+            // Work around timestamp granularity issue of citus partition table names
             String createdPartitionName =
                     partitionInfo.getParentTable() + CITUS_TIME_PARTITION_NAME_FORMATTER.format(start);
             long partitionCount = partitionInfo.getNextFrom() / partitionDuration.toNanos();
