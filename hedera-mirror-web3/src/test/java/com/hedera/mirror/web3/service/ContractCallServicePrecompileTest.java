@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -70,10 +69,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
@@ -87,10 +85,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
