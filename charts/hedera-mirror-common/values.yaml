@@ -341,7 +341,7 @@ promtail:
       pipelineStages:
         - cri: {}
         - multiline:
-            firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|\+\d{4}) '
+            firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|[+-]\d{4}) '
   enabled: true
   resources:
     limits:
