@@ -137,7 +137,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void reRunOnEndMigration() {
+    void onEnd() {
         // given
         // Nft allowance and nft allowance history entries that have the incorrect owner
         var contractResultSenderId = EntityId.of("0.0.2001", CONTRACT);
@@ -212,6 +212,58 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
                 contractResultConsensus,
                 collidedNftAllowance,
                 nullSenderIdNftAllowancePair);
+    }
+
+    @Test
+    void onEndHapiVersionNotMatched() {
+        // given
+        // Nft allowance and nft allowance history entries that have the incorrect owner
+        var contractResultSenderId = EntityId.of("0.0.2001", CONTRACT);
+        long incorrectOwnerAccountId = 1001L;
+        var incorrectNftAllowancePair = generateNftAllowance(contractResultSenderId, incorrectOwnerAccountId);
+
+        // An nft allowance that has no contract result, but has primary key values that will end up matching those of
+        // a migrated nft allowance.
+        var ownerAccountId = 38L;
+        var spender = 39L;
+        var tokenId = 44L;
+        var nftAllowancePreMigration = getCollidedNftAllowance(spender, tokenId, ownerAccountId, 1676546171829734003L);
+
+        // An nft allowance that has a contract result, once migrated it will have the same primary key fields as the
+        // above nft allowance.
+        var ownerPreMigration = 1322L;
+        var contractResultConsensus = 1676546391434923004L;
+        var collidedNftAllowance =
+                getCollidedNftAllowance(spender, tokenId, ownerPreMigration, contractResultConsensus);
+
+        // The contract result for the collided nft allowance
+        persistContractResultCollidedNftAllowance(ownerAccountId, ownerPreMigration, contractResultConsensus);
+
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(0))
+                .persist();
+
+        // when
+        migration.onEnd(RecordFile.builder()
+                .consensusStart(1568415600193620000L)
+                .consensusEnd(1568528100472477002L)
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(37)
+                .hapiVersionPatch(1)
+                .build());
+
+        // then
+        var expected = new ArrayList<>(List.of(incorrectNftAllowancePair.getLeft()));
+        // The primary key will not be updated since migration is not run
+        expected.add(collidedNftAllowance);
+        expected.add(nftAllowancePreMigration);
+        assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        // The history of the nft allowance should also be updated with the corrected owner. This will not happen since
+        // the migration is not run
+        var expectedHistory = new ArrayList<>(incorrectNftAllowancePair.getRight());
+        assertThat(findHistory(NftAllowance.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     private NftAllowance getCollidedNftAllowance(

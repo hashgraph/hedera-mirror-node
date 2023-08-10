@@ -171,7 +171,6 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             }
         } catch (IOException e) {
             log.error("Error executing the migration again after consensus_timestamp {}", streamFile.getConsensusEnd());
-            throw new RuntimeException(e);
         }
     }
 
