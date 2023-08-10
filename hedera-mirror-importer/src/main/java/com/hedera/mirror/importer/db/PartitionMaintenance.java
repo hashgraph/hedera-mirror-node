@@ -20,28 +20,34 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import lombok.*;
+import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.boot.context.event.ApplicationPreparedEvent;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @CustomLog
 @Component
 @RequiredArgsConstructor
-
-// TODO:// only in V2
+@Profile("v2")
 public class PartitionMaintenance {
-    //    TODO:// use in query
     private static final String TIMESTAMP_PARTITION_COLUMN_NAME_PATTERN = "^(.*_timestamp|consensus_end)$";
     private static final DateTimeFormatter CITUS_TIME_PARTITION_NAME_FORMATTER =
             DateTimeFormatter.ofPattern("'_p'yyyy_MM_dd_HHmmss").withZone(ZoneId.of("UTC"));
 
     // todo can probably drop these cases statements. One becomes boolean comparrison and the other can be changed to
     // use same calculation
-    private static final String TABLE_INFO_QUERY = "SELECT " + "                   tp.parent_table, "
+    private static final String TABLE_INFO_QUERY = "SELECT "
+            + "                   tp.parent_table, "
             + "                   tp.partition_column, "
             + "                   max(tp.to_value::bigint) as next_from, "
             + "                   case when tp.partition_column::varchar ~ '"
@@ -61,51 +67,57 @@ public class PartitionMaintenance {
             + "                              end_at := ?)";
 
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
     private final PartitionMaintenanceConfiguration maintenanceConfig;
 
-    // TODO:// configure ... likely not to be a configurable prop but instead static cron definition
-    @Scheduled(initialDelay = 0, fixedRate = 1000000000000L)
-    @Transactional
-    public void test() {
-        // TODO PessimisticLockingFailureException when trying to create partitions. Probably execute individual tables
-        // in a transaction template
-        jdbcTemplate
-                .query(
-                        TABLE_INFO_QUERY,
-                        new DataClassRowMapper<>(PartitionInfo.class),
-                        maintenanceConfig.getTimePartitionInterval())
-                .forEach(table -> {
-                    LocalDateTime start = Instant.ofEpochSecond(0L, table.getNextFrom())
-                            .atZone(ZoneId.of("UTC"))
-                            .toLocalDateTime();
-                    LocalDateTime end = Instant.ofEpochSecond(0L, table.getNextTo())
-                            .atZone(ZoneId.of("UTC"))
-                            .toLocalDateTime();
+    @EventListener(ApplicationPreparedEvent.class)
+    public void test(ApplicationPreparedEvent event) throws Exception {
+        Thread.sleep(90L * 1000);
+    }
 
-                    // TODO configure threshold
-                    if (false && !table.isTimePartition() && table.getMaxEntityId() * 2 < table.getNextFrom()) {
-                        log.info("No new partition needed. Skipping creation for partition {}", table);
-                        return;
-                    }
-                    String interval = table.isTimePartition()
-                            ? maintenanceConfig.timePartitionInterval
-                            : maintenanceConfig.idPartitionInterval;
-                    Boolean created = jdbcTemplate.queryForObject(
-                            CREATE_TIME_PARTITIONS_SQL, Boolean.class, table.parentTable, interval, start, end);
+    // TODO:// configure ...
+    //    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 1 * *}")
+    @Scheduled(initialDelay = 0, fixedRate = 100000000000L)
+    // TODO:// retry logic
+    @Retryable(retryFor = DataAccessException.class)
+    public void runMaintenance() {
 
-                    if (created && !table.isTimePartition()) {
-                        // Work around granularity issue of citus table names
-                        String createdPartitionName =
-                                table.getParentTable() + CITUS_TIME_PARTITION_NAME_FORMATTER.format(start);
-                        long partitionDuration = table.nextTo - table.nextFrom;
-                        long partitionCount = table.nextFrom / partitionDuration;
-                        String newPartitionName = String.format("%s_p%d", table.parentTable, partitionCount);
-                        // TODO:// handle failure
-                        jdbcTemplate.execute("ALTER table " + createdPartitionName + " rename to " + newPartitionName);
-                        log.info("Renamed {} to {}", createdPartitionName, newPartitionName);
-                    }
-                    log.info("Partition {} created {}", table, created);
-                });
+        List<PartitionInfo> newPartitions = jdbcTemplate.query(
+                TABLE_INFO_QUERY,
+                new DataClassRowMapper<>(PartitionInfo.class),
+                maintenanceConfig.getTimePartitionInterval());
+
+        newPartitions.forEach(table -> transactionTemplate.executeWithoutResult(status -> {
+            LocalDateTime start = Instant.ofEpochSecond(0L, table.getNextFrom())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
+            LocalDateTime end = Instant.ofEpochSecond(0L, table.getNextTo())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
+
+            if (!table.isTimePartition()
+                    && table.getMaxEntityId() * maintenanceConfig.maxEntityIdRatio < table.getNextFrom()) {
+                log.info("No new partition needed. Skipping creation for partition {}", table);
+                return;
+            }
+            String interval = table.isTimePartition()
+                    ? maintenanceConfig.timePartitionInterval
+                    : maintenanceConfig.idPartitionInterval;
+            Boolean created = jdbcTemplate.queryForObject(
+                    CREATE_TIME_PARTITIONS_SQL, Boolean.class, table.parentTable, interval, start, end);
+
+            if (BooleanUtils.isTrue(created) && !table.isTimePartition()) {
+                // Work around granularity issue of citus table names
+                String createdPartitionName =
+                        table.getParentTable() + CITUS_TIME_PARTITION_NAME_FORMATTER.format(start);
+                long partitionDuration = table.nextTo - table.nextFrom;
+                long partitionCount = table.nextFrom / partitionDuration;
+                String newPartitionName = String.format("%s_p%d", table.parentTable, partitionCount);
+                jdbcTemplate.execute("ALTER table " + createdPartitionName + " rename to " + newPartitionName);
+                log.info("Renamed {} to {}", createdPartitionName, newPartitionName);
+            }
+            log.info("Partition {} created {}", table, created);
+        }));
     }
 
     @Data
@@ -126,5 +138,6 @@ public class PartitionMaintenance {
     private static class PartitionMaintenanceConfiguration {
         private String timePartitionInterval = "1 month";
         private String idPartitionInterval = ".001 seconds";
+        private double maxEntityIdRatio = 2.0;
     }
 }

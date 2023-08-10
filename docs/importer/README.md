@@ -79,8 +79,11 @@ For local testing the importer can be run using the following command:
 
 ## Building the Citus docker image
 The citus image is built and then pushed to our [Docker Hub repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
-A multi-platform alpine linux image is built in order to be used for local testing (arm64 on M-series Macs) and
-Github CI workflows (amd64). In production environments, citus is enabled through stackgres SGShardedCluster and doesn't use the custom image. 
+A multi-platform alpine linux image is built in order to be used for local testing (arm64 on M-series Macs).
+This image will need to be maintained until the [upstream builder](https://github.com/citusdata/docker/tree/master)
+provides a multi-platform supporting arm64.
+
+In production and ci environments, citus is enabled through stackgres SGShardedCluster and doesn't use the custom image. 
 
 `DockerFile` to build a custom image to be used in v2 testing is located in the following folder:
 ```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2/docker```
