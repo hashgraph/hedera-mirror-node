@@ -293,10 +293,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     protected Path ABI_PATH;
 
-    // The contract source `RedirectTestContract.sol` is in test resources
-    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.bin")
-    protected Path REDIRECT_CONTRACT_BYTES_PATH;
-
     @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.json")
     protected Path REDIRECT_CONTRACT_ABI_PATH;
 
