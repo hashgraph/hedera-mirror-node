@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract PrecompileTestContract is HederaTokenService {
     function isTokenAddress(address token) external returns (bool) {
@@ -115,10 +116,10 @@ contract PrecompileTestContract is HederaTokenService {
         return key;
     }
 
-    function redirectForTokenExternal(address token, bytes memory encodedFunctionSelector) external
+    function redirectBalanceOfExternal(address token, address account) external
     returns(int responseCode)
     {
-        (responseCode, ) = this.redirectForToken(token, encodedFunctionSelector);
+        (responseCode, ) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }

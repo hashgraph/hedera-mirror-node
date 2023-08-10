@@ -22,7 +22,6 @@ import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
@@ -35,6 +34,9 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -45,12 +47,12 @@ import com.esaulpaugh.headlong.abi.Function;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -67,21 +69,14 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asHeadlongByteArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Optional;
-import java.util.LinkedHashMap;
-
-import org.json.JSONObject;
-
-import java.util.Map;
-
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class EstimatePrecompileFeature extends AbstractFeature {
+public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(
                     DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -92,7 +87,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     private static final long firstNftSerialNumber = 1;
     private final ContractClient contractClient;
     private final FileClient fileClient;
-    private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
     private final List<TokenId> tokenIds = new ArrayList<>();
     private final AccountClient accountClient;
@@ -105,42 +99,10 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     private String estimatePrecompileContractSolidityAddress;
     private String ercTestContractSolidityAddress;
     private String precompileTestContractSolidityAddress;
-    private int lowerDeviation;
-    private int upperDeviation;
-    @Value("classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json")
-    private Resource estimatePrecompileTestContract;
 
-    @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
-    private Resource ercTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    private Resource precompileTestContract;
     private CompiledSolidityArtifact compiledEstimatePrecompileSolidityArtifacts;
     private CompiledSolidityArtifact compiledErcTestContractSolidityArtifacts;
     private CompiledSolidityArtifact compiledPrecompileContractSolidityArtifacts;
-
-    /**
-     * Checks if the actualUsedGas is within the specified range of the estimatedGas.
-     * <p>
-     * The method calculates the lower and upper bounds as percentages of the actualUsedGas, then checks if the
-     * estimatedGas is within the range (inclusive) and returns true if it is, otherwise returns false.
-     *
-     * @param actualUsedGas     the integer value that represents the expected value
-     * @param estimatedGas      the integer value to be checked
-     * @param lowerBoundPercent the integer percentage value for the lower bound of the acceptable range
-     * @param upperBoundPercent the integer percentage value for the upper bound of the acceptable range
-     * @return true if the actualUsedGas is within the specified range, false otherwise
-     */
-    public static boolean isWithinDeviation(int actualUsedGas, int estimatedGas, int lowerBoundPercent,
-            int upperBoundPercent) {
-        int lowerDeviation = actualUsedGas * lowerBoundPercent / 100;
-        int upperDeviation = actualUsedGas * upperBoundPercent / 100;
-
-        int lowerBound = actualUsedGas + lowerDeviation;
-        int upperBound = actualUsedGas + upperDeviation;
-
-        return (estimatedGas >= lowerBound) && (estimatedGas <= upperBound);
-    }
 
     @Given("I create estimate precompile contract with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
@@ -186,12 +148,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Given("I mint and verify a new nft")
     public void mintNft() {
-        NetworkTransactionResponse tx = tokenClient.mint(tokenIds.get(1), RandomUtils.nextBytes(4));
-        assertNotNull(tx.getTransactionId());
-        TransactionReceipt receipt = tx.getReceipt();
-        assertNotNull(receipt);
-        assertThat(receipt.serials.size()).isOne();
-
+        networkTransactionResponse = tokenClient.mint(tokenIds.get(1), RandomUtils.nextBytes(4));
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         verifyNft(tokenIds.get(1), firstNftSerialNumber);
     }
 
@@ -445,9 +403,8 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with ERC transferFrom function without approval")
     public void ercTransferFromEstimateGasWithoutApproval() {
-        Function function = Function.fromJson(getAbiFunctionAsJsonString(compiledErcTestContractSolidityArtifacts,
-                ContractMethods.TRANSFER_FROM_ERC.getFunctionName()));
-        ByteBuffer encodedFunctionCall = function
+        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(
+                ContractMethods.TRANSFER_FROM_ERC.getFunctionName())
                 .encodeCallWithArgs(
                         asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
@@ -704,7 +661,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     @Then("I call estimateGas with transferNFTs function")
     public void transferNFTsEstimateGas() {
         tokenClient.mint(tokenIds.get(5), RandomUtils.nextBytes(4));
-        //tokenClient.associate(receiverAccount, tokenIds.get(5));
         tokenClient.associate(secondReceiverAccount, tokenIds.get(5));
         tokenClient.grantKyc(tokenIds.get(5), admin.getAccountId());
         tokenClient.grantKyc(tokenIds.get(5), receiverAccount.getAccountId());
@@ -761,10 +717,7 @@ public class EstimatePrecompileFeature extends AbstractFeature {
     }
 
     @Then("I call estimateGas with cryptoTransfer function for fungible tokens")
-    public void cryptoTransferFungibleEstimateGas() throws InvalidProtocolBufferException {
-        networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(0), receiverAccount.getAccountId());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
+    public void cryptoTransferFungibleEstimateGas() {
         var tokenTransferList = (Object) new Tuple[]{tokenTransferList()
                 .forToken(tokenIds.get(0).toSolidityAddress())
                 .withAccountAmounts(
@@ -873,7 +826,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with WipeTokenAccount function")
     public void wipeTokenAccountEstimateGas() {
-        tokenClient.grantKyc(tokenIds.get(0), receiverAccount.getAccountId());
         accountClient.approveToken(tokenIds.get(0), receiverAccount.getAccountId(), 10_000_000_000L);
         networkTransactionResponse = tokenClient.transferFungibleToken(tokenIds.get(0), admin,
                 receiverAccount.getAccountId(), 3_000_000_000_0L);
@@ -904,9 +856,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with WipeNFTAccount function")
     public void wipeNFTAccountEstimateGas() {
-        tokenClient.grantKyc(tokenIds.get(1), receiverAccount.getAccountId());
-        NftId id = new NftId(tokenIds.get(1), firstNftSerialNumber);
-        accountClient.approveNft(id, receiverAccount.getAccountId());
         networkTransactionResponse = tokenClient.transferNonFungibleToken(tokenIds.get(1), admin,
                 receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -996,7 +945,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
 
     @Then("I call estimateGas with RevokeTokenKYC function for NFT")
     public void revokeTokenKYCNonFungibleEstimateGas() {
-//        tokenClient.grantKyc(tokenIds.get(1), receiverAccount.getAccountId());
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.REVOKE_KYC.getFunctionName())
                 .encodeCallWithArgs(
                         asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
@@ -1731,24 +1679,11 @@ public class EstimatePrecompileFeature extends AbstractFeature {
                 ContractMethods.REDIRECT_FOR_TOKEN.getFunctionName())
                 .encodeCallWithArgs(
                         asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
-                        new byte[]{(byte) 0x06, (byte) 0xfd, (byte) 0xde, (byte) 0x03});
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
 
         validateGasEstimation(Strings.encode(encodedFunctionCall),
                 ContractMethods.REDIRECT_FOR_TOKEN.getActualGas(),
                 precompileTestContractSolidityAddress);
-    }
-
-    public void assertContractCallReturnsBadRequest(ByteBuffer encodedFunctionCall, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(Strings.encode(encodedFunctionCall))
-                .to(contractAddress)
-                .estimate(true)
-                .build();
-
-        assertThatThrownBy(
-                () -> mirrorClient.contractsCall(contractCallRequestBody))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
     }
 
     private void validateGasEstimationForTokenCreateWithCustomFees(String selector, int actualGasUsed) {
@@ -1761,21 +1696,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
         assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
-    }
-
-    public String getAbiFunctionAsJsonString(CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
-        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
-                .filter(item -> {
-                    Object name = ((LinkedHashMap) item).get("name");
-                    return name != null && name.equals(functionName);
-                })
-                .findFirst();
-
-        if (function.isPresent()) {
-            return (new JSONObject((Map) function.get())).toString();
-        } else {
-            throw new IllegalStateException("Function " + functionName + " is not present in the ABI.");
-        }
     }
 
     public Function getFunctionFromEstimateArtifact(String functionName) {
@@ -1827,18 +1747,6 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         return contractId;
     }
 
-    private void validateGasEstimation(String selector, int actualGasUsed, String solidityAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(selector)
-                .to(solidityAddress)
-                .estimate(true)
-                .build();
-        ContractCallResponse msgSenderResponse =
-                mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
-
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
-    }
 
     private void createNewToken(
             String symbol, TokenType tokenType, int kycStatus, TokenSupplyType tokenSupplyType,
@@ -1974,7 +1882,7 @@ public class EstimatePrecompileFeature extends AbstractFeature {
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         OWNER_OF("getOwnerOf", 27271),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
-        REDIRECT_FOR_TOKEN("redirectForTokenExternal", 23422),
+        REDIRECT_FOR_TOKEN("redirectBalanceOfExternal", 23422),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         SYMBOL("symbol", 27815),
         SYMBOL_NFT("symbolIERC721", 27814),

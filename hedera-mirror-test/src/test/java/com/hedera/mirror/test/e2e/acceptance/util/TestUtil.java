@@ -21,6 +21,11 @@ import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.proto.Key;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +33,7 @@ import org.apache.tuweni.bytes.Bytes;
 import com.esaulpaugh.headlong.abi.Tuple;
 
 import java.util.List;
+import org.json.JSONObject;
 
 
 @UtilityClass
@@ -98,6 +104,21 @@ public class TestUtil {
         return longList.stream()
                 .mapToLong(Long::longValue)
                 .toArray();
+    }
+
+    public static String getAbiFunctionAsJsonString(CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
+        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
+                .filter(item -> {
+                    Object name = ((LinkedHashMap) item).get("name");
+                    return name != null && name.equals(functionName);
+                })
+                .findFirst();
+
+        if (function.isPresent()) {
+            return (new JSONObject((Map) function.get())).toString();
+        } else {
+            throw new IllegalStateException("Function " + functionName + " is not present in the ABI.");
+        }
     }
 
     public static class TokenTransferListBuilder {

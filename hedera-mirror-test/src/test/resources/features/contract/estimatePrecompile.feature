@@ -9,9 +9,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Given I successfully create and verify a non fungible token for estimateGas precompile tests
     Given I mint and verify a new nft
     And I set lower deviation at 5% and upper deviation at 20%
-    Then I call estimateGas with updateTokenExpiryInfo function
-    Then I call estimateGas with updateTokenInfo function
-#    Then I call estimateGas with updateTokenKeys function
+#    Then I call estimateGas with redirectForToken function
     Then I call estimateGas with associate function for fungible token
     Then I call estimateGas with associate function for NFT
     Then I call estimateGas with dissociate token function without association for fungible token
@@ -82,6 +80,9 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with delete function for Fungible token
     Then I call estimateGas with delete function for NFT
     Then I call estimateGas with delete function for invalid token address
+    Then I call estimateGas with updateTokenExpiryInfo function
+    Then I call estimateGas with updateTokenInfo function
+    Then I call estimateGas with updateTokenKeys function
     Then I call estimateGas with pause function for fungible token
     Then I call estimateGas with pause function for NFT
     Then I call estimateGas with unpause function for fungible token
@@ -132,4 +133,4 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with isFrozen function for NFT
     Then I call estimateGas with getTokenType function for fungible token
     Then I call estimateGas with getTokenType function for NFT
-#    Then I call estimateGas with redirectForToken function
+

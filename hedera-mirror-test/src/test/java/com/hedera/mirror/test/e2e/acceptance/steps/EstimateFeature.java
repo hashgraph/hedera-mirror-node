@@ -51,7 +51,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class EstimateFeature extends AbstractFeature {
+public class EstimateFeature extends AbstractEstimateFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -62,37 +62,10 @@ public class EstimateFeature extends AbstractFeature {
     private final MirrorNodeClient mirrorClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
-    private int lowerDeviation;
-    private int upperDeviation;
-
-    @Value("classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json")
-    private Resource estimateGasTestContract;
 
     private CompiledSolidityArtifact compiledSolidityArtifacts;
     private String newAccountEvnAddress;
 
-    /**
-     * Checks if the actualUsedGas is within the specified range of the estimatedGas.
-     * <p>
-     * The method calculates the lower and upper bounds as percentages of the actualUsedGas, then checks if the
-     * estimatedGas is within the range (inclusive) and returns true if it is, otherwise returns false.
-     *
-     * @param actualUsedGas     the integer value that represents the expected value
-     * @param estimatedGas      the integer value to be checked
-     * @param lowerBoundPercent the integer percentage value for the lower bound of the acceptable range
-     * @param upperBoundPercent the integer percentage value for the upper bound of the acceptable range
-     * @return true if the actualUsedGas is within the specified range, false otherwise
-     */
-    public static boolean isWithinDeviation(
-            int actualUsedGas, int estimatedGas, int lowerBoundPercent, int upperBoundPercent) {
-        int lowerDeviation = actualUsedGas * lowerBoundPercent / 100;
-        int upperDeviation = actualUsedGas * upperBoundPercent / 100;
-
-        int lowerBound = actualUsedGas + lowerDeviation;
-        int upperBound = actualUsedGas + upperDeviation;
-
-        return (estimatedGas >= lowerBound) && (estimatedGas <= upperBound);
-    }
 
     @Given("I successfully create contract from contract bytes with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
@@ -116,30 +89,34 @@ public class EstimateFeature extends AbstractFeature {
     public void multiplyEstimateCall() {
         validateGasEstimation(
                 ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getSelector(),
-                ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getActualGas());
+                ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function msgSender")
     public void msgSenderEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_SENDER.getSelector(), ContractMethods.MESSAGE_SENDER.getActualGas());
+                ContractMethods.MESSAGE_SENDER.getSelector(), ContractMethods.MESSAGE_SENDER.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function tx origin")
     public void txOriginEstimateCall() {
-        validateGasEstimation(ContractMethods.TX_ORIGIN.getSelector(), ContractMethods.TX_ORIGIN.getActualGas());
+        validateGasEstimation(ContractMethods.TX_ORIGIN.getSelector(), ContractMethods.TX_ORIGIN.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function messageValue")
     public void msgValueEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_VALUE.getSelector(), ContractMethods.MESSAGE_VALUE.getActualGas());
+                ContractMethods.MESSAGE_VALUE.getSelector(), ContractMethods.MESSAGE_VALUE.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function messageSigner")
     public void msgSignerEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_SIGNER.getSelector(), ContractMethods.MESSAGE_SIGNER.getActualGas());
+                ContractMethods.MESSAGE_SIGNER.getSelector(), ContractMethods.MESSAGE_SIGNER.getActualGas(),
+                contractSolidityAddress);
     }
 
     @RetryAsserts
@@ -147,7 +124,7 @@ public class EstimateFeature extends AbstractFeature {
     public void addressBalanceEstimateCall() {
         validateGasEstimation(
                 ContractMethods.ADDRESS_BALANCE.getSelector() + RANDOM_ADDRESS,
-                ContractMethods.ADDRESS_BALANCE.getActualGas());
+                ContractMethods.ADDRESS_BALANCE.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that changes contract slot information"
@@ -157,21 +134,21 @@ public class EstimateFeature extends AbstractFeature {
         String updateValue = to32BytesString("5");
         validateGasEstimation(
                 ContractMethods.UPDATE_COUNTER.getSelector() + updateValue,
-                ContractMethods.UPDATE_COUNTER.getActualGas());
+                ContractMethods.UPDATE_COUNTER.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE op code")
     public void deployContractViaCreateOpcodeEstimateCall() {
         validateGasEstimation(
                 ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getSelector(),
-                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getActualGas());
+                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code")
     public void deployContractViaCreateTwoOpcodeEstimateCall() {
         validateGasEstimation(
                 ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getSelector(),
-                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getActualGas());
+                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a static call to a method from a different contract")
@@ -187,7 +164,7 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.STATIC_CALL_TO_CONTRACT.getSelector()
                         + to32BytesString(getMockAddressResponse)
                         + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
-                ContractMethods.STATIC_CALL_TO_CONTRACT.getActualGas());
+                ContractMethods.STATIC_CALL_TO_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a delegate call to a method from a different contract")
@@ -203,7 +180,7 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.DELEGATE_CALL_TO_CONTRACT.getSelector()
                         + to32BytesString(getMockAddressResponse)
                         + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
-                ContractMethods.DELEGATE_CALL_TO_CONTRACT.getActualGas());
+                ContractMethods.DELEGATE_CALL_TO_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a call code to a method from a different contract")
@@ -219,17 +196,19 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.CALL_CODE_TO_CONTRACT.getSelector()
                         + to32BytesString(getMockAddressResponse)
                         + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
-                ContractMethods.CALL_CODE_TO_CONTRACT.getActualGas());
+                ContractMethods.CALL_CODE_TO_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations")
     public void logsEstimateCall() {
-        validateGasEstimation(ContractMethods.LOGS.getSelector(), ContractMethods.LOGS.getActualGas());
+        validateGasEstimation(ContractMethods.LOGS.getSelector(), ContractMethods.LOGS.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(ContractMethods.DESTROY.getSelector(), ContractMethods.DESTROY.getActualGas());
+        validateGasEstimation(ContractMethods.DESTROY.getSelector(), ContractMethods.DESTROY.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
@@ -277,28 +256,28 @@ public class EstimateFeature extends AbstractFeature {
     public void callToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
                 ContractMethods.CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
-                ContractMethods.CALL_TO_INVALID_CONTRACT.getActualGas());
+                ContractMethods.CALL_TO_INVALID_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a delegate call to invalid smart contract")
     public void delegateCallToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
                 ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
-                ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getActualGas());
+                ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a static call to invalid smart contract")
     public void staticCallToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
                 ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
-                ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getActualGas());
+                ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a call code to invalid smart contract")
     public void callCodeToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
                 ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
-                ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getActualGas());
+                ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes call to an external contract function")
@@ -307,7 +286,7 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector()
                         + to32BytesString("1")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas());
+                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes delegate call to an external contract function")
@@ -316,7 +295,8 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector()
                         + to32BytesString("1")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas());
+                ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes call to an external contract view function")
@@ -325,7 +305,7 @@ public class EstimateFeature extends AbstractFeature {
                 ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getSelector()
                         + to32BytesString("1")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getActualGas());
+                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a state update to a contract")
@@ -333,7 +313,7 @@ public class EstimateFeature extends AbstractFeature {
         // making 5 times to state update
         validateGasEstimation(
                 ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("5"),
-                ContractMethods.STATE_UPDATE_OF_CONTRACT.getActualGas());
+                ContractMethods.STATE_UPDATE_OF_CONTRACT.getActualGas(), contractSolidityAddress);
     }
 
     @Then(
@@ -367,19 +347,20 @@ public class EstimateFeature extends AbstractFeature {
     public void reentrancyTransferAttackFunction() {
         validateGasEstimation(
                 ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10"),
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas());
+                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
         validateGasEstimation(
                 ContractMethods.REENTRANCY_CALL_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10000000000"),
-                ContractMethods.REENTRANCY_CALL_ATTACK.getActualGas());
+                ContractMethods.REENTRANCY_CALL_ATTACK.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes gasLeft")
     public void getGasLeftContractFunction() {
-        validateGasEstimation(ContractMethods.GET_GAS_LEFT.getSelector(), ContractMethods.GET_GAS_LEFT.getActualGas());
+        validateGasEstimation(ContractMethods.GET_GAS_LEFT.getSelector(), ContractMethods.GET_GAS_LEFT.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes positive nested calls")
@@ -389,7 +370,7 @@ public class EstimateFeature extends AbstractFeature {
                         + to32BytesString("1")
                         + to32BytesString("10")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_POSITIVE.getActualGas());
+                ContractMethods.NESTED_CALLS_POSITIVE.getActualGas(), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes limited nested calls")
@@ -401,19 +382,19 @@ public class EstimateFeature extends AbstractFeature {
                         + to32BytesString("1")
                         + to32BytesString("500")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+                ContractMethods.NESTED_CALLS_LIMITED.getActualGas(), contractSolidityAddress);
         validateGasEstimation(
                 ContractMethods.NESTED_CALLS_LIMITED.getSelector()
                         + to32BytesString("1")
                         + to32BytesString("1024")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+                ContractMethods.NESTED_CALLS_LIMITED.getActualGas(), contractSolidityAddress);
         validateGasEstimation(
                 ContractMethods.NESTED_CALLS_LIMITED.getSelector()
                         + to32BytesString("1")
                         + to32BytesString("1025")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+                ContractMethods.NESTED_CALLS_LIMITED.getActualGas(), contractSolidityAddress);
     }
 
     private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
@@ -434,7 +415,7 @@ public class EstimateFeature extends AbstractFeature {
 
     private FileId persistContractBytes(String contractContents) {
         // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -452,18 +433,6 @@ public class EstimateFeature extends AbstractFeature {
         var contractId = networkTransactionResponse.getReceipt().contractId;
         assertNotNull(contractId);
         return contractId;
-    }
-
-    private void validateGasEstimation(String selector, int actualGasUsed) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(selector)
-                .to(contractSolidityAddress)
-                .estimate(true)
-                .build();
-        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
-
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
     }
 
     /**
@@ -509,5 +478,6 @@ public class EstimateFeature extends AbstractFeature {
     }
 
     private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {
+    }
 }
