@@ -2410,7 +2410,7 @@ components:
           type: string
         data:
           description: Hexadecimal method signature and encoded parameters.
-          example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
+          example: "0x47f1aae7"
           format: binary
           maxLength: 12288
           nullable: true
@@ -2431,8 +2431,8 @@ components:
           pattern: "^(0x)?[A-Fa-f0-9]{40}$"
           type: string
         gas:
-          description: Gas provided for the transaction execution. Defaults to 120000000.
-          example: 120000000
+          description: Gas provided for the transaction execution. Defaults to 15000000.
+          example: 15000000
           format: int64
           minimum: 0
           nullable: true
@@ -2446,7 +2446,7 @@ components:
           type: integer
         to:
           description: The 20-byte hexadecimal EVM address the transaction is directed to.
-          example: "0x00000000000000000000000000000000000003f4"
+          example: "0xd9d0c5c0ff85758bdf05a7636f8036d4d065f5b6"
           format: binary
           maxLength: 42
           minLength: 40
@@ -2467,7 +2467,7 @@ components:
       properties:
         result:
           description: Result in hexadecimal from executed contract call.
-          example: "0x94c4d54535f6e616d6500"
+          example: "0x0000000000006d8d"
           format: binary
           nullable: false
           pattern: "^0x[0-9a-fA-F]+$"
