@@ -21,7 +21,6 @@ import static jakarta.transaction.Transactional.TxType.REQUIRES_NEW;
 import jakarta.inject.Named;
 import jakarta.transaction.Transactional;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.retry.annotation.Retryable;
 
 @Named
@@ -57,6 +57,9 @@ public class PartitionMaintenanceService {
             + "                              start_from := ?,"
             + "                              end_at := ?)";
 
+    private static final String UPDATE_PARTITION_NAME_SQL =
+            "select updatePartitionTableName(?::regclass, ?::interval, ?::timestamptz, ?)";
+
     private final JdbcTemplate jdbcTemplate;
     private final PartitionMaintenanceConfiguration maintenanceConfig;
 
@@ -77,7 +80,7 @@ public class PartitionMaintenanceService {
                 LocalDateTime.ofInstant(Instant.ofEpochSecond(0L, partitionInfo.getNextTo()), PARTITION_BOUND_TIMEZONE);
         Duration partitionDuration = Duration.between(start, end);
 
-        // will always premake one time partition
+        // will always premake one partition
         boolean makeTimePartition = partitionInfo.isTimePartition()
                 && LocalDateTime.now(PARTITION_BOUND_TIMEZONE)
                         .plus(partitionDuration)
@@ -87,7 +90,7 @@ public class PartitionMaintenanceService {
                         >= partitionInfo.getNextFrom();
         boolean skipPartition = !(makeIdPartition || makeTimePartition);
         if (skipPartition) {
-            log.info("No new partition needed. Skipping creation for partition {}", partitionInfo);
+            log.info("No new partition needed. Skipping creation for {}", partitionInfo);
             return false;
         }
         String interval = partitionInfo.isTimePartition()
@@ -97,16 +100,16 @@ public class PartitionMaintenanceService {
                 CREATE_TIME_PARTITIONS_SQL, Boolean.class, partitionInfo.getParentTable(), interval, start, end));
 
         if (created && !partitionInfo.isTimePartition()) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(maintenanceConfig.getIdPartitionNamePattern())
-                    .withZone(PARTITION_BOUND_TIMEZONE);
             // Work around timestamp granularity issue of citus partition table names
-            String createdPartitionName = partitionInfo.getParentTable() + formatter.format(start);
             long partitionCount = partitionInfo.getNextFrom() / partitionDuration.toNanos();
-            String updatePartitionNameSql = String.format(
-                    "alter table %s rename to %s_p%d",
-                    createdPartitionName, partitionInfo.getParentTable(), partitionCount);
-            jdbcTemplate.execute(updatePartitionNameSql);
-            log.info("Renamed partition: {}", updatePartitionNameSql);
+            jdbcTemplate.execute(UPDATE_PARTITION_NAME_SQL, (PreparedStatementCallback<Boolean>) ps -> {
+                ps.setString(1, partitionInfo.getParentTable());
+                ps.setString(2, maintenanceConfig.getIdPartitionInterval());
+                ps.setObject(3, start);
+                ps.setLong(4, partitionCount);
+                return ps.execute();
+            });
+            log.info("Renamed partition: {}", partitionInfo);
         }
         log.info("Partition {} created {}", partitionInfo, created);
         return created;

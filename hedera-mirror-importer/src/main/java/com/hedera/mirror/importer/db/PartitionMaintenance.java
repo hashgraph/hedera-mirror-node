@@ -17,7 +17,9 @@
 package com.hedera.mirror.importer.db;
 
 import lombok.*;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -28,8 +30,8 @@ import org.springframework.stereotype.Component;
 public class PartitionMaintenance {
     private final PartitionMaintenanceService service;
 
-    @Scheduled(initialDelay = 0, fixedRate = 1000000000L)
-    //    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 1 * ?}")
+    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
+    @EventListener(ApplicationReadyEvent.class)
     public void runMaintenance() {
         service.getNextPartitions().forEach(partitionInfo -> {
             try {
