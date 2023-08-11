@@ -16,10 +16,11 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeFungibleCreate;
@@ -49,8 +50,10 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -97,6 +100,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,11 +143,12 @@ class TokenCreatePrecompileTest {
             "0x457339690000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
     private static final Bytes CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3 = Bytes.fromHexString(
             "0xabb54eb50000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000052000000000000000000000000000000000000000000000000000000000000005e0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000007fffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000007a120000000000000000000000000000000000000000000000000000000000000000074d794e465456320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054e4654563200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096e66744d656d6f56320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002");
-    private static final long TEST_SERVICE_FEE = 5_000_000;
-    private static final long TEST_NETWORK_FEE = 400_000;
-    private static final long TEST_NODE_FEE = 300_000;
-    private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
+    private static final long TEST_SERVICE_FEE = 100L;
+    private static final long TEST_NODE_FEE = 100_000L;
+    private static final long TEST_NETWORK_FEE = 100L;
+    private static final long EXPECTED_TINYBARS_REQUIREMENT = (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+            + (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
+    private static final long SENDER_INITIAL_BALANCE = 1_000_000L;
 
     @Mock
     private AssetsLoader assetLoader;
@@ -194,6 +199,9 @@ class TokenCreatePrecompileTest {
     private Account account;
 
     @Mock
+    com.hedera.services.store.models.Account senderAccount;
+
+    @Mock
     private Deque<MessageFrame> stack;
 
     @Mock
@@ -201,6 +209,9 @@ class TokenCreatePrecompileTest {
 
     @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
+
+    @Mock
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
@@ -221,6 +232,13 @@ class TokenCreatePrecompileTest {
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void cleanUp() {
+        if (staticTokenCreatePrecompile != null) {
+            staticTokenCreatePrecompile.close();
+        }
     }
 
     @Test
@@ -603,9 +621,6 @@ class TokenCreatePrecompileTest {
         final var transactionBody =
                 TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
 
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
-                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -615,7 +630,7 @@ class TokenCreatePrecompileTest {
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
-        assertEquals(EXPECTED_GAS_PRICE, result);
+        assertEquals(subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
     }
 
     @Test
@@ -645,7 +660,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreate(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT);
-        clearStaticContext();
     }
 
     @Test
@@ -667,7 +681,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreate(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT);
-        clearStaticContext();
     }
 
     @Test
@@ -690,7 +703,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFees(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT);
-        clearStaticContext();
     }
 
     @Test
@@ -707,7 +719,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreateWithFees(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT);
-        clearStaticContext();
     }
 
     @Test
@@ -737,7 +748,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreateV2(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT_V2);
-        clearStaticContext();
     }
 
     @Test
@@ -767,7 +777,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreateV3(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT_V3);
-        clearStaticContext();
     }
 
     @Test
@@ -790,7 +799,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFeesV2(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT_V2);
-        clearStaticContext();
     }
 
     @Test
@@ -813,7 +821,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreateWithFeesV3(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_WITH_FEES_INPUT_V3);
-        clearStaticContext();
     }
 
     @Test
@@ -835,7 +842,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreateV2(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V2);
-        clearStaticContext();
     }
 
     @Test
@@ -857,7 +863,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreateV3(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_NO_FEES_INPUT_V3);
-        clearStaticContext();
     }
 
     @Test
@@ -874,7 +879,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreateWithFeesV2(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V2);
-        clearStaticContext();
     }
 
     @Test
@@ -891,7 +895,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeNonFungibleCreateWithFeesV3(any(), any()))
                 .thenReturn(tokenCreateWrapper);
         prepareAndAssertCreateHappyPathSucceeds(CREATE_NON_FUNGIBLE_WITH_FEES_INPUT_V3);
-        clearStaticContext();
     }
 
     @Test
@@ -910,7 +913,6 @@ class TokenCreatePrecompileTest {
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(frame.getRemainingGas()).willReturn(10_000_000L);
-        given(frame.getValue()).willReturn(Wei.ZERO);
         // when:
         final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
 
@@ -925,7 +927,6 @@ class TokenCreatePrecompileTest {
                         validator,
                         store,
                         transactionBody.getTokenCreation());
-        clearStaticContext();
     }
 
     @Test
@@ -957,7 +958,6 @@ class TokenCreatePrecompileTest {
                         validator,
                         store,
                         transactionBody.getTokenCreation());
-        clearStaticContext();
     }
 
     private void assertExpectedFungibleTokenCreateStruct(final TokenCreateWrapper decodedInput) {
@@ -1026,8 +1026,10 @@ class TokenCreatePrecompileTest {
     }
 
     private void givenMinFrameContext() {
-        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
+        given(worldUpdater.aliases()).willReturn(mirrorEvmContractAliases);
     }
 
     private void givenIfDelegateCall() {
@@ -1043,10 +1045,14 @@ class TokenCreatePrecompileTest {
         givenMinFrameContext();
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(encoder.encodeCreateSuccess(any())).willReturn(HTSTestsUtil.successResult);
-
+        givenValidGasCalculation();
+        given(store.getAccount(senderAddress, OnMissing.THROW)).willReturn(senderAccount);
+        given(senderAccount.getBalance()).willReturn(1000L);
+        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         // when:
         given(frame.getRemainingGas()).willReturn(100_000L);
-        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getValue()).willReturn(Wei.of(90_000_000_000L));
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         final var result = subject.computeInternal(frame);
@@ -1056,10 +1062,6 @@ class TokenCreatePrecompileTest {
     }
 
     private void givenValidGasCalculation() {
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
-                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
-        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
-
         final var blockValuesMock = mock(BlockValues.class);
         given(frame.getBlockValues()).willReturn(blockValuesMock);
         given(blockValuesMock.getTimestamp()).willReturn(HTSTestsUtil.timestamp.getSeconds());
@@ -1067,9 +1069,5 @@ class TokenCreatePrecompileTest {
 
     private void prepareStaticContext() {
         staticTokenCreatePrecompile = mockStatic(TokenCreatePrecompile.class);
-    }
-
-    private void clearStaticContext() {
-        staticTokenCreatePrecompile.close();
     }
 }

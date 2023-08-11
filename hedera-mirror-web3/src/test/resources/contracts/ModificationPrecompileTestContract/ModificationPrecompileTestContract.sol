@@ -74,7 +74,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function createFungibleTokenExternal(IHederaTokenService.HederaToken memory token,
         int64 initialTotalSupply,
-        int32 decimals) external
+        int32 decimals) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
@@ -87,7 +87,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         int64 initialTotalSupply,
         int32 decimals,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.FractionalFee[] memory fractionalFees) external
+        IHederaTokenService.FractionalFee[] memory fractionalFees) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
@@ -96,7 +96,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function createNonFungibleTokenExternal(IHederaTokenService.HederaToken memory token) external
+    function createNonFungibleTokenExternal(IHederaTokenService.HederaToken memory token) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createNonFungibleToken(token);
@@ -107,7 +107,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function createNonFungibleTokenWithCustomFeesExternal(IHederaTokenService.HederaToken memory token,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.RoyaltyFee[] memory royaltyFees) external
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createNonFungibleTokenWithCustomFees(token, fixedFees, royaltyFees);
