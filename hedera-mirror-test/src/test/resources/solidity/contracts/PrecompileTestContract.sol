@@ -5,6 +5,9 @@ pragma experimental ABIEncoderV2;
 import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+
 
 contract PrecompileTestContract is HederaTokenService {
     function isTokenAddress(address token) external returns (bool) {
@@ -116,12 +119,162 @@ contract PrecompileTestContract is HederaTokenService {
         return key;
     }
 
-    function redirectBalanceOfExternal(address token, address account) external
-    returns(int responseCode)
+    function balanceOfRedirect(address token, address account) external
+    returns(bytes memory result)
     {
-        (responseCode, ) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
+        return responseResult;
+    }
+
+    function nameRedirect(address token) external
+    returns(bytes memory result)
+    {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.name.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseResult;
+    }
+
+    function symbolRedirect(address token) external
+    returns(bytes memory result)
+    {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.symbol.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseResult;
+    }
+
+    function nameNFTRedirect(address token) external
+    returns(bytes memory result)
+    {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721Metadata.name.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseResult;
+    }
+
+    function symbolNFTRedirect(address token) external
+    returns(bytes memory result)
+    {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721Metadata.symbol.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseResult;
+    }
+
+    function decimalsRedirect(address token) external
+    returns(bytes memory result)
+    {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.decimals.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+        return responseResult;
+    }
+
+    function totalSupplyRedirect(address token) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.totalSupply.selector));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Token redirect failed");
+        }
+        return responseResult;
+    }
+
+    function allowanceRedirect(address token, address owner, address spender) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.allowance.selector, owner, spender));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function getApprovedRedirect(address token, uint256 tokenId) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721.getApproved.selector, tokenId));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function getOwnerOfRedirect(address token, uint256 serialNo) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721.ownerOf.selector, serialNo));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function tokenURIRedirect(address token, uint256 tokenId) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721Metadata.tokenURI.selector, tokenId));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function isApprovedForAllRedirect(address token, address owner, address operator) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721.isApprovedForAll.selector, owner, operator));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function transferRedirect(address token, address recipient, uint256 amount) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.transfer.selector, recipient, amount));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function transferFromRedirect(address token, address sender, address recipient, uint256 amount) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.transferFrom.selector, sender, recipient, amount));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function approveRedirect(address token, address spender, uint256 amount) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.approve.selector, spender, amount));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function transferFromNFTRedirect(address token, address from, address to, uint256 tokenId) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721.transferFrom.selector, from, to, tokenId));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
+    }
+
+    function setApprovalForAllRedirect(address token, address operator, bool approved) external
+    returns (bytes memory result) {
+        (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721.setApprovalForAll.selector, operator, approved));
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+        return responseResult;
     }
 }

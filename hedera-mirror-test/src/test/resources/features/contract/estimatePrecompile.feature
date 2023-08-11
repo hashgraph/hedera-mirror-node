@@ -9,7 +9,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Given I successfully create and verify a non fungible token for estimateGas precompile tests
     Given I mint and verify a new nft
     And I set lower deviation at 5% and upper deviation at 20%
-#    Then I call estimateGas with redirectForToken function
+#    Then I call estimateGas with redirect balanceOf function
     Then I call estimateGas with associate function for fungible token
     Then I call estimateGas with associate function for NFT
     Then I call estimateGas with dissociate token function without association for fungible token
@@ -134,3 +134,17 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with getTokenType function for fungible token
     Then I call estimateGas with getTokenType function for NFT
 
+#    Then I call estimateGas with redirect name function
+#    Then I call estimateGas with redirect name function for NFT
+#    Then I call estimateGas with redirect symbol function
+#    Then I call estimateGas with redirect symbol function for NFT
+#    Then I call estimateGas with redirect decimals function
+#    Then I call estimateGas with redirect allowance function
+#    Then I call estimateGas with redirect getOwnerOf function
+#    Then I call estimateGas with redirect tokenURI function
+#    Then I call estimateGas with redirect isApprovedForAll function
+#    Then I call estimateGas with redirect transfer function
+#    Then I call estimateGas with redirect transferFrom function
+#    Then I call estimateGas with redirect approve function
+#    Then I call estimateGas with redirect transferFrom NFT function
+#    Then I call estimateGas with redirect setApprovalForAll function

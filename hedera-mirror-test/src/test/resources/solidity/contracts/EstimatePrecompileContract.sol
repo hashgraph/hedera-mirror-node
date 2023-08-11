@@ -18,14 +18,19 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     int32 decimals = 8;
     bool freezeDefaultStatus = false;
 
+    // Helper function to handle the common logic
+    function handleResponseCode(int responseCode) internal pure {
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+
     // associate & dissociate
     function associateTokenExternal(address account, address token) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.associateToken(account, token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token association failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     function nestedAssociateTokenExternal(address account, address token) external
@@ -33,9 +38,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.associateToken(account, token);
         responseCode = HederaTokenService.associateToken(account, token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token association failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     function dissociateAndAssociateTokenExternal(address account, address token) external
@@ -43,36 +46,28 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.dissociateToken(account, token);
         responseCode = HederaTokenService.associateToken(account, token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Nested token association failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     function dissociateTokenExternal(address account, address token) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.dissociateToken(account, token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token dissociation failed!");
-        }
+        handleResponseCode(responseCode);
     }
     //associate & dissociate - many
     function associateTokensExternal(address account, address[] memory tokens) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.associateTokens(account, tokens);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token associate failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     function dissociateTokensExternal(address account, address[] memory tokens) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.dissociateTokens(account, tokens);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token dissociation failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     //approve
@@ -80,18 +75,14 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     returns (int responseCode)
     {
         responseCode = HederaTokenService.approve(token, spender, amount);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Approval failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     function approveNFTExternal(address token, address approved, uint256 serialNumber) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("NFT approval failed!");
-        }
+        handleResponseCode(responseCode);
     }
 
     //transfer
@@ -99,36 +90,28 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     returns (int responseCode)
     {
         responseCode = this.transferFrom(token, from, to, amount);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function transferFromNFTExternal(address token, address from, address to, uint256 serialNumber) external
     returns (int responseCode)
     {
         responseCode = this.transferFromNFT(token, from, to, serialNumber);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("NFT transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function transferTokenExternal(address token, address sender, address receiver, int64 amount) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.transferToken(token, sender, receiver, amount);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function transferNFTExternal(address token, address sender, address receiver, int64 serialNumber) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.transferNFT(token, sender, receiver, serialNumber);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("NFT transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     //transfer-many
@@ -136,45 +119,35 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     returns (int responseCode)
     {
         responseCode = HederaTokenService.transferTokens(token, accountIds, amounts);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Token transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function transferNFTsExternal(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.transferNFTs(token, sender, receiver, serialNumber);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("NFT transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.cryptoTransfer(transferList, tokenTransfers);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert("Crypto transfer failed");
-        }
+        handleResponseCode(responseCode);
     }
 
     function mintTokenExternal(address token, int64 amount, bytes[] memory metadata) external
     returns (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers)
     {
         (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function burnTokenExternal(address token, int64 amount, int64[] memory serialNumbers) external
     returns (int responseCode, int64 newTotalSupply)
     {
         (responseCode, newTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     //create operations
@@ -197,9 +170,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         (int responseCode, address tokenAddress) =
                             HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
 
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
+        handleResponseCode(responseCode);
     }
 
     function createNonFungibleTokenPublic(address treasury) public payable {
@@ -221,9 +192,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         (int responseCode, address tokenAddress) =
                             HederaTokenService.createNonFungibleToken(token);
 
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
+        handleResponseCode(responseCode);
     }
 
     function createFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable {
@@ -247,9 +216,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         (int responseCode, address tokenAddress) =
                             HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
 
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
+        handleResponseCode(responseCode);
     }
 
     function createNonFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable {
@@ -277,54 +244,42 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         (int responseCode, address tokenAddress) =
                             HederaTokenService.createNonFungibleTokenWithCustomFees(token, fixedFees, royaltyFees);
 
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert ();
-        }
+        handleResponseCode(responseCode);
     }
 
     function wipeTokenAccountExternal(address token, address account, int64 amount) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function wipeTokenAccountNFTExternal(address token, address account, int64[] memory serialNumbers) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function setApprovalForAllExternal(address token, address account, bool approved) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.setApprovalForAll(token, account, approved);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function grantTokenKycExternal(address token, address account) external
     returns (int64 responseCode)
     {
         responseCode = HederaTokenService.grantTokenKyc(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function revokeTokenKycExternal(address token, address account) external
     returns (int64 responseCode)
     {
         responseCode = HederaTokenService.revokeTokenKyc(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function nestedGrantAndRevokeTokenKYCExternal(address token, address account) external
@@ -332,27 +287,21 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.grantTokenKyc(token, account);
         responseCode = HederaTokenService.revokeTokenKyc(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function freezeTokenExternal(address token, address account) external
     returns (int64 responseCode)
     {
         responseCode = HederaTokenService.freezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function unfreezeTokenExternal(address token, address account) external
     returns (int64 responseCode)
     {
         responseCode = HederaTokenService.unfreezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function nestedFreezeUnfreezeTokenExternal(address token, address account) external
@@ -360,9 +309,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.freezeToken(token, account);
         responseCode = HederaTokenService.unfreezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function freezeTokenTwiceExternal(address token, address account) external
@@ -370,18 +317,14 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.freezeToken(token, account);
         responseCode = HederaTokenService.freezeToken(token, account);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function deleteTokenExternal(address token) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.deleteToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function deleteTokenTwiceExternal(address token) external
@@ -389,27 +332,21 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.deleteToken(token);
         responseCode = HederaTokenService.deleteToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function pauseTokenExternal(address token) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.pauseToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function unpauseTokenExternal(address token) external
     returns (int responseCode)
     {
         responseCode = HederaTokenService.unpauseToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function nestedPauseUnpauseTokenExternal(address token) external
@@ -417,9 +354,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     {
         HederaTokenService.pauseToken(token);
         responseCode = HederaTokenService.unpauseToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function updateTokenExpiryInfoExternal(address token, address treasury) external
@@ -429,9 +364,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             0, treasury, 9000
         );
         responseCode = HederaTokenService.updateTokenExpiryInfo(token, expiry);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function updateTokenInfoExternal(address token, address treasury) external
@@ -453,9 +386,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         );
 
         responseCode = HederaTokenService.updateTokenInfo(token, tokenInfo);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function updateTokenKeysExternal(address token) external
@@ -468,62 +399,48 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[3] = getSingleKey(KeyType.WIPE, KeyValueType.SECP256K1, abi.encodePacked(hex"02e35698a0273a8c6509ae4716c26a52eebca73e5de2c6677b189ef40f6fcd1fed"));
 
         responseCode = HederaTokenService.updateTokenKeys(token, keys);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function getTokenExpiryInfoExternal(address token) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.getTokenExpiryInfo(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function isTokenExternal(address token) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.isToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function getTokenKeyExternal(address token, uint keyType) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.getTokenKey(token, keyType);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function allowanceExternal(address token, address owner, address spender) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.allowance(token, owner, spender);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function getApprovedExternal(address token, uint256 serialNumber) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.getApproved(token, serialNumber);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 
     function isApprovedForAllExternal(address token, address owner, address operator) external
     returns(int responseCode)
     {
         (responseCode, ) = HederaTokenService.isApprovedForAll(token, owner, operator);
-        if (responseCode != HederaResponseCodes.SUCCESS) {
-            revert();
-        }
+        handleResponseCode(responseCode);
     }
 }

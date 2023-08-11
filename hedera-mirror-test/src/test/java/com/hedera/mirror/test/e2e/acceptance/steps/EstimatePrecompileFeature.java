@@ -34,9 +34,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -47,10 +44,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import java.nio.ByteBuffer;
 import java.math.BigInteger;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
@@ -478,7 +472,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(1), receiverAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        //tokenClient.transferNonFungibleToken(tokenIds.get(1), admin, receiverAccount.getAccountId(), Collections.singletonList(firstNftSerialNumber));
 
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.TRANSFER_FROM_NFT.getFunctionName())
@@ -1673,16 +1666,203 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 precompileTestContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with redirectForToken function")
-    public void redirectForTokenEstimateGas() {
+    @Then("I call estimateGas with redirect balanceOf function")
+    public void redirectBalanceOfEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                ContractMethods.REDIRECT_FOR_TOKEN.getFunctionName())
+                ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF.getFunctionName())
                 .encodeCallWithArgs(
                         asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
 
         validateGasEstimation(Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN.getActualGas(),
+                ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect name function")
+    public void redirectNameEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect symbol function")
+    public void redirectSymbolEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect name function for NFT")
+    public void redirectNameNonFungibleEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect symbol function for NFT")
+    public void redirectSymbolNonFungibleEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect decimals function")
+    public void redirectDecimalsEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect allowance function")
+    public void redirectAllowanceEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect getOwnerOf function")
+    public void redirectGetOwnerOfEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        new BigInteger("1"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect tokenURI function")
+    public void redirectTokenURIEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        new BigInteger("1"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect isApprovedForAll function")
+    public void redirectIsApprovedForAllEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect transfer function")
+    public void redirectTransferEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("5"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect transferFrom function")
+    public void redirectTransferFromEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("5"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect approve function")
+    public void redirectApproveEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_APPROVE.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(0).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("10"));
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_APPROVE.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect transferFrom NFT function")
+    public void redirectTransferFromNonFungibleEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        new BigInteger("1"));
+
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getActualGas(),
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with redirect setApprovalForAll function")
+    public void redirectSetApprovalForAllEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
+                ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL.getFunctionName())
+                .encodeCallWithArgs(
+                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
+                        true);
+
+        validateGasEstimation(Strings.encode(encodedFunctionCall),
+                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getActualGas(),
                 precompileTestContractSolidityAddress);
     }
 
@@ -1882,7 +2062,23 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         OWNER_OF("getOwnerOf", 27271),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
-        REDIRECT_FOR_TOKEN("redirectBalanceOfExternal", 23422),
+        REDIRECT_FOR_TOKEN_ALLOWANCE("allowanceRedirect", 23422),
+        REDIRECT_FOR_TOKEN_APPROVE("approveRedirect", 23422),
+        REDIRECT_FOR_TOKEN_BALANCE_OF("balanceOfRedirect", 23422),
+        REDIRECT_FOR_TOKEN_DECIMALS("decimalsRedirect", 23422),
+        REDIRECT_FOR_TOKEN_GET_APPROVED("getApprovedRedirect", 23422),
+        REDIRECT_FOR_TOKEN_GET_OWNER_OF("getOwnerOfRedirect", 23422),
+        REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL("isApprovedForAllRedirect", 23422),
+        REDIRECT_FOR_TOKEN_NAME("nameNFTRedirect", 23422),
+        REDIRECT_FOR_TOKEN_SYMBOL("symbolNFTRedirect", 23422),
+        REDIRECT_FOR_TOKEN_NAME_NFT("nameRedirect", 23422),
+        REDIRECT_FOR_TOKEN_SYMBOL_NFT("symbolRedirect", 23422),
+        REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL("setApprovalForAllRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TOTAL_SUPPLY("totalSupplyRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TOKEN_URI("tokenURIRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TRANSFER("transferRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM("transferFromRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT("transferFromNFTRedirect", 23422),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         SYMBOL("symbol", 27815),
         SYMBOL_NFT("symbolIERC721", 27814),
