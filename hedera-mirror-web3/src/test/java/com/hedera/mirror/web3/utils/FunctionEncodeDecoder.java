@@ -247,16 +247,32 @@ public class FunctionEncodeDecoder {
         };
     }
 
+    private Tuple[] encodeCryptoTransferForNFT(Object[] parameters) {
+        return new Tuple[] {};
+    }
+
     private Tuple[] encodeCryptoTransfer(Object[] parameters) {
-        return new Tuple[] {
-            Tuple.of(
-                    convertAddress((Address) parameters[0]),
-                    new Tuple[] {
-                        Tuple.of(convertAddress((Address) parameters[1]), -(Long) parameters[3], false),
-                        Tuple.of(convertAddress((Address) parameters[2]), parameters[3], false)
-                    },
-                    new Tuple[] {})
-        };
+        if ((Boolean) parameters[4]) { // means it's a NFT transfer
+            return new Tuple[] {
+                Tuple.of(convertAddress((Address) parameters[0]), new Tuple[] {}, new Tuple[] {
+                    Tuple.of(
+                            convertAddress((Address) parameters[1]),
+                            convertAddress((Address) parameters[2]),
+                            parameters[3],
+                            false)
+                })
+            };
+        } else {
+            return new Tuple[] {
+                Tuple.of(
+                        convertAddress((Address) parameters[0]),
+                        new Tuple[] {
+                            Tuple.of(convertAddress((Address) parameters[1]), -(Long) parameters[3], false),
+                            Tuple.of(convertAddress((Address) parameters[2]), parameters[3], false)
+                        },
+                        new Tuple[] {})
+            };
+        }
     }
 
     private String getFunctionAbi(final String functionName, final Path contractPath) {

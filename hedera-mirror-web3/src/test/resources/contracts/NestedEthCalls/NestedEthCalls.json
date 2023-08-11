@@ -21,67 +21,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "serialNumber",
-        "type": "uint256"
-      }
-    ],
-    "name": "approveForAllTokenTransferFromGetAllowance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "serialNumber",
-        "type": "uint256"
-      }
-    ],
-    "name": "approveForAllTokenTransferGetAllowance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "serialNumber",
-        "type": "uint256"
-      },
-      {
         "components": [
           {
             "components": [
@@ -170,6 +109,52 @@
         "internalType": "struct IHederaTokenService.TokenTransferList[]",
         "name": "tokenTransfers",
         "type": "tuple[]"
+      }
+    ],
+    "name": "approveForAllCryptoTransferGetAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveForAllTokenTransferFromGetAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
       }
     ],
     "name": "approveForAllTokenTransferGetAllowance",
@@ -727,11 +712,6 @@
       {
         "internalType": "address",
         "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "spender",
         "type": "address"
       },
       {
