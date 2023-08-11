@@ -161,6 +161,14 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         TRANSFER_NFT_GET_OWNER(
                 "transferFromGetAllowanceGetBalance",
                 new Object[] {NFT_TRANSFER_ADDRESS, SPENDER_ADDRESS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        CRYPTO_TRANSFER_FUNFIBLE_TOKEN_GET_OWNER(
+                "cryptoTransferFromGetAllowanceGetBalance",
+                new Object[] {TREASURY_TOKEN_ADDRESS, NESTED_ETH_CALLS_CONTRACT_ADDRESS, SPENDER_ADDRESS, 1L, false},
+                null),
+        CRYPTO_TRANSFER_NFT_GET_OWNER(
+                "cryptoTransferFromGetAllowanceGetBalance",
+                new Object[] {NFT_TRANSFER_ADDRESS, NESTED_ETH_CALLS_CONTRACT_ADDRESS, SPENDER_ADDRESS, 1L, true},
                 null);
         private final String name;
         private final Object[] functionParameters;
