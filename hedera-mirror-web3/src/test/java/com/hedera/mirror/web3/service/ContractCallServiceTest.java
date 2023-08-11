@@ -128,7 +128,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 7L);
-        receiverPersist();
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
 
@@ -214,7 +213,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void transferNegative() {
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L);
-        receiverPersist();
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -224,7 +222,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void transferExceedsBalance() {
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 210000L);
-        receiverPersist();
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
