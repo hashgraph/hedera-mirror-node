@@ -690,14 +690,13 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
 };
 
 const addCustomFee = async (customFee) => {
-  customFee.fixed_fees?.forEach((f) => {
-    parseCustomFeeEntityIds(f);
-  });
-  customFee.fractional_fees?.forEach((f) => {
-    parseCustomFeeEntityIds(f);
-  });
+  customFee.fixed_fees?.forEach(parseCustomFeeEntityIds);
+  customFee.fractional_fees?.forEach(parseCustomFeeEntityIds);
   customFee.royalty_fees?.forEach((f) => {
-    parseCustomFeeEntityIds(f.fallback_fee);
+    parseCustomFeeEntityIds(f);
+    if (!_.isNil(f.fallback_fee?.denominating_token_id)) {
+      f.fallback_fee.denominating_token_id = EntityId.parse(f.fallback_fee.denominating_token_id).getEncodedId();
+    }
   });
 
   const fixed_fees = customFee.fixed_fees ? JSONStringify(customFee.fixed_fees) : null;
@@ -721,13 +720,14 @@ const addCustomFee = async (customFee) => {
   );
 };
 
-const parseCustomFeeEntityIds = async (fee) => {
-  fee = {
-    all_collectors_are_exempt: true,
+const parseCustomFeeEntityIds = (fee) => {
+  Object.assign(fee, {
+    all_collectors_are_exempt: false,
     collector_account_id: '0.0.300',
     ...fee,
-  };
-  fee.collector_account_id = EntityId.parse(fee.collector_account_id, {isNullable: true}).getEncodedId();
+  });
+
+  fee.collector_account_id = EntityId.parse(fee.collector_account_id).getEncodedId();
   if (!_.isNil(fee.denominating_token_id)) {
     fee.denominating_token_id = EntityId.parse(fee.denominating_token_id).getEncodedId();
   }

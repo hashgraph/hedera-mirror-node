@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static java.util.Objects.requireNonNullElse;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
 
 @Named
 @RequiredArgsConstructor
@@ -55,86 +57,85 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
     }
 
     private List<CustomFee> mapFixedFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
-        if (customFee.getFixedFees() == null) {
+        if (CollectionUtils.isEmpty(customFee.getFixedFees())) {
             return Collections.emptyList();
         }
 
         var fixedFees = new ArrayList<CustomFee>();
         customFee.getFixedFees().forEach(f -> {
-            if (f.getCollectorAccountId() != null) {
-                final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
-                final var denominatingTokenId = f.getDenominatingTokenId();
-                final var denominatingTokenAddress =
-                        denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
-                final var fixedFee = new FixedFee(
-                        requireNonNullElse(f.getAmount(), 0L),
-                        denominatingTokenAddress,
-                        denominatingTokenId == null,
-                        false,
-                        collector);
-                var constructed = new CustomFee();
-                constructed.setFixedFee(fixedFee);
-                fixedFees.add(constructed);
-            }
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var denominatingTokenId = f.getDenominatingTokenId();
+            final var denominatingTokenAddress =
+                    denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
+            final var fixedFee = new FixedFee(
+                    requireNonNullElse(f.getAmount(), 0L),
+                    denominatingTokenAddress,
+                    denominatingTokenId == null,
+                    false,
+                    collector);
+            var constructed = new CustomFee();
+            constructed.setFixedFee(fixedFee);
+            fixedFees.add(constructed);
         });
 
         return fixedFees;
     }
 
     private List<CustomFee> mapFractionalFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
-        if (customFee.getFractionalFees() == null) {
+        if (CollectionUtils.isEmpty(customFee.getFractionalFees())) {
             return Collections.emptyList();
         }
 
         var fractionalFees = new ArrayList<CustomFee>();
         customFee.getFractionalFees().forEach(f -> {
-            if (f.getCollectorAccountId() != null) {
-                final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
-                final var fractionFee = new FractionalFee(
-                        requireNonNullElse(f.getNumerator(), 0L),
-                        requireNonNullElse(f.getDenominator(), 0L),
-                        requireNonNullElse(f.getMinimumAmount(), 0L),
-                        requireNonNullElse(f.getMaximumAmount(), 0L),
-                        requireNonNullElse(f.isNetOfTransfers(), false),
-                        collector);
-                var constructed = new CustomFee();
-                constructed.setFractionalFee(fractionFee);
-                fractionalFees.add(constructed);
-            }
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var fractionFee = new FractionalFee(
+                    requireNonNullElse(f.getNumerator(), 0L),
+                    requireNonNullElse(f.getDenominator(), 0L),
+                    requireNonNullElse(f.getMinimumAmount(), 0L),
+                    requireNonNullElse(f.getMaximumAmount(), 0L),
+                    requireNonNullElse(f.isNetOfTransfers(), false),
+                    collector);
+            var constructed = new CustomFee();
+            constructed.setFractionalFee(fractionFee);
+            fractionalFees.add(constructed);
         });
 
         return fractionalFees;
     }
 
     private List<CustomFee> mapRoyaltyFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
-        if (customFee.getRoyaltyFees() == null) {
+        if (CollectionUtils.isEmpty(customFee.getRoyaltyFees())) {
             return Collections.emptyList();
         }
 
         var royaltyFees = new ArrayList<CustomFee>();
-        if (customFee.getRoyaltyFees() != null) {
-            customFee.getRoyaltyFees().forEach(f -> {
-                if (f.getCollectorAccountId() != null) {
-                    final var fallbackFee = f.getFallbackFee();
-                    if (fallbackFee != null) {
-                        final var denominatingTokenId = fallbackFee.getDenominatingTokenId();
-                        final var denominatingTokenAddress =
-                                denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
-                        final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
-                        final var royaltyFee = new RoyaltyFee(
-                                requireNonNullElse(f.getNumerator(), 0L),
-                                requireNonNullElse(f.getDenominator(), 0L),
-                                requireNonNullElse(fallbackFee.getAmount(), 0L),
-                                denominatingTokenAddress,
-                                denominatingTokenId == null,
-                                collector);
-                        var constructed = new CustomFee();
-                        constructed.setRoyaltyFee(royaltyFee);
-                        royaltyFees.add(constructed);
-                    }
+        customFee.getRoyaltyFees().forEach(f -> {
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var fallbackFee = f.getFallbackFee();
+
+            long amount = 0;
+            EntityId denominatingTokenId = null;
+            var denominatingTokenAddress = EMPTY_EVM_ADDRESS;
+            if (fallbackFee != null) {
+                amount = fallbackFee.getAmount();
+                denominatingTokenId = fallbackFee.getDenominatingTokenId();
+                if (denominatingTokenId != null) {
+                    denominatingTokenAddress = toAddress(denominatingTokenId);
                 }
-            });
-        }
+            }
+
+            final var royaltyFee = new RoyaltyFee(
+                    requireNonNullElse(f.getNumerator(), 0L),
+                    requireNonNullElse(f.getDenominator(), 0L),
+                    amount,
+                    denominatingTokenAddress,
+                    denominatingTokenId == null,
+                    collector);
+            var constructed = new CustomFee();
+            constructed.setRoyaltyFee(royaltyFee);
+            royaltyFees.add(constructed);
+        });
 
         return royaltyFees;
     }

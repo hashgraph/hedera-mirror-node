@@ -131,6 +131,7 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
             var collector = EntityId.of(protoCustomFee.getFeeCollectorAccountId());
             fee.setAllCollectorsAreExempt(allCollectorsAreExempt);
             fee.setCollectorAccountId(collector);
+            recordItem.addEntityId(collector);
             recordItem.addEntityId(denominatingTokenId);
 
             // If it's from a token create transaction, and the fee is charged in the attached token, the attached
@@ -138,8 +139,6 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
             if (transaction.getType() == TOKENCREATION.getProtoId() && fee.isChargedInToken(tokenId)) {
                 autoAssociatedAccounts.add(collector);
             }
-
-            recordItem.addEntityId(collector);
         }
 
         // If the fee is empty do not persist it. The protoCustomFees did not contain a parseable fee, only recoverable

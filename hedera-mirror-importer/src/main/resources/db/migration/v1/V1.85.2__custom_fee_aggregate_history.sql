@@ -10,8 +10,8 @@ create table custom_fee_history
     like custom_fee_temp including constraints
 );
 
- with custom_fee_jsonb as (
-   select
+with custom_fee_jsonb as (
+  select
      case when collector_account_id is not null and amount_denominator is null and royalty_denominator is null then
        jsonb_build_object(
          'all_collectors_are_exempt', all_collectors_are_exempt,
@@ -61,8 +61,8 @@ create table custom_fee_history
   from custom_fee_jsonb
   group by token_id, timestamp_range
 ), history as (
- insert into custom_fee_history (fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id)
- select * from aggregated_custom_fee where upper(timestamp_range) is not null
+  insert into custom_fee_history (fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id)
+  select * from aggregated_custom_fee where upper(timestamp_range) is not null
 ) insert into custom_fee_temp (fixed_fees, fractional_fees, royalty_fees, timestamp_range, token_id)
 select * from aggregated_custom_fee where upper(timestamp_range) is null;
 

@@ -34,6 +34,13 @@ import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from '
 
 const {default: defaultLimit} = getResponseLimit();
 
+const customFeeSelect = `select jsonb_build_object(
+  'created_timestamp', lower(${CustomFee.TIMESTAMP_RANGE}),
+  'fixed_fees', ${CustomFee.FIXED_FEES},
+  'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
+  'royalty_fees', ${CustomFee.ROYALTY_FEES},
+  'token_id', ${CustomFee.TOKEN_ID})`;
+
 // select columns
 const sqlQueryColumns = {
   DELETED: 'e.deleted',
@@ -402,7 +409,7 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
     // include the history table in the query
     customFeeQuery = `
-      ${getCustomFeeSelect(true)}
+      ${customFeeSelect}
       from
       (
         (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as ${CustomFee.CREATED_TIMESTAMP}
@@ -417,7 +424,7 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
       ) as feeAndHistory`;
   } else {
     customFeeQuery = `
-      ${getCustomFeeSelect(false)}
+      ${customFeeSelect}
       from ${CustomFee.tableName}
       where ${conditions.join(' and ')}`;
   }
@@ -434,18 +441,6 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
     query,
     params,
   };
-};
-
-const getCustomFeeSelect = (includeHistory) => {
-  const createdTimestampColumn = includeHistory
-    ? `${CustomFee.CREATED_TIMESTAMP}`
-    : `lower(${CustomFee.TIMESTAMP_RANGE})`;
-  return `select jsonb_build_object(
-          'created_timestamp', ${createdTimestampColumn},
-          'fixed_fees', ${CustomFee.FIXED_FEES},
-          'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
-          'royalty_fees', ${CustomFee.ROYALTY_FEES},
-          'token_id', ${CustomFee.TOKEN_ID})`;
 };
 
 const getTokenInfoRequest = async (req, res) => {

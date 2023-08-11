@@ -33,7 +33,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,10 +48,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -63,7 +60,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(properties = {"spring.flyway.target=1.84.2"})
+@TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
 class CustomFeesMigrationTest extends IntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
@@ -152,17 +149,16 @@ class CustomFeesMigrationTest extends IntegrationTest {
         expected.forEach(e -> e.setTimestampRange(Range.atLeast(updateTimestamp)));
         assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var history = getHistory();
         var expectedHistory = toAggregateCustomFees(List.of(initial));
         expectedHistory.forEach(h -> h.setTimestampRange(Range.closedOpen(initialTimestamp, updateTimestamp)));
-        assertThat(history).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test
     void empty() {
         runMigration();
         assertThat(customFeeRepository.findAll()).isEmpty();
-        assertThat(getHistory()).isEmpty();
+        assertThat(findHistory(CustomFee.class)).isEmpty();
     }
 
     @Test
@@ -188,13 +184,12 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 fixedFees.aggregateFee, royaltyFees.aggregateFee, fractionalFees.aggregateFee, emptyFees.aggregateFee);
         assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var history = getHistory();
         var expectedHistory = new ArrayList<CustomFee>();
         expectedHistory.addAll(fixedFees.aggregateHistory);
         expectedHistory.addAll(royaltyFees.aggregateHistory);
         expectedHistory.addAll(fractionalFees.aggregateHistory);
         expectedHistory.addAll(emptyFees.aggregateHistory);
-        assertThat(history).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     @Test
@@ -275,8 +270,8 @@ class CustomFeesMigrationTest extends IntegrationTest {
         aggregateHistory.addAll(royaltyFees.aggregateHistory);
         aggregateHistory.addAll(royaltyFees2.aggregateHistory);
         var expectedHistory = combineAggregates(aggregateHistory, true);
-        var history = getHistory();
-        var historyListAssert = Assertions.assertThat(history).hasSize(2);
+        var historyListAssert =
+                Assertions.assertThat(findHistory(CustomFee.class)).hasSize(2);
         for (var historyResult : expectedHistory) {
             historyListAssert.anySatisfy(h -> {
                 assertThat(h.getFixedFees()).containsExactlyInAnyOrderElementsOf(historyResult.getFixedFees());
@@ -503,105 +498,6 @@ class CustomFeesMigrationTest extends IntegrationTest {
                             customFee.royaltyNumerator
                         })
                         .toList());
-    }
-
-    private List<CustomFee> getHistory() {
-        String sql =
-                "select token_id, fixed_fees, fractional_fees, royalty_fees, timestamp_range from custom_fee_history order by token_id, timestamp_range asc";
-        List<CustomFee> customFees = new ArrayList<>();
-        jdbcTemplate.query(sql, rs -> {
-            long token_id = rs.getLong(1);
-            List<FixedFee> fixedFees = convertFixedFees(rs.getObject(2, PGobject.class));
-            List<FractionalFee> fractionalFees = convertFractionalFees(rs.getObject(3, PGobject.class));
-            List<RoyaltyFee> royaltyFees = convertRoyaltyFees(rs.getObject(4, PGobject.class));
-            var timestampRange = convertRange(rs.getObject(5, PGobject.class));
-            customFees.add(CustomFee.builder()
-                    .tokenId(token_id)
-                    .fixedFees(fixedFees)
-                    .fractionalFees(fractionalFees)
-                    .royaltyFees(royaltyFees)
-                    .timestampRange(timestampRange)
-                    .build());
-        });
-
-        return customFees;
-    }
-
-    @SneakyThrows
-    private List<FixedFee> convertFixedFees(PGobject pgobject) {
-        if (pgobject.isNull()) {
-            return null;
-        }
-        var fixedFees = new ArrayList<FixedFee>();
-        var jsonArray = new JSONArray(pgobject.getValue());
-        for (int i = 0; i < jsonArray.length(); i++) {
-            var item = jsonArray.getJSONObject(i);
-            var amount = item.getString("amount");
-            var denominatingTokenId = item.getString("denominating_token_id");
-            fixedFees.add(FixedFee.builder()
-                    .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .amount(amount == "null" ? null : Long.valueOf(amount))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
-                    .denominatingTokenId(
-                            denominatingTokenId == "null"
-                                    ? null
-                                    : EntityId.of(item.getLong("denominating_token_id"), TOKEN))
-                    .build());
-        }
-        return fixedFees;
-    }
-
-    @SneakyThrows
-    private List<FractionalFee> convertFractionalFees(PGobject pgobject) {
-        if (pgobject.isNull()) {
-            return null;
-        }
-        var fractionalFees = new ArrayList<FractionalFee>();
-        var jsonArray = new JSONArray(pgobject.getValue());
-        for (int i = 0; i < jsonArray.length(); i++) {
-            var item = jsonArray.getJSONObject(i);
-            fractionalFees.add(FractionalFee.builder()
-                    .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
-                    .denominator(item.getLong("denominator"))
-                    .maximumAmount(item.getLong("maximum_amount"))
-                    .minimumAmount(item.getLong("minimum_amount"))
-                    .netOfTransfers(item.getBoolean("net_of_transfers"))
-                    .numerator(item.getLong("numerator"))
-                    .build());
-        }
-        return fractionalFees;
-    }
-
-    @SneakyThrows
-    private List<RoyaltyFee> convertRoyaltyFees(PGobject pgobject) {
-        if (pgobject.isNull()) {
-            return null;
-        }
-        var royaltyFees = new ArrayList<RoyaltyFee>();
-        var jsonArray = new JSONArray(pgobject.getValue());
-        for (int i = 0; i < jsonArray.length(); i++) {
-            var item = jsonArray.getJSONObject(i);
-            var builder = RoyaltyFee.builder()
-                    .allCollectorsAreExempt(item.getBoolean("all_collectors_are_exempt"))
-                    .collectorAccountId(EntityId.of(item.getLong("collector_account_id"), ACCOUNT))
-                    .denominator(item.getLong("denominator"))
-                    .numerator(item.getLong("numerator"));
-
-            if (!item.getString("fallback_fee").equals("null")) {
-                var fallBackFee = item.getJSONObject("fallback_fee");
-                builder.fallbackFee(FallbackFee.builder()
-                        .amount(fallBackFee.getLong("amount"))
-                        .denominatingTokenId(EntityId.of(fallBackFee.getLong("denominating_token_id"), TOKEN))
-                        .build());
-            }
-            royaltyFees.add(builder.build());
-        }
-        return royaltyFees;
-    }
-
-    private Range<Long> convertRange(PGobject pgobject) {
-        return PostgreSQLGuavaRangeType.longRange(pgobject.getValue());
     }
 
     @Data

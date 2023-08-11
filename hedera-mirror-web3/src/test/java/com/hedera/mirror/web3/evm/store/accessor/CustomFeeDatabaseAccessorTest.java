@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -98,6 +100,29 @@ class CustomFeeDatabaseAccessorTest {
                 assertThat(resultRoyaltyFee.getFeeCollector()).isEqualTo(collectorAddress);
             });
         }
+    }
+
+    @Test
+    void royaltyFeeNoFallback() {
+        var royaltyFee = RoyaltyFee.builder()
+                .numerator(15L)
+                .denominator(10L)
+                .fallbackFee(null)
+                .collectorAccountId(collectorId)
+                .build();
+        var royaltyFees = List.of(royaltyFee);
+        customFee.setRoyaltyFees(royaltyFees);
+
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var resultFee = results.get(0).getRoyaltyFee();
+        assertEquals(royaltyFee.getNumerator(), resultFee.getNumerator());
+        assertEquals(royaltyFee.getDenominator(), resultFee.getDenominator());
+        assertEquals(0L, resultFee.getAmount());
+        assertEquals(collectorAddress, resultFee.getFeeCollector());
+        assertEquals(EMPTY_EVM_ADDRESS, resultFee.getDenominatingTokenId());
     }
 
     @Test
