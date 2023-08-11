@@ -85,8 +85,7 @@ provides a multi-platform build supporting arm64.
 
 In production and ci environments, citus is enabled through stackgres SGShardedCluster and doesn't use the custom image. 
 
-`DockerFile` to build a custom image to be used in v2 testing is located in the following folder:
-```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2/docker```
+`DockerFile` to build a custom image to be used in v2 testing is located in [citusdata upstream repository](https://github.com/citusdata/docker). To build this image:
 
 ### Docker Hub details
 The `mirrornodeswirldslabs` user was created just for this purpose. Therefore, when building the images below,
@@ -133,12 +132,18 @@ mybuilder
 
 Switch to the new builder:
 ```console
-$ docker buildx use mybuilder
+docker buildx use mybuilder
 ```
+Checkout the source code
+```
+git clone git@github.com:citusdata/docker.git
+cd docker
+```
+
 Build the image for both amd64 (Github CI) and arm64 (local testing). Don't forget the '.' at the end of the line. This
 can take some time depending on your internet speed. You will see activity around both arm64 and amd64.
 ```console
-$ docker buildx build --build-arg DB=mirror_node --platform linux/arm64,linux/amd64 -t mirrornodeswirldslabs/citus:12.0.0 .
+$ docker buildx build --platform linux/arm64,linux/amd64 -t mirrornodeswirldslabs/citus:12.0.0 --file alpine/Dockerfile  .
 [+] Building 351.1s (28/28) FINISHED
  => [internal] load .dockerignore                                                                                                                         0.0s
  => => transferring context: 2B                                                                                                                           0.0s
