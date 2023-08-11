@@ -1479,26 +1479,23 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 
 describe('token extractSqlFromTokenInfoRequest tests', () => {
   const getExpectedQuery = (timestampCondition = '') => {
+    const selectStatement = `
+      (select jsonb_build_object(
+        'created_timestamp', lower(timestamp_range),
+        'fixed_fees', fixed_fees,
+        'fractional_fees', fractional_fees,
+        'royalty_fees', royalty_fees,
+        'token_id', token_id
+      )`;
     let customFeeQuery = `
-        (select jsonb_build_object(
-           'created_timestamp', lower(timestamp_range),
-           'fixed_fees', fixed_fees,
-           'fractional_fees', fractional_fees,
-           'royalty_fees', royalty_fees,
-           'token_id', token_id
-        )
-        from custom_fee
-        where token_id = $1
-      ) as custom_fee`;
+      ${selectStatement}
+      from custom_fee
+      where token_id = $1
+    ) as custom_fee`;
 
     if (!_.isEmpty(timestampCondition)) {
       customFeeQuery = `
-        (select jsonb_build_object(
-            'created_timestamp', created_timestamp,
-            'fixed_fees', fixed_fees,
-            'fractional_fees', fractional_fees,
-            'royalty_fees', royalty_fees,
-            'token_id', token_id)
+        ${selectStatement}
         from (
             (select *, lower(timestamp_range) as created_timestamp 
               from custom_fee 
