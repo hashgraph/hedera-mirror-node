@@ -9,6 +9,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ModificationPrecompileTestContract is HederaTokenService {
 
+    uint256 salt = 1234;
+
+    function deployViaCreate2() public returns (address) {
+        NestedContract newContract = new NestedContract{salt: bytes32(salt)}();
+
+        return address(newContract);
+    }
+
     function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external
     returns (int responseCode)
     {
@@ -318,4 +326,34 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     function callNotExistingPrecompile(address token) public {
         HederaTokenService.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
     }
+
+    function createContractViaCreate2AndTransferFromIt(address token, address sponsor, address receiver, int64 amount) external
+    returns (int responseCode)
+    {
+        address create2Contract = deployViaCreate2();
+
+        int associateSenderResponseCode = HederaTokenService.associateToken(create2Contract, token);
+        if (associateSenderResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int associateRecipientResponseCode = HederaTokenService.associateToken(receiver, token);
+        if (associateRecipientResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int sponsorTransferResponseCode = HederaTokenService.transferToken(token, sponsor, create2Contract, amount / 2);
+        if (sponsorTransferResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        responseCode = HederaTokenService.transferToken(token, create2Contract, receiver, amount / 4);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+}
+
+contract NestedContract {
+
 }

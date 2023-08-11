@@ -94,6 +94,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
+    @EnumSource(NestedContractModificationFunctions.class)
+    void nestedContractModificationFunctionsTest(final NestedContractModificationFunctions contractFunc) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
+    @ParameterizedTest
     @EnumSource(FeeCase.class)
     void customFeesEthCall(final FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
@@ -445,7 +461,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
         TRANSFER_TOKEN(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, SENDER_ADDRESS, 1L}),
+                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L}),
         TRANSFER_TOKEN_WITH_ALIAS(
                 "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {
@@ -503,6 +519,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new Object[] {0b1111111, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
             }
         });
+
+        private final String name;
+        private final Object[] functionParameters;
+    }
+
+    @RequiredArgsConstructor
+    enum NestedContractModificationFunctions {
+        CREATE_CONTRACT_VIA_CREATE2_AND_TRANSFER_FROM_IT(
+                "createContractViaCreate2AndTransferFromIt",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});
 
         private final String name;
         private final Object[] functionParameters;

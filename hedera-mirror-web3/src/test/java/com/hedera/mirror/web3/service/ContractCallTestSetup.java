@@ -140,11 +140,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static Key keyWithECDSASecp256K1 =
+            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
     protected static final byte[] NEW_ECDSA_KEY = new byte[] {
         2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
         68, -87, -110, -13, -115, 74, 86, 90
     };
     protected static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static Key keyWithEd25519 =
+            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
     protected static final byte[] NEW_ED25519_KEY = new byte[] {
         -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
         25, 38, -95, 50, 77, 40, -38
@@ -161,8 +165,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
-    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
+    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
@@ -259,17 +263,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .build())
                                     .build())))
             .build();
-
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
-
-    protected static Key keyWithEd25519 =
-            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
-
-    protected static Key keyWithECDSASecp256K1 =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
-
     protected static Key keyWithDelegatableContractId = Key.newBuilder()
             .setDelegatableContractId(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
@@ -320,6 +316,54 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/EvmCodes/EvmCodes.json")
     protected Path EVM_CODES_ABI_PATH;
 
+    private static TokenCreateWrapper getFungibleToken() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleToken() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static FixedFeeWrapper getFixedFee() {
+        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
+    }
+
+    private static FractionalFeeWrapper getFractionalFee() {
+        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
+    }
+
+    private static RoyaltyFeeWrapper getRoyaltyFee() {
+        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
+    }
+
+    private static TokenExpiryWrapper getTokenExpiry() {
+        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
+    }
+
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
@@ -358,6 +402,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(receiverEntityId.getId())
                         .num(receiverEntityId.getEntityNum())
                         .evmAddress(receiverEvmAddress)
+                        .deleted(false)
                         .type(CONTRACT))
                 .persist();
     }
@@ -372,6 +417,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ercContract = ercContractPersist();
         fileDataPersist();
 
+        receiverPersist();
         final var senderEntityId = senderEntityPersist();
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
@@ -1094,53 +1140,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
-    }
-
-    private static TokenCreateWrapper getFungibleToken() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleToken() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static FixedFeeWrapper getFixedFee() {
-        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
-    }
-
-    private static FractionalFeeWrapper getFractionalFee() {
-        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
-    }
-
-    private static RoyaltyFeeWrapper getRoyaltyFee() {
-        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
-    }
-
-    private static TokenExpiryWrapper getTokenExpiry() {
-        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
     }
 }

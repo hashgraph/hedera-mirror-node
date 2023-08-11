@@ -104,10 +104,12 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private void persistAccount(Address address, long nonce, Wei balance) {
+        final var resolvedAddress = Address.wrap(Bytes.wrap(unaliased(address.toArray())));
+
         final var accountModel = new com.hedera.services.store.models.Account(
-                ByteString.EMPTY,
+                address != resolvedAddress ? ByteString.copyFrom(address.toArray()) : ByteString.EMPTY,
                 0L,
-                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
+                Id.fromGrpcAccount(accountIdFromEvmAddress(resolvedAddress)),
                 0L,
                 balance.toLong(),
                 false,
