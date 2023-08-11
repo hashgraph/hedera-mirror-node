@@ -169,7 +169,10 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         CRYPTO_TRANSFER_NFT_GET_OWNER(
                 "cryptoTransferFromGetAllowanceGetBalance",
                 new Object[] {NFT_TRANSFER_ADDRESS, NESTED_ETH_CALLS_CONTRACT_ADDRESS, SPENDER_ADDRESS, 1L, true},
-                null);
+                null),
+        GRANT_KYC_REVOKE_KYC_FUNGIBLE("grantKycRevokeKyc", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, null),
+        GRANT_KYC_REVOKE_KYC_NFT("grantKycRevokeKyc", new Object[] {NFT_ADDRESS, SENDER_ADDRESS}, null);
+
         private final String name;
         private final Object[] functionParameters;
         private final String expectedErrorMessage;

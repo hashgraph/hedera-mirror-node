@@ -368,4 +368,19 @@ contract NestedEthCalls is HederaTokenService {
             if(IERC721(token).ownerOf(serialNumber) != spender) revert("NFT ownership mismatch after transfer");
         }
     }
+
+
+    function grantKycRevokeKyc(address token, address account) external {
+        int responseCode = HederaTokenService.grantTokenKyc(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Grant kyc operation failed");
+        (int response, bool isKyc) = HederaTokenService.isKyc(token, account);
+        if (response != HederaResponseCodes.SUCCESS) revert("Is kyc operation failed");
+        if(!isKyc) revert("Kyc status mismatch");
+
+        responseCode = HederaTokenService.revokeTokenKyc(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Grant kyc operation failed");
+        (response, isKyc) = HederaTokenService.isKyc(token, account);
+        if (response != HederaResponseCodes.SUCCESS) revert("Is kyc operation failed");
+        if(isKyc) revert("Kyc status mismatch");
+    }
 }
