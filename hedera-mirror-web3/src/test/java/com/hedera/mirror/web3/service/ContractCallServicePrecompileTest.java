@@ -461,7 +461,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
         TRANSFER_TOKEN(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L}),
+                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, RECEIVER_ADDRESS, 1L}),
         TRANSFER_TOKEN_WITH_ALIAS(
                 "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
         TRANSFER_TOKENS("transferTokensExternal", new Object[] {
