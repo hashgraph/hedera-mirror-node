@@ -45,7 +45,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final boolean isCreate;
-    private HederaFunctionality functionality;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
