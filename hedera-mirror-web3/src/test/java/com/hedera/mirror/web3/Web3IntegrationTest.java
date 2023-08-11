@@ -38,6 +38,8 @@ import org.springframework.test.context.jdbc.Sql;
 public abstract class Web3IntegrationTest {
 
     static {
+        // Ensure the ObjectToStringSerializer is instantiated for testing.
+        // It is used for the conversion of Jsonb data into domain objects.
         ObjectToStringSerializer.INSTANCE.toString();
     }
 

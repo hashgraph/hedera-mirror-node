@@ -32,7 +32,6 @@ class CustomFee {
 
   static tableName = `custom_fee`;
 
-  static CREATED_TIMESTAMP = `created_timestamp`;
   static FIXED_FEES = `fixed_fees`;
   static FRACTIONAL_FEES = `fractional_fees`;
   static ROYALTY_FEES = `royalty_fees`;

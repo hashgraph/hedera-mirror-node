@@ -412,14 +412,14 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
       ${customFeeSelect}
       from
       (
-        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as ${CustomFee.CREATED_TIMESTAMP}
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as created_timestamp
          from ${CustomFee.tableName}
          where ${conditions.join(' and ')})
         union all
-        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as ${CustomFee.CREATED_TIMESTAMP}
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as created_timestamp
          from ${CustomFee.tableName}_history 
          where ${conditions.join(' and ')} order by lower(${CustomFee.TIMESTAMP_RANGE}) desc limit 1)
-        order by ${CustomFee.CREATED_TIMESTAMP} desc
+        order by created_timestamp desc
         limit 1
       ) as feeAndHistory`;
   } else {

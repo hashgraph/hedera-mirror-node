@@ -555,9 +555,11 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    private DomainWrapper<FallbackFee, FallbackFee.FallbackFeeBuilder<?, ?>> fallbackFee() {
-        var builder = FallbackFee.builder().amount(id()).denominatingTokenId(entityId(TOKEN));
-        return new DomainWrapperImpl<>(builder, builder::build);
+    private FallbackFee fallbackFee() {
+        return FallbackFee.builder()
+                .amount(id())
+                .denominatingTokenId(entityId(TOKEN))
+                .build();
     }
 
     private FixedFee fixedFee() {
@@ -754,7 +756,7 @@ public class DomainBuilder {
                 .allCollectorsAreExempt(true)
                 .collectorAccountId(entityId(ACCOUNT))
                 .denominator(id())
-                .fallbackFee(fallbackFee().get())
+                .fallbackFee(fallbackFee())
                 .numerator(id())
                 .build();
     }
