@@ -116,7 +116,6 @@ spring:
       autovacuumFreezeMaxAgeInsertOnly: 100000
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
-      idPartitionPostfix: p1970_01_01_000000
       partitionTimeInterval: "'1 month'"
       partitionIdCount: 1
       partitionIdInterval: "'.001 seconds'"

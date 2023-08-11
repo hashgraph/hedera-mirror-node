@@ -109,7 +109,6 @@ log "Copying Flyway configuration"
 cp "${MIGRATIONS_DIR}/V2.0."[0-2]* ${FLYWAY_DIR}/sql/
 cat > "${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
-flyway.placeholders.idPartitionPostfix=p1970_01_01_000000
 flyway.placeholders.partitionIdCount=1
 flyway.placeholders.partitionIdInterval='.001 seconds'
 flyway.placeholders.partitionStartDate='3 years'

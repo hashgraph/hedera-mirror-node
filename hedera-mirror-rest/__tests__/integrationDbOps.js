@@ -116,7 +116,6 @@ const flywayMigrate = async () => {
       "placeholders.compressionAge": 9007199254740991,
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
-      "placeholders.idPartitionPostfix": "p1970",
       "placeholders.partitionIdCount": "1",
       "placeholders.partitionIdInterval": "'.001 seconds'",
       "placeholders.partitionStartDate": "'0 days'",
