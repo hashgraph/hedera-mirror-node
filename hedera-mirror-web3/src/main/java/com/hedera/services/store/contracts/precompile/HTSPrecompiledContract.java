@@ -366,7 +366,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         if (isTokenProxyRedirect(input)) {
             final var redirectTarget = DescriptorUtils.getRedirectTarget(input);
             final var executor = infrastructureFactory.newRedirectExecutor(
-                    redirectTarget.massagedInput(), frame, viewGasCalculator, tokenAccessor);
+                    redirectTarget.massagedInput() == null ? input : redirectTarget.massagedInput(),
+                    frame,
+                    viewGasCalculator,
+                    tokenAccessor);
+
             resultFromExecutor = executor.computeCosted();
 
             if (resultFromExecutor.getRight() == null) {
