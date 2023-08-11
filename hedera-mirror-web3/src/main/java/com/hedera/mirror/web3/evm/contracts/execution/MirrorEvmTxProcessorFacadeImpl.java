@@ -132,7 +132,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
-                codeCache);
+                codeCache,
+                Address.ZERO.equals(receiver));
 
         processor.setOperationTracer(mirrorOperationTracer);
 
