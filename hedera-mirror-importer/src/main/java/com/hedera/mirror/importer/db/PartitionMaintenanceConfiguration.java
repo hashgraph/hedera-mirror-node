@@ -25,4 +25,5 @@ class PartitionMaintenanceConfiguration {
     private String timePartitionInterval = "1 month";
     private String idPartitionInterval = ".001 seconds";
     private double maxEntityIdRatio = 2.0;
+    private String idPartitionNamePattern = "'_p'yyyy_MM_dd_HHmmss";
 }

@@ -17,7 +17,7 @@ aims to document the required changes associated with any new feature.
 - [ ] V1 migration
 - [ ] `V2.0.0__create_tables.sql`
 - [ ] `V2.0.1__distribution.sql`
-- [ ] `V2.0.3__index_init.sql`
+- [ ] `V2.0.4__index_init.sql`
 - [ ] Repository
   - [ ] `RetentionRepository` if insert-only
 - [ ] `EntityListener`

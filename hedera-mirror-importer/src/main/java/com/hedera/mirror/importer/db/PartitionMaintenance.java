@@ -28,7 +28,8 @@ import org.springframework.stereotype.Component;
 public class PartitionMaintenance {
     private final PartitionMaintenanceService service;
 
-    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 1 * ?}")
+    @Scheduled(initialDelay = 0, fixedRate = 1000000000L)
+    //    @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 1 * ?}")
     public void runMaintenance() {
         service.getNextPartitions().forEach(partitionInfo -> {
             try {

@@ -37,8 +37,7 @@ import org.springframework.retry.annotation.Retryable;
 public class PartitionMaintenanceService {
     private static final String TIMESTAMP_PARTITION_COLUMN_NAME_PATTERN = "^(.*_timestamp|consensus_end)$";
     private static final ZoneId PARTITION_BOUND_TIMEZONE = ZoneId.of("UTC");
-    private static final DateTimeFormatter CITUS_TIME_PARTITION_NAME_FORMATTER =
-            DateTimeFormatter.ofPattern("'_p'yyyy_MM_dd_HHmmss").withZone(PARTITION_BOUND_TIMEZONE);
+
     private static final String TABLE_INFO_QUERY = "SELECT "
             + "                   tp.parent_table, "
             + "                   tp.partition_column, "
@@ -98,9 +97,10 @@ public class PartitionMaintenanceService {
                 CREATE_TIME_PARTITIONS_SQL, Boolean.class, partitionInfo.getParentTable(), interval, start, end));
 
         if (created && !partitionInfo.isTimePartition()) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(maintenanceConfig.getIdPartitionNamePattern())
+                    .withZone(PARTITION_BOUND_TIMEZONE);
             // Work around timestamp granularity issue of citus partition table names
-            String createdPartitionName =
-                    partitionInfo.getParentTable() + CITUS_TIME_PARTITION_NAME_FORMATTER.format(start);
+            String createdPartitionName = partitionInfo.getParentTable() + formatter.format(start);
             long partitionCount = partitionInfo.getNextFrom() / partitionDuration.toNanos();
             String updatePartitionNameSql = String.format(
                     "alter table %s rename to %s_p%d",
