@@ -142,7 +142,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // getAccountBalance(address)
         // Use alias address when applicable as EVM checks alias with highest priority
         final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
-        final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000004e20";
+        final var expectedBalance = "0x000000000000000000000000000000000000000000000000000000746a528800";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
@@ -223,7 +223,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void transferExceedsBalance() {
         final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 210000L);
+                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 510000000000L);
         receiverPersist();
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
