@@ -211,20 +211,19 @@ comment on table crypto_transfer is 'Crypto account Hbar transfers';
 -- custom_fee
 create table if not exists custom_fee
 (
-    all_collectors_are_exempt boolean not null default false,
-    amount                    bigint,
-    amount_denominator        bigint,
-    collector_account_id      bigint,
-    created_timestamp         bigint  not null,
-    denominating_token_id     bigint,
-    maximum_amount            bigint,
-    minimum_amount            bigint  not null default 0,
-    net_of_transfers          boolean,
-    royalty_denominator       bigint,
-    royalty_numerator         bigint,
-    token_id                  bigint  not null
-) partition by range (created_timestamp);
+    fixed_fees        jsonb,
+    fractional_fees   jsonb,
+    royalty_fees      jsonb,
+    timestamp_range   int8range not null,
+    token_id          bigint    not null
+) partition by range (token_id);
 comment on table custom_fee is 'HTS Custom fees';
+
+create table if not exists custom_fee_history
+(
+    like custom_fee including defaults
+) partition by range (token_id);
+comment on table custom_fee_history is 'HTS Custom fees history state';
 
 -- entity
 create table if not exists entity

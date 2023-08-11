@@ -14,9 +14,29 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.common.domain.token;
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+@Data
+@NoArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class FractionalFee extends AbstractFee {
+
+    private long denominator;
+
+    private Long maximumAmount;
+
+    private long minimumAmount;
+
+    private long numerator;
+
+    private boolean netOfTransfers;
+
+    public boolean isChargedInToken(EntityId tokenId) {
+        return true;
+    }
+}

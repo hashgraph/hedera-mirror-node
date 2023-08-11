@@ -14,9 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.repository;
+import Fee from './fee';
+import FixedFee from './fixedFee.js';
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+class RoyaltyFee extends Fee {
+  /**
+   * Parses royalty_fee from element in custom_fee.royalty_fees jsonb column
+   */
+  constructor(royaltyFee) {
+    super(royaltyFee);
+    this.denominator = royaltyFee.denominator;
+    this.fallbackFee = royaltyFee.fallback_fee ? new FixedFee(royaltyFee.fallback_fee) : null;
+    this.numerator = royaltyFee.numerator;
+  }
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+  static FALLBACK_FEE = `fallback_fee`;
+  static DENOMINATOR = `denominator`;
+  static NUMERATOR = `numerator`;
+}
+
+export default RoyaltyFee;

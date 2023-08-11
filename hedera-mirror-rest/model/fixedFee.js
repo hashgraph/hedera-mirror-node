@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+import Fee from './fee';
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+class FixedFee extends Fee {
+  /**
+   * Parses fixed_fee from element in custom_fee.fixed_fees jsonb column
+   */
+  constructor(fixedFee) {
+    super(fixedFee);
+    this.amount = fixedFee.amount;
+    this.denominatingTokenId = fixedFee.denominating_token_id;
+  }
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+  static AMOUNT = `amount`;
+  static DENOMINATING_TOKEN_ID = `denominating_token_id`;
+}
+
+export default FixedFee;
