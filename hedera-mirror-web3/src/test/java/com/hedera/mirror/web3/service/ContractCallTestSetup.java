@@ -296,6 +296,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.json")
     protected Path REDIRECT_CONTRACT_ABI_PATH;
 
+    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.bin")
+    protected Path REDIRECT_CONTRACT_BYTES_PATH;
+
     // The contract source `ModificationPrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
     protected Path MODIFICATION_CONTRACT_BYTES_PATH;
@@ -376,6 +379,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         precompileContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
+        final var redirectContract = redirectContractPersist();
         fileDataPersist();
 
         final var senderEntityId = senderEntityPersist();
@@ -527,6 +531,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -542,6 +548,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContract, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
+        allowancesPersist(ownerEntityId, redirectContract, tokenEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
@@ -1044,6 +1051,41 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder.recordFile().customize(f -> f.bytes(ercContractBytes)).persist();
         return ercContractEntityId;
+    }
+
+    private EntityId redirectContractPersist() {
+        final var redirectContractBytes = functionEncodeDecoder.getContractBytes(REDIRECT_CONTRACT_BYTES_PATH);
+        final var redirectContractEntityId = fromEvmAddress(REDIRECT_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var redirectContractEvmAddress = toEvmAddress(redirectContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(redirectContractEntityId.getId())
+                        .num(redirectContractEntityId.getEntityNum())
+                        .evmAddress(redirectContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(redirectContractEntityId.getId()).runtimeBytecode(redirectContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(redirectContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(redirectContractBytes))
+                .persist();
+        return redirectContractEntityId;
     }
 
     protected void customFeesPersist(final FeeCase feeCase) {
