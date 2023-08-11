@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAllowance;
+import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorCryptoAllowance {
-    private long amount;
-    private long amountGranted;
-    private String owner;
-    private String spender;
-    private MirrorTimestampRange timestamp;
+public class MirrorTokenAllowanceResponse {
+    List<MirrorTokenAllowance> allowances;
 }

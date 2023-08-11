@@ -38,6 +38,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceRespo
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenAllowanceResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
@@ -170,6 +171,21 @@ public class MirrorNodeClient {
                 "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
                 MirrorCryptoAllowanceResponse.class,
                 accountId,
+                spenderId);
+    }
+
+    public MirrorTokenAllowanceResponse getAccountTokenAllowanceBySpender(
+            String accountId, String tokenId, String spenderId) {
+        log.debug(
+                "Verify account '{}''s token allowance for token {} and spender {} is returned by Mirror Node",
+                accountId,
+                tokenId,
+                spenderId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/tokens?token.id={tokenId}&spender.id={spenderId}",
+                MirrorTokenAllowanceResponse.class,
+                accountId,
+                tokenId,
                 spenderId);
     }
 

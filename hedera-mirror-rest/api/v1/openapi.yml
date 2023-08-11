@@ -1308,6 +1308,11 @@ components:
     Allowance:
       type: object
       properties:
+        amount:
+          description: The amount remaining of the original amount granted.
+          format: int64
+          type: integer
+          example: 75
         amount_granted:
           description: The granted amount of the spender's allowance.
           format: int64
@@ -2356,6 +2361,8 @@ components:
       allOf:
         - $ref: "#/components/schemas/Allowance"
         - properties:
+            amount:
+              description: The amount remaining of the original amount granted in tinybars.
             amount_granted:
               description: The granted amount of the spender's allowance in tinybars.
     CryptoAllowances:

@@ -19,11 +19,6 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 
 @Data
-public class MirrorTransferAllowance {
-
-    private String owner;
-
-    private String spender;
-
-    private MirrorTimestampRange timestamp;
+public class MirrorTokenAllowance extends MirrorCryptoAllowance {
+    private String tokenId;
 }
