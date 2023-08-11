@@ -32,6 +32,263 @@
       },
       {
         "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveForAllTokenTransferFromGetAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveForAllTokenTransferGetAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TransferList",
+        "name": "transferList",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "senderAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiverAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "serialNumber",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.NftTransfer[]",
+            "name": "nftTransfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TokenTransferList[]",
+        "name": "tokenTransfers",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "approveForAllTokenTransferGetAllowance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TransferList",
+        "name": "transferList",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "senderAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiverAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "serialNumber",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.NftTransfer[]",
+            "name": "nftTransfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TokenTransferList[]",
+        "name": "tokenTransfers",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "approveTokenCryptoTransferGetAllowanceGetBalance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
       },
@@ -70,6 +327,34 @@
       }
     ],
     "name": "approveTokenTransferFromGetAllowanceGetBalance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveTokenTransferGetAllowanceGetBalance",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -131,6 +416,124 @@
       }
     ],
     "name": "burnTokenGetTotalSupplyAndBalanceOfTreasury",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TransferList",
+        "name": "transferList",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "accountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.AccountAmount[]",
+            "name": "transfers",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "senderAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiverAccountID",
+                "type": "address"
+              },
+              {
+                "internalType": "int64",
+                "name": "serialNumber",
+                "type": "int64"
+              },
+              {
+                "internalType": "bool",
+                "name": "isApproval",
+                "type": "bool"
+              }
+            ],
+            "internalType": "struct IHederaTokenService.NftTransfer[]",
+            "name": "nftTransfers",
+            "type": "tuple[]"
+          }
+        ],
+        "internalType": "struct IHederaTokenService.TokenTransferList[]",
+        "name": "tokenTransfers",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "cryptoTransferFromGetAllowanceGetBalance",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -266,6 +669,34 @@
       },
       {
         "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromGetAllowanceGetBalance",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "from",
         "type": "address"
       },
@@ -288,6 +719,29 @@
         "type": "int64"
       }
     ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "spender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromNFTGetAllowance",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },

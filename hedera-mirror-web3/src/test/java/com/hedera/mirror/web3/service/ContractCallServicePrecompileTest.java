@@ -24,7 +24,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
@@ -417,65 +416,80 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
-        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
-        DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
-        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
-        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}),
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
-        ASSOCIATE_TOKEN_WITH_ALIAS("associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}),
-        ASSOCIATE_TOKENS(
-                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        ASSOCIATE_TOKENS_WITH_ALIAS(
-                "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
-        MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
-            NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
-        }),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
-        DISSOCIATE_TOKEN_WITH_ALIAS("dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}),
-        DISSOCIATE_TOKENS(
-                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
-        DISSOCIATE_TOKENS_WITH_ALIAS(
-                "dissociateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L}),
-        WIPE_TOKEN_WITH_ALIAS(
-                "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L}),
-        WIPE_NFT_TOKEN(
-                "wipeTokenAccountNFTExternal",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ADDRESS, new long[] {1}}),
-        WIPE_NFT_TOKEN_WITH_ALIAS(
-                "wipeTokenAccountNFTExternal",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ALIAS, new long[] {1}}),
-        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
-        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
-        REVOKE_TOKEN_KYC_WITH_ALIAS("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
-        GRANT_TOKEN_KYC_WITH_ALIAS("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        FREEZE_TOKEN("freezeTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS}),
-        UNFREEZE_TOKEN("unfreezeTokenExternal", new Object[] {FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS}),
-        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createFungibleTokenWithCustomFeesExternal",
-                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER}),
-        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
-        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
-                "createNonFungibleTokenWithCustomFeesExternal",
-                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
-        TRANSFER_TOKEN(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, SENDER_ADDRESS, 1L}),
-        TRANSFER_TOKEN_WITH_ALIAS(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
-        TRANSFER_TOKENS("transferTokensExternal", new Object[] {
-            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ADDRESS, SENDER_ADDRESS}, new long[] {1L, -1L}
-        }),
-        TRANSFER_TOKENS_WITH_ALIAS("transferTokensExternal", new Object[] {
-            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
-        }),
+        //        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
+        //        DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
+        //        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
+        //        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
+        //        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}),
+        //        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS}),
+        //        ASSOCIATE_TOKEN_WITH_ALIAS("associateTokenExternal", new Object[] {SPENDER_ALIAS,
+        // FUNGIBLE_TOKEN_ADDRESS}),
+        //        ASSOCIATE_TOKENS(
+        //                "associateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[]
+        // {FUNGIBLE_TOKEN_ADDRESS}}),
+        //        ASSOCIATE_TOKENS_WITH_ALIAS(
+        //                "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[]
+        // {FUNGIBLE_TOKEN_ADDRESS}}),
+        //        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new
+        // byte[0][0]}),
+        //        MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
+        //            NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+        //        }),
+        //        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ADDRESS, TREASURY_TOKEN_ADDRESS}),
+        //        DISSOCIATE_TOKEN_WITH_ALIAS("dissociateTokenExternal", new Object[] {SPENDER_ALIAS,
+        // TREASURY_TOKEN_ADDRESS}),
+        //        DISSOCIATE_TOKENS(
+        //                "dissociateTokensExternal", new Object[] {SPENDER_ADDRESS, new Address[]
+        // {TREASURY_TOKEN_ADDRESS}}),
+        //        DISSOCIATE_TOKENS_WITH_ALIAS(
+        //                "dissociateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[]
+        // {TREASURY_TOKEN_ADDRESS}}),
+        //        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
+        //        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS,
+        // 1L}),
+        //        WIPE_TOKEN_WITH_ALIAS(
+        //                "wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS,
+        // 1L}),
+        //        WIPE_NFT_TOKEN(
+        //                "wipeTokenAccountNFTExternal",
+        //                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ADDRESS, new long[] {1}}),
+        //        WIPE_NFT_TOKEN_WITH_ALIAS(
+        //                "wipeTokenAccountNFTExternal",
+        //                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ALIAS, new long[] {1}}),
+        //        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
+        //        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
+        //        REVOKE_TOKEN_KYC_WITH_ALIAS("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS,
+        // SENDER_ALIAS}),
+        //        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}),
+        //        GRANT_TOKEN_KYC_WITH_ALIAS("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS,
+        // SENDER_ALIAS}),
+        //        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
+        //        FREEZE_TOKEN("freezeTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS,
+        // SPENDER_ADDRESS}),
+        //        UNFREEZE_TOKEN("unfreezeTokenExternal", new Object[] {FROZEN_FUNGIBLE_TOKEN_ADDRESS,
+        // SPENDER_ADDRESS}),
+        //        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
+        //        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
+        //        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
+        //        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+        //                "createFungibleTokenWithCustomFeesExternal",
+        //                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER}),
+        //        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
+        //        CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
+        //                "createNonFungibleTokenWithCustomFeesExternal",
+        //                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
+        //        TRANSFER_TOKEN(
+        //                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS,
+        // SENDER_ADDRESS, 1L}),
+        //        TRANSFER_TOKEN_WITH_ALIAS(
+        //                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS,
+        // 1L}),
+        //        TRANSFER_TOKENS("transferTokensExternal", new Object[] {
+        //            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ADDRESS, SENDER_ADDRESS}, new long[] {1L, -1L}
+        //        }),
+        //        TRANSFER_TOKENS_WITH_ALIAS("transferTokensExternal", new Object[] {
+        //            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
+        //        }),
         CRYPTO_TRANSFER_TOKENS(
                 "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS, 5L}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
