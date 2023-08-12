@@ -143,7 +143,7 @@ cd docker
 Build the image for both amd64 (Github CI) and arm64 (local testing). Don't forget the '.' at the end of the line. This
 can take some time depending on your internet speed. You will see activity around both arm64 and amd64.
 ```console
-$ docker buildx build --platform linux/arm64,linux/amd64 -t mirrornodeswirldslabs/citus:12.0.0 --file alpine/Dockerfile  .
+$ docker buildx build --platform linux/arm64,linux/amd64 -t gcr.io/mirrornode/citus:12.0.0 --file alpine/Dockerfile  .
 [+] Building 351.1s (28/28) FINISHED
  => [internal] load .dockerignore                                                                                                                         0.0s
  => => transferring context: 2B                                                                                                                           0.0s
@@ -162,7 +162,7 @@ rather than as a separate step below.
 
 If you did not utilize `--push` with `docker buildx` when building the alpine image, push it now to Docker Hub.
 ```console
-docker push mirrornodeswirldslabs/citus:12.0.0
+docker push gcr.io/mirrornode/citus:12.0.0
 ```
 You can then see that the images have been updated in [the repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
 If you click on the tags you can see the OS/ARCH supported by each.
