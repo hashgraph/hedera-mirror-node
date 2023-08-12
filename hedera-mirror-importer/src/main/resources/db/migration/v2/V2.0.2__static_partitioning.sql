@@ -77,7 +77,7 @@ begin
         group by tp.parent_table, tp.partition_column
         loop
             if ((not partitionInfo.time_partition and
-                partitionInfo.max_entity_id * 2.0 < (extract(epoch from (partitionInfo.next_from))) * 1000000000.0) or
+                partitionInfo.max_entity_id * ${maxEntityIdRatio} < (extract(epoch from (partitionInfo.next_from))) * 1000000000.0) or
                (partitionInfo.time_partition and
                 (CURRENT_TIMESTAMP + interval ${partitionTimeInterval} < partitionInfo.next_from)))
             then
@@ -164,9 +164,18 @@ select create_time_partitions(table_name :='public.crypto_transfer',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
                               end_at := CURRENT_TIMESTAMP + '1 month');
-select create_time_partitions(table_name :='public.custom_fee', partition_interval := interval ${partitionTimeInterval},
-                              start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+select create_time_partitions(table_name :='public.custom_fee', partition_interval := interval ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at := '1970-01-01 00:00:00.000'::timestamptz +
+                                        interval ${partitionIdInterval});
+select update_partition_table_name('public.custom_fee'::regclass, interval ${partitionIdInterval},
+                                   '1970-01-01 00:00:00.000'::timestamptz);
+select create_time_partitions(table_name :='public.custom_fee_history', partition_interval := interval ${partitionIdInterval},
+                              start_from := '1970-01-01 00:00:00.000'::timestamptz,
+                              end_at := '1970-01-01 00:00:00.000'::timestamptz +
+                                        interval ${partitionIdInterval});
+select update_partition_table_name('public.custom_fee_history'::regclass, interval ${partitionIdInterval},
+                                   '1970-01-01 00:00:00.000'::timestamptz);
 select create_time_partitions(table_name :='public.entity', partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
                               end_at := '1970-01-01 00:00:00.000'::timestamptz +

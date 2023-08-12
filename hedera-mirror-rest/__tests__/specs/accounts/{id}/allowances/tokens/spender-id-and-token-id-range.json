@@ -37,12 +37,36 @@
         "timestamp_range": "[1234567890000000002,)"
       },
       {
+        "amount": 0,
+        "amount_granted": 1000,
+        "owner": 1001,
+        "spender": 2001,
+        "token_id": 10003,
+        "timestamp_range": "[1234567890000000002,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "spender": 2001,
+        "token_id": 10004,
+        "timestamp_range": "[1234567890000000002,)"
+      },
+      {
         "amount": 45,
         "amount_granted": 55,
         "owner": 2001,
         "spender": 3001,
         "token_id": 10001,
         "timestamp_range": "[1234567890000000003,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "spender": 2001,
+        "token_id": 10005,
+        "timestamp_range": "[1234567890000000004,)"
       },
       {
         "amount": 56,

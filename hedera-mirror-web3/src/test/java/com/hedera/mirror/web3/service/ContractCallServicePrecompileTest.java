@@ -77,20 +77,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(UnsupportedContractModificationFunctions.class)
-    void evmPrecompileUnsupportedModificationTokenFunctionsTest(
-            final UnsupportedContractModificationFunctions contractFunc) {
-        final var functionHash = functionEncodeDecoder.functionHashWithEmptyDataFor(
-                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage(ERROR_MESSAGE);
-    }
-
-    @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctionsTest(
             final SupportedContractModificationFunctions contractFunc) {
@@ -113,7 +99,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var functionName = "getCustomFeesForToken";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeesPersist(feeCase);
+        customFeePersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final var decodeResult = functionEncodeDecoder.decodeResult(functionName, ABI_PATH, callResult);
@@ -160,7 +146,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeesPersist(FRACTIONAL_FEE);
+        customFeePersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final Tuple decodeResult = functionEncodeDecoder
@@ -408,14 +394,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @RequiredArgsConstructor
-    enum UnsupportedContractModificationFunctions {
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", new Object[] {EMPTY_ADDRESS, new Object[] {}});
-
-        private final String name;
-        private final Object[] functionParameters;
-    }
-
-    @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
         APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 1L}),
         DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
@@ -500,7 +478,31 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN}),
         UPDATE_TOKEN_EXPIRY(
-                "updateTokenExpiryInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER});
+                "updateTokenExpiryInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER}),
+        UPDATE_TOKEN_KEYS_CONTRACT_ADDRESS("updateTokenKeysExternal", new Object[] {
+            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+            new Object[] {
+                new Object[] {0b1111111, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+            }
+        }),
+        UPDATE_TOKEN_KEYS_DELEGATABLE_CONTRACT_ID("updateTokenKeysExternal", new Object[] {
+            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+            new Object[] {
+                new Object[] {0b1111111, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+            }
+        }),
+        UPDATE_TOKEN_KEYS_ED25519("updateTokenKeysExternal", new Object[] {
+            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+            new Object[] {
+                new Object[] {0b1111111, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
+            }
+        }),
+        UPDATE_TOKEN_KEYS_ECDSA("updateTokenKeysExternal", new Object[] {
+            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+            new Object[] {
+                new Object[] {0b1111111, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
+            }
+        });
 
         private final String name;
         private final Object[] functionParameters;

@@ -41,13 +41,19 @@ import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
+import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -56,6 +62,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Collection<TokenAccount> tokenAccounts = new CopyOnWriteArrayList<>();
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
+    private final Map<TokenNameEnum, TokenId> tokenMap = new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -81,6 +88,41 @@ public class TokenClient extends AbstractNetworkClient {
     @Override
     public int getOrder() {
         return -1;
+    }
+
+    public TokenId getToken(TokenNameEnum tokenNameEnum) {
+        // Create token only if it does not currently exist
+        var tokenId = tokenMap.computeIfAbsent(tokenNameEnum, x -> {
+            var operator = sdkClient.getExpandedOperatorAccountId();
+            try {
+                var response = createToken(tokenNameEnum, operator);
+                return response.getReceipt().tokenId;
+            } catch (Exception e) {
+                log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
+                return null;
+            }
+        });
+
+        if (tokenId == null) {
+            throw new NetworkException("Null tokenId retrieved from receipt");
+        }
+
+        log.debug("Retrieved token: {} with ID: {}", tokenNameEnum, tokenId);
+        return tokenId;
+    }
+
+    private NetworkTransactionResponse createToken(TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId) {
+        return createToken(
+                expandedAccountId,
+                tokenNameEnum.symbol,
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                expandedAccountId,
+                1_000_000,
+                TokenSupplyType.INFINITE,
+                1,
+                tokenNameEnum.tokenType,
+                Collections.emptyList());
     }
 
     public NetworkTransactionResponse createToken(
@@ -330,11 +372,17 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public TransferTransaction getFungibleTokenTransferTransaction(
-            TokenId tokenId, AccountId sender, AccountId recipient, long amount) {
-        return getTransferTransaction()
-                .addTokenTransfer(tokenId, sender, Math.negateExact(amount))
-                .addTokenTransfer(tokenId, recipient, amount);
+    private TransferTransaction getFungibleTokenTransferTransaction(
+            TokenId tokenId, AccountId owner, AccountId sender, AccountId recipient, long amount, boolean isApproval) {
+        var transferTransaction = getTransferTransaction();
+
+        if (isApproval) {
+            transferTransaction.addApprovedTokenTransfer(tokenId, owner, Math.negateExact(amount));
+        } else {
+            transferTransaction.addTokenTransfer(tokenId, sender, Math.negateExact(amount));
+        }
+        transferTransaction.addTokenTransfer(tokenId, recipient, amount);
+        return transferTransaction;
     }
 
     public TransferTransaction getNonFungibleTokenTransferTransaction(
@@ -352,15 +400,27 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse transferFungibleToken(
             TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount) {
-        var transaction = getFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, amount);
+        return transferFungibleToken(tokenId, sender.getAccountId(), sender, recipient, amount, false);
+    }
+
+    public NetworkTransactionResponse transferFungibleToken(
+            TokenId tokenId,
+            AccountId owner,
+            ExpandedAccountId sender,
+            AccountId recipient,
+            long amount,
+            boolean isApproval) {
+        var transaction = getFungibleTokenTransferTransaction(
+                tokenId, owner, sender.getAccountId(), recipient, amount, isApproval);
         var response = executeTransactionAndRetrieveReceipt(transaction, sender);
         log.info(
-                "Transferred {} tokens of {} from {} to {} via {}",
+                "Transferred {} tokens of {} from {} to {} via {}, isApproval {}",
                 amount,
                 tokenId,
                 sender,
                 recipient,
-                response.getTransactionId());
+                response.getTransactionId(),
+                isApproval);
         return response;
     }
 
@@ -504,6 +564,21 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(transaction, KeyList.of(expandedAccountId.getPrivateKey()));
         log.info("Updated custom fees schedule for token {} via {}", tokenId, response.getTransactionId());
         return response;
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum TokenNameEnum {
+        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON),
+        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE);
+
+        private final String symbol;
+        private final TokenType tokenType;
+
+        @Override
+        public String toString() {
+            return String.format("%s (%s)", symbol, tokenType);
+        }
     }
 
     private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
