@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("v2")
 public class PartitionMaintenance {
-    private static final String RUN_MAINTENANCE_QUERY = "SELECT mirror_node_create_partitions()";
+    private static final String RUN_MAINTENANCE_QUERY = "CALL mirror_node_create_partitions()";
     private final JdbcTemplate jdbcTemplate;
     private final Timer maintenanceMetric;
 
