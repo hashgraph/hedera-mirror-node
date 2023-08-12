@@ -16,29 +16,42 @@
 
 package com.hedera.mirror.importer.db;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
+import java.time.Instant;
 import lombok.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @CustomLog
 @Component
-@RequiredArgsConstructor
 @Profile("v2")
 public class PartitionMaintenance {
-    private final PartitionMaintenanceService service;
+    private static final String RUN_MAINTENANCE_QUERY = "SELECT mirror_node_create_partitions()";
+    private final JdbcTemplate jdbcTemplate;
+    private final Timer maintenanceMetric;
+
+    public PartitionMaintenance(JdbcTemplate jdbcTemplate, MeterRegistry meterRegistry) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.maintenanceMetric = Timer.builder(getClass().getCanonicalName())
+                .description("The duration in seconds it took to create new partitions")
+                .register(meterRegistry);
+    }
 
     @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
     @EventListener(ApplicationReadyEvent.class)
+    @Retryable
     public void runMaintenance() {
-        service.getNextPartitions().forEach(partitionInfo -> {
-            try {
-                service.createPartition(partitionInfo);
-            } catch (Exception e) {
-                log.error("Unable to create partition {}", partitionInfo, e);
-            }
-        });
+        log.info("Running partition maintenance");
+        Instant start = Instant.now();
+        jdbcTemplate.execute(RUN_MAINTENANCE_QUERY);
+        log.info("Partition maintenance completed successfully");
+        this.maintenanceMetric.record(Duration.between(start, Instant.now()));
     }
 }

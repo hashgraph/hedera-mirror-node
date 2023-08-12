@@ -49,7 +49,7 @@ spring:
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
-      partitionIdCount: 1
+      maxEntityIdRatio: 2.0
       partitionIdInterval: "'1 second'"
       partitionStartDate: "'0 days'"
       partitionTimeInterval: "'1 year'"
