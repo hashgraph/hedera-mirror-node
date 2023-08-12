@@ -84,7 +84,6 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Integrat
     void teardown() {
         entityProperties.getPersist().setTopics(true);
         entityProperties.getPersist().setTopicMessageLookups(false);
-        createPartitions();
     }
 
     private void createPartitions() {
