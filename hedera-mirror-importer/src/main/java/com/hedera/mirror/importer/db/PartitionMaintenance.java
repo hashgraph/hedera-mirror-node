@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.db;
 
+import com.hedera.mirror.importer.leader.Leader;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
@@ -47,6 +48,7 @@ public class PartitionMaintenance {
     @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
     @EventListener(ApplicationReadyEvent.class)
     @Retryable
+    @Leader
     public void runMaintenance() {
         log.info("Running partition maintenance");
         Instant start = Instant.now();
