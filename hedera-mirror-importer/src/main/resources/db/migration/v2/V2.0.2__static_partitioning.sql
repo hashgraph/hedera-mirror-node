@@ -112,11 +112,11 @@ $$
 select create_time_partitions(table_name :='public.account_balance',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.assessed_custom_fee',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.contract', partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
                               end_at := '1970-01-01 00:00:00.000'::timestamptz +
@@ -126,15 +126,15 @@ select update_partition_table_name('public.contract'::regclass, interval ${parti
 select create_time_partitions(table_name :='public.contract_action',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.contract_log',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.contract_result',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.contract_state',
                               partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
@@ -145,7 +145,7 @@ select update_partition_table_name('public.contract_state'::regclass, interval $
 select create_time_partitions(table_name :='public.contract_state_change',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.crypto_allowance',
                               partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
@@ -163,7 +163,7 @@ select update_partition_table_name('public.crypto_allowance_history'::regclass, 
 select create_time_partitions(table_name :='public.crypto_transfer',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.custom_fee', partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
                               end_at := '1970-01-01 00:00:00.000'::timestamptz +
@@ -205,21 +205,21 @@ select update_partition_table_name('public.entity_stake_history'::regclass, inte
 select create_time_partitions(table_name :='public.entity_transaction',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.ethereum_transaction',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.event_file', partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.file_data', partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.network_freeze',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.nft', partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
                               end_at := '1970-01-01 00:00:00.000'::timestamptz +
@@ -249,7 +249,7 @@ select update_partition_table_name('public.nft_allowance_history'::regclass, int
 select create_time_partitions(table_name :='public.record_file',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.schedule', partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
                               end_at := '1970-01-01 00:00:00.000'::timestamptz +
@@ -259,7 +259,7 @@ select update_partition_table_name('public.schedule'::regclass, interval ${parti
 select create_time_partitions(table_name :='public.staking_reward_transfer',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.token'::regclass,
                               partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
@@ -305,23 +305,23 @@ select update_partition_table_name('public.token_allowance_history'::regclass, i
 select create_time_partitions(table_name :='public.token_balance',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.token_transfer',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.topic_message',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.transaction',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.transaction_hash',
                               partition_interval := interval ${partitionTimeInterval},
                               start_from := CURRENT_TIMESTAMP - ${partitionStartDate}:: interval,
-                              end_at := CURRENT_TIMESTAMP + '1 month');
+                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.transaction_signature',
                               partition_interval := interval ${partitionIdInterval},
                               start_from := '1970-01-01 00:00:00.000'::timestamptz,
