@@ -43,8 +43,10 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -75,6 +77,13 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             .build();
 
     private AtomicLong count = new AtomicLong(100000);
+
+    @AfterEach
+    void after() throws Exception {
+        Field activeField = migration.getClass().getDeclaredField("executed");
+        activeField.setAccessible(true);
+        activeField.set(migration, new AtomicBoolean(false));
+    }
 
     @BeforeEach
     void setup() {
@@ -202,11 +211,19 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         // given
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(9))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(37)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600183620000L)
+                        .consensusEnd(1568415600183620001L))
                 .persist();
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(39).hapiVersionPatch(0))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(37)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600173620000L)
+                        .consensusEnd(1568415600173620001L))
                 .persist();
         // given
         var contractId = EntityId.of("0.0.2119900", CONTRACT);

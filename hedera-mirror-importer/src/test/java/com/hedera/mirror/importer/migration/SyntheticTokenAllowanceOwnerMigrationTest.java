@@ -25,10 +25,13 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +42,13 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
     private final SyntheticTokenAllowanceOwnerMigration migration;
     private final TokenAllowanceRepository tokenAllowanceRepository;
+
+    @AfterEach
+    void after() throws Exception {
+        Field activeField = migration.getClass().getDeclaredField("executed");
+        activeField.setAccessible(true);
+        activeField.set(migration, new AtomicBoolean(false));
+    }
 
     @Test
     void checksum() {
@@ -200,17 +210,25 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(36).hapiVersionPatch(10))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(36)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600193620000L)
+                        .consensusEnd(1568415600193620001L))
                 .persist();
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(0))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(36)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600183620000L)
+                        .consensusEnd(1568415600183620001L))
                 .persist();
 
         // when
         migration.onEnd(RecordFile.builder()
-                .consensusStart(1568415600193620000L)
-                .consensusEnd(1568528100472477002L)
+                .consensusStart(1568415600193620009L)
+                .consensusEnd(1568415600193620010L)
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(37)
                 .hapiVersionPatch(1)

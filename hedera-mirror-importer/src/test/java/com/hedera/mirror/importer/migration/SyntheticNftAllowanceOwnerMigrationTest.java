@@ -27,10 +27,13 @@ import com.hedera.mirror.common.domain.entity.NftAllowance.NftAllowanceBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +44,13 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
     private final SyntheticNftAllowanceOwnerMigration migration;
     private final NftAllowanceRepository nftAllowanceRepository;
+
+    @AfterEach
+    void after() throws Exception {
+        Field activeField = migration.getClass().getDeclaredField("executed");
+        activeField.setAccessible(true);
+        activeField.set(migration, new AtomicBoolean(false));
+    }
 
     @Test
     void checksum() {
@@ -184,17 +194,25 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(36).hapiVersionPatch(10))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(36)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600193620000L)
+                        .consensusEnd(1568415600193620001L))
                 .persist();
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(0))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(36)
+                        .hapiVersionPatch(10)
+                        .consensusStart(1568415600183620000L)
+                        .consensusEnd(1568415600183620001L))
                 .persist();
 
         // when
         migration.onEnd(RecordFile.builder()
-                .consensusStart(1568415600193620000L)
-                .consensusEnd(1568528100472477002L)
+                .consensusStart(1568415600193620009L)
+                .consensusEnd(1568415600193620010L)
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(37)
                 .hapiVersionPatch(1)
@@ -239,15 +257,20 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         // The contract result for the collided nft allowance
         persistContractResultCollidedNftAllowance(ownerAccountId, ownerPreMigration, contractResultConsensus);
 
+        // The latest HAPI version in the DB is >=37.0, so migration will not be run.
         domainBuilder
                 .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(37).hapiVersionPatch(0))
+                .customize(r -> r.hapiVersionMajor(0)
+                        .hapiVersionMinor(37)
+                        .hapiVersionPatch(0)
+                        .consensusStart(1568415600193610000L)
+                        .consensusEnd(1568415600193610002L))
                 .persist();
 
         // when
         migration.onEnd(RecordFile.builder()
                 .consensusStart(1568415600193620000L)
-                .consensusEnd(1568528100472477002L)
+                .consensusEnd(1568415600193620001L)
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(37)
                 .hapiVersionPatch(1)
