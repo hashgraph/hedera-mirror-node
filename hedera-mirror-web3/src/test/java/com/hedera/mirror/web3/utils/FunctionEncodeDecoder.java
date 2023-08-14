@@ -33,7 +33,6 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.Fractio
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import jakarta.inject.Named;
 import java.io.FileInputStream;
@@ -91,7 +90,8 @@ public class FunctionEncodeDecoder {
     private static final String EXPIRY = "(int64,address,int64)";
     private static final String EXPIRY_V1 = "(uint32,address,uint32)";
     public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
-    public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE = "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
+    public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
+            "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String TRIPLE_BOOL = "(bool,bool,bool)";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
@@ -316,20 +316,24 @@ public class FunctionEncodeDecoder {
                 tokenCreateWrapper.getMaxSupply(),
                 tokenCreateWrapper.isFreezeDefault(),
                 tokenCreateWrapper.getTokenKeys().stream()
-                                .map(tokenKeyWrapper -> Tuple.of(
-                                        BigInteger.valueOf(tokenKeyWrapper.keyType()),
-                                        Tuple.of(
-                                                tokenKeyWrapper.key().isShouldInheritAccountKeySet(),
-                                                tokenKeyWrapper.key().getContractID() != null
-                                                        ? convertAddress(EntityIdUtils.asTypedEvmAddress(tokenKeyWrapper.key().getContractID()))
-                                                        : convertAddress(EntityIdUtils.asTypedEvmAddress(ContractID.getDefaultInstance())),
-                                                tokenKeyWrapper.key().getEd25519Key(),
-                                                tokenKeyWrapper.key().getEcdsaSecp256k1(),
-                                                tokenKeyWrapper.key().getDelegatableContractID() != null
-                                                        ? convertAddress(EntityIdUtils.asTypedEvmAddress(tokenKeyWrapper.key().getDelegatableContractID()))
-                                                        : convertAddress(EntityIdUtils.asTypedEvmAddress(ContractID.getDefaultInstance()))
-                                        )
-                                )).toList().toArray(new Tuple[tokenCreateWrapper.getTokenKeys().size()]),
+                        .map(tokenKeyWrapper -> Tuple.of(
+                                BigInteger.valueOf(tokenKeyWrapper.keyType()),
+                                Tuple.of(
+                                        tokenKeyWrapper.key().isShouldInheritAccountKeySet(),
+                                        tokenKeyWrapper.key().getContractID() != null
+                                                ? convertAddress(EntityIdUtils.asTypedEvmAddress(
+                                                        tokenKeyWrapper.key().getContractID()))
+                                                : convertAddress(EntityIdUtils.asTypedEvmAddress(
+                                                        ContractID.getDefaultInstance())),
+                                        tokenKeyWrapper.key().getEd25519Key(),
+                                        tokenKeyWrapper.key().getEcdsaSecp256k1(),
+                                        tokenKeyWrapper.key().getDelegatableContractID() != null
+                                                ? convertAddress(EntityIdUtils.asTypedEvmAddress(
+                                                        tokenKeyWrapper.key().getDelegatableContractID()))
+                                                : convertAddress(EntityIdUtils.asTypedEvmAddress(
+                                                        ContractID.getDefaultInstance())))))
+                        .toList()
+                        .toArray(new Tuple[tokenCreateWrapper.getTokenKeys().size()]),
                 Tuple.of(
                         tokenCreateWrapper.getExpiry().second(),
                         convertAddress(EntityIdUtils.asTypedEvmAddress(

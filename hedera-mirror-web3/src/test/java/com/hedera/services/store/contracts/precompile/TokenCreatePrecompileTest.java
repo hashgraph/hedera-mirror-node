@@ -86,7 +86,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -218,9 +217,10 @@ class TokenCreatePrecompileTest {
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
     private HTSPrecompiledContract subject;
     protected static final byte[] ED25519_KEY = new byte[] {
-            -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
-            77, -103, 47, -118, 107, -58, -85, -63, 55, -57
-    };;
+        -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1, 77, -103, 47,
+        -118, 107, -58, -85, -63, 55, -57
+    };
+    ;
 
     @BeforeEach
     void setUp() throws IOException {
