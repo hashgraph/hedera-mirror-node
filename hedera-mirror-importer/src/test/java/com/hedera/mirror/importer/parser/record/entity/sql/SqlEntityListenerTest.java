@@ -968,6 +968,34 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onEntityPersistHistoryCreatedTimestamp() {
+        var entity1 = domainBuilder.entity().get();
+        sqlEntityListener.onEntity(entity1);
+        completeFileAndCommit();
+
+        long timestamp = entity1.getCreatedTimestamp() + 12345L;
+        var entity2 = entity1.toBuilder()
+                .createdTimestamp(timestamp)
+                .timestampRange(Range.atLeast(timestamp))
+                .build();
+        var entity3 = entity2.toBuilder()
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(timestamp + 5555L))
+                .build();
+        sqlEntityListener.onEntity(entity2);
+        sqlEntityListener.onEntity(entity3);
+        completeFileAndCommit();
+
+        assertThat(entityRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(entity1.getCreatedTimestamp(), Entity::getCreatedTimestamp);
+        assertThat(findHistory(Entity.class))
+                .extracting("createdTimestamp")
+                .containsOnly(entity1.getCreatedTimestamp());
+    }
+
+    @Test
     void onEntityTransactions() {
         // given
         var entityTransaction1 = domainBuilder.entityTransaction().get();

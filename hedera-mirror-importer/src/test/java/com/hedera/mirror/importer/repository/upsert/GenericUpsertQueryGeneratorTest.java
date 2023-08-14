@@ -352,7 +352,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                               type
                             )
                           select
-                            distinct coalesce(alias, e_alias, null),
+                            distinct coalesce(e_alias, alias, null),
                             coalesce(
                               auto_renew_account_id,
                               e_auto_renew_account_id,
@@ -363,16 +363,16 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                               when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
                               else null
                             end,
-                            coalesce(created_timestamp, e_created_timestamp, null),
+                            coalesce(e_created_timestamp, created_timestamp, null),
                             coalesce(decline_reward, e_decline_reward, false),
                             coalesce(deleted, e_deleted, null),
                             case
                               when coalesce(e_type, type) = 'ACCOUNT' then coalesce(ethereum_nonce, e_ethereum_nonce, 0)
                               else coalesce(ethereum_nonce, e_ethereum_nonce)
                             end,
-                            coalesce(evm_address, e_evm_address, null),
+                            coalesce(e_evm_address, evm_address, null),
                             coalesce(expiration_timestamp, e_expiration_timestamp, null),
-                            coalesce(id, e_id, null),
+                            coalesce(e_id, id, null),
                             coalesce(key, e_key, null),
                             coalesce(
                               max_automatic_token_associations,
@@ -380,18 +380,18 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                               null
                             ),
                             coalesce(memo, e_memo, ''),
-                            coalesce(num, e_num, null),
+                            coalesce(e_num, num, null),
                             coalesce(obtainer_id, e_obtainer_id, null),
                             coalesce(permanent_removal, e_permanent_removal, null),
                             coalesce(proxy_account_id, e_proxy_account_id, null),
                             coalesce(public_key, e_public_key, null),
-                            coalesce(realm, e_realm, null),
+                            coalesce(e_realm, realm, null),
                             coalesce(
                               receiver_sig_required,
                               e_receiver_sig_required,
                               null
                             ),
-                            coalesce(shard, e_shard, null),
+                            coalesce(e_shard, shard, null),
                             coalesce(stake_period_start, e_stake_period_start, '-1'),
                             coalesce(staked_account_id, e_staked_account_id, null),
                             coalesce(staked_node_id, e_staked_node_id, '-1'),
