@@ -1,0 +1,8 @@
+embedded:
+  postgresql:
+    docker-image: gcr.io/mirrornode/citus:12.0.0
+    initScriptPath: db/scripts/init-v2.sql
+spring:
+  flyway:
+    baselineVersion: 1.999.999
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2"

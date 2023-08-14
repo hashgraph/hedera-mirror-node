@@ -1,0 +1,79 @@
+hedera:
+  mirror:
+    restJava:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_rest_java_pass
+        port: 5432
+        sslMode: DISABLE
+        statementTimeout: 10000
+        username: mirror_rest_java
+logging:
+  level:
+    root: warn
+    com.hedera.mirror.restjava: info
+    org.springframework.cloud.kubernetes.fabric8.config: error
+management:
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, ping
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        step: 60s
+server:
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+  max-http-header-size: 1KB
+  netty:
+    connection-timeout: 3s
+  port: 8084
+  shutdown: graceful
+spring:
+  application:
+    name: hedera-mirror-rest-java
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
+    discovery:
+      enabled: false
+  datasource:
+    name: ${hedera.mirror.restJava.db.name}
+    password: ${hedera.mirror.restJava.db.password}
+    url: jdbc:postgresql://${hedera.mirror.restJava.db.host}:${hedera.mirror.restJava.db.port}/${hedera.mirror.restJava.db.name}?options=-c%20statement_timeout=${hedera.mirror.restJava.db.statementTimeout}
+    username: ${hedera.mirror.restJava.db.username}
+    hikari:
+      connection-timeout: 3000
+      data-source-properties:
+        idle_in_transaction_session_timeout: "30000"
+        lock_timeout: "10000"
+        sslmode: ${hedera.mirror.restJava.db.sslMode}
+        tcpKeepAlive: true
+      maximum-pool-size: 50
+      minimum-idle: 4
+      validation-timeout: 3000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
+      hibernate.generate_statistics: true
+      hibernate.hbm2ddl.auto: none
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
