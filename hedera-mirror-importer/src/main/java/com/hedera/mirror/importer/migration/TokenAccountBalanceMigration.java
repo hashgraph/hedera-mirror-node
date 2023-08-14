@@ -118,6 +118,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
         if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
             return;
         }
+
         if (firstConsensusTimestamp.get() == 0) {
             if (accountBalanceFileRepository
                     .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
@@ -128,6 +129,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
                 return;
             }
         }
+
         if (recordFileRepository
                 .findLatest()
                 .map(RecordFile::getConsensusEnd)
