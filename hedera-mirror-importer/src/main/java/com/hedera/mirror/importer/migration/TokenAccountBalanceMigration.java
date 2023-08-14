@@ -115,18 +115,24 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
 
     @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
-        if (firstConsensusTimestamp.get() == -1 || succeeded.get()) return;
+        if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
+            return;
+        }
         if (firstConsensusTimestamp.get() == 0) {
             if (accountBalanceFileRepository
                     .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
                     .isEmpty()) {
                 firstConsensusTimestamp.set(accountBalanceFile.getConsensusTimestamp());
             } else {
+                firstConsensusTimestamp.set(-1);
                 return;
             }
         }
-        if (recordFileRepository.findLatest().map(RecordFile::getConsensusEnd).orElse(-1L)
-                >= firstConsensusTimestamp.get()) {
+        if (recordFileRepository
+                .findLatest()
+                .map(RecordFile::getConsensusEnd)
+                .filter(timestamp -> timestamp >= firstConsensusTimestamp.get())
+                .isPresent()) {
             TransactionSynchronizationManager.registerSynchronization(this);
             doMigrate();
         }
