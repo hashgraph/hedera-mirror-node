@@ -113,6 +113,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
         log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
 
+    @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
         if (firstConsensusTimestamp.get() == -1 || succeeded.get()) return;
         if (firstConsensusTimestamp.get() == 0) {
