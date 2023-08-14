@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.common.domain.token;
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+@Data
+@NoArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class FallbackFee {
+
+    private long amount;
+
+    private EntityId denominatingTokenId;
+}

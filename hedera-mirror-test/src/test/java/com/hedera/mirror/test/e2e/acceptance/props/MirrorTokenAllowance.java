@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+import lombok.Data;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+@Data
+public class MirrorTokenAllowance extends MirrorCryptoAllowance {
+    private String tokenId;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+class Fee {
+  constructor(fee) {
+    this.allCollectorsAreExempt = fee.all_collectors_are_exempt;
+    this.collectorAccountId = fee.collector_account_id;
+  }
 
-import com.hedera.mirror.common.domain.token.CustomFee;
-import org.springframework.data.repository.CrudRepository;
+  static ALL_COLLECTORS_ARE_EXEMPT = 'all_collectors_are_exempt';
+  static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
+}
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+export default Fee;
