@@ -134,6 +134,6 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
 
     @Override
     public void afterCommit() {
-        succeeded.compareAndSet(false, true);
+        succeeded.set(true);
     }
 }
