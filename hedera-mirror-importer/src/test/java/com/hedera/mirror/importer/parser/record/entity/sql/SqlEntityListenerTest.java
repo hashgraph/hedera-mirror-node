@@ -968,7 +968,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEntityPersistHistoryCreatedTimestamp() {
+    void onEntityPersistOriginalHistoryCreatedTimestamp() {
         var entity1 = domainBuilder.entity().get();
         sqlEntityListener.onEntity(entity1);
         completeFileAndCommit();
