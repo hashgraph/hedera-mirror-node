@@ -265,7 +265,7 @@ stackgres:
   coordinator:
     config:
       checkpoint_timeout: "1800"
-      citus.executor_slow_start_interval: "101ms"
+      citus.executor_slow_start_interval: "100ms"
       citus.max_cached_conns_per_worker: "4"
       citus.max_shared_pool_size: "380"
       cron.database_name: "{{ .Values.db.name }}"
