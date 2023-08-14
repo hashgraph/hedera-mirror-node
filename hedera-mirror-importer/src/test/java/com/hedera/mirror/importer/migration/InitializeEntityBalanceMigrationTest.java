@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -182,11 +183,10 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void onEndRollback() {
+    @Transactional
+    void onEndWhenNotFirstFile() {
         // given
         setup();
-        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
-
         // when
         initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
 
@@ -198,11 +198,10 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void onEndWhenDbIsEmpty() {
+    @Transactional
+    void onEndWhenNoRecordFileAfterTimestamp() {
         // given
-        setup();
-        accountBalanceFileRepository.deleteAll();
-        accountBalanceRepository.deleteAll();
+        setupForFirstAccountBalanceFile();
 
         // when
         initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
@@ -215,17 +214,20 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
+    @Transactional
     void onEnd() {
         // given
         setupForFirstAccountBalanceFile();
+        recordFile2 = domainBuilder
+                .recordFile()
+                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
+                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
+                .persist();
 
         // when
         initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 

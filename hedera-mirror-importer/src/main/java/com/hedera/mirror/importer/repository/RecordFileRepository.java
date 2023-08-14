@@ -38,7 +38,7 @@ public interface RecordFileRepository extends StreamFileRepository<RecordFile, L
     @Query(
             nativeQuery = true,
             value = "select * from record_file where consensus_end < ?1 order by consensus_end desc limit 1")
-    Optional<RecordFile> findLatestBeforeCurrent(long offset);
+    Optional<RecordFile> findLatestBefore(long offset);
 
     @Query(
             value = "select * from record_file where consensus_end < ?1 and gas_used = -1 order by consensus_end desc "
