@@ -23,6 +23,7 @@ import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.UPPER_BOUND_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -36,6 +37,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -44,8 +46,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +58,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -62,7 +67,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
-
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final SyntheticCryptoTransferApprovalMigration migration;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TransactionRepository transactionRepository;
@@ -279,6 +284,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
         // when
         migration.onEnd(RECORD_FILE);
+
+        waitForCompletion();
 
         // then
         var expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
@@ -792,5 +799,20 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private long getTimestampWithinBoundary() {
         return LOWER_BOUND_TIMESTAMP + count.incrementAndGet();
+    }
+
+    private void waitForCompletion() {
+        await().atMost(Duration.ofSeconds(5))
+                .pollDelay(Duration.ofMillis(100))
+                .pollInterval(Duration.ofMillis(100))
+                .untilAsserted(() -> assertThat(isMigrationCompleted()).isTrue());
+    }
+
+    private boolean isMigrationCompleted() {
+        var actual = jdbcTemplate.queryForObject(
+                "select (select checksum from flyway_schema_history where script = ?)",
+                Integer.class,
+                SyntheticCryptoTransferApprovalMigration.class.getName());
+        return Objects.equals(actual, migration.getSuccessChecksum());
     }
 }
