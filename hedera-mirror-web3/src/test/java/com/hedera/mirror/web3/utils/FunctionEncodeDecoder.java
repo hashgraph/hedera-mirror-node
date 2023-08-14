@@ -33,6 +33,8 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.Fractio
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import jakarta.inject.Named;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -85,7 +87,12 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
     public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
             "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
+    private static final String ADDRESS_EXPIRY_V1 = "(address,(uint32,address,uint32))";
+    private static final String EXPIRY = "(int64,address,int64)";
+    private static final String EXPIRY_V1 = "(uint32,address,uint32)";
     public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
+    public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE = "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
+    private static final String TRIPLE_BOOL = "(bool,bool,bool)";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
 
@@ -148,7 +155,7 @@ public class FunctionEncodeDecoder {
             case UINT256, INT -> Tuple.of(BigInteger.valueOf((long) parameters[0]));
             case ADDRESS_DUO -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]));
-            case ADDRESS_DUO_BOOL -> Tuple.of(
+            case ADDRESS_DUO_BOOL, DOUBLE_ADDRESS_INT64, DOUBLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
             case TRIPLE_ADDRESS -> Tuple.of(
                     convertAddress((Address) parameters[0]),
@@ -183,8 +190,6 @@ public class FunctionEncodeDecoder {
                     convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
             case ADDRESS_TOKEN -> Tuple.of(
                     convertAddress((Address) parameters[0]), encodeToken((TokenCreateWrapper) parameters[1]));
-            case DOUBLE_ADDRESS_INT64, DOUBLE_ADDRESS_INT64S -> Tuple.of(
-                    convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]), parameters[2]);
             case TOKEN_INT64_INT32 -> Tuple.of(
                     encodeToken((TokenCreateWrapper) parameters[0]), parameters[1], parameters[2]);
             case TOKEN -> Tuple.of(encodeToken((TokenCreateWrapper) parameters[0]));
@@ -198,8 +203,9 @@ public class FunctionEncodeDecoder {
                     encodeToken((TokenCreateWrapper) parameters[0]),
                     encodeFixedFee((FixedFeeWrapper) parameters[1]),
                     encodeRoyaltyFee((RoyaltyFeeWrapper) parameters[2]));
-            case ADDRESS_EXPIRY -> Tuple.of(
+            case ADDRESS_EXPIRY, ADDRESS_EXPIRY_V1 -> Tuple.of(
                     convertAddress((Address) parameters[0]), encodeTokenExpiry((TokenExpiryWrapper) parameters[1]));
+            case EXPIRY, EXPIRY_V1 -> Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]);
             case TRIPLE_ADDRESS_INT64S -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     Arrays.stream(((Address[]) parameters[1]))
@@ -244,8 +250,25 @@ public class FunctionEncodeDecoder {
                             })
                             .toList()
                             .toArray(new Tuple[((Object[]) parameters[1]).length]));
-            case UINT32_ADDRESS_UINT32 -> Tuple.of(
-                    Tuple.of(parameters[0], convertAddress((Address) parameters[1]), parameters[2]));
+            case ADDRESS_ARRAY_OF_KEYS_KEY_TYPE -> Tuple.of(
+                    convertAddress((Address) parameters[0]),
+                    Arrays.stream((Object[]) parameters[1])
+                            .map(e -> (Object[]) e)
+                            .map(e -> {
+                                final var keyParams = ((Object[]) e[1]);
+                                return Tuple.of(
+                                        BigInteger.valueOf((int) e[0]),
+                                        Tuple.of(
+                                                keyParams[0],
+                                                convertAddress((Address) keyParams[1]),
+                                                keyParams[2],
+                                                keyParams[3],
+                                                convertAddress((Address) keyParams[4])));
+                            })
+                            .toList()
+                            .toArray(new Tuple[((Object[]) parameters[1]).length]),
+                    BigInteger.valueOf((long) parameters[2]));
+            case TRIPLE_BOOL -> Tuple.of(parameters[0], parameters[1], parameters[2]);
             default -> Tuple.EMPTY;
         };
     }
@@ -292,16 +315,21 @@ public class FunctionEncodeDecoder {
                 tokenCreateWrapper.isSupplyTypeFinite(),
                 tokenCreateWrapper.getMaxSupply(),
                 tokenCreateWrapper.isFreezeDefault(),
-                new Tuple[] {
-                    Tuple.of(
-                            BigInteger.ONE,
-                            Tuple.of(
-                                    true,
-                                    convertAddress(Address.ZERO),
-                                    new byte[] {},
-                                    new byte[] {},
-                                    convertAddress(Address.ZERO)))
-                },
+                tokenCreateWrapper.getTokenKeys().stream()
+                                .map(tokenKeyWrapper -> Tuple.of(
+                                        BigInteger.valueOf(tokenKeyWrapper.keyType()),
+                                        Tuple.of(
+                                                tokenKeyWrapper.key().isShouldInheritAccountKeySet(),
+                                                tokenKeyWrapper.key().getContractID() != null
+                                                        ? convertAddress(EntityIdUtils.asTypedEvmAddress(tokenKeyWrapper.key().getContractID()))
+                                                        : convertAddress(EntityIdUtils.asTypedEvmAddress(ContractID.getDefaultInstance())),
+                                                tokenKeyWrapper.key().getEd25519Key(),
+                                                tokenKeyWrapper.key().getEcdsaSecp256k1(),
+                                                tokenKeyWrapper.key().getDelegatableContractID() != null
+                                                        ? convertAddress(EntityIdUtils.asTypedEvmAddress(tokenKeyWrapper.key().getDelegatableContractID()))
+                                                        : convertAddress(EntityIdUtils.asTypedEvmAddress(ContractID.getDefaultInstance()))
+                                        )
+                                )).toList().toArray(new Tuple[tokenCreateWrapper.getTokenKeys().size()]),
                 Tuple.of(
                         tokenCreateWrapper.getExpiry().second(),
                         convertAddress(EntityIdUtils.asTypedEvmAddress(

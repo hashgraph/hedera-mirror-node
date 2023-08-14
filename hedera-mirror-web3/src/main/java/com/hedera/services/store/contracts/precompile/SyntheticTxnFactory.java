@@ -369,6 +369,32 @@ public class SyntheticTxnFactory {
             txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder()
                     .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
         }
+
+        tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
+            final var key = tokenKeyWrapper.key().asGrpc();
+            if (tokenKeyWrapper.isUsedForAdminKey()) {
+                txnBodyBuilder.setAdminKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForKycKey()) {
+                txnBodyBuilder.setKycKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFreezeKey()) {
+                txnBodyBuilder.setFreezeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForWipeKey()) {
+                txnBodyBuilder.setWipeKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForSupplyKey()) {
+                txnBodyBuilder.setSupplyKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForFeeScheduleKey()) {
+                txnBodyBuilder.setFeeScheduleKey(key);
+            }
+            if (tokenKeyWrapper.isUsedForPauseKey()) {
+                txnBodyBuilder.setPauseKey(key);
+            }
+        });
+
         txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
                 .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
                 .toList());

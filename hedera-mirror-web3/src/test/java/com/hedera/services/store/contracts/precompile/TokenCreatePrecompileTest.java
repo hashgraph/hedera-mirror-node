@@ -86,6 +86,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -216,6 +217,10 @@ class TokenCreatePrecompileTest {
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
     private HTSPrecompiledContract subject;
+    protected static final byte[] ED25519_KEY = new byte[] {
+            -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
+            77, -103, 47, -118, 107, -58, -85, -63, 55, -57
+    };;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -625,7 +630,7 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
-        subject.prepareComputation(CREATE_FUNGIBLE_NO_FEES_INPUT, a -> a);
+        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
         final long result = subject.getPrecompile()
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
@@ -712,7 +717,7 @@ class TokenCreatePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
-                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
         tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
         staticTokenCreatePrecompile
@@ -872,7 +877,7 @@ class TokenCreatePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
-                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
         tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
         staticTokenCreatePrecompile
@@ -888,7 +893,7 @@ class TokenCreatePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
-                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+                List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
         tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
         staticTokenCreatePrecompile

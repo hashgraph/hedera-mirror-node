@@ -164,7 +164,7 @@ class TokenCreateWrapperTest {
 
     @Test
     void keyValueWrapperWithContractIdAndOneMoreKeyValueHasInvalidKeyType() {
-        final var wrapper = new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, contractID);
+        final var wrapper =  new KeyValueWrapper(false, contractID, new byte[] {}, new byte[] {}, contractID);
 
         assertEquals(KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
     }

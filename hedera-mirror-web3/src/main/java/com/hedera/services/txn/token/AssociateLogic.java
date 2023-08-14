@@ -80,8 +80,7 @@ public class AssociateLogic {
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
             validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-
-            final var newRel = new TokenRelationship(token, updatedAccount, true);
+            final var newRel = new TokenRelationship(token, updatedAccount, true, false);
             numAssociations++;
             newModelRels.add(newRel);
         }

@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
