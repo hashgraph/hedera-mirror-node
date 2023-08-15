@@ -163,6 +163,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
     protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
@@ -170,6 +171,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
+
+    // TODO: Add correct prices for fees for ContractCall for token create
     protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
@@ -214,7 +217,40 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setConstant(393746195920L)
+                                            .setGas(116571)
+                                            .setRbh(11657)
+                                            .setSbh(874)
+                                            .setBpt(17485616)
+                                            .setSbpr(437140)
+                                            .setVpt(43714039850L)
+                                            .setBpr(17485616)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
                                             .build())
                                     .build())))
             .setNextFeeSchedule(FeeSchedule.newBuilder()
@@ -259,7 +295,40 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setConstant(393746195920L)
+                                            .setGas(116571)
+                                            .setRbh(11657)
+                                            .setSbh(874)
+                                            .setBpt(17485616)
+                                            .setSbpr(437140)
+                                            .setVpt(43714039850L)
+                                            .setBpr(17485616)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
                                             .build())
                                     .build())))
             .build();
@@ -709,7 +778,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .evmAddress(SENDER_ALIAS.toArray())
                         .deleted(false)
                         .alias(SENDER_PUBLIC_KEY.toByteArray())
-                        .balance(20000L))
+                        .balance(10000 * 100_000_000L))
                 .persist();
         return senderEntityId;
     }
@@ -1121,6 +1190,22 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 true,
                 "Test",
                 "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleToken2() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
                 EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
                 "test",
                 true,
@@ -1137,7 +1222,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 "TestNFT",
                 "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
                 "test",
                 true,
                 BigInteger.valueOf(0L),
@@ -1145,7 +1230,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
     private static FixedFeeWrapper getFixedFee() {

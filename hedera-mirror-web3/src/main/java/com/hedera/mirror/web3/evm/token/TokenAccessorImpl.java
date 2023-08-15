@@ -34,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
@@ -213,7 +214,11 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address canonicalAddress(final Address addressOrAlias) {
-        return addressOrAlias;
+        Account account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
+        if (account.isEmptyAccount()) {
+            return Address.ZERO;
+        }
+        return account.canonicalAddress();
     }
 
     @Override
