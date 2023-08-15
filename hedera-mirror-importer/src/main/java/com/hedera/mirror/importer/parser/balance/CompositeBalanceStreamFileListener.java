@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.balance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.StreamFileListener;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,6 +32,7 @@ import org.springframework.context.annotation.Primary;
 public class CompositeBalanceStreamFileListener implements BalanceStreamFileListener {
 
     private final List<BalanceStreamFileListener> listeners;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Override
     public void onStart() throws ImporterException {
@@ -39,6 +41,7 @@ public class CompositeBalanceStreamFileListener implements BalanceStreamFileList
 
     @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
+        accountBalanceFileRepository.save(streamFile);
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).onEnd(streamFile);
         }

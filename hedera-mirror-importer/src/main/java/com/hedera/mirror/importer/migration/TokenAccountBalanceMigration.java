@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
@@ -27,7 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 
 @Named
-public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration implements BalanceStreamFileListener {
+public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration {
 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """

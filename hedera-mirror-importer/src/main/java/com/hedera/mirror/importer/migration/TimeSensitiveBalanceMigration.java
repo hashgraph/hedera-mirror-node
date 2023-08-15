@@ -46,41 +46,38 @@ abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
         this.recordFileRepository = recordFileRepository;
     }
 
-    void initializeBalanceTimeSensitively(AccountBalanceFile accountBalanceFile) throws IOException {
-        if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
-            return;
-        }
-
-        if (firstConsensusTimestamp.get() == 0) {
-            // Check if this is the first account balance file after importer startup
-            // Set current file timestamp to firstConsensusTimestamp.
-            if (accountBalanceFileRepository
-                    .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
-                    .isEmpty()) {
-                firstConsensusTimestamp.set(accountBalanceFile.getConsensusTimestamp());
-            } else {
-                // Set firstConsensusTimestamp to -1 to add an early return in case of existing account balance files.
-                firstConsensusTimestamp.set(-1);
-                return;
-            }
-        }
-
-        // Check if at-least one recordFile after the account balance file has been parsed,the migration will then
-        // update rows
-        if (recordFileRepository
-                .findLatest()
-                .map(RecordFile::getConsensusEnd)
-                .filter(timestamp -> timestamp >= firstConsensusTimestamp.get())
-                .isPresent()) {
-            TransactionSynchronizationManager.registerSynchronization(this);
-            doMigrate();
-        }
-    }
-
     @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
         try {
-            initializeBalanceTimeSensitively(accountBalanceFile);
+            if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
+                return;
+            }
+
+            if (firstConsensusTimestamp.get() == 0) {
+                // Check if this is the first account balance file after importer startup
+                // Set current file timestamp to firstConsensusTimestamp.
+                if (accountBalanceFileRepository
+                        .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
+                        .isEmpty()) {
+                    firstConsensusTimestamp.set(accountBalanceFile.getConsensusTimestamp());
+                } else {
+                    // Set firstConsensusTimestamp to -1 to add an early return in case of existing account balance
+                    // files.
+                    firstConsensusTimestamp.set(-1);
+                    return;
+                }
+            }
+
+            // Check if at-least one recordFile after the account balance file has been parsed,the migration will then
+            // update rows
+            if (recordFileRepository
+                    .findLatest()
+                    .map(RecordFile::getConsensusEnd)
+                    .filter(timestamp -> timestamp >= firstConsensusTimestamp.get())
+                    .isPresent()) {
+                TransactionSynchronizationManager.registerSynchronization(this);
+                doMigrate();
+            }
         } catch (IOException e) {
             log.error(
                     "Error executing the migration again after consensus_timestamp {}",
