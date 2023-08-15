@@ -89,6 +89,15 @@ public class TokenFeature extends AbstractFeature {
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
     private final List<TokenId> tokenIds = new ArrayList<>();
 
+    @Given("I ensure token {string} has been created")
+    public void createNamedToken(String tokenName) {
+        var tokenAndResponse = tokenClient.getTokenAndResponse(TokenClient.TokenNameEnum.valueOf(tokenName));
+        if (tokenAndResponse.response() != null) {
+            this.networkTransactionResponse = tokenAndResponse.response();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+        }
+    }
+
     @Given("I associate account {string} with token {string}")
     public void associateToken(String accountName, String tokenName) {
         var accountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));

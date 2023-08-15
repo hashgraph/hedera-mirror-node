@@ -131,20 +131,6 @@ public class CallFeature extends AbstractFeature {
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
-    @Given("I create or reuse token {string}")
-    public void createNamedToken(String tokenName) {
-        var tokenAndResponse = tokenClient.getTokenAndResponse(TokenClient.TokenNameEnum.valueOf(tokenName));
-        this.networkTransactionResponse = tokenAndResponse.response();
-    }
-
-    @RetryAsserts
-    @Then("the mirror node REST API should return status {int} for the token creation transaction")
-    public void conditionallyVerifyMirrorAPIResponses(int status) {
-        if (this.networkTransactionResponse != null) {
-            verifyMirrorTransactionsResponse(mirrorClient, status);
-        }
-    }
-
     // ETHCALL-017
     @RetryAsserts
     @Then("I call function with IERC721Metadata token {string} name")
