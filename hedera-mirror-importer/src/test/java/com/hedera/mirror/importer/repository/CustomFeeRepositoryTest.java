@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,31 +18,37 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class CustomFeeRepositoryTest extends IntegrationTest {
+class CustomFeeRepositoryTest extends AbstractRepositoryTest {
 
     private final CustomFeeRepository customFeeRepository;
-
-    @Test
-    void prune() {
-        domainBuilder.customFee().persist();
-        var customFee2 = domainBuilder.customFee().persist();
-        var customFee3 = domainBuilder.customFee().persist();
-
-        customFeeRepository.prune(customFee2.getId().getCreatedTimestamp());
-
-        assertThat(customFeeRepository.findAll()).containsExactly(customFee3);
-    }
+    private static final RowMapper<CustomFee> ROW_MAPPER = rowMapper(CustomFee.class);
 
     @Test
     void save() {
         var customFee = domainBuilder.customFee().get();
         customFeeRepository.save(customFee);
-        assertThat(customFeeRepository.findById(customFee.getId())).get().isEqualTo(customFee);
+        assertThat(customFeeRepository.findById(customFee.getTokenId())).get().isEqualTo(customFee);
+    }
+
+    /**
+     * This test verifies that the domain object and table definition are in sync with the history table.
+     */
+    @Test
+    void history() {
+        var customFee = domainBuilder.customFee().persist();
+
+        jdbcOperations.update("insert into custom_fee_history select * from custom_fee");
+        List<CustomFee> customFeeHistory = jdbcOperations.query("select * from custom_fee_history", ROW_MAPPER);
+
+        assertThat(customFeeRepository.findAll()).containsExactly(customFee);
+        assertThat(customFeeHistory).containsExactly(customFee);
     }
 }

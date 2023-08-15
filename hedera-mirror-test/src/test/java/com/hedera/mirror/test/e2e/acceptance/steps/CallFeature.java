@@ -27,14 +27,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
-import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
@@ -50,9 +44,6 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -64,8 +55,6 @@ import org.springframework.core.io.Resource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class CallFeature extends AbstractFeature {
 
-    private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 1;
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -76,9 +65,6 @@ public class CallFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-    private final List<TokenId> tokenIds = new ArrayList<>();
-    private final String fungibleTokenName = "fungible";
-    private final String nonFungibleTokenName = "non_fungible_name";
     private CompiledSolidityArtifact ercArtifacts;
     private CompiledSolidityArtifact precompileArtifacts;
     private CompiledSolidityArtifact estimateArtifacts;
@@ -111,6 +97,7 @@ public class CallFeature extends AbstractFeature {
         return new String[] {address1, address2};
     }
 
+    @RetryAsserts
     @Then("the mirror node REST API should return status {int} for the estimate contract transaction")
     public void verifyMirrorAPIResponses(int status) {
         verifyMirrorTransactionsResponse(mirrorClient, status);
@@ -144,35 +131,21 @@ public class CallFeature extends AbstractFeature {
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
-    @Given("I successfully create a new fungible token")
-    public void createNewFungibleToken() {
-        createNewToken(
-                fungibleTokenName,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                Collections.emptyList());
-    }
-
-    @Given("I successfully create a new non-fungible token")
-    public void createNewNonFungibleToken() {
-        createNewToken(
-                nonFungibleTokenName,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenSupplyType.INFINITE,
-                Collections.emptyList());
+    @Given("I ensure token {string} has been created")
+    public void createNamedToken(String tokenName) {
+        // If just now created, then ensure transaction has been seen by mirror node and receipt was available
+        tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
     }
 
     // ETHCALL-017
     @RetryAsserts
-    @Then("I call function with IERC721Metadata token name")
-    public void ierc721MetadataTokenName() {
+    @Then("I call function with IERC721Metadata token {string} name")
+    public void ierc721MetadataTokenName(String tokenName) {
+        var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
+        var tokenId = tokenClient.getToken(tokenNameEnum);
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_NAME_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
@@ -180,32 +153,35 @@ public class CallFeature extends AbstractFeature {
 
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsText()).isEqualTo(nonFungibleTokenName + "_name");
+        assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol() + "_name");
     }
 
     // ETHCALL-018
     @RetryAsserts
-    @Then("I call function with IERC721Metadata token symbol")
-    public void ierc721MetadataTokenSymbol() {
+    @Then("I call function with IERC721Metadata token {string} symbol")
+    public void ierc721MetadataTokenSymbol(String tokenName) {
+        var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
+        var tokenId = tokenClient.getToken(tokenNameEnum);
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsText()).isEqualTo(nonFungibleTokenName);
+        assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
     }
 
     // ETHCALL-019
     @RetryAsserts
-    @Then("I call function with IERC721Metadata token totalSupply")
-    public void ierc721MetadataTokenTotalSupply() {
+    @Then("I call function with IERC721Metadata token {string} totalSupply")
+    public void ierc721MetadataTokenTotalSupply(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
                 .estimate(false)
@@ -217,11 +193,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-020
     @RetryAsserts
-    @Then("I call function with IERC721 token balanceOf owner")
-    public void ierc721MetadataTokenBalanceOf() {
+    @Then("I call function with IERC721 token {string} balanceOf owner")
+    public void ierc721MetadataTokenBalanceOf(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_BALANCE_OF_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(tokenId.toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(ercContractAddress)
@@ -234,11 +211,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-025
     @RetryAsserts
-    @Then("I call function with HederaTokenService isToken token")
-    public void htsIsToken() {
+    @Then("I call function with HederaTokenService isToken token {string}")
+    public void htsIsToken(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_TOKEN_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(precompileContractAddress)
                 .estimate(false)
@@ -251,11 +229,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-026
     @RetryAsserts
-    @Then("I call function with HederaTokenService isFrozen token, account")
-    public void htsIsFrozen() {
+    @Then("I call function with HederaTokenService isFrozen token {string}, account")
+    public void htsIsFrozen(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_FROZEN_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(tokenId.toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(precompileContractAddress)
@@ -268,11 +247,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-027
     @RetryAsserts
-    @Then("I call function with HederaTokenService isKyc token, account")
-    public void htsIsKyc() {
+    @Then("I call function with HederaTokenService isKyc token {string}, account")
+    public void htsIsKyc(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_KYC_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(tokenId.toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
                 .to(precompileContractAddress)
@@ -285,11 +265,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-028
     @RetryAsserts
-    @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token")
-    public void htsGetTokenDefaultFreezeStatus() {
+    @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token {string}")
+    public void htsGetTokenDefaultFreezeStatus(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(precompileContractAddress)
                 .estimate(false)
@@ -301,11 +282,12 @@ public class CallFeature extends AbstractFeature {
 
     // ETHCALL-029
     @RetryAsserts
-    @Then("I call function with HederaTokenService getTokenDefaultKycStatus token")
-    public void htsGetTokenDefaultKycStatus() {
+    @Then("I call function with HederaTokenService getTokenDefaultKycStatus token {string}")
+    public void htsGetTokenDefaultKycStatus(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR.getSelector()
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress()))
+                        + to32BytesString(tokenId.toSolidityAddress()))
                 .from(contractClient.getClientAddress())
                 .to(precompileContractAddress)
                 .estimate(false)
@@ -429,34 +411,6 @@ public class CallFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         return fileId;
-    }
-
-    private TokenId createNewToken(
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
-            TokenType tokenType,
-            TokenSupplyType tokenSupplyType,
-            List<CustomFee> customFees) {
-        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.createToken(
-                admin,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                admin,
-                INITIAL_SUPPLY,
-                tokenSupplyType,
-                MAX_SUPPLY,
-                tokenType,
-                customFees);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-        tokenIds.add(tokenId);
-
-        return tokenId;
     }
 
     private void validateAddresses(String[] addresses) {

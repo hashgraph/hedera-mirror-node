@@ -31,10 +31,10 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.23.4")
+    set("protobufVersion", "3.24.0")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.0-RC8")
+    set("testcontainersSpringBootVersion", "3.0.0-RC9")
     set("vertxVersion", "4.4.4")
 }
 
@@ -47,7 +47,7 @@ dependencies {
         val testcontainersSpringBootVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:9.3.0")
+        api("com.esaulpaugh:headlong:9.4.0")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.18.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.120")
+        api("software.amazon.awssdk:bom:2.20.125")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

@@ -28,7 +28,6 @@ repositories {
 }
 
 dependencies {
-    val springBootVersion: String by rootProject.extra
     implementation("com.bmuschko:gradle-docker-plugin:9.3.2")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.20.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
@@ -37,8 +36,8 @@ dependencies {
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.2")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
-    implementation("io.freefair.gradle:lombok-plugin:8.1.0")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.2")
+    implementation("io.freefair.gradle:lombok-plugin:8.2.2")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.3")
     implementation("org.apache.commons:commons-compress:1.23.0")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.4")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.6.0")

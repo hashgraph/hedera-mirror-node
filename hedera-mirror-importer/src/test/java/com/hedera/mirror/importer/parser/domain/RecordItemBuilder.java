@@ -502,7 +502,7 @@ public class RecordItemBuilder {
                 .setNetOfTransfers(false);
     }
 
-    private RoyaltyFee.Builder royaltyFee() {
+    public RoyaltyFee.Builder royaltyFee() {
         return RoyaltyFee.newBuilder()
                 .setExchangeValueFraction(Fraction.newBuilder().setNumerator(50).setDenominator(100))
                 .setFallbackFee(fixedFee());

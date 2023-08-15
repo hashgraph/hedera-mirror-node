@@ -24,5 +24,7 @@ import java.util.Collection;
  */
 public interface BatchPersister {
 
+    String LATENCY_METRIC = "hedera.mirror.importer.batch.latency";
+
     void persist(Collection<? extends Object> items);
 }
