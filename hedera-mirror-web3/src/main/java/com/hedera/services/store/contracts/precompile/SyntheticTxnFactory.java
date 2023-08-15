@@ -370,6 +370,22 @@ public class SyntheticTxnFactory {
                     .setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
         }
 
+        setTokenKeys(tokenCreateWrapper, txnBodyBuilder);
+
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
+                .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
+                .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+                .toList());
+        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
+                .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+                .toList());
+        return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
+    }
+
+    private void setTokenKeys(
+            TokenCreateWrapper tokenCreateWrapper, TokenCreateTransactionBody.Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
             if (tokenKeyWrapper.isUsedForAdminKey()) {
@@ -394,17 +410,6 @@ public class SyntheticTxnFactory {
                 txnBodyBuilder.setPauseKey(key);
             }
         });
-
-        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
-                .map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
-                .toList());
-        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
-                .map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
-                .toList());
-        txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
-                .map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
-                .toList());
-        return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
     }
 
     public TransactionBody.Builder createTransactionCall(final long gas, final Bytes functionParameters) {

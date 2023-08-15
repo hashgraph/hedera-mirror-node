@@ -28,7 +28,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class ContractCallNestedCallsTest extends ContractCallTestSetup {
+class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedEthCallContractFunctions.class)
