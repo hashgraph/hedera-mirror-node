@@ -97,13 +97,14 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        final var isCreate = Address.ZERO.equals(to);
 
         if (code == null) {
             throw new InvalidTransactionException(
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        if (Address.ZERO.equals(to)) {
+        if (isCreate) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)
