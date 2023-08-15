@@ -4,7 +4,7 @@ import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract NestedEthCalls is HederaTokenService {
+contract NestedCalls is HederaTokenService {
 
     //Update token key + get token info key
     function updateTokenKeysAndGetUpdatedTokenKey(address token, IHederaTokenService.TokenKey[] memory keys, uint keyType) external returns (IHederaTokenService.KeyValue memory) {

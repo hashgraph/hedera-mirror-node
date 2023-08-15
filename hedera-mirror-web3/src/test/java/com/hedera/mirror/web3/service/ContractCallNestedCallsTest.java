@@ -34,7 +34,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     @EnumSource(NestedEthCallContractFunctions.class)
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.functionParameters);
+                contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
@@ -46,7 +46,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.expectedResultFields);
+                contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
@@ -55,7 +55,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     @EnumSource(NestedEthCallContractFunctions.class)
     void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.functionParameters);
+                contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,

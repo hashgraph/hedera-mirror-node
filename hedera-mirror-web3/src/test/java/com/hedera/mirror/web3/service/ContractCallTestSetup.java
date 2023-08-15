@@ -24,7 +24,6 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -410,11 +409,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/EvmCodes/EvmCodes.json")
     protected Path EVM_CODES_ABI_PATH;
 
-    @Value("classpath:contracts/NestedEthCallsTestContract/NestedEthCallsTestContract.bin")
-    protected Path NESTED_ETH_CALLS_CONTRACT_BYTES_PATH;
+    @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.bin")
+    protected Path NESTED_CALLS_CONTRACT_BYTES_PATH;
 
-    @Value("classpath:contracts/NestedEthCallsTestContract/NestedEthCallsTestContract.json")
-    protected Path NESTED_ETH_CALLS_ABI_PATH;
+    @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
+    protected Path NESTED_CALLS_ABI_PATH;
 
     private static TokenCreateWrapper getFungibleToken() {
         return new TokenCreateWrapper(
@@ -1230,7 +1229,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private void nestedEthCallsContractPersist() {
-        final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_ETH_CALLS_CONTRACT_BYTES_PATH);
+        final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_CALLS_CONTRACT_BYTES_PATH);
         final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
 
