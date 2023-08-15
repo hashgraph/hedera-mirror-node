@@ -34,7 +34,6 @@ import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
-import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -51,7 +50,6 @@ public class HederaEvmStackedWorldStateUpdater
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
 
-    @Getter
     private final EntityAddressSequencer entityAddressSequencer;
 
     private final TokenAccessor tokenAccessor;
