@@ -120,6 +120,5 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         accountBalanceFile.setCount(count);
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
         streamFileListener.onEnd(accountBalanceFile);
-        streamFileRepository.save(accountBalanceFile);
     }
 }
