@@ -159,6 +159,8 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         if (streamFile == null) {
             return;
         }
+
+        // The services version 0.38.0 has the fixes this migration solves.
         try {
             if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_0)
                     && executed.compareAndSet(false, true)) {

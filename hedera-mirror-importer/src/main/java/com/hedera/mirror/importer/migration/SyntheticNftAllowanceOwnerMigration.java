@@ -150,6 +150,7 @@ public class SyntheticNftAllowanceOwnerMigration extends RepeatableMigration imp
             return;
         }
 
+        // The services version 0.37.0 has the fixes this migration solves.
         if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0)
                 && executed.compareAndSet(false, true)) {
             var latestFile = recordFileRepository.findLatestBefore(streamFile.getConsensusStart());

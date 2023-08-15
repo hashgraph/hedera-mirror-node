@@ -18,29 +18,19 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.IOException;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Named
-public class TokenAccountBalanceMigration extends RepeatableMigration
-        implements BalanceStreamFileListener, TransactionSynchronization {
-
-    private final AccountBalanceFileRepository accountBalanceFileRepository;
-    private final RecordFileRepository recordFileRepository;
-    private final AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
-    private final AtomicBoolean succeeded = new AtomicBoolean(false);
+public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration implements BalanceStreamFileListener {
 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
@@ -90,10 +80,8 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
             MirrorProperties mirrorProperties,
             AccountBalanceFileRepository accountBalanceFileRepository,
             RecordFileRepository recordFileRepository) {
-        super(mirrorProperties.getMigration());
+        super(mirrorProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
         this.jdbcOperations = jdbcOperations;
-        this.accountBalanceFileRepository = accountBalanceFileRepository;
-        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
@@ -115,33 +103,12 @@ public class TokenAccountBalanceMigration extends RepeatableMigration
 
     @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
-        if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
-            return;
+        try {
+            initializeBalanceTimeSensitively(accountBalanceFile);
+        } catch (IOException e) {
+            log.error(
+                    "Error executing the migration again after consensus_timestamp {}",
+                    accountBalanceFile.getConsensusTimestamp());
         }
-
-        if (firstConsensusTimestamp.get() == 0) {
-            if (accountBalanceFileRepository
-                    .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
-                    .isEmpty()) {
-                firstConsensusTimestamp.set(accountBalanceFile.getConsensusTimestamp());
-            } else {
-                firstConsensusTimestamp.set(-1);
-                return;
-            }
-        }
-
-        if (recordFileRepository
-                .findLatest()
-                .map(RecordFile::getConsensusEnd)
-                .filter(timestamp -> timestamp >= firstConsensusTimestamp.get())
-                .isPresent()) {
-            TransactionSynchronizationManager.registerSynchronization(this);
-            doMigrate();
-        }
-    }
-
-    @Override
-    public void afterCommit() {
-        succeeded.set(true);
     }
 }
