@@ -78,42 +78,26 @@ For local testing the importer can be run using the following command:
 ```
 
 ## Building the Citus docker image
-The citus image is built and then pushed to our [Docker Hub repository](https://hub.docker.com/repository/docker/mirrornodeswirldslabs/citus/general).
+The citus image is built and then pushed to our [Google Cloud Registry](https://gcr.io/mirrornode).
 A multi-platform alpine linux image is built in order to be used for local testing (arm64 on M-series Macs).
 This image will need to be maintained until the [upstream builder](https://github.com/citusdata/docker/tree/master)
 provides a multi-platform build supporting arm64.
 
 In production and ci environments, citus is enabled through stackgres SGShardedCluster and doesn't use the custom image. 
 
-`DockerFile` to build a custom image to be used in v2 testing is located in [citusdata upstream repository](https://github.com/citusdata/docker). To build this image:
+`DockerFile` to build a custom image to be used in v2 testing is located in [Citus's upstream repository](https://github.com/citusdata/docker). To build this image:
 
-### Docker Hub details
-The `mirrornodeswirldslabs` user was created just for this purpose. Therefore, when building the images below,
-the tag contains `mirrornodeswirldslabs/citus` to indicate this repository, to which these images are later pushed.
-
-The shared `mirrornode` 1Password vault contains the credentials for the Docker Hub `mirrornodeswirldslabs` user. This includes
-an access token for the CLI as well as the TOTP configuration for MFA. You can use this to authenticate with
-Docker Hub:
+### GCR details
+You authenticate with the registry via gcloud:
 
 ```console
-docker login --username mirrornodeswirldslabs                                                                                                                  1 ↵
-Password:
+gcloud auth configure-docker gcr.io
 ```
-Copy and paste the token from 1Password.
+You should see output similar to:
 ```console
-Login Succeeded
-
-Logging in with your password grants your terminal complete access to your account.
-For better security, log in with a limited-privilege personal access token. Learn more at https://docs.docker.com/go/access-tokens/
+Adding credentials for: gcr.io
 ```
-**NOTE:** Not sure why it still issues the above message when using the token instead of the password. It is a complete
-access token though.
 
-If you instead see this:
-```console
-Error saving credentials: error storing credentials - err: exit status 1, out: `ID hub token does not contain email`
-```
-You may need to restart Docker Desktop according to this [forum post](https://forums.docker.com/t/id-hub-token-does-not-contain-email/134608/2).
 ### Build
 The instructions here pertain to building the multi-platform alpine image on an M-series Mac using Docker Desktop. Please refer to
 [Multi-platform images](https://docs.docker.com/build/building/multi-platform/) for an overview on how to use Docker
@@ -134,7 +118,8 @@ Switch to the new builder:
 ```console
 docker buildx use mybuilder
 ```
-Checkout the source code
+
+Checkout the upstream project containing the docker file
 ```
 git clone git@github.com:citusdata/docker.git
 cd docker

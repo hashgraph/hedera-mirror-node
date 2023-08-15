@@ -58,4 +58,6 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
+
+    private String connectionInitSql = "";
 }

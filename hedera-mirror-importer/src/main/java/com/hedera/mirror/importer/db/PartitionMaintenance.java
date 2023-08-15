@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.db;
 
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.leader.Leader;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -38,7 +39,7 @@ public class PartitionMaintenance {
     private final JdbcTemplate jdbcTemplate;
     private final Timer maintenanceMetric;
 
-    public PartitionMaintenance(JdbcTemplate jdbcTemplate, MeterRegistry meterRegistry) {
+    public PartitionMaintenance(@Owner JdbcTemplate jdbcTemplate, MeterRegistry meterRegistry) {
         this.jdbcTemplate = jdbcTemplate;
         this.maintenanceMetric = Timer.builder(getClass().getCanonicalName())
                 .description("The duration in seconds it took to create new partitions")

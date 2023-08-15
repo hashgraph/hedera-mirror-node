@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.config;
 
 import com.hedera.mirror.importer.db.DBProperties;
+import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.jdbc.JdbcProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -37,15 +38,21 @@ class JdbcTemplateConfiguration {
     @Bean
     @Owner
     JdbcTemplate jdbcTemplateOwner(DBProperties dbProperties, JdbcProperties properties) {
+        var dataSource = createDataSource(dbProperties);
+        dataSource.setConnectionInitSql(dbProperties.getConnectionInitSql());
+        return createJdbcTemplate(dataSource, properties);
+    }
+
+    HikariDataSource createDataSource(DBProperties dbProperties) {
         String jdbcUrl = String.format(
                 "jdbc:postgresql://%s:%d/%s?tcpKeepAlive=true",
                 dbProperties.getHost(), dbProperties.getPort(), dbProperties.getName());
-        var datasource = DataSourceBuilder.create()
+        return DataSourceBuilder.create()
                 .password(dbProperties.getOwnerPassword())
                 .url(jdbcUrl)
                 .username(dbProperties.getOwner())
+                .type(HikariDataSource.class)
                 .build();
-        return createJdbcTemplate(datasource, properties);
     }
 
     private JdbcTemplate createJdbcTemplate(DataSource dataSource, JdbcProperties properties) {
