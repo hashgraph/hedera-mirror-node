@@ -296,6 +296,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
+    void estimateGasForDirectCreateContractDeploy() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        final var serviceParameters =
+                serviceParametersForTopLevelContractCreate(ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
     void nestedContractStateChangesWork() {
         final var stateChangeHash =
                 "0x51fecdca000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004ed00000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000";
