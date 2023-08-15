@@ -452,20 +452,35 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
+        TRANSFER_TOKEN(
+                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, OWNER_ADDRESS, 1L}),
         TRANSFER_TOKEN_WITH_ALIAS(
                 "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
+        TRANSFER_TOKENS("transferTokensExternal", new Object[] {
+            TREASURY_TOKEN_ADDRESS, new Address[] {OWNER_ADDRESS, SPENDER_ALIAS}, new long[] {1L, -1L}
+        }),
         TRANSFER_TOKENS_WITH_ALIAS("transferTokensExternal", new Object[] {
             TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
         }),
+        CRYPTO_TRANSFER_TOKENS(
+                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
                 "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L}),
+        TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
+            NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
+        }),
         TRANSFER_NFT_TOKENS_WITH_ALIAS("transferNFTsExternal", new Object[] {
             NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
         }),
+        TRANSFER_NFT_TOKEN(
+                "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         TRANSFER_NFT_TOKEN_WITH_ALIAS(
                 "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
+        TRANSFER_FROM("transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L}),
         TRANSFER_FROM_WITH_ALIAS(
                 "transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L}),
+        TRANSFER_FROM_NFT(
+                "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         TRANSFER_FROM_NFT_WITH_ALIAS(
                 "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN2}),
