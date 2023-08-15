@@ -236,5 +236,5 @@ The following migrations would be rerun automatically when the first account bal
 * InitializeEntityBalanceMigration
 * TokenAccountBalanceMigration
 
-If there is an error during the rerun, the migration can be manually rerun using the steps provided at:
+If there is an error during the rerun, or for some reason the migration does not run, it can be manually rerun using the steps provided at:
 [Importer-Initialize Entity Balance](/docs/importer/README.md#Initialize Entity Balance)
