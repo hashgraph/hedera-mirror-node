@@ -341,6 +341,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .setGas(852000)
                                             .build()))))
             .build();
+
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
@@ -519,6 +520,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(receiverEntityId.getId())
                         .num(receiverEntityId.getEntityNum())
                         .evmAddress(receiverEvmAddress)
+                        .deleted(false)
                         .type(CONTRACT))
                 .persist();
     }
@@ -533,6 +535,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ercContract = ercContractPersist();
         fileDataPersist();
 
+        receiverPersist();
         final var senderEntityId = senderEntityPersist();
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
