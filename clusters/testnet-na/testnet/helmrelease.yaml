@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.86.0'
+      version: '0.86.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -32,7 +32,7 @@ spec:
       name: mirror
   values:
     global:
-      hostname: testnet.mirrornode.hedera.com
+      hostname: "*.mirrornode.hedera.com"
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
