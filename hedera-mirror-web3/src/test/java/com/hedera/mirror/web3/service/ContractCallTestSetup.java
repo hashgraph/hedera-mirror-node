@@ -176,7 +176,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
-    // TODO: Add correct prices for fees for ContractCall for token create
     protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
