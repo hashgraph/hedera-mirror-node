@@ -82,8 +82,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             final SupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var value =
+                switch (contractFunc) {
+                    case CREATE_FUNGIBLE_TOKEN,
+                            CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                            CREATE_NON_FUNGIBLE_TOKEN,
+                            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 3050 * 100_000_000L;
+                    default -> 0L;
+                };
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
