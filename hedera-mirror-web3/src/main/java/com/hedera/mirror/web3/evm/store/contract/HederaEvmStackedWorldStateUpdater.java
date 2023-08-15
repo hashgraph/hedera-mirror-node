@@ -34,6 +34,7 @@ import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
+import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -49,7 +50,10 @@ public class HederaEvmStackedWorldStateUpdater
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
+
+    @Getter
     private final EntityAddressSequencer entityAddressSequencer;
+
     private final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -104,11 +108,11 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private void persistAccount(Address address, long nonce, Wei balance) {
-        final var resolvedAddress = Address.wrap(Bytes.wrap(unaliased(address.toArray())));
+        final var resolvedAddress = aliases().resolveForEvm(address);
         final var isResolvedAddressZero = Address.ZERO.equals(resolvedAddress);
 
         final var accountModel = new com.hedera.services.store.models.Account(
-                (!isResolvedAddressZero && !address.equals(resolvedAddress))
+                !isResolvedAddressZero && !address.equals(resolvedAddress)
                         ? ByteString.copyFrom(address.toArray())
                         : ByteString.EMPTY,
                 0L,
@@ -191,10 +195,6 @@ public class HederaEvmStackedWorldStateUpdater
 
     public Store getStore() {
         return store;
-    }
-
-    public EntityAddressSequencer getEntityAddressSequencer() {
-        return entityAddressSequencer;
     }
 
     private boolean isMissingTarget(final Address alias) {

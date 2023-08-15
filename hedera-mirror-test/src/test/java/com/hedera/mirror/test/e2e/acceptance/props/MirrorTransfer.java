@@ -16,18 +16,21 @@
 
 package com.hedera.mirror.test.e2e.acceptance.props;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // for builder
-@Builder
+@SuperBuilder
 @Data
 @NoArgsConstructor
 public class MirrorTransfer {
     private String account;
     private long amount;
+
+    @JsonProperty("is_approval")
     private boolean isApproval;
 }

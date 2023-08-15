@@ -16,16 +16,22 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,110 +59,145 @@ class CustomFeeDatabaseAccessorTest {
 
     private final EntityId denominatingTokenId = new EntityId(11L, 12L, 13L, EntityType.TOKEN);
 
-    private com.hedera.mirror.common.domain.transaction.CustomFee customFee;
+    private CustomFee customFee;
 
     @BeforeEach
     void setup() {
-        customFee = new com.hedera.mirror.common.domain.transaction.CustomFee();
-        customFee.setCollectorAccountId(collectorId);
+        customFee = new CustomFee();
     }
 
     @Test
     void royaltyFee() {
-        long denominator = 10L;
-        long numerator = 15L;
-        long amount = 20L;
+        var fallbackFeeBuilder = FallbackFee.builder().denominatingTokenId(denominatingTokenId);
+        var fallbackFee = fallbackFeeBuilder.amount(20L).build();
 
-        customFee.setRoyaltyDenominator(denominator);
-        customFee.setRoyaltyNumerator(numerator);
-        customFee.setAmount(amount);
-        customFee.setDenominatingTokenId(denominatingTokenId);
+        var royaltyFeeBuilder = RoyaltyFee.builder().collectorAccountId(collectorId);
+        var royaltyFee = royaltyFeeBuilder
+                .numerator(15L)
+                .denominator(10L)
+                .fallbackFee(fallbackFee)
+                .build();
+        var royaltyFee2 = royaltyFeeBuilder.numerator(16L).denominator(11L).build();
+        var royaltyFees = List.of(royaltyFee, royaltyFee2);
+        customFee.setRoyaltyFees(royaltyFees);
 
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
-        assertThat(customFeeDatabaseAccessor.get(tokenId)).hasValueSatisfying(customFees -> assertThat(customFees)
-                .hasSize(1)
-                .first()
-                .returns(null, CustomFee::getFixedFee)
-                .returns(null, CustomFee::getFractionalFee)
-                .returns(denominator, f -> f.getRoyaltyFee().getDenominator())
-                .returns(numerator, f -> f.getRoyaltyFee().getNumerator())
-                .returns(amount, f -> f.getRoyaltyFee().getAmount())
-                .returns(toAddress(denominatingTokenId), f -> f.getRoyaltyFee().getDenominatingTokenId())
-                .returns(false, f -> f.getRoyaltyFee().isUseHbarsForPayment())
-                .returns(collectorAddress, f -> f.getRoyaltyFee().getFeeCollector()));
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : royaltyFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFixedFee()).isNull();
+                assertThat(fee.getFractionalFee()).isNull();
+                var resultRoyaltyFee = fee.getRoyaltyFee();
+                assertThat(resultRoyaltyFee.getDenominator()).isEqualTo(domainFee.getDenominator());
+                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getNumerator());
+                assertThat(resultRoyaltyFee.getAmount())
+                        .isEqualTo(domainFee.getFallbackFee().getAmount());
+                assertThat(resultRoyaltyFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
+                assertThat(resultRoyaltyFee.isUseHbarsForPayment()).isFalse();
+                assertThat(resultRoyaltyFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
+    }
+
+    @Test
+    void royaltyFeeNoFallback() {
+        var royaltyFee = RoyaltyFee.builder()
+                .numerator(15L)
+                .denominator(10L)
+                .fallbackFee(null)
+                .collectorAccountId(collectorId)
+                .build();
+        var royaltyFees = List.of(royaltyFee);
+        customFee.setRoyaltyFees(royaltyFees);
+
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var resultFee = results.get(0).getRoyaltyFee();
+        assertEquals(royaltyFee.getNumerator(), resultFee.getNumerator());
+        assertEquals(royaltyFee.getDenominator(), resultFee.getDenominator());
+        assertEquals(0L, resultFee.getAmount());
+        assertEquals(collectorAddress, resultFee.getFeeCollector());
+        assertEquals(EMPTY_EVM_ADDRESS, resultFee.getDenominatingTokenId());
     }
 
     @Test
     void fractionFee() {
-        long denominator = 0;
-        long numerator = 0;
-        long amount = 20L;
-        long amountDenominator = 2L;
-        long maxAmount = 100L;
-        long minAmount = 5L;
+        var fractionalFeeBuilder = FractionalFee.builder().collectorAccountId(collectorId);
+        var fractionalFee = fractionalFeeBuilder
+                .numerator(20L)
+                .denominator(2L)
+                .maximumAmount(100L)
+                .minimumAmount(5L)
+                .netOfTransfers(true)
+                .build();
+        var fractionalFee2 = fractionalFeeBuilder
+                .numerator(21L)
+                .denominator(3L)
+                .maximumAmount(101L)
+                .minimumAmount(6L)
+                .netOfTransfers(false)
+                .build();
+        var fractionalFees = List.of(fractionalFee, fractionalFee2);
+        customFee.setFractionalFees(fractionalFees);
 
-        customFee.setRoyaltyDenominator(denominator);
-        customFee.setRoyaltyNumerator(numerator);
-        customFee.setAmountDenominator(amountDenominator);
-        customFee.setAmount(amount);
-        customFee.setMaximumAmount(maxAmount);
-        customFee.setMinimumAmount(minAmount);
-        customFee.setNetOfTransfers(true);
-
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
-        assertThat(customFeeDatabaseAccessor.get(tokenId)).hasValueSatisfying(customFees -> assertThat(customFees)
-                .hasSize(1)
-                .first()
-                .returns(null, CustomFee::getFixedFee)
-                .returns(null, CustomFee::getRoyaltyFee)
-                .returns(amount, f -> f.getFractionalFee().getNumerator())
-                .returns(amountDenominator, f -> f.getFractionalFee().getDenominator())
-                .returns(maxAmount, f -> f.getFractionalFee().getMaximumAmount())
-                .returns(minAmount, f -> f.getFractionalFee().getMinimumAmount())
-                .returns(true, f -> f.getFractionalFee().getNetOfTransfers())
-                .returns(collectorAddress, f -> f.getFractionalFee().getFeeCollector()));
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : fractionalFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFixedFee()).isNull();
+                assertThat(fee.getRoyaltyFee()).isNull();
+                var resultFractionalFee = fee.getFractionalFee();
+                assertThat(resultFractionalFee.getNumerator()).isEqualTo(domainFee.getNumerator());
+                assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getDenominator());
+                assertThat(resultFractionalFee.getMaximumAmount()).isEqualTo(domainFee.getMaximumAmount());
+                assertThat(resultFractionalFee.getMinimumAmount()).isEqualTo(domainFee.getMinimumAmount());
+                assertThat(resultFractionalFee.getNetOfTransfers()).isEqualTo(domainFee.isNetOfTransfers());
+                assertThat(resultFractionalFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
     }
 
     @Test
     void fixedFee() {
-        long denominator = 0;
-        long numerator = 0;
-        long amount = 20L;
-        long amountDenominator = 0;
+        var fixedFeeBuilder =
+                FixedFee.builder().collectorAccountId(collectorId).denominatingTokenId(denominatingTokenId);
+        var fixedFee = fixedFeeBuilder.amount(20L).build();
+        var fixedFee2 = fixedFeeBuilder.amount(21L).build();
+        var fixedFees = List.of(fixedFee, fixedFee2);
+        customFee.setFixedFees(fixedFees);
 
-        customFee.setRoyaltyDenominator(denominator);
-        customFee.setRoyaltyNumerator(numerator);
-        customFee.setAmountDenominator(amountDenominator);
-        customFee.setAmount(amount);
-        customFee.setDenominatingTokenId(denominatingTokenId);
-
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(singletonList(customFee));
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
         when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
 
-        assertThat(customFeeDatabaseAccessor.get(tokenId)).hasValueSatisfying(customFees -> assertThat(customFees)
-                .hasSize(1)
-                .first()
-                .returns(null, CustomFee::getFractionalFee)
-                .returns(null, CustomFee::getRoyaltyFee)
-                .returns(amount, f -> f.getFixedFee().getAmount())
-                .returns(false, f -> f.getFixedFee().isUseCurrentTokenForPayment())
-                .returns(toAddress(denominatingTokenId), f -> f.getFixedFee().getDenominatingTokenId())
-                .returns(false, f -> f.getFixedFee().isUseHbarsForPayment())
-                .returns(collectorAddress, f -> f.getFixedFee().getFeeCollector()));
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : fixedFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFractionalFee()).isNull();
+                assertThat(fee.getRoyaltyFee()).isNull();
+                var resultFixedFee = fee.getFixedFee();
+                assertThat(resultFixedFee.getAmount()).isEqualTo(domainFee.getAmount());
+                assertThat(resultFixedFee.isUseCurrentTokenForPayment()).isFalse();
+                assertThat(resultFixedFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
+                assertThat(resultFixedFee.isUseHbarsForPayment()).isFalse();
+                assertThat(resultFixedFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
     }
 
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
-        final var noCollectorCustomFee = new com.hedera.mirror.common.domain.transaction.CustomFee();
-        noCollectorCustomFee.setCollectorAccountId(null);
-
-        when(customFeeRepository.findByTokenId(tokenId)).thenReturn(List.of(customFee, noCollectorCustomFee));
-
+        final var noCollectorCustomFee = new CustomFee();
+        when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
         assertThat(customFeeDatabaseAccessor.get(tokenId))
-                .hasValueSatisfying(customFees -> assertThat(customFees).hasSize(1));
+                .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
     }
 }

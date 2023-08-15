@@ -10,23 +10,23 @@ create index if not exists assessed_custom_fee__consensus_timestamp
     on assessed_custom_fee (consensus_timestamp);
 
 -- account_balance
-alter table account_balance
+alter table if exists account_balance
     add constraint account_balance__pk primary key (consensus_timestamp, account_id);
 
 -- account_balance_file
-alter table account_balance_file
+alter table if exists account_balance_file
     add constraint account_balance_file__pk primary key (consensus_timestamp, node_id);
 
 -- address_book
-alter table address_book
+alter table if exists address_book
     add constraint address_book__pk primary key (start_consensus_timestamp);
 
 -- address_book_entry
-alter table address_book_entry
+alter table if exists address_book_entry
     add constraint address_book_entry__pk primary key (consensus_timestamp, node_id);
 
 -- address_book_service_endpoint
-alter table address_book_service_endpoint
+alter table if exists address_book_service_endpoint
     add constraint address_book_service_endpoint__pk primary key (consensus_timestamp, node_id, ip_address_v4, port);
 
 -- contract
@@ -88,11 +88,16 @@ create index if not exists crypto_transfer__entity_id_consensus_timestamp
 -- id corresponding to treasury address 0.0.98
 
 -- custom_fee
-create index if not exists custom_fee__token_timestamp
-    on custom_fee (token_id desc, created_timestamp desc);
+alter table if exists custom_fee
+    add constraint custom_fee__pk primary key (token_id);
+
+-- custom_fee_history
+create index if not exists custom_fee_history__token_id_timestamp_range
+    on custom_fee_history (token_id, lower(timestamp_range));
+create index if not exists custom_fee_history__timestamp_range on custom_fee_history using gist (timestamp_range);
 
 -- entity
-alter table entity
+alter table if exists entity
     add constraint entity__pk primary key (id);
 create index if not exists entity__id_type
     on entity (id, type);
@@ -123,24 +128,24 @@ alter table if exists entity_transaction
     add constraint entity_transaction__pk primary key (entity_id, consensus_timestamp);
 
 -- ethereum_transaction
-alter table ethereum_transaction
+alter table if exists ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
 create index if not exists ethereum_transaction__hash on ethereum_transaction using hash (hash);
 
 -- event_file
-alter table event_file
+alter table if exists event_file
     add constraint event_file__pk primary key (consensus_end, node_id);
 create index if not exists event_file__hash
     on event_file using hash (hash);
 
 -- file_data
-alter table file_data
+alter table if exists file_data
     add constraint file_data__pk primary key (consensus_timestamp, entity_id);
 create index if not exists file_data__id_timestamp
     on file_data (entity_id, consensus_timestamp);
 
 -- live_hash
-alter table live_hash
+alter table if exists live_hash
     add constraint live_hash__pk primary key (consensus_timestamp);
 
 -- network_freeze
@@ -152,7 +157,7 @@ alter table if exists network_stake
     add constraint network_stake__pk primary key (consensus_timestamp);
 
 -- nft
-alter table nft
+alter table if exists nft
     add constraint nft__pk primary key (token_id, serial_number);
 create index if not exists nft__account_token_serialnumber on nft (account_id, token_id, serial_number);
 create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
@@ -176,15 +181,15 @@ alter table if exists node_stake
 create index if not exists node_stake__epoch_day on node_stake (epoch_day);
 
 -- prng
-alter table prng
+alter table if exists prng
     add constraint prng__pk primary key (consensus_timestamp, payer_account_id);
 
 -- reconciliation_job
-alter table reconciliation_job
+alter table if exists reconciliation_job
     add constraint reconciliation_job__pk primary key (timestamp_start);
 
 -- record_file
-alter table record_file
+alter table if exists record_file
     add constraint record_file__pk primary key (consensus_end, node_id);
 create index if not exists record_file__index_node
     on record_file (index);
@@ -192,30 +197,30 @@ create index if not exists record_file__hash
     on record_file (hash collate "C");
 
 -- schedule
-alter table schedule
+alter table if exists schedule
     add constraint schedule__pk primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
 -- sidecar_file
-alter table sidecar_file
+alter table if exists sidecar_file
     add constraint sidecar_file__pk primary key (consensus_end, id);
 
 -- staking_reward_transfer
-alter table staking_reward_transfer
+alter table if exists staking_reward_transfer
     add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id, payer_account_id);
 create index if not exists staking_reward_transfer__account_timestamp
     on staking_reward_transfer (account_id, consensus_timestamp);
 
 -- token
-alter table token
+alter table if exists token
     add constraint token__pk primary key (token_id);
 create index if not exists token_history__token_id_timestamp_range
     on token_history (token_id, lower(timestamp_range));
 create index if not exists token_history__timestamp_range on token_history using gist (timestamp_range);
 
 -- token_account
-alter table token_account
+alter table if exists token_account
     add constraint token_account__pk primary key (account_id, token_id);
 create index if not exists token_account_history__timestamp_range
     on token_account_history using gist (timestamp_range);
@@ -230,7 +235,7 @@ create index if not exists token_allowance_history__owner_spender_token_lower_ti
     on token_allowance_history (owner, spender, token_id, lower(timestamp_range));
 
 -- token_balance
-alter table token_balance
+alter table if exists token_balance
     add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
 create index if not exists token_balance__timestamp_token
     on token_balance (consensus_timestamp desc, token_id);

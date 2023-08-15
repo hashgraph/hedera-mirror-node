@@ -30,6 +30,7 @@ import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -51,9 +52,11 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 public class BatchInserter implements BatchPersister {
 
     protected final DataSource dataSource;
+    protected final Timer latencyMetric;
     protected final MeterRegistry meterRegistry;
     protected final String tableName;
-    protected final Timer insertDurationMetric;
+
+    private final Counter rowsMetric;
     private final String sql;
     private final ObjectWriter writer;
     private final CommonParserProperties properties;
@@ -92,9 +95,15 @@ public class BatchInserter implements BatchPersister {
                 .map(name -> CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name))
                 .collect(Collectors.joining(", "));
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
-        insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
-                .description("Time to insert transactions into table")
-                .tag("table", this.tableName)
+        var parentTableName = this.tableName.replaceAll("_\\d+$", ""); // Strip _01 shard suffix
+        latencyMetric = Timer.builder(LATENCY_METRIC)
+                .description("The time it took to batch insert rows")
+                .tag("table", parentTableName)
+                .tag("upsert", "false")
+                .register(meterRegistry);
+        rowsMetric = Counter.builder("hedera.mirror.importer.batch.rows")
+                .description("The number of rows inserted into the table")
+                .tag("table", parentTableName)
                 .register(meterRegistry);
     }
 
@@ -109,7 +118,6 @@ public class BatchInserter implements BatchPersister {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             persistItems(items, connection);
-            insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows to {} table in {}", items.size(), tableName, stopwatch);
         } catch (Exception e) {
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
@@ -119,6 +127,7 @@ public class BatchInserter implements BatchPersister {
     }
 
     protected void persistItems(Collection<?> items, Connection connection) throws SQLException, IOException {
+        var stopwatch = Stopwatch.createStarted();
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
@@ -129,6 +138,8 @@ public class BatchInserter implements BatchPersister {
 
         try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
             writer.writeValue(pgCopyOutputStream, items);
+            rowsMetric.increment(items.size());
+            latencyMetric.record(stopwatch.elapsed());
         } finally {
             if (copyIn.isActive()) {
                 copyIn.cancelCopy();
