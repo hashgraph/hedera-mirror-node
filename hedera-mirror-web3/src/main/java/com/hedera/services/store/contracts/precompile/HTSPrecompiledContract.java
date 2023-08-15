@@ -24,6 +24,8 @@ import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -69,13 +71,16 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
- *
- * Differences with the original class:
- * 1. Use abstraction for the state by introducing {@link Store} interface.
- * 2. Use workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the need of having separate precompile classes
+ * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services
+ * package.
+ * <p>
+ * Differences with the original class: 1. Use abstraction for the state by introducing {@link Store} interface. 2. Use
+ * workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the
+ * need of having separate precompile classes
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
+
+    public static final TupleType redirectType = TupleType.parse("(int32,bytes)");
 
     public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
@@ -229,12 +234,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final int functionId = input.getInt(0);
         switch (functionId) {
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                final RedirectTarget target;
-                try {
-                    target = DescriptorUtils.getRedirectTarget(input);
-                } catch (final Exception e) {
-                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-                }
+                final var target = getRedirectTarget(input);
                 final var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
@@ -361,26 +361,45 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.mirrorNodeEvmProperties = updater.aliases();
     }
 
-    private Pair<Long, Bytes> handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
+    private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
+
         if (isTokenProxyRedirect(input)) {
-            final var redirectTarget = DescriptorUtils.getRedirectTarget(input);
-            final var executor = infrastructureFactory.newRedirectExecutor(
-                    redirectTarget.massagedInput() == null ? input : redirectTarget.massagedInput(),
-                    frame,
-                    viewGasCalculator,
-                    tokenAccessor);
+            final var target = getRedirectTarget(input);
+            final var isExplicitRedirectCall = target.massagedInput() != null;
 
-            resultFromExecutor = executor.computeCosted();
+            if (isExplicitRedirectCall) {
+                input = target.massagedInput();
+            }
 
-            if (resultFromExecutor.getRight() == null) {
-                throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+            resultFromExecutor = computeUsingRedirectExecutor(input, frame);
+
+            if (isExplicitRedirectCall) {
+                final var signatureTuple = Tuple.of(
+                        ResponseCodeEnum.SUCCESS_VALUE,
+                        resultFromExecutor.getRight().toArray());
+                final var encodedBytes =
+                        Bytes.wrap(redirectType.encode(signatureTuple).array());
+
+                resultFromExecutor = Pair.of(resultFromExecutor.getLeft(), encodedBytes);
             }
         } else if (isViewFunction(input)) {
             final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         }
+
         return resultFromExecutor;
+    }
+
+    private Pair<Long, Bytes> computeUsingRedirectExecutor(final Bytes input, final MessageFrame frame) {
+        final var executor = infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        final var result = executor.computeCosted();
+
+        if (result.getRight() == null) {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+        }
+
+        return result;
     }
 
     private boolean isNestedFunctionSelectorForWrite(final Bytes input) {
@@ -400,6 +419,14 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
             default -> false;
         };
+    }
+
+    private static RedirectTarget getRedirectTarget(final Bytes input) {
+        try {
+            return DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        }
     }
 
     private long defaultGas() {
