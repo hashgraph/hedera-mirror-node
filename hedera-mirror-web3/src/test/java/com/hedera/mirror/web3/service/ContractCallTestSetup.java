@@ -163,6 +163,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
     protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
@@ -777,7 +778,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .evmAddress(SENDER_ALIAS.toArray())
                         .deleted(false)
                         .alias(SENDER_PUBLIC_KEY.toByteArray())
-                        .balance(5000 * 100_000_000L))
+                        .balance(10000 * 100_000_000L))
                 .persist();
         return senderEntityId;
     }
@@ -1189,6 +1190,22 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 true,
                 "Test",
                 "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleToken2() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
                 EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
                 "test",
                 true,
@@ -1205,7 +1222,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 "TestNFT",
                 "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
                 "test",
                 true,
                 BigInteger.valueOf(0L),
@@ -1213,7 +1230,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
     private static FixedFeeWrapper getFixedFee() {
