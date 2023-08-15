@@ -17,14 +17,11 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
-import java.io.IOException;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -99,16 +96,5 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
         var stopwatch = Stopwatch.createStarted();
         int count = jdbcOperations.update(UPDATE_TOKEN_ACCOUNT_SQL);
         log.info("Migrated {} token account balances in {}", count, stopwatch);
-    }
-
-    @Override
-    public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
-        try {
-            initializeBalanceTimeSensitively(accountBalanceFile);
-        } catch (IOException e) {
-            log.error(
-                    "Error executing the migration again after consensus_timestamp {}",
-                    accountBalanceFile.getConsensusTimestamp());
-        }
     }
 }
