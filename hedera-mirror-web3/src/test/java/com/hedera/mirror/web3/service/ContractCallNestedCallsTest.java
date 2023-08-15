@@ -35,8 +35,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.functionParameters);
+        final var value =
+                switch (contractFunc) {
+                    case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 3050 * 100_000_000L;
+                    default -> 0L;
+                };
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.expectedResultFields);
 
@@ -48,8 +56,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_ETH_CALLS_ABI_PATH, contractFunc.functionParameters);
+        final var value =
+                switch (contractFunc) {
+                    case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 3050 * 100_000_000L;
+                    default -> 0L;
+                };
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 

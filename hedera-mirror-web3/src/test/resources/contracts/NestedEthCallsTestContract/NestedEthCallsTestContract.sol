@@ -122,7 +122,7 @@ contract NestedEthCalls is HederaTokenService {
     }
 
     // Create token for fungible token with/without default freeze status + name + symbol + getTokenDefaultFreezeStatus + getTokenDefaultKycStatus + isToken
-    function createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(IHederaTokenService.HederaToken memory token, int64 initialTotalSupply, int32 decimals) external returns (
+    function createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(IHederaTokenService.HederaToken memory token, int64 initialTotalSupply, int32 decimals) external payable returns (
         bool defaultKycStatus,
         bool defaultFreezeStatus,
         bool isToken) {
@@ -148,7 +148,7 @@ contract NestedEthCalls is HederaTokenService {
     }
 
     // Create NFT with/without default freeze status + name + symbol + getTokenDefaultFreezeStatus + getTokenDefaultKycStatus + isToken
-    function createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(IHederaTokenService.HederaToken memory token) external returns (
+    function createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus(IHederaTokenService.HederaToken memory token) external payable returns (
         bool defaultKycStatus,
         bool defaultFreezeStatus,
         bool isToken) {
