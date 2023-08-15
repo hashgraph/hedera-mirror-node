@@ -61,12 +61,16 @@ public class AssociateLogic {
                 .toList();
 
         /* Associate and commit the changes */
-        final var newTokenRelationships = associateWith(account, tokens, store);
+        final var newTokenRelationships = associateWith(account, tokens, store, false);
 
         newTokenRelationships.forEach(store::updateTokenRelationship);
     }
 
-    public List<TokenRelationship> associateWith(final Account account, final List<Token> tokens, final Store store) {
+    public List<TokenRelationship> associateWith(
+            final Account account,
+            final List<Token> tokens,
+            final Store store,
+            final boolean shouldEnableRelationship) {
         int numAssociations = account.getNumAssociations();
         final var proposedTotalAssociations = tokens.size() + numAssociations;
 
@@ -80,7 +84,7 @@ public class AssociateLogic {
                     new TokenRelationshipKey(token.getId().asEvmAddress(), account.getAccountAddress());
 
             validateFalse(store.hasAssociation(tokenRelationshipKey), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-            final var newRel = new TokenRelationship(token, updatedAccount, true, false);
+            final var newRel = new TokenRelationship(token, updatedAccount, true, false, shouldEnableRelationship);
             numAssociations++;
             newModelRels.add(newRel);
         }
