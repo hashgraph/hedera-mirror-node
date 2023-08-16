@@ -36,9 +36,6 @@ loki:
       enabled: false
       grafanaAgent:
         installOperator: false
-  persistence:
-    enableStatefulSetAutoDeletePVC: true
-    size: 100Gi
   rules:
     - name: hedera-mirror-grpc
       rules:
@@ -138,6 +135,9 @@ loki:
         configMap:
           defaultMode: 420
           name: mirror-log-alerts
+    persistence:
+      enableStatefulSetAutoDeletePVC: true
+      size: 100Gi
     replicas: 1
     resources:
       limits:
@@ -339,7 +339,9 @@ promtail:
       - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
     snippets:
       pipelineStages:
-        - docker: {}
+        - cri: {}
+        - multiline:
+            firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|[+-]\d{4}) '
   enabled: true
   resources:
     limits:

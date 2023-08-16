@@ -193,6 +193,40 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "sponsor",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "name": "createContractViaCreate2AndTransferFromIt",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
             "internalType": "string",
@@ -324,7 +358,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -530,7 +564,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -657,7 +691,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -853,7 +887,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -974,6 +1008,19 @@
         "internalType": "int256",
         "name": "responseCode",
         "type": "int256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "deployViaCreate2",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1160,6 +1207,35 @@
         "type": "address"
       },
       {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "response",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -1228,7 +1304,75 @@
         "type": "uint256"
       }
     ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
     "name": "transferFromExternal",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromNFT",
     "outputs": [
       {
         "internalType": "int64",

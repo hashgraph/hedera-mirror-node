@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import jakarta.inject.Named;
-import java.time.Instant;
+import lombok.Data;
 
-@Named
-public class PricesAndFeesImpl implements PricesAndFeesProvider {
-    // FEATURE WORK - precise gas price calculation to be provided with eth_estimateGas implementation
-    private static final long GAS_PRICE = 1000L;
-
-    @Override
-    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
-        return GAS_PRICE;
-    }
+@Data
+public class MirrorTokenAllowance extends MirrorCryptoAllowance {
+    private String tokenId;
 }

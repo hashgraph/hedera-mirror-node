@@ -124,7 +124,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 7L);
-        receiverPersist();
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
 
@@ -138,7 +137,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // getAccountBalance(address)
         // Use alias address when applicable as EVM checks alias with highest priority
         final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
-        final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000004e20";
+        final var expectedBalance = "0x000000000000000000000000000000000000000000000000000000e8d4a51000";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
@@ -209,7 +208,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void transferNegative() {
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L);
-        receiverPersist();
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -218,8 +216,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void transferExceedsBalance() {
         final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 210000L);
-        receiverPersist();
+                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -283,6 +280,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasForDirectCreateContractDeploy() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        final var serviceParameters =
+                serviceParametersForTopLevelContractCreate(ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }

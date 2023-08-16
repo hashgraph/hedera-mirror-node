@@ -34,6 +34,7 @@ import javax.inject.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -43,6 +44,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
+    private final boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -54,11 +56,13 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final AbstractCodeCache codeCache) {
+            final AbstractCodeCache codeCache,
+            final boolean isCreate) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
+        this.isCreate = isCreate;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -69,7 +73,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Bytes callData,
             final Instant consensusTime,
             final boolean isStatic) {
-        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
+        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
 
@@ -86,7 +90,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     protected HederaFunctionality getFunctionType() {
-        return HederaFunctionality.ContractCall;
+        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @Override
@@ -99,12 +103,23 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        return baseInitialFrame
-                .type(MessageFrame.Type.MESSAGE_CALL)
-                .address(to)
-                .contract(to)
-                .inputData(payload)
-                .code(code)
-                .build();
+        if (isCreate) {
+            return baseInitialFrame
+                    .type(MessageFrame.Type.CONTRACT_CREATION)
+                    .address(to)
+                    .contract(to)
+                    .inputData(payload)
+                    .inputData(Bytes.EMPTY)
+                    .code(CodeFactory.createCode(payload, 0, false))
+                    .build();
+        } else {
+            return baseInitialFrame
+                    .type(MessageFrame.Type.MESSAGE_CALL)
+                    .address(to)
+                    .contract(to)
+                    .inputData(payload)
+                    .code(code)
+                    .build();
+        }
     }
 }

@@ -17,11 +17,10 @@
 package com.hedera.mirror.test.e2e.acceptance.response;
 
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransferAllowance;
 import java.util.List;
 import lombok.Data;
 
 @Data
-public class MirrorCryptoAllowanceResponse extends MirrorTransferAllowance {
+public class MirrorCryptoAllowanceResponse {
     List<MirrorCryptoAllowance> allowances;
 }
