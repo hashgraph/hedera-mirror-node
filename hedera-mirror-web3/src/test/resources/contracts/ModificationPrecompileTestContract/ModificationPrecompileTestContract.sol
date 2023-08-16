@@ -9,6 +9,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ModificationPrecompileTestContract is HederaTokenService {
 
+    uint256 salt = 1234;
+
+    function deployViaCreate2() public returns (address) {
+        NestedContract newContract = new NestedContract{salt: bytes32(salt)}();
+
+        return address(newContract);
+    }
+
     function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external
     returns (int responseCode)
     {
@@ -74,7 +82,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function createFungibleTokenExternal(IHederaTokenService.HederaToken memory token,
         int64 initialTotalSupply,
-        int32 decimals) external
+        int32 decimals) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
@@ -87,7 +95,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         int64 initialTotalSupply,
         int32 decimals,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.FractionalFee[] memory fractionalFees) external
+        IHederaTokenService.FractionalFee[] memory fractionalFees) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
@@ -96,7 +104,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    function createNonFungibleTokenExternal(IHederaTokenService.HederaToken memory token) external
+    function createNonFungibleTokenExternal(IHederaTokenService.HederaToken memory token) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createNonFungibleToken(token);
@@ -107,7 +115,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function createNonFungibleTokenWithCustomFeesExternal(IHederaTokenService.HederaToken memory token,
         IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.RoyaltyFee[] memory royaltyFees) external
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) external payable
     returns (int responseCode, address tokenAddress)
     {
         (responseCode, tokenAddress) = HederaTokenService.createNonFungibleTokenWithCustomFees(token, fixedFees, royaltyFees);
@@ -128,7 +136,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     function transferFromExternal(address token, address from, address to, uint256 amount) external
     returns (int64 responseCode)
     {
-        responseCode = HederaTokenService.transferFrom(token, from, to, amount);
+        responseCode = this.transferFrom(token, from, to, amount);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -137,7 +145,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     function transferFromNFTExternal(address token, address from, address to, uint256 serialNumber) external
     returns (int64 responseCode)
     {
-        responseCode = HederaTokenService.transferFromNFT(token, from, to, serialNumber);
+        responseCode = this.transferFromNFT(token, from, to, serialNumber);
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert();
         }
@@ -308,7 +316,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     function getBalanceOfWithDirectRedirect(address token, address account) external
     returns (bytes memory result)
     {
-        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Token redirect failed");
         }
@@ -316,6 +324,36 @@ contract ModificationPrecompileTestContract is HederaTokenService {
     }
 
     function callNotExistingPrecompile(address token) public {
-        HederaTokenService.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
+        this.redirectForToken(token, abi.encodeWithSelector(bytes4(keccak256("notExistingPrecompile()"))));
     }
+
+    function createContractViaCreate2AndTransferFromIt(address token, address sponsor, address receiver, int64 amount) external
+    returns (int responseCode)
+    {
+        address create2Contract = deployViaCreate2();
+
+        int associateSenderResponseCode = HederaTokenService.associateToken(create2Contract, token);
+        if (associateSenderResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int associateRecipientResponseCode = HederaTokenService.associateToken(receiver, token);
+        if (associateRecipientResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int sponsorTransferResponseCode = HederaTokenService.transferToken(token, sponsor, create2Contract, amount / 2);
+        if (sponsorTransferResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        responseCode = HederaTokenService.transferToken(token, create2Contract, receiver, amount / 4);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+    }
+}
+
+contract NestedContract {
+
 }

@@ -305,7 +305,7 @@ test:
     helm.sh/hook: test-success
     helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   enabled: true
-  defaultAccount: 98
+  defaultAccount: ""
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman

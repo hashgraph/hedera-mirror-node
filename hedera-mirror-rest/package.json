@@ -19,7 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.385.0",
+    "@aws-sdk/client-s3": "^3.388.0",
     "@godaddy/terminus": "^4.12.1",
     "@hashgraph/proto": "^2.13.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -98,10 +98,10 @@
     "node-flywaydb": "^3.0.7",
     "nodemon": "^3.0.1",
     "pg-format": "^1.0.4",
-    "rewire": "^6.0.0",
+    "rewire": "^7.0.0",
     "sinon": "^15.2.0",
     "supertest": "^6.3.3",
-    "testcontainers": "^10.0.2"
+    "testcontainers": "^10.2.0"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
