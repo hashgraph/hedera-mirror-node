@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.db;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.leader.Leader;
 import jakarta.inject.Named;
 import lombok.*;
@@ -33,6 +34,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 @RequiredArgsConstructor
 public class PartitionMaintenance {
     private static final String RUN_MAINTENANCE_QUERY = "CALL mirror_node_create_partitions()";
+
+    @Owner
     private final JdbcTemplate jdbcTemplate;
 
     @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
