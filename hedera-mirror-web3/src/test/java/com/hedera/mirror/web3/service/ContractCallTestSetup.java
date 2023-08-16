@@ -1373,7 +1373,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 "TestNFT",
                 "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
                 "test",
                 true,
                 BigInteger.valueOf(0L),
@@ -1388,7 +1388,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
     private static TokenCreateWrapper getNonFungibleTokenExpiryInUint32Range() {

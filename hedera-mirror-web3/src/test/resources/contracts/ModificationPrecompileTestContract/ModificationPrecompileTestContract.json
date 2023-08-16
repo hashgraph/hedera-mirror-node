@@ -1194,20 +1194,20 @@
       },
       {
         "internalType": "bytes",
-        "name": "encodedFunctionSelector",
+        "name": "data",
         "type": "bytes"
       }
     ],
     "name": "redirectForToken",
     "outputs": [
       {
-        "internalType": "int64",
+        "internalType": "int256",
         "name": "responseCode",
-        "type": "int64"
+        "type": "int256"
       },
       {
         "internalType": "bytes",
-        "name": "response",
+        "name": "result",
         "type": "bytes"
       }
     ],

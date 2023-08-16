@@ -342,6 +342,16 @@ contract ModificationPrecompileTestContract is HederaTokenService {
             revert();
         }
 
+        int grantTokenKycResponseCodeContract = grantTokenKyc(token, create2Contract);
+        if (grantTokenKycResponseCodeContract != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int grantTokenKycResponseCodeReceiver = grantTokenKyc(token, receiver);
+        if (grantTokenKycResponseCodeReceiver != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
         int sponsorTransferResponseCode = HederaTokenService.transferToken(token, sponsor, create2Contract, amount / 2);
         if (sponsorTransferResponseCode != HederaResponseCodes.SUCCESS) {
             revert();

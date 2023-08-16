@@ -40,7 +40,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
                             CREATE_FUNGIBLE_TOKEN_NO_KEYS,
                             CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 3050 * 100_000_000L;
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 10000 * 100_000_000L;
                     default -> 0L;
                 };
         final var serviceParameters =
@@ -660,9 +660,9 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new TokenExpiryWrapper(
-                            4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L)
+                            4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 10_000L)
                 },
-                new Object[] {4_000_000_000L, SENDER_ADDRESS, 10_000L
+                new Object[] {4_000_000_000L, AUTO_RENEW_ACCOUNT_ADDRESS, 10_000L
                 }), // 4_000_000_000L in order to fit in uint32 until there is a support for int64 in EvmEncodingFacade
         // to match the Expiry struct in IHederaTokenService
         UPDATE_NFT_TOKEN_EXPIRY_AND_GET_TOKEN_EXPIRY(
@@ -670,9 +670,9 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new TokenExpiryWrapper(
-                            4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L)
+                            4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 10_000L)
                 },
-                new Object[] {4_000_000_000L, SENDER_ADDRESS, 10_000L
+                new Object[] {4_000_000_000L, AUTO_RENEW_ACCOUNT_ADDRESS, 10_000L
                 }), // 4_000_000_000L in order to fit in uint32 until there is a support for int64 in EvmEncodingFacade
         // to match the Expiry struct in IHederaTokenService
         UPDATE_TOKEN_INFO_AND_GET_TOKEN_INFO_SYMBOL(
