@@ -23,11 +23,9 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcOperations;
 
 @Named
-@Order
 public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigration {
 
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =

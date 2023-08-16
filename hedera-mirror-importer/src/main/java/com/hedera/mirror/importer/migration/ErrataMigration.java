@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -58,6 +59,7 @@ import org.springframework.transaction.support.TransactionOperations;
  * docs/database/README.md#errata for more detail.
  */
 @Named
+@Order(2)
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
     private static final int ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET = 53;
