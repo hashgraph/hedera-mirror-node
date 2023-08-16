@@ -216,11 +216,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             result = precompile.getSuccessResultFor(precompileResultWrapper);
 
             final var inputData = frame.getInputData();
-            final var redirect = getRedirectTarget(inputData);
-            final var isExplicitRedirect = isTokenProxyRedirect(inputData) && redirect.massagedInput() != null;
-            if (isExplicitRedirect) {
-                final var signatureTuple = Tuple.of(ResponseCodeEnum.SUCCESS_VALUE, result.toArray());
-                result = Bytes.wrap(redirectType.encode(signatureTuple).array());
+            if (inputData != null) {
+                final var redirect = getRedirectTarget(inputData);
+                final var isExplicitRedirect = isTokenProxyRedirect(inputData) && redirect.massagedInput() != null;
+                if (isExplicitRedirect) {
+                    final var signatureTuple = Tuple.of(ResponseCodeEnum.SUCCESS_VALUE, result.toArray());
+                    result = Bytes.wrap(redirectType.encode(signatureTuple).array());
+                }
             }
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
