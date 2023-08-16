@@ -216,10 +216,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             result = precompile.getSuccessResultFor(precompileResultWrapper);
 
             final var inputData = frame.getInputData();
-            final var functionId = inputData.getInt(0);
             final var redirect = getRedirectTarget(inputData);
-            final var isExplicitRedirect =
-                    AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN == functionId && redirect.massagedInput() != null;
+            final var isExplicitRedirect = isTokenProxyRedirect(inputData) && redirect.massagedInput() != null;
             if (isExplicitRedirect) {
                 final var signatureTuple = Tuple.of(ResponseCodeEnum.SUCCESS_VALUE, result.toArray());
                 result = Bytes.wrap(redirectType.encode(signatureTuple).array());
@@ -377,7 +375,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         if (isTokenProxyRedirect(input)) {
             final var target = getRedirectTarget(input);
             final var isExplicitRedirectCall = target.massagedInput() != null;
-
             if (isExplicitRedirectCall) {
                 input = target.massagedInput();
             }

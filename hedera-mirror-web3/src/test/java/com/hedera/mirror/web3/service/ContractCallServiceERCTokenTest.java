@@ -32,6 +32,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
+    public static final String REDIRECT_SUFFIX = "Redirect";
+    public static final String NON_STATIC_SUFFIX = "NonStatic";
+
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")
     void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
@@ -81,7 +84,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractReadOnlyFunctions.class)
     void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
-        final var functionName = ercFunction.name + "Redirect";
+        final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters =
@@ -145,7 +148,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
 
         public String getName(final boolean isStatic) {
-            return isStatic ? name : name + "NonStatic";
+            return isStatic ? name : name + NON_STATIC_SUFFIX;
         }
     }
 
