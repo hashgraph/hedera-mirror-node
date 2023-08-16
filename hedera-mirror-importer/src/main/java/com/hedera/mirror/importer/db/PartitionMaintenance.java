@@ -16,12 +16,9 @@
 
 package com.hedera.mirror.importer.db;
 
-import com.hedera.mirror.importer.config.Owner;
+import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.leader.Leader;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import java.time.Duration;
-import java.time.Instant;
+import jakarta.inject.Named;
 import lombok.*;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
@@ -29,22 +26,14 @@ import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 @CustomLog
-@Component
+@Named
 @Profile("v2")
+@RequiredArgsConstructor
 public class PartitionMaintenance {
     private static final String RUN_MAINTENANCE_QUERY = "CALL mirror_node_create_partitions()";
     private final JdbcTemplate jdbcTemplate;
-    private final Timer maintenanceMetric;
-
-    public PartitionMaintenance(@Owner JdbcTemplate jdbcTemplate, MeterRegistry meterRegistry) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.maintenanceMetric = Timer.builder(getClass().getCanonicalName())
-                .description("The duration in seconds it took to create new partitions")
-                .register(meterRegistry);
-    }
 
     @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
     @EventListener(ApplicationReadyEvent.class)
@@ -52,9 +41,8 @@ public class PartitionMaintenance {
     @Leader
     public void runMaintenance() {
         log.info("Running partition maintenance");
-        Instant start = Instant.now();
+        Stopwatch stopwatch = Stopwatch.createStarted();
         jdbcTemplate.execute(RUN_MAINTENANCE_QUERY);
-        log.info("Partition maintenance completed successfully");
-        this.maintenanceMetric.record(Duration.between(start, Instant.now()));
+        log.info("Partition maintenance completed successfully in {}", stopwatch);
     }
 }

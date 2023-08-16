@@ -26,7 +26,7 @@ CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
 DECLARE
 value timestamptz;
 BEGIN
-select to_timestamp(nanos * 1.0 / 1000000000)
+select to_timestamp(nanos * 1.0 / 1000000000.0)
 into value;
 return value;
 END;

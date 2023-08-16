@@ -3,8 +3,9 @@ graphql:
     defaultAccount: 111146
 importer:
   env:
+    SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+    SPRING_FLYWAY_PLACEHOLDERS_PARTITIONTIMEINTERVAL: "'10 years'"
     SPRING_FLYWAY_PLACEHOLDERS_SHARDCOUNT: "2"
-    SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "'0 days'"
     SPRING_PROFILES_ACTIVE: v2
   # Ensure importer has time to start stream processing after startup
   readinessProbe:

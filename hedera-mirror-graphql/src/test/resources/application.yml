@@ -27,9 +27,9 @@ spring:
       db-name: ${hedera.mirror.graphql.db.name}
       db-user: ${hedera.mirror.graphql.db.username}
       maxEntityIdRatio: 2.0
-      partitionIdInterval: "'.001 seconds'"
-      partitionStartDate: "'0 days'"
-      partitionTimeInterval: "'1 year'"
+      partitionIdInterval: "'1 year'"
+      partitionStartDate: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+      partitionTimeInterval: "'10 years'"
       schema: public
       shardCount: 2
       topicRunningHashV2AddedTimestamp: 0

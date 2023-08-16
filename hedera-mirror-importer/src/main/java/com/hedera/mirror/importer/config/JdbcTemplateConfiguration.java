@@ -38,21 +38,21 @@ class JdbcTemplateConfiguration {
     @Bean
     @Owner
     JdbcTemplate jdbcTemplateOwner(DBProperties dbProperties, JdbcProperties properties) {
-        var dataSource = createDataSource(dbProperties);
-        dataSource.setConnectionInitSql(dbProperties.getConnectionInitSql());
-        return createJdbcTemplate(dataSource, properties);
+        return createJdbcTemplate(createDataSource(dbProperties), properties);
     }
 
     HikariDataSource createDataSource(DBProperties dbProperties) {
-        String jdbcUrl = String.format(
+        var jdbcUrl = String.format(
                 "jdbc:postgresql://%s:%d/%s?tcpKeepAlive=true",
                 dbProperties.getHost(), dbProperties.getPort(), dbProperties.getName());
-        return DataSourceBuilder.create()
+        var dataSource = DataSourceBuilder.create()
                 .password(dbProperties.getOwnerPassword())
                 .url(jdbcUrl)
                 .username(dbProperties.getOwner())
                 .type(HikariDataSource.class)
                 .build();
+        dataSource.setConnectionInitSql(dbProperties.getConnectionInitSql());
+        return dataSource;
     }
 
     private JdbcTemplate createJdbcTemplate(DataSource dataSource, JdbcProperties properties) {

@@ -120,7 +120,7 @@ const flywayMigrate = async () => {
       "placeholders.maxEntityIdRatio": 2.0,
       "placeholders.partitionIdInterval": "'1 year'",
       "placeholders.partitionStartDate": "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
-      "placeholders.partitionTimeInterval": "'1 year'",
+      "placeholders.partitionTimeInterval": "'10 years'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "placeholders.schema": "public",
       "placeholders.shardCount": 2,

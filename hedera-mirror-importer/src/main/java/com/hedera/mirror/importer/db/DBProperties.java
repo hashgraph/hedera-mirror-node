@@ -26,6 +26,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.db")
 public class DBProperties {
+    private String connectionInitSql = "";
 
     @NotBlank
     private String host = "";
@@ -58,6 +59,4 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
-
-    private String connectionInitSql = "";
 }

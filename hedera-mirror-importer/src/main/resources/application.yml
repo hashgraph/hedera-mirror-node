@@ -2,6 +2,7 @@ hedera:
   mirror:
     importer:
       db:
+        connectionInitSql: set timezone TO 'UTC';
         host: 127.0.0.1
         loadBalance: true
         name: mirror_node
@@ -13,7 +14,6 @@ hedera:
         restUsername: mirror_api
         schema: public
         username: mirror_node
-        connection-init-sql: ${spring.datasource.hikari.connection-init-sql}
       migration:
         blockNumberMigration:
           checksum: 4
@@ -99,7 +99,7 @@ spring:
     url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?tcpKeepAlive=true
     username: ${hedera.mirror.importer.db.username}
     hikari:
-      connection-init-sql: set temp_buffers='${hedera.mirror.importer.parser.tempTableBufferSize}MB'; set timezone TO 'UTC';
+      connection-init-sql: ${hedera.mirror.importer.db.connectionInitSql}
       # Note: Flyway does not use Hikari so these properties are ignored. Use URL properties for Flyway instead.
       data-source-properties:
         #loggerLevel: TRACE

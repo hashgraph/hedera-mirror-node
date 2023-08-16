@@ -277,7 +277,6 @@ stackgres:
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
       shared_buffers: "12GB"
-      shared_preload_libraries: ''
       work_mem: "32MB"
     instances: 1
     resources:
@@ -314,7 +313,6 @@ stackgres:
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
       shared_buffers: "12GB"
-      shared_preload_libraries: ''
       work_mem: "32MB"
     instances: 1
     replicasPerInstance: 1

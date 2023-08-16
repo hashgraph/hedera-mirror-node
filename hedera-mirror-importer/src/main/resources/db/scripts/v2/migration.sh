@@ -111,7 +111,7 @@ cat > "${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
 flyway.placeholders.maxEntityIdRatio=2.0
 flyway.placeholders.partitionIdInterval='.001 seconds'
-flyway.placeholders.partitionStartDate='3 years'
+flyway.placeholders.partitionStartDate='4 years'
 flyway.placeholders.partitionTimeInterval='1 month'
 flyway.placeholders.schema=${TARGET_DB_SCHEMA}
 flyway.placeholders.shardCount=16

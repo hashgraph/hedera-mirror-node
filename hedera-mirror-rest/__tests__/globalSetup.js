@@ -78,7 +78,7 @@ const createDbContainer = async (maxWorkers) => {
         DECLARE
         value timestamptz;
         BEGIN
-        select to_timestamp(nanos * 1.0 / 1000000000)
+        select to_timestamp(nanos / 1000000000.0)
         into value;
         return value;
         END;
