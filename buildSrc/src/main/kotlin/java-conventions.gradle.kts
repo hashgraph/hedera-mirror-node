@@ -41,6 +41,9 @@ repositories {
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
     }
+    maven {
+        url = uri("https://repository.apache.org/content/repositories/snapshots")
+    }
 }
 
 dependencyManagement {
