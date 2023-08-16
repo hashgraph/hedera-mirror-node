@@ -64,8 +64,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -222,7 +222,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         var nodes = partialCollection(consensusNodeService.getNodes());
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
-        var totalDownloads = new AtomicInteger();
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
 
         /*
@@ -250,8 +249,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                             .block();
 
                     if (count > 0) {
-                        totalDownloads.addAndGet(count.intValue());
-                        log.info("Downloaded {} signatures for node {} in {}", count, node, stopwatch);
+                        log.debug("Downloaded {} signatures for node {} in {}", count, node, stopwatch);
                     }
                 } catch (Exception e) {
                     log.error("Error downloading signature files for node {} after {}", node, stopwatch, e);
@@ -260,14 +258,18 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         }
 
         // Wait for all tasks to complete.
-        // invokeAll() does return Futures, but it waits for all to complete (so they're returned in a completed state).
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        var stopwatch = Stopwatch.createStarted();
         long timeoutMillis = downloaderProperties.getCommon().getTimeout().toMillis();
         signatureDownloadThreadPool.invokeAll(tasks, timeoutMillis, TimeUnit.MILLISECONDS);
+        int total = sigFilesMap.size();
 
-        if (totalDownloads.get() > 0) {
-            var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
-            log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
+        if (total > 0) {
+            var rate = (int) (1000000.0 * total / stopwatch.elapsed(TimeUnit.MICROSECONDS));
+            var counts = sigFilesMap.keySet().stream()
+                    .limit(10)
+                    .collect(Collectors.toMap(
+                            Function.identity(), s -> sigFilesMap.get(s).size()));
+            log.info("Downloaded {} signatures in {} ({}/s): {}", total, stopwatch, rate, counts);
         } else {
             log.info(
                     "No new signature files to download after file: {}. Retrying in {} s",
@@ -537,8 +539,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     }
 
     /**
-     * Returns a randomly-selected (and randomly-ordered) collection of CondensusNode elements from the
-     * input, where the total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
+     * Returns a randomly-selected (and randomly-ordered) collection of CondensusNode elements from the input, where the
+     * total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
      *
      * @param allNodes the entire set of ConsensusNodes
      * @return a randomly-ordered subcollection
