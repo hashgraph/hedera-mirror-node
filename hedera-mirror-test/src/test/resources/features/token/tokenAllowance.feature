@@ -3,7 +3,8 @@ Feature: Account Crypto Allowance Coverage Feature
 
   @critical @release @acceptance
   Scenario Outline: Validate approval TokenTransfer affect on TokenAllowance amount
-    Given I associate account <recipient> with token <tokenName>
+    Given I ensure token <tokenName> has been created
+    And I associate account <recipient> with token <tokenName>
     Then the mirror node REST API should return the transaction
     Given I approve <spender> to transfer up to <approvedAmount> of token <tokenName>
     Then the mirror node REST API should confirm the approved allowance <approvedAmount> of <tokenName> for <spender>
