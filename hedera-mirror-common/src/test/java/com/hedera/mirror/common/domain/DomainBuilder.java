@@ -988,6 +988,7 @@ public class DomainBuilder {
                 .scheduled(false)
                 .transactionBytes(bytes(100))
                 .transactionHash(bytes(48))
+                .transactionRecordBytes(bytes(200))
                 .type(TransactionType.CRYPTOTRANSFER.getProtoId())
                 .validStartNs(timestamp())
                 .validDurationSeconds(120L);

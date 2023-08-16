@@ -96,6 +96,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -1471,6 +1472,24 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void persistTransactionRecordBytes(boolean persist) {
+        // given
+        entityProperties.getPersist().setTransactionRecordBytes(persist);
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        var transactionRecordBytes = persist ? recordItem.getRecordBytes() : null;
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getTransactionRecordBytes)
+                .containsOnly(transactionRecordBytes);
     }
 
     @SuppressWarnings("deprecation")

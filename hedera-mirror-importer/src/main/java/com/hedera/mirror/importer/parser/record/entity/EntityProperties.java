@@ -98,6 +98,12 @@ public class EntityProperties {
          */
         private boolean transactionBytes = false;
 
+        /**
+         * If configured the mirror node will store the raw transaction record bytes on the transaction table.
+         * The transaction record bytes include the signatures used for stateproof validation.
+         */
+        private boolean transactionRecordBytes = false;
+
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
 
