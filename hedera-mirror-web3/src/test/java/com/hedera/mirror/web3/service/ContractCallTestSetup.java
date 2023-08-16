@@ -120,6 +120,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052, TOKEN));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048, TOKEN));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050, TOKEN));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(0, 0, 1068, TOKEN));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049, TOKEN));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
             toAddress(EntityId.of(0, 0, 1060, TOKEN));
@@ -573,6 +574,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
+        final var tokenEntityIdNotAssociated = fungibleTokenPersist(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
         final var notFrozenFungibleTokenEntityId = fungibleTokenPersist(
                 spenderEntityId,
                 KEY_PROTO,
@@ -682,31 +690,33 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
-        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN, true);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN, true);
         tokenAccountPersist(ethAccount, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(modificationContract, tokenEntityIdNotAssociated, TokenFreezeStatusEnum.UNFROZEN, false);
+        tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
-        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN, true);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
 
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
@@ -716,6 +726,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }
@@ -803,14 +814,17 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private void tokenAccountPersist(
-            final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
+            final EntityId senderEntityId,
+            final EntityId tokenEntityId,
+            final TokenFreezeStatusEnum freezeStatus,
+            final boolean associated) {
         domainBuilder
                 .tokenAccount()
                 .customize(e -> e.freezeStatus(freezeStatus)
                         .accountId(senderEntityId.getId())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(true)
+                        .associated(associated)
                         .balance(12L))
                 .persist();
     }
@@ -843,7 +857,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Nullable
     private EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
-        final var spenderEvmAddress = toEvmAddress(spenderEntityId);
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
@@ -1257,7 +1270,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
         switch (feeCase) {
             case ROYALTY_FEE -> {
-                var royaltyFee = RoyaltyFee.builder()
+                final var royaltyFee = RoyaltyFee.builder()
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .fallbackFee(FallbackFee.builder()
@@ -1272,7 +1285,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .persist();
             }
             case FRACTIONAL_FEE -> {
-                var fractionalFee = FractionalFee.builder()
+                final var fractionalFee = FractionalFee.builder()
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .minimumAmount(1L)
@@ -1286,7 +1299,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .persist();
             }
             case FIXED_FEE -> {
-                var fixedFee = FixedFee.builder()
+                final var fixedFee = FixedFee.builder()
                         .amount(100L)
                         .collectorAccountId(collectorAccountId)
                         .denominatingTokenId(tokenEntityId)

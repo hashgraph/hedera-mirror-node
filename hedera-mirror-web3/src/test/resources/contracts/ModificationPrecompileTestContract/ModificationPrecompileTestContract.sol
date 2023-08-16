@@ -322,7 +322,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function associateWithRedirect(address token) external returns (bytes memory result)
     {
-        (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
+        (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(IHRC.associate.selector));
         if (response != HederaResponseCodes.SUCCESS) {
             revert("Tokens association redirect failed");
         }
@@ -331,7 +331,7 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
     function dissociateWithRedirect(address token) external returns (bytes memory result)
     {
-        (int response, bytes memory result) = HederaTokenService.redirectForToken(token, abi.encodeWithSelector(IHRC.dissociate.selector));
+        (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(IHRC.dissociate.selector));
         if (response != HederaResponseCodes.SUCCESS) {
             revert("Tokens dissociation redirect failed");
         }

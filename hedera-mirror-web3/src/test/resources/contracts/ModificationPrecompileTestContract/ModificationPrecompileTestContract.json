@@ -1215,9 +1215,9 @@
     "name": "redirectForToken",
     "outputs": [
       {
-        "internalType": "int64",
+        "internalType": "int256",
         "name": "responseCode",
-        "type": "int64"
+        "type": "int256"
       },
       {
         "internalType": "bytes",

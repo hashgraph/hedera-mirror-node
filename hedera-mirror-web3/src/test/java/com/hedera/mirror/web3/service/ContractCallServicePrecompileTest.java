@@ -426,7 +426,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
         ASSOCIATE_TOKENS_WITH_ALIAS(
                 "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        HRC_ASSOCIATE_REDIRECT("associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
+        HRC_ASSOCIATE_REDIRECT("associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED}),
         MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
         MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
             NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}

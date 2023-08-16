@@ -221,6 +221,35 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "response",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
       }
     ],
     "name": "symbolRedirect",
