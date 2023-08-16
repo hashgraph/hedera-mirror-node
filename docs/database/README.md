@@ -230,11 +230,3 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 6. Stop the [Importer](/docs/importer/README.md) process.
 7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
 8. Update the mirror node configuration to point to the new Citus DB and start it.
-
-## Repeatable migration
-The following migrations would be rerun automatically when the first account balance file is parsed:
-* InitializeEntityBalanceMigration
-* TokenAccountBalanceMigration
-
-If there is an error during the rerun, or for some reason the migration does not run, it can be manually rerun using the steps provided at:
-[Importer-Initialize Entity Balance](/docs/importer/README.md#Initialize Entity Balance)

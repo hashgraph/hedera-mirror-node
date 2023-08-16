@@ -52,7 +52,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -67,6 +70,16 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
+
+    EntityId contractId = EntityId.of("0.0.2119900", CONTRACT);
+    EntityId contractId2 = EntityId.of("0.0.2119901", CONTRACT);
+    EntityId priorContractId = EntityId.of("0.0.2119899", CONTRACT);
+
+    Entity currentKeyUnaffectedEntity;
+    Entity currentKeyAffectedEntity;
+    Entity noKeyEntity;
+    Entity thresholdTwoKeyEntity;
+
     private final @Owner JdbcTemplate jdbcTemplate;
     private final SyntheticCryptoTransferApprovalMigration migration;
     private final CryptoTransferRepository cryptoTransferRepository;
@@ -116,78 +129,39 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     @Test
     void migrate() {
         // given
-        var contractId = EntityId.of("0.0.2119900", CONTRACT);
-        var contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-        var priorContractId = EntityId.of("0.0.2119899", CONTRACT);
-        var currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
-        var currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
-        var noKeyEntity = entityWithNoKey();
-        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var thresholdTwoKeyEntity = domainBuilder
-                .entity()
-                .customize(e -> e.key(getThresholdTwoKey(contractId.getEntityNum()))
-                        .timestampRange(Range.atLeast(getTimestampWithinBoundary()))
-                        .build())
-                .persist();
-
-        var cryptoTransfersPair = setupCryptoTransfers(
+        entitySetup();
+        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
                 noKeyEntity,
-                pastKeyUnaffectedEntity,
-                pastKeyAffectedEntity,
                 thresholdTwoKeyEntity);
 
-        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var nftTransfersTransactionPair = setupTransactionNfts(
-                contractId,
-                priorContractId,
-                currentKeyUnaffectedEntity,
-                currentKeyAffectedEntity,
-                noKeyEntity,
-                nftPastKeyUnaffectedEntity,
-                nftPastKeyAffectedEntity,
-                thresholdTwoKeyEntity);
-
-        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var tokenTransfersPair = setupTokenTransfers(
+        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
                 contractId,
                 contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
                 noKeyEntity,
-                tokenPastKeyUnaffectedEntity,
-                tokenPastKeyAffectedEntity,
+                thresholdTwoKeyEntity);
+
+        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+                contractId,
+                contractId2,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
                 thresholdTwoKeyEntity);
 
         // when
         migration.migrateAsync();
 
         // then
-        var expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
-        expectedCryptoTransfers.forEach(t -> t.setIsApproval(true));
-        expectedCryptoTransfers.addAll(cryptoTransfersPair.getRight());
-        assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
-
-        var expectedTokenTransfers = new ArrayList<>(tokenTransfersPair.getLeft());
-        expectedTokenTransfers.forEach(t -> t.setIsApproval(true));
-        expectedTokenTransfers.addAll(tokenTransfersPair.getRight());
-        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
-
-        var expectedNftTransfers = new ArrayList<>(nftTransfersTransactionPair.getLeft());
-        expectedNftTransfers.forEach(t -> t.setIsApproval(true));
-        expectedNftTransfers.addAll(nftTransfersTransactionPair.getRight());
-
-        var repositoryNftTransfers = new ArrayList<NftTransfer>();
-        transactionRepository.findAll().forEach(t -> repositoryNftTransfers.addAll(t.getNftTransfer()));
-        assertThat(repositoryNftTransfers).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
+        assertTransfers(cryptoTransfersPair, nftTransfersTransactionPair, tokenTransfersPair);
     }
 
     @Test
@@ -214,6 +188,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     @Test
     void onEnd() {
         // given
+
+        // Creating record files with version <0.38.0 and consensus start and end < RECORD_FILE
         domainBuilder
                 .recordFile()
                 .customize(r -> r.hapiVersionMajor(0)
@@ -230,56 +206,33 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                         .consensusStart(1568415600173620000L)
                         .consensusEnd(1568415600173620001L))
                 .persist();
-        // given
-        var contractId = EntityId.of("0.0.2119900", CONTRACT);
-        var contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-        var priorContractId = EntityId.of("0.0.2119899", CONTRACT);
-        var currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
-        var currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
-        var noKeyEntity = entityWithNoKey();
-        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var thresholdTwoKeyEntity = domainBuilder
-                .entity()
-                .customize(e -> e.key(getThresholdTwoKey(contractId.getEntityNum()))
-                        .timestampRange(Range.atLeast(getTimestampWithinBoundary()))
-                        .build())
-                .persist();
 
-        var cryptoTransfersPair = setupCryptoTransfers(
+        entitySetup();
+        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
                 noKeyEntity,
-                pastKeyUnaffectedEntity,
-                pastKeyAffectedEntity,
                 thresholdTwoKeyEntity);
 
-        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var nftTransfersTransactionPair = setupTransactionNfts(
-                contractId,
-                priorContractId,
-                currentKeyUnaffectedEntity,
-                currentKeyAffectedEntity,
-                noKeyEntity,
-                nftPastKeyUnaffectedEntity,
-                nftPastKeyAffectedEntity,
-                thresholdTwoKeyEntity);
-
-        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var tokenTransfersPair = setupTokenTransfers(
+        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
                 contractId,
                 contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
                 noKeyEntity,
-                tokenPastKeyUnaffectedEntity,
-                tokenPastKeyAffectedEntity,
+                thresholdTwoKeyEntity);
+
+        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+                contractId,
+                contractId2,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
                 thresholdTwoKeyEntity);
 
         // when
@@ -288,7 +241,77 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         waitForCompletion();
 
         // then
-        var expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
+        assertTransfers(cryptoTransfersPair, nftTransfersTransactionPair, tokenTransfersPair);
+    }
+
+    @Test
+    void onEndHapiVersionNotMatched() {
+        // given
+        // Creating record files with version >0.38.0 which will not run the migration
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(39).hapiVersionPatch(0))
+                .persist();
+
+        entitySetup();
+        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
+                contractId,
+                contractId2,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
+                thresholdTwoKeyEntity);
+
+        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
+                contractId,
+                contractId2,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
+                thresholdTwoKeyEntity);
+
+        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+                contractId,
+                contractId2,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
+                thresholdTwoKeyEntity);
+
+        // when
+        migration.onEnd(RECORD_FILE);
+
+        // then
+        // isApproval is not set to true
+        assertThat(cryptoTransferRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(
+                        Stream.of(cryptoTransfersPair.getLeft(), cryptoTransfersPair.getRight())
+                                .flatMap(x -> x.stream())
+                                .collect(Collectors.toList()));
+
+        assertThat(tokenTransferRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(
+                        Stream.of(tokenTransfersPair.getLeft(), tokenTransfersPair.getRight())
+                                .flatMap(x -> x.stream())
+                                .collect(Collectors.toList()));
+
+        var repositoryNftTransfers = new ArrayList<NftTransfer>();
+        transactionRepository.findAll().forEach(t -> repositoryNftTransfers.addAll(t.getNftTransfer()));
+        assertThat(repositoryNftTransfers)
+                .containsExactlyInAnyOrderElementsOf(
+                        Stream.of(nftTransfersTransactionPair.getLeft(), nftTransfersTransactionPair.getRight())
+                                .flatMap(x -> x.stream())
+                                .collect(Collectors.toList()));
+    }
+
+    private void assertTransfers(
+            Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair,
+            Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair,
+            Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair) {
+        ArrayList<CryptoTransfer> expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
         expectedCryptoTransfers.forEach(t -> t.setIsApproval(true));
         expectedCryptoTransfers.addAll(cryptoTransfersPair.getRight());
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
@@ -307,28 +330,29 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         assertThat(repositoryNftTransfers).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
     }
 
-    @Test
-    void onEndHapiVersionNotMatched() {
-        // given
-        domainBuilder
-                .recordFile()
-                .customize(r -> r.hapiVersionMajor(0).hapiVersionMinor(39).hapiVersionPatch(0))
-                .persist();
-        // given
-        var contractId = EntityId.of("0.0.2119900", CONTRACT);
-        var contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-        var priorContractId = EntityId.of("0.0.2119899", CONTRACT);
-        var currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
-        var currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
-        var noKeyEntity = entityWithNoKey();
-        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var thresholdTwoKeyEntity = domainBuilder
+    private void entitySetup() {
+        currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
+        currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
+        noKeyEntity = entityWithNoKey();
+        thresholdTwoKeyEntity = domainBuilder
                 .entity()
                 .customize(e -> e.key(getThresholdTwoKey(contractId.getEntityNum()))
                         .timestampRange(Range.atLeast(getTimestampWithinBoundary()))
                         .build())
                 .persist();
+    }
+
+    @NotNull
+    private Pair<List<CryptoTransfer>, List<CryptoTransfer>> getCryptoTransfersPair(
+            EntityId contractId,
+            EntityId contractId2,
+            EntityId priorContractId,
+            Entity currentKeyUnaffectedEntity,
+            Entity currentKeyAffectedEntity,
+            Entity noKeyEntity,
+            Entity thresholdTwoKeyEntity) {
+        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
+        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
 
         var cryptoTransfersPair = setupCryptoTransfers(
                 contractId,
@@ -340,22 +364,21 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 pastKeyUnaffectedEntity,
                 pastKeyAffectedEntity,
                 thresholdTwoKeyEntity);
+        return cryptoTransfersPair;
+    }
 
-        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var nftTransfersTransactionPair = setupTransactionNfts(
-                contractId,
-                priorContractId,
-                currentKeyUnaffectedEntity,
-                currentKeyAffectedEntity,
-                noKeyEntity,
-                nftPastKeyUnaffectedEntity,
-                nftPastKeyAffectedEntity,
-                thresholdTwoKeyEntity);
-
+    @NotNull
+    private Pair<List<TokenTransfer>, List<TokenTransfer>> getTokenTransfersPair(
+            EntityId contractId,
+            EntityId contractId2,
+            EntityId priorContractId,
+            Entity currentKeyUnaffectedEntity,
+            Entity currentKeyAffectedEntity,
+            Entity noKeyEntity,
+            Entity thresholdTwoKeyEntity) {
         var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
         var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
-        var tokenTransfersPair = setupTokenTransfers(
+        return setupTokenTransfers(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -365,25 +388,28 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 tokenPastKeyUnaffectedEntity,
                 tokenPastKeyAffectedEntity,
                 thresholdTwoKeyEntity);
+    }
 
-        // when
-        migration.onEnd(RECORD_FILE);
-
-        // then
-        var expectedCryptoTransfers = new ArrayList<>(cryptoTransfersPair.getLeft());
-        expectedCryptoTransfers.addAll(cryptoTransfersPair.getRight());
-        assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedCryptoTransfers);
-
-        var expectedTokenTransfers = new ArrayList<>(tokenTransfersPair.getLeft());
-        expectedTokenTransfers.addAll(tokenTransfersPair.getRight());
-        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
-
-        var expectedNftTransfers = new ArrayList<>(nftTransfersTransactionPair.getLeft());
-        expectedNftTransfers.addAll(nftTransfersTransactionPair.getRight());
-
-        var repositoryNftTransfers = new ArrayList<NftTransfer>();
-        transactionRepository.findAll().forEach(t -> repositoryNftTransfers.addAll(t.getNftTransfer()));
-        assertThat(repositoryNftTransfers).containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
+    @NotNull
+    private Pair<List<NftTransfer>, List<NftTransfer>> getNftTransfersTransactionPair(
+            EntityId contractId,
+            EntityId contractId2,
+            EntityId priorContractId,
+            Entity currentKeyUnaffectedEntity,
+            Entity currentKeyAffectedEntity,
+            Entity noKeyEntity,
+            Entity thresholdTwoKeyEntity) {
+        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
+        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        return setupTransactionNfts(
+                contractId,
+                priorContractId,
+                currentKeyUnaffectedEntity,
+                currentKeyAffectedEntity,
+                noKeyEntity,
+                nftPastKeyUnaffectedEntity,
+                nftPastKeyAffectedEntity,
+                thresholdTwoKeyEntity);
     }
 
     private Pair<List<CryptoTransfer>, List<CryptoTransfer>> setupCryptoTransfers(

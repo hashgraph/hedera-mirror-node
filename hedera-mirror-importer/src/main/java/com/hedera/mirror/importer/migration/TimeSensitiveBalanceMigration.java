@@ -24,7 +24,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -32,10 +31,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
         implements BalanceStreamFileListener, TransactionSynchronization {
 
+    private static final int NO_BALANCE_FILE = 0;
+    private static final int EXECUTED = -1;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
     private final AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
-    private final AtomicBoolean succeeded = new AtomicBoolean(false);
 
     protected TimeSensitiveBalanceMigration(
             Map<String, MigrationProperties> migrationPropertiesMap,
@@ -49,12 +49,12 @@ abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
     @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) throws ImporterException {
         try {
-            if (firstConsensusTimestamp.get() == -1 || succeeded.get()) {
+            if (firstConsensusTimestamp.get() == EXECUTED) {
                 return;
             }
 
-            if (firstConsensusTimestamp.get() == 0) {
-                // Check if this is the first account balance file after importer startup
+            // Check if this is the first account balance file after importer startup
+            if (firstConsensusTimestamp.get() == NO_BALANCE_FILE) {
                 // Set current file timestamp to firstConsensusTimestamp.
                 if (accountBalanceFileRepository
                         .findLatestBefore(accountBalanceFile.getConsensusTimestamp())
@@ -63,7 +63,7 @@ abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
                 } else {
                     // Set firstConsensusTimestamp to -1 to add an early return in case of existing account balance
                     // files.
-                    firstConsensusTimestamp.set(-1);
+                    firstConsensusTimestamp.set(EXECUTED);
                     return;
                 }
             }
@@ -87,6 +87,6 @@ abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
 
     @Override
     public void afterCommit() {
-        succeeded.set(true);
+        firstConsensusTimestamp.set(EXECUTED);
     }
 }

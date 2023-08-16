@@ -55,7 +55,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final RecordFileRepository recordFileRepository;
 
     private Entity account;
-    private AccountBalanceFile accountBalanceFile1, accountBalanceFile2;
+    private AccountBalanceFile accountBalanceFile1;
+    private AccountBalanceFile accountBalanceFile2;
     private Entity accountDeleted;
     private Entity contract;
     private RecordFile recordFile2;
@@ -189,6 +190,27 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         setup();
         // when
         initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
+
+        // then
+        account.setBalance(0L);
+        accountDeleted.setBalance(0L);
+        contract.setBalance(0L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+    }
+
+    @Test
+    @Transactional
+    void onEndEarlyReturn() {
+        // given
+        setup();
+        initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
+        long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
+        var accountBalanceFile3 = domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
+                .persist();
+        // when
+        initializeEntityBalanceMigration.onEnd(accountBalanceFile3);
 
         // then
         account.setBalance(0L);

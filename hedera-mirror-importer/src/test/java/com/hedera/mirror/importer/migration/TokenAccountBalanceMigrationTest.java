@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -56,9 +55,8 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private final TokenTransferRepository tokenTransferRepository;
-    private final TransactionTemplate transactionTemplate;
-
-    private AccountBalanceFile accountBalanceFile1, accountBalanceFile2;
+    private AccountBalanceFile accountBalanceFile1;
+    private AccountBalanceFile accountBalanceFile2;
     private AtomicLong timestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
@@ -271,6 +269,34 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         setup();
         // when
         tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+
+        // then
+        tokenAccount.setBalance(0L);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
+    }
+
+    @Test
+    @Transactional
+    void onEndEarlyReturn() {
+        // given
+        setup();
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+        long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
+        var accountBalanceFile3 = domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
+                .persist();
+        // when
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile3);
 
         // then
         tokenAccount.setBalance(0L);
