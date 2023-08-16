@@ -173,10 +173,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
-    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE = getFungibleTokenExpiryInUint32Range();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
+            getFungibleTokenExpiryInUint32Range();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
-    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE = getNonFungibleTokenExpiryInUint32Range();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
+            getNonFungibleTokenExpiryInUint32Range();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
     protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
     protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
@@ -1348,8 +1350,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
-                new TokenExpiryWrapper(
-                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
     private static TokenCreateWrapper getFungibleTokenExpiryInUint32Range() {
@@ -1406,5 +1407,4 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 List.of(),
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
-
 }
