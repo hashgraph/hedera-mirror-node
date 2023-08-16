@@ -91,11 +91,7 @@ public class TokenClient extends AbstractNetworkClient {
         return -1;
     }
 
-    public TokenId getToken(TokenNameEnum tokenNameEnum) {
-        return getTokenAndResponse(tokenNameEnum).tokenId();
-    }
-
-    public TokenResponse getTokenAndResponse(TokenNameEnum tokenNameEnum) {
+    public TokenResponse getToken(TokenNameEnum tokenNameEnum) {
         AtomicReference<NetworkTransactionResponse> responseRef = new AtomicReference<>();
         // Create token only if it does not currently exist
         var tokenId = tokenMap.computeIfAbsent(tokenNameEnum, x -> {

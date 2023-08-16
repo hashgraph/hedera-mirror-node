@@ -136,7 +136,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721Metadata token {string} name")
     public void ierc721MetadataTokenName(String tokenName) {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
-        var tokenId = tokenClient.getToken(tokenNameEnum);
+        var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_NAME_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
@@ -155,7 +155,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721Metadata token {string} symbol")
     public void ierc721MetadataTokenSymbol(String tokenName) {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
-        var tokenId = tokenClient.getToken(tokenNameEnum);
+        var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
@@ -172,7 +172,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with IERC721Metadata token {string} totalSupply")
     public void ierc721MetadataTokenTotalSupply(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
@@ -189,7 +191,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with IERC721 token {string} balanceOf owner")
     public void ierc721MetadataTokenBalanceOf(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.IERC721_TOKEN_BALANCE_OF_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress())
@@ -207,7 +211,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with HederaTokenService isToken token {string}")
     public void htsIsToken(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
@@ -225,7 +231,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with HederaTokenService isFrozen token {string}, account")
     public void htsIsFrozen(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_FROZEN_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress())
@@ -243,7 +251,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with HederaTokenService isKyc token {string}, account")
     public void htsIsKyc(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_IS_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress())
@@ -261,7 +271,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token {string}")
     public void htsGetTokenDefaultFreezeStatus(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
@@ -278,7 +290,9 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with HederaTokenService getTokenDefaultKycStatus token {string}")
     public void htsGetTokenDefaultKycStatus(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+        var tokenId = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress()))
