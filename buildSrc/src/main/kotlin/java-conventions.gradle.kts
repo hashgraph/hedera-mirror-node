@@ -42,6 +42,8 @@ repositories {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
     }
     maven {
+        // org.gaul:s3proxy:2.1.0-SNAPSHOT depends on snapshot artifacts from the repo, remove it when upgrading
+        // s3proxy to a GA release
         url = uri("https://repository.apache.org/content/repositories/snapshots")
     }
 }
