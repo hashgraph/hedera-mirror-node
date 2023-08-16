@@ -20,7 +20,6 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import jakarta.inject.Named;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -54,18 +53,32 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
                     return;
                 }
 
+                var stopwatch = Stopwatch.createStarted();
+                var lastEndStakePeriod =
+                        entityStakeRepository.getEndStakePeriod().orElse(0L);
                 transactionOperations.executeWithoutResult(s -> {
-                    var stopwatch = Stopwatch.createStarted();
                     entityStakeRepository.lockFromConcurrentUpdates();
                     entityStakeRepository.createEntityStateStart();
                     log.info("Created entity_state_start in {}", stopwatch);
                     entityStakeRepository.updateEntityStake();
-                    Optional<Long> endStakePeriod = entityStakeRepository.getEndStakePeriod();
+                });
+
+                var endStakePeriod = entityStakeRepository.getEndStakePeriod();
+                if (endStakePeriod
+                        .filter(stakePeriod -> stakePeriod > lastEndStakePeriod)
+                        .isPresent()) {
                     log.info(
                             "Completed pending reward calculation of end stake period {} in {}",
-                            endStakePeriod.orElse(null),
+                            endStakePeriod.get(),
                             stopwatch);
-                });
+                } else {
+                    log.warn(
+                            "Failed to calculate pending reward in {}, last end stake period is {}, and the end stake period afterwards is {}",
+                            stopwatch,
+                            lastEndStakePeriod,
+                            endStakePeriod.orElse(null));
+                    break;
+                }
             }
         } catch (Exception e) {
             log.error("Failed to update entity stake", e);

@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -81,6 +82,16 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .customize(ns -> ns.consensusTimestamp(nodeStakeTimestamp).epochDay(epochDay))
                 .persist();
 
+        var stakingRewardAccount = domainBuilder
+                .entity()
+                .customize(e -> {
+                    long createdTimestamp = nodeStakeTimestamp - 10;
+                    e.createdTimestamp(createdTimestamp)
+                            .id(STAKING_REWARD_ACCOUNT)
+                            .num(STAKING_REWARD_ACCOUNT)
+                            .timestampRange(Range.atLeast(createdTimestamp));
+                })
+                .persist();
         var account1 = domainBuilder
                 .entity()
                 .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
@@ -172,13 +183,24 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .build();
+        var expectedStackingRewardAccount = stakingRewardAccount.toBuilder()
+                .balance(0L)
+                .stakedAccountId(0L)
+                .stakedNodeId(-1L)
+                .stakePeriodStart(-1L)
+                .build();
 
         transactionOperations.executeWithoutResult(s -> {
             // when
             entityStakeRepository.createEntityStateStart();
 
             // then
-            assertEntityStartStart(List.of(expectedAccount1, expectedAccount2, expectedAccount3, expectedContract));
+            assertEntityStartStart(List.of(
+                    expectedAccount1,
+                    expectedAccount2,
+                    expectedAccount3,
+                    expectedContract,
+                    expectedStackingRewardAccount));
         });
 
         // given
@@ -195,7 +217,8 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
             entityStakeRepository.createEntityStateStart();
 
             // then
-            assertEntityStartStart(List.of(expectedAccount1, expectedAccount2, expectedAccount3));
+            assertEntityStartStart(
+                    List.of(expectedAccount1, expectedAccount2, expectedAccount3, expectedStackingRewardAccount));
         });
     }
 
@@ -283,13 +306,14 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         long nodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 1000L;
         long nextNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 2)) + 600L;
         long previousNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 700L;
-        var stakingRewardAccount = EntityId.of(800, ACCOUNT);
+        var stakingRewardAccount = EntityId.of(STAKING_REWARD_ACCOUNT, ACCOUNT);
 
         // Alice changed her staking settings after previousNodeStakeTimestamp, then she changed it again after
         // nextNodeStakeTimestamp. In entity state start, alice's stake settings should come from aliceHistory2
         domainBuilder
                 .entity()
-                .customize(e -> e.id(800L).timestampRange(Range.atLeast(previousNodeStakeTimestamp - 8000L)))
+                .customize(e ->
+                        e.id(STAKING_REWARD_ACCOUNT).timestampRange(Range.atLeast(previousNodeStakeTimestamp - 8000L)))
                 .persist();
         var aliceHistory1 = domainBuilder
                 .entityHistory()
@@ -319,7 +343,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         // epochDay + 1, thus entity stake is two staking period behind
         domainBuilder
                 .entityStake()
-                .customize(es -> es.id(800L)
+                .customize(es -> es.id(STAKING_REWARD_ACCOUNT)
                         .endStakePeriod(epochDay - 1)
                         .timestampRange(Range.atLeast(previousNodeStakeTimestamp)))
                 .persist();
@@ -356,7 +380,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .accountBalance()
                 .customize(ab -> ab.balance(1500).id(new Id(accountBalanceTimestamp, aliceEntityId)))
                 .persist();
-        persistCryptoTransfer(150, accountBalanceTimestamp + 10, 800);
+        persistCryptoTransfer(150, accountBalanceTimestamp + 10, STAKING_REWARD_ACCOUNT);
 
         // Account balance before nextNodeStakeTimestamp
         long accountBalanceTimestampBeforeNextNodeStake = nextNodeStakeTimestamp - 700;
@@ -383,7 +407,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.balance(1150L)
                         .declineReward(false)
-                        .id(800L)
+                        .id(STAKING_REWARD_ACCOUNT)
                         .stakedAccountId(0L)
                         .stakedNodeId(-1L)
                         .stakePeriodStart(-1L))
@@ -405,7 +429,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         long endStakePeriod = domainBuilder.id();
         domainBuilder
                 .entityStake()
-                .customize(es -> es.endStakePeriod(endStakePeriod).id(800L))
+                .customize(es -> es.endStakePeriod(endStakePeriod).id(STAKING_REWARD_ACCOUNT))
                 .persist();
         assertThat(entityStakeRepository.getEndStakePeriod()).contains(endStakePeriod);
     }
@@ -467,7 +491,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         if (endStakePeriod != null) {
             domainBuilder
                     .entityStake()
-                    .customize(e -> e.id(800L).endStakePeriod(endStakePeriod))
+                    .customize(e -> e.id(STAKING_REWARD_ACCOUNT).endStakePeriod(endStakePeriod))
                     .persist();
             domainBuilder
                     .entityStake()
@@ -476,7 +500,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         }
 
         if (hasStakingRewardAccount) {
-            domainBuilder.entity().customize(e -> e.id(800L).num(800L)).persist();
+            domainBuilder
+                    .entity()
+                    .customize(e -> e.id(STAKING_REWARD_ACCOUNT).num(STAKING_REWARD_ACCOUNT))
+                    .persist();
         }
 
         // when
@@ -525,6 +552,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         var entity10 = domainBuilder
                 .entity()
                 .customize(e -> e.id(entityId10).num(entityId10).stakedAccountId(entityId9))
+                .persist();
+        var stakingRewardAccount = domainBuilder
+                .entity()
+                .customize(e -> e.id(STAKING_REWARD_ACCOUNT).num(STAKING_REWARD_ACCOUNT))
                 .persist();
         long timestamp = domainBuilder.timestamp();
         var nodeStake = domainBuilder
@@ -601,7 +632,8 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 fromEntity(entity6, nodeStake, 800L, 0L),
                 fromEntity(entity8, nodeStake, 0L, 0L),
                 fromEntity(entity9, nodeStake, 1000L, 0L),
-                fromEntity(entity10, nodeStake, 900L, 0L));
+                fromEntity(entity10, nodeStake, 900L, 0L),
+                fromEntity(stakingRewardAccount, nodeStake, 0L, 0L));
         var entityStake1History = existingEntityStake1.toBuilder().build();
         entityStake1History.setTimestampUpper(nodeStake.getConsensusTimestamp());
 
@@ -630,6 +662,16 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         domainBuilder.topic().persist();
         var nodeStake = domainBuilder.nodeStake().persist();
+        var stakingRewardAccount = domainBuilder
+                .entity()
+                .customize(e -> {
+                    long createdTimestamp = nodeStake.getConsensusTimestamp() - 10;
+                    e.createdTimestamp(createdTimestamp)
+                            .id(STAKING_REWARD_ACCOUNT)
+                            .num(STAKING_REWARD_ACCOUNT)
+                            .timestampRange(Range.atLeast(createdTimestamp));
+                })
+                .persist();
         long balanceTimestamp = nodeStake.getConsensusTimestamp() - 1000L;
         domainBuilder
                 .accountBalanceFile()
@@ -649,8 +691,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .consensusEnd(balanceTimestamp + 100L)
                         .hapiVersionMinor(25))
                 .persist();
-        var expectedEntityStakes =
-                List.of(fromEntity(account, nodeStake, 0L, 0L), fromEntity(contract, nodeStake, 0L, 5L));
+        var expectedEntityStakes = List.of(
+                fromEntity(account, nodeStake, 0L, 0L),
+                fromEntity(contract, nodeStake, 0L, 5L),
+                fromEntity(stakingRewardAccount, nodeStake, 0L, 0L));
 
         // when
         transactionOperations.executeWithoutResult(s -> {
@@ -698,7 +742,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         long nodeStakeLowerTimestamp =
                 TestUtils.plus(nodeStakeTimestamp, Duration.ofDays(1).negated());
-        var existingNodeStake = domainBuilder
+        var existingEntityStake = domainBuilder
                 .entityStake()
                 .customize(es -> es.declineRewardStart(declineRewardStart)
                         .endStakePeriod(nodeStakeEpochDay - 1)
@@ -706,6 +750,13 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .pendingReward(currentPendingReward)
                         .stakedNodeIdStart(stakedNodeIdStart)
                         .stakeTotalStart(stakeTotalStart)
+                        .timestampRange(Range.atLeast(nodeStakeLowerTimestamp)))
+                .persist();
+        // existing entity stake for staking reward account
+        domainBuilder
+                .entityStake()
+                .customize(es -> es.id(STAKING_REWARD_ACCOUNT)
+                        .endStakePeriod(nodeStakeEpochDay - 1)
                         .timestampRange(Range.atLeast(nodeStakeLowerTimestamp)))
                 .persist();
         domainBuilder
@@ -739,7 +790,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .consensusTimestamp(nodeStakeTimestamp - 100)
                         .nodeId(2L))
                 .persist();
-        existingNodeStake.setTimestampUpper(nodeStakeTimestamp);
+        existingEntityStake.setTimestampUpper(nodeStakeTimestamp);
 
         // when
         transactionOperations.executeWithoutResult(s -> {
@@ -752,7 +803,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .returns(nodeStakeEpochDay, EntityStake::getEndStakePeriod)
                 .returns(expectedPendingReward, EntityStake::getPendingReward);
-        assertThat(findHistory(EntityStake.class)).containsExactly(existingNodeStake);
+        assertThat(findHistory(EntityStake.class)).containsExactly(existingEntityStake);
     }
 
     @Test
@@ -771,7 +822,9 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
         var stakingRewardAccount = domainBuilder
                 .entity()
-                .customize(e -> e.id(800L).num(800L).timestampRange(Range.atLeast(entityLowerTimestamp)))
+                .customize(e -> e.id(STAKING_REWARD_ACCOUNT)
+                        .num(STAKING_REWARD_ACCOUNT)
+                        .timestampRange(Range.atLeast(entityLowerTimestamp)))
                 .persist();
         // forfeitedStakingPeriod is the first period the account has earned staking reward, so the stake period start
         // is forfeitedStakingPeriod - 1
@@ -813,7 +866,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         var stakingRewardAccountStake = domainBuilder
                 .entityStake()
                 .customize(es -> es.endStakePeriod(epochDay - 1)
-                        .id(800L)
+                        .id(STAKING_REWARD_ACCOUNT)
                         .timestampRange(Range.atLeast(previousNodeStakeTimestamp)))
                 .persist();
         long balanceTimestamp = nodeStakeTimestamp - 2000L;
