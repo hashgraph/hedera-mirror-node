@@ -53,13 +53,8 @@ class EntityMetadata {
     }
 
     public String columns(String defaultPattern, Predicate<ColumnMetadata> predicate, String predicatePattern) {
-        return columns(defaultPattern, predicate, predicatePattern, ",");
-    }
-
-    public String columns(
-            String defaultPattern, Predicate<ColumnMetadata> predicate, String predicatePattern, String separator) {
         return columns.stream()
                 .map(c -> predicate.test(c) ? c.format(predicatePattern) : c.format(defaultPattern))
-                .collect(Collectors.joining(separator));
+                .collect(Collectors.joining(","));
     }
 }

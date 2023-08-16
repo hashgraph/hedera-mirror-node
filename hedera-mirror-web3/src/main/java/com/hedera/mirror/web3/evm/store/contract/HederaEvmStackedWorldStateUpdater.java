@@ -49,7 +49,9 @@ public class HederaEvmStackedWorldStateUpdater
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
+
     private final EntityAddressSequencer entityAddressSequencer;
+
     private final TokenAccessor tokenAccessor;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -104,10 +106,17 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private void persistAccount(Address address, long nonce, Wei balance) {
+        final var resolvedAddress = aliases().resolveForEvm(address);
+        final var isResolvedAddressZero = Address.ZERO.equals(resolvedAddress);
+
         final var accountModel = new com.hedera.services.store.models.Account(
-                ByteString.EMPTY,
+                !isResolvedAddressZero && !address.equals(resolvedAddress)
+                        ? ByteString.copyFrom(address.toArray())
+                        : ByteString.EMPTY,
                 0L,
-                Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
+                !isResolvedAddressZero
+                        ? Id.fromGrpcAccount(accountIdFromEvmAddress(resolvedAddress))
+                        : Id.fromGrpcAccount(accountIdFromEvmAddress(address)),
                 0L,
                 balance.toLong(),
                 false,
@@ -184,10 +193,6 @@ public class HederaEvmStackedWorldStateUpdater
 
     public Store getStore() {
         return store;
-    }
-
-    public EntityAddressSequencer getEntityAddressSequencer() {
-        return entityAddressSequencer;
     }
 
     private boolean isMissingTarget(final Address alias) {
