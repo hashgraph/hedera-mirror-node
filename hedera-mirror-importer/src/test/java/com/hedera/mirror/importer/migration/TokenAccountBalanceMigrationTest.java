@@ -35,9 +35,11 @@ import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -68,6 +70,14 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
+    }
+
+    @AfterEach
+    void after() throws Exception {
+        Field activeField =
+                TokenAccountBalanceMigration.class.getSuperclass().getDeclaredField("firstConsensusTimestamp");
+        activeField.setAccessible(true);
+        activeField.set(tokenAccountBalanceMigration, new AtomicLong(0L));
     }
 
     @Test

@@ -34,9 +34,11 @@ import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
-    private final InitializeEntityBalanceMigration initializeEntityBalanceMigration;
+    private final InitializeEntityBalanceMigration migration;
     private final RecordFileRepository recordFileRepository;
 
     private Entity account;
@@ -68,14 +70,22 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         timestamp = new AtomicLong(0L);
     }
 
+    @AfterEach
+    void after() throws Exception {
+        Field activeField =
+                InitializeEntityBalanceMigration.class.getSuperclass().getDeclaredField("firstConsensusTimestamp");
+        activeField.setAccessible(true);
+        activeField.set(migration, new AtomicLong(0L));
+    }
+
     @Test
     void checksum() {
-        assertThat(initializeEntityBalanceMigration.getChecksum()).isEqualTo(3);
+        assertThat(migration.getChecksum()).isEqualTo(3);
     }
 
     @Test
     void empty() {
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
@@ -85,7 +95,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         setup();
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
@@ -104,7 +114,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         persistCryptoTransfer(300, account.getId(), null, accountBalanceFile1.getConsensusTimestamp() + 2L);
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
@@ -118,7 +128,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         accountBalanceRepository.deleteAll();
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         account.setBalance(0L);
@@ -135,7 +145,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         accountBalanceRepository.prune(recordFile2.getConsensusEnd());
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         account.setBalance(0L);
@@ -152,7 +162,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         recordFileRepository.deleteAll();
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         account.setBalance(0L);
@@ -168,7 +178,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         entityRepository.deleteAll();
 
         // when
-        initializeEntityBalanceMigration.doMigrate();
+        migration.doMigrate();
 
         // then
         account.setDeleted(false); // We only know for sure that entities in the balance file are not deleted
@@ -189,7 +199,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         // given
         setup();
         // when
-        initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
+        migration.onEnd(accountBalanceFile2);
 
         // then
         account.setBalance(0L);
@@ -203,14 +213,14 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     void onEndEarlyReturn() {
         // given
         setup();
-        initializeEntityBalanceMigration.onEnd(accountBalanceFile2);
+        migration.onEnd(accountBalanceFile2);
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
                 .persist();
         // when
-        initializeEntityBalanceMigration.onEnd(accountBalanceFile3);
+        migration.onEnd(accountBalanceFile3);
 
         // then
         account.setBalance(0L);
@@ -226,7 +236,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         setupForFirstAccountBalanceFile();
 
         // when
-        initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
+        migration.onEnd(accountBalanceFile1);
 
         // then
         account.setBalance(0L);
@@ -239,15 +249,11 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEnd() {
         // given
-        setupForFirstAccountBalanceFile();
-        recordFile2 = domainBuilder
-                .recordFile()
-                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
-                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
-                .persist();
+        setup();
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
         // when
-        initializeEntityBalanceMigration.onEnd(accountBalanceFile1);
+        migration.onEnd(accountBalanceFile1);
 
         // then
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
