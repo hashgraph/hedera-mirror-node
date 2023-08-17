@@ -109,8 +109,9 @@ log "Copying Flyway configuration"
 cp "${MIGRATIONS_DIR}/V2.0."[0-2]* ${FLYWAY_DIR}/sql/
 cat > "${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
+flyway.placeholders.idPartitionSize=1000000
+flyway.placeholders.maxEntityId=5000000
 flyway.placeholders.maxEntityIdRatio=2.0
-flyway.placeholders.partitionIdInterval='.001 seconds'
 flyway.placeholders.partitionStartDate='4 years'
 flyway.placeholders.partitionTimeInterval='1 month'
 flyway.placeholders.schema=${TARGET_DB_SCHEMA}

@@ -47,7 +47,7 @@ class PartitionMaintenanceTest extends IntegrationTest {
                            tp.to_value::bigint as current_to,
                            (greatest(0, case when tp.partition_column::varchar ~ '^(.*_timestamp|consensus_end)$' then
                                              extract(epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000
-                                             else extract(epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000 end)) as previous_from,
+                                             else tp.from_value::bigint - ? end)) as previous_from,
                            tp.partition_column::varchar ~ '^(.*_timestamp|consensus_end)$' as time_partition,
                            (select coalesce(max(id), 1) from entity)             as max_entity_id
                     from time_partitions tp
@@ -91,6 +91,8 @@ class PartitionMaintenanceTest extends IntegrationTest {
             if (actual.timePartition) {
                 assertThat(actual.currentTo).isEqualTo(expected.currentFrom);
                 assertThat(actual.currentFrom).isEqualTo(expected.previousFrom);
+            } else {
+                assertThat(actual).isEqualTo(expected);
             }
         }
         partitionMaintenance.runMaintenance();
@@ -108,13 +110,14 @@ class PartitionMaintenanceTest extends IntegrationTest {
         var newEntityId = entityIdPartition.getCurrentTo() - 1;
         domainBuilder.entity().customize(builder -> builder.id(newEntityId)).persist();
         partitionMaintenance.runMaintenance();
-
+        var partitionSize = Long.parseLong(flywayProperties.getPlaceholders().get("idPartitionSize"));
         var expected = latestPartitions.stream()
                 .peek(partitionInfo -> {
                     if (!partitionInfo.isTimePartition()) {
-                        partitionInfo.setPartition(partitionInfo.parentTable + "_p1");
                         var newFrom = partitionInfo.currentTo;
-                        var newTo = 2 * (newFrom - partitionInfo.currentFrom);
+                        var partitionCount = newFrom / partitionSize;
+                        var newTo = partitionInfo.currentTo + partitionSize;
+                        partitionInfo.setPartition(partitionInfo.parentTable + "_p" + partitionCount);
                         partitionInfo.setPreviousFrom(partitionInfo.currentFrom);
                         partitionInfo.setCurrentFrom(newFrom);
                         partitionInfo.setCurrentTo(newTo);
@@ -132,7 +135,7 @@ class PartitionMaintenanceTest extends IntegrationTest {
                 GET_LATEST_PARTITIONS,
                 new DataClassRowMapper<>(PartitionInfo.class),
                 flywayProperties.getPlaceholders().get("partitionTimeInterval"),
-                flywayProperties.getPlaceholders().get("partitionIdInterval"));
+                Long.parseLong(flywayProperties.getPlaceholders().get("idPartitionSize")));
     }
 
     @Data
