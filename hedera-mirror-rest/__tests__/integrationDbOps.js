@@ -57,7 +57,7 @@ const v2SchemaConfigs = {
 
 const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
-const dbUrlRegex = /^postgresql:\/\/(.*):(.*)@(.*):(\d+)/;
+const dbUrlRegex = /^postgres:\/\/(.*):(.*)@(.*):(\d+)/;
 
 const extractDbConnectionParams = (url) => {
   const found = url.match(dbUrlRegex);
@@ -183,7 +183,7 @@ const getCleanupSql = async () => {
   cleanupSql.v2 = rows
     .map(
       (row) => `delete
-                                     from ${row.table_name};`
+                from ${row.table_name};`
     )
     .join('\n');
   return cleanupSql.v2;
