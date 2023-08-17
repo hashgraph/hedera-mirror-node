@@ -54,6 +54,12 @@ val dockerBuild = tasks.register<DockerBuildImage>("dockerBuild") {
     images.addAll(dockerImages())
     inputDir = file(projectDir)
     pull = true
+
+    val dockerPlatform: String by project
+    if (dockerPlatform.isNotBlank()) {
+        buildArgs.put("TARGETPLATFORM", dockerPlatform)
+        platform = dockerPlatform
+    }
 }
 
 tasks.register<DockerPushImage>("dockerPush") {

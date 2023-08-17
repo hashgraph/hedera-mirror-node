@@ -20,6 +20,7 @@ import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
@@ -191,6 +192,11 @@ public class ServicesConfiguration {
                 pricedUsageCalculator,
                 queryResourceUsageEstimators,
                 txnUsageEstimators);
+    }
+
+    @Bean
+    LivePricesSource livePricesSource(HbarCentExchange hbarCentExchange, UsagePricesProvider usagePricesProvider) {
+        return new LivePricesSource(hbarCentExchange, usagePricesProvider);
     }
 
     @Bean

@@ -60,7 +60,7 @@ public class EntityProperties {
 
         private boolean files = true;
 
-        private boolean itemizedTransfers = true;
+        private boolean itemizedTransfers = false;
 
         private boolean pendingReward = true;
 

@@ -36,6 +36,7 @@ import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
@@ -52,7 +53,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final MirrorNodeEvmProperties evmProperties;
     private final StaticBlockMetaSource blockMetaSource;
-    private final PricesAndFeesImpl pricesAndFees;
+    private final LivePricesSource pricesAndFees;
     private final GasCalculatorHederaV22 gasCalculator;
     private final PrecompileMapper precompileMapper;
     private final EntityAddressSequencer entityAddressSequencer;
@@ -67,7 +68,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorNodeEvmProperties evmProperties,
             final TraceProperties traceProperties,
             final StaticBlockMetaSource blockMetaSource,
-            final PricesAndFeesImpl pricesAndFees,
+            final LivePricesSource pricesAndFees,
             final GasCalculatorHederaV22 gasCalculator,
             final EntityAddressSequencer entityAddressSequencer,
             final ContractRepository contractRepository,
@@ -131,7 +132,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
-                codeCache);
+                codeCache,
+                Address.ZERO.equals(receiver));
 
         processor.setOperationTracer(mirrorOperationTracer);
 

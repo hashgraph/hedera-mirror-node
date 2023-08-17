@@ -119,12 +119,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setEntityTransactions(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
         entityProperties.getPersist().setTransactionBytes(false);
     }
 
     @AfterEach
     void after() {
         entityProperties.getPersist().setEntityTransactions(false);
+        entityProperties.getPersist().setItemizedTransfers(false);
     }
 
     @Test

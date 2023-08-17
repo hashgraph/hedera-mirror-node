@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -90,13 +91,15 @@ public class TokenClient extends AbstractNetworkClient {
         return -1;
     }
 
-    public TokenId getToken(TokenNameEnum tokenNameEnum) {
+    public TokenResponse getToken(TokenNameEnum tokenNameEnum) {
+        AtomicReference<NetworkTransactionResponse> responseRef = new AtomicReference<>();
         // Create token only if it does not currently exist
         var tokenId = tokenMap.computeIfAbsent(tokenNameEnum, x -> {
             var operator = sdkClient.getExpandedOperatorAccountId();
             try {
-                var response = createToken(tokenNameEnum, operator);
-                return response.getReceipt().tokenId;
+                var networkTransactionResponse = createToken(tokenNameEnum, operator);
+                responseRef.set(networkTransactionResponse);
+                return networkTransactionResponse.getReceipt().tokenId;
             } catch (Exception e) {
                 log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
                 return null;
@@ -108,7 +111,7 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         log.debug("Retrieved token: {} with ID: {}", tokenNameEnum, tokenId);
-        return tokenId;
+        return new TokenResponse(tokenId, responseRef.get());
     }
 
     private NetworkTransactionResponse createToken(TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId) {
@@ -580,6 +583,8 @@ public class TokenClient extends AbstractNetworkClient {
             return String.format("%s (%s)", symbol, tokenType);
         }
     }
+
+    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {}
 
     private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
 }

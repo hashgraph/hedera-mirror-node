@@ -36,9 +36,6 @@ loki:
       enabled: false
       grafanaAgent:
         installOperator: false
-  persistence:
-    enableStatefulSetAutoDeletePVC: true
-    size: 100Gi
   rules:
     - name: hedera-mirror-grpc
       rules:
@@ -138,6 +135,9 @@ loki:
         configMap:
           defaultMode: 420
           name: mirror-log-alerts
+    persistence:
+      enableStatefulSetAutoDeletePVC: true
+      size: 100Gi
     replicas: 1
     resources:
       limits:

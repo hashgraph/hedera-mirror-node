@@ -28,7 +28,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -42,7 +42,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -344,7 +344,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -358,7 +358,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -680,7 +680,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -694,7 +694,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1017,7 +1017,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -1031,7 +1031,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1252,7 +1252,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -1266,7 +1266,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1519,7 +1519,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -1533,7 +1533,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1681,8 +1681,8 @@
       {
         "current": {
           "selected": false,
-          "text": "grafanacloud-mirrornode-logs",
-          "value": "grafanacloud-mirrornode-logs"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Loki datasource to use",
         "hide": 2,

@@ -343,7 +343,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -357,7 +357,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1127,7 +1127,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -1141,7 +1141,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -1153,7 +1153,7 @@
       "datasource": {
         "uid": "${prometheus}"
       },
-      "description": "The amount of memory configured for the app",
+      "description": "The amount of memory consumed by the app",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1979,7 +1979,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "description": "The amount of time it takes to invoke the Spring Data repository method to execute a query.",
       "fieldConfig": {
@@ -2065,7 +2065,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "sum(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method)",
@@ -2080,7 +2080,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "description": "The amount of time the process has been running.",
       "fieldConfig": {
@@ -2160,7 +2160,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "process_uptime_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
@@ -2177,7 +2177,7 @@
       "collapsed": true,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -2492,7 +2492,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -2504,7 +2504,7 @@
       "collapsed": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "${prometheus}"
       },
       "gridPos": {
         "h": 1,
@@ -2518,7 +2518,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "${prometheus}"
           },
           "refId": "A"
         }
@@ -2773,8 +2773,8 @@
       {
         "current": {
           "selected": false,
-          "text": "grafanacloud-mirrornode-logs",
-          "value": "grafanacloud-mirrornode-logs"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Loki datasource to use",
         "hide": 2,

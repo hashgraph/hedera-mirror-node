@@ -56,9 +56,10 @@ public class BatchUpserter extends BatchInserter {
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
         log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
-        upsertMetric = Timer.builder("hedera.mirror.importer.parse.upsert")
-                .description("Time to insert transaction information from temp to final table")
+        upsertMetric = Timer.builder(LATENCY_METRIC)
+                .description("The time it took to batch insert rows")
                 .tag("table", finalTableName)
+                .tag("upsert", "true")
                 .register(meterRegistry);
     }
 
