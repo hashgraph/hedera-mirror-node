@@ -58,8 +58,8 @@ public class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SystemContractFunctions {
-    // TODO: Add integration cases for tinycentsToTinybars and tinybarsToTinycents
-    ;
+        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {1550L}),
+        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {1550L}, new Object[] {100L});
 
         private final String name;
         private final Object[] functionParameters;
