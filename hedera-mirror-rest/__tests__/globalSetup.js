@@ -14,63 +14,48 @@
  * limitations under the License.
  */
 
-import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import pg from 'pg';
-import {GenericContainer} from 'testcontainers';
+import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
-const DEFAULT_DB_NAME = 'mirror_node_integration';
-const POSTGRES_PORT = 5432;
-
+const dbNamePrefix = 'test';
 const v1DatabaseImage = 'postgres:14-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.0.0';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 const createDbContainer = async (maxWorkers) => {
-  const dbAdminUser = 'mirror_api_admin';
-  const dbAdminPassword = crypto.randomBytes(16).toString('hex');
   const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
-  console.info(`Starting PostgreSQL docker container with image ${image}`);
+  const dockerDb = await new PostgreSqlContainer(image).start();
+  console.info(`Started PostgreSQL container ${image}`);
 
-  const dockerDb = await new GenericContainer(image)
-    .withEnvironment({
-      POSTGRES_USER: dbAdminUser,
-      POSTGRES_PASSWORD: dbAdminPassword,
-    })
-    .withExposedPorts(POSTGRES_PORT)
-    .start();
-  const host = dockerDb.getHost();
-  const port = dockerDb.getMappedPort(POSTGRES_PORT);
-  console.info(`Started dockerized PostgreSQL at ${host}:${port}`);
-
-  process.env.INTEGRATION_DATABASE_URL = `postgresql://${dbAdminUser}:${dbAdminPassword}@${host}:${port}`;
+  process.env.INTEGRATION_DATABASE_URL = dockerDb.getConnectionUri();
 
   const poolConfig = {
-    user: dbAdminUser,
-    host,
-    database: 'postgres',
-    password: dbAdminPassword,
-    port,
+    database: dockerDb.getDatabase(),
+    host: dockerDb.getHost(),
+    password: dockerDb.getPassword(),
+    port: dockerDb.getPort(),
     sslmode: 'DISABLE',
+    user: dockerDb.getUsername(),
   };
   const pool = new pg.Pool(poolConfig);
 
   for (let i = 1; i <= maxWorkers; i++) {
     // JEST_WORKER_ID starts from 1
     const dbName = getDatabaseNameForWorker(i);
-    await pool.query(`create database ${dbName} with owner ${dbAdminUser}`);
+    await pool.query(`create database ${dbName} with owner ${poolConfig.user}`);
 
     if (isV2Schema()) {
       // create extensions needed for v2
       const query = `
         create extension if not exists btree_gist;
         create extension if not exists citus;
-        grant create on database ${dbName} to ${dbAdminUser};
-        grant all on schema public to ${dbAdminUser};
-        grant temporary on database ${dbName} to ${dbAdminUser};
+        grant create on database ${dbName} to ${poolConfig.user};
+        grant all on schema public to ${poolConfig.user};
+        grant temporary on database ${dbName} to ${poolConfig.user};
         -- Create cast UDFs for citus create_time_partitions
         CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
             LANGUAGE plpgsql AS
@@ -114,7 +99,7 @@ const createDbContainer = async (maxWorkers) => {
 
 const getDatabaseName = () => getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
 
-const getDatabaseNameForWorker = (workerId) => `${DEFAULT_DB_NAME}_${workerId}`;
+const getDatabaseNameForWorker = (workerId) => `${dbNamePrefix}_${workerId}`;
 
 export default async function (globalConfig) {
   await createDbContainer(globalConfig.maxWorkers);
