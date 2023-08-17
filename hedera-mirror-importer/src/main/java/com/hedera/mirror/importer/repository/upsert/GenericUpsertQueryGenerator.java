@@ -77,6 +77,9 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
         // {0} is column name and {1} is column default. t or blank is the temporary table alias and e is the existing.
         velocityContext.put("coalesceColumns", metadata.columns("coalesce({0}, e_{0}, {1})"));
+        velocityContext.put(
+                "coalesceHistoryColumns",
+                metadata.columns("coalesce({0}, e_{0}, {1})", c -> !c.isUpdatable(), "coalesce(e_{0}, {0}, {1})"));
         velocityContext.put("conflictColumns", metadata.columns(ColumnMetadata::isId, "{0}"));
         velocityContext.put("existingColumns", closeRange(metadata.columns("e_{0}")));
         velocityContext.put("existingColumnsAs", metadata.columns("e.{0} as e_{0}"));
