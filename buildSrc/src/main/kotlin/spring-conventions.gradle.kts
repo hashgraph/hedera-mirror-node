@@ -46,7 +46,7 @@ tasks.register<Tar>("package") {
     archiveFileName = "${name}.tgz"
     compression = Compression.GZIP
     into("/${name}") {
-        from("${buildDir}/libs")
+        from("${layout.buildDirectory.asFile.get()}/libs")
         exclude("*-plain.jar")
         include("*.jar")
     }
