@@ -233,10 +233,11 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNoRecordFileAfterTimestamp() {
         // given
-        setupForFirstAccountBalanceFile();
+        setup();
+        recordFileRepository.deleteById(recordFile2.getConsensusEnd());
 
         // when
-        migration.onEnd(accountBalanceFile1);
+        migration.onEnd(accountBalanceFile2);
 
         // then
         account.setBalance(0L);
