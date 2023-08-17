@@ -233,12 +233,12 @@ begin
                case
                    when tp.partition_column::varchar ~ timePartitionRegex
                        then extract(epoch from(to_timestamp(max(tp.to_value::bigint) / 1000000000.0)))::bigint
-                   else max(tp.to_value)::bigint
+                   else max(tp.to_value::bigint)
                    end                                               as next_from,
                case
                    when tp.partition_column::varchar ~ timePartitionRegex
                        then extract(epoch from(to_timestamp(max(tp.to_value::bigint) / 1000000000.0) + interval ${partitionTimeInterval}))::bigint
-                   else max(tp.to_value)::bigint + ${idPartitionSize}
+                   else max(tp.to_value::bigint) + ${idPartitionSize}
                    end                                               as next_to,
                (tp.partition_column::varchar ~ timePartitionRegex)   as time_partition,
                (select coalesce(max(id), 1) from entity)             as max_entity_id
@@ -250,7 +250,7 @@ begin
                (partitionInfo.time_partition and
                 (CURRENT_TIMESTAMP + interval ${partitionTimeInterval} < to_timestamp(partitionInfo.next_from))))
             then
-                raise info 'Skipping partition creation for %', partitionInfo.parent_table;
+                raise LOG 'Skipping partition creation for % from % to %', partitionInfo.parent_table, partitionInfo.next_from, partitionInfo.next_to;
                 continue;
             end if;
             if partitionInfo.time_partition then
@@ -267,7 +267,7 @@ begin
                 into createdPartition;
             end if;
             commit;
-            raise info 'Processed % created %', partitionInfo.parent_table, createdPartition;
+            raise LOG 'Processed % for values from % to % created %', partitionInfo.parent_table, partitionInfo.next_from, partitionInfo.next_to, createdPartition;
         end loop;
 end;
 $$
