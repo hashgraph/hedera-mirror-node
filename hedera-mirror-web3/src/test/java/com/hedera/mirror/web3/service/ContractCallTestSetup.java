@@ -162,6 +162,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
+    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS =
+            toAddress(EntityId.of(0, 0, 1264, CONTRACT));
     protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
     protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260, CONTRACT));
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
@@ -382,6 +384,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     protected Path ERC_ABI_PATH;
 
+    // The contract source `ExchangeRatePrecompile.sol` is in test resources
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.bin")
+    protected Path EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.json")
+    protected Path EXCHANGE_RATE_PRECOMPILE_ABI_PATH;
+
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
     protected Path ETH_CALL_CONTRACT_BYTES_PATH;
@@ -531,6 +540,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         reverterContractPersist();
         stateContractPersist();
         precompileContractPersist();
+        systemExchangeRateContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
         fileDataPersist();
@@ -1202,6 +1212,43 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         domainBuilder.recordFile().customize(f -> f.bytes(ercContractBytes)).persist();
         return ercContractEntityId;
+    }
+
+    private EntityId systemExchangeRateContractPersist() {
+        final var exchangeRateContractBytes =
+                functionEncodeDecoder.getContractBytes(EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH);
+        final var exchangeRateContractEntityId =
+                fromEvmAddress(EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var exchangeRteContractEvmAddress = toEvmAddress(exchangeRateContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(exchangeRateContractEntityId.getId())
+                        .num(exchangeRateContractEntityId.getEntityNum())
+                        .evmAddress(exchangeRteContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(exchangeRateContractEntityId.getId()).runtimeBytecode(exchangeRateContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(exchangeRateContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(exchangeRateContractBytes))
+                .persist();
+        return exchangeRateContractEntityId;
     }
 
     protected void customFeePersist(final FeeCase feeCase) {
