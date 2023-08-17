@@ -85,6 +85,7 @@ class SyntheticTxnFactoryTest {
             List.of(ByteString.copyFromUtf8("AAA"), ByteString.copyFromUtf8("BBB"), ByteString.copyFromUtf8("CCC"));
     private static final long valueInTinyBars = 123;
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
+    public static final String PRNG_PRECOMPILED_CONTRACT_ADDRESS = "0x169";
     public static final TokenID token = IdUtils.asToken("0.0.1");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     public static final AccountID sender = IdUtils.asAccount("0.0.2");
@@ -93,7 +94,7 @@ class SyntheticTxnFactoryTest {
     public static final Id payerId = Id.fromGrpcAccount(payer);
     public static final Id senderId = Id.fromGrpcAccount(sender);
 
-    private SyntheticTxnFactory subject = new SyntheticTxnFactory();
+    private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
     @Test
     void createsExpectedCryptoCreateWithEDKeyAlias() {

@@ -39,7 +39,10 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
@@ -66,7 +69,7 @@ public class EvmOperationConstructionUtil {
     public static final String EVM_VERSION = EVM_VERSION_0_34;
 
     public static Map<String, Provider<ContractCreationProcessor>> ccps(
-            GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
         return Map.of(
                 EVM_VERSION_0_30,
@@ -104,16 +107,20 @@ public class EvmOperationConstructionUtil {
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
                 evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
+        // final var prngPrecompiledContract
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
-
+        //        hederaPrecompiles.put(
+        //                EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
+        //                new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
         return hederaPrecompiles;
     }
 
-    private static EVM constructEvm(GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        var operationRegistry = new OperationRegistry();
-        BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
+    private static EVM constructEvm(
+            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        final var operationRegistry = new OperationRegistry();
+        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
         registerShanghaiOperations(
                 operationRegistry,
@@ -142,12 +149,12 @@ public class EvmOperationConstructionUtil {
     private static CreateOperationExternalizer getDefaultCreateOperationExternalizer() {
         return new CreateOperationExternalizer() {
             @Override
-            public void externalize(MessageFrame frame, MessageFrame childFrame) {
+            public void externalize(final MessageFrame frame, final MessageFrame childFrame) {
                 // do nothing
             }
 
             @Override
-            public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
+            public boolean shouldFailBasedOnLazyCreation(final MessageFrame frame, final Address contractAddress) {
                 return false;
             }
         };
