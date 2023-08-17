@@ -100,7 +100,6 @@ public class EntityProperties {
 
         /**
          * If configured the mirror node will store the raw transaction record bytes on the transaction table.
-         * The transaction record bytes include the signatures used for stateproof validation.
          */
         private boolean transactionRecordBytes = false;
 
