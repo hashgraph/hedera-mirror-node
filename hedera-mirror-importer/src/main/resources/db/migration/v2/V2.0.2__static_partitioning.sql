@@ -62,14 +62,10 @@ WHERE attrelid = table_name::oid
     AND attnum = partition_column_index;
 
 IF partition_column_type <> 'bigint'::regtype
-    --         TODO should support below types too
-    --     AND partition_column_type <> 'bigserial'::regtype
-    --     AND partition_column_type <> 'integer'::regtype
-    --     AND partition_column_type <> 'serial'::regtype
-    --     AND partition_column_type <> 'smallint'::regtype
-    --     AND partition_column_type <> 'smallserial'::regtype
+        AND partition_column_type <> 'integer'::regtype
+        AND partition_column_type <> 'smallint'::regtype
             THEN
-            RAISE 'type of the partition column of the table % must be bigint', table_name;
+            RAISE 'type of the partition column of the table % must be bigint, integer, or smallint', table_name;
 END IF;
 
     -- If no partition exists, truncate from_value to find intuitive initial value.
@@ -122,8 +118,6 @@ END IF;
 
     WHILE current_range_from_value < to_value LOOP
         -- Check whether partition with given range has already been created
-        -- Since partition interval can be given with different types, we are converting
-        -- all variables to timestamptz to make sure that we are comparing same type of parameters
         EXECUTE partition_exist_query into partition using current_range_from_value, current_range_to_value, table_name;
 
         IF partition is not NULL THEN
