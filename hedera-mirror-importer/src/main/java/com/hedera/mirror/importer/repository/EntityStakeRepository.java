@@ -41,10 +41,23 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
         with end_period as (
           select epoch_day, consensus_timestamp
           from node_stake
-          where epoch_day = coalesce(
+          where epoch_day >= coalesce(
             (select end_stake_period + 1 from entity_stake where id = 800),
-            (select max(epoch_day) from node_stake)
+            (
+              select epoch_day
+              from node_stake
+              where consensus_timestamp > (
+                select lower(timestamp_range) as timestamp from entity where id = 800
+                union all
+                select lower(timestamp_range) as timestamp from entity_history where id = 800
+                order by timestamp
+                limit 1
+              )
+              order by consensus_timestamp
+              limit 1
+            )
           )
+          order by epoch_day
           limit 1
         ), balance_timestamp as (
              select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
@@ -167,10 +180,23 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             with ending_period as (
               select epoch_day, consensus_timestamp
               from node_stake
-              where epoch_day = coalesce(
+              where epoch_day >= coalesce(
                 (select end_stake_period + 1 from entity_stake where id = 800),
-                (select max(epoch_day) from node_stake)
+                (
+                  select epoch_day
+                  from node_stake
+                  where consensus_timestamp > (
+                    select lower(timestamp_range) as timestamp from entity where id = 800
+                    union all
+                    select lower(timestamp_range) as timestamp from entity_history where id = 800
+                    order by timestamp
+                    limit 1
+                  )
+                  order by consensus_timestamp
+                  limit 1
+                )
               )
+              order by epoch_day
               limit 1
             ), ending_period_stake_state as (
               select
