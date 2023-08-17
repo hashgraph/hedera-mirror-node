@@ -37,13 +37,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import lombok.CustomLog;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 public class ConfigurableTransactionGenerator implements TransactionGenerator {
 
     private static final SecureRandom RANDOM = new SecureRandom();

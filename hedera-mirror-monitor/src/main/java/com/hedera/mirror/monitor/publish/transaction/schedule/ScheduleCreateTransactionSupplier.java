@@ -27,12 +27,12 @@ import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
 import com.hedera.mirror.monitor.util.Utility;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.Getter;
-import lombok.extern.log4j.Log4j2;
 
 @Data
-@Log4j2
+@CustomLog
 public class ScheduleCreateTransactionSupplier implements TransactionSupplier<ScheduleCreateTransaction>, AdminKeyable {
 
     private String adminKey;

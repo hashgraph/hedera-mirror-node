@@ -27,10 +27,10 @@ import jakarta.inject.Named;
 import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
 
-@Log4j2
+@CustomLog
 @Named
 public class EventFileReaderV3 implements EventFileReader {
 

@@ -21,10 +21,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
 import java.time.Instant;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 
-@Log4j2
+@CustomLog
 public class StringToInstantDeserializer extends JsonDeserializer<Instant> {
 
     @Override

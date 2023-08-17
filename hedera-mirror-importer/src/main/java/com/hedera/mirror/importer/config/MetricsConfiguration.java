@@ -28,15 +28,15 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.function.ToDoubleFunction;
 import javax.sql.DataSource;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 
-@Log4j2
+@CustomLog
 @Configuration
 @RequiredArgsConstructor
 class MetricsConfiguration {

@@ -18,8 +18,8 @@ package com.hedera.mirror.grpc.config;
 
 import jakarta.inject.Named;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.event.GrpcServerShutdownEvent;
 import net.devh.boot.grpc.server.event.GrpcServerStartedEvent;
 import net.devh.boot.grpc.server.event.GrpcServerTerminatedEvent;
@@ -28,7 +28,7 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.context.event.EventListener;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class GrpcHealthIndicator implements HealthIndicator {

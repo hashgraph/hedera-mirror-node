@@ -24,13 +24,13 @@ import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 import reactor.core.publisher.Flux;
 
 @Named
-@Log4j2
+@CustomLog
 @Primary
 @RequiredArgsConstructor
 public class CompositeTopicListener implements TopicListener {

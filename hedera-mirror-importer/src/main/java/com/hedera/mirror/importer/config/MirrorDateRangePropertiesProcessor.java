@@ -37,11 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class MirrorDateRangePropertiesProcessor {

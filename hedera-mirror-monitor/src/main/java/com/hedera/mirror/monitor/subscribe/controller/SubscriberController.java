@@ -24,8 +24,8 @@ import com.hedera.mirror.monitor.subscribe.Scenario;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Log4j2
+@CustomLog
 @RequestMapping("/api/v1/subscriber")
 @RequiredArgsConstructor
 @RestController

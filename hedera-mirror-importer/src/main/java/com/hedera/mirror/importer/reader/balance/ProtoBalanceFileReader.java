@@ -35,13 +35,13 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @Named
 public class ProtoBalanceFileReader implements BalanceFileReader {
 
