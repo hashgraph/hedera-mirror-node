@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -36,6 +37,7 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -43,7 +45,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -53,6 +58,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final InitializeEntityBalanceMigration migration;
     private final RecordFileRepository recordFileRepository;
 
@@ -212,8 +218,17 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
-        migration.onEnd(accountBalanceFile2);
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        transactionTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
+
+        // then
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+
+        // given
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder
                 .accountBalanceFile()

@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
@@ -37,6 +38,7 @@ import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
@@ -44,7 +46,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -52,6 +57,8 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
+
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -298,8 +305,13 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        transactionTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile2));
+
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder
                 .accountBalanceFile()
