@@ -28,9 +28,9 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -42,7 +42,7 @@ import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 /**
  * Intercepts requests to the S3 API and records relevant metrics before continuing.
  */
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {

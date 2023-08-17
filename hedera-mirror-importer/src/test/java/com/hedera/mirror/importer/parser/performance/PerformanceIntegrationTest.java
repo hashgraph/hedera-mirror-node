@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,7 +41,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.startupcheck.IndefiniteWaitOneShotStartupCheckStrategy;
 
-@Log4j2
+@CustomLog
 @SpringBootTest
 public abstract class PerformanceIntegrationTest {
 

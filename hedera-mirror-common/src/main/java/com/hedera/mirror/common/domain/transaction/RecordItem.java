@@ -43,17 +43,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.util.Version;
 
 @Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = PRIVATE)
-@Log4j2
+@CustomLog
 @Value
 public class RecordItem implements StreamItem {
 

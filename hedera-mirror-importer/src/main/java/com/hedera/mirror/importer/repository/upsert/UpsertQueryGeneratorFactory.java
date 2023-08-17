@@ -20,10 +20,10 @@ import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class UpsertQueryGeneratorFactory {

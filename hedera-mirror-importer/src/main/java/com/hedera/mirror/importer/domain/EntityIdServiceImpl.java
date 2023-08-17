@@ -34,12 +34,12 @@ import jakarta.inject.Named;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-@Log4j2
+@CustomLog
 @Named
 public class EntityIdServiceImpl implements EntityIdService {
 

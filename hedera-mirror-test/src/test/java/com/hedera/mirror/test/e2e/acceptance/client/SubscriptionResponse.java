@@ -26,11 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.CustomLog;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 
 @Data
-@Log4j2
+@CustomLog
 public class SubscriptionResponse {
     private SubscriptionHandle subscription;
     private List<MirrorHCSResponse> mirrorHCSResponses = new ArrayList<>();

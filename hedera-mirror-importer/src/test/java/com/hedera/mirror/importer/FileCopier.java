@@ -25,14 +25,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.function.Function;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-@Log4j2
+@CustomLog
 @Value
 public class FileCopier {
 

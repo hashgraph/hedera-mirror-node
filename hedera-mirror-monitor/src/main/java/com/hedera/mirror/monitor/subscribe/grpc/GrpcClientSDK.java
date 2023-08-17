@@ -29,13 +29,13 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 
-@Log4j2
+@CustomLog
 @Named
 class GrpcClientSDK implements GrpcClient {
 

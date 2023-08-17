@@ -29,10 +29,10 @@ import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.scheduling.annotation.Scheduled;
 
-@Log4j2
+@CustomLog
 @Named
 public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, AccountBalance> {
 

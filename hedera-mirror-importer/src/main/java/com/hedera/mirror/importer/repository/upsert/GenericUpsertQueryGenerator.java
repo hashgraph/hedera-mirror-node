@@ -18,15 +18,15 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import java.io.StringWriter;
 import java.text.MessageFormat;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
