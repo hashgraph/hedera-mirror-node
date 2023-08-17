@@ -117,7 +117,7 @@ const flywayMigrate = async () => {
       "placeholders.compressionAge": 9007199254740991,
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
-      "placeholders.idPartitionSize": 1000000000,
+      "placeholders.idPartitionSize": 1000000000000,
       "placeholders.maxEntityId": 5000000,
       "placeholders.maxEntityIdRatio": 2.0,
       "placeholders.partitionStartDate": "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
