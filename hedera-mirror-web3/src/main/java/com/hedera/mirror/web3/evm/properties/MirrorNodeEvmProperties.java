@@ -58,6 +58,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     private boolean dynamicEvmVersion = true;
 
+    @Min(1)
     private long exchangeRateGasReq = 100;
 
     @NotBlank
