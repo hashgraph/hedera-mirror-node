@@ -29,18 +29,17 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -59,6 +58,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
+    private final MirrorProperties mirrorProperties;
     private final InitializeEntityBalanceMigration migration;
     private final RecordFileRepository recordFileRepository;
 
@@ -74,14 +74,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
-    }
-
-    @AfterEach
-    void after() throws Exception {
-        Field activeField =
-                InitializeEntityBalanceMigration.class.getSuperclass().getDeclaredField("firstConsensusTimestamp");
-        activeField.setAccessible(true);
-        activeField.set(migration, new AtomicLong(0L));
     }
 
     @Test
@@ -203,6 +195,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNotFirstFile() {
         // given
+        var migration = new InitializeEntityBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         // when
         migration.onEnd(accountBalanceFile2);
@@ -218,6 +212,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
+        var migration = new InitializeEntityBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
@@ -248,6 +244,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNoRecordFileAfterTimestamp() {
         // given
+        var migration = new InitializeEntityBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         recordFileRepository.deleteById(recordFile2.getConsensusEnd());
 
@@ -265,6 +263,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEnd() {
         // given
+        var migration = new InitializeEntityBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 

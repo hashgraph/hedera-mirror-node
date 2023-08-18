@@ -31,11 +31,11 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 abstract class TimeSensitiveBalanceMigration extends RepeatableMigration
         implements BalanceStreamFileListener, TransactionSynchronization {
 
-    private static final int NO_BALANCE_FILE = 0;
-    private static final int EXECUTED = -1;
+    private static final long EXECUTED = -1L;
+    private static final long NO_BALANCE_FILE = 0L;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
-    private final AtomicLong firstConsensusTimestamp = new AtomicLong(0L);
+    private final AtomicLong firstConsensusTimestamp = new AtomicLong(NO_BALANCE_FILE);
 
     protected TimeSensitiveBalanceMigration(
             Map<String, MigrationProperties> migrationPropertiesMap,

@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -64,6 +65,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private final TokenTransferRepository tokenTransferRepository;
+    private final MirrorProperties mirrorProperties;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
     private AtomicLong timestamp;
@@ -283,9 +285,11 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNotFirstFile() {
         // given
+        var migration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+        migration.onEnd(accountBalanceFile2);
 
         // then
         tokenAccount.setBalance(0L);
@@ -305,12 +309,14 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
+        var migration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
-        transactionTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile2));
+        transactionTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
 
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder
@@ -318,7 +324,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
                 .persist();
         // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile3);
+        migration.onEnd(accountBalanceFile3);
 
         // then
         tokenAccount.setBalance(0L);
@@ -338,11 +344,13 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNoRecordFileAfterTimestamp() {
         // given
+        var migration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         initialSetup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
         // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
+        migration.onEnd(accountBalanceFile1);
 
         // then
         tokenAccount.setBalance(0L);
@@ -362,11 +370,13 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEnd() {
         // given
+        var migration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
         // when
-        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
+        migration.onEnd(accountBalanceFile1);
 
         // then
         assertThat(tokenAccountRepository.findAll())

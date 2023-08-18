@@ -42,22 +42,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Tag("migration")
 class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
-    private final SyntheticNftAllowanceOwnerMigration migration;
-    private final NftAllowanceRepository nftAllowanceRepository;
     private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001", CONTRACT);
     private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001", CONTRACT);
-    private NftAllowance nftAllowancePreMigration;
-    private NftAllowance collidedNftAllowance;
     private static final long INCORRECT_OWNER_ACCOUNT_ID = 1001L;
-    private Pair<NftAllowance, List<NftAllowance>> incorrectNftAllowancePair;
-    private Pair<NftAllowance, List<NftAllowance>> unaffectedNftAllowancePair;
-    private Pair<NftAllowance, List<NftAllowance>> correctNftAllowancePair;
-    private NftAllowance newNftAllowance;
     private static final long OWNER_ACCOUNT_ID = 38L;
     private static final long OWNER_PRE_MIGRATION = 1322L;
     private static final long SPENDER = 39L;
     private static final long TOKEN_ID = 44L;
     private static final long CONTRACT_RESULT_CONSENSUS = 1676546391434923004L;
+    private final SyntheticNftAllowanceOwnerMigration migration;
+    private final NftAllowanceRepository nftAllowanceRepository;
+    private NftAllowance nftAllowancePreMigration;
+    private NftAllowance collidedNftAllowance;
+    private Pair<NftAllowance, List<NftAllowance>> incorrectNftAllowancePair;
+    private Pair<NftAllowance, List<NftAllowance>> unaffectedNftAllowancePair;
+    private Pair<NftAllowance, List<NftAllowance>> correctNftAllowancePair;
+    private NftAllowance newNftAllowance;
 
     @AfterEach
     void after() throws Exception {

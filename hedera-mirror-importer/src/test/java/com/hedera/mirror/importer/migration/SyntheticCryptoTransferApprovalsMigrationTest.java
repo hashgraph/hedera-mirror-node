@@ -70,22 +70,10 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
-
-    EntityId contractId = EntityId.of("0.0.2119900", CONTRACT);
-    EntityId contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-    EntityId priorContractId = EntityId.of("0.0.2119899", CONTRACT);
-
-    Entity currentKeyUnaffectedEntity;
-    Entity currentKeyAffectedEntity;
-    Entity noKeyEntity;
-    Entity thresholdTwoKeyEntity;
-
-    private final @Owner JdbcTemplate jdbcTemplate;
-    private final SyntheticCryptoTransferApprovalMigration migration;
-    private final CryptoTransferRepository cryptoTransferRepository;
-    private final TransactionRepository transactionRepository;
-    private final TokenTransferRepository tokenTransferRepository;
-    private final MirrorProperties mirrorProperties;
+    private static final AtomicLong count = new AtomicLong(100000);
+    private static final EntityId contractId = EntityId.of("0.0.2119900", CONTRACT);
+    private static final EntityId contractId2 = EntityId.of("0.0.2119901", CONTRACT);
+    private static final EntityId priorContractId = EntityId.of("0.0.2119899", CONTRACT);
     private static final RecordFile RECORD_FILE = RecordFile.builder()
             .consensusStart(START_TIMESTAMP)
             .consensusEnd(END_TIMESTAMP)
@@ -93,8 +81,16 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             .hapiVersionMinor(39)
             .hapiVersionPatch(1)
             .build();
-
-    private AtomicLong count = new AtomicLong(100000);
+    private final @Owner JdbcTemplate jdbcTemplate;
+    private final SyntheticCryptoTransferApprovalMigration migration;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final TransactionRepository transactionRepository;
+    private final TokenTransferRepository tokenTransferRepository;
+    private final MirrorProperties mirrorProperties;
+    private Entity currentKeyUnaffectedEntity;
+    private Entity currentKeyAffectedEntity;
+    private Entity noKeyEntity;
+    private Entity thresholdTwoKeyEntity;
 
     @AfterEach
     void after() throws Exception {
@@ -354,7 +350,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
         var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
 
-        var cryptoTransfersPair = setupCryptoTransfers(
+        return setupCryptoTransfers(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -364,7 +360,6 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                 pastKeyUnaffectedEntity,
                 pastKeyAffectedEntity,
                 thresholdTwoKeyEntity);
-        return cryptoTransfersPair;
     }
 
     @NotNull
@@ -765,15 +760,13 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
                             e -> e.key(getThresholdKey(pastContractNum)).timestampRange(rangeUpdate1))
                     .get();
             var pastEntityHistory = saveHistory(update1);
-            var pastEntity = domainBuilder
+            return domainBuilder
                     .entity()
                     .customize(e -> e.id(pastEntityHistory.getId())
                             .key(pastEntityHistory.getKey())
                             .num(pastEntityHistory.getNum())
                             .timestampRange(pastEntityHistory.getTimestampRange()))
                     .get();
-
-            return pastEntity;
         }
 
         return currentEntity;
