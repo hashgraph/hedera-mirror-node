@@ -1,6 +1,32 @@
 -- configure session to ensure partitions are created with bounds in UTC
 SET timezone TO 'UTC';
 
+CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
+    LANGUAGE plpgsql AS
+    $$
+DECLARE
+value timestamptz;
+BEGIN
+select to_timestamp(nanos / 1000000000.0)
+into value;
+return value;
+END;
+    $$;
+CREATE CAST (bigint AS timestamptz) WITH FUNCTION nanos_to_timestamptz(bigint);
+
+CREATE FUNCTION timestamptz_to_nanos(ts timestamptz) RETURNS bigint
+    LANGUAGE plpgsql AS
+    $$
+DECLARE
+value bigint;
+BEGIN
+select extract(epoch from ts) * 1000000000
+into value;
+return value;
+END;
+    $$;
+CREATE CAST (timestamptz AS bigint) WITH FUNCTION timestamptz_to_nanos(timestamptz);
+
 CREATE OR REPLACE FUNCTION get_missing_range_partition_ranges(
     table_name regclass,
     partition_size bigint,

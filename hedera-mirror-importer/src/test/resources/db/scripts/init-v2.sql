@@ -26,31 +26,4 @@ alter default privileges in schema public grant insert, update, delete on tables
 -- Owner privileges
 grant all on schema public to mirror_node;
 grant temporary on database mirror_node to mirror_node;
-
-
--- Create cast UDFs for citus create_time_partitions
-CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
-    LANGUAGE plpgsql AS
-'
-DECLARE
-value timestamptz;
-BEGIN
-select to_timestamp(nanos / 1000000000.0)
-into value;
-return value;
-END;
-';
-CREATE CAST (bigint AS timestamptz) WITH FUNCTION nanos_to_timestamptz(bigint);
-
-CREATE FUNCTION timestamptz_to_nanos(ts timestamptz) RETURNS bigint
-    LANGUAGE plpgsql AS
-'
-DECLARE
-value bigint;
-BEGIN
-select extract(epoch from ts) * 1000000000
-into value;
-return value;
-END;
-';
-CREATE CAST (timestamptz AS bigint) WITH FUNCTION timestamptz_to_nanos(timestamptz);
+alter type timestamptz owner to mirror_node;

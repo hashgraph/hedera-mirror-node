@@ -56,32 +56,7 @@ const createDbContainer = async (maxWorkers) => {
         grant create on database ${dbName} to ${poolConfig.user};
         grant all on schema public to ${poolConfig.user};
         grant temporary on database ${dbName} to ${poolConfig.user};
-        -- Create cast UDFs for citus create_time_partitions
-        CREATE FUNCTION nanos_to_timestamptz(nanos bigint) RETURNS timestamptz
-            LANGUAGE plpgsql AS
-        $$
-        DECLARE
-        value timestamptz;
-        BEGIN
-        select to_timestamp(nanos / 1000000000.0)
-        into value;
-        return value;
-        END;
-        $$;
-        CREATE CAST (bigint AS timestamptz) WITH FUNCTION nanos_to_timestamptz(bigint);
-    
-        CREATE FUNCTION timestamptz_to_nanos(ts timestamptz) RETURNS bigint
-            LANGUAGE plpgsql AS
-        $$
-        DECLARE
-        value bigint;
-        BEGIN
-        select extract(epoch from ts) * 1000000000
-        into value;
-        return value;
-        END;
-        $$;
-        CREATE CAST (timestamptz AS bigint) WITH FUNCTION timestamptz_to_nanos(timestamptz);`;
+        alter type timestamptz owner to ${poolConfig.user}`;
 
       const workerPool = new pg.Pool({...poolConfig, database: dbName});
       await workerPool.query(query);
