@@ -30,6 +30,7 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -57,6 +59,7 @@ import org.springframework.transaction.support.TransactionOperations;
  * docs/database/README.md#errata for more detail.
  */
 @Named
+@Order(2)
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
     private static final int ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET = 53;
@@ -67,6 +70,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
 
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
@@ -81,6 +85,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     @SuppressWarnings("java:S107")
     public ErrataMigration(
             Resource balanceOffsets,
+            AccountBalanceFileRepository accountBalanceFileRepository,
             EntityRecordItemListener entityRecordItemListener,
             EntityProperties entityProperties,
             NamedParameterJdbcOperations jdbcOperations,
@@ -91,6 +96,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             TransactionRepository transactionRepository) {
         super(mirrorProperties.getMigration());
         this.balanceOffsets = balanceOffsets;
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.entityRecordItemListener = entityRecordItemListener;
         this.entityProperties = entityProperties;
         this.jdbcOperations = jdbcOperations;
@@ -122,6 +128,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             if (shouldApplyFixedTimeOffset(consensusTimestamp)) {
                 accountBalanceFile.setTimeOffset(ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET);
             }
+            accountBalanceFileRepository.save(accountBalanceFile);
         }
     }
 
