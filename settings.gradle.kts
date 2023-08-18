@@ -19,7 +19,7 @@
  */
 
 plugins {
-    id("com.gradle.enterprise") version ("3.11.1")
+    id("com.gradle.enterprise") version ("3.14.1")
 }
 
 rootProject.name = "hedera-mirror-node"
