@@ -26,8 +26,8 @@ import com.hedera.mirror.importer.parser.batch.BatchUpserter;
 import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransferUpsertQueryGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnCloudPlatform;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -45,7 +45,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @EnableAsync
 @EntityScan({"com.hedera.mirror.common.domain", "com.hedera.mirror.importer.repository.upsert"})
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {

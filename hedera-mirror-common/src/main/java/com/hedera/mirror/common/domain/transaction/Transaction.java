@@ -92,6 +92,9 @@ public class Transaction implements Persistable<Long> {
     @ToString.Exclude
     private byte[] transactionHash;
 
+    @ToString.Exclude
+    private byte[] transactionRecordBytes;
+
     private Integer type;
 
     private Long validDurationSeconds;

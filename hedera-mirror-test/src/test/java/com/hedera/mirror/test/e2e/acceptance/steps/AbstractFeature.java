@@ -24,10 +24,10 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.util.List;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.http.HttpStatus;
 
-@Log4j2
+@CustomLog
 abstract class AbstractFeature {
     protected NetworkTransactionResponse networkTransactionResponse;
 

@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
@@ -43,7 +43,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.retry.Jitter;
 import reactor.retry.Repeat;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 @Validated

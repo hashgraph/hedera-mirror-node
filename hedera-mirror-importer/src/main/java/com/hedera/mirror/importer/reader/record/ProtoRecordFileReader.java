@@ -42,12 +42,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.io.output.NullOutputStream;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @Named
 public class ProtoRecordFileReader implements RecordFileReader {
 

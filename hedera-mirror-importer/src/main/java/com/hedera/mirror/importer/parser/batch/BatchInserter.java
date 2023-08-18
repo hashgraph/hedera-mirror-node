@@ -39,7 +39,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -48,7 +48,7 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 /**
  * Stateless writer to insert rows into PostgreSQL using COPY.
  */
-@Log4j2
+@CustomLog
 public class BatchInserter implements BatchPersister {
 
     protected final DataSource dataSource;
