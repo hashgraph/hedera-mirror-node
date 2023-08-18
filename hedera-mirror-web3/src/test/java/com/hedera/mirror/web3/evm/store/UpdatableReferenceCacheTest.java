@@ -30,6 +30,8 @@ import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,22 +42,20 @@ class UpdatableReferenceCacheTest {
 
     ///// Common types/values/methods for this test start here:
 
-    enum ValueIs {
-        MISSING,
-        NULL,
-        NON_NULL
-    }
-
-    enum ValueFrom {
-        NOWHERE,
-        ORIGINAL,
-        CURRENT
-    }
-
     static final String THIS_KEY = "THIS KEY";
+    static final String NEW_KEY = "NEW_KEY";
     static final Long ORIGINAL_VALUE = 10L;
     static final Long UPDATED_VALUE = -25L;
     static final Long NEW_VALUE = -100L;
+    final UpdatableReferenceCacheSpy sut = new UpdatableReferenceCacheSpy(); // cache that maps String->Long
+
+    @InjectSoftAssertions
+    SoftAssertions softly;
+
+    @AfterEach
+    public void clean() {
+        sut.cleanThread();
+    }
 
     void setInitialCacheLineState(@NonNull final ValueIs originalValueIs, @NonNull final ValueIs currentValueIs) {
         switch (originalValueIs) {
@@ -71,13 +71,6 @@ class UpdatableReferenceCacheTest {
     }
 
     ///// Per-test setup starts here:
-
-    final UpdatableReferenceCacheSpy sut = new UpdatableReferenceCacheSpy(); // cache that maps String->Long
-
-    @InjectSoftAssertions
-    SoftAssertions softly;
-
-    ///// Tests start here:
 
     @Test
     void emptyCacheTest() {
@@ -122,6 +115,8 @@ class UpdatableReferenceCacheTest {
         softly.assertThat(actualGet).isEqualTo(expected);
     }
 
+    ///// Tests start here:
+
     @Test
     void cannotGetWithANullKeyTest() {
         assertThatNullPointerException().isThrownBy(() -> sut.get(null));
@@ -130,8 +125,8 @@ class UpdatableReferenceCacheTest {
     @Test
     void fillWhileNotYetFetchedIsOkTest() {
         sut.fill(THIS_KEY, ORIGINAL_VALUE);
-        assertThat(sut.getOriginal()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, ORIGINAL_VALUE);
-        assertThat(sut.getCurrent()).isEmpty();
+        assertThat(sut.getOriginal().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, ORIGINAL_VALUE);
+        assertThat(sut.getCurrent().get()).isEmpty();
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2})")
@@ -153,9 +148,19 @@ class UpdatableReferenceCacheTest {
 
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
-        assertThatExceptionOfType(
-                        state == ValueState.INVALID ? IllegalStateException.class : UpdatableCacheUsageException.class)
-                .isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
+        if (state == ValueState.INVALID) {
+            assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
+        } else if (originalValueIs == ValueIs.MISSING) {
+            // Validate that we don't add new entry
+            assertThat(sut.getOriginal().get()).isEmpty();
+        } else if (currentValueIs == ValueIs.MISSING) {
+            // Validate that we don't add new entry
+            assertThat(sut.getCurrent().get()).isEmpty();
+        } else {
+            // Validate that we don't add new entry
+            assertThat(sut.getOriginal().get().size()).isOne();
+            assertThat(sut.getCurrent().get().size()).isOne();
+        }
     }
 
     @Test
@@ -190,7 +195,7 @@ class UpdatableReferenceCacheTest {
 
         sut.update(THIS_KEY, NEW_VALUE);
         softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(ValueState.UPDATED, NEW_VALUE));
-        softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
+        softly.assertThat(sut.getCurrent().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
     }
 
     @Test
@@ -211,7 +216,7 @@ class UpdatableReferenceCacheTest {
                 .as("PRESENT, overwriting with same value")
                 .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("Trying to update");
-        softly.assertThat(sut.getOriginal())
+        softly.assertThat(sut.getOriginal().get())
                 .as("PRESENT, overwriting with same value didn't change k/v")
                 .containsOnlyKeys(THIS_KEY)
                 .containsEntry(THIS_KEY, ORIGINAL_VALUE);
@@ -243,8 +248,8 @@ class UpdatableReferenceCacheTest {
         sut.delete(THIS_KEY);
         softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(endState, null));
         if (keyInCurrentAtEnd)
-            softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
-        else softly.assertThat(sut.getCurrent()).isEmpty();
+            softly.assertThat(sut.getCurrent().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
+        else softly.assertThat(sut.getCurrent().get()).isEmpty();
     }
 
     @Test
@@ -282,7 +287,12 @@ class UpdatableReferenceCacheTest {
                 .hasMessageContaining("deleted");
     }
 
+    /**
+     * Using ThreadLocals currently utilize one single RWCachingStateFrame,
+     * so unless we see a need to have stacked RWCachingStateFrames, we don't currently utilize
+     * {@link UpdatableReferenceCache#coalesceFrom(UpdatableReferenceCache)}.*/
     @Test
+    @Disabled
     void coalesceFromTest() {
 
         final var src = new UpdatableReferenceCacheSpy(); // maps String->Long
@@ -305,7 +315,7 @@ class UpdatableReferenceCacheTest {
                 .addNullToCurrent("SUT NULL VALUE C")
                 .addNullToCurrent("BOTH NULL VALUE C");
 
-        final var expectedOriginal = new HashMap<>(sut.getOriginal());
+        final var expectedOriginal = new HashMap<>(sut.getOriginal().get());
         // spotless:off
         final var expectedCurrent = makeMapOf(
                 String.class, Object.class,
@@ -319,16 +329,14 @@ class UpdatableReferenceCacheTest {
 
         sut.coalesceFrom(src);
 
-        softly.assertThat(sut.getOriginal())
+        softly.assertThat(sut.getOriginal().get())
                 .as("original map is not touched by coalesce")
                 .isEqualTo(expectedOriginal);
 
-        softly.assertThat(sut.getCurrent())
+        softly.assertThat(sut.getCurrent().get())
                 .as("current map is merged by coalesce")
                 .isEqualTo(expectedCurrent);
     }
-
-    ///// Utility methods beyond this point:
 
     /** Like `Map.of` but doesn't barf on `null` values */
     // TODO: Move to utils class
@@ -367,6 +375,8 @@ class UpdatableReferenceCacheTest {
                                                 obj.getClass().getTypeName()));
     }
 
+    ///// Utility methods beyond this point:
+
     /** Throw an exception (with message) in the context of an _expression_ (where a `throw` statement by itself is
      * not acceptable).
      */
@@ -382,5 +392,17 @@ class UpdatableReferenceCacheTest {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    enum ValueIs {
+        MISSING,
+        NULL,
+        NON_NULL
+    }
+
+    enum ValueFrom {
+        NOWHERE,
+        ORIGINAL,
+        CURRENT
     }
 }

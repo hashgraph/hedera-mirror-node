@@ -220,8 +220,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000L);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -230,9 +230,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void transferThruContract() {
         // transferHbarsToAddress(address)
-        final var stateChangePayable = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
+        final var transferHbarsInput = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e9";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(stateChangePayable), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
+                Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
@@ -346,23 +346,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x" + stateChange);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
-    }
-
-    @Test
-    void ercPrecompileCallRevertsForEstimateGas() {
-        final var tokenNameCall = "0x6f0fccab0000000000000000000000000000000000000000000000000000000000000416";
-        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(tokenNameCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
     private double getGasUsedBeforeExecution(final CallType callType) {

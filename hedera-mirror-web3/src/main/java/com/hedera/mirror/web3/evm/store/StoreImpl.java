@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
@@ -36,17 +35,19 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
+@Named
 public class StoreImpl implements Store {
 
     private final StackedStateFrames<Object> stackedStateFrames;
 
-    public StoreImpl(final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
-        this.stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+    public StoreImpl(final StackedStateFrames<Object> stackedStateFrames) {
+        this.stackedStateFrames = stackedStateFrames;
     }
 
     @Override
@@ -178,6 +179,7 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    @Deprecated
     public void commit() {
         if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
             stackedStateFrames.top().commit();
@@ -213,6 +215,11 @@ public class StoreImpl implements Store {
         }
 
         return token.setLoadedUniqueTokens(loadedUniqueTokens);
+    }
+
+    @Override
+    public void cleanThread() {
+        stackedStateFrames.cleanThread();
     }
 
     /**

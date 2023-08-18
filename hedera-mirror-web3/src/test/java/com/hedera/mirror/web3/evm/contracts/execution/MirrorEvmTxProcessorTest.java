@@ -159,11 +159,11 @@ class MirrorEvmTxProcessorTest {
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
-                new AbstractCodeCache(10, hederaEvmEntityAccess),
-                false);
+                new AbstractCodeCache(10, hederaEvmEntityAccess));
 
         DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
+        mirrorEvmTxProcessor.setIsCreate(false);
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 

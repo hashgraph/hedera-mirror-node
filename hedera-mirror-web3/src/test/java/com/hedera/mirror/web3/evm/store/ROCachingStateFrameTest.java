@@ -39,70 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ROCachingStateFrameTest {
 
-    static class CannedCachingStateFrame extends CachingStateFrame<Integer> {
-
-        final Optional<Character> cannedValue;
-
-        public CannedCachingStateFrame(@NonNull final Optional<Character> cannedValue) {
-            super(Optional.empty(), Character.class);
-            this.cannedValue = cannedValue;
-        }
-
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        @NonNull
-        @Override
-        public <V> Accessor<Integer, V> getAccessor(@NonNull Class<V> klass) {
-            return new Accessor<Integer, V>() {
-                @Override
-                public Optional<V> get(@NonNull final Integer key) {
-                    return (Optional<V>) (Optional) cannedValue;
-                }
-
-                @Override
-                public void set(@NonNull final Integer key, @NonNull final V value) {
-                    /* not needed */
-                }
-
-                @Override
-                public void delete(@NonNull final Integer key) {
-                    /* not needed */
-                }
-            };
-        }
-
-        @Override
-        public void updatesFromDownstream(@NonNull final CachingStateFrame<Integer> childFrame) {
-            /* not needed */
-        }
-
-        @NonNull
-        @Override
-        protected Optional<Object> getValue(
-                @NonNull final Class<?> klass,
-                @NonNull final UpdatableReferenceCache<Integer> cache,
-                @NonNull final Integer key) {
-            /* not needed */
-            return Optional.empty();
-        }
-
-        @Override
-        protected void setValue(
-                @NonNull final Class<?> klass,
-                @NonNull final UpdatableReferenceCache<Integer> cache,
-                @NonNull final Integer key,
-                @NonNull final Object value) {
-            /* not needed */
-        }
-
-        @Override
-        protected void deleteValue(
-                @NonNull final Class<?> klass,
-                @NonNull final UpdatableReferenceCache<Integer> cache,
-                @NonNull final Integer key) {
-            /* not needed */
-        }
-    }
-
     @Mock
     UpdatableReferenceCache<Integer> mockCache;
 
@@ -186,5 +122,74 @@ class ROCachingStateFrameTest {
     void updatesFromDownstreamIsNotAllowed() {
         final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> sut.updatesFromDownstream(sut));
+    }
+
+    static class CannedCachingStateFrame extends CachingStateFrame<Integer> {
+
+        final Optional<Character> cannedValue;
+
+        public CannedCachingStateFrame(@NonNull final Optional<Character> cannedValue) {
+            super(Optional.empty(), Character.class);
+            this.cannedValue = cannedValue;
+        }
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        @NonNull
+        @Override
+        public <V> Accessor<Integer, V> getAccessor(@NonNull Class<V> klass) {
+            return new Accessor<Integer, V>() {
+                @Override
+                public Optional<V> get(@NonNull final Integer key) {
+                    return (Optional<V>) cannedValue;
+                }
+
+                @Override
+                public void set(@NonNull final Integer key, @NonNull final V value) {
+                    /* not needed */
+                }
+
+                @Override
+                public void delete(@NonNull final Integer key) {
+                    /* not needed */
+                }
+
+                @Override
+                public void cleanThread() {
+                    /* not needed */
+                }
+            };
+        }
+
+        @Override
+        public void updatesFromDownstream(@NonNull final CachingStateFrame<Integer> childFrame) {
+            /* not needed */
+        }
+
+        @NonNull
+        @Override
+        protected Optional<Object> getValue(
+                @NonNull final Class<?> klass,
+                @NonNull final UpdatableReferenceCache<Integer> cache,
+                @NonNull final Integer key) {
+            /* not needed */
+            return Optional.empty();
+        }
+
+        @Override
+        protected void setValue(
+                @NonNull final Class<?> klass,
+                @NonNull final UpdatableReferenceCache<Integer> cache,
+                @NonNull final Integer key,
+                @NonNull final Object value) {
+            /* not needed */
+        }
+
+        @Override
+        protected void deleteValue(
+                @NonNull final Class<?> klass,
+                @NonNull final UpdatableReferenceCache<Integer> cache,
+                @NonNull final Integer key) {
+            /* not needed */
+        }
     }
 }

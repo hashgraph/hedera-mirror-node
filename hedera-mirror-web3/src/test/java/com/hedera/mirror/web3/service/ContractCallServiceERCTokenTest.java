@@ -33,6 +33,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
+    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
+        return Arrays.stream(ErcContractReadOnlyFunctions.values())
+                .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
+    }
+
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")
     void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
@@ -136,10 +141,5 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 "transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L});
         private final String name;
         private final Object[] functionParameters;
-    }
-
-    private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
-        return Arrays.stream(ErcContractReadOnlyFunctions.values())
-                .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));
     }
 }

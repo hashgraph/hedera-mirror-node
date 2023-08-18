@@ -74,7 +74,12 @@ public interface Store {
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.
+     *
+     * Currently we use a single {@link RWCachingStateFrame} for all the changes that are part of a single transaction,
+     * so we don't utilize the commit functionality
+     *
      */
+    @Deprecated(since = "0.88.0")
     void commit();
 
     /**
@@ -87,6 +92,8 @@ public interface Store {
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 
     boolean exists(AccountID accountID);
+
+    void cleanThread();
 
     enum OnMissing {
         THROW,

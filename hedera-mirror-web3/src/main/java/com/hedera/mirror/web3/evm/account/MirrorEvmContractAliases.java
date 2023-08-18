@@ -25,6 +25,7 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,13 +36,20 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
+@Named
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
-    final Map<Address, Address> aliases = new HashMap<>();
-    final Map<Address, Address> pendingAliases = new HashMap<>();
-    final Set<Address> pendingRemovals = new HashSet<>();
+    static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
+    static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
+    static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
 
     final Store store;
+
+    public static void cleanThread() {
+        aliases.remove();
+        pendingAliases.remove();
+        pendingRemovals.remove();
+    }
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
@@ -78,11 +86,11 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
-        if (pendingAliases.containsKey(alias)) {
-            return Optional.ofNullable(pendingAliases.get(alias));
+        if (pendingAliases.get().containsKey(alias)) {
+            return Optional.ofNullable(pendingAliases.get().get(alias));
         }
-        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
-            return Optional.ofNullable(aliases.get(alias));
+        if (aliases.get().containsKey(alias) && !pendingRemovals.get().contains(alias)) {
+            return Optional.ofNullable(aliases.get().get(alias));
         }
         return Optional.empty();
     }
@@ -101,29 +109,29 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isInUse(final Address address) {
-        return aliases.containsKey(address) && !pendingRemovals.contains(address)
-                || pendingAliases.containsKey(address);
+        return aliases.get().containsKey(address) && !pendingRemovals.get().contains(address)
+                || pendingAliases.get().containsKey(address);
     }
 
     public void link(final Address alias, final Address address) {
-        pendingAliases.put(alias, address);
-        pendingRemovals.remove(alias);
+        pendingAliases.get().put(alias, address);
+        pendingRemovals.get().remove(alias);
     }
 
     public void unlink(Address alias) {
-        pendingRemovals.add(alias);
-        pendingAliases.remove(alias);
+        pendingRemovals.get().add(alias);
+        pendingAliases.get().remove(alias);
     }
 
     public void commit() {
-        aliases.putAll(pendingAliases);
-        aliases.keySet().removeAll(pendingRemovals);
+        aliases.get().putAll(pendingAliases.get());
+        aliases.get().keySet().removeAll(pendingRemovals.get());
 
         resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        pendingAliases.clear();
-        pendingRemovals.clear();
+        pendingAliases.get().clear();
+        pendingRemovals.get().clear();
     }
 }

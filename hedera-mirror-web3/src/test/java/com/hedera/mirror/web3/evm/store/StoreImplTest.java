@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -164,7 +165,13 @@ class StoreImplTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        subject = new StoreImpl(accessors);
+        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        subject = new StoreImpl(stackedStateFrames);
+    }
+
+    @AfterEach
+    public void clean() {
+        subject.cleanThread();
     }
 
     @Test

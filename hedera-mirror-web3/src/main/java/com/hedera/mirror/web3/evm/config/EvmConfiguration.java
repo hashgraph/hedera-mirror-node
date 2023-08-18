@@ -16,8 +16,28 @@
 
 package com.hedera.mirror.web3.evm.config;
 
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
+
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.services.contracts.execution.LivePricesSource;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
@@ -86,5 +106,85 @@ public class EvmConfiguration {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
+    }
+
+    @Bean
+    TokenAccessorImpl tokenAccessor(
+            final MirrorNodeEvmProperties evmProperties,
+            final StoreImpl store,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
+    }
+
+    @Bean
+    AccountAccessorImpl accountAccessor(
+            final StoreImpl store,
+            final MirrorEntityAccess mirrorEntityAccess,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
+    }
+
+    @Bean
+    AbstractCodeCache abstractCodeCache(
+            final MirrorNodeEvmProperties evmProperties, final MirrorEntityAccess mirrorEntityAccess) {
+        return new AbstractCodeCache(
+                (int) evmProperties.getExpirationCacheTime().toSeconds(), mirrorEntityAccess);
+    }
+
+    @Bean
+    MirrorOperationTracer mirrorOperationTracer(
+            final TraceProperties traceProperties, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
+    }
+
+    @Bean
+    HederaEvmWorldState hederaEvmWorldState(
+            final MirrorEntityAccess mirrorEntityAccess,
+            final MirrorNodeEvmProperties evmProperties,
+            final AbstractCodeCache abstractCodeCache,
+            final AccountAccessorImpl accountAccessor,
+            final TokenAccessorImpl tokenAccessor,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
+            final StoreImpl store) {
+        return new HederaEvmWorldState(
+                mirrorEntityAccess,
+                evmProperties,
+                abstractCodeCache,
+                accountAccessor,
+                tokenAccessor,
+                entityAddressSequencer,
+                mirrorEvmContractAliases,
+                store);
+    }
+
+    @Bean
+    MirrorEvmTxProcessor mirrorEvmTxProcessor(
+            final HederaEvmWorldState worldState,
+            final LivePricesSource pricesAndFees,
+            final MirrorNodeEvmProperties evmProperties,
+            final GasCalculatorHederaV22 gasCalculator,
+            final AbstractAutoCreationLogic autoCreationLogic,
+            final PrecompileMapper precompileMapper,
+            final EntityAddressSequencer entityAddressSequencer,
+            final MirrorEvmContractAliases mirrorEvmContractAliases,
+            final StaticBlockMetaSource blockMetaSource,
+            final AbstractCodeCache abstractCodeCache) {
+        return new MirrorEvmTxProcessor(
+                worldState,
+                pricesAndFees,
+                evmProperties,
+                gasCalculator,
+                mcps(
+                        gasCalculator,
+                        autoCreationLogic,
+                        entityAddressSequencer,
+                        mirrorEvmContractAliases,
+                        evmProperties,
+                        precompileMapper),
+                ccps(gasCalculator, evmProperties),
+                blockMetaSource,
+                mirrorEvmContractAliases,
+                abstractCodeCache);
     }
 }

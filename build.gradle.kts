@@ -84,7 +84,7 @@ dependencies {
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.1.0-SNAPSHOT") // Temporary until 2.1.0 for Jakarta compatability
         api("org.hyperledger.besu:secp256k1:0.6.1")
-        api("org.hyperledger.besu:evm:22.7.6")
+        api("org.hyperledger.besu:evm:23.1.2")
         api("org.jetbrains:annotations:24.0.1")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
@@ -134,14 +134,14 @@ idea {
 fun replaceVersion(files: String, match: String) {
     ant.withGroovyBuilder {
         "replaceregexp"(
-                "match" to match,
-                "replace" to project.version,
-                "flags" to "gm"
+            "match" to match,
+            "replace" to project.version,
+            "flags" to "gm"
         ) {
             "fileset"(
-                    "dir" to rootProject.projectDir,
-                    "includes" to files,
-                    "excludes" to "**/node_modules/"
+                "dir" to rootProject.projectDir,
+                "includes" to files,
+                "excludes" to "**/node_modules/"
             )
         }
     }
@@ -154,8 +154,8 @@ project.tasks.register("release") {
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
-                "hedera-mirror-rest/**/package*.json",
-                "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+            "hedera-mirror-rest/**/package*.json",
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }

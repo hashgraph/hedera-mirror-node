@@ -82,7 +82,6 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             }
             updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
         }
-        store.commit();
     }
 
     public HederaEvmContractAliases aliases() {

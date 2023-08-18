@@ -82,7 +82,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
@@ -357,9 +356,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Autowired
     protected ContractCallService contractCallService;
-
-    @Autowired
-    protected JdbcTemplate jdbcTemplate;
 
     @Autowired
     protected MirrorNodeEvmProperties properties;

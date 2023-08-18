@@ -18,28 +18,27 @@ package com.hedera.mirror.web3.evm.store;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import jakarta.inject.Named;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
 
+@Named
 public class StackedStateFrames<K> {
-
-    /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
-    @NonNull
-    protected CachingStateFrame<K> stackBase;
-
-    /** Current top of stack (which is all linked together) */
-    @NonNull
-    protected CachingStateFrame<K> stack;
 
     /** All the database accessors for the value types this stacked cache can hold */
     @NonNull
     protected final List<DatabaseAccessor<K, ?>> accessors;
-
     /** All the `Class`es for the value types this stacked cache can hold */
     @NonNull
     protected final Class<?>[] valueClasses;
+    /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
+    @NonNull
+    protected CachingStateFrame<K> stackBase;
+    /** Current top of stack (which is all linked together) */
+    @NonNull
+    protected CachingStateFrame<K> stack;
 
     /** Create a `StackedStackFrames` stacked cache at base level given the database accessors for all the value
      * types this cache will hold.
@@ -65,6 +64,10 @@ public class StackedStateFrames<K> {
 
         final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
         stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), valueClasses);
+        stack = new RWCachingStateFrame<>(Optional.of(stackBase), valueClasses);
+
+        //        push();
+        // TODO update javadoc
         // Initial state is just the R/O cache on top of the database.  You really need to do a
         // `push()` before you can expect to write anything to this state
     }
@@ -115,13 +118,18 @@ public class StackedStateFrames<K> {
      * using this method.)
      */
     public void resetToBase() {
-        stack = stackBase;
+        stack = new RWCachingStateFrame<>(Optional.of(stackBase), valueClasses);
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
     @NonNull
     public Class<?>[] getValueClasses() {
         return valueClasses;
+    }
+
+    public void cleanThread() {
+        stack.cleanThread();
+        stackBase.cleanThread();
     }
 
     /** It may happen that you want to push some special frame type on the stack, not a standard `RWCachingStateFrame`.

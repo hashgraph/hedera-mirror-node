@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -118,7 +119,8 @@ class HederaEvmWorldStateTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        store = new StoreImpl(accessors);
+        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        store = new StoreImpl(stackedStateFrames);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,

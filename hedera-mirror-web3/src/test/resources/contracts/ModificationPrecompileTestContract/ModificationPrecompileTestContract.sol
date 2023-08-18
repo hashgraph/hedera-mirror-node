@@ -352,6 +352,9 @@ contract ModificationPrecompileTestContract is HederaTokenService {
             revert();
         }
     }
+
+    receive() external payable {
+    }
 }
 
 contract NestedContract {

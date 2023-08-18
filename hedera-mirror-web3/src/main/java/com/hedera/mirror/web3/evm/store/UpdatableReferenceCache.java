@@ -43,18 +43,27 @@ import lombok.NonNull;
 public class UpdatableReferenceCache<K> {
 
     @NonNull
-    protected final Map<K, Object> original = new HashMap<>(); // "missing" denoted by null values here
+    protected static final ThreadLocal<Map<Object, Object>> original =
+            ThreadLocal.withInitial(HashMap::new); // "missing" denoted by null values here
 
     @NonNull
-    protected final Map<K, Object> current = new HashMap<>(); // "deleted" denoted by null values here
+    protected static final ThreadLocal<Map<Object, Object>> current =
+            ThreadLocal.withInitial(HashMap::new); // "deleted" denoted by null values here
+
+    private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
 
     @NonNull
-    protected final UpdatableReferenceCacheLineState<K> cacheLineStateIdentification =
+    protected final UpdatableReferenceCacheLineState<Object> cacheLineStateIdentification =
             new UpdatableReferenceCacheLineState<>();
 
     /**
      * Create an `UpdatableReferenceCache` for holding the cached value of some type. */
     UpdatableReferenceCache() {}
+
+    public void cleanThread() {
+        original.remove();
+        current.remove();
+    }
 
     /**
      * Get from the cache
@@ -63,14 +72,34 @@ public class UpdatableReferenceCache<K> {
         return getCacheLineState(key);
     }
 
+    public Object getFromCurrent(final Object key) {
+        return current.get().get(key);
+    }
+
+    public Object getFromOriginal(final Object key) {
+        return original.get().get(key);
+    }
+
     /**
      * Fill cache with a read from a lower level - used only in response to NOT_YET_FETCHED.
      */
     public void fill(@NonNull final K key, final Object value) {
         switch (getCacheLineState(key).state()) {
-            case NOT_YET_FETCHED -> original.put(key, value);
-            case MISSING, PRESENT -> throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
-            case UPDATED, DELETED -> throw new UpdatableCacheUsageException("Trying to override an updated entry");
+            case NOT_YET_FETCHED -> {
+                if (value != null) {
+                    original.get().put(key, value);
+                }
+            }
+            case MISSING, PRESENT -> {
+                if (!original.get().containsKey(key)) {
+                    throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
+                }
+            }
+            case UPDATED, DELETED -> {
+                if (!original.get().containsKey(key)) {
+                    throw new UpdatableCacheUsageException("Trying to override an updated entry");
+                }
+            }
             case INVALID -> throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }
     }
@@ -93,7 +122,7 @@ public class UpdatableReferenceCache<K> {
                 }
                 // fallthrough
             case NOT_YET_FETCHED, MISSING, UPDATED, DELETED:
-                current.put(key, value);
+                current.get().put(key, value);
                 break;
             case INVALID:
                 throw new IllegalStateException(INVALID_STATE_MESSAGE);
@@ -106,8 +135,8 @@ public class UpdatableReferenceCache<K> {
      */
     public void delete(@NonNull final K key) {
         switch (getCacheLineState(key).state()) {
-            case PRESENT -> current.put(key, null);
-            case UPDATED -> current.remove(key);
+            case PRESENT -> current.get().put(key, null);
+            case UPDATED -> current.get().remove(key);
             case NOT_YET_FETCHED -> throw new UpdatableCacheUsageException(
                     "Trying to delete a value that hasn't been fetched");
             case MISSING, DELETED -> throw new UpdatableCacheUsageException(
@@ -123,12 +152,12 @@ public class UpdatableReferenceCache<K> {
      * (such as this one, being coalesced _into_) already have those entries.
      */
     public void coalesceFrom(@NonNull final UpdatableReferenceCache<K> source) {
-        current.putAll(source.current);
+        current.get().putAll(current.get());
     }
 
     @NonNull
     protected Entry getCacheLineState(@NonNull final K key) {
-        return cacheLineStateIdentification.get(original, current, key);
+        return cacheLineStateIdentification.get(original.get(), current.get(), key);
     }
 
     public static class UpdatableCacheUsageException extends RuntimeException {
@@ -140,6 +169,4 @@ public class UpdatableReferenceCache<K> {
             super(message);
         }
     }
-
-    private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
 }

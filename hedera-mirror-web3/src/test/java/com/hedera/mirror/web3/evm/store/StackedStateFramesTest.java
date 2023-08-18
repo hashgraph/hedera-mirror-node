@@ -30,14 +30,6 @@ import org.junit.jupiter.api.Test;
 
 class StackedStateFramesTest {
 
-    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
-        @NonNull
-        @Override
-        public Optional<V> get(@NonNull final K key) {
-            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
-        }
-    }
-
     @Test
     void constructionHappyPath() {
 
@@ -47,16 +39,17 @@ class StackedStateFramesTest {
         final var sut = new StackedStateFrames<>(accessors);
 
         final var softly = new SoftAssertions();
-        softly.assertThat(sut.height()).as("visible height").isZero();
-        softly.assertThat(sut.cachedFramesDepth()).as("true height").isEqualTo(2);
-        softly.assertThat(sut.top()).as("RO on top").isInstanceOf(ROCachingStateFrame.class);
+        softly.assertThat(sut.height()).as("visible height").isOne();
+        softly.assertThat(sut.cachedFramesDepth()).as("true height").isEqualTo(3);
+        softly.assertThat(sut.top()).as("RW on top").isInstanceOf(RWCachingStateFrame.class);
         softly.assertThat(sut.top().getUpstream())
-                .as("DB at very bottom")
-                .containsInstanceOf(DatabaseBackedStateFrame.class);
+                .as("RO is upstream of RW")
+                .containsInstanceOf(ROCachingStateFrame.class);
         softly.assertThat(sut.getValueClasses())
                 .as("value classes correct")
                 .containsExactlyInAnyOrder(Character.class, String.class);
         softly.assertAll();
+        sut.pop();
         assertThatExceptionOfType(EmptyStackException.class)
                 .as("cannot pop bare stack")
                 .isThrownBy(sut::pop);
@@ -87,36 +80,36 @@ class StackedStateFramesTest {
     void pushAndPopDoSo() {
         final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var roOnTopOfBase = sut.top();
+        final var rwOnTop = sut.top();
 
-        assertThat(sut.height()).isZero();
+        assertThat(sut.height()).isOne();
         sut.push();
-        assertThat(sut.height()).isEqualTo(1);
-        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
+        assertThat(sut.height()).isEqualTo(2);
+        assertThat(sut.cachedFramesDepth()).isEqualTo(4);
         assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
-        assertThat(sut.top().getUpstream()).contains(roOnTopOfBase);
+        assertThat(sut.top().getUpstream()).contains(rwOnTop);
         sut.pop();
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
-        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
+        assertThat(sut.height()).isOne();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
+        assertThat(sut.top()).isEqualTo(rwOnTop);
     }
 
     @Test
     void resetToBaseDoes() {
         final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var roOnTopOfBase = sut.top();
+        final var rwOnTopOfBase = sut.top();
 
         sut.push();
         sut.push();
         sut.push();
-        assertThat(sut.height()).isEqualTo(3);
+        assertThat(sut.height()).isEqualTo(4);
         assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
 
         sut.resetToBase();
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
-        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
+        assertThat(sut.height()).isOne();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
+        assertThat(sut.top()).isInstanceOf(rwOnTopOfBase.getClass());
     }
 
     @Test
@@ -125,7 +118,7 @@ class StackedStateFramesTest {
         final var sut = new StackedStateFrames<>(accessors);
         final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
-        assertThat(sut.height()).isEqualTo(1);
+        assertThat(sut.height()).isEqualTo(2);
         assertThat(actual).isEqualTo(newTos);
     }
 
@@ -147,5 +140,13 @@ class StackedStateFramesTest {
         assertThat(sut.height()).isZero();
         assertThat(sut.cachedFramesDepth()).isEqualTo(1);
         assertThat(sut.top()).isEqualTo(newStack);
+    }
+
+    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
+        @NonNull
+        @Override
+        public Optional<V> get(@NonNull final K key) {
+            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
+        }
     }
 }

@@ -42,9 +42,9 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
+    private static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
-    private final boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -56,13 +56,16 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final AbstractCodeCache codeCache,
-            final boolean isCreate) {
+            final AbstractCodeCache codeCache) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
-        this.isCreate = isCreate;
+        //        this.isCreate = isCreate;
+    }
+
+    public static void cleanThread() {
+        isCreate.remove();
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -90,7 +93,9 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     protected HederaFunctionality getFunctionType() {
-        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
+        return Boolean.TRUE.equals(isCreate.get())
+                ? HederaFunctionality.ContractCreate
+                : HederaFunctionality.ContractCall;
     }
 
     @Override
@@ -103,7 +108,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        if (isCreate) {
+        if (Boolean.TRUE.equals(isCreate.get())) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)
@@ -121,5 +126,9 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     .code(code)
                     .build();
         }
+    }
+
+    public void setIsCreate(boolean isCreate) {
+        MirrorEvmTxProcessor.isCreate.set(isCreate);
     }
 }

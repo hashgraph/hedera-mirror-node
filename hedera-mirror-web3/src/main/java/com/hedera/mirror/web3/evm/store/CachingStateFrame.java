@@ -65,6 +65,7 @@ public abstract class CachingStateFrame<K> {
     @NonNull
     public <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
         final var accessor = (AccessorImpl<V>) accessors.get(klass);
+
         if (accessor != null) {
             return accessor;
         }
@@ -113,6 +114,10 @@ public abstract class CachingStateFrame<K> {
         return accessors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, kv -> kv.getValue().cache));
     }
 
+    protected void cleanThread() {
+        accessors.values().forEach(AccessorImpl::cleanThread);
+    }
+
     /** Strongly-typed access to values stored in this `CachingStateFrame`.
      *
      * A `CachingStateFrame` can cache values of several _different_ types.  For type safety you want, as a caller
@@ -134,6 +139,9 @@ public abstract class CachingStateFrame<K> {
 
         /** Delete the value associated with this key from this `CachingStateFrame`, respecting stacked-cache behavior */
         void delete(@NonNull final K key);
+
+        /** Clean the thread local cache */
+        void cleanThread();
     }
 
     /** Signals that a type error occurred with the _value_ type */
@@ -198,6 +206,12 @@ public abstract class CachingStateFrame<K> {
         public void delete(@NonNull final K key) {
             // Can't check type of value matches because we don't have one
             deleteValue(klass, cache, key);
+        }
+
+        /** Clean the thread local cache */
+        @Override
+        public void cleanThread() {
+            cache.cleanThread();
         }
     }
 }

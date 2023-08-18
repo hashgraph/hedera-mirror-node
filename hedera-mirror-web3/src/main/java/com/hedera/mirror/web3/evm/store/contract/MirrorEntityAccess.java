@@ -20,17 +20,20 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import jakarta.inject.Named;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
+@Named
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
@@ -82,7 +85,13 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isTokenAccount(final Address address) {
-        return !store.getToken(address, OnMissing.DONT_THROW).isEmptyToken();
+        try {
+            final var maybeToken = store.getToken(address, OnMissing.DONT_THROW);
+            return !maybeToken.isEmptyToken();
+        } catch (CacheAccessIncorrectType e) {
+            // We found an entry from the state, but it's not a token. Thus, we return false.
+            return false;
+        }
     }
 
     @Override

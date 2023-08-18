@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -65,6 +66,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -146,8 +148,14 @@ class TokenAccessorImplTest {
                 new TokenRelationshipDatabaseAccessor(
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
-        store = new StoreImpl(accessors);
+        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
+    }
+
+    @AfterEach
+    public void clean() {
+        store.cleanThread();
     }
 
     @Test
