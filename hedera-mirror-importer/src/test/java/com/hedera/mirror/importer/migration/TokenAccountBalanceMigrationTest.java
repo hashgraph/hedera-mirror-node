@@ -61,9 +61,9 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
-    private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
+    private TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
     private AtomicLong timestamp;
@@ -77,6 +77,8 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
+        tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test
@@ -275,11 +277,9 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNotFirstFile() {
         // given
-        var migration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         // when
-        migration.onEnd(accountBalanceFile2);
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
 
         // then
         tokenAccount.setBalance(0L);
@@ -299,14 +299,12 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
-        var migration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
-        transactionTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
+        transactionTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile1));
 
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
         var accountBalanceFile3 = domainBuilder
@@ -314,7 +312,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
                 .persist();
         // when
-        migration.onEnd(accountBalanceFile3);
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile3);
 
         // then
         tokenAccount.setBalance(0L);
@@ -334,13 +332,11 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNoRecordFileAfterTimestamp() {
         // given
-        var migration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         initialSetup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
         // when
-        migration.onEnd(accountBalanceFile1);
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
 
         // then
         tokenAccount.setBalance(0L);
@@ -360,13 +356,11 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEnd() {
         // given
-        var migration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
         // when
-        migration.onEnd(accountBalanceFile1);
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
 
         // then
         assertThat(tokenAccountRepository.findAll())

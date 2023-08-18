@@ -59,9 +59,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
-    private final InitializeEntityBalanceMigration migration;
     private final RecordFileRepository recordFileRepository;
-
+    private InitializeEntityBalanceMigration migration;
     private Entity account;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
@@ -74,6 +73,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
+        migration = new InitializeEntityBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test
@@ -195,8 +196,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNotFirstFile() {
         // given
-        var migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         // when
         migration.onEnd(accountBalanceFile2);
@@ -212,8 +211,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
-        var migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
@@ -244,8 +241,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEndWhenNoRecordFileAfterTimestamp() {
         // given
-        var migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         recordFileRepository.deleteById(recordFile2.getConsensusEnd());
 
@@ -263,8 +258,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     @Transactional
     void onEnd() {
         // given
-        var migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
 
