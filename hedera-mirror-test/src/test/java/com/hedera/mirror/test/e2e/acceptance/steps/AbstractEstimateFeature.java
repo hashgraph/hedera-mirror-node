@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -5,17 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -27,6 +37,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
 
     protected int lowerDeviation;
     protected int upperDeviation;
+
     @Autowired
     protected MirrorNodeClient mirrorClient;
 
@@ -54,8 +65,8 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param upperBoundPercent the integer percentage value for the upper bound of the acceptable range
      * @return true if the actualUsedGas is within the specified range, false otherwise
      */
-    protected static boolean isWithinDeviation(int actualUsedGas, int estimatedGas, int lowerBoundPercent,
-            int upperBoundPercent) {
+    protected static boolean isWithinDeviation(
+            int actualUsedGas, int estimatedGas, int lowerBoundPercent, int upperBoundPercent) {
         int lowerDeviation = actualUsedGas * lowerBoundPercent / 100;
         int upperDeviation = actualUsedGas * upperBoundPercent / 100;
 
@@ -83,8 +94,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
                 .to(solidityAddress)
                 .estimate(true)
                 .build();
-        ContractCallResponse msgSenderResponse =
-                mirrorClient.contractsCall(contractCallRequestBody);
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
         assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
@@ -108,8 +118,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
                 .estimate(true)
                 .build();
 
-        assertThatThrownBy(
-                () -> mirrorClient.contractsCall(contractCallRequestBody))
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }

@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.util;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -24,17 +25,14 @@ import com.hedera.hashgraph.sdk.proto.Key;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
-import com.esaulpaugh.headlong.abi.Tuple;
-
-import java.util.List;
 import org.json.JSONObject;
-
 
 @UtilityClass
 public class TestUtil {
@@ -89,9 +87,7 @@ public class TestUtil {
     }
 
     public static Address[] asHeadlongAddressArray(List<String> addressStrings) {
-        return addressStrings.stream()
-                .map(addr -> asHeadlongAddress(addr))
-                .toArray(Address[]::new);
+        return addressStrings.stream().map(addr -> asHeadlongAddress(addr)).toArray(Address[]::new);
     }
 
     public static byte[][] asHeadlongByteArray(List<String> hexStringList) {
@@ -101,12 +97,11 @@ public class TestUtil {
     }
 
     public static long[] asLongArray(final List<Long> longList) {
-        return longList.stream()
-                .mapToLong(Long::longValue)
-                .toArray();
+        return longList.stream().mapToLong(Long::longValue).toArray();
     }
 
-    public static String getAbiFunctionAsJsonString(CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
+    public static String getAbiFunctionAsJsonString(
+            CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
         Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
                 .filter(item -> {
                     Object name = ((LinkedHashMap) item).get("name");
@@ -136,12 +131,12 @@ public class TestUtil {
         }
 
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
-            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[]{});
+            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
         }
 
         public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
-            this.tokenTransferList = Tuple.of(token, new Tuple[]{}, nftTransfers);
+            this.tokenTransferList = Tuple.of(token, new Tuple[] {}, nftTransfers);
             return this;
         }
 
