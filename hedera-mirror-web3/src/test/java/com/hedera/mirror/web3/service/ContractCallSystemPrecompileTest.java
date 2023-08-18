@@ -25,7 +25,7 @@ import org.assertj.core.data.Percentage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
+class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(SystemContractFunctions.class)
