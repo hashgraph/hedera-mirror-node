@@ -29,15 +29,15 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.transaction.support.TransactionOperations;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class RetentionJob {

@@ -24,12 +24,12 @@ public interface StreamFileListener<T extends StreamFile<?>> {
     /**
      * Called when starting to process a new stream file.
      */
-    void onStart() throws ImporterException;
+    default void onStart() throws ImporterException {}
 
-    void onEnd(T streamFile) throws ImporterException;
+    default void onEnd(T streamFile) throws ImporterException {}
 
     /**
      * Called if an error is encountered during processing of stream file.
      */
-    void onError();
+    default void onError() {}
 }

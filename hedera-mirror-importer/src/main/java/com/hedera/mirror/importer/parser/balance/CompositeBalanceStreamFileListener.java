@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.record.entity;
+package com.hedera.mirror.importer.parser.balance;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.StreamFileListener;
-import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import jakarta.inject.Named;
 import java.util.List;
 import java.util.function.Consumer;
@@ -29,9 +29,10 @@ import org.springframework.context.annotation.Primary;
 @Named
 @Primary
 @RequiredArgsConstructor
-public class CompositeRecordStreamFileListener implements RecordStreamFileListener {
+public class CompositeBalanceStreamFileListener implements BalanceStreamFileListener {
 
-    private final List<RecordStreamFileListener> listeners;
+    private final List<BalanceStreamFileListener> listeners;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Override
     public void onStart() throws ImporterException {
@@ -39,7 +40,8 @@ public class CompositeRecordStreamFileListener implements RecordStreamFileListen
     }
 
     @Override
-    public void onEnd(RecordFile streamFile) throws ImporterException {
+    public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
+        accountBalanceFileRepository.save(streamFile);
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).onEnd(streamFile);
         }
@@ -50,7 +52,7 @@ public class CompositeRecordStreamFileListener implements RecordStreamFileListen
         onEach(StreamFileListener::onError);
     }
 
-    private void onEach(Consumer<RecordStreamFileListener> consumer) {
+    private void onEach(Consumer<BalanceStreamFileListener> consumer) {
         for (int i = 0; i < listeners.size(); i++) {
             consumer.accept(listeners.get(i));
         }

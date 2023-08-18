@@ -28,13 +28,13 @@ import io.grpc.StatusRuntimeException;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collection;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 @SuppressWarnings("unchecked")

@@ -18,13 +18,16 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
 
 @Named
-public class TokenAccountBalanceMigration extends RepeatableMigration {
+public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration {
+
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
              with timestamp_range as (
@@ -68,8 +71,12 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
     private final JdbcOperations jdbcOperations;
 
     @Lazy
-    public TokenAccountBalanceMigration(JdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+    public TokenAccountBalanceMigration(
+            JdbcOperations jdbcOperations,
+            MirrorProperties mirrorProperties,
+            AccountBalanceFileRepository accountBalanceFileRepository,
+            RecordFileRepository recordFileRepository) {
+        super(mirrorProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
         this.jdbcOperations = jdbcOperations;
     }
 

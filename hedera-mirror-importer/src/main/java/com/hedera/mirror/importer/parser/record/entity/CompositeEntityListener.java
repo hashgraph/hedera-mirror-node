@@ -50,11 +50,11 @@ import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
-@Log4j2
+@CustomLog
 @Named
 @Primary
 @RequiredArgsConstructor

@@ -26,8 +26,8 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -37,7 +37,7 @@ import reactor.retry.Repeat;
 import reactor.util.retry.Retry;
 
 @Named
-@Log4j2
+@CustomLog
 public class PollingTopicMessageRetriever implements TopicMessageRetriever {
 
     private final ObservationRegistry observationRegistry;

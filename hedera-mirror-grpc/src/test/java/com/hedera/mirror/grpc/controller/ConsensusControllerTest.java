@@ -40,8 +40,8 @@ import io.grpc.StatusRuntimeException;
 import jakarta.annotation.Resource;
 import java.time.Duration;
 import java.time.Instant;
+import lombok.CustomLog;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-@Log4j2
+@CustomLog
 class ConsensusControllerTest extends GrpcIntegrationTest {
 
     private static final Duration WAIT = Duration.ofSeconds(10L);

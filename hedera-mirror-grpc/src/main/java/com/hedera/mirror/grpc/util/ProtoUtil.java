@@ -28,13 +28,13 @@ import io.grpc.StatusRuntimeException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
+import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.NonTransientDataAccessResourceException;
 import org.springframework.dao.TransientDataAccessException;
 import reactor.core.Exceptions;
 
-@Log4j2
+@CustomLog
 @UtilityClass
 public final class ProtoUtil {
 

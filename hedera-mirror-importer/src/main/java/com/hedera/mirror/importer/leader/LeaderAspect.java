@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.leader;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -32,7 +32,7 @@ import org.springframework.integration.leader.event.OnRevokedEvent;
  * whether this pod is currently leader or not.
  */
 @Aspect
-@Log4j2
+@CustomLog
 @Order(1)
 public class LeaderAspect implements LeaderService {
 
