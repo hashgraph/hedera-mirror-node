@@ -33,7 +33,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Profile("v2")
 @RequiredArgsConstructor
 public class PartitionMaintenance {
-    private static final String RUN_MAINTENANCE_QUERY = "CALL mirror_node_create_partitions()";
+    private static final String RUN_MAINTENANCE_QUERY =
+            """
+    CALL create_mirror_node_time_partitions();
+    CALL create_mirror_node_range_partitions();
+    """;
 
     @Owner
     private final JdbcTemplate jdbcTemplate;

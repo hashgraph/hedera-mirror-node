@@ -150,7 +150,7 @@ SELECT
         current_range_from_value_text,
         current_range_to_value_text;
 
-current_range_from_value := current_range_to_value;
+        current_range_from_value := current_range_to_value;
         current_range_to_value := current_range_to_value + partition_size;
 END LOOP;
     RETURN;
@@ -175,7 +175,7 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     -- partitioned table name
-schema_name_text name;
+    schema_name_text name;
     table_name_text name;
 
     -- record for to-be-created partition
@@ -220,59 +220,69 @@ COMMENT ON FUNCTION create_range_partitions(
     start_from bigint)
 IS 'create range partitions for the given range';
 
-create or replace procedure mirror_node_create_partitions() as
+create or replace procedure create_mirror_node_range_partitions() as
 $$
 declare
-    partitionInfo      record;
-    createdPartition   boolean;
-    timePartitionRegex varchar = '^(.*_timestamp|consensus_end)$';
+    partition_info      record;
+    created_partition   boolean;
+    time_partition_pattern varchar = '^(.*_timestamp|consensus_end)$';
 begin
-    for partitionInfo in
+    for partition_info in
         SELECT tp.parent_table,
-               tp.partition_column,
-               case
-                   when tp.partition_column::varchar ~ timePartitionRegex
-                       then extract(epoch from(to_timestamp(max(tp.to_value::bigint) / 1000000000.0)))::bigint
-                   else max(tp.to_value::bigint)
-                   end                                               as next_from,
-               case
-                   when tp.partition_column::varchar ~ timePartitionRegex
-                       then extract(epoch from(to_timestamp(max(tp.to_value::bigint) / 1000000000.0) + interval ${partitionTimeInterval}))::bigint
-                   else max(tp.to_value::bigint) + ${idPartitionSize}
-                   end                                               as next_to,
-               (tp.partition_column::varchar ~ timePartitionRegex)   as time_partition,
-               (select coalesce(max(id), 1) from entity)             as max_entity_id
+               max(tp.to_value::bigint)                                as next_from,
+               max(tp.to_value::bigint) + ${idPartitionSize}::bigint   as next_to,
+               (select coalesce(max(id), 1) from entity)               as max_entity_id
         from time_partitions tp
-        group by tp.parent_table, tp.partition_column
+        where tp.partition_column::varchar !~ time_partition_pattern
+        group by tp.parent_table
         loop
-            if ((not partitionInfo.time_partition and
-                partitionInfo.max_entity_id * ${maxEntityIdRatio} < partitionInfo.next_from) or
-               (partitionInfo.time_partition and
-                (CURRENT_TIMESTAMP + interval ${partitionTimeInterval} < to_timestamp(partitionInfo.next_from))))
-            then
-                raise LOG 'Skipping partition creation for % from % to %', partitionInfo.parent_table, partitionInfo.next_from, partitionInfo.next_to;
+            if partition_info.max_entity_id * ${maxEntityIdRatio} < partition_info.next_from then
+                raise log 'Skipping partition creation for range partition % from % to %', partition_info.parent_table, partition_info.next_from, partition_info.next_to;
                 continue;
             end if;
-            if partitionInfo.time_partition then
-                select create_time_partitions(table_name := partitionInfo.parent_table,
-                                              partition_interval := interval ${partitionTimeInterval},
-                                              start_from := to_timestamp(partitionInfo.next_from),
-                                              end_at := to_timestamp(partitionInfo.next_to))
-                into createdPartition;
-            else
-                select create_range_partitions(table_name := partitionInfo.parent_table,
-                                              partition_size := ${idPartitionSize},
-                                              start_from := partitionInfo.next_from,
-                                              end_at := partitionInfo.next_to)
-                into createdPartition;
-            end if;
+            select create_range_partitions(partition_info.parent_table, ${idPartitionSize}::bigint,
+                                           partition_info.next_to::bigint, partition_info.next_from::bigint)
+            into created_partition;
             commit;
-            raise LOG 'Processed % for values from % to % created %', partitionInfo.parent_table, partitionInfo.next_from, partitionInfo.next_to, createdPartition;
+            raise log 'Processed % for values from % to % created %',
+                       partition_info.parent_table, partition_info.next_from,
+                       partition_info.next_to, created_partition;
         end loop;
 end;
 $$
     language plpgsql;
 
+create or replace procedure create_mirror_node_time_partitions() as
+$$
+declare
+    partition_info      record;
+    created_partition   boolean;
+    time_partition_pattern varchar = '^(.*_timestamp|consensus_end)$';
+begin
+    for partition_info in
+        SELECT tp.parent_table,
+               to_timestamp(max(tp.to_value::bigint) / 1000000000.0)                                      as next_from,
+               to_timestamp(max(tp.to_value::bigint) / 1000000000.0) + interval ${partitionTimeInterval}  as next_to
+        from time_partitions tp
+        where tp.partition_column::varchar ~ time_partition_pattern
+        group by tp.parent_table
+        loop
+            if CURRENT_TIMESTAMP + interval ${partitionTimeInterval} < partition_info.next_from then
+                raise log 'Skipping partition creation for time partition % from % to %',
+                          partition_info.parent_table, partition_info.next_from, partition_info.next_to;
+                continue;
+            end if;
+            select create_time_partitions(partition_info.parent_table, interval ${partitionTimeInterval},
+                                          partition_info.next_to, partition_info.next_from)
+            into created_partition;
+            commit;
+            raise log 'Processed % for values from % to % created %',
+                       partition_info.parent_table, partition_info.next_from,
+                       partition_info.next_to, created_partition;
+        end loop;
+end;
+$$
+    language plpgsql;
 -------------------
 -- Add non-repeatable partitioning logic to large tables.
 -------------------
