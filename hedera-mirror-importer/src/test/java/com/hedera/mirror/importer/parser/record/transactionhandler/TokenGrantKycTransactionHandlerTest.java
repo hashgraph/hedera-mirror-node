@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -57,9 +58,15 @@ class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest
     void updateTransaction() {
         // Given
         var recordItem = recordItemBuilder.tokenGrantKyc().build();
-        var transaction = domainBuilder.transaction().get();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var body = recordItem.getTransactionBody().getTokenGrantKyc();
+        var accountId = EntityId.of(body.getAccount());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(accountId))
+                .get();
         var tokenAccount = ArgumentCaptor.forClass(TokenAccount.class);
-        var transactionBody = recordItem.getTransactionBody().getTokenGrantKyc();
+        var tokenId = EntityId.of(body.getToken());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -70,9 +77,10 @@ class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest
         assertThat(tokenAccount.getValue())
                 .returns(transaction.getEntityId().getId(), TokenAccount::getAccountId)
                 .returns(TokenKycStatusEnum.GRANTED, TokenAccount::getKycStatus)
-                .returns(recordItem.getConsensusTimestamp(), TokenAccount::getTimestampLower)
-                .returns(null, TokenAccount::getTimestampUpper)
-                .returns(EntityId.of(transactionBody.getToken()).getId(), TokenAccount::getTokenId);
+                .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
+                .returns(tokenId.getId(), TokenAccount::getTokenId);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, tokenId));
     }
 
     @Test
@@ -87,5 +95,7 @@ class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

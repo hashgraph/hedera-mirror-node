@@ -21,6 +21,7 @@ import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -30,17 +31,13 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.Key;
-import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
@@ -98,7 +95,7 @@ public class AccountClient extends AbstractNetworkClient {
         // retrieve account, setting if it doesn't exist
         ExpandedAccountId accountId = accountMap.computeIfAbsent(accountNameEnum, x -> {
             try {
-                return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
+                return createNewAccount(DEFAULT_INITIAL_BALANCE, accountNameEnum);
             } catch (Exception e) {
                 log.warn("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                 return null;
@@ -174,7 +171,8 @@ public class AccountClient extends AbstractNetworkClient {
     public ExpandedAccountId createNewAccount(long initialBalance, AccountNameEnum accountNameEnum) {
         // Get the keyType from the enum
         Key.KeyCase keyType = accountNameEnum.keyType;
-        return createCryptoAccount(Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
+        return createCryptoAccount(
+                Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
     }
 
     private ExpandedAccountId createCryptoAccount(
@@ -271,7 +269,8 @@ public class AccountClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, ContractId spender) throws InvalidProtocolBufferException {
+    public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, ContractId spender)
+            throws InvalidProtocolBufferException {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, AccountId.fromBytes(spender.toBytes()));

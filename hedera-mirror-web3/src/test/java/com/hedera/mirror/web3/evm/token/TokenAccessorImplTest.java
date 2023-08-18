@@ -30,6 +30,8 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -37,7 +39,6 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -232,14 +233,14 @@ class TokenAccessorImplTest {
     void infoForTokenCustomFees() {
         final var customFee = new CustomFee();
         final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
-        customFee.setCollectorAccountId(collectorId);
+        customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
-        when(customFeeRepository.findByTokenId(any())).thenReturn(customFeeList);
+        when(customFeeRepository.findById(any())).thenReturn(Optional.of(customFee));
         assertThat(tokenAccessor.infoForTokenCustomFees(TOKEN)).isNotEmpty();
         assertEquals(
                 toAddress(collectorId),

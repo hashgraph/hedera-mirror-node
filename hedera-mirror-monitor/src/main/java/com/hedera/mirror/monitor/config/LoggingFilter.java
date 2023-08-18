@@ -20,7 +20,7 @@ import jakarta.inject.Named;
 import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -31,7 +31,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-@Log4j2
+@CustomLog
 @Named
 public class LoggingFilter implements WebFilter {
 

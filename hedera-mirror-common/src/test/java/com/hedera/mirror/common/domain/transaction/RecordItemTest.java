@@ -40,7 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -49,13 +53,19 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
 @SuppressWarnings("deprecation")
@@ -127,6 +137,58 @@ class RecordItemTest {
                 .transaction(Transaction.newBuilder().build())
                 .build();
         assertThat(recordItem.isSuccessful()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testAddEntityId(boolean accept) {
+        var random = new SecureRandom();
+        long id = random.nextLong(2000) + 2000L;
+        var now = Instant.now();
+        var payerAccountId = AccountID.newBuilder().setAccountNum(id++).build();
+        long consensusTimestamp = now.getEpochSecond() * 1_000_000_000 + now.getNano();
+        var validStart =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond() - 1).setNanos(now.getNano());
+        var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart))
+                .build();
+        var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+        var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.toByteString())
+                .build();
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var recordItem = RecordItem.builder()
+                .entityTransactionPredicate(e -> accept)
+                .transaction(transaction)
+                .transactionRecord(transactionRecord)
+                .build();
+        var account = EntityId.of(id, EntityType.ACCOUNT);
+        var expected = accept
+                ? Map.of(
+                        id,
+                        EntityTransaction.builder()
+                                .consensusTimestamp(consensusTimestamp)
+                                .entityId(id)
+                                .payerAccountId(EntityId.of(payerAccountId))
+                                .result(ResponseCodeEnum.SUCCESS_VALUE)
+                                .type(TransactionType.CRYPTOTRANSFER.getProtoId())
+                                .build())
+                : new HashMap<Long, EntityTransaction>();
+
+        // when
+        recordItem.addEntityId(account);
+
+        // then
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expected);
     }
 
     @Test

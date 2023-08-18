@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class CryptoAddLiveHashTransactionHandler implements TransactionHandler {
+class CryptoAddLiveHashTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -50,7 +50,7 @@ class CryptoAddLiveHashTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isClaims() || !recordItem.isSuccessful()) {
             return;
         }

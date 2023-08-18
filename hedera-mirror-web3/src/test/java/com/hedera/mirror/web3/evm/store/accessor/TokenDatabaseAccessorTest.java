@@ -150,14 +150,13 @@ class TokenDatabaseAccessorTest {
         when(defaultEntity.getShard()).thenReturn(0L);
         when(defaultEntity.getRealm()).thenReturn(0L);
         when(defaultEntity.getNum()).thenReturn(0L);
-        when(defaultEntity.getBalance()).thenReturn(0L);
         assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO)).hasValueSatisfying(token -> assertThat(token)
                 .returns(emptyList(), Token::mintedUniqueTokens)
                 .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                 .returns(false, Token::hasChangedSupply)
                 .returns(null, Token::getTreasury)
-                .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
+                .returns(null, Token::getAutoRenewAccount)
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
                 .returns(null, Token::getTreasury)

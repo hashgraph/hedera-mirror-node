@@ -48,7 +48,7 @@ services:
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
 
   graphql:
-    image: gcr.io/mirrornode/hedera-mirror-graphql:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-graphql:0.87.0-SNAPSHOT
     pull_policy: always
     environment:
       HEDERA_MIRROR_GRAPHQL_DB_HOST: db
@@ -61,7 +61,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-graphql/application.yml
 
   grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-grpc:0.87.0-SNAPSHOT
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -74,7 +74,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
 
   importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-importer:0.87.0-SNAPSHOT
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -87,7 +87,7 @@ services:
   monitor:
     deploy:
       replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-monitor:0.87.0-SNAPSHOT
     pull_policy: always
     restart: unless-stopped
     environment:
@@ -105,7 +105,7 @@ services:
     tty: true
 
   rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rest:0.87.0-SNAPSHOT
     pull_policy: always
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
@@ -115,7 +115,7 @@ services:
     tty: true
 
   rosetta:
-    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.87.0-SNAPSHOT
     pull_policy: always
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
@@ -127,7 +127,7 @@ services:
       - ./application.yml:/src/hedera-mirror-rosetta/application.yml
 
   web3:
-    image: gcr.io/mirrornode/hedera-mirror-web3:0.86.0-SNAPSHOT
+    image: gcr.io/mirrornode/hedera-mirror-web3:0.87.0-SNAPSHOT
     pull_policy: always
     environment:
       HEDERA_MIRROR_WEB3_DB_HOST: db

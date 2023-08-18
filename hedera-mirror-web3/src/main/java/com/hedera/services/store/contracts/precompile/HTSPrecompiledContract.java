@@ -41,8 +41,10 @@ import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
+import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
+import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -61,7 +63,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
@@ -69,6 +70,10 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
  * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
+ *
+ * Differences with the original class:
+ * 1. Use abstraction for the state by introducing {@link Store} interface.
+ * 2. Use workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the need of having separate precompile classes
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
@@ -130,21 +135,20 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             return evmHTSPrecompiledContract.computeCosted(input, frame, viewGasCalculator, tokenAccessor);
         }
+
+        /* Workaround allowing execution of read only precompile methods in a dynamic context (non pure/view).
+        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.*/
+
+        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
+            return handleReadsFromDynamicContext(input, frame);
+        }
+
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
     }
 
     @NonNull
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
-        /* TODO Temporary workaround allowing eth_call to execute precompile methods in a dynamic context (non pure/view).
-        This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.
-        After the Precompile classes are implemented, this workaround won't be needed. */
-
-        // redirect operations
-        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
-            return handleReadsFromDynamicContext(input, frame);
-        }
-
         if (unqualifiedDelegateDetected(frame)) {
             frame.setExceptionalHaltReason(Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
             return INVALID_DELEGATE;
@@ -198,7 +202,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         try {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
-            precompile.handleSentHbars(frame);
+            precompile.handleSentHbars(frame, transactionBody);
             final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
@@ -222,24 +226,22 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
         final int functionId = input.getInt(0);
         switch (functionId) {
-            case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN:
+            case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                 RedirectTarget target;
                 try {
                     target = DescriptorUtils.getRedirectTarget(input);
                 } catch (final Exception e) {
                     throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
                 }
-
                 var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
                 }
-
                 var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
                 var nestedFunctionSelector = target.descriptor();
                 switch (nestedFunctionSelector) {
                         // cases will be added with the addition of precompiles using redirect operations
-                    case AbiConstants.ABI_ID_ERC_APPROVE:
+                    case AbiConstants.ABI_ID_ERC_APPROVE -> {
                         final var isFungibleToken =
                                 /* For implicit redirect call scenarios, at this point in the logic it has already been
                                  * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
@@ -272,14 +274,22 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 input,
                                 aliasResolver,
                                 new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
-                        break;
-                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL:
+                    }
+                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
                         this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         this.transactionBody =
                                 precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
-                        break;
-                    default:
+                    }
+                    case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
+                        this.precompile =
+                                precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
+                        this.transactionBody = precompile.body(
+                                input.slice(24),
+                                aliasResolver,
+                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
+                    }
+                    default -> {
                         this.precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
@@ -287,14 +297,15 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                             this.transactionBody =
                                     precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                         }
+                    }
                 }
-                break;
-            case AbiConstants.ABI_ID_APPROVE:
+            }
+            case AbiConstants.ABI_ID_APPROVE -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
-                break;
-            case AbiConstants.ABI_ID_APPROVE_NFT:
+            }
+            case AbiConstants.ABI_ID_APPROVE_NFT -> {
                 final var approveDecodedNftInfo =
                         ApprovePrecompile.decodeTokenIdAndSerialNum(input, TokenID.getDefaultInstance());
                 final var tokenID = approveDecodedNftInfo.tokenId();
@@ -310,16 +321,31 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
-                break;
-            case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL:
+            }
+            case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody =
                         precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
-                break;
-            default:
+            }
+            case AbiConstants.ABI_ID_TRANSFER_TOKENS,
+                    AbiConstants.ABI_ID_TRANSFER_TOKEN,
+                    AbiConstants.ABI_ID_TRANSFER_NFTS,
+                    AbiConstants.ABI_ID_TRANSFER_NFT,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER,
+                    AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists));
+            }
+            case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
+            }
+            default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
-                break;
+            }
         }
         gasRequirement = defaultGas();
     }
@@ -333,8 +359,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.mirrorNodeEvmProperties = updater.aliases();
     }
 
-    private PrecompiledContract.PrecompileContractResult handleReadsFromDynamicContext(
-            final Bytes input, @NonNull final MessageFrame frame) {
+    private Pair<Long, Bytes> handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
         if (isTokenProxyRedirect(input)) {
             final var executor =
@@ -344,14 +369,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             if (resultFromExecutor.getRight() == null) {
                 throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
             }
-
         } else if (isViewFunction(input)) {
             final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         }
-        return resultFromExecutor == null
-                ? PrecompileContractResult.halt(null, Optional.of(ExceptionalHaltReason.NONE))
-                : PrecompileContractResult.success(resultFromExecutor.getRight());
+        return resultFromExecutor;
     }
 
     private boolean isNestedFunctionSelectorForWrite(Bytes input) {

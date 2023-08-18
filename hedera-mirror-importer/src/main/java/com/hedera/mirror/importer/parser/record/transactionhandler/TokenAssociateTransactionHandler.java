@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class TokenAssociateTransactionHandler implements TransactionHandler {
+class TokenAssociateTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -44,7 +44,7 @@ class TokenAssociateTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }
@@ -62,6 +62,8 @@ class TokenAssociateTransactionHandler implements TransactionHandler {
             tokenAccount.setTimestampLower(consensusTimestamp);
             tokenAccount.setTokenId(tokenId.getId());
             entityListener.onTokenAccount(tokenAccount);
+
+            recordItem.addEntityId(tokenId);
         });
     }
 }

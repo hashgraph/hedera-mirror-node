@@ -182,6 +182,7 @@ comment on table contract_state_change is 'Contract execution state changes';
 create table if not exists crypto_allowance
 (
     amount           bigint    not null,
+    amount_granted   bigint    not null,
     owner            bigint    not null,
     payer_account_id bigint    not null,
     spender          bigint    not null,
@@ -210,20 +211,19 @@ comment on table crypto_transfer is 'Crypto account Hbar transfers';
 -- custom_fee
 create table if not exists custom_fee
 (
-    all_collectors_are_exempt boolean not null default false,
-    amount                    bigint,
-    amount_denominator        bigint,
-    collector_account_id      bigint,
-    created_timestamp         bigint  not null,
-    denominating_token_id     bigint,
-    maximum_amount            bigint,
-    minimum_amount            bigint  not null default 0,
-    net_of_transfers          boolean,
-    royalty_denominator       bigint,
-    royalty_numerator         bigint,
-    token_id                  bigint  not null
-) partition by range (created_timestamp);
+    fixed_fees        jsonb,
+    fractional_fees   jsonb,
+    royalty_fees      jsonb,
+    timestamp_range   int8range not null,
+    token_id          bigint    not null
+) partition by range (token_id);
 comment on table custom_fee is 'HTS Custom fees';
+
+create table if not exists custom_fee_history
+(
+    like custom_fee including defaults
+) partition by range (token_id);
+comment on table custom_fee_history is 'HTS Custom fees history state';
 
 -- entity
 create table if not exists entity
@@ -283,6 +283,16 @@ create table if not exists entity_stake_history
     like entity_stake including defaults
 ) partition by range (id);
 comment on table entity_stake_history is 'Network entity stake historical state';
+
+create table if not exists entity_transaction
+(
+    consensus_timestamp bigint   not null,
+    entity_id           bigint   not null,
+    payer_account_id    bigint   not null,
+    result              smallint not null,
+    type                smallint not null
+) partition by range (consensus_timestamp);
+comment on table entity_transaction is 'Network entity transaction lookup table';
 
 create table if not exists ethereum_transaction
 (
@@ -344,6 +354,18 @@ create table if not exists live_hash
     livehash            bytea,
     consensus_timestamp bigint not null
 );
+
+create table if not exists network_freeze
+(
+    consensus_timestamp bigint   not null,
+    end_time            bigint,
+    file_hash           bytea    not null,
+    file_id             bigint,
+    payer_account_id    bigint   not null,
+    start_time          bigint   not null,
+    type                smallint not null
+) partition by range (consensus_timestamp);
+comment on table network_freeze is 'System transaction to freeze the network';
 
 create table if not exists network_stake
 (
@@ -561,6 +583,7 @@ comment on table token_account_history is 'History of token_account';
 create table if not exists token_allowance
 (
     amount           bigint    not null,
+    amount_granted   bigint    not null,
     owner            bigint    not null,
     payer_account_id bigint    not null,
     spender          bigint    not null,
@@ -645,6 +668,7 @@ create table if not exists transaction
     scheduled                  boolean     not null default false,
     transaction_bytes          bytea,
     transaction_hash           bytea,
+    transaction_record_bytes   bytea,
     type                       smallint    not null,
     valid_start_ns             bigint      not null,
     valid_duration_seconds     bigint

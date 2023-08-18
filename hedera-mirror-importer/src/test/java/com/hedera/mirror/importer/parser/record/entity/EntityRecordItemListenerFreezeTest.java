@@ -16,76 +16,56 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hederahashgraph.api.proto.java.FileID;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.NetworkFreezeRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.junit.jupiter.api.BeforeEach;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 
-    @BeforeEach
-    void before() {
-        entityProperties.getPersist().setFiles(true);
-        entityProperties.getPersist().setSystemFiles(true);
-        entityProperties.getPersist().setCryptoTransferAmounts(true);
-    }
+    private final NetworkFreezeRepository networkFreezeRepository;
 
     @Test
     void freeze() {
-        Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(transactionBody);
+        var recordItem = recordItemBuilder.freeze().build();
+        var freeze = recordItem.getTransactionBody().getFreeze();
 
-        parseRecordItemAndCommit(RecordItem.builder()
-                .transactionRecord(record)
-                .transaction(transaction)
-                .build());
+        parseRecordItemAndCommit(recordItem);
 
-        assertAll(() -> assertRowCount(), () -> assertTransactionAndRecord(transactionBody, record));
+        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
+        softly.assertThat(transactionRepository.count()).isOne();
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(3);
+        softly.assertThat(networkFreezeRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(recordItem.getConsensusTimestamp(), NetworkFreeze::getConsensusTimestamp)
+                .returns(null, NetworkFreeze::getEndTime)
+                .returns(DomainUtils.toBytes(freeze.getFileHash()), NetworkFreeze::getFileHash)
+                .returns(EntityId.of(freeze.getUpdateFile()), NetworkFreeze::getFileId)
+                .returns(recordItem.getPayerAccountId(), NetworkFreeze::getPayerAccountId)
+                .returns(DomainUtils.timestampInNanosMax(freeze.getStartTime()), NetworkFreeze::getStartTime)
+                .returns(freeze.getFreezeTypeValue(), NetworkFreeze::getType);
     }
 
     @Test
     void freezeInvalidTransaction() {
-        Transaction transaction = freezeTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        var recordItem = recordItemBuilder
+                .freeze()
+                .status(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
+                .build();
 
-        parseRecordItemAndCommit(RecordItem.builder()
-                .transactionRecord(record)
-                .transaction(transaction)
-                .build());
+        parseRecordItemAndCommit(recordItem);
 
-        assertAll(() -> assertRowCount(), () -> assertTransactionAndRecord(transactionBody, record));
-    }
-
-    private void assertRowCount() {
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()));
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody) {
-        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum result) {
-        return buildTransactionRecord(recordBuilder -> {}, transactionBody, result.getNumber());
-    }
-
-    @SuppressWarnings("deprecation")
-    private Transaction freezeTransaction() {
-        return buildTransaction(builder -> builder.getFreezeBuilder()
-                .setEndHour(1)
-                .setEndMin(2)
-                .setStartHour(3)
-                .setStartMin(4)
-                .setUpdateFile(FileID.newBuilder().setFileNum(5).build()));
+        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
+        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(3);
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(networkFreezeRepository.count()).isZero();
+        softly.assertThat(transactionRepository.count()).isOne();
     }
 }

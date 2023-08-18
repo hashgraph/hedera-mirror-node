@@ -36,13 +36,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public abstract class CsvBalanceFileReader implements BalanceFileReader {
 

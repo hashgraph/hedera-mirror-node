@@ -85,10 +85,12 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     void updateTransactionSuccessful() {
         // given
         long nodeStake1 = 5_000_000 * TINYBARS_IN_ONE_HBAR;
-        var nodeStakeProto1 = getNodeStakeProto(nodeStake1, nodeStake1);
+        var nodeStakeProto1 = getNodeStakeProto(nodeStake1, nodeStake1, 0);
 
         long nodeStake2 = 21_000_000 * TINYBARS_IN_ONE_HBAR;
-        var nodeStakeProto2 = getNodeStakeProto(nodeStake2, nodeStake2 - 3_000 * TINYBARS_IN_ONE_HBAR);
+        long nodeStakeRewarded2 = nodeStake2 - 3_000 * TINYBARS_IN_ONE_HBAR;
+        long nodeNotRewarded2 = 2_0000 * TINYBARS_IN_ONE_HBAR;
+        var nodeStakeProto2 = getNodeStakeProto(nodeStake2, nodeStakeRewarded2, nodeNotRewarded2);
 
         var recordItem = recordItemBuilder
                 .nodeStakeUpdate()
@@ -97,15 +99,20 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long epochDay = Utility.getEpochDay(consensusTimestamp) - 1L;
-        long stakeTotal = nodeStake1 + nodeStake2;
+        long stakeTotal = nodeStake1 + nodeStakeRewarded2 + nodeNotRewarded2;
         var body = recordItem.getTransactionBody().getNodeStakeUpdate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(body.getEndOfStakingPeriod());
         var expectedNodeStakes = List.of(
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakingPeriod),
                 getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod));
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(applicationEventPublisher).publishEvent(any(NodeStakeUpdatedEvent.class));
@@ -131,6 +138,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
                 .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -140,19 +149,26 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .nodeStakeUpdate()
                 .transactionBody(Builder::clearNodeStake)
                 .build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t ->
+                        t.consensusTimestamp(recordItem.getConsensusTimestamp()).entityId(null))
+                .get();
 
         // when
-        transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verifyNoInteractions(applicationEventPublisher);
         verify(entityListener).onNetworkStake(any());
         verify(entityListener, never()).onNodeStake(any());
         verify(consensusNodeService, never()).refresh();
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
-    private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {
-        long stakeNotRewarded = stake - stakeRewarded;
+    private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(
+            long stake, long stakeRewarded, long stakeNotRewarded) {
         return recordItemBuilder
                 .nodeStake()
                 .setMaxStake(stake * 2)

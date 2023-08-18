@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class CompositeEthereumTransactionParser implements EthereumTransactionParser {
     private final LegacyEthereumTransactionParser legacyEthereumTransactionParser;
+    private final Eip2930EthereumTransactionParser eip2930EthereumTransactionParser;
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
 
     @Override
@@ -43,7 +44,20 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
         }
 
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
-        var legacyRlpItem = decoder.next();
-        return legacyRlpItem.isList() ? legacyEthereumTransactionParser : eip1559EthereumTransactionParser;
+        var firstRlpItem = decoder.next();
+
+        // legacy transactions are encoded as a list
+        if (firstRlpItem.isList()) {
+            return legacyEthereumTransactionParser;
+        }
+
+        // typed transactions encode the type in the first byte
+        var legacyRlpItemByte = firstRlpItem.asByte();
+        if (legacyRlpItemByte == Eip2930EthereumTransactionParser.EIP2930_TYPE_BYTE) {
+            return eip2930EthereumTransactionParser;
+        } else if (legacyRlpItemByte == Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE) {
+            return eip1559EthereumTransactionParser;
+        }
+        throw new InvalidDatasetException("Unsupported Ethereum transaction data type");
     }
 }

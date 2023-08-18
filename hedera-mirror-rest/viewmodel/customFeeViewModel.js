@@ -26,59 +26,54 @@ class CustomFeeViewModel {
    * @param {CustomFee} customFee
    */
   constructor(customFee) {
-    if (!customFee.amount && !customFee.royaltyDenominator) {
-      return;
-    }
-    this.all_collectors_are_exempt = customFee.allCollectorsAreExempt;
-    if (customFee.amountDenominator) {
-      // fractional fee
-      this.amount = {
-        numerator: customFee.amount,
-        denominator: customFee.amountDenominator,
-      };
-
-      this.denominating_token_id = EntityId.parse(customFee.tokenId).toString();
-      this.maximum = customFee.maximumAmount || undefined;
-      this.minimum = customFee.minimumAmount;
-      this.net_of_transfers = customFee.netOfTransfers;
-    } else if (customFee.royaltyDenominator) {
-      // royalty fee
-      this.amount = {
-        numerator: customFee.royaltyNumerator,
-        denominator: customFee.royaltyDenominator,
-      };
-
-      if (customFee.amount) {
-        this.fallback_fee = this._parseFixedFee(customFee);
-      }
-    } else {
-      // fixed fee
-      Object.assign(this, this._parseFixedFee(customFee));
-    }
-
-    this.collector_account_id = EntityId.parse(customFee.collectorAccountId, {isNullable: true}).toString();
+    this.created_timestamp = customFee.createdTimestamp;
+    this.fixed_fees = customFee.fixedFees?.map((f) => this._parseFixedFee(f)) ?? [];
+    this.fractional_fees = customFee.fractionalFees?.map((f) => this._parseFractionalFee(f, customFee.tokenId)) ?? [];
+    this.royalty_fees = customFee.royaltyFees?.map((f) => this._parseRoyaltyFee(f)) ?? [];
   }
 
-  hasFee() {
-    return !!this.amount;
-  }
-
-  isFixedFee() {
-    return this.amount.denominator === undefined;
-  }
-
-  isFractionalFee() {
-    return this.amount.denominator !== undefined && this.minimum !== undefined;
-  }
-
-  isRoyaltyFee() {
-    return this.amount.denominator !== undefined && this.minimum === undefined;
-  }
-
-  _parseFixedFee(customFee) {
+  _parseFixedFee(fixedFee) {
     return {
-      amount: customFee.amount,
-      denominating_token_id: EntityId.parse(customFee.denominatingTokenId, {isNullable: true}).toString(),
+      all_collectors_are_exempt: fixedFee.allCollectorsAreExempt ?? false,
+      amount: fixedFee.amount,
+      collector_account_id: EntityId.parse(fixedFee.collectorAccountId).toString(),
+      denominating_token_id: EntityId.parse(fixedFee.denominatingTokenId, {isNullable: true}).toString(),
+    };
+  }
+
+  _parseFractionalFee(fractionalFee, tokenId) {
+    return {
+      all_collectors_are_exempt: fractionalFee.allCollectorsAreExempt ?? false,
+      amount: {
+        numerator: fractionalFee.numerator,
+        denominator: fractionalFee.denominator,
+      },
+      collector_account_id: EntityId.parse(fractionalFee.collectorAccountId).toString(),
+      denominating_token_id: EntityId.parse(tokenId).toString(),
+      maximum: fractionalFee.maximumAmount ?? null,
+      minimum: fractionalFee.minimumAmount,
+      net_of_transfers: fractionalFee.netOfTransfers ?? false,
+    };
+  }
+
+  _parseRoyaltyFee(royaltyFee) {
+    const fallback_fee = royaltyFee.fallbackFee?.amount
+      ? {
+          amount: royaltyFee.fallbackFee.amount,
+          denominating_token_id: EntityId.parse(royaltyFee.fallbackFee.denominatingTokenId, {
+            isNullable: true,
+          }).toString(),
+        }
+      : null;
+
+    return {
+      all_collectors_are_exempt: royaltyFee.allCollectorsAreExempt ?? false,
+      amount: {
+        denominator: royaltyFee.denominator,
+        numerator: royaltyFee.numerator,
+      },
+      collector_account_id: EntityId.parse(royaltyFee.collectorAccountId).toString(),
+      fallback_fee,
     };
   }
 }

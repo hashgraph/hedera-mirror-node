@@ -51,14 +51,16 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
             ), state as (
               select
                 coalesce(account_id, entity_id) as account_id,
-                coalesce(balance, 0) + coalesce(amount, 0) as balance
+                coalesce(balance, 0) + coalesce(amount, 0) as balance,
+                case when balance is not null then false end as deleted
               from snapshot
               full outer join change on account_id = entity_id
             )
-            update entity
-            set balance = s.balance
+            insert into entity (balance, deleted, id, num, realm, shard, timestamp_range)
+            select s.balance, s.deleted, s.account_id, (s.account_id & 4294967295), ((s.account_id >> 32) & 65535), (s.account_id  >> 48), '[0,)'
             from state s
-            where account_id = id and type in ('ACCOUNT', 'CONTRACT');
+            on conflict (id) do update
+            set balance = excluded.balance;
             """;
 
     private final JdbcOperations jdbcOperations;

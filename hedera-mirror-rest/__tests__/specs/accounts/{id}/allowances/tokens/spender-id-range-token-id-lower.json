@@ -21,56 +21,64 @@
     ],
     "tokenAllowances": [
       {
-        "amount": 33,
+        "amount": 23,
+        "amount_granted": 33,
         "owner": 1001,
         "spender": 2001,
         "token_id": 10001,
         "timestamp_range": "[1234567890000000001,)"
       },
       {
-        "amount": 44,
+        "amount": 34,
+        "amount_granted": 44,
         "owner": 1001,
         "spender": 2001,
         "token_id": 10002,
         "timestamp_range": "[1234567890000000002,)"
       },
       {
-        "amount": 55,
+        "amount": 45,
+        "amount_granted": 55,
         "owner": 2001,
         "spender": 3001,
         "token_id": 10001,
         "timestamp_range": "[1234567890000000003,)"
       },
       {
-        "amount": 66,
+        "amount": 56,
+        "amount_granted": 66,
         "owner": 1001,
         "spender": 2001,
         "token_id": 10006,
         "timestamp_range": "[1234567890000000004,)"
       },
       {
-        "amount": 77,
+        "amount": 67,
+        "amount_granted": 77,
         "owner": 1001,
         "spender": 3001,
         "token_id": 10005,
         "timestamp_range": "[1234567890000000005,)"
       },
       {
-        "amount": 78,
+        "amount": 68,
+        "amount_granted": 78,
         "owner": 1001,
         "spender": 3101,
         "token_id": 10005,
         "timestamp_range": "[1234567890000000006,)"
       },
       {
-        "amount": 98,
+        "amount": 88,
+        "amount_granted": 98,
         "owner": 1001,
         "spender": 3101,
         "token_id": 10006,
         "timestamp_range": "[1234567890000000007,)"
       },
       {
-        "amount": 99,
+        "amount": 89,
+        "amount_granted": 99,
         "owner": 1001,
         "spender": 3102,
         "token_id": 10006,
@@ -85,6 +93,7 @@
       "responseJson": {
         "allowances": [
           {
+            "amount": 56,
             "amount_granted": 66,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
@@ -95,6 +104,7 @@
             "token_id": "0.0.10006"
           },
           {
+            "amount": 67,
             "amount_granted": 77,
             "owner": "0.0.1001",
             "spender": "0.0.3001",
@@ -105,6 +115,7 @@
             "token_id": "0.0.10005"
           },
           {
+            "amount": 68,
             "amount_granted": 78,
             "owner": "0.0.1001",
             "spender": "0.0.3101",
@@ -115,6 +126,7 @@
             "token_id": "0.0.10005"
           },
           {
+            "amount": 88,
             "amount_granted": 98,
             "owner": "0.0.1001",
             "spender": "0.0.3101",
@@ -136,6 +148,7 @@
       "responseJson": {
         "allowances": [
           {
+            "amount": 56,
             "amount_granted": 66,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
@@ -146,6 +159,7 @@
             "token_id": "0.0.10006"
           },
           {
+            "amount": 67,
             "amount_granted": 77,
             "owner": "0.0.1001",
             "spender": "0.0.3001",
@@ -156,6 +170,7 @@
             "token_id": "0.0.10005"
           },
           {
+            "amount": 68,
             "amount_granted": 78,
             "owner": "0.0.1001",
             "spender": "0.0.3101",
@@ -177,6 +192,7 @@
       "responseJson": {
         "allowances": [
           {
+            "amount": 88,
             "amount_granted": 98,
             "owner": "0.0.1001",
             "spender": "0.0.3101",
@@ -187,6 +203,7 @@
             "token_id": "0.0.10006"
           },
           {
+            "amount": 68,
             "amount_granted": 78,
             "owner": "0.0.1001",
             "spender": "0.0.3101",
@@ -197,6 +214,7 @@
             "token_id": "0.0.10005"
           },
           {
+            "amount": 67,
             "amount_granted": 77,
             "owner": "0.0.1001",
             "spender": "0.0.3001",

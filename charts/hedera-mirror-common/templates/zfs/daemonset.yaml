@@ -13,26 +13,33 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret: {{ include (print $.Template.BasePath "/zfs/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/zfs/configmap-init.yaml") . | sha256sum }}
       labels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 8 }}
         app: zfs-init
     spec:
+      serviceAccount: {{ .Values.zfs.init.serviceAccount.name }}
       containers:
         - image: registry.k8s.io/pause:latest
-          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
+          imagePullPolicy: {{ .Values.zfs.init.image.pullPolicy }}
           name: pause
       initContainers:
-        - image: "{{ .Values.zfs.image.registry }}/{{ .Values.zfs.image.repository }}:{{ .Values.zfs.image.tag }}"
-          imagePullPolicy: {{ .Values.zfs.image.pullPolicy }}
+        - image: "{{ .Values.zfs.init.image.registry }}/{{ .Values.zfs.init.image.repository }}:{{ .Values.zfs.init.image.tag }}"
+          imagePullPolicy: {{ .Values.zfs.init.image.pullPolicy }}
           name: init
           command: [ "/scripts/entrypoint.sh" ]
           env:
             - name: ROOT_MOUNT_DIR
               value: /node
+            - name: DISK_PREFIX
+              value: {{ .Values.zfs.init.diskPrefix }}
             - name: DISK_SIZE_COORDINATOR
               value: {{ .Values.zfs.coordinator.diskSize }}
             - name: DISK_SIZE_WORKER
               value: {{ .Values.zfs.worker.diskSize }}
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           securityContext:
             privileged: true
           volumeMounts:

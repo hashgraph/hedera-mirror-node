@@ -22,11 +22,11 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import jakarta.inject.Named;
 import java.io.DataInputStream;
 import java.io.IOException;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
-@Log4j2
+@CustomLog
 @Named
 @Primary
 @RequiredArgsConstructor

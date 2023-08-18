@@ -1230,7 +1230,7 @@ func TestConstructionSubmitOffline(t *testing.T) {
 		SignedTransaction: "0xfc2267c53ef8a27e2ab65f0a6b5e5607ba33b9c8c8f7304d8cb4a77aee19107d",
 	}
 
-	service, _ := NewConstructionAPIService(nil, offlineBaseService, defaultConfig, nil)
+	service, _ := NewConstructionAPIService(nil, offlineBaseService, &config.Config{Network: defaultNetwork}, nil)
 
 	// when
 	res, e := service.ConstructionSubmit(defaultContext, request)
@@ -1526,6 +1526,12 @@ func TestGetFrozenTransactionBodyBytes(t *testing.T) {
 	// then
 	assert.Nil(t, err)
 	assert.Equal(t, expected, bytes)
+}
+
+func TestNewConstructionAPIServiceThrowsWithUnrecognizedNetwork(t *testing.T) {
+	client, err := NewConstructionAPIService(nil, onlineBaseService, &config.Config{Network: "unknown"}, nil)
+	assert.Error(t, err)
+	assert.Nil(t, client)
 }
 
 func TestUnmarshallTransactionFromHexString(t *testing.T) {

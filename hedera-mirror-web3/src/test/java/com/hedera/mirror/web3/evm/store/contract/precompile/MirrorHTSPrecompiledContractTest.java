@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiCons
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -31,6 +30,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -99,6 +99,9 @@ class MirrorHTSPrecompiledContractTest {
 
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private EntityAddressSequencer entityAddressSequencer;
 
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
@@ -179,25 +182,6 @@ class MirrorHTSPrecompiledContractTest {
         final var precompileResult = subject.computeCosted(input, messageFrame, gasCalculator, tokenAccessor);
 
         assertThat(Pair.of(0L, SUCCESS_RESULT)).isEqualTo(precompileResult);
-    }
-
-    @Test
-    void prepareComputationForUnsupportedPrecompileThrowsException() {
-        // updateTokenKeys signature
-        final var functionHash = Bytes.fromHexString("0x6fc3cbaf");
-
-        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
-        given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
-        given(messageFrame.getSenderAddress()).willReturn(Address.ALTBN128_MUL);
-        given(messageFrame.isStatic()).willReturn(false);
-
-        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.permissivelyUnaliased(any()))
-                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-
-        assertThatThrownBy(() -> subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage(ERROR_MESSAGE);
     }
 
     @Test

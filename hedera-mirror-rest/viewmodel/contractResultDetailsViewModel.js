@@ -52,8 +52,8 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
   ) {
     super(contractResult);
 
-    this.block_hash = utils.addHexPrefix(recordFile.hash);
-    this.block_number = recordFile.index;
+    this.block_hash = utils.addHexPrefix(recordFile?.hash);
+    this.block_number = recordFile?.index ?? null;
     this.hash = utils.toHexStringNonQuantity(contractResult.transactionHash);
     if (!_.isNil(contractLogs)) {
       this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
@@ -82,7 +82,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     // default eth related values
     this.access_list = null;
-    this.block_gas_used = recordFile.gasUsed !== null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;
+    this.block_gas_used = recordFile?.gasUsed != null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;
     this.chain_id = null;
     this.gas_price = null;
     this.max_fee_per_gas = null;

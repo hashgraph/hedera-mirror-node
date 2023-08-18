@@ -29,14 +29,13 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
-@Log4j2
 @Named
 @RequiredArgsConstructor
-class EthereumTransactionHandler implements TransactionHandler {
-    private final EntityProperties entityProperties;
+class EthereumTransactionHandler extends AbstractTransactionHandler {
+
     private final EntityListener entityListener;
+    private final EntityProperties entityProperties;
     private final EthereumTransactionParser ethereumTransactionParser;
 
     /**
@@ -45,7 +44,6 @@ class EthereumTransactionHandler implements TransactionHandler {
      * @param recordItem to check
      * @return The contract ID associated with this ethereum transaction call
      */
-    @SuppressWarnings("deprecation")
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
@@ -64,7 +62,7 @@ class EthereumTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isEthereumTransactions()) {
             return;
         }
@@ -92,6 +90,8 @@ class EthereumTransactionHandler implements TransactionHandler {
         entityListener.onEthereumTransaction(ethereumTransaction);
         updateAccountNonce(recordItem, ethereumTransaction);
         recordItem.setEthereumTransaction(ethereumTransaction);
+
+        recordItem.addEntityId(ethereumTransaction.getCallDataId());
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
@@ -114,6 +114,8 @@ class EthereumTransactionHandler implements TransactionHandler {
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
+
+            recordItem.addEntityId(senderId);
         }
     }
 

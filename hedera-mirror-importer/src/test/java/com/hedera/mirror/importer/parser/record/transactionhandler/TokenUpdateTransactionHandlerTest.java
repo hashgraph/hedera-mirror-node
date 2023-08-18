@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -43,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,36 +80,37 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionSuccessful() {
         // Given
         var recordItem = recordItemBuilder.tokenUpdate().build();
-        var tokenId =
-                EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
-        var transactionBody = recordItem.getTransactionBody().getTokenUpdate();
+        var body = recordItem.getTransactionBody().getTokenUpdate();
+        var tokenId = EntityId.of(body.getToken());
         var timestamp = recordItem.getConsensusTimestamp();
-        var token = ArgumentCaptor.forClass(Token.class);
         var transaction = domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
                 .get();
-        when(entityIdService.lookup(any(AccountID.class)))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10, EntityType.ACCOUNT)));
+        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
+        var treasuryId = EntityId.of(body.getTreasury());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
-        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(10L, id));
-        verify(entityListener).onToken(token.capture());
-        assertThat(token.getValue())
-                .returns(transactionBody.getFeeScheduleKey().toByteArray(), Token::getFeeScheduleKey)
-                .returns(transactionBody.getFreezeKey().toByteArray(), Token::getFreezeKey)
-                .returns(transactionBody.getKycKey().toByteArray(), Token::getKycKey)
-                .returns(timestamp, Token::getTimestampLower)
-                .returns(transactionBody.getName(), Token::getName)
-                .returns(transactionBody.getPauseKey().toByteArray(), Token::getPauseKey)
-                .returns(transactionBody.getSupplyKey().toByteArray(), Token::getSupplyKey)
-                .returns(transactionBody.getSymbol(), Token::getSymbol)
-                .returns(EntityId.of(transactionBody.getTreasury()), Token::getTreasuryAccountId)
-                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
-                .returns(transactionBody.getWipeKey().toByteArray(), Token::getWipeKey);
+        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(autoRenewAccountId.getId(), id));
+        verify(entityListener).onToken(assertArg(t -> assertThat(t)
+                .returns(body.getFeeScheduleKey().toByteArray(), Token::getFeeScheduleKey)
+                .returns(body.getFreezeKey().toByteArray(), Token::getFreezeKey)
+                .returns(body.getKycKey().toByteArray(), Token::getKycKey)
+                .returns(Range.atLeast(timestamp), Token::getTimestampRange)
+                .returns(body.getName(), Token::getName)
+                .returns(body.getPauseKey().toByteArray(), Token::getPauseKey)
+                .returns(body.getSupplyKey().toByteArray(), Token::getSupplyKey)
+                .returns(body.getSymbol(), Token::getSymbol)
+                .returns(EntityId.of(body.getTreasury()), Token::getTreasuryAccountId)
+                .returns(tokenId.getId(), Token::getTokenId)
+                .returns(body.getWipeKey().toByteArray(), Token::getWipeKey)));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId, treasuryId));
     }
 
     @Test
@@ -119,7 +118,9 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // Given
         var recordItem = recordItemBuilder
                 .tokenUpdate()
-                .transactionBody(b -> b.clearFeeScheduleKey()
+                .transactionBody(b -> b.clearAutoRenewAccount()
+                        .clearAutoRenewPeriod()
+                        .clearFeeScheduleKey()
                         .clearFreezeKey()
                         .clearKycKey()
                         .clearName()
@@ -129,15 +130,19 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .clearTreasury()
                         .clearWipeKey())
                 .build();
-        var token = ArgumentCaptor.forClass(Token.class);
-        var transaction = domainBuilder.transaction().get();
+        long timestamp = recordItem.getConsensusTimestamp();
+        var tokenId =
+                EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
+                .get();
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
-        verify(entityListener).onToken(token.capture());
-        assertThat(token.getValue())
+        verify(entityListener).onToken(assertArg(t -> assertThat(t)
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
@@ -146,8 +151,10 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getSupplyKey)
                 .returns(null, Token::getSymbol)
                 .returns(null, Token::getTreasuryAccountId)
-                .returns(transaction.getEntityId().getId(), t -> t.getTokenId())
-                .returns(null, Token::getWipeKey);
+                .returns(transaction.getEntityId().getId(), Token::getTokenId)
+                .returns(null, Token::getWipeKey)));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -162,14 +169,18 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verify(entityListener, never()).onToken(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var aliasAccount = AccountID.newBuilder().setAlias(alias).build();
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
         var recordItem = recordItemBuilder
                 .tokenUpdate()
-                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .transactionBody(b -> b.setAutoRenewAccount(aliasAccount).clearTreasury())
                 .build();
         var tokenId =
                 EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
@@ -178,19 +189,22 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
                 .get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(10L, id));
+        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(aliasAccountId.getId(), id));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, aliasAccountId));
     }
 
     @ParameterizedTest
     @MethodSource("provideEntities")
     void updateTransactionWithEmptyEntity(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var aliasAccount = AccountID.newBuilder().setAlias(alias).build();
         var recordItem = recordItemBuilder
                 .tokenUpdate()
-                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .transactionBody(b -> b.setAutoRenewAccount(aliasAccount).clearTreasury())
                 .build();
         var tokenId =
                 EntityId.of(recordItem.getTransactionBody().getTokenUpdate().getToken());
@@ -199,13 +213,14 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
                 .get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.ofNullable(entityId));
+        when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.ofNullable(entityId));
         var expectedId = entityId == null ? null : entityId.getId();
 
         transactionHandler.updateTransaction(transaction, recordItem);
 
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(expectedId, id));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @SuppressWarnings("java:S6103")

@@ -36,9 +36,9 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.validation.annotation.Validated;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,7 +46,7 @@ import reactor.core.publisher.SignalType;
 import reactor.retry.Repeat;
 
 @Named
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 @Validated
 public class TopicMessageServiceImpl implements TopicMessageService {

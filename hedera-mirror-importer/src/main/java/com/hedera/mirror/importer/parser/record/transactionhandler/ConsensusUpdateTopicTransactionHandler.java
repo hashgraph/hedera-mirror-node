@@ -51,9 +51,11 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
             // Allow clearing of the autoRenewAccount by allowing it to be set to 0
             entityIdService
                     .lookup(transactionBody.getAutoRenewAccount())
-                    .map(EntityId::getId)
                     .ifPresentOrElse(
-                            entity::setAutoRenewAccountId,
+                            entityId -> {
+                                entity.setAutoRenewAccountId(entityId.getId());
+                                recordItem.addEntityId(entityId);
+                            },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
                                     recordItem.getConsensusTimestamp()));

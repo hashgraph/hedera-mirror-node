@@ -14,6 +14,8 @@ hedera:
         bucketName: test
       importHistoricalAccountInfo: false
       migration:
+        fixCryptoAllowanceAmountMigration:
+          enabled: false # disable the migration so during test it doesn't drop the crypto_allowance_migration table
         DUMMYMIGRATION:
           checksum: 5
       network: TESTNET

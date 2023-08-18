@@ -31,12 +31,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.apache.commons.math3.util.Pair;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @Named
 public class CompositeTransactionGenerator implements TransactionGenerator {
 

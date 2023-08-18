@@ -46,7 +46,7 @@ public class CommonParserProperties {
     private Collection<TransactionFilter> include = new ArrayList<>();
 
     @Min(1)
-    private int tempTableBufferSize = 256; // Size in MB
+    private int tempTableBufferSize; // Default value set in application.yml, size in MB
 
     @Getter(lazy = true)
     private final Predicate<TransactionFilterFields> filter = includeFilter().and(excludeFilter());

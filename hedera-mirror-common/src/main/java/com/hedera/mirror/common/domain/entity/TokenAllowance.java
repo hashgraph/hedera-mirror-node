@@ -16,14 +16,15 @@
 
 package com.hedera.mirror.common.domain.entity;
 
+import jakarta.persistence.Entity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@jakarta.persistence.Entity
+@Entity
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 public class TokenAllowance extends AbstractTokenAllowance {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

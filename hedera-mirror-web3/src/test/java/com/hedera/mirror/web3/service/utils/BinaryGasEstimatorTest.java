@@ -48,7 +48,7 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
     @DisplayName("binarySearch")
     @ParameterizedTest(name = "#{index} (low {0}, high {1}, iterationLimit{2}")
     @CsvSource({
-        "21000, 100000, 7",
+        "23850, 100000, 6",
         "35000, 15_000_000, 14",
         "55555, 55555, 1",
         "77777, 77778, 1",

@@ -59,9 +59,11 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             // Allow clearing of the autoRenewAccount by allowing it to be set to 0
             entityIdService
                     .lookup(transactionBody.getAutoRenewAccount())
-                    .map(EntityId::getId)
                     .ifPresentOrElse(
-                            entity::setAutoRenewAccountId,
+                            accountId -> {
+                                entity.setAutoRenewAccountId(accountId.getId());
+                                recordItem.addEntityId(accountId);
+                            },
                             () -> log.error(
                                     RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
                                     recordItem.getConsensusTimestamp()));
@@ -122,7 +124,9 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasTreasury()) {
-            token.setTreasuryAccountId(EntityId.of(transactionBody.getTreasury()));
+            var treasury = EntityId.of(transactionBody.getTreasury());
+            token.setTreasuryAccountId(treasury);
+            recordItem.addEntityId(treasury);
         }
 
         if (transactionBody.hasWipeKey()) {

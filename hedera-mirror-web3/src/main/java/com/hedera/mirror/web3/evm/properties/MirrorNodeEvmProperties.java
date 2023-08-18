@@ -21,7 +21,11 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,8 +45,14 @@ import org.springframework.validation.annotation.Validated;
 public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
+    private boolean allowTreasuryToOwnNfts = true;
+
+    @NotNull
+    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
+
+    @Getter
     @Positive
-    private long estimateGasIterationThreshold = 4200L;
+    private long estimateGasIterationThreshold = 7300L;
 
     private boolean directTokenCall = true;
 
@@ -65,6 +75,13 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     private long htsDefaultGasCost = 10000;
+
+    @Getter
+    private boolean limitTokenAssociations = false;
+
+    @Getter
+    @Min(1)
+    private long maxAutoRenewDuration = 10000L;
 
     @Getter
     @Min(1)
@@ -90,11 +107,27 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxGasRefundPercentage = 100;
 
     @Getter
+    @Min(1)
+    private int maxMemoUtf8Bytes = 100;
+
+    @Getter
     private int maxNftMetadataBytes = 100;
 
     @Getter
     @Min(1)
+    private int maxTokenNameUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
     private int maxTokensPerAccount = 1000;
+
+    @Getter
+    @Min(1)
+    private int maxTokenSymbolUtf8Bytes = 10;
+
+    @Getter
+    @Min(1)
+    private long minAutoRenewDuration = 1000L;
 
     @Getter
     @NotNull
@@ -104,12 +137,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
-
-    @NotNull
-    private Set<EntityType> autoRenewTargetTypes = new HashSet<>();
-
-    @Getter
-    private boolean limitTokenAssociations = false;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);

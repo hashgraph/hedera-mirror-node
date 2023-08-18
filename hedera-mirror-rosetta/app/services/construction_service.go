@@ -619,15 +619,23 @@ func NewConstructionAPIService(
 
 	if len(config.Nodes) > 0 {
 		hederaClient = hedera.ClientForNetwork(config.Nodes)
-	} else if hederaClient, err = hedera.ClientForName(network); err != nil {
-		return nil, err
+	} else {
+		if baseService.IsOnline() {
+			hederaClient, err = hedera.ClientForName(network)
+		} else {
+			// Workaround for offline mode, create client without mirror network to skip the blocking initial network
+			// address book update
+			clientConfig := []byte(fmt.Sprintf("{\"network\": \"%s\"}", network))
+			hederaClient, err = hedera.ClientFromConfig(clientConfig)
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if !baseService.IsOnline() || len(config.Nodes) > 0 {
-		// cancel scheduled network address book update if in offline mode or custom nodes are provided
-		log.Info("Cancel scheduled network address book update")
-		hederaClient.CancelScheduledNetworkUpdate()
-	} else {
+	if baseService.IsOnline() && len(config.Nodes) == 0 {
+		// Set network update period only when in online mode and there is no network nodes configuration
 		hederaClient.SetNetworkUpdatePeriod(config.NodeRefreshInterval)
 	}
 

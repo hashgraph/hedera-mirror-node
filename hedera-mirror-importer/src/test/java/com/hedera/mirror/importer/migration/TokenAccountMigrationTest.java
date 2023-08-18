@@ -27,7 +27,6 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.Builder;
@@ -81,7 +80,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
     void empty() {
         runMigration();
         assertThat(findAllTokenAccounts()).isEmpty();
-        assertThat(findHistory().stream().count()).isZero();
+        assertThat(findHistory(TokenAccount.class)).isEmpty();
     }
 
     @Test
@@ -136,7 +135,9 @@ class TokenAccountMigrationTest extends IntegrationTest {
 
         // then
         assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(expected);
-        assertThat(findHistory()).map(t -> convert(t)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findHistory(TokenAccount.class))
+                .map(this::convert)
+                .containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     private TokenAccountRange convert(MigrationTokenAccount last, Long upperTimestamp) {
@@ -166,10 +167,6 @@ class TokenAccountMigrationTest extends IntegrationTest {
                 .timestampRange(tokenAccount.getTimestampRange())
                 .tokenId(tokenAccount.getTokenId())
                 .build();
-    }
-
-    private Collection<TokenAccount> findHistory() {
-        return findHistory(TokenAccount.class, "account_id, token_id");
     }
 
     private void persistMigrationTokenAccount(MigrationTokenAccount migrationTokenAccount) {

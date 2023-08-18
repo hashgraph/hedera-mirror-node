@@ -3,10 +3,17 @@
 This module covers the [k6](https://k6.io/) based performance tests for Mirror Node APIs including rest, rosetta,
 and web3.
 
-## Install k6
+## Setup
 
 The k6 test engine is needed to run the tests. Please follow
-the [official documentation](https://k6.io/docs/getting-started/installation/) to install k6.
+the [official documentation](https://k6.io/docs/getting-started/installation/) to install k6. If running on a VM,
+ensure the following OS properties are set to avoid resource exhaustion:
+
+```shell
+ulimit -n 1048576
+echo "1" > /proc/sys/net/ipv4/tcp_tw_reuse
+echo "16384 65535" > /proc/sys/net/ipv4/ip_local_port_range
+```
 
 ## Run The Tests
 

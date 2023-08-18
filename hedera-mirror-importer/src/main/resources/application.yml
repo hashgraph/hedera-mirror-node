@@ -28,6 +28,8 @@ hedera:
           checksum: 2
         tokenAccountBalanceMigration:
           checksum: 3
+      parser:
+        tempTableBufferSize: 256 # Size in MB
 
 logging:
   level:
@@ -96,6 +98,7 @@ spring:
     url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?tcpKeepAlive=true
     username: ${hedera.mirror.importer.db.username}
     hikari:
+      connection-init-sql: set temp_buffers='${hedera.mirror.importer.parser.tempTableBufferSize}MB'
       # Note: Flyway does not use Hikari so these properties are ignored. Use URL properties for Flyway instead.
       data-source-properties:
         #loggerLevel: TRACE

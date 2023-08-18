@@ -24,9 +24,9 @@ import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -35,7 +35,7 @@ import reactor.retry.Jitter;
 import reactor.retry.Repeat;
 
 @Named
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public class PollingTopicListener implements TopicListener {
 

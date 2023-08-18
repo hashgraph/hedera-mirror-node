@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
 import com.hedera.services.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.IdUtils;
@@ -153,6 +154,11 @@ public class HTSTestsUtil {
     public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper = new TokenGetCustomFeesWrapper<>(token);
     public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
             new GetTokenExpiryInfoWrapper<>(token);
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
+            new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
+
+    public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapperWithInvalidTokenID =
+            new TokenUpdateExpiryInfoWrapper(null, new TokenExpiryWrapper(442L, payer, 555L));
 
     public static final Bytes ercTransferSuccessResult =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
@@ -196,8 +202,13 @@ public class HTSTestsUtil {
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
     public static final TokenTransferWrapper tokensTransferList =
             new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer, transfer));
+
+    public static final TokenTransferWrapper tokensTransferList2 =
+            new TokenTransferWrapper(new ArrayList<>() {}, List.of(transfer));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(Collections.emptyList()), Collections.singletonList(tokensTransferList2));
     public static final FungibleTokenTransfer transferToAlias1SenderOnly =
             new FungibleTokenTransfer(-AMOUNT, false, token, sender, null);
     public static final FungibleTokenTransfer transferToAlias1ReceiverOnly =
@@ -242,17 +253,19 @@ public class HTSTestsUtil {
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_EMPTY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(Collections.emptyList()), Collections.emptyList());
     public static final List<HbarTransfer> hbarTransfers =
-            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(-AMOUNT, false, sender, null));
+            List.of(new HbarTransfer(AMOUNT, false, null, receiver), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.emptyList());
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList));
+    public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER2 = new CryptoTransferWrapper(
+            new TransferWrapper(hbarTransfers), Collections.singletonList(tokensTransferList2));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_NFT_WRAPPER =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), Collections.singletonList(nftsTransferList));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER = new CryptoTransferWrapper(
             new TransferWrapper(hbarTransfers), List.of(tokensTransferList, nftsTransferList));
     public static final List<HbarTransfer> hbarTransfersAliased = List.of(
-            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(-AMOUNT, false, sender, null));
+            new HbarTransfer(AMOUNT, false, null, receiverAliased), new HbarTransfer(AMOUNT, false, sender, null));
     public static final CryptoTransferWrapper CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER_ALIASED =
             new CryptoTransferWrapper(new TransferWrapper(hbarTransfersAliased), Collections.emptyList());
     public static final List<HbarTransfer> twoHbarTransfers = List.of(

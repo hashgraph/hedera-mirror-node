@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class FileAppendTransactionHandler implements TransactionHandler {
+class FileAppendTransactionHandler extends AbstractTransactionHandler {
 
     private final FileDataHandler fileDataHandler;
 
@@ -40,7 +40,7 @@ class FileAppendTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!recordItem.isSuccessful()) {
             return;
         }

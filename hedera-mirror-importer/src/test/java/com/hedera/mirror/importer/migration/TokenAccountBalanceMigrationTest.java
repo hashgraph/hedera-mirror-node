@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -243,7 +244,21 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccountBalanceMigration.doMigrate();
 
         // then
-        assertThat(tokenAccountRepository.findAll()).isEmpty();
+        disassociatedTokenAccount5.setBalance(30L);
+        assertThat(tokenAccountRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
+                        "associated", "createdTimestamp", "timestampRange")
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5)
+                .allSatisfy(t -> assertThat(t)
+                        .returns(true, TokenAccount::getAssociated)
+                        .returns(0L, TokenAccount::getCreatedTimestamp)
+                        .returns(Range.atLeast(0L), TokenAccount::getTimestampRange));
+        assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 
     private void setup() {

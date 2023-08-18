@@ -48,6 +48,7 @@ import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.entity.EntityStakeHistory;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -58,9 +59,15 @@ import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.CustomFeeHistory;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftHistory;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
@@ -75,10 +82,10 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
@@ -92,6 +99,7 @@ import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -112,9 +120,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -123,7 +131,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Component
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
@@ -227,7 +235,7 @@ public class DomainBuilder {
         id.setConsensusTimestamp(timestamp());
         var builder = AssessedCustomFee.builder()
                 .amount(100L)
-                .effectivePayerAccountIds(List.of(entityId(ACCOUNT).getId()))
+                .effectivePayerAccountIds(List.of(id(), id()))
                 .id(id)
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenId(entityId(TOKEN));
@@ -325,22 +333,28 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowance.builder()
-                .amount(10)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
             cryptoAllowanceHistory() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = CryptoAllowanceHistory.builder()
-                .amount(10)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -355,22 +369,23 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder> customFee() {
-        var id = new CustomFee.Id();
-        id.setCreatedTimestamp(timestamp());
-        id.setTokenId(entityId(TOKEN));
+    public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder<?, ?>> customFee() {
         var builder = CustomFee.builder()
-                .allCollectorsAreExempt(false)
-                .amount(100L)
-                .amountDenominator(10L)
-                .id(id)
-                .collectorAccountId(entityId(ACCOUNT))
-                .denominatingTokenId(entityId(TOKEN))
-                .maximumAmount(1000L)
-                .minimumAmount(1L)
-                .netOfTransfers(true)
-                .royaltyDenominator(10L)
-                .royaltyNumerator(20L);
+                .fixedFees(List.of(fixedFee()))
+                .fractionalFees(List.of(fractionalFee()))
+                .royaltyFees(List.of(royaltyFee()))
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
+        var builder = CustomFeeHistory.builder()
+                .fixedFees(List.of(fixedFee()))
+                .fractionalFees(List.of(fractionalFee()))
+                .royaltyFees(List.of(royaltyFee()))
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -470,6 +485,16 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<EntityTransaction, EntityTransaction.EntityTransactionBuilder> entityTransaction() {
+        var builder = EntityTransaction.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(entityId(ACCOUNT))
+                .type(TransactionType.CRYPTOCREATEACCOUNT.getProtoId())
+                .result(ResponseCodeEnum.SUCCESS_VALUE);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
             boolean hasInitCode) {
         var builder = EthereumTransaction.builder()
@@ -530,8 +555,48 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    private FallbackFee fallbackFee() {
+        return FallbackFee.builder()
+                .amount(id())
+                .denominatingTokenId(entityId(TOKEN))
+                .build();
+    }
+
+    private FixedFee fixedFee() {
+        return FixedFee.builder()
+                .allCollectorsAreExempt(true)
+                .amount(id())
+                .collectorAccountId(entityId(ACCOUNT))
+                .denominatingTokenId(entityId(TOKEN))
+                .build();
+    }
+
+    private FractionalFee fractionalFee() {
+        return FractionalFee.builder()
+                .allCollectorsAreExempt(true)
+                .collectorAccountId(entityId(ACCOUNT))
+                .denominator(id())
+                .maximumAmount(id())
+                .minimumAmount(1L)
+                .numerator(id())
+                .netOfTransfers(true)
+                .build();
+    }
+
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
         var builder = LiveHash.builder().consensusTimestamp(timestamp()).livehash(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NetworkFreeze, NetworkFreeze.NetworkFreezeBuilder<?, ?>> networkFreeze() {
+        var builder = NetworkFreeze.builder()
+                .consensusTimestamp(timestamp())
+                .endTime(timestamp())
+                .fileHash(bytes(48))
+                .fileId(entityId(FILE))
+                .payerAccountId(entityId(ACCOUNT))
+                .startTime(timestamp())
+                .type(FreezeType.FREEZE_UPGRADE_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -686,6 +751,16 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    private RoyaltyFee royaltyFee() {
+        return RoyaltyFee.builder()
+                .allCollectorsAreExempt(true)
+                .collectorAccountId(entityId(ACCOUNT))
+                .denominator(id())
+                .fallbackFee(fallbackFee())
+                .numerator(id())
+                .build();
+    }
+
     public DomainWrapper<Schedule, Schedule.ScheduleBuilder> schedule() {
         var builder = Schedule.builder()
                 .consensusTimestamp(timestamp())
@@ -804,25 +879,31 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowance.builder()
-                .amount(10L)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
             tokenAllowanceHistory() {
+        long amount = id() + 1000;
+        var spender = entityId(ACCOUNT);
         var builder = TokenAllowanceHistory.builder()
-                .amount(10L)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .spender(entityId(ACCOUNT).getId())
+                .amount(amount)
+                .amountGranted(amount)
+                .owner(id())
+                .payerAccountId(spender)
+                .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -907,6 +988,7 @@ public class DomainBuilder {
                 .scheduled(false)
                 .transactionBytes(bytes(100))
                 .transactionHash(bytes(48))
+                .transactionRecordBytes(bytes(200))
                 .type(TransactionType.CRYPTOTRANSFER.getProtoId())
                 .validStartNs(timestamp())
                 .validDurationSeconds(120L);
@@ -927,6 +1009,10 @@ public class DomainBuilder {
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
         return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public <T, B> DomainWrapper<T, B> wrap(B builder, Supplier<T> supplier) {
+        return new DomainWrapperImpl<>(builder, supplier);
     }
 
     public byte[] bloomFilter() {

@@ -28,14 +28,14 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @GrpcService
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceImplBase {
 

@@ -214,6 +214,9 @@ class NetworkServiceTest extends GrpcIntegrationTest {
 
         var filter = AddressBookFilter.builder().fileId(addressBook.getFileId()).build();
         assertThat(getNodes(filter)).containsExactly(addressBookEntry1, addressBookEntry2, addressBookEntry3);
+        assertThat(addressBookEntryRepository.findAll())
+                .extracting(AddressBookEntry::getStake)
+                .doesNotContain(nodeStakeTableStake);
     }
 
     @Test

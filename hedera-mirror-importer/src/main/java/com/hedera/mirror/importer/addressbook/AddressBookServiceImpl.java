@@ -57,8 +57,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.cache.annotation.CacheConfig;
@@ -69,7 +69,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
-@Log4j2
+@CustomLog
 @Named
 @CacheConfig(cacheNames = CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 @RequiredArgsConstructor

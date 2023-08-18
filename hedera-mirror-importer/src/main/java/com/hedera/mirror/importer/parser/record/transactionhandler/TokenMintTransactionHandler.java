@@ -35,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 @CustomLog
 @Named
 @RequiredArgsConstructor
-class TokenMintTransactionHandler implements TransactionHandler {
+class TokenMintTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -51,7 +51,7 @@ class TokenMintTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
         }

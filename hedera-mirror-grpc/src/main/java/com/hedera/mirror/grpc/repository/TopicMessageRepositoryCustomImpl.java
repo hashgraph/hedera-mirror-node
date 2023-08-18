@@ -26,11 +26,11 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import java.util.stream.Stream;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.hibernate.jpa.HibernateHints;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {

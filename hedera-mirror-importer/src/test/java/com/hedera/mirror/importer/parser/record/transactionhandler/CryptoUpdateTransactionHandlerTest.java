@@ -18,19 +18,23 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -114,6 +118,13 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                         () -> extraAssert.accept(t))));
     }
 
+    @SuppressWarnings("deprecation")
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
+        var body = recordItem.getTransactionBody().getCryptoUpdateAccount();
+        return getExpectedEntityTransactions(
+                recordItem, transaction, EntityId.of(body.getStakedAccountId()), EntityId.of(body.getProxyAccountID()));
+    }
+
     private void setupForCryptoUpdateTransactionTest(RecordItem recordItem, Consumer<Entity> extraAssertions) {
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
@@ -122,5 +133,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .get();
         getTransactionHandler().updateTransaction(transaction, recordItem);
         assertCryptoUpdate(timestamp, extraAssertions);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

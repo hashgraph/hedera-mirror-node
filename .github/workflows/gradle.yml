@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [ graphql, grpc, importer, monitor, rest, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
+        project: [ common, graphql, grpc, importer, monitor, rest, 'rest:check-state-proof', 'rest:monitoring', rosetta, web3 ]
         schema: [ v1, v2 ]
         exclude:
+          - project: common
+            schema: v2
           - project: monitor
             schema: v2
           - project: rest:check-state-proof
@@ -44,15 +46,8 @@ jobs:
         uses: codecov/codecov-action@v3
         if: always() && matrix.schema == 'v1'
 
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v3
-        if: always()
-        with:
-          report_paths: "**/build/test-results/test/TEST-*.xml"
-          require_tests: "false"
-
       - name: Upload artifact
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.schema == 'v1'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.project != 'common' && matrix.schema == 'v1'
         uses: actions/upload-artifact@v3
         with:
           name: hedera-mirror-${{matrix.project}}

@@ -66,5 +66,6 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         entity.setObtainerId(obtainerId);
         entity.setPermanentRemoval(transactionBody.getPermanentRemoval());
         entityListener.onEntity(entity);
+        recordItem.addEntityId(obtainerId);
     }
 }

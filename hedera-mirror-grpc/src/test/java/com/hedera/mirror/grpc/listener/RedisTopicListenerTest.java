@@ -18,11 +18,11 @@ package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import jakarta.annotation.Resource;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @SuppressWarnings("java:S2187") // Ignore no tests in file warning
 class RedisTopicListenerTest extends AbstractSharedTopicListenerTest {
 

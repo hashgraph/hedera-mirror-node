@@ -16,7 +16,11 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -25,6 +29,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import org.junit.jupiter.api.Test;
 
 class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -70,5 +75,26 @@ class ScheduleSignTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.SCHEDULE;
+    }
+
+    @Test
+    void updateTransactionSuccessful() {
+        // given
+        var recordItem = recordItemBuilder.scheduleSign().build();
+        var scheduleId =
+                EntityId.of(recordItem.getTransactionBody().getScheduleSign().getScheduleID());
+        long timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(scheduleId))
+                .get();
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

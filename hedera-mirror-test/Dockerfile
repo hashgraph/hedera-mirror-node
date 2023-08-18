@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.7_7-jre-jammy
+FROM eclipse-temurin:17.0.8_7-jre-jammy
 
 ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80"
 WORKDIR /app

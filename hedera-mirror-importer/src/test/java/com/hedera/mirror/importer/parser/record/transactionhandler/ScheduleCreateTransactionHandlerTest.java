@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -99,6 +100,8 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
                 .returns(timestamp, Entity::getTimestampLower)));
         verify(entityListener, never()).onSchedule(any());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -113,6 +116,8 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp))
                 .get();
+        var schedulePayerAccountId =
+                EntityId.of(recordItem.getTransactionBody().getScheduleCreate().getPayerAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -131,10 +136,13 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(recordItem.getPayerAccountId(), Schedule::getCreatorAccountId)
                 .returns(null, Schedule::getExecutedTimestamp)
                 .satisfies(s -> assertThat(s.getExpirationTime()).isPositive())
-                .satisfies(s -> assertThat(s.getPayerAccountId()).isNotNull())
+                .returns(schedulePayerAccountId, Schedule::getPayerAccountId)
                 .satisfies(s -> assertThat(s.getScheduleId()).isPositive())
                 .satisfies(s -> assertThat(s.getTransactionBody()).isNotEmpty())
                 .returns(true, Schedule::isWaitForExpiry)));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, schedulePayerAccountId));
     }
 
     @Test
@@ -146,6 +154,7 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         b -> b.clearExpirationTime().clearPayerAccountID().setWaitForExpiry(false))
                 .receipt(r -> r.setScheduleID(recordItemBuilder.scheduleId()))
                 .build();
+        var payerAccountId = recordItem.getPayerAccountId();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
@@ -169,9 +178,12 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(recordItem.getPayerAccountId(), Schedule::getCreatorAccountId)
                 .returns(null, Schedule::getExecutedTimestamp)
                 .returns(null, Schedule::getExpirationTime)
-                .returns(recordItem.getPayerAccountId(), Schedule::getPayerAccountId)
+                .returns(payerAccountId, Schedule::getPayerAccountId)
                 .satisfies(s -> assertThat(s.getScheduleId()).isPositive())
                 .satisfies(s -> assertThat(s.getTransactionBody()).isNotEmpty())
                 .returns(false, Schedule::isWaitForExpiry)));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(
+                        getExpectedEntityTransactions(recordItem, transaction, payerAccountId));
     }
 }

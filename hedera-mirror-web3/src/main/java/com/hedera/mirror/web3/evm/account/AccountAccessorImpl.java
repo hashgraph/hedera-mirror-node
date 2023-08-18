@@ -46,6 +46,9 @@ public class AccountAccessorImpl implements AccountAccessor {
     }
 
     public Address getAddressOrAlias(final Address address) {
+        if (mirrorEntityAccess.isExtant(address)) {
+            return address;
+        }
         // An EIP-1014 address is always canonical
         if (!aliases.isMirror(address)) {
             return address;

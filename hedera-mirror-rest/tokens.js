@@ -34,6 +34,13 @@ import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from '
 
 const {default: defaultLimit} = getResponseLimit();
 
+const customFeeSelect = `select jsonb_build_object(
+  'created_timestamp', lower(${CustomFee.TIMESTAMP_RANGE}),
+  'fixed_fees', ${CustomFee.FIXED_FEES},
+  'fractional_fees', ${CustomFee.FRACTIONAL_FEES},
+  'royalty_fees', ${CustomFee.ROYALTY_FEES},
+  'token_id', ${CustomFee.TOKEN_ID})`;
+
 // select columns
 const sqlQueryColumns = {
   DELETED: 'e.deleted',
@@ -183,29 +190,21 @@ const formatTokenRow = (row) => {
  * @param tokenType
  * @return {{}|*}
  */
-const createCustomFeesObject = (customFees, tokenType) => {
-  if (!customFees) {
+const createCustomFeeObject = (customFee, tokenType) => {
+  if (!customFee) {
     return null;
   }
 
+  const model = new CustomFee(customFee);
+  const viewModel = new CustomFeeViewModel(model);
   const nonFixedFeesField = tokenType === Token.TYPE.FUNGIBLE_COMMON ? 'fractional_fees' : 'royalty_fees';
   const result = {
-    created_timestamp: utils.nsToSecNs(customFees[0].created_timestamp),
-    fixed_fees: [],
-    [nonFixedFeesField]: [],
+    created_timestamp: utils.nsToSecNs(viewModel.created_timestamp),
+    fixed_fees: viewModel.fixed_fees,
+    [nonFixedFeesField]: viewModel[nonFixedFeesField],
   };
 
-  return customFees.reduce((customFeesObject, customFee) => {
-    const model = new CustomFee(customFee);
-    const viewModel = new CustomFeeViewModel(model);
-
-    if (viewModel.hasFee()) {
-      const fees = viewModel.isFixedFee() ? customFeesObject.fixed_fees : customFeesObject[nonFixedFeesField];
-      fees.push(viewModel);
-    }
-
-    return customFeesObject;
-  }, result);
+  return result;
 };
 
 const formatTokenInfoRow = (row) => {
@@ -214,7 +213,7 @@ const formatTokenInfoRow = (row) => {
     auto_renew_account: EntityId.parse(row.auto_renew_account_id, {isNullable: true}).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
-    custom_fees: createCustomFeesObject(row.custom_fees, row.type),
+    custom_fees: createCustomFeeObject(row.custom_fee, row.type),
     decimals: `${row.decimals}`,
     deleted: row.deleted,
     expiry_timestamp: utils.calculateExpiryTimestamp(
@@ -399,43 +398,40 @@ const transformTimestampFilterOp = (op) => {
 const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
   const conditions = [`${CustomFee.TOKEN_ID} = $1`];
   const params = [tokenId];
+  let customFeeQuery;
 
   if (filters && filters.length !== 0) {
     // honor the last timestamp filter
     const filter = filters[filters.length - 1];
     const op = transformTimestampFilterOp(filter.operator);
-    conditions.push(`${CustomFee.FILTER_MAP[filter.key]} ${op} $2`);
+    conditions.push(`lower(${CustomFee.TIMESTAMP_RANGE}) ${op} $2`);
     params.push(filter.value);
-  }
 
-  const aggregateCustomFeeQuery = `
-    select jsonb_agg(jsonb_build_object(
-                       'all_collectors_are_exempt', ${CustomFee.ALL_COLLECTORS_ARE_EXEMPT},
-                       'amount', ${CustomFee.AMOUNT},
-                       'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
-                       'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,
-                       'created_timestamp', ${CustomFee.CREATED_TIMESTAMP}::text,
-                       'denominating_token_id', ${CustomFee.DENOMINATING_TOKEN_ID}::text,
-                       'maximum_amount', ${CustomFee.MAXIMUM_AMOUNT},
-                       'minimum_amount', ${CustomFee.MINIMUM_AMOUNT},
-                       'net_of_transfers', ${CustomFee.NET_OF_TRANSFERS},
-                       'royalty_denominator', ${CustomFee.ROYALTY_DENOMINATOR},
-                       'royalty_numerator', ${CustomFee.ROYALTY_NUMERATOR},
-                       'token_id', ${CustomFee.TOKEN_ID}::text
-                       )
-                     order by ${CustomFee.COLLECTOR_ACCOUNT_ID}, ${CustomFee.DENOMINATING_TOKEN_ID}, ${
-    CustomFee.AMOUNT
-  }, ${CustomFee.ROYALTY_NUMERATOR})
-    from ${CustomFee.tableName} ${CustomFee.tableAlias}
-    where ${conditions.join(' and ')}
-    group by ${CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP)}
-    order by ${CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP)} desc
-    limit 1
-  `;
+    // include the history table in the query
+    customFeeQuery = `
+      ${customFeeSelect}
+      from
+      (
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as created_timestamp
+         from ${CustomFee.tableName}
+         where ${conditions.join(' and ')})
+        union all
+        (select *, lower(${CustomFee.TIMESTAMP_RANGE}) as created_timestamp
+         from ${CustomFee.tableName}_history 
+         where ${conditions.join(' and ')} order by lower(${CustomFee.TIMESTAMP_RANGE}) desc limit 1)
+        order by created_timestamp desc
+        limit 1
+      ) as feeAndHistory`;
+  } else {
+    customFeeQuery = `
+      ${customFeeSelect}
+      from ${CustomFee.tableName}
+      where ${conditions.join(' and ')}`;
+  }
 
   const query = [
     'select',
-    [...tokenInfoSelectFields, `(${aggregateCustomFeeQuery}) as custom_fees`].join(',\n'),
+    [...tokenInfoSelectFields, `(${customFeeQuery}) as custom_fee`].join(',\n'),
     'from token t',
     entityIdJoinQuery,
     tokenIdMatchQuery,

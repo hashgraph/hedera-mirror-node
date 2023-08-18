@@ -17,8 +17,12 @@
 package com.hedera.mirror.test.e2e.acceptance.props;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
+@SuperBuilder
 @Data
+@NoArgsConstructor
 public class MirrorTokenTransfer extends MirrorTransfer {
     private String tokenId;
 }

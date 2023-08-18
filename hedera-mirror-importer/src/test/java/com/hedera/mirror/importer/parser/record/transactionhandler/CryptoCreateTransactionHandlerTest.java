@@ -27,6 +27,7 @@ import com.google.protobuf.Message;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
@@ -113,17 +115,20 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
                 .build();
+        var transaction = transaction(recordItem);
         var accountId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(false, Entity::getDeclineReward)
                 .returns(stakedAccountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -134,11 +139,12 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
+        var transaction = transaction(recordItem);
         var accountId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         assertEntity(accountId, recordItem.getConsensusTimestamp())
@@ -146,6 +152,8 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -155,12 +163,15 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .cryptoCreate()
                 .record(r -> r.setAlias(DomainUtils.fromBytes(alias)))
                 .build();
+        var transaction = transaction(recordItem);
         var accountId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         assertEntity(accountId, recordItem.getConsensusTimestamp()).returns(alias, Entity::getAlias);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -172,15 +183,18 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .record(r -> r.setEvmAddress(DomainUtils.fromBytes(evmAddress)))
                 .transactionBody(t -> t.setAlias(DomainUtils.fromBytes(alias)).setKey(Key.getDefaultInstance()))
                 .build();
+        var transaction = transaction(recordItem);
         var accountId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(alias, Entity::getAlias)
                 .returns(alias, Entity::getKey)
                 .returns(evmAddress, Entity::getEvmAddress);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private static Stream<Arguments> provideAlias() {
@@ -255,6 +269,13 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(ACCOUNT, Entity::getType)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(null, Entity::getObtainerId);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
+        var body = recordItem.getTransactionBody().getCryptoCreateAccount();
+        return getExpectedEntityTransactions(
+                recordItem, transaction, EntityId.of(body.getStakedAccountId()), EntityId.of(body.getProxyAccountID()));
     }
 
     private Transaction transaction(RecordItem recordItem) {

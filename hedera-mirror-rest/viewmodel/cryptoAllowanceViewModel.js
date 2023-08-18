@@ -27,7 +27,6 @@ class CryptoAllowanceViewModel extends BaseAllowanceViewModel {
    */
   constructor(cryptoAllowance) {
     super(cryptoAllowance);
-    this.amount_granted = cryptoAllowance.amount;
   }
 }
 

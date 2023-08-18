@@ -33,6 +33,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.AfterAll;
 import io.cucumber.java.Before;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -215,17 +216,28 @@ public class AccountFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should confirm the approved {long} tℏ crypto allowance")
     public void verifyMirrorAPIApprovedCryptoAllowanceResponse(long approvedAmount) {
+        verifyMirrorAPIApprovedCryptoAllowanceResponse(approvedAmount, 0L);
+    }
+
+    @And("the mirror node REST API should confirm the approved allowance of {long} tℏ was debited by {long} tℏ")
+    public void verifyMirrorAPICryptoAllowanceAmountResponse(long approvedAmount, long transferAmount) {
+        verifyMirrorAPIApprovedCryptoAllowanceResponse(approvedAmount, transferAmount);
+    }
+
+    private void verifyMirrorAPIApprovedCryptoAllowanceResponse(long approvedAmount, long transferAmount) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var spender = spenderAccountId.getAccountId().toString();
         var mirrorCryptoAllowanceResponse = mirrorClient.getAccountCryptoAllowanceBySpender(owner, spender);
+        var remainingAmount = approvedAmount - transferAmount;
 
         // verify valid set of allowance
         assertThat(mirrorCryptoAllowanceResponse.getAllowances())
                 .isNotEmpty()
                 .first()
                 .isNotNull()
+                .returns(remainingAmount, MirrorCryptoAllowance::getAmount)
                 .returns(approvedAmount, MirrorCryptoAllowance::getAmountGranted)
                 .returns(owner, MirrorCryptoAllowance::getOwner)
                 .returns(spender, MirrorCryptoAllowance::getSpender)
@@ -258,7 +270,7 @@ public class AccountFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should confirm the crypto allowance deletion")
     public void verifyCryptoAllowanceDelete() {
-        verifyMirrorAPIApprovedCryptoAllowanceResponse(0);
+        verifyMirrorAPIApprovedCryptoAllowanceResponse(0L, 0L);
     }
 
     private void setCryptoAllowance(String accountName, long amount) {

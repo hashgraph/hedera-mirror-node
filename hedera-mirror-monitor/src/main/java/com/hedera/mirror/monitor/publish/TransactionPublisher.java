@@ -33,12 +33,12 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class TransactionPublisher implements AutoCloseable {

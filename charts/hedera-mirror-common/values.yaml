@@ -36,9 +36,6 @@ loki:
       enabled: false
       grafanaAgent:
         installOperator: false
-  persistence:
-    enableStatefulSetAutoDeletePVC: true
-    size: 100Gi
   rules:
     - name: hedera-mirror-grpc
       rules:
@@ -138,6 +135,9 @@ loki:
         configMap:
           defaultMode: 420
           name: mirror-log-alerts
+    persistence:
+      enableStatefulSetAutoDeletePVC: true
+      size: 100Gi
     replicas: 1
     resources:
       limits:
@@ -339,7 +339,9 @@ promtail:
       - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
     snippets:
       pipelineStages:
-        - docker: {}
+        - cri: {}
+        - multiline:
+            firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|[+-]\d{4}) '
   enabled: true
   resources:
     limits:
@@ -418,11 +420,16 @@ zfs:
   coordinator:
     diskSize: 300GB
   enabled: false
-  image:
-    pullPolicy: IfNotPresent
-    registry: gcr.io
-    repository: google.com/cloudsdktool/google-cloud-cli
-    tag: slim
+  init:
+    diskPrefix: citus
+    image:
+      pullPolicy: IfNotPresent
+      registry: gcr.io
+      repository: google.com/cloudsdktool/google-cloud-cli
+      tag: slim
+    serviceAccount:
+      name: zfs-service-account
+      iAmName: sa-name@project.iam.gserviceaccount.com
   parameters:
     compression: zstd-6
     fstype: zfs
@@ -438,3 +445,32 @@ zfs:
         key: zfs
         operator: Equal
         value: "true"
+    additionalVolumes:
+      node:
+        hostPath:
+          path: /
+      scripts:
+        configMap:
+          name: "{{ .Release.Name }}-zfs-init"
+          defaultMode: 0744
+    initContainers:
+      label-wait:
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+        imagePullPolicy: IfNotPresent
+        command: ["/scripts/label-wait.sh"]
+        env:
+          - name: ROOT_MOUNT_DIR
+            value: /node
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: node
+            mountPath: /node
+          - name: scripts
+            mountPath: /scripts
+  zfsPlugin:
+    image:
+      registry: gcr.io/
+      repository: mirrornode/zfs-driver
+      pullPolicy: IfNotPresent
+      tag: 2.3.1-HEDERA

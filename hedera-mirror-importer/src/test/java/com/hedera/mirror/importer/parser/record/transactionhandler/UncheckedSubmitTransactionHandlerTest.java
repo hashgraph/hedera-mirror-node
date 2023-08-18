@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,7 @@ class UncheckedSubmitTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Test
     void testGetEntityId() {
         var recordItem = recordItemBuilder.uncheckedSubmit().build();
-        assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(EntityId.EMPTY);
+        assertThat(transactionHandler.getEntity(recordItem)).isNull();
     }
 
     @Test
@@ -58,5 +57,7 @@ class UncheckedSubmitTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 }

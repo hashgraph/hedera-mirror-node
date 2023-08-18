@@ -16,26 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-/*
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
+import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -44,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -55,6 +37,7 @@ import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -82,14 +65,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Value;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -194,17 +178,40 @@ abstract class AbstractTransactionHandlerTest {
     // For testGetEntityId
     protected abstract EntityType getExpectedEntityIdType();
 
+    protected Map<Long, EntityTransaction> getExpectedEntityTransactions(
+            RecordItem recordItem,
+            com.hedera.mirror.common.domain.transaction.Transaction transaction,
+            EntityId... entityIds) {
+        var entityIdList = Lists.newArrayList(entityIds);
+        entityIdList.add(transaction.getEntityId());
+        entityIdList.add(transaction.getNodeAccountId());
+        entityIdList.add(transaction.getPayerAccountId());
+        return toEntityTransactions(recordItem, entityIdList.toArray(EntityId[]::new));
+    }
+
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
         return null;
+    }
+
+    protected boolean isSkipMainEntityTransaction() {
+        return false;
     }
 
     @BeforeEach
     void beforeEach(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
+        entityProperties.getPersist().setEntityTransactions(true);
+        recordItemBuilder.getPersistProperties().setEntityTransactions(true);
         transactionHandler = getTransactionHandler();
         when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(Optional.of(EntityId.EMPTY));
         when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0).build()))
                 .thenReturn(Optional.of(EntityId.EMPTY));
+    }
+
+    @AfterEach
+    void afterEach() {
+        entityProperties.getPersist().setEntityTransactions(false);
+        recordItemBuilder.getPersistProperties().setEntityTransactions(false);
     }
 
     @Test
@@ -278,12 +285,18 @@ abstract class AbstractTransactionHandlerTest {
         transactionRecord.getReceiptBuilder().setStatus(INSUFFICIENT_PAYER_BALANCE);
         var recordItem = getRecordItem(getDefaultTransactionBody().build(), transactionRecord.build());
         var transaction = domainBuilder.transaction().get();
+        var expectedEntityTransactions = toEntityTransactions(
+                recordItem,
+                isSkipMainEntityTransaction() ? EntityId.EMPTY : transaction.getEntityId(),
+                transaction.getNodeAccountId(),
+                transaction.getPayerAccountId());
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
         verifyNoInteractions(entityListener);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     protected void testGetEntityIdHelper(
@@ -476,7 +489,7 @@ abstract class AbstractTransactionHandlerTest {
         Message innerBody = getInnerBody(defaultBody);
         List<String> fieldNames = innerBody.getDescriptorForType().getFields().stream()
                 .map(FieldDescriptor::getName)
-                .collect(Collectors.toList());
+                .toList();
 
         for (String fieldName : fieldNames) {
             switch (fieldName) {
@@ -574,14 +587,14 @@ abstract class AbstractTransactionHandlerTest {
                 .build();
 
         return RecordItem.builder()
+                .entityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction)
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build();
     }
 
     private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {
-        return transactionHandler instanceof AbstractEntityCrudTransactionHandler
-                || transactionHandler instanceof ContractCreateTransactionHandler;
+        return transactionHandler instanceof AbstractEntityCrudTransactionHandler;
     }
 
     @Builder

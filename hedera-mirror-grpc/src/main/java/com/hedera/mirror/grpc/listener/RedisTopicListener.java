@@ -24,7 +24,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.ReactiveSubscription.Message;
@@ -39,7 +39,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 @Lazy
-@Log4j2
+@CustomLog
 @Named
 public class RedisTopicListener extends SharedTopicListener {
 

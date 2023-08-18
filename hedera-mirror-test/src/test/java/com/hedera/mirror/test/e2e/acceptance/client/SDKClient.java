@@ -76,6 +76,7 @@ public class SDKClient implements Cleanable {
         this.client = createClient();
         client.setGrpcDeadline(sdkProperties.getGrpcDeadline())
                 .setMaxAttempts(sdkProperties.getMaxAttempts())
+                .setMaxNodeReadmitTime(Duration.ofSeconds(60L))
                 .setMaxNodesPerTransaction(sdkProperties.getMaxNodesPerTransaction());
         startupProbe.validateEnvironment(client);
         validateClient();

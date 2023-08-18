@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -42,6 +42,7 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,6 +146,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(
                         DomainUtils.toBytes(transaction.getConstructorParameters()),
                         ContractResult::getFunctionParameters);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -165,6 +168,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(
                         DomainUtils.toBytes(transaction.getConstructorParameters()),
                         ContractResult::getFunctionParameters);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
@@ -178,10 +182,12 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(null, ContractResult::getGasLimit)
                 .returns(null, ContractResult::getFailedInitcode)
                 .returns(null, ContractResult::getFunctionParameters);
+        assertThat(recordItem.getEntityTransactions()).isEmpty();
     }
 
     @Test
     void updateTransactionSuccessful() {
+        // given
         var recordItem = recordItemBuilder.contractCreate().build();
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
@@ -195,13 +201,19 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var initCode = DomainUtils.toBytes(
                 recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         when(entityIdService.lookup(autoRenewAccount)).thenReturn(Optional.of(EntityId.of(autoRenewAccount)));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertEntity(contractId, timestamp)
                 .returns(autoRenewAccount.getAccountNum(), Entity::getAutoRenewAccountId)
                 .returns(null, Entity::getEvmAddress);
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
                 .returns(initCode, Contract::getInitcode);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -225,14 +237,18 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getEvmAddress()).hasSize(20));
         assertContract(contractEntityId).returns(null, Contract::getFileId).satisfies(c -> assertThat(c.getInitcode())
                 .hasSize(2048));
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var aliasAccount = AccountID.newBuilder().setAlias(alias).build();
         var recordItem = recordItemBuilder
                 .contractCreate()
-                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
+                .transactionBody(b -> b.setAutoRenewAccountId(aliasAccount))
                 .build();
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
@@ -243,38 +259,49 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         var initCode = DomainUtils.toBytes(
                 recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
+        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
+        expectedEntityTransactions.put(
+                aliasAccountId.getId(), TestUtils.toEntityTransaction(aliasAccountId, recordItem));
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertEntity(contractId, timestamp)
                 .returns(10L, Entity::getAutoRenewAccountId)
                 .returns(null, Entity::getEvmAddress);
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
                 .returns(initCode, Contract::getInitcode);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
     void updateTransactionStakedAccountId() {
         // given
-        final AccountID accountID = AccountID.newBuilder().setAccountNum(1L).build();
+        final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
                 .contractCreate()
                 .transactionBody(
-                        b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountID))
+                        b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountId))
                 .build();
+        var transaction = transaction(recordItem);
 
         // when
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onEntity(entityCaptor.capture());
         assertThat(entityCaptor.getValue())
                 .isNotNull()
                 .returns(false, Entity::getDeclineReward)
-                .returns(accountID.getAccountNum(), Entity::getStakedAccountId)
+                .returns(accountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(null, Entity::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -286,9 +313,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(
                         b -> b.clearAutoRenewAccountId().setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
+        var transaction = transaction(recordItem);
 
         // when
-        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
         verify(entityListener).onEntity(entityCaptor.capture());
@@ -298,6 +326,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(null, Entity::getStakedAccountId)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @ParameterizedTest
@@ -327,6 +357,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
                 .returns(initCode, Contract::getInitcode);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -356,6 +388,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(transaction, recordItem);
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(null, Contract::getFileId).returns(initCode, Contract::getInitcode);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -386,6 +420,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(transaction, recordItem);
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(null, Contract::getFileId).returns(initCode, Contract::getInitcode);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -416,6 +452,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(null, Contract::getFileId).satisfies(c -> assertThat(c.getInitcode())
                 .isNotEmpty());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -451,6 +489,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(initCode, Contract::getInitcode).satisfies(c -> assertThat(c.getFileId())
                 .isNotNull());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -458,7 +498,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // parent item
         var parentRecordItem = recordItemBuilder
                 .ethereumTransaction(true)
-                .transactionBody(x -> x.clearCallData())
+                .transactionBody(Builder::clearCallData)
                 .build();
 
         var ethereumTransaction = domainBuilder
@@ -486,10 +526,13 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(null, Contract::getFileId).satisfies(c -> assertThat(c.getInitcode())
                 .isNotEmpty());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
     void updateContractFromEthereumCreateWFileIDParent() {
+        // given
         // parent item
         var parentRecordItem = recordItemBuilder.ethereumTransaction(true).build();
 
@@ -515,10 +558,16 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         var initCode = DomainUtils.toBytes(
                 recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(initCode, Contract::getInitcode).satisfies(c -> assertThat(c.getFileId())
                 .isNotNull());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -551,6 +600,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertEntity(contractId, timestamp).returns(null, Entity::getAutoRenewAccountId);
         assertContract(contractId).returns(null, Contract::getFileId).satisfies(c -> assertThat(c.getInitcode())
                 .isNotEmpty());
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     @Test
@@ -571,6 +622,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         when(entityIdService.lookup(autoRenewAccount)).thenReturn(Optional.of(EntityId.of(autoRenewAccount)));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId).returns(null, Contract::getInitcode).returns(null, Contract::getRuntimeBytecode);
+        assertThat(recordItem.getEntityTransactions())
+                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
     private ObjectAssert<Contract> assertContract(EntityId contractId) {
@@ -599,6 +652,18 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(CONTRACT, Entity::getType)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(null, Entity::getObtainerId);
+    }
+
+    @SuppressWarnings("deprecation")
+    private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
+        var body = recordItem.getTransactionBody().getContractCreateInstance();
+        return getExpectedEntityTransactions(
+                recordItem,
+                transaction,
+                EntityId.of(body.getAutoRenewAccountId()),
+                EntityId.of(body.getFileID()),
+                EntityId.of(body.getProxyAccountID()),
+                EntityId.of(body.getStakedAccountId()));
     }
 
     private Transaction transaction(RecordItem recordItem) {

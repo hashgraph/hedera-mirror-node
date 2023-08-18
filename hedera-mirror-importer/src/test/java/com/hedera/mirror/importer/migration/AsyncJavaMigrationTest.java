@@ -51,21 +51,22 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     private static final String TEST_MIGRATION_DESCRIPTION = "Async java migration for testing";
 
     private final DBProperties dbProperties;
-    private final NamedParameterJdbcTemplate jdbcTemplate2;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final TransactionOperations transactionOperations;
     private final String script = TestAsyncJavaMigration.class.getName();
 
     @AfterEach
     @BeforeEach
     void cleanup() {
-        jdbcTemplate2.update("delete from flyway_schema_history where script = :script", Map.of("script", script));
+        namedParameterJdbcTemplate.update(
+                "delete from flyway_schema_history where script = :script", Map.of("script", script));
     }
 
     @ParameterizedTest
     @CsvSource(value = {", -1", "-1, -2", "1, 1", "2, -1"})
     void getChecksum(Integer existing, Integer expected) {
         addMigrationHistory(new MigrationHistory(existing, ELAPSED, 1000));
-        var migration = new TestAsyncJavaMigration(false, 0, 1);
+        var migration = new TestAsyncJavaMigration(false, new MigrationProperties(), 1);
         assertThat(migration.getChecksum()).isEqualTo(expected);
     }
 
@@ -73,7 +74,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     void migrate() throws Exception {
         addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
         addMigrationHistory(new MigrationHistory(-2, ELAPSED, 1001));
-        var migration = new TestAsyncJavaMigration(false, 0, 1);
+        var migration = new TestAsyncJavaMigration(false, new MigrationProperties(), 1);
         migrateSync(migration);
         assertThat(getAllMigrationHistory())
                 .hasSize(2)
@@ -84,7 +85,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     @Test
     void migrateUpdatedExecutionTime() throws Exception {
         addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
-        var migration = new TestAsyncJavaMigration(false, 1, 1);
+        var migration = new TestAsyncJavaMigration(false, new MigrationProperties(), 1);
         migrateSync(migration);
         assertThat(getAllMigrationHistory())
                 .hasSize(1)
@@ -96,7 +97,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     void migrateError() throws Exception {
         addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
         addMigrationHistory(new MigrationHistory(-2, ELAPSED, 1001));
-        var migration = new TestAsyncJavaMigration(true, 0, 1);
+        var migration = new TestAsyncJavaMigration(true, new MigrationProperties(), 0);
         migrateSync(migration);
         assertThat(getAllMigrationHistory())
                 .hasSize(2)
@@ -107,7 +108,9 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     @ParameterizedTest
     @ValueSource(ints = {0, -1})
     void migrateNonPositiveSuccessChecksum(int checksum) {
-        var migration = new TestAsyncJavaMigration(false, 0, checksum);
+        var migrationProperties = new MigrationProperties();
+        migrationProperties.setChecksum(checksum);
+        var migration = new TestAsyncJavaMigration(false, migrationProperties, 0);
         assertThatThrownBy(migration::doMigrate).isInstanceOf(IllegalArgumentException.class);
         assertThat(getAllMigrationHistory()).isEmpty();
     }
@@ -128,11 +131,11 @@ class AsyncJavaMigrationTest extends IntegrationTest {
                 installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script,
                 :checksum, 20, 100, true)
                 """;
-        jdbcTemplate2.update(sql, paramSource);
+        namedParameterJdbcTemplate.update(sql, paramSource);
     }
 
     private List<MigrationHistory> getAllMigrationHistory() {
-        return jdbcTemplate2.query(
+        return namedParameterJdbcTemplate.query(
                 "select installed_rank, checksum, execution_time from flyway_schema_history where "
                         + "script = :script order by installed_rank asc",
                 Map.of("script", script),
@@ -164,13 +167,14 @@ class AsyncJavaMigrationTest extends IntegrationTest {
 
         private final boolean error;
         private final long sleep;
-        private final int successChecksum;
 
-        public TestAsyncJavaMigration(boolean error, long sleep, int successChecksum) {
-            super(jdbcTemplate2, dbProperties.getSchema(), transactionOperations);
+        public TestAsyncJavaMigration(boolean error, MigrationProperties migrationProperties, long sleep) {
+            super(
+                    Map.of("testAsyncJavaMigration", migrationProperties),
+                    AsyncJavaMigrationTest.this.namedParameterJdbcTemplate,
+                    dbProperties.getSchema());
             this.error = error;
             this.sleep = sleep;
-            this.successChecksum = successChecksum;
         }
 
         @Override
@@ -190,6 +194,11 @@ class AsyncJavaMigrationTest extends IntegrationTest {
             }
 
             return Optional.empty();
+        }
+
+        @Override
+        protected TransactionOperations getTransactionOperations() {
+            return transactionOperations;
         }
 
         @Override

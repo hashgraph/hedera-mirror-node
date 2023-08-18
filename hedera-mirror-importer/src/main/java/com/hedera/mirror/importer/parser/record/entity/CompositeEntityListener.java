@@ -25,10 +25,12 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -36,22 +38,23 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
 import jakarta.inject.Named;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
-@Log4j2
+@CustomLog
 @Named
 @Primary
 @RequiredArgsConstructor
@@ -60,7 +63,8 @@ public class CompositeEntityListener implements EntityListener {
     private final List<EntityListener> entityListeners;
 
     private <T> void onEach(BiConsumer<EntityListener, T> consumer, T t) {
-        for (EntityListener entityListener : entityListeners) {
+        for (int i = 0; i < entityListeners.size(); ++i) {
+            var entityListener = entityListeners.get(i);
             if (entityListener.isEnabled()) {
                 consumer.accept(entityListener, t);
             }
@@ -118,6 +122,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
+        onEach(EntityListener::onEntityTransactions, entityTransactions);
+    }
+
+    @Override
     public void onEthereumTransaction(EthereumTransaction ethereumTransaction) {
         onEach(EntityListener::onEthereumTransaction, ethereumTransaction);
     }
@@ -130,6 +139,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         onEach(EntityListener::onLiveHash, liveHash);
+    }
+
+    @Override
+    public void onNetworkFreeze(NetworkFreeze networkFreeze) {
+        onEach(EntityListener::onNetworkFreeze, networkFreeze);
     }
 
     @Override

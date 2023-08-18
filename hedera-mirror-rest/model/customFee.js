@@ -14,56 +14,29 @@
  * limitations under the License.
  */
 
-import {filterKeys} from '../constants';
+import FixedFee from './fixedFee.js';
+import FractionalFee from './fractionalFee.js';
+import RoyaltyFee from './royaltyFee.js';
 
 class CustomFee {
   /**
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
-    this.allCollectorsAreExempt = customFee.all_collectors_are_exempt;
-    this.amount = customFee.amount;
-    this.amountDenominator = customFee.amount_denominator;
-    this.collectorAccountId = customFee.collector_account_id;
     this.createdTimestamp = customFee.created_timestamp;
-    this.denominatingTokenId = customFee.denominating_token_id;
-    this.maximumAmount = customFee.maximum_amount;
-    this.minimumAmount = customFee.minimum_amount;
-    this.netOfTransfers = customFee.net_of_transfers;
-    this.royaltyDenominator = customFee.royalty_denominator;
-    this.royaltyNumerator = customFee.royalty_numerator;
+    this.fixedFees = (customFee.fixed_fees ?? []).map((n) => new FixedFee(n));
+    this.fractionalFees = (customFee.fractional_fees ?? []).map((n) => new FractionalFee(n));
+    this.royaltyFees = (customFee.royalty_fees ?? []).map((n) => new RoyaltyFee(n));
     this.tokenId = customFee.token_id;
   }
 
-  static tableAlias = 'cf';
-  static tableName = 'custom_fee';
+  static tableName = `custom_fee`;
 
-  static ALL_COLLECTORS_ARE_EXEMPT = 'all_collectors_are_exempt';
-  static AMOUNT = `amount`;
-  static AMOUNT_DENOMINATOR = `amount_denominator`;
-  static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
-  static CREATED_TIMESTAMP = `created_timestamp`;
-  static DENOMINATING_TOKEN_ID = `denominating_token_id`;
-  static MAXIMUM_AMOUNT = `maximum_amount`;
-  static MINIMUM_AMOUNT = `minimum_amount`;
-  static NET_OF_TRANSFERS = `net_of_transfers`;
-  static ROYALTY_DENOMINATOR = `royalty_denominator`;
-  static ROYALTY_NUMERATOR = `royalty_numerator`;
+  static FIXED_FEES = `fixed_fees`;
+  static FRACTIONAL_FEES = `fractional_fees`;
+  static ROYALTY_FEES = `royalty_fees`;
   static TOKEN_ID = `token_id`;
-
-  static FILTER_MAP = {
-    [filterKeys.TIMESTAMP]: CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP),
-  };
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
+  static TIMESTAMP_RANGE = `timestamp_range`;
 }
 
 export default CustomFee;

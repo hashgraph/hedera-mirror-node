@@ -33,6 +33,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;
@@ -186,6 +187,14 @@ public class StoreImpl implements Store {
     @Override
     public void wrap() {
         stackedStateFrames.push();
+    }
+
+    @Override
+    public boolean exists(AccountID accountID) {
+        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
+        final var address = EntityIdUtils.asTypedEvmAddress(accountID);
+        final var account = accountAccessor.get(address);
+        return account.isPresent();
     }
 
     /**

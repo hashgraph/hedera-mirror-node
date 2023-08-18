@@ -18,7 +18,9 @@ package com.hedera.services.ledger;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityNum.fromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -128,8 +130,14 @@ public class TransferLogic {
         Account account = store.getAccount(asTypedEvmAddress(ownerID), OnMissing.THROW);
         final var hbarAllowances = new TreeMap<>((Map<EntityNum, Long>) account.getCryptoAllowances());
         final var currentAllowance = hbarAllowances.get(payerNum);
+        if (currentAllowance == null) {
+            throw new InvalidTransactionException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        }
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
-        if (newAllowance != 0) {
+
+        if (newAllowance < 0L) {
+            throw new InvalidTransactionException(AMOUNT_EXCEEDS_ALLOWANCE);
+        } else if (newAllowance != 0) {
             hbarAllowances.put(payerNum, newAllowance);
         } else {
             hbarAllowances.remove(payerNum);
@@ -146,9 +154,14 @@ public class TransferLogic {
         final var fungibleAllowances =
                 new TreeMap<>((Map<FcTokenAllowanceId, Long>) account.getFungibleTokenAllowances());
         final var currentAllowance = fungibleAllowances.get(allowanceId);
+        if (currentAllowance == null) {
+            throw new InvalidTransactionException(SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        }
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
-        if (newAllowance == 0) {
+        if (newAllowance == 0L) {
             fungibleAllowances.remove(allowanceId);
+        } else if (newAllowance < 0L) {
+            throw new InvalidTransactionException(AMOUNT_EXCEEDS_ALLOWANCE);
         } else {
             fungibleAllowances.put(allowanceId, newAllowance);
         }

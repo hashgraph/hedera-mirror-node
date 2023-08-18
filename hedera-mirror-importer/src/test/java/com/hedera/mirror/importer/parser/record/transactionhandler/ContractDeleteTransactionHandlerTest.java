@@ -18,8 +18,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.data.util.Predicates.negate;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -35,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -135,5 +140,35 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(Optional.ofNullable(entityId));
         EntityId receivedEntityId = transactionHandler.getEntity(recordItem);
         assertThat(receivedEntityId).isEqualTo(EntityId.EMPTY);
+    }
+
+    @Test
+    void updateTransactionSuccessful() {
+        // given
+        var recordItem = recordItemBuilder.contractDelete().build();
+        var body = recordItem.getTransactionBody().getContractDeleteInstance();
+        var contractId = EntityId.of(body.getContractID());
+        var obtainerId = Optional.of(EntityId.of(body.getTransferAccountID()))
+                .filter(negate(EntityId::isEmpty))
+                .orElse(EntityId.of(body.getTransferContractID()));
+        long timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        var expectedEntity = contractId.toEntity().toBuilder()
+                .deleted(true)
+                .obtainerId(obtainerId)
+                .permanentRemoval(body.getPermanentRemoval())
+                .timestampRange(Range.atLeast(timestamp))
+                .build();
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        verify(entityListener).onEntity(ArgumentMatchers.assertArg(e -> assertEquals(expectedEntity, e)));
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 }

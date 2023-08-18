@@ -24,7 +24,6 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
-import java.math.BigInteger;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,7 +48,7 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 1st byte was 1 but should be 2");
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, First byte was 1 but should be 2");
     }
 
     @Test
@@ -58,7 +57,7 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem was not a list");
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, Second RLPItem was not a list");
     }
 
     @Test
@@ -67,35 +66,32 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)
-                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem list size was 0 but "
-                        + "should be 12");
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, RLP list size was 0 but expected 12");
     }
 
+    @SneakyThrows
     @Override
     protected void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
         assertThat(ethereumTransaction)
                 .isNotNull()
-                .satisfies(t -> assertThat(t.getType()).isEqualTo(2))
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getChainId())).isEqualTo("012a"))
-                .satisfies(t -> assertThat(t.getNonce()).isEqualTo(2))
-                .satisfies(t -> assertThat(t.getGasPrice()).isNull())
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getMaxPriorityFeePerGas()))
-                        .isEqualTo("2f"))
-                .satisfies(t ->
-                        assertThat(Hex.encodeHexString(t.getMaxFeePerGas())).isEqualTo("2f"))
-                .satisfies(t -> assertThat(t.getGasLimit()).isEqualTo(98_304L))
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getToAddress()))
-                        .isEqualTo("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181"))
-                .satisfies(
-                        t -> assertThat(t.getValue()).isEqualTo(new BigInteger("0de0b6b3a7640000", 16).toByteArray()))
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getCallData())).isEqualTo("123456"))
-                .satisfies(
-                        t -> assertThat(Hex.encodeHexString(t.getAccessList())).isEmpty())
-                .satisfies(t -> assertThat(t.getRecoveryId()).isEqualTo(1))
-                .satisfies(t -> assertThat(t.getSignatureV()).isNull())
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureR()))
-                        .isEqualTo("df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"))
-                .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS()))
-                        .isEqualTo("1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"));
+                .returns(Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE, EthereumTransaction::getType)
+                .returns(Hex.decodeHex("012a"), EthereumTransaction::getChainId)
+                .returns(2L, EthereumTransaction::getNonce)
+                .returns(null, EthereumTransaction::getGasPrice)
+                .returns(Hex.decodeHex("2f"), EthereumTransaction::getMaxPriorityFeePerGas)
+                .returns(Hex.decodeHex("2f"), EthereumTransaction::getMaxFeePerGas)
+                .returns(98_304L, EthereumTransaction::getGasLimit)
+                .returns(Hex.decodeHex("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181"), EthereumTransaction::getToAddress)
+                .returns(Hex.decodeHex("0de0b6b3a7640000"), EthereumTransaction::getValue)
+                .returns(Hex.decodeHex("123456"), EthereumTransaction::getCallData)
+                .returns(Hex.decodeHex(""), EthereumTransaction::getAccessList)
+                .returns(1, EthereumTransaction::getRecoveryId)
+                .returns(null, EthereumTransaction::getSignatureV)
+                .returns(
+                        Hex.decodeHex("df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"),
+                        EthereumTransaction::getSignatureR)
+                .returns(
+                        Hex.decodeHex("1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"),
+                        EthereumTransaction::getSignatureS);
     }
 }

@@ -85,7 +85,9 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            var proxyAccountId = EntityId.of(transactionBody.getProxyAccountID());
+            entity.setProxyAccountId(proxyAccountId);
+            recordItem.addEntityId(proxyAccountId);
         }
 
         entity.setBalance(0L);
@@ -102,15 +104,15 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         entity.setDeclineReward(transactionBody.getDeclineReward());
 
         switch (transactionBody.getStakedIdCase()) {
-            case STAKEDID_NOT_SET:
+            case STAKEDID_NOT_SET -> {
                 return;
-            case STAKED_NODE_ID:
-                entity.setStakedNodeId(transactionBody.getStakedNodeId());
-                break;
-            case STAKED_ACCOUNT_ID:
-                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+            }
+            case STAKED_NODE_ID -> entity.setStakedNodeId(transactionBody.getStakedNodeId());
+            case STAKED_ACCOUNT_ID -> {
+                var accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(accountId.getId());
-                break;
+                recordItem.addEntityId(accountId);
+            }
         }
 
         entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
