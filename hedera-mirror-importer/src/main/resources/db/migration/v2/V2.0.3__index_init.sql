@@ -84,8 +84,7 @@ create index if not exists crypto_transfer__consensus_timestamp
     on crypto_transfer (consensus_timestamp);
 create index if not exists crypto_transfer__entity_id_consensus_timestamp
     on crypto_transfer (entity_id, consensus_timestamp)
-    where entity_id != 98;
--- id corresponding to treasury address 0.0.98
+    where entity_id not in (98, 800);
 
 -- custom_fee
 alter table if exists custom_fee
@@ -237,8 +236,6 @@ create index if not exists token_allowance_history__owner_spender_token_lower_ti
 -- token_balance
 alter table if exists token_balance
     add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
-create index if not exists token_balance__timestamp_token
-    on token_balance (consensus_timestamp desc, token_id);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp
@@ -264,9 +261,7 @@ create index if not exists topic_message_lookup__topic_sequence_number_range
 alter table if exists transaction
     add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);
 create index if not exists transaction__transaction_id
-    on transaction (valid_start_ns, payer_account_id);
-create index if not exists transaction__payer_account_id
-    on transaction (payer_account_id);
+    on transaction (payer_account_id, valid_start_ns);
 create index if not exists transaction__type_consensus_timestamp
     on transaction (type, consensus_timestamp);
 

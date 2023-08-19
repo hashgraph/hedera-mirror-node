@@ -271,13 +271,14 @@ stackgres:
       cron.database_name: "{{ .Values.db.name }}"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
+      maintenance_work_mem: "256MB"
       max_connections: "300"
       max_replication_slots: "5"
       max_wal_senders: "5"
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "12GB"
+      shared_buffers: "6GB"
       shared_preload_libraries: pg_cron,pg_partman_bgw
       work_mem: "32MB"
     instances: 1
@@ -311,13 +312,14 @@ stackgres:
       cron.database_name: "{{ .Values.db.name }}"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
+      maintenance_work_mem: "256MB"
       max_connections: "400"
       max_replication_slots: "5"
       max_wal_senders: "5"
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "12GB"
+      shared_buffers: "6GB"
       shared_preload_libraries: pg_cron,pg_partman_bgw
       work_mem: "32MB"
     instances: 1
