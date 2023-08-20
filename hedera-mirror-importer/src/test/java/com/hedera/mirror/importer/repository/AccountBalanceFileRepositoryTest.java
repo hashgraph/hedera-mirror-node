@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,24 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.accountBalanceFile().persist();
         var latest = domainBuilder.accountBalanceFile().persist();
         assertThat(accountBalanceFileRepository.findLatest()).get().isEqualTo(latest);
+    }
+
+    @Test
+    void findLatestBefore() {
+        assertThat(accountBalanceFileRepository.findLatestBefore(DomainUtils.now()))
+                .isEmpty();
+
+        domainBuilder.accountBalanceFile().persist();
+        var accountBalanceFile2 = domainBuilder.accountBalanceFile().persist();
+
+        assertThat(accountBalanceFileRepository.findLatestBefore(DomainUtils.now()))
+                .get()
+                .isEqualTo(accountBalanceFile2);
+
+        var accountBalanceFile3 = domainBuilder.accountBalanceFile().persist();
+        assertThat(accountBalanceFileRepository.findLatestBefore(DomainUtils.now()))
+                .get()
+                .isEqualTo(accountBalanceFile3);
     }
 
     @Test
