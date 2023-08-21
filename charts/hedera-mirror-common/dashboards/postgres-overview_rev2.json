@@ -13,7 +13,7 @@
     ]
   },
   "description": "Performance metrics for Postgres",
-  "editable": true,
+  "editable": false,
   "gnetId": 455,
   "graphTooltip": 0,
   "id": 29,
