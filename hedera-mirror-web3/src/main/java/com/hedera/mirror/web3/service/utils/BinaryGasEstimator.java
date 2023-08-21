@@ -47,7 +47,7 @@ public class BinaryGasEstimator {
         // threshold.
         // This value might be adapted or removed in the future, when we have the support of more precompiles and adjust
         // the binary search algorithm accordingly.
-        long minimumThreshold = (long) (lo * 0.08);
+        long minimumThreshold = (long) (lo * 0.09);
         final long estimateIterationThreshold =
                 Math.max(minimumThreshold, properties.getEstimateGasIterationThreshold());
 

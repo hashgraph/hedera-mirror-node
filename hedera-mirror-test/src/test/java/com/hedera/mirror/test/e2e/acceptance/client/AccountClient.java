@@ -93,7 +93,7 @@ public class AccountClient extends AbstractNetworkClient {
         // retrieve account, setting if it doesn't exist
         ExpandedAccountId accountId = accountMap.computeIfAbsent(accountNameEnum, x -> {
             try {
-                return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
+                return createNewAccount(DEFAULT_INITIAL_BALANCE, accountNameEnum);
             } catch (Exception e) {
                 log.warn("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                 return null;

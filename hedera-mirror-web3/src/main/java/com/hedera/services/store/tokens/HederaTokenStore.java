@@ -68,7 +68,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -101,14 +101,12 @@ public class HederaTokenStore {
     static final TokenID NO_PENDING_ID = TokenID.getDefaultInstance();
     public static final TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
     private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
-    private final ContextOptionValidator validator;
+    private final OptionValidator validator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final Store store;
 
     public HederaTokenStore(
-            final ContextOptionValidator validator,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final Store store) {
+            final OptionValidator validator, final MirrorNodeEvmProperties mirrorNodeEvmProperties, final Store store) {
         this.validator = validator;
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.store = store;

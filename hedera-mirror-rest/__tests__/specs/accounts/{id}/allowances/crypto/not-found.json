@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for all crypto allowances with no match",
+  "description": "Account api call for all crypto allowances with no matching active allowance",
   "setup": {
     "accounts": [
       {
@@ -59,11 +59,28 @@
         "payer_account_id": 2001,
         "spender": 5001,
         "timestamp_range": "[1234567890000000005,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 88,
+        "owner": 1001,
+        "payer_account_id": 5002,
+        "spender": 5002,
+        "timestamp_range": "[1234567890000000006,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "payer_account_id": 5003,
+        "spender": 5003,
+        "timestamp_range": "[1234567890000000007,)"
       }
     ]
   },
   "urls": [
     "/api/v1/accounts/3001/allowances/crypto",
+    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=5002",
     "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=7000"
   ],
   "responseStatus": 200,

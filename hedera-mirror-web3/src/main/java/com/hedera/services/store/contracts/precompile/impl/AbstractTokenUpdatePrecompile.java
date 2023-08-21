@@ -31,7 +31,7 @@ import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.validation.ContextOptionValidator;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -40,22 +40,22 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 /**
  * This class is a modified copy of AbstractTokenUpdatePrecompile from hedera-services repo.
  * Differences with the original:
- *  1. Implements a modified {@link Precompile} interface
- *  2. Removed class fields and adapted constructor in order to achieve stateless behaviour
- *  3. The run method does not handle any signature verification and is modified to obtain
- *     the update type function from the MessageFrame input data parameter. It will not be
- *     overridden in the extending classes
+ * 1. Implements a modified {@link Precompile} interface
+ * 2. Removed class fields and adapted constructor in order to achieve stateless behaviour
+ * 3. The run method does not handle any signature verification and is modified to obtain
+ * the update type function from the MessageFrame input data parameter. It will not be
+ * overridden in the extending classes
  */
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
 
     private final TokenUpdateLogic tokenUpdateLogic;
-    private final ContextOptionValidator contextOptionValidator;
+    private final OptionValidator contextOptionValidator;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     protected AbstractTokenUpdatePrecompile(
             TokenUpdateLogic tokenUpdateLogic,
             MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            ContextOptionValidator contextOptionValidator,
+            OptionValidator contextOptionValidator,
             PrecompilePricingUtils pricingUtils,
             SyntheticTxnFactory syntheticTxnFactory) {
         super(pricingUtils, syntheticTxnFactory);

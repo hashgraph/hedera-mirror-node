@@ -17,15 +17,25 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
-public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
+public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration implements RecordStreamFileListener {
+
+    static final Version HAPI_VERSION_0_37_0 = new Version(0, 37, 0);
+    private final AtomicBoolean executed = new AtomicBoolean(false);
+    private final RecordFileRepository recordFileRepository;
 
     private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL =
             """
@@ -110,9 +120,13 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public SyntheticTokenAllowanceOwnerMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
+    public SyntheticTokenAllowanceOwnerMigration(
+            @Owner JdbcTemplate jdbcTemplate,
+            MirrorProperties mirrorProperties,
+            RecordFileRepository recordFileRepository) {
         super(mirrorProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
+        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
@@ -131,5 +145,23 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
         var stopwatch = Stopwatch.createStarted();
         jdbcTemplate.execute(UPDATE_TOKEN_ALLOWANCE_OWNER_SQL);
         log.info("Updated token allowance owners in {}", stopwatch);
+    }
+
+    @Override
+    public void onEnd(RecordFile streamFile) throws ImporterException {
+        if (streamFile == null) {
+            return;
+        }
+
+        // The services version 0.38.0 has the fixes this migration solves.
+        if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_37_0)
+                && executed.compareAndSet(false, true)) {
+            var latestFile = recordFileRepository.findLatestBefore(streamFile.getConsensusStart());
+            if (latestFile
+                    .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_37_0))
+                    .isPresent()) {
+                doMigrate();
+            }
+        }
     }
 }

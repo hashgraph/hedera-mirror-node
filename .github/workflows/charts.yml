@@ -3,6 +3,7 @@ name: Charts
 on:
   pull_request:
     branches: [ main, release/** ]
+    paths: [ charts/** ]
   push:
     branches: [ main, release/** ]
     tags: [ v* ]
@@ -21,12 +22,16 @@ jobs:
         run: ct lint --config .github/ct.yaml --all
 
   install:
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, large, ephemeral ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Setup Kind
+        uses: helm/kind-action@v1
 
       - name: Install JDK
         uses: actions/setup-java@v3
@@ -34,39 +39,18 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Install k3d
-        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-
-      - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.27.4-k3s1
-        timeout-minutes: 3
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - name: Install Python
+        uses: actions/setup-python@v4
         with:
-          driver-opts: network=host
-
-      - name: Build images
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: dockerPush -x :rosetta:dockerPush -x :test:dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test
-
-      - name: Build rosetta image
-        uses: docker/build-push-action@v4
-        with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          context: hedera-mirror-rosetta
-          push: true
-          tags: localhost:5001/mirrornode/hedera-mirror-rosetta:test
-
-      - name: Install ct
-        uses: helm/chart-testing-action@v2.4.0
+          python-version: '3.10'
 
       - name: Install Stackgres
         run: |
           helm repo add stackgres https://stackgres.io/downloads/stackgres-k8s/stackgres/helm
-          helm install stackgres stackgres/stackgres-operator --version 1.5.0
+          helm install stackgres stackgres/stackgres-operator --version 1.5.0 --create-namespace -n stackgres
+
+      - name: Install ct
+        uses: helm/chart-testing-action@v2.4.0
 
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test"
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-args="--timeout 10m"

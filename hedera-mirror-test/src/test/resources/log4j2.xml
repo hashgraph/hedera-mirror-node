@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
-    <Appenders>
-        <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout>
-                <alwaysWriteExceptions>false</alwaysWriteExceptions>
-                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %level{length=1} %-15.15t %c{1.} %m %ex%n
-                </pattern>
-            </PatternLayout>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="com.hedera.mirror.test" level="info" additivity="false">
-            <AppenderRef ref="console"/>
-        </Logger>
-        <Root level="warn">
-            <AppenderRef ref="console"/>
-        </Root>
-    </Loggers>
+  <Appenders>
+    <Console name="console" target="SYSTEM_OUT">
+      <PatternLayout>
+        <alwaysWriteExceptions>false</alwaysWriteExceptions>
+        <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{UTC} %p %t %c{1.} %m %ex%n</pattern>
+      </PatternLayout>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger additivity="false" level="info" name="com.hedera.mirror.test">
+      <AppenderRef ref="console"/>
+    </Logger>
+    <Root level="warn">
+      <AppenderRef ref="console"/>
+    </Root>
+  </Loggers>
 </Configuration>

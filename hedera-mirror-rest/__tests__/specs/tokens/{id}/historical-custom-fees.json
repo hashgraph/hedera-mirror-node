@@ -44,6 +44,74 @@
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
+        "custom_fees": [
+          {
+            "fractional_fees": [
+              {
+                "collector_account_id": "0.0.8901",
+                "denominator": 1,
+                "maximum_amount": 98,
+                "minimum_amount": 9,
+                "numerator": 1
+              }
+            ],
+            "timestamp_range": "[1234567899999999000,1234567899999999001)",
+            "token_id": "0.0.1135"
+          },
+          {
+            "fractional_fees": [
+              {
+                "collector_account_id": "0.0.8901",
+                "denominator": 13,
+                "maximum_amount": 980,
+                "minimum_amount": 97,
+                "numerator": 10
+              }
+            ],
+            "timestamp_range": "[1234567899999999001,1234567899999999006)",
+            "token_id": "0.0.1135"
+          },
+          {
+            "fixed_fees": [
+              {
+                "amount": 12,
+                "collector_account_id": "0.0.8904",
+                "denominating_token_id": "0.0.1137"
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "amount": 13,
+                "collector_account_id": "0.0.8905"
+              }
+            ],
+            "fractional_fees": [
+              {
+                "collector_account_id": "0.0.8901",
+                "denominator": 17,
+                "maximum_amount": 987,
+                "minimum_amount": 79,
+                "numerator": 11
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "collector_account_id": "0.0.8902",
+                "denominator": 13,
+                "minimum_amount": 1,
+                "numerator": 9
+              },
+              {
+                "all_collectors_are_exempt": true,
+                "collector_account_id": "0.0.8904",
+                "denominator": 131,
+                "minimum_amount": 0,
+                "net_of_transfers": true,
+                "numerator": 41
+              }
+            ],
+            "timestamp_range": "[1234567899999999007,)",
+            "token_id": "0.0.1135"
+          }
+        ],
         "created_timestamp": "1234567890000000002",
         "type": "FUNGIBLE_COMMON"
       },
@@ -58,61 +126,6 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "type": "FUNGIBLE_COMMON"
-      }
-    ],
-    "customfees": [
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "10",
-        "amount_denominator": "13",
-        "collector_account_id": "0.0.8901",
-        "created_timestamp": "1234567899999999001",
-        "maximum_amount": "980",
-        "minimum_amount": "97",
-        "token_id": "0.0.1135"
-      },
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "11",
-        "amount_denominator": "17",
-        "collector_account_id": "0.0.8901",
-        "created_timestamp": "1234567899999999007",
-        "maximum_amount": "987",
-        "minimum_amount": "79",
-        "token_id": "0.0.1135"
-      },
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "9",
-        "amount_denominator": "13",
-        "collector_account_id": "0.0.8902",
-        "created_timestamp": "1234567899999999007",
-        "minimum_amount": "1",
-        "token_id": "0.0.1135"
-      },
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "41",
-        "amount_denominator": "131",
-        "collector_account_id": "0.0.8904",
-        "created_timestamp": "1234567899999999007",
-        "minimum_amount": "0",
-        "token_id": "0.0.1135"
-      },
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "12",
-        "collector_account_id": "0.0.8904",
-        "created_timestamp": "1234567899999999007",
-        "denominating_token_id": "0.0.1137",
-        "token_id": "0.0.1135"
-      },
-      {
-        "all_collectors_are_exempt": false,
-        "amount": "13",
-        "collector_account_id": "0.0.8905",
-        "created_timestamp": "1234567899999999007",
-        "token_id": "0.0.1135"
       }
     ]
   },

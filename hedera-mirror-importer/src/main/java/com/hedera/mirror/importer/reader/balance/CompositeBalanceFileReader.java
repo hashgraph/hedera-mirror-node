@@ -20,11 +20,11 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import jakarta.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
-@Log4j2
+@CustomLog
 @Named
 @Primary
 @RequiredArgsConstructor

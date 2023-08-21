@@ -29,6 +29,8 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
@@ -36,12 +38,17 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -49,13 +56,16 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
+
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
-    private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private final TokenTransferRepository tokenTransferRepository;
-
-    private AccountBalanceFile accountBalanceFile;
+    private final MirrorProperties mirrorProperties;
+    private TokenAccountBalanceMigration tokenAccountBalanceMigration;
+    private AccountBalanceFile accountBalanceFile1;
+    private AccountBalanceFile accountBalanceFile2;
     private AtomicLong timestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
@@ -67,6 +77,8 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
+        tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
+                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test
@@ -107,7 +119,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // token transfer between the consensusTimestamp of the balance file and the current timestamp
         var balanceUpdatedAfterBalanceFileConsensusTimestamp = 12345L;
         var tokenTransferId = new TokenTransfer.Id(
-                accountBalanceFile.getConsensusTimestamp() + 1,
+                accountBalanceFile2.getConsensusTimestamp() + 1,
                 tokenBalance.getId().getTokenId(),
                 tokenBalance.getId().getAccountId());
         domainBuilder
@@ -118,7 +130,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .persist();
         var secondBalanceUpdate = 222L;
         var tokenTransferId2 = new TokenTransfer.Id(
-                accountBalanceFile.getConsensusTimestamp() + 2,
+                accountBalanceFile2.getConsensusTimestamp() + 2,
                 tokenBalance.getId().getTokenId(),
                 tokenBalance.getId().getAccountId());
         domainBuilder
@@ -193,7 +205,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     void migrateWhenNoTokenBalance() {
         // given
         setup();
-        tokenBalanceRepository.prune(accountBalanceFile.getConsensusTimestamp());
+        tokenBalanceRepository.prune(accountBalanceFile2.getConsensusTimestamp());
 
         // when
         tokenAccountBalanceMigration.doMigrate();
@@ -261,7 +273,117 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 
+    @Test
+    @Transactional
+    void onEndWhenNotFirstFile() {
+        // given
+        setup();
+        // when
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile2);
+
+        // then
+        tokenAccount.setBalance(0L);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
+    }
+
+    @Test
+    @Transactional
+    void onEndEarlyReturn() {
+        // given
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionTemplate = new TransactionTemplate(transactionManager);
+        setup();
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        transactionTemplate.executeWithoutResult(s -> tokenAccountBalanceMigration.onEnd(accountBalanceFile1));
+
+        long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
+        var accountBalanceFile3 = domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(accountBalanceTimestamp3))
+                .persist();
+        // when
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile3);
+
+        // then
+        tokenAccount.setBalance(0L);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
+    }
+
+    @Test
+    @Transactional
+    void onEndWhenNoRecordFileAfterTimestamp() {
+        // given
+        initialSetup();
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        // when
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
+
+        // then
+        tokenAccount.setBalance(0L);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        deletedEntityTokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
+    }
+
+    @Test
+    @Transactional
+    void onEnd() {
+        // given
+        setup();
+        accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+
+        // when
+        tokenAccountBalanceMigration.onEnd(accountBalanceFile1);
+
+        // then
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(
+                        tokenAccount,
+                        tokenAccount2,
+                        tokenAccount3,
+                        deletedEntityTokenAccount4,
+                        disassociatedTokenAccount5);
+    }
+
     private void setup() {
+        initialSetup();
+
+        // Second record file
+        domainBuilder
+                .recordFile()
+                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
+                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
+                .persist();
+    }
+
+    private void initialSetup() {
         var entity1 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
         var accountId1 = EntityId.of(entity1.getId(), ACCOUNT);
         var entity2 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
@@ -303,7 +425,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // First account balance file
         var firstAccountBalanceFileTimestamp = timestamp(Duration.ofMinutes(10));
-        domainBuilder
+        accountBalanceFile1 = domainBuilder
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(firstAccountBalanceFileTimestamp))
                 .persist();
@@ -318,7 +440,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // Second account balance file, this file should be used for the token balance migration
         long accountBalanceTimestamp = timestamp(Duration.ofMinutes(10));
-        accountBalanceFile = domainBuilder
+        accountBalanceFile2 = domainBuilder
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp))
                 .persist();
@@ -411,13 +533,6 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(tokenBalance3Amount);
         deletedEntityTokenAccount4.setBalance(1009875L);
         disassociatedTokenAccount5.setBalance(0L);
-
-        // Second record file
-        domainBuilder
-                .recordFile()
-                .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
-                        .consensusEnd(timestamp(Duration.ofSeconds(2))))
-                .persist();
     }
 
     private long timestamp(Duration delta) {

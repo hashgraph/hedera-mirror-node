@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.performance;
 
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Log4j2
+@CustomLog
 @Tag("largedbperf")
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

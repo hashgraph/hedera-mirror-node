@@ -60,6 +60,22 @@
         "spender": 5001,
         "token_id": 10005,
         "timestamp_range": "[1234567890000000005,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 100,
+        "owner": 1001,
+        "spender": 5001,
+        "token_id": 20005,
+        "timestamp_range": "[1234567890000000005,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "spender": 5001,
+        "token_id": 20006,
+        "timestamp_range": "[1234567890000000005,)"
       }
     ]
   },

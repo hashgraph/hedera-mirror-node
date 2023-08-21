@@ -162,7 +162,7 @@ jobs:
       - name: Run Rosetta BDD Tests
         working-directory: ./hedera-mirror-rosetta/test/bdd-client
         run: |
-          export GOROOT=$GOROOT_1_18_X64
+          export GOROOT=$GOROOT_1_20_X64
           export PATH=$GOROOT/bin:$PATH
           jq -r '.[] | {"privateKey": .privkey, "id": .account_identifier.address}' /tmp/accounts.json | \
             jq -s '. | {operators: .} | .server.offlineUrl="${{ env.OFFLINE_URL }}" | {test: .} | {rosetta: .}

@@ -31,7 +31,7 @@ with existing as (
 ),
 temp_history as (
   insert into $historyTable ($insertColumns)
-  select distinct $coalesceColumns
+  select distinct $coalesceHistoryColumns
   from existing
   where upper(timestamp_range) is not null
 #if($skipPartialUpdate)

@@ -50,6 +50,7 @@ class TransactionTest {
                       "scheduled": false,
                       "transaction_bytes": "FxgZ",
                       "transaction_hash": "Ghsc",
+                      "transaction_record_bytes": "HR4f",
                       "type": 29,
                       "valid_duration_seconds": 30,
                       "valid_start_ns": 31
@@ -176,6 +177,7 @@ class TransactionTest {
         transaction.setScheduled(false);
         transaction.setTransactionBytes(new byte[] {23, 24, 25});
         transaction.setTransactionHash(new byte[] {26, 27, 28});
+        transaction.setTransactionRecordBytes(new byte[] {29, 30, 31});
         transaction.setType(29);
         transaction.setValidDurationSeconds(30L);
         transaction.setValidStartNs(31L);
