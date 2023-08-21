@@ -6,7 +6,7 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=16.13.0 < 19"
+    "node": ">=18.17.1 < 19"
   },
   "scripts": {
     "dev": "nodemon --experimental-specifier-resolution=node server.js",
@@ -26,7 +26,6 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "mathjs": "^11.9.1",
-    "node-fetch": "^3.3.2",
     "parse-duration": "^1.1.0",
     "pretty-ms": "^8.0.0"
   },
