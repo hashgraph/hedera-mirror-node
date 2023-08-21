@@ -105,6 +105,7 @@ const flywayMigrate = async () => {
 
   const flywayConfig = `{
     "flywayArgs": {
+      "baselineOnMigrate": "true",
       "baselineVersion": "${schemaConfigs.baselineVersion}",
       "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
@@ -114,12 +115,13 @@ const flywayMigrate = async () => {
       "placeholders.chunkIdInterval": 10000,
       "placeholders.chunkTimeInterval": 604800000000000,
       "placeholders.compressionAge": 9007199254740991,
-      "placeholders.cronSchedule": "'@daily'",
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
-      "placeholders.partitionIdInterval": "'1000000'",
-      "placeholders.partitionStartDate": "'0 days'",
-      "placeholders.partitionTimeInterval": "'1 year'",
+      "placeholders.idPartitionSize": 1000000000000000,
+      "placeholders.maxEntityId": 5000000,
+      "placeholders.maxEntityIdRatio": 2.0,
+      "placeholders.partitionStartDate": "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
+      "placeholders.partitionTimeInterval": "'10 years'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "placeholders.schema": "public",
       "placeholders.shardCount": 2,
