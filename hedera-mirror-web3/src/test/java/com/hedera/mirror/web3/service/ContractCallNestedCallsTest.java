@@ -73,7 +73,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 null),
         WIPE_FUNGIBLE_TOKEN(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ADDRESS},
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ALIAS},
                 null),
         WIPE_FUNGIBLE_TOKEN_WITH_ALIAS(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
@@ -81,7 +81,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 null),
         WIPE_NFT(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ADDRESS},
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ALIAS},
                 null),
         WIPE_NFT_ALIAS(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
@@ -91,16 +91,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 "pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, null),
         FREEZE_UNFREEZE_FUNGIBLE_TOKEN(
                 "freezeTokenGetPauseStatusUnpauseGetPauseStatus",
-                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS},
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS},
                 null),
         PAUSE_UNPAUSE_NFT("pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS}, null),
         FREEZE_UNFREEZE_NFT(
-                "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS}, null),
+                "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ALIAS}, null),
         ASSOCIATE_DISSOCIATE_TRANSFER_FUNGIBLE_TOKEN_FAIL(
                 "associateTokenDissociateFailTransfer",
                 new Object[] {
                     TREASURY_TOKEN_ADDRESS,
-                    NOT_ASSOCIATED_SPENDER_ADDRESS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
                     NESTED_ETH_CALLS_CONTRACT_ADDRESS,
                     BigInteger.ONE,
                     BigInteger.ZERO
@@ -118,11 +118,15 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 null),
         APPROVE_NFT_GET_ALLOWANCE(
                 "approveTokenGetAllowance",
-                new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, BigInteger.ZERO, BigInteger.ONE},
+                new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_NFT_GET_ALLOWANCE_WITH_ALIAS(
+                "approveTokenGetAllowance",
+                new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
         APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
                 "approveTokenTransferFromGetAllowanceGetBalance",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
                 null);
         private final String name;
         private final Object[] functionParameters;

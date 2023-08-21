@@ -111,6 +111,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 750, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
     protected static final Address NOT_ASSOCIATED_SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 744, ACCOUNT));
+    protected static final ByteString NOT_ASSOCIATED_SPENDER_PUBLIC_KEY =
+            ByteString.fromHex("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+    protected static final Address NOT_ASSOCIATED_SPENDER_ALIAS = Address.wrap(Bytes.wrap(recoverAddressFromPubKey(
+            NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
     protected static final Address SPENDER_ALIAS = Address.wrap(
@@ -851,6 +855,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
                         .num(spenderEntityId.getEntityNum())
+                        .evmAddress(NOT_ASSOCIATED_SPENDER_ALIAS.toArray())
+                        .alias(NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.toByteArray())
                         .deleted(false))
                 .persist();
         return spenderEntityId;

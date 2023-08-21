@@ -21,7 +21,8 @@ contract NestedEthCalls is HederaTokenService {
         int totalSupplyBeforeMint = retrievedTokenInfo.totalSupply;
 
         int newTotalSupply;
-        (responseCode, newTotalSupply,) = HederaTokenService.mintToken(token, amount, metadata);
+        int64[] memory serialNumbers;
+        (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
         if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to mint token");
 
         (responseCode, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
@@ -31,6 +32,7 @@ contract NestedEthCalls is HederaTokenService {
         if(amount > 0 && metadata.length == 0) {
             if((totalSupplyBeforeMint + amount != totalSupplyAfterMint) || (newTotalSupply != totalSupplyAfterMint)) revert("Total supply mismatch after mint (Fungible)");
         } else {
+            if(serialNumbers.length != metadata.length) revert("Serial numbers mismatch after mint (NFT)");
             if((totalSupplyBeforeMint + int256(metadata.length) != totalSupplyAfterMint) || (newTotalSupply != totalSupplyAfterMint)) revert("Total supply mismatch after mint (NFT)");
         }
 
