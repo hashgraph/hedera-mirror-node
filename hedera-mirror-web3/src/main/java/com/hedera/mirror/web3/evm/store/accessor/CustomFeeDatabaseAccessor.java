@@ -20,12 +20,14 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static java.util.Objects.requireNonNullElse;
 
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +40,14 @@ import org.springframework.util.CollectionUtils;
 @Named
 @RequiredArgsConstructor
 public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<CustomFee>> {
+
+    @PostConstruct
+    private void initConversion() {
+        // Ensure the ObjectToStringSerializer is instantiated.
+        // It is used for the conversion of Jsonb data into domain objects.
+        ObjectToStringSerializer.INSTANCE.toString();
+    }
+
     private final CustomFeeRepository customFeeRepository;
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
