@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityTypeSerializer;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -48,6 +49,14 @@ import lombok.Value;
 public class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityType.ACCOUNT);
+
+    static final int SHARD_BITS = 15;
+    static final int REALM_BITS = 16;
+    static final int NUM_BITS = 32;
+
+    private static final long SHARD_MASK = (1L << SHARD_BITS) - 1;
+    private static final long REALM_MASK = (1L << REALM_BITS) - 1;
+    private static final long NUM_MASK = (1L << NUM_BITS) - 1;
     private static final Comparator<EntityId> COMPARATOR =
             Comparator.nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
@@ -69,12 +78,51 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final String cachedString = String.format("%d.%d.%d", shardNum, realmNum, entityNum);
 
-    public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityType type) {
-        id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
+    public EntityId(long shardNum, long realmNum, long entityNum, EntityType type) {
+        id = encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;
         this.entityNum = entityNum;
         this.type = type;
+    }
+
+    private EntityId(long id, EntityType type) {
+        if (id < 0) {
+            throw new InvalidEntityException("Entity ID can not be negative: " + id);
+        }
+
+        this.id = id;
+        this.shardNum = id >> (REALM_BITS + NUM_BITS);
+        this.realmNum = (id >> NUM_BITS) & REALM_MASK;
+        this.entityNum = id & NUM_MASK;
+        this.type = type;
+    }
+
+    /**
+     * Encodes given shard, realm, num into an 8 bytes long.
+     * <p/>
+     * Only 63 bits (excluding signed bit) are used for encoding to make it easy to encode/decode using mathematical
+     * operations too. That's because JavaScript's support for bitwise operations is very limited (truncates numbers to
+     * 32 bits internally before bitwise operation).
+     * <p/>
+     * Format: <br/> First bit (sign bit) is left 0. <br/> Next 15 bits are for shard, followed by 16 bits for realm,
+     * and then 32 bits for entity num. <br/> This encoding will support following ranges: <br/> shard: 0 - 32767 <br/>
+     * realm: 0 - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids
+     * <= 4294967295 will also be human-readable.
+     */
+    private static Long encode(long shardNum, long realmNum, long entityNum) {
+        if (shardNum > SHARD_MASK
+                || shardNum < 0
+                || realmNum > REALM_MASK
+                || realmNum < 0
+                || entityNum > NUM_MASK
+                || entityNum < 0) {
+            throw new InvalidEntityException("Invalid entity ID: " + shardNum + "." + realmNum + "." + entityNum);
+        }
+
+        return (entityNum & NUM_MASK)
+                | (realmNum & REALM_MASK) << NUM_BITS
+                | (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 
     public static EntityId of(AccountID accountID) {
@@ -122,7 +170,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(long encodedEntityId, EntityType type) {
-        return EntityIdEndec.decode(encodedEntityId, type);
+        return new EntityId(encodedEntityId, type);
     }
 
     public static boolean isEmpty(EntityId entityId) {

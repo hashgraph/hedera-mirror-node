@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.domain;
 
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import java.sql.SQLException;
@@ -46,9 +46,9 @@ public class AssessedCustomFeeWrapper {
             throws SQLException {
         assessedCustomFee = new AssessedCustomFee();
         assessedCustomFee.setAmount(amount);
-        assessedCustomFee.setId(new AssessedCustomFee.Id(
-                EntityIdEndec.decode(collectorAccountId, EntityType.ACCOUNT), consensusTimestamp));
-        assessedCustomFee.setPayerAccountId(EntityIdEndec.decode(payerAccountId, EntityType.ACCOUNT));
+        assessedCustomFee.setId(
+                new AssessedCustomFee.Id(EntityId.of(collectorAccountId, EntityType.ACCOUNT), consensusTimestamp));
+        assessedCustomFee.setPayerAccountId(EntityId.of(payerAccountId, EntityType.ACCOUNT));
 
         if (effectivePayerAccountIds != null) {
             Long[] payers = (Long[]) effectivePayerAccountIds.getArray();
@@ -56,7 +56,7 @@ public class AssessedCustomFeeWrapper {
         }
 
         if (tokenId != null) {
-            assessedCustomFee.setTokenId(EntityIdEndec.decode(tokenId, EntityType.TOKEN));
+            assessedCustomFee.setTokenId(EntityId.of(tokenId, EntityType.TOKEN));
         }
     }
 }

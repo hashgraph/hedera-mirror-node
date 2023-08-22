@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
@@ -79,8 +78,9 @@ class TokenAccessorImplTest {
     private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
-    private static final Long ENTITY_ID =
-            EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
+    private static final Long ENTITY_ID = EntityId.of(
+                    ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum(), EntityType.ACCOUNT)
+            .getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;
     private final DomainBuilder domainBuilder = new DomainBuilder();

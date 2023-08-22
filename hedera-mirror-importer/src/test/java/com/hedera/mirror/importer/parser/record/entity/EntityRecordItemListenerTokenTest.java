@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
@@ -119,12 +118,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityIdEndec.decode(1201, ACCOUNT);
-    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityIdEndec.decode(9800, EntityType.TOKEN);
-    private static final EntityId FEE_PAYER_1 = EntityIdEndec.decode(1500, ACCOUNT);
-    private static final EntityId FEE_PAYER_2 = EntityIdEndec.decode(1501, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201, ACCOUNT);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800, EntityType.TOKEN);
+    private static final EntityId FEE_PAYER_1 = EntityId.of(1500, ACCOUNT);
+    private static final EntityId FEE_PAYER_2 = EntityId.of(1501, ACCOUNT);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final byte[] METADATA = "METADATA".getBytes();
     private static final long SERIAL_NUMBER_1 = 1L;
