@@ -37,6 +37,7 @@ public class PartitionMaintenance {
             """
     CALL create_mirror_node_time_partitions();
     CALL create_mirror_node_range_partitions();
+    SELECT apply_vacuum_settings();
     """;
 
     @Owner

@@ -21,6 +21,9 @@ spring:
       api-password: mirror_api_pass
       api-user: mirror_api
       autovacuumFreezeMaxAgeInsertOnly: 100000
+      autovacuumVacuumInsertThresholdCryptoTransfer: 300000
+      autovacuumVacuumInsertThresholdTokenTransfer: 2000
+      autovacuumVacuumInsertThresholdTransaction: 100000
       db-name: ${hedera.mirror.web3.db.name}
       db-user: ${hedera.mirror.web3.db.username}
       idPartitionSize: 1000000000000000
