@@ -133,7 +133,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should confirm the approved allowance for {string} and {string} no longer exists")
     @RetryAsserts
-    public void verifyMirrorAPIApprovedTokenAllowanceResponse(String tokenName, String accountName) {
+    public void verifyTokenAllowanceDelete(String tokenName, String accountName) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
         var owner = accountClient.getClient().getOperatorAccountId().toString();
