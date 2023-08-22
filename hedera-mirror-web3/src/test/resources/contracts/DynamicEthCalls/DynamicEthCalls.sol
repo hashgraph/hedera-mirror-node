@@ -210,5 +210,4 @@ contract NestedEthCalls is HederaTokenService {
             if(IERC721(token).getApproved(serialNumber) == spender) revert("NFT allowance mismatch after transfer");
         }
     }
-
 }

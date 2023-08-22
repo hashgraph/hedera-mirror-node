@@ -373,10 +373,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     protected Path CONTRACT_BYTES_PATH;
 
-    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.bin")
+    @Value("classpath:contracts/DynamicEthCalls/DynamicEthCalls.bin")
     protected Path NESTED_ETH_CALLS_BYTES_PATH;
 
-    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.json")
+    @Value("classpath:contracts/DynamicEthCalls/DynamicEthCalls.json")
     protected Path NESTED_ETH_CALLS_ABI_PATH;
 
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")

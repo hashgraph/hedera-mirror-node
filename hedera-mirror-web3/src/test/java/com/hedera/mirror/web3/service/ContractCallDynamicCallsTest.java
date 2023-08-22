@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class ContractCallNestedCallsTest extends ContractCallTestSetup {
+class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedCallsContractFunctions.class)
