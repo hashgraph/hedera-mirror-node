@@ -38,8 +38,8 @@ import org.springframework.util.CollectionUtils;
 @Named
 @RequiredArgsConstructor
 public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<CustomFee>> {
-    private final CustomFeeRepository customFeeRepository;
 
+    private final CustomFeeRepository customFeeRepository;
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override

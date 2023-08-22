@@ -80,6 +80,12 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Integrat
         createPartitions();
     }
 
+    @AfterEach
+    void teardown() {
+        entityProperties.getPersist().setTopics(true);
+        entityProperties.getPersist().setTopicMessageLookups(false);
+    }
+
     private void createPartitions() {
         if (isV1()) {
             jdbcTemplate.execute(CREATE_DDL);

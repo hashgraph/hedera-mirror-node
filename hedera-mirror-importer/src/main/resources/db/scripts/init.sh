@@ -11,18 +11,11 @@ if [[ "${SCHEMA_V2}" == "true" ]]; then
   DB_SPECIFIC_EXTENSION_SQL="create extension if not exists btree_gist;
                              create extension citus;
                              grant all privileges on database :dbName to :ownerUsername;
-                             create extension if not exists pg_cron;
-                             create schema if not exists partman authorization :ownerUsername;
-                             create extension if not exists pg_partman schema partman;
-                             alter schema partman owner to :ownerUsername;
                              grant create on database :dbName to :ownerUsername;
-                             grant all on schema partman to :ownerUsername;
-                             grant usage on schema cron to :ownerUsername;
-                             grant all on all tables in schema partman to :ownerUsername;
-                             grant execute on all functions in schema partman to :ownerUsername;
-                             grant execute on all procedures in schema partman to :ownerUsername;
                              grant all on schema public to :ownerUsername;
-                             grant temporary on database :dbName to :ownerUsername;"
+                             grant temporary on database :dbName to :ownerUsername;
+                             alter type timestamptz owner to :ownerUsername;
+                             "
   DB_SPECIFIC_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 

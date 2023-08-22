@@ -31,7 +31,7 @@ dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.3.2")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.20.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
-    implementation("com.github.node-gradle:gradle-node-plugin:5.0.0")
+    implementation("com.github.node-gradle:gradle-node-plugin:7.0.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.2")

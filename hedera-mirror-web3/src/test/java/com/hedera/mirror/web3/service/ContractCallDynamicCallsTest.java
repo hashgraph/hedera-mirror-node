@@ -33,9 +33,9 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
     @EnumSource(NestedCallsContractFunctions.class)
     void nestedCallsTest(NestedCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunctions.name, NESTED_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+                contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(InvalidTransactionException.class)
@@ -101,7 +101,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     TREASURY_TOKEN_ADDRESS,
                     NOT_ASSOCIATED_SPENDER_ALIAS,
-                    NESTED_ETH_CALLS_CONTRACT_ADDRESS,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
                     BigInteger.ONE,
                     BigInteger.ZERO
                 },
