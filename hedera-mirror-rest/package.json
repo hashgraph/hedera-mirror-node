@@ -6,7 +6,7 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=16.13.0 < 19"
+    "node": ">=18.12.0 < 19"
   },
   "scripts": {
     "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --experimental-specifier-resolution=node server.js",
