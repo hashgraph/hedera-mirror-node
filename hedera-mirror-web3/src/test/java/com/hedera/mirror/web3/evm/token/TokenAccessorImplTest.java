@@ -220,6 +220,7 @@ class TokenAccessorImplTest {
         TokenAccount tokenAccount = new TokenAccount();
         tokenAccount.setKycStatus(TokenKycStatusEnum.GRANTED);
         tokenAccount.setAssociated(true);
+        when(mirrorEvmContractAliases.resolveForEvm(ACCOUNT)).thenReturn(ACCOUNT);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(null);
