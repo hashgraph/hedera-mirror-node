@@ -1,6 +1,6 @@
 hedera:
   mirror:
-    rest_java:
+    restJava:
       db:
         host: ${embedded.postgresql.host}
         port: ${embedded.postgresql.port}
@@ -9,10 +9,10 @@ hedera:
         password: ${embedded.postgresql.password}
 spring:
   datasource:
-    name: ${hedera.mirror.rest-java.db.name}
-    password: ${hedera.mirror.rest-java.db.password}
-    url: jdbc:postgresql://${hedera.mirror.rest-java.db.host}:${hedera.mirror.rest-java.db.port}/${hedera.mirror.rest-java.db.name}
-    username: ${hedera.mirror.rest-java.db.username}
+    name: ${hedera.mirror.restJava.db.name}
+    password: ${hedera.mirror.restJava.db.password}
+    url: jdbc:postgresql://${hedera.mirror.restJava.db.host}:${hedera.mirror.restJava.db.port}/${hedera.mirror.restJava.db.name}
+    username: ${hedera.mirror.restJava.db.username}
   flyway:
     baselineOnMigrate: true
     connectRetries: 10
@@ -20,8 +20,8 @@ spring:
       api-password: mirror_api_pass
       api-user: mirror_api
       autovacuumFreezeMaxAgeInsertOnly: 100000
-      db-name: ${hedera.mirror.rest-java.db.name}
-      db-user: ${hedera.mirror.rest-java.db.username}
+      db-name: ${hedera.mirror.restJava.db.name}
+      db-user: ${hedera.mirror.restJava.db.username}
       idPartitionSize: 1000000000000000
       maxEntityId: 5000000
       maxEntityIdRatio: 2.0

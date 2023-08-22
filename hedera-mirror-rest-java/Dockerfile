@@ -6,7 +6,7 @@ RUN java -Djarmode=layertools -jar *.jar extract
 FROM eclipse-temurin:17.0.8_7-jre-jammy
 ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80"
 EXPOSE 8084
-HEALTHCHECK --interval=10s --retries=3 --start-period=50s --timeout=2s CMD curl -f http://localhost:5553/actuator/health/liveness
+HEALTHCHECK --interval=10s --retries=3 --start-period=50s --timeout=2s CMD curl -f http://localhost:8084/actuator/health/liveness
 WORKDIR /app
 
 # Copy artifacts

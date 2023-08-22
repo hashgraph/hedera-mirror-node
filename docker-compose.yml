@@ -118,7 +118,7 @@ services:
     image: gcr.io/mirrornode/hedera-mirror-rest-java:0.88.0-SNAPSHOT
     pull_policy: always
     environment:
-      HEDERA_MIRROR_REST_JAVA_DB_HOST: db
+      HEDERA_MIRROR_RESTJAVA_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-rest-java/
     ports:
       - 8084:8084
