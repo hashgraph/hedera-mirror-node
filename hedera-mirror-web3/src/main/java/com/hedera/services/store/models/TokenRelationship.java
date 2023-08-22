@@ -96,7 +96,7 @@ public class TokenRelationship {
                 token.isFrozenByDefault() && token.hasFreezeKey(),
                 !token.hasKycKey(),
                 false,
-                false,
+                true,
                 false,
                 hasAssociation,
                 0);
