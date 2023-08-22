@@ -131,6 +131,25 @@ public class TokenFeature extends AbstractFeature {
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, 0);
     }
 
+    @Then("the mirror node REST API should confirm the approved allowance for {string} and {string} no longer exists")
+    @RetryAsserts
+    public void verifyMirrorAPIApprovedTokenAllowanceResponse(String tokenName, String accountName) {
+        verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
+
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName))
+                .getAccountId()
+                .toString();
+        var token = tokenClient
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
+                .tokenId()
+                .toString();
+
+        var mirrorTokenAllowanceResponse = mirrorClient.getAccountTokenAllowanceBySpender(owner, token, spender);
+        assertThat(mirrorTokenAllowanceResponse.getAllowances()).isEmpty();
+    }
+
     @Then("the mirror node REST API should confirm the debit of {long} from {string} allowance of {long} for {string}")
     @RetryAsserts
     public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
