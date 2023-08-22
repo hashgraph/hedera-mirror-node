@@ -51,13 +51,13 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with cryptoTransfer function for nft
     Then I call estimateGas with cryptoTransfer function for fungible tokens
     Then I call estimateGas with mintToken function for fungible token
-    Then I call estimateGas with mintToken function for NFT
+#    Then I call estimateGas with mintToken function for NFT
     Then I call estimateGas with burnToken function for fungible token
     Then I call estimateGas with burnToken function for NFT
     Then I call estimateGas with CreateFungibleToken function
     Then I call estimateGas with CreateNFT function
-#    Then I call estimateGas with CreateFungibleToken function with custom fees
-#    Then I call estimateGas with CreateNFT function with custom fees
+    Then I call estimateGas with CreateFungibleToken function with custom fees
+    Then I call estimateGas with CreateNFT function with custom fees
     Then I call estimateGas with WipeTokenAccount function
     Then I call estimateGas with WipeTokenAccount function with invalid amount
     Then I call estimateGas with WipeNFTAccount function
@@ -133,7 +133,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with isFrozen function for NFT
     Then I call estimateGas with getTokenType function for fungible token
     Then I call estimateGas with getTokenType function for NFT
-
 #    Then I call estimateGas with redirect name function
 #    Then I call estimateGas with redirect name function for NFT
 #    Then I call estimateGas with redirect symbol function

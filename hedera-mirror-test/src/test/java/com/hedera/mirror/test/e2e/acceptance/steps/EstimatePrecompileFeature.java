@@ -860,10 +860,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                         ContractMethods.CREATE_FUNGIBLE_TOKEN.getFunctionName())
                 .encodeCallWithArgs(asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
 
-        validateGasEstimation(
+        validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+                812000000);
     }
 
     @Then("I call estimateGas with CreateNFT function")
@@ -871,10 +871,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_NFT.getFunctionName())
                 .encodeCallWithArgs(asHeadlongAddress(admin.getAccountId().toSolidityAddress()));
 
-        validateGasEstimation(
+        validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+                812000000);
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
@@ -885,9 +885,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
                         asHeadlongAddress(tokenIds.get(0).toSolidityAddress()));
 
-        validateGasEstimationForTokenCreateWithCustomFees(
+        validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
-                ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas());
+                ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(),
+                1635000000);
     }
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
@@ -898,8 +899,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
                         asHeadlongAddress(tokenIds.get(1).toSolidityAddress()));
 
-        validateGasEstimationForTokenCreateWithCustomFees(
-                Strings.encode(encodedFunctionCall), ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas());
+        validateGasEstimationForCreateToken(
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
+                1635000000);
     }
 
     @Then("I call estimateGas with WipeTokenAccount function")
@@ -1998,12 +2001,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 precompileTestContractSolidityAddress);
     }
 
-    private void validateGasEstimationForTokenCreateWithCustomFees(String selector, int actualGasUsed) {
+    private void validateGasEstimationForCreateToken(String selector, int actualGasUsed, long value) {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(selector)
                 .to(estimatePrecompileContractSolidityAddress)
+                .from(contractClient.getClientAddress())
                 .estimate(true)
-                .gas(30_000_000)
+                .value(value)
                 .build();
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
@@ -2161,10 +2165,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         BALANCE_OF("balanceOf", 27270),
         BALANCE_OF_NFT("balanceOfIERC721", 27228),
         BURN_TOKEN("burnTokenExternal", 40247),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenPublic", 11590398),
-        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesPublic", 23134640),
-        CREATE_NFT("createNonFungibleTokenPublic", 11574020),
-        CREATE_NFT_WITH_CUSTOM_FEES("createNonFungibleTokenWithCustomFeesPublic", 23133124),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenPublic", 192752),
+        CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesPublic", 176628),
+        CREATE_NFT("createNonFungibleTokenPublic", 192472),
+        CREATE_NFT_WITH_CUSTOM_FEES("createNonFungibleTokenWithCustomFeesPublic", 195579),
         CRYPTO_TRANSFER("cryptoTransferExternal", 44438),
         CRYPTO_TRANSFER_HBARS("cryptoTransferExternal", 29698),
         CRYPTO_TRANSFER_NFT("cryptoTransferExternal", 57934),
