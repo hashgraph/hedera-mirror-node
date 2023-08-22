@@ -57,6 +57,9 @@ class CreateLogicTest {
     private TokenCreateTransactionBody op;
 
     @Mock
+    private AssociateLogic associateLogic;
+
+    @Mock
     private MirrorNodeEvmProperties evmProperties;
 
     @Mock
@@ -99,7 +102,7 @@ class CreateLogicTest {
 
     @BeforeEach
     void setup() {
-        createLogic = new CreateLogic(evmProperties);
+        createLogic = new CreateLogic(evmProperties, associateLogic);
         staticMock = Mockito.mockStatic(Id.class);
         staticToken = Mockito.mockStatic(Token.class);
     }

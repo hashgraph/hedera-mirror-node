@@ -173,6 +173,7 @@ public class StoreImpl implements Store {
 
     @Override
     public boolean hasApprovedForAll(Address ownerAddress, AccountID operatorId, TokenID tokenId) {
+        if (Address.ZERO.equals(ownerAddress)) return false;
         final Set<FcTokenAllowanceId> approvedForAll =
                 getAccount(ownerAddress, OnMissing.THROW).getApproveForAllNfts();
         return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));
