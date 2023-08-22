@@ -248,7 +248,7 @@ class StoreImplTest {
                 new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
-        // tokenRel is now presisted in store
+        // tokenRel is now persisted in store
         tokenRel = tokenRel.setNotYetPersisted(false);
         assertEquals(
                 tokenRel,
