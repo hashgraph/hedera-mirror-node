@@ -289,9 +289,9 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     private void insertEntity(EntityId entityId) {
         Entity entity = new Entity();
         entity.setId(entityId.getId());
-        entity.setNum(entityId.getEntityNum());
-        entity.setRealm(entityId.getRealmNum());
-        entity.setShard(entityId.getShardNum());
+        entity.setNum(entityId.getNum());
+        entity.setRealm(entityId.getRealm());
+        entity.setShard(entityId.getShard());
         entity.setType(entityId.getType());
         entity.setMemo("abc" + (char) 0);
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT).getId());

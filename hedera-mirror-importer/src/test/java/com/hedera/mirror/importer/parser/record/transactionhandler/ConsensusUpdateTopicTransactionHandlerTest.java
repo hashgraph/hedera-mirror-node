@@ -172,9 +172,9 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .returns(false, Entity::getDeleted)
                 .satisfies(e -> assertThat(e.getExpirationTimestamp()).isPositive())
                 .returns(topicId.getId(), Entity::getId)
-                .returns(topicId.getEntityNum(), Entity::getNum)
-                .returns(topicId.getRealmNum(), Entity::getRealm)
-                .returns(topicId.getShardNum(), Entity::getShard)
+                .returns(topicId.getNum(), Entity::getNum)
+                .returns(topicId.getRealm(), Entity::getRealm)
+                .returns(topicId.getShard(), Entity::getShard)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(TOPIC, Entity::getType)));
     }

@@ -122,7 +122,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private EntityNum entityNumFromId(EntityId entityId) {
-        return EntityNum.fromLong(entityId.getEntityNum());
+        return EntityNum.fromLong(entityId.getNum());
     }
 
     private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {

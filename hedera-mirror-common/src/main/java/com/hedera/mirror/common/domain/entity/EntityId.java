@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
@@ -46,7 +47,7 @@ import lombok.Value;
  */
 @Value
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class EntityId implements Serializable, Comparable<EntityId> {
+public final class EntityId implements Serializable, Comparable<EntityId> {
 
     public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityType.ACCOUNT);
 
@@ -61,28 +62,30 @@ public class EntityId implements Serializable, Comparable<EntityId> {
             Comparator.nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
+
+    @Serial
     private static final long serialVersionUID = 1427649605832330197L;
 
     // Ignored so not included in json serialization of PubSubMessage
     @JsonIgnore
     @EqualsAndHashCode.Include
-    private final Long id;
+    private final long id;
 
-    private final Long shardNum;
-    private final Long realmNum;
-    private final Long entityNum;
+    private final long shard;
+    private final long realm;
+    private final long num;
 
     @JsonSerialize(using = EntityTypeSerializer.class)
     private final EntityType type;
 
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
-    private final String cachedString = String.format("%d.%d.%d", shardNum, realmNum, entityNum);
+    private final String cachedString = String.format("%d.%d.%d", shard, realm, num);
 
-    private EntityId(long shardNum, long realmNum, long entityNum, EntityType type) {
-        id = encode(shardNum, realmNum, entityNum);
-        this.shardNum = shardNum;
-        this.realmNum = realmNum;
-        this.entityNum = entityNum;
+    private EntityId(long shard, long realm, long num, EntityType type) {
+        id = encode(shard, realm, num);
+        this.num = num;
+        this.realm = realm;
+        this.shard = shard;
         this.type = type;
     }
 
@@ -92,9 +95,9 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         }
 
         this.id = id;
-        this.shardNum = id >> (REALM_BITS + NUM_BITS);
-        this.realmNum = (id >> NUM_BITS) & REALM_MASK;
-        this.entityNum = id & NUM_MASK;
+        this.num = id & NUM_MASK;
+        this.realm = (id >> NUM_BITS) & REALM_MASK;
+        this.shard = id >> (REALM_BITS + NUM_BITS);
         this.type = type;
     }
 
@@ -110,19 +113,12 @@ public class EntityId implements Serializable, Comparable<EntityId> {
      * realm: 0 - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids
      * <= 4294967295 will also be human-readable.
      */
-    private static Long encode(long shardNum, long realmNum, long entityNum) {
-        if (shardNum > SHARD_MASK
-                || shardNum < 0
-                || realmNum > REALM_MASK
-                || realmNum < 0
-                || entityNum > NUM_MASK
-                || entityNum < 0) {
-            throw new InvalidEntityException("Invalid entity ID: " + shardNum + "." + realmNum + "." + entityNum);
+    private static long encode(long shard, long realm, long num) {
+        if (shard > SHARD_MASK || shard < 0 || realm > REALM_MASK || realm < 0 || num > NUM_MASK || num < 0) {
+            throw new InvalidEntityException("Invalid entity ID: " + shard + "." + realm + "." + num);
         }
 
-        return (entityNum & NUM_MASK)
-                | (realmNum & REALM_MASK) << NUM_BITS
-                | (shardNum & SHARD_MASK) << (REALM_BITS + NUM_BITS);
+        return (num & NUM_MASK) | (realm & REALM_MASK) << NUM_BITS | (shard & SHARD_MASK) << (REALM_BITS + NUM_BITS);
     }
 
     public static EntityId of(AccountID accountID) {
@@ -162,15 +158,15 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return of(parts.get(0), parts.get(1), parts.get(2), type);
     }
 
-    public static EntityId of(long entityShard, long entityRealm, long entityNum, EntityType type) {
-        if (entityNum == 0 && entityRealm == 0 && entityShard == 0) {
+    public static EntityId of(long shard, long realm, long num, EntityType type) {
+        if (num == 0 && realm == 0 && shard == 0) {
             return EMPTY;
         }
-        return new EntityId(entityShard, entityRealm, entityNum, type);
+        return new EntityId(shard, realm, num, type);
     }
 
-    public static EntityId of(long encodedEntityId, EntityType type) {
-        return new EntityId(encodedEntityId, type);
+    public static EntityId of(long id, EntityType type) {
+        return new EntityId(id, type);
     }
 
     public static boolean isEmpty(EntityId entityId) {
@@ -180,9 +176,9 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     public Entity toEntity() {
         Entity entity = new Entity();
         entity.setId(id);
-        entity.setShard(shardNum);
-        entity.setRealm(realmNum);
-        entity.setNum(entityNum);
+        entity.setNum(num);
+        entity.setRealm(realm);
+        entity.setShard(shard);
         entity.setTimestampRange(DEFAULT_RANGE);
         entity.setType(type);
         return entity;

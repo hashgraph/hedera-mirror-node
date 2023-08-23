@@ -327,12 +327,12 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     }
 
     private void entitySetup() {
-        currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
-        currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
+        currentKeyUnaffectedEntity = entityCurrentKey(contractId.getNum());
+        currentKeyAffectedEntity = entityCurrentKey(contractId2.getNum());
         noKeyEntity = entityWithNoKey();
         thresholdTwoKeyEntity = domainBuilder
                 .entity()
-                .customize(e -> e.key(getThresholdTwoKey(contractId.getEntityNum()))
+                .customize(e -> e.key(getThresholdTwoKey(contractId.getNum()))
                         .timestampRange(Range.atLeast(getTimestampWithinBoundary()))
                         .build())
                 .persist();
@@ -347,8 +347,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var pastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var pastKeyAffectedEntity = entityPastKey(contractId2.getNum());
 
         return setupCryptoTransfers(
                 contractId,
@@ -371,8 +371,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getNum());
         return setupTokenTransfers(
                 contractId,
                 contractId2,
@@ -394,8 +394,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getNum());
         return setupTransactionNfts(
                 contractId,
                 priorContractId,

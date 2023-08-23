@@ -90,7 +90,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                     .setTotal(t.getChunkTotal());
 
             TransactionID transactionID = parseTransactionID(
-                    t.getInitialTransactionId(), t.getTopicId().getEntityNum(), t.getSequenceNumber());
+                    t.getInitialTransactionId(), t.getTopicId().getNum(), t.getSequenceNumber());
             EntityId payerAccountEntity = t.getPayerAccountId();
             var validStartInstant = ProtoUtil.toTimestamp(t.getValidStartTimestamp());
 

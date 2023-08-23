@@ -193,7 +193,7 @@ public final class EntityIdUtils {
         if (entityId == null) {
             return null;
         }
-        return new Id(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum());
+        return new Id(entityId.getShard(), entityId.getRealm(), entityId.getNum());
     }
 
     public static String readableId(final Object o) {
