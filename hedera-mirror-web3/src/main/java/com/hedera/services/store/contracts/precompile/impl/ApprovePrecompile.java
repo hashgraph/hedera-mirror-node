@@ -180,7 +180,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;
-        Id nftOwnerId = null;
+        Id nftOwnerId = Id.DEFAULT;
         Id operatorId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
         Address spender = Address.ZERO;
         TokenID tokenId;
