@@ -292,7 +292,7 @@ public class DomainUtils {
             throw new InvalidEntityException("Empty contractId");
         }
 
-        return toEvmAddress(contractId.getShardNum().intValue(), contractId.getRealmNum(), contractId.getEntityNum());
+        return toEvmAddress(Long.valueOf(contractId.getShard()).intValue(), contractId.getRealm(), contractId.getNum());
     }
 
     private static byte[] toEvmAddress(int shard, long realm, long num) {

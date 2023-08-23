@@ -408,10 +408,8 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         var nodeId = nodeAddressProto.getNodeId();
         // ensure valid nodeId. In early versions of initial addressBook (entityNum < 20) all nodeIds are set to 0
-        if (nodeId == 0
-                && nodeAccountId.getEntityNum() < 20
-                && nodeAccountId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
-            nodeId = nodeAccountId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
+        if (nodeId == 0 && nodeAccountId.getNum() < 20 && nodeAccountId.getNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+            nodeId = nodeAccountId.getNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
         return Pair.of(nodeId, nodeAccountId);

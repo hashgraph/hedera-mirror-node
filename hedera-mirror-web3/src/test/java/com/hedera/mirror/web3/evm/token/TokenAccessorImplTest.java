@@ -79,7 +79,7 @@ class TokenAccessorImplTest {
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
     private static final Long ENTITY_ID = EntityId.of(
-                    ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum(), EntityType.ACCOUNT)
+                    ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum(), EntityType.ACCOUNT)
             .getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;

@@ -106,7 +106,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         AddressBookEntry addressBookEntry2 = addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .build();
 
@@ -125,7 +125,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .setLimit(1)
                 .build();
@@ -152,7 +152,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .persist();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .build();
 

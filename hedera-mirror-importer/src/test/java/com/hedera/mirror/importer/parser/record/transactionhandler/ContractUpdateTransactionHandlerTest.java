@@ -343,10 +343,10 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                                 .returns(false, Entity::getDeleted)
                                 .returns(null, Entity::getEvmAddress)
                                 .returns(contractId.getId(), Entity::getId)
-                                .returns(contractId.getEntityNum(), Entity::getNum)
+                                .returns(contractId.getNum(), Entity::getNum)
                                 .returns(null, Entity::getObtainerId)
-                                .returns(contractId.getRealmNum(), Entity::getRealm)
-                                .returns(contractId.getShardNum(), Entity::getShard)
+                                .returns(contractId.getRealm(), Entity::getRealm)
+                                .returns(contractId.getShard(), Entity::getShard)
                                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                                 .returns(CONTRACT, Entity::getType),
                         () -> extraAssert.accept(t))));

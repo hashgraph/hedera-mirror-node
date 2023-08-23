@@ -140,8 +140,8 @@ public class FileCopier {
                             EntityType.ACCOUNT);
 
                     var destinationNodeIdPath = networkDir.resolve(Path.of(
-                            String.valueOf(nodeEntityId.getShardNum()),
-                            String.valueOf(nodeEntityId.getEntityNum() - 3L), // Node ID
+                            String.valueOf(nodeEntityId.getShard()),
+                            String.valueOf(nodeEntityId.getNum() - 3L), // Node ID
                             streamType.getNodeIdBasedSuffix()));
 
                     FileUtils.copyDirectory(sourceNodeDir, destinationNodeIdPath.toFile());

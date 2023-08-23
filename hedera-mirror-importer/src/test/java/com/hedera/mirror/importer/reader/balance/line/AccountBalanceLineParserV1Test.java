@@ -75,9 +75,9 @@ class AccountBalanceLineParserV1Test {
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
             assertThat(id).isNotNull();
-            assertThat(id.getAccountId().getShardNum()).isEqualTo(mirrorProperties.getShard());
-            assertThat(id.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
-            assertThat(id.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
+            assertThat(id.getAccountId().getShard()).isEqualTo(mirrorProperties.getShard());
+            assertThat(id.getAccountId().getRealm()).isEqualTo(expectedRealm);
+            assertThat(id.getAccountId().getNum()).isEqualTo(expectedAccount);
             assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
         } else {
             assertThrows(InvalidDatasetException.class, () -> {

@@ -66,7 +66,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder()
             .setShardNum(0)
             .setRealmNum(0)
-            .setFileNum(AddressBookServiceImpl.FILE_102.getEntityNum())
+            .setFileNum(AddressBookServiceImpl.FILE_102.getNum())
             .build();
     private static final FileID FILE_ID =
             FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();

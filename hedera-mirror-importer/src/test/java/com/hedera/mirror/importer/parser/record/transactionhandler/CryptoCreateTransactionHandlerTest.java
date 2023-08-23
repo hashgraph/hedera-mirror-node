@@ -262,10 +262,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(accountId.getId(), Entity::getId)
                 .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
-                .returns(accountId.getEntityNum(), Entity::getNum)
+                .returns(accountId.getNum(), Entity::getNum)
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
-                .returns(accountId.getRealmNum(), Entity::getRealm)
-                .returns(accountId.getShardNum(), Entity::getShard)
+                .returns(accountId.getRealm(), Entity::getRealm)
+                .returns(accountId.getShard(), Entity::getShard)
                 .returns(ACCOUNT, Entity::getType)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(null, Entity::getObtainerId);

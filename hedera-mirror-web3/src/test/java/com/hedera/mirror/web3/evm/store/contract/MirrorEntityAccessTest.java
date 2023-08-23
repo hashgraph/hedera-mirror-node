@@ -50,7 +50,7 @@ class MirrorEntityAccessTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
     private static final Long ENTITY_ID = EntityId.of(
-                    ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum(), EntityType.ACCOUNT)
+                    ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum(), EntityType.ACCOUNT)
             .getId();
     private static final Address NON_MIRROR_ADDRESS =
             Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");

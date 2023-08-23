@@ -140,9 +140,9 @@ class AccountDatabaseAccessorTest {
                 .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
                 .returns(
                         new Id(
-                                entity.getProxyAccountId().getShardNum(),
-                                entity.getProxyAccountId().getRealmNum(),
-                                entity.getProxyAccountId().getEntityNum()),
+                                entity.getProxyAccountId().getShard(),
+                                entity.getProxyAccountId().getRealm(),
+                                entity.getProxyAccountId().getNum()),
                         Account::getProxy)
                 .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
     }

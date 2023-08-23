@@ -401,17 +401,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static AccountID convertAccountId(EntityId accountId) {
         return AccountID.newBuilder()
-                .setShardNum(accountId.getShardNum())
-                .setRealmNum(accountId.getRealmNum())
-                .setAccountNum(accountId.getEntityNum())
+                .setShardNum(accountId.getShard())
+                .setRealmNum(accountId.getRealm())
+                .setAccountNum(accountId.getNum())
                 .build();
     }
 
     private static TokenID convertTokenId(EntityId tokenId) {
         return TokenID.newBuilder()
-                .setShardNum(tokenId.getShardNum())
-                .setRealmNum(tokenId.getRealmNum())
-                .setTokenNum(tokenId.getEntityNum())
+                .setShardNum(tokenId.getShard())
+                .setRealmNum(tokenId.getRealm())
+                .setTokenNum(tokenId.getNum())
                 .build();
     }
 
@@ -1175,13 +1175,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var newTreasury = domainBuilder.entityId(ACCOUNT);
         var tokenId = domainBuilder.entityId(TOKEN);
         var protoAccount =
-                AccountID.newBuilder().setAccountNum(account.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(account.getNum()).build();
         var protoOldTreasury =
-                AccountID.newBuilder().setAccountNum(oldTreasury.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(oldTreasury.getNum()).build();
         var protoNewTreasury =
-                AccountID.newBuilder().setAccountNum(newTreasury.getEntityNum()).build();
-        var protoTokenId =
-                TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(newTreasury.getNum()).build();
+        var protoTokenId = TokenID.newBuilder().setTokenNum(tokenId.getNum()).build();
 
         var recordItems = new ArrayList<RecordItem>();
         var tokenCreateRecordItem = recordItemBuilder
