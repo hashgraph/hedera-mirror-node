@@ -101,4 +101,117 @@ function ContractCallTestScenarioBuilder() {
   return this;
 }
 
-export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder};
+function ContractCallScenarioBuilder() {
+  this._name = null;
+  this._selector = null;
+  this._args = null;
+  this._to = null;
+  this._scenario = null;
+  this._tags = {};
+
+  this._block = null;
+  this._data = null;
+  this._gas = null;
+  this._from = null;
+  this._value = null;
+
+  this._estimate = null;
+
+  this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
+
+  this.build = function () {
+    const that = this;
+    return {
+      options: utils.getOptionsWithScenario(that._name, that._scenario, that._tags),
+      run: function (testParameters) {
+        const payload = {
+          to: that._to,
+          estimate: that._estimate || true, // Set default to true
+        };
+
+        if (that._selector && that._args) {
+          payload.data = that._selector + that._args;
+        } else {
+          Object.assign(payload, {
+            block: that._block,
+            data: that._data,
+            gas: that._gas,
+            from: that._from,
+            value: that._value,
+          });
+        }
+
+        const response = jsonPost(that._url, JSON.stringify(payload));
+        check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
+      },
+    };
+  };
+
+  // Common methods
+  this.name = function (name) {
+    this._name = name;
+    return this;
+  };
+
+  this.to = function (to) {
+    this._to = to;
+    return this;
+  };
+
+  this.scenario = function (scenario) {
+    this._scenario = scenario;
+    return this;
+  };
+
+  this.tags = function (tags) {
+    this._tags = tags;
+    return this;
+  };
+
+  // Methods specific to ContractCallTestScenarioBuilder
+  this.selector = function (selector) {
+    this._selector = selector;
+    return this;
+  };
+
+  this.args = function (args) {
+    this._args = args.join('');
+    return this;
+  };
+
+  // Methods specific to ContractCallEstimateTestScenarioBuilder
+  this.block = function (block) {
+    this._block = block;
+    return this;
+  };
+
+  this.data = function (data) {
+    this._data = data;
+    return this;
+  };
+
+  this.gas = function (gas) {
+    this._gas = gas;
+    return this;
+  };
+
+  this.from = function (from) {
+    this._from = from;
+    return this;
+  };
+
+  this.value = function (value) {
+    this._value = value;
+    return this;
+  };
+
+  this.estimate = function (estimate) {
+    this._estimate = estimate;
+    return this;
+  };
+
+  return this;
+}
+
+
+export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder, ContractCallScenarioBuilder};

@@ -25,6 +25,52 @@ the tests of an API as a test suite. You can also run tests one at a time.
 To run a test suite, such as rest, use the following command.
 
 ```shell
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_LIMIT=10 \
+HTS_CONTRACT_ADDRESS=00000000000000000000000000000000000004bd \
+TOKEN_ADDRESS=4b5c668700000000000000000000000000000000000000000000000000000000000004cf \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenCustomFees.js
+```
+
+```shell
+DEFAULT_DURATION=100s \
+DEFAULT_VUS=6 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenCustomFeesEstimate.js
+```
+
+```shell
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=6 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallNftCustomFeesEstimate.js
+```
+
+```shell
+DEFAULT_DURATION=100s \
+DEFAULT_VUS=6 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallNftEstimate.js
+```
+
+```shell
+DEFAULT_DURATION=100s \
+DEFAULT_VUS=6 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenDissociateEstimate.js
+```
+
+```shell
+DEFAULT_DURATION=100s \
+DEFAULT_VUS=6 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenEstimate.js
+```
+
+
+```shell
 DEFAULT_DURATION=1s \
 DEFAULT_VUS=1 \
 BASE_URL=https://testnet.mirrornode.hedera.com \
