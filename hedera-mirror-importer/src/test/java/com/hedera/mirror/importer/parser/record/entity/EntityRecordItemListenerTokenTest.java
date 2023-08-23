@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -331,17 +330,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(12505L);
+        assessedCustomFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1.getId());
+        assessedCustomFee1.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee1.setEffectivePayerAccountIds(Collections.emptyList());
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee1.setPayerAccountId(PAYER_ACCOUNT_ID);
 
         // paid in FEE_DOMAIN_TOKEN_ID
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(8750L);
+        assessedCustomFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2.getId());
+        assessedCustomFee2.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee2.setEffectivePayerAccountIds(Collections.emptyList());
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee2.setPayerAccountId(PAYER_ACCOUNT_ID);
+        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
         List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
 
         // build the corresponding protobuf assessed custom fee list
@@ -360,17 +361,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR, one effective payer
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(12300L);
+        assessedCustomFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1.getId());
+        assessedCustomFee3.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee3.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId()));
-        assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee3.setPayerAccountId(PAYER_ACCOUNT_ID);
 
         // paid in FEE_DOMAIN_TOKEN_ID, two effective payers
         AssessedCustomFee assessedCustomFee4 = new AssessedCustomFee();
         assessedCustomFee4.setAmount(8790L);
-        assessedCustomFee4.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
+        assessedCustomFee4.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2.getId());
+        assessedCustomFee4.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee4.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId(), FEE_PAYER_2.getId()));
-        assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee4.setPayerAccountId(PAYER_ACCOUNT_ID);
+        assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4);
 
         // build the corresponding protobuf assessed custom fee list, with effective payer account ids
@@ -3169,7 +3172,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 EntityId.of(TOKEN_ID),
                 EntityId.of(tokenId2));
         assessedCustomFees.forEach(assessedCustomFee -> {
-            entityIds.add(assessedCustomFee.getId().getCollectorAccountId());
+            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId(), ACCOUNT));
             entityIds.add(assessedCustomFee.getTokenId());
             assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
         });
@@ -3569,10 +3572,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {
-        var actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
-        assertThat(actual)
-                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
-                .containsExactlyInAnyOrderElementsOf(expected);
+        var actual = jdbcTemplate.query("select * from assessed_custom_fee", rowMapper(AssessedCustomFee.class));
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {
