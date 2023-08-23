@@ -55,7 +55,7 @@ hedera:
            httpTimeout: 25s
            submitRetry:
              backOff: 200ms
-             max: 5
+             max: 100
 `
 	keyDelimiter = "::"
 )

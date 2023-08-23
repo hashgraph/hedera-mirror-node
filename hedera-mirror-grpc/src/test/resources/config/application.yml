@@ -44,9 +44,6 @@ spring:
       api-password: mirror_api_pass
       api-user: mirror_api
       autovacuumFreezeMaxAgeInsertOnly: 100000
-      chunkIdInterval: 10000
-      chunkTimeInterval: 604800000000000
-      compressionAge: 9223372036854775807 # use long max to avoid compression during test
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       idPartitionSize: 1000000000000000
