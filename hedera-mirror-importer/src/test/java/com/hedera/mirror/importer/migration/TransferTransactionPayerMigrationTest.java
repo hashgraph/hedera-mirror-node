@@ -199,15 +199,17 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(receivedAmount);
+        assessedCustomFee1.setCollectorAccountId(receiverId.getId());
+        assessedCustomFee1.setConsensusTimestamp(transfer1.getConsensusTimestamp());
         assessedCustomFee1.setEffectivePayerAccountIds(List.of(senderId.getId()));
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(receiverId, transfer1.getConsensusTimestamp()));
         assessedCustomFee1.setPayerAccountId(tokenId);
         assessedCustomFee1.setTokenId(tokenId);
 
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(receivedAmount);
+        assessedCustomFee2.setCollectorAccountId(receiverId.getId());
+        assessedCustomFee2.setConsensusTimestamp(transfer5.getConsensusTimestamp());
         assessedCustomFee2.setEffectivePayerAccountIds(List.of(senderId.getId()));
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(receiverId, transfer5.getConsensusTimestamp()));
         assessedCustomFee2.setPayerAccountId(tokenId);
         assessedCustomFee2.setTokenId(tokenId);
 
@@ -444,14 +446,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
     private void persistAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees) throws IOException {
         for (AssessedCustomFee assessedCustomFee : assessedCustomFees) {
-            var id = assessedCustomFee.getId();
             jdbcOperations.update(
                     "insert into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id,"
                             + "effective_payer_account_ids)"
                             + " values (?,?,?,?,?::bigint[])",
                     assessedCustomFee.getAmount(),
-                    id.getCollectorAccountId().getId(),
-                    id.getConsensusTimestamp(),
+                    assessedCustomFee.getCollectorAccountId(),
+                    assessedCustomFee.getConsensusTimestamp(),
                     assessedCustomFee.getTokenId().getId(),
                     longListSerializer(assessedCustomFee.getEffectivePayerAccountIds()));
         }

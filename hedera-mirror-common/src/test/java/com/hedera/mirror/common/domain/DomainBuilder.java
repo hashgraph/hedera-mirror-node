@@ -230,13 +230,11 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<AssessedCustomFee, AssessedCustomFee.AssessedCustomFeeBuilder> assessedCustomFee() {
-        var id = new AssessedCustomFee.Id();
-        id.setCollectorAccountId(entityId(ACCOUNT));
-        id.setConsensusTimestamp(timestamp());
         var builder = AssessedCustomFee.builder()
                 .amount(100L)
+                .collectorAccountId(entityId(ACCOUNT).getId())
+                .consensusTimestamp(timestamp())
                 .effectivePayerAccountIds(List.of(id(), id()))
-                .id(id)
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenId(entityId(TOKEN));
         return new DomainWrapperImpl<>(builder, builder::build);
