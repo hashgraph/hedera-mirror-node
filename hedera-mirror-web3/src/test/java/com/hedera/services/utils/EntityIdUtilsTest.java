@@ -180,7 +180,7 @@ class EntityIdUtilsTest {
 
     @Test
     void idFromEntityId() {
-        assertThat(EntityIdUtils.idFromEntityId(new EntityId(1L, 2L, 3L, EntityType.ACCOUNT)))
+        assertThat(EntityIdUtils.idFromEntityId(EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT)))
                 .returns(1L, Id::shard)
                 .returns(2L, Id::realm)
                 .returns(3L, Id::num);

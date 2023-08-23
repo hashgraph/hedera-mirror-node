@@ -232,7 +232,7 @@ class TokenAccessorImplTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     void infoForTokenCustomFees() {
         final var customFee = new CustomFee();
-        final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+        final EntityId collectorId = EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT);
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));

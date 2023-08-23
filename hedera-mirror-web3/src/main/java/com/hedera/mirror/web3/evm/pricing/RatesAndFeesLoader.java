@@ -37,8 +37,8 @@ import org.springframework.cache.annotation.Cacheable;
 @CustomLog
 public class RatesAndFeesLoader {
     private final FileDataRepository fileDataRepository;
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
+    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
 
     /**
      * Loads the exchange rates for a given time. Currently, works only with current timestamp.
