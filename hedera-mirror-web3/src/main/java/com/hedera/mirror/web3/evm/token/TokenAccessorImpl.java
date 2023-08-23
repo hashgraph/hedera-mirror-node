@@ -99,9 +99,8 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isKyc(final Address address, final Address token) {
-        final var resolvedAddress = aliases.resolveForEvm(address);
         final var tokenRelationship =
-                store.getTokenRelationship(new TokenRelationshipKey(token, resolvedAddress), OnMissing.DONT_THROW);
+                store.getTokenRelationship(new TokenRelationshipKey(token, address), OnMissing.DONT_THROW);
         return !tokenRelationship.isEmptyTokenRelationship() && tokenRelationship.isKycGranted();
     }
 
@@ -112,8 +111,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address address) {
-        final var resolvedAddress = aliases.resolveForEvm(address);
-        return store.getToken(resolvedAddress, OnMissing.DONT_THROW).getType();
+        return store.getToken(address, OnMissing.DONT_THROW).getType();
     }
 
     @Override
@@ -155,8 +153,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public long balanceOf(Address address, Address token) {
-        final var resolvedAddress = aliases.resolveForEvm(address);
-        final var tokenRelKey = new TokenRelationshipKey(token, resolvedAddress);
+        final var tokenRelKey = new TokenRelationshipKey(token, address);
         return store.getTokenRelationship(tokenRelKey, OnMissing.DONT_THROW).getBalance();
     }
 
@@ -164,20 +161,18 @@ public class TokenAccessorImpl implements TokenAccessor {
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
         final var tokenNum = EntityNum.fromEvmAddress(token);
 
-        final var resolvedOwner = aliases.resolveForEvm(owner);
         final var resolvedSpender = aliases.resolveForEvm(spender);
         final var spenderNum = EntityNum.fromEvmAddress(resolvedSpender);
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, spenderNum);
 
-        final var account = store.getAccount(resolvedOwner, OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
         return account.getFungibleTokenAllowances().getOrDefault(fcTokenAllowanceId, 0L);
     }
 
     @Override
     public Address staticApprovedSpenderOf(final Address address, long serialNo) {
-        final var resolvedNftAddress = aliases.resolveForEvm(address);
-        final var entityId = entityIdFromEvmAddress(resolvedNftAddress);
+        final var entityId = entityIdFromEvmAddress(address);
         final var nft = store.getUniqueToken(nftIdFromEntityId(entityId, serialNo), OnMissing.DONT_THROW);
 
         if (nft.isEmptyUniqueToken()) {
@@ -193,12 +188,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
         final var tokenNum = EntityNum.fromEvmAddress(token);
-        final var resolvedOwner = aliases.resolveForEvm(owner);
         final var operatorNum = EntityNum.fromEvmAddress(aliases.resolveForEvm(operator));
 
         final var fcTokenAllowanceId = new FcTokenAllowanceId(tokenNum, operatorNum);
 
-        final var account = store.getAccount(resolvedOwner, OnMissing.DONT_THROW);
+        final var account = store.getAccount(owner, OnMissing.DONT_THROW);
         if (account.isEmptyAccount()) return false;
         return account.getApproveForAllNfts().contains(fcTokenAllowanceId);
     }
