@@ -183,6 +183,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // given
         setup();
         accountBalanceFileRepository.deleteAll();
+        tokenBalanceRepository.deleteAll();
 
         // when
         tokenAccountBalanceMigration.doMigrate();

@@ -27,4 +27,9 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     @Override
     @Query(nativeQuery = true, value = "delete from token_balance where consensus_timestamp <= ?1")
     int prune(long consensusTimestamp);
+
+    @Override
+    @Query(nativeQuery = true, value = "delete from token_balance")
+    @Modifying
+    void deleteAll();
 }

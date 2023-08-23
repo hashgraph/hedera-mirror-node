@@ -31,19 +31,19 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
              with timestamp_range as (
-                select consensus_timestamp as snapshot_timestamp,
-                    consensus_timestamp + time_offset as from_timestamp,
+                select
+                    consensus_timestamp as from_timestamp,
                     consensus_end as to_timestamp
-                from account_balance_file
-                join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-                  on consensus_timestamp + time_offset <= consensus_end
+                from token_balance
+                         join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
+                              on consensus_timestamp <= consensus_end
                 order by consensus_timestamp desc
                 limit 1
             ),
             token_balance_latest as (
                 select *
                 from token_balance
-                join timestamp_range on snapshot_timestamp = consensus_timestamp
+                join timestamp_range on from_timestamp = consensus_timestamp
             ),
             token_transfer as (
                 select account_id, token_id, sum(amount) as amount
