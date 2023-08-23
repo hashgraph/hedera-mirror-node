@@ -69,4 +69,5 @@ spec:
             test:
               acceptance:
                 network: OTHER
+      cucumberTags: "@acceptance and not @web3"
 
