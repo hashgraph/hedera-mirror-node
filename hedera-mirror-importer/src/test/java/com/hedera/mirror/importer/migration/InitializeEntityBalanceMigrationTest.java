@@ -101,25 +101,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateWhenAccountBalanceFileHasOffset() {
-        // given
-        setup();
-        // The account balance file has a +5ns offset, so the crypto transfer to account at +2ns shouldn't be included
-        // in the account's balance change
-        // Note the delete then insert is a workaround for citus
-        accountBalanceFileRepository.deleteById(accountBalanceFile1.getConsensusTimestamp());
-        accountBalanceFile1.setTimeOffset(5);
-        accountBalanceFileRepository.save(accountBalanceFile1);
-        persistCryptoTransfer(300, account.getId(), null, accountBalanceFile1.getConsensusTimestamp() + 2L);
-
-        // when
-        migration.doMigrate();
-
-        // then
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
-    }
-
-    @Test
     void migrateWhenNoAccountBalance() {
         // given
         setup();

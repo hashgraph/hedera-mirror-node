@@ -37,4 +37,9 @@ public interface AccountBalanceRepository
     @Override
     @Query(nativeQuery = true, value = "delete from account_balance where consensus_timestamp <= ?1")
     int prune(long consensusTimestamp);
+
+    @Override
+    @Query(nativeQuery = true, value = "delete from account_balance")
+    @Modifying
+    void deleteAll();
 }

@@ -31,38 +31,37 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =
             """
             with timestamp_range as (
-              select
-                consensus_timestamp as snapshot_timestamp,
-                consensus_timestamp + time_offset as from_timestamp,
-                consensus_end as to_timestamp
-              from account_balance_file
-              join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-                on consensus_timestamp + time_offset <= consensus_end
-              order by consensus_timestamp desc
-              limit 1
+                select
+                    consensus_timestamp as from_timestamp,
+                    consensus_end as to_timestamp
+                from account_balance
+                         join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
+                              on consensus_timestamp <= consensus_end
+                order by consensus_timestamp desc
+                limit 1
             ), snapshot as (
-              select account_id, balance
-              from account_balance
-              join timestamp_range on snapshot_timestamp = consensus_timestamp
+                select account_id, balance
+                from account_balance
+                         join timestamp_range on from_timestamp = consensus_timestamp
             ), change as (
-              select entity_id, sum(amount) as amount
-              from crypto_transfer
-              join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
-              where errata is null or errata <> 'DELETE'
-              group by entity_id
+                select entity_id, sum(amount) as amount
+                from crypto_transfer
+                         join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
+                where errata is null or errata <> 'DELETE'
+                group by entity_id
             ), state as (
-              select
-                coalesce(account_id, entity_id) as account_id,
-                coalesce(balance, 0) + coalesce(amount, 0) as balance,
-                case when balance is not null then false end as deleted
-              from snapshot
-              full outer join change on account_id = entity_id
+                select
+                    coalesce(account_id, entity_id) as account_id,
+                    coalesce(balance, 0) + coalesce(amount, 0) as balance,
+                    case when balance is not null then false end as deleted
+                from snapshot
+                         full outer join change on account_id = entity_id
             )
             insert into entity (balance, deleted, id, num, realm, shard, timestamp_range)
             select s.balance, s.deleted, s.account_id, (s.account_id & 4294967295), ((s.account_id >> 32) & 65535), (s.account_id  >> 48), '[0,)'
             from state s
             on conflict (id) do update
-            set balance = excluded.balance;
+                set balance = excluded.balance;
             """;
 
     private final JdbcOperations jdbcOperations;
