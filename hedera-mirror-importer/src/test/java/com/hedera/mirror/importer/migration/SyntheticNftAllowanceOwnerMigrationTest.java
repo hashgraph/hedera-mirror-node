@@ -256,7 +256,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         newNftAllowance = domainBuilder.nftAllowance().persist();
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(new EntityId(0L, 0L, newNftAllowance.getOwner(), CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(0L, 0L, newNftAllowance.getOwner(), CONTRACT))
                         .consensusTimestamp(newNftAllowance.getTimestampLower()))
                 .persist();
 

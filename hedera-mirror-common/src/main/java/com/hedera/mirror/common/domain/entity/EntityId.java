@@ -78,7 +78,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final String cachedString = String.format("%d.%d.%d", shardNum, realmNum, entityNum);
 
-    public EntityId(long shardNum, long realmNum, long entityNum, EntityType type) {
+    private EntityId(long shardNum, long realmNum, long entityNum, EntityType type) {
         id = encode(shardNum, realmNum, entityNum);
         this.shardNum = shardNum;
         this.realmNum = realmNum;

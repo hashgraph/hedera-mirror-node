@@ -101,7 +101,7 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getEvmAddress()).thenReturn(null);
         when(mockEntity.getAlias()).thenReturn(null);
 
-        final var entityId = new EntityId(1L, 2L, 3L, EntityType.CONTRACT);
+        final var entityId = EntityId.of(1L, 2L, 3L, EntityType.CONTRACT);
         assertThat(entityDatabaseAccessor.evmAddressFromId(entityId)).isEqualTo(toAddress(entityId));
     }
 }
