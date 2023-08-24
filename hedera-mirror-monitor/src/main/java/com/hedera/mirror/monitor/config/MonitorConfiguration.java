@@ -27,8 +27,8 @@ import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,7 +37,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 
-@Log4j2
+@CustomLog
 @Configuration
 @RequiredArgsConstructor
 class MonitorConfiguration {

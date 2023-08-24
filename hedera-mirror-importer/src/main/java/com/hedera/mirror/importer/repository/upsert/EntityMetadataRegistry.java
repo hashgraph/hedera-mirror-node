@@ -42,15 +42,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.metamodel.model.domain.SingularPersistentAttribute;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.jdbc.core.JdbcOperations;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class EntityMetadataRegistry {

@@ -54,7 +54,7 @@ class MirrorEvmContractAliasesTest {
     private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
     private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
 
-    private static final EntityId entityId = new EntityId(0L, 0L, 3L, EntityType.TOKEN);
+    private static final EntityId entityId = EntityId.of(0L, 0L, 3L, EntityType.TOKEN);
     private static final Id id = new Id(0L, 0L, 3L);
 
     @Mock

@@ -59,7 +59,7 @@ public abstract class AbstractSyntheticContractLog implements SyntheticContractL
             .toArray();
 
     static byte[] entityIdToBytes(EntityId entityId) {
-        return Bytes.ofUnsignedLong(entityId.getEntityNum()).toArrayUnsafe();
+        return Bytes.ofUnsignedLong(entityId.getNum()).toArrayUnsafe();
     }
 
     static byte[] longToBytes(long value) {

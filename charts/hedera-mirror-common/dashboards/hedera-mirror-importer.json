@@ -21,7 +21,7 @@
       }
     ]
   },
-  "editable": true,
+  "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 99,
@@ -2185,7 +2185,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "avg(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (repository, method) > 0",
+          "expr": "sum(rate(spring_data_repository_invocations_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (repository, method) / sum(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (repository, method) > 0",
           "hide": false,
           "interval": "1m",
           "legendFormat": "{{repository}}::{{ method }}",

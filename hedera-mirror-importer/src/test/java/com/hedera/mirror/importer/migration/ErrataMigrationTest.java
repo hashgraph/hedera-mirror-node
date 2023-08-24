@@ -194,7 +194,8 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void onEndWithoutOffset() {
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+        AccountBalanceFile accountBalanceFile =
+                domainBuilder.accountBalanceFile().get();
         accountBalanceFile.setConsensusTimestamp(1L);
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isZero();
@@ -202,14 +203,15 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void onEndWithOffset() {
-        var accountBalanceFile = new AccountBalanceFile();
+        AccountBalanceFile accountBalanceFile =
+                domainBuilder.accountBalanceFile().get();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
         errataMigration.onStart(); // Call to increase test coverage of no-op methods
         errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(-1);
 
-        accountBalanceFile = new AccountBalanceFile();
+        accountBalanceFile = domainBuilder.accountBalanceFile().get();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET);
         errataMigration.onStart(); // Call to increase test coverage of no-op methods
         errataMigration.onError();

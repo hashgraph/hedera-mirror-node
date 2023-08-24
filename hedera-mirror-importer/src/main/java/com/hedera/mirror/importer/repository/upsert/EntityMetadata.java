@@ -51,4 +51,10 @@ class EntityMetadata {
     public String columns(Predicate<ColumnMetadata> filter, String pattern, String separator) {
         return columns.stream().filter(filter).map(c -> c.format(pattern)).collect(Collectors.joining(separator));
     }
+
+    public String columns(String defaultPattern, Predicate<ColumnMetadata> predicate, String predicatePattern) {
+        return columns.stream()
+                .map(c -> predicate.test(c) ? c.format(predicatePattern) : c.format(defaultPattern))
+                .collect(Collectors.joining(","));
+    }
 }

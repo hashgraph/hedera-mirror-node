@@ -48,8 +48,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import lombok.NonNull;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Durations;
 import org.springframework.http.HttpStatus;
@@ -60,7 +60,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
-@Log4j2
+@CustomLog
 @Named
 public class MirrorNodeClient {
 

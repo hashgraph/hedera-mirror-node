@@ -318,8 +318,6 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
-    //Redirect Precompiles
-
     function associateWithRedirect(address token) external returns (bytes memory result)
     {
         (int response, bytes memory result) = this.redirectForToken(token, abi.encodeWithSelector(IHRC.associate.selector));
@@ -354,6 +352,16 @@ contract ModificationPrecompileTestContract is HederaTokenService {
 
         int associateRecipientResponseCode = HederaTokenService.associateToken(receiver, token);
         if (associateRecipientResponseCode != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int grantTokenKycResponseCodeContract = grantTokenKyc(token, create2Contract);
+        if (grantTokenKycResponseCodeContract != HederaResponseCodes.SUCCESS) {
+            revert();
+        }
+
+        int grantTokenKycResponseCodeReceiver = grantTokenKyc(token, receiver);
+        if (grantTokenKycResponseCodeReceiver != HederaResponseCodes.SUCCESS) {
             revert();
         }
 

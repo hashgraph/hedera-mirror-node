@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 
-@Log4j2
+@CustomLog
 @Named
 public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggregator {
 

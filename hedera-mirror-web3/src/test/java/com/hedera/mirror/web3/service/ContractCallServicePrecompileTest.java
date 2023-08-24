@@ -534,7 +534,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         CREATE_CONTRACT_VIA_CREATE2_AND_TRANSFER_FROM_IT(
                 "createContractViaCreate2AndTransferFromIt",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});
-
         private final String name;
         private final Object[] functionParameters;
     }
