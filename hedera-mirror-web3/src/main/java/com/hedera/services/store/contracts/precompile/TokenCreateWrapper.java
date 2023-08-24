@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;
@@ -151,6 +153,14 @@ public class TokenCreateWrapper {
 
     public void setRoyaltyFees(final List<RoyaltyFeeWrapper> royaltyFees) {
         this.royaltyFees = royaltyFees;
+    }
+
+    public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+        for (final var tokenKey : tokenKeys) {
+            if (tokenKey.key().isShouldInheritAccountKeySet()) {
+                tokenKey.key().setInheritedKey(JKey.mapJKey(senderKey));
+            }
+        }
     }
 
     public Optional<TokenKeyWrapper> getAdminKey() {

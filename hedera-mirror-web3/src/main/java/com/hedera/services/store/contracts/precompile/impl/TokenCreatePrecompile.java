@@ -43,6 +43,7 @@ import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -52,6 +53,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -61,8 +63,8 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFe
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -81,6 +83,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -230,7 +233,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        final var functionId = ((FunctionParam) bodyParams).functionId();
+        final var functionId = ((CreateParams) bodyParams).functionId();
         final var tokenCreateOp =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
@@ -259,6 +262,12 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 };
 
         verifySolidityInput(Objects.requireNonNull(tokenCreateOp));
+        try {
+            tokenCreateOp.setAllInheritedKeysTo(((CreateParams) bodyParams).senderAccountKey());
+        } catch (DecoderException e) {
+            throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
+        }
+
         return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
     }
 

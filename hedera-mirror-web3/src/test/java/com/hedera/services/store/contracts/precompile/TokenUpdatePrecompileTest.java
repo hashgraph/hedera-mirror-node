@@ -30,6 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -40,6 +42,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -122,6 +125,12 @@ class TokenUpdatePrecompileTest {
     @Mock
     private ContextOptionValidator contextOptionValidator;
 
+    @Mock
+    private Store store;
+
+    @Mock
+    private Account senderAccount;
+
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private final TransactionBody transactionBody = TransactionBody.newBuilder()
@@ -173,6 +182,7 @@ class TokenUpdatePrecompileTest {
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
@@ -337,6 +347,8 @@ class TokenUpdatePrecompileTest {
         givenMinimalFrameContext();
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

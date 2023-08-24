@@ -30,6 +30,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -41,6 +42,7 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.PauseLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
@@ -113,6 +115,9 @@ class PausePrecompileTest {
     private Store store;
 
     @Mock
+    private Account senderAccount;
+
+    @Mock
     private MirrorEvmContractAliases contractAliases;
 
     @Mock
@@ -173,6 +178,7 @@ class PausePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(pauseLogic.validateSyntax(any())).willReturn(OK);
         given(pausePrecompile.body(pretendArguments, aliasResolver, bodyParams)).willReturn(transactionBody);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -197,6 +203,8 @@ class PausePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);

@@ -22,6 +22,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accoun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.AUTO_MEMO;
 import static com.hedera.services.store.contracts.precompile.codec.Association.multiAssociation;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
@@ -56,6 +60,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.util.Collections;
@@ -755,6 +761,114 @@ class SyntheticTxnFactoryTest {
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
         assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
+    }
+
+    @Test
+    void createsExpectedFungibleTokenCreate() {
+        // given
+        final var adminKey = new KeyValueWrapper(
+                false, null, new byte[] {}, new byte[] {}, contractIdFromEvmAddress(contractAddress));
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var wrapper = createTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(254, multiKey), new TokenKeyWrapper(1, adminKey)));
+        wrapper.setFixedFees(List.of(fixedFee));
+        wrapper.setFractionalFees(List.of(fractionalFee));
+
+        // when
+        final var result = subject.createTokenCreate(wrapper);
+        final var txnBody = result.build().getTokenCreation();
+
+        // then
+        assertTrue(result.hasTokenCreation());
+
+        assertEquals(TokenType.FUNGIBLE_COMMON, txnBody.getTokenType());
+        assertEquals("token", txnBody.getName());
+        assertEquals("symbol", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("memo", txnBody.getMemo());
+        assertEquals(TokenSupplyType.INFINITE, txnBody.getSupplyType());
+        assertEquals(Long.MAX_VALUE, txnBody.getInitialSupply());
+        assertEquals(Integer.MAX_VALUE, txnBody.getDecimals());
+        assertEquals(5054L, txnBody.getMaxSupply());
+        assertFalse(txnBody.getFreezeDefault());
+        assertEquals(442L, txnBody.getExpiry().getSeconds());
+        assertEquals(555L, txnBody.getAutoRenewPeriod().getSeconds());
+        assertEquals(payer, txnBody.getAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasAdminKey());
+        assertEquals(adminKey.asGrpc(), txnBody.getAdminKey());
+        assertTrue(txnBody.hasKycKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
+        assertTrue(txnBody.hasFreezeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
+        assertTrue(txnBody.hasWipeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+
+        // assert custom fees
+        assertEquals(2, txnBody.getCustomFeesCount());
+        assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+        assertEquals(fractionalFee.asGrpc(), txnBody.getCustomFees(1));
+    }
+
+    @Test
+    void createsExpectedNonFungibleTokenCreate() {
+        // given
+        final var multiKey = new KeyValueWrapper(
+                false, contractIdFromEvmAddress(contractAddress), new byte[] {}, new byte[] {}, null);
+        final var wrapper =
+                HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(255, multiKey)));
+        wrapper.setFixedFees(List.of(fixedFee));
+        wrapper.setRoyaltyFees(List.of(royaltyFee));
+
+        // when
+        final var result = subject.createTokenCreate(wrapper);
+        final var txnBody = result.build().getTokenCreation();
+
+        // then
+        assertTrue(result.hasTokenCreation());
+
+        assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, txnBody.getTokenType());
+        assertEquals("nft", txnBody.getName());
+        assertEquals("NFT", txnBody.getSymbol());
+        assertEquals(account, txnBody.getTreasury());
+        assertEquals("nftMemo", txnBody.getMemo());
+        assertEquals(TokenSupplyType.FINITE, txnBody.getSupplyType());
+        assertEquals(0L, txnBody.getInitialSupply());
+        assertEquals(0, txnBody.getDecimals());
+        assertEquals(5054L, txnBody.getMaxSupply());
+        assertTrue(txnBody.getFreezeDefault());
+        assertEquals(0, txnBody.getExpiry().getSeconds());
+        assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
+        assertFalse(txnBody.hasAutoRenewAccount());
+
+        // keys assertions
+        assertTrue(txnBody.hasAdminKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getAdminKey());
+        assertTrue(txnBody.hasKycKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
+        assertTrue(txnBody.hasFreezeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
+        assertTrue(txnBody.hasWipeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+
+        // assert custom fees
+        assertEquals(2, txnBody.getCustomFeesCount());
+        assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+        assertEquals(royaltyFee.asGrpc(), txnBody.getCustomFees(1));
     }
 
     private static AccountAmount aaWith(final AccountID accountID, final long amount) {

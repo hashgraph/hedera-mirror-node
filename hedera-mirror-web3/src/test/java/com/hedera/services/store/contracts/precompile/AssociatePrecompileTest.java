@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddr;
 import static com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile.decodeAssociation;
 import static com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile.decodeMultipleAssociations;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -109,6 +110,9 @@ class AssociatePrecompileTest {
 
     @Mock
     private Store store;
+
+    @Mock
+    private Account senderAccount;
 
     @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
@@ -273,6 +277,8 @@ class AssociatePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
@@ -299,6 +305,8 @@ class AssociatePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
@@ -341,6 +349,7 @@ class AssociatePrecompileTest {
     private void givenTokenAssociate() {
         given(store.getAccount(Address.fromHexString("0x0000000000000000000000000000000000000482"), OnMissing.THROW))
                 .willReturn(account);
+        given(store.getAccount(senderAddr, OnMissing.THROW)).willReturn(account);
         given(store.getToken(Address.fromHexString("0x0000000000000000000000000000000000000480"), OnMissing.THROW))
                 .willReturn(token);
         given(account.getAccountAddress())

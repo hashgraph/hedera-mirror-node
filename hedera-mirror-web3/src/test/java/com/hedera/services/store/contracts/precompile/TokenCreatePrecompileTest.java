@@ -628,6 +628,7 @@ class TokenCreatePrecompileTest {
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
@@ -918,6 +919,7 @@ class TokenCreatePrecompileTest {
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(frame.getRemainingGas()).willReturn(10_000_000L);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
         // when:
         final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
 
@@ -947,6 +949,7 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreate(eq(CREATE_FUNGIBLE_NO_FEES_INPUT), any()))
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
         givenIfDelegateCall();
 
         // when:

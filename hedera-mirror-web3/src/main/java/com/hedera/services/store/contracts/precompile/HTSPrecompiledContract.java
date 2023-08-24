@@ -41,8 +41,10 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
+import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -100,6 +102,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
     private Address senderAddress;
+    private JKey senderAccountKey;
 
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -354,6 +357,22 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
             }
+            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody =
+                        precompile.body(input, aliasResolver, new CreateParams(functionId, senderAccountKey));
+            }
             default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
@@ -369,6 +388,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
         this.store = updater.getStore();
         this.mirrorNodeEvmProperties = updater.aliases();
+        this.senderAccountKey = store.getAccount(senderAddress, OnMissing.THROW).getKey();
     }
 
     private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
