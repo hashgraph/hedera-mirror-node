@@ -519,22 +519,20 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
-        tokenTransfers.forEach(tokenTransfer -> {
+        long senderId = payerAccountId.getId();
+        if (!tokenTransfers.isEmpty() && recordItem.getTransactionRecord().hasContractCallResult()) {
+            senderId = recordItem
+                    .getTransactionRecord()
+                    .getContractCallResult()
+                    .getSenderId()
+                    .getAccountNum();
+        }
+
+        for (TokenTransferList tokenTransfer : tokenTransfers) {
             var tokenId = EntityId.of(tokenTransfer.getToken());
-            tokenTransfer.getTransfersList().forEach(accountAmount -> {
-                // Emit allowance amount representing approved transfer debit
+            for (AccountAmount accountAmount :
+                    tokenTransfer.getTransfersList()) { // Emit allowance amount representing approved transfer debit
                 if (accountAmount.getIsApproval() && accountAmount.getAmount() < 0) {
-                    boolean isContractCall = recordItem.getTransactionRecord().hasContractCallResult();
-                    long senderId = payerAccountId.getId();
-
-                    if (isContractCall) {
-                        senderId = recordItem
-                                .getTransactionRecord()
-                                .getContractCallResult()
-                                .getSenderId()
-                                .getAccountNum();
-                    }
-
                     var tokenAllowance = TokenAllowance.builder()
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
@@ -545,8 +543,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     entityListener.onTokenAllowance(tokenAllowance);
                 }
-            });
-        });
+            }
+        }
     }
 
     private void insertNonFungibleTokenTransfers(
