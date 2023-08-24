@@ -521,11 +521,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
         long spenderId = payerAccountId.getId();
         if (!tokenTransfers.isEmpty() && recordItem.getTransactionRecord().hasContractCallResult()) {
-            spenderId = recordItem
-                    .getTransactionRecord()
-                    .getContractCallResult()
-                    .getSenderId()
-                    .getAccountNum();
+            spenderId = EntityId.of(recordItem
+                            .getTransactionRecord()
+                            .getContractCallResult()
+                            .getSenderId())
+                    .getId();
         }
         long transferSenderId = spenderId;
         tokenTransfers.forEach(tokenTransfer -> {
