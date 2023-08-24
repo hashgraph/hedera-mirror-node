@@ -21,6 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -534,6 +535,12 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(tokenBalance3Amount);
         deletedEntityTokenAccount4.setBalance(1009875L);
         disassociatedTokenAccount5.setBalance(0L);
+
+        // account balance is needed to generate timestamp filter efficiently
+        domainBuilder
+                .accountBalance()
+                .customize(a -> a.balance(0).id(new AccountBalance.Id(accountBalanceTimestamp, accountId1)))
+                .persist();
     }
 
     private long timestamp(Duration delta) {

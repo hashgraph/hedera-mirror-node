@@ -34,7 +34,7 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
                 select
                     consensus_timestamp as from_timestamp,
                     consensus_end as to_timestamp
-                from token_balance
+                from account_balance
                          join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
                               on consensus_timestamp <= consensus_end
                 order by consensus_timestamp desc
