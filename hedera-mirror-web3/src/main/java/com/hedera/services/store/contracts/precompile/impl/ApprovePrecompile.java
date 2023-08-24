@@ -175,8 +175,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
-        final var senderAddress = Address.wrap(Bytes.wrap(
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray())));
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;

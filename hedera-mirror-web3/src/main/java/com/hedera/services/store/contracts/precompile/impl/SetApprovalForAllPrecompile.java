@@ -117,8 +117,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
-        final var senderAddress = Address.wrap(Bytes.wrap(
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray())));
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var payerAccount = store.getAccount(senderAddress, OnMissing.THROW);

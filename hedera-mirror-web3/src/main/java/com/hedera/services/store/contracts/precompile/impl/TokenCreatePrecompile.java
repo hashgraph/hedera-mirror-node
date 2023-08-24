@@ -82,7 +82,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -273,8 +272,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var tokenCreateOp = transactionBody.getTokenCreation();
-        final var senderAddress = Address.wrap(Bytes.wrap(
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray())));
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
 
         /* --- Execute the transaction and capture its results --- */
@@ -314,8 +312,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     public void handleSentHbars(final MessageFrame frame, final TransactionBody.Builder transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
-        final var senderAddress = Address.wrap(Bytes.wrap(
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray())));
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         final var aliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
