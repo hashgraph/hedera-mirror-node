@@ -2768,6 +2768,65 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenTransferWithApprovalViaContract() {
+        entityProperties.getPersist().setTrackAllowance(true);
+        // given
+        createAndAssociateToken(
+                TOKEN_ID,
+                FUNGIBLE_COMMON,
+                SYMBOL,
+                CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                PAYER2,
+                false,
+                false,
+                false,
+                INITIAL_SUPPLY);
+
+        // approve allowance for fungible token
+        var allowanceAmount = INITIAL_SUPPLY / 4L;
+        var cryptoApproveAllowanceTransaction = buildTransaction(b -> b.getCryptoApproveAllowanceBuilder()
+                .addTokenAllowances(TokenAllowance.newBuilder()
+                        .setTokenId(TOKEN_ID)
+                        .setOwner(PAYER2)
+                        .setSpender(PAYER)
+                        .setAmount(allowanceAmount)));
+        insertAndParseTransaction(ALLOWANCE_TIMESTAMP, cryptoApproveAllowanceTransaction);
+
+        AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
+
+        // when
+        TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(accountId)
+                        .setAmount(1000)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER2)
+                        .setAmount(-1000)
+                        .setIsApproval(true)
+                        .build())
+                .build();
+
+        Transaction transaction = buildTransaction(builder -> {
+            builder.getCryptoTransferBuilder().addTokenTransfers(transferList1);
+        });
+
+        List<TokenTransferList> transferLists = List.of(transferList1);
+        insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
+            builder.addAllTokenTransferLists(transferLists);
+            buildContractFunctionResult(builder.getContractCallResultBuilder().setSenderId(PAYER));
+        });
+
+        // then
+        assertTokenTransferInRepository(TOKEN_ID, PAYER2, TRANSFER_TIMESTAMP, -1000, true);
+        assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
+        assertTokenAllowanceInRepository(
+                TOKEN_ID, PAYER2, PAYER, allowanceAmount, allowanceAmount - 1000L, ALLOWANCE_TIMESTAMP);
+    }
+
+    @Test
     void tokenWipe() {
         createAndAssociateToken(
                 TOKEN_ID,
