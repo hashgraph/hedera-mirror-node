@@ -40,7 +40,7 @@ public class PubSubEntityIdSerializer extends JsonSerializer<EntityId> {
         gen.writeFieldName(ENTITY_NUM);
         gen.writeRawValue(String.valueOf(entityId.getNum()));
         gen.writeFieldName(TYPE);
-        gen.writeRawValue(String.valueOf(EntityType.UNKNOWN.ordinal()));
+        gen.writeNumber(EntityType.UNKNOWN.ordinal());
         gen.writeEndObject();
     }
 }
