@@ -156,7 +156,7 @@ public class HederaEvmStackedWorldStateUpdater
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
-        if (!addressOrAlias.equals(accountAccessor.canonicalAddress(addressOrAlias))) {
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
             return NON_CANONICAL_REFERENCE;
         }
         return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();

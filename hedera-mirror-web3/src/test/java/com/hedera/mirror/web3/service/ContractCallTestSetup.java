@@ -1418,7 +1418,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         0b1111111,
                         new KeyValueWrapper(
                                 false,
-                                contractIdFromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
@@ -1457,7 +1457,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         0b1111111,
                         new KeyValueWrapper(
                                 false,
-                                contractIdFromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
