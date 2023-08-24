@@ -117,9 +117,10 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
-        final var payerAccount = store.getAccount(frame.getSenderAddress(), OnMissing.THROW);
+        final var payerAccount = store.getAccount(senderAddress, OnMissing.THROW);
 
         final var status = approveAllowanceChecks.allowancesValidation(
                 transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
@@ -137,13 +138,12 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
                 transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                 transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-                EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+                EntityIdUtils.accountIdFromEvmAddress(senderAddress));
         final var nftAllowances = transactionBody.getCryptoApproveAllowance().getNftAllowances(0);
         final var tokenAddress = asTypedEvmAddress(nftAllowances.getTokenId());
         final var spenderAddress = asTypedEvmAddress(nftAllowances.getSpender());
         final var approved = nftAllowances.getApprovedForAll();
-        frame.addLog(
-                getLogForSetApprovalForAll(tokenAddress, frame.getSenderAddress(), spenderAddress, approved, updater));
+        frame.addLog(getLogForSetApprovalForAll(tokenAddress, senderAddress, spenderAddress, approved, updater));
         return new EmptyRunResult();
     }
 

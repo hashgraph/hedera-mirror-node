@@ -400,8 +400,9 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    CreateLogic createLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        return new CreateLogic(mirrorNodeEvmProperties);
+    CreateLogic createLogic(
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties, final AssociateLogic associateLogic) {
+        return new CreateLogic(mirrorNodeEvmProperties, associateLogic);
     }
 
     @Bean

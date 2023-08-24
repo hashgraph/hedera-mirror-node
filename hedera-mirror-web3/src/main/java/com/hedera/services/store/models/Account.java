@@ -239,7 +239,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                key);
+                oldAccount.key);
     }
 
     /**
@@ -428,7 +428,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                key);
+                oldAccount.key);
     }
 
     /**
