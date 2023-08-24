@@ -25,6 +25,7 @@ const {options, run} = new ContractCallScenarioBuilder()
                            .from('0000000000000000000000000000000000000511')
                            .value(812000000)
                            .name('contractCallTokenCustomFeesEstimate')
+                           .sleep(1)
                            .build();
 
 export {options, run};

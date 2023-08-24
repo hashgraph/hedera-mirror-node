@@ -23,6 +23,7 @@ const {options, run} = new ContractCallScenarioBuilder()
                            .to('0000000000000000000000000000000000000573')
                            .gas(15000000)
                            .name('contractCallTokenDissociateEstimate')
+                           .sleep(1)
                            .build();
 
 export {options, run};

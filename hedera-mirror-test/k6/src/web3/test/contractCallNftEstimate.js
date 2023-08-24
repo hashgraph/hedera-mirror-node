@@ -25,6 +25,7 @@ const {options, run} = new ContractCallScenarioBuilder()
                            .from('0000000000000000000000000000000000000559')
                            .value(812000000)
                            .name('contractCallNftEstimate')
+                           .sleep(1)
                            .build();
 
 export {options, run};

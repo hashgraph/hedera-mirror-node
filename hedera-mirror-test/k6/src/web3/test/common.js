@@ -17,6 +17,7 @@
 import http from 'k6/http';
 import {check} from 'k6';
 import * as utils from '../../lib/common.js';
+import { sleep } from 'k6';
 
 const resultField = 'result';
 
@@ -108,13 +109,13 @@ function ContractCallScenarioBuilder() {
   this._to = null;
   this._scenario = null;
   this._tags = {};
+  this._sleep = 0;
 
   this._block = null;
   this._data = null;
   this._gas = null;
   this._from = null;
   this._value = null;
-
   this._estimate = null;
 
   this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
@@ -140,9 +141,11 @@ function ContractCallScenarioBuilder() {
             value: that._value,
           });
         }
-
         const response = jsonPost(that._url, JSON.stringify(payload));
         check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
+        if (that._sleep > 0) {
+          sleep(that._sleep);
+        }
       },
     };
   };
@@ -209,6 +212,11 @@ function ContractCallScenarioBuilder() {
     this._estimate = estimate;
     return this;
   };
+
+  this.sleep = function (sleep) {
+    this._sleep = sleep;
+    return this;
+  }
 
   return this;
 }

@@ -35,40 +35,47 @@ DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenCustomFees.
 ```
 
 ```shell
-DEFAULT_DURATION=100s \
-DEFAULT_VUS=6 \
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
 BASE_URL=http://localhost:8545 \
 DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenCustomFeesEstimate.js
 ```
 
 ```shell
 DEFAULT_DURATION=10s \
-DEFAULT_VUS=6 \
+DEFAULT_VUS=1 \
 BASE_URL=http://localhost:8545 \
 DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallNftCustomFeesEstimate.js
 ```
 
 ```shell
-DEFAULT_DURATION=100s \
-DEFAULT_VUS=6 \
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
 BASE_URL=http://localhost:8545 \
 DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallNftEstimate.js
 ```
 
 ```shell
-DEFAULT_DURATION=100s \
-DEFAULT_VUS=6 \
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
 BASE_URL=http://localhost:8545 \
 DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenDissociateEstimate.js
 ```
 
 ```shell
-DEFAULT_DURATION=100s \
-DEFAULT_VUS=6 \
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
 BASE_URL=http://localhost:8545 \
 DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallTokenEstimate.js
 ```
 
+```shell
+DEFAULT_DURATION=10s \
+DEFAULT_VUS=1 \
+BASE_URL=http://localhost:8545 \
+DEFAULT_LIMIT=100 \
+DEFAULT_START_ACCOUNT=0.0.2 k6 run src/web3/apisEstimate.js
+```
 
 ```shell
 DEFAULT_DURATION=1s \
