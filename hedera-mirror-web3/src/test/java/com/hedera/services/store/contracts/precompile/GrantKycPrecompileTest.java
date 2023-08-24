@@ -28,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -38,6 +39,7 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txn.token.GrantKycLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -120,6 +122,9 @@ public class GrantKycPrecompileTest {
     private Store store;
 
     @Mock
+    private Account senderAccount;
+
+    @Mock
     private TokenRelationship tokenRelationship;
 
     @Mock
@@ -162,6 +167,7 @@ public class GrantKycPrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when
         subject.prepareFields(frame);
@@ -188,6 +194,9 @@ public class GrantKycPrecompileTest {
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
+
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);

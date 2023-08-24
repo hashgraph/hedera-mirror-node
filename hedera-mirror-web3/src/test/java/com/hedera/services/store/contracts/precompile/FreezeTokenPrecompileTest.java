@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -39,6 +40,7 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.FreezeLogic;
 import com.hedera.services.utils.IdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -108,6 +110,9 @@ class FreezeTokenPrecompileTest {
     @Mock
     private Store store;
 
+    @Mock
+    private Account senderAccount;
+
     private HTSPrecompiledContract subject;
     private MockedStatic<FreezeTokenPrecompile> staticFreezeTokenPrecompile;
 
@@ -174,6 +179,8 @@ class FreezeTokenPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        given(worldUpdater.getStore()).willReturn(store);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when
         subject.prepareFields(frame);
@@ -219,6 +226,7 @@ class FreezeTokenPrecompileTest {
                         .setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder()
                                 .setToken(IdUtils.asToken("1.2.3"))
                                 .setAccount(IdUtils.asAccount("1.2.4"))));
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void givenPricingUtilsContext() {
