@@ -519,32 +519,32 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
-        long senderId = payerAccountId.getId();
+        long spenderId = payerAccountId.getId();
         if (!tokenTransfers.isEmpty() && recordItem.getTransactionRecord().hasContractCallResult()) {
-            senderId = EntityId.of(recordItem
-                            .getTransactionRecord()
-                            .getContractCallResult()
-                            .getSenderId())
-                    .getId();
+            spenderId = recordItem
+                    .getTransactionRecord()
+                    .getContractCallResult()
+                    .getSenderId()
+                    .getAccountNum();
         }
-
-        for (TokenTransferList tokenTransfer : tokenTransfers) {
+        long transferSenderId = spenderId;
+        tokenTransfers.forEach(tokenTransfer -> {
             var tokenId = EntityId.of(tokenTransfer.getToken());
-            for (AccountAmount accountAmount :
-                    tokenTransfer.getTransfersList()) { // Emit allowance amount representing approved transfer debit
+            tokenTransfer.getTransfersList().forEach(accountAmount -> {
+                // Emit allowance amount representing approved transfer debit
                 if (accountAmount.getIsApproval() && accountAmount.getAmount() < 0) {
                     var tokenAllowance = TokenAllowance.builder()
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
                             .payerAccountId(payerAccountId)
-                            .spender(senderId)
+                            .spender(transferSenderId)
                             .tokenId(tokenId.getId())
                             .build();
 
                     entityListener.onTokenAllowance(tokenAllowance);
                 }
-            }
-        }
+            });
+        });
     }
 
     private void insertNonFungibleTokenTransfers(
