@@ -34,7 +34,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
@@ -214,10 +213,16 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address canonicalAddress(final Address addressOrAlias) {
-        Account account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
-        if (account.isEmptyAccount()) {
-            return Address.ZERO;
+        if (aliases.isInUse(addressOrAlias)) {
+            return addressOrAlias;
         }
+
+        // An EIP-1014 address is always canonical
+        if (!aliases.isMirror(addressOrAlias)) {
+            return addressOrAlias;
+        }
+
+        final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
         return account.canonicalAddress();
     }
 

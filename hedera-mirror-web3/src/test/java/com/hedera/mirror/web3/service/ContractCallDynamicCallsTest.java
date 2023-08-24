@@ -30,8 +30,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
-    @EnumSource(NestedCallsContractFunctions.class)
-    void nestedCallsTest(NestedCallsContractFunctions contractFunctions) {
+    @EnumSource(DynamicCallsContractFunctions.class)
+    void nestedCallsTest(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
         final var serviceParameters =
@@ -48,8 +48,46 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(DynamicCallWithAliasSender.class)
+    void nestedCallsTestWithAliasSender(DynamicCallWithAliasSender contractFunctions) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
+        if (contractFunctions.expectedErrorMessage != null) {
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(InvalidTransactionException.class)
+                    .satisfies(ex -> {
+                        InvalidTransactionException exception = (InvalidTransactionException) ex;
+                        assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
+                    });
+        } else {
+            contractCallService.processCall(serviceParameters);
+        }
+    }
+
     @RequiredArgsConstructor
-    enum NestedCallsContractFunctions {
+    enum DynamicCallWithAliasSender {
+        APPROVE_FUNGIBLE_TOKEN_GET_ALLOWANCE(
+                "approveTokenGetAllowance",
+                new Object[] {FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},
+                null),
+        APPROVE_NFT_GET_ALLOWANCE(
+                "approveTokenGetAllowance",
+                new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
+                "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
+                null);
+        private final String name;
+        private final Object[] functionParameters;
+        private final String expectedErrorMessage;
+    }
+
+    @RequiredArgsConstructor
+    enum DynamicCallsContractFunctions {
         MINT_FUNGIBLE_TOKEN(
                 "mintTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS},
@@ -73,7 +111,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         WIPE_FUNGIBLE_TOKEN(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ALIAS},
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ADDRESS},
                 null),
         WIPE_FUNGIBLE_TOKEN_WITH_ALIAS(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
@@ -81,9 +119,9 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         WIPE_NFT(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ALIAS},
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ADDRESS},
                 null),
-        WIPE_NFT_ALIAS(
+        WIPE_NFT_WITH_ALIAS(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ALIAS},
                 null),
@@ -91,17 +129,23 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, null),
         FREEZE_UNFREEZE_FUNGIBLE_TOKEN(
                 "freezeTokenGetPauseStatusUnpauseGetPauseStatus",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS},
+                null),
+        FREEZE_UNFREEZE_FUNGIBLE_TOKEN_WITH_ALIAS(
+                "freezeTokenGetPauseStatusUnpauseGetPauseStatus",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS},
                 null),
         PAUSE_UNPAUSE_NFT("pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS}, null),
         FREEZE_UNFREEZE_NFT(
+                "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS}, null),
+        FREEZE_UNFREEZE_NFT_WITH_ALIAS(
                 "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ALIAS}, null),
         ASSOCIATE_DISSOCIATE_TRANSFER_FUNGIBLE_TOKEN_FAIL(
                 "associateTokenDissociateFailTransfer",
                 new Object[] {
                     TREASURY_TOKEN_ADDRESS,
                     NOT_ASSOCIATED_SPENDER_ALIAS,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
                     BigInteger.ONE,
                     BigInteger.ZERO
                 },
@@ -117,10 +161,6 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},
                 null),
         APPROVE_NFT_GET_ALLOWANCE(
-                "approveTokenGetAllowance",
-                new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
-                null),
-        APPROVE_NFT_GET_ALLOWANCE_WITH_ALIAS(
                 "approveTokenGetAllowance",
                 new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
