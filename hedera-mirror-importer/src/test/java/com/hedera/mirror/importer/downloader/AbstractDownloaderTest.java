@@ -193,7 +193,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                                 : EntityId.of(e.getMemo().toStringUtf8(), FILE);
                         return ConsensusNodeStub.builder()
                                 .nodeAccountId(id)
-                                .nodeId(id.getEntityNum() - 3)
+                                .nodeId(id.getNum() - 3)
                                 .publicKey(entry.getPublicKeyObject())
                                 .stake(1L)
                                 .totalStake(addressBook.getNodeAddressCount())

@@ -207,8 +207,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to create
-     * an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
+     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to
+     * create an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
     private void processItemizedTransfers(RecordItem recordItem, Transaction transaction) {
@@ -719,9 +719,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 var tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
                 var assessedCustomFee = new AssessedCustomFee();
                 assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
-                assessedCustomFee.setTokenId(tokenId);
+                assessedCustomFee.setCollectorAccountId(collectorAccountId.getId());
+                assessedCustomFee.setConsensusTimestamp(consensusTimestamp);
                 assessedCustomFee.setPayerAccountId(recordItem.getPayerAccountId());
+                assessedCustomFee.setTokenId(tokenId);
 
                 if (protoAssessedCustomFee.getEffectivePayerAccountIdCount() > 0) {
                     var effectivePayerEntityIds = new ArrayList<Long>();

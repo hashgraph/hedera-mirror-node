@@ -79,7 +79,7 @@ class TokenAccessorImplTest {
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
     private static final Long ENTITY_ID = EntityId.of(
-                    ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum(), EntityType.ACCOUNT)
+                    ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum(), EntityType.ACCOUNT)
             .getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;
@@ -232,7 +232,7 @@ class TokenAccessorImplTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     void infoForTokenCustomFees() {
         final var customFee = new CustomFee();
-        final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+        final EntityId collectorId = EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT);
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));

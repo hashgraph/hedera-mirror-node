@@ -236,11 +236,11 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
                 .returns(null, Entity::getMaxAutomaticTokenAssociations)
                 .satisfies(e -> assertThat(e.getMemo()).isNotEmpty())
-                .returns(tokenId.getEntityNum(), Entity::getNum)
+                .returns(tokenId.getNum(), Entity::getNum)
                 .returns(null, Entity::getProxyAccountId)
                 .satisfies(e -> assertThat(e.getPublicKey()).isNotEmpty())
-                .returns(tokenId.getRealmNum(), Entity::getRealm)
-                .returns(tokenId.getShardNum(), Entity::getShard)
+                .returns(tokenId.getRealm(), Entity::getRealm)
+                .returns(tokenId.getShard(), Entity::getShard)
                 .returns(EntityType.TOKEN, Entity::getType)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)));
     }

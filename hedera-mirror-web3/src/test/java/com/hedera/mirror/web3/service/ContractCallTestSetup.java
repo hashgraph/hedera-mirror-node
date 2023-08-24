@@ -102,8 +102,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
-    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
+    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
+    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ALIAS =
@@ -549,7 +549,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(receiverEntityId.getId())
-                        .num(receiverEntityId.getEntityNum())
+                        .num(receiverEntityId.getNum())
                         .evmAddress(receiverEvmAddress)
                         .deleted(false)
                         .type(CONTRACT))
@@ -780,7 +780,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .build())
                 .build();
         final var timeStamp = System.currentTimeMillis();
-        final var entityId = new EntityId(0L, 0L, 112L, EntityType.FILE);
+        final var entityId = EntityId.of(0L, 0L, 112L, EntityType.FILE);
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
@@ -804,7 +804,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(tokenEntityId.getId())
                         .autoRenewAccountId(autoRenewEntityId.getId())
-                        .num(tokenEntityId.getEntityNum())
+                        .num(tokenEntityId.getNum())
                         .evmAddress(tokenEvmAddress)
                         .type(TOKEN)
                         .balance(1500L)
@@ -868,7 +868,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .tokenAccount()
                 .customize(e -> e.freezeStatus(freezeStatusEnum)
-                        .accountId(contractEntityId.getEntityNum())
+                        .accountId(contractEntityId.getNum())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .balance(10L))
@@ -882,7 +882,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
-                        .num(spenderEntityId.getEntityNum())
+                        .num(spenderEntityId.getNum())
                         .evmAddress(NOT_ASSOCIATED_SPENDER_ALIAS.toArray())
                         .alias(NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.toByteArray())
                         .deleted(false))
@@ -897,7 +897,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
-                        .num(spenderEntityId.getEntityNum())
+                        .num(spenderEntityId.getNum())
                         .evmAddress(SPENDER_ALIAS.toArray())
                         .alias(SPENDER_PUBLIC_KEY.toByteArray())
                         .deleted(false))
@@ -925,7 +925,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
-                        .num(senderEntityId.getEntityNum())
+                        .num(senderEntityId.getNum())
                         .evmAddress(SENDER_ALIAS.toArray())
                         .deleted(false)
                         .alias(SENDER_PUBLIC_KEY.toByteArray())
@@ -941,7 +941,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ownerEntityId.getId())
-                        .num(ownerEntityId.getEntityNum())
+                        .num(ownerEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(ownerEntityId))
                         .balance(20000L))
@@ -956,7 +956,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(autoRenewEntityId.getId())
-                        .num(autoRenewEntityId.getEntityNum())
+                        .num(autoRenewEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(autoRenewEntityId)))
                 .persist();
@@ -970,7 +970,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(treasuryEntityId.getId())
-                        .num(treasuryEntityId.getEntityNum())
+                        .num(treasuryEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(treasuryEntityId)))
                 .persist();
@@ -997,7 +997,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(nftEntityId.getId())
                         .autoRenewAccountId(autoRenewEntityId.getId())
                         .expirationTimestamp(null)
-                        .num(nftEntityId.getEntityNum())
+                        .num(nftEntityId.getNum())
                         .evmAddress(nftEvmAddress)
                         .type(TOKEN)
                         .balance(1500L)
@@ -1048,16 +1048,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntityId.getId())
                         .payerAccountId(senderEntityId)
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(spenderEntityId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
                         .amount(13))
                 .persist();
 
         domainBuilder
                 .nftAllowance()
                 .customize(a -> a.tokenId(nftEntityId.getId())
-                        .spender(spenderEntityId.getEntityNum())
-                        .owner(senderEntityId.getEntityNum())
+                        .spender(spenderEntityId.getNum())
+                        .owner(senderEntityId.getNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();
@@ -1073,16 +1073,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntityId.getId())
                         .payerAccountId(senderEntityId)
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(contractId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(contractId.getNum())
                         .amount(20))
                 .persist();
 
         domainBuilder
                 .nftAllowance()
                 .customize(a -> a.tokenId(nftEntityId.getId())
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(contractId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(contractId.getNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();
@@ -1096,7 +1096,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(evmCodesContractEntityId.getId())
-                        .num(evmCodesContractEntityId.getEntityNum())
+                        .num(evmCodesContractEntityId.getNum())
                         .evmAddress(evmCodesContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1121,7 +1121,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ethCallContractEntityId.getId())
-                        .num(ethCallContractEntityId.getEntityNum())
+                        .num(ethCallContractEntityId.getNum())
                         .evmAddress(ethCallContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1152,7 +1152,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(reverterContractEntityId.getId())
-                        .num(reverterContractEntityId.getEntityNum())
+                        .num(reverterContractEntityId.getNum())
                         .evmAddress(reverterContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1172,7 +1172,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(stateContractId.getId())
-                        .num(stateContractId.getEntityNum())
+                        .num(stateContractId.getNum())
                         .evmAddress(stateContractAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1192,7 +1192,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
-                        .num(contractEntityId.getEntityNum())
+                        .num(contractEntityId.getNum())
                         .evmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toArray())
                         .alias(ByteStringUtils.wrapUnsafely(SENDER_ALIAS.toArrayUnsafe())
                                 .toByteArray())
@@ -1226,7 +1226,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
-                        .num(contractEntityId.getEntityNum())
+                        .num(contractEntityId.getNum())
                         .evmAddress(contractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1257,7 +1257,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(modificationContractEntityId.getId())
-                        .num(modificationContractEntityId.getEntityNum())
+                        .num(modificationContractEntityId.getNum())
                         .evmAddress(modificationContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1278,7 +1278,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ercContractEntityId.getId())
-                        .num(ercContractEntityId.getEntityNum())
+                        .num(ercContractEntityId.getNum())
                         .evmAddress(ercContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1310,7 +1310,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
-                        .num(contractEntityId.getEntityNum())
+                        .num(contractEntityId.getNum())
                         .evmAddress(contractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))

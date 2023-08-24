@@ -53,11 +53,11 @@ class CustomFeeDatabaseAccessorTest {
 
     private final long tokenId = 123L;
 
-    private final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+    private final EntityId collectorId = EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT);
 
     private final Address collectorAddress = toAddress(collectorId);
 
-    private final EntityId denominatingTokenId = new EntityId(11L, 12L, 13L, EntityType.TOKEN);
+    private final EntityId denominatingTokenId = EntityId.of(11L, 12L, 13L, EntityType.TOKEN);
 
     private CustomFee customFee;
 

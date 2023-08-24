@@ -210,7 +210,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         newTokenAllowance = domainBuilder.tokenAllowance().persist();
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(new EntityId(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
                         .consensusTimestamp(newTokenAllowance.getTimestampLower()))
                 .persist();
 

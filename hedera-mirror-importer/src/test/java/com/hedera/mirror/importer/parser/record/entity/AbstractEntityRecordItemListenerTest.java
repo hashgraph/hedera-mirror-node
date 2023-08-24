@@ -536,9 +536,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected TransactionID transactionId(EntityId payerAccountId, long validStartTimestamp) {
         var payer = AccountID.newBuilder()
-                .setShardNum(payerAccountId.getShardNum())
-                .setRealmNum(payerAccountId.getRealmNum())
-                .setAccountNum(payerAccountId.getEntityNum())
+                .setShardNum(payerAccountId.getShard())
+                .setRealmNum(payerAccountId.getRealm())
+                .setAccountNum(payerAccountId.getNum())
                 .build();
         return TransactionID.newBuilder()
                 .setAccountID(payer)
