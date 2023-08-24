@@ -1173,7 +1173,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
                 .returns(createdId.getNum(), Entity::getNum)
                 .returns(createdId.getShard(), Entity::getShard)
-                .returns(createdId.getType(), Entity::getType);
+                .returns(CONTRACT, Entity::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
         contractAssert.returns(contractCreateInstance.getDeclineReward(), Entity::getDeclineReward);

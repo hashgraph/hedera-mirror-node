@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
 
 public class PubSubEntityIdSerializer extends JsonSerializer<EntityId> {
@@ -39,7 +40,7 @@ public class PubSubEntityIdSerializer extends JsonSerializer<EntityId> {
         gen.writeFieldName(ENTITY_NUM);
         gen.writeRawValue(String.valueOf(entityId.getNum()));
         gen.writeFieldName(TYPE);
-        gen.writeRawValue(String.valueOf(entityId.getType().ordinal()));
+        gen.writeRawValue(String.valueOf(EntityType.UNKNOWN.ordinal()));
         gen.writeEndObject();
     }
 }

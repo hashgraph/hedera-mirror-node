@@ -316,7 +316,9 @@ abstract class AbstractTransactionHandlerTest {
 
     protected Entity getEntity() {
         EntityId entityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, getExpectedEntityIdType());
-        return entityId.toEntity();
+        var entity = entityId.toEntity();
+        entity.setType(getExpectedEntityIdType());
+        return entity;
     }
 
     protected Entity getExpectedEntityWithTimestamp() {

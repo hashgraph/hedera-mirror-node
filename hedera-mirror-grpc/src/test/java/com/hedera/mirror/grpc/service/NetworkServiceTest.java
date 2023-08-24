@@ -91,7 +91,7 @@ class NetworkServiceTest extends GrpcIntegrationTest {
 
         assertThatThrownBy(() -> networkService.getNodes(filter))
                 .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("File 0.0.102 does not exist");
+                .hasMessage("0.0.102 does not exist");
     }
 
     @Test

@@ -484,6 +484,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -916,6 +917,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -943,6 +945,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
         Entity expectedEntity = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -990,6 +993,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_UPDATE_REF_KEY,
                 expectedAutoRenewAccountId,
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD,
@@ -3022,6 +3026,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,

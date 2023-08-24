@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.io.IOException;
@@ -129,7 +128,6 @@ class AccountBalanceLineParserV2Test {
 
                     assertThat(actualId.getTokenId().getShard()).isEqualTo(mirrorProperties.getShard());
                     assertThat(actualId.getTokenId().getRealm()).isEqualTo(expectedRealm);
-                    assertThat(actualId.getTokenId().getType()).isEqualTo(EntityType.TOKEN);
                 }
             } else {
                 assertThat(actualTokenBalanceList).isEmpty();

@@ -21,6 +21,7 @@ import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -61,6 +62,8 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         boolean emptyAlias = ArrayUtils.isEmpty(alias);
         var key = transactionBody.hasKey() ? transactionBody.getKey().toByteArray() : null;
         boolean emptyKey = ArrayUtils.isEmpty(key);
+        entity.setType(EntityType.ACCOUNT);
+
         if (!emptyAlias) {
             entity.setAlias(alias);
             entityIdService.notify(entity);

@@ -234,7 +234,6 @@ class TokenAccessorImplTest {
         final var customFee = new CustomFee();
         final EntityId collectorId = EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT);
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
-        List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(null);
