@@ -30,12 +30,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
-    @EnumSource(NestedCallsContractFunctions.class)
-    void nestedCallsTest(NestedCallsContractFunctions contractFunctions) {
+    @EnumSource(DynamicCallsContractFunctions.class)
+    void dynamicCallsTestWithAliasSender(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(InvalidTransactionException.class)
@@ -49,7 +49,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
     }
 
     @RequiredArgsConstructor
-    enum NestedCallsContractFunctions {
+    enum DynamicCallsContractFunctions {
         MINT_FUNGIBLE_TOKEN(
                 "mintTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS},
@@ -75,15 +75,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ALIAS},
                 null),
-        WIPE_FUNGIBLE_TOKEN_WITH_ALIAS(
-                "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 10L, new long[0], SENDER_ALIAS},
-                null),
         WIPE_NFT(
-                "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ALIAS},
-                null),
-        WIPE_NFT_ALIAS(
                 "wipeTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, 0L, new long[] {1L}, SENDER_ALIAS},
                 null),
@@ -101,7 +93,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     TREASURY_TOKEN_ADDRESS,
                     NOT_ASSOCIATED_SPENDER_ALIAS,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
                     BigInteger.ONE,
                     BigInteger.ZERO
                 },
@@ -117,10 +109,6 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},
                 null),
         APPROVE_NFT_GET_ALLOWANCE(
-                "approveTokenGetAllowance",
-                new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
-                null),
-        APPROVE_NFT_GET_ALLOWANCE_WITH_ALIAS(
                 "approveTokenGetAllowance",
                 new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
