@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.util;
 
 import jakarta.inject.Named;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 
 /**
  * ShutdownHelper helps in shutting down the threads cleanly when JVM is doing down.
@@ -26,7 +26,7 @@ import lombok.extern.log4j.Log4j2;
  * threads will have fixed time (say 5 seconds), to stop gracefully. Therefore, long living and heavy lifting threads
  * should regularly probe for this flag.
  */
-@Log4j2
+@CustomLog
 @Named
 public class ShutdownHelper {
 

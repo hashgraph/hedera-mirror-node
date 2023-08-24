@@ -24,7 +24,7 @@ import com.hedera.mirror.monitor.config.LoggingFilter;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.TestScenario;
 import java.util.Arrays;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 
-@Log4j2
+@CustomLog
 @ExtendWith(MockitoExtension.class)
 class SubscriberControllerTest {
 

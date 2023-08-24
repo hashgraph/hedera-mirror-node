@@ -122,7 +122,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
-                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getNum())))
                 .build();
         var transaction = domainBuilder
                 .transaction()
@@ -274,7 +274,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
-                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getEntityNum())))
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getNum())))
                 .build();
 
         var transaction = new Transaction();

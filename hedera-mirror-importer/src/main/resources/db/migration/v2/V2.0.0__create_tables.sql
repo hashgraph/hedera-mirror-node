@@ -668,6 +668,7 @@ create table if not exists transaction
     scheduled                  boolean     not null default false,
     transaction_bytes          bytea,
     transaction_hash           bytea,
+    transaction_record_bytes   bytea,
     type                       smallint    not null,
     valid_start_ns             bigint      not null,
     valid_duration_seconds     bigint

@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -290,9 +289,9 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     private void insertEntity(EntityId entityId) {
         Entity entity = new Entity();
         entity.setId(entityId.getId());
-        entity.setNum(entityId.getEntityNum());
-        entity.setRealm(entityId.getRealmNum());
-        entity.setShard(entityId.getShardNum());
+        entity.setNum(entityId.getNum());
+        entity.setRealm(entityId.getRealm());
+        entity.setShard(entityId.getShard());
         entity.setType(entityId.getType());
         entity.setMemo("abc" + (char) 0);
         entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT).getId());
@@ -338,7 +337,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setNum(rs.getLong("entity_num"));
                     entity.setRealm(rs.getLong("entity_realm"));
                     entity.setShard(rs.getLong("entity_shard"));
-                    entity.setProxyAccountId(EntityIdEndec.decode(rs.getLong("proxy_account_id"), EntityType.ACCOUNT));
+                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id"), EntityType.ACCOUNT));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
                     entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;

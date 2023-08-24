@@ -32,10 +32,10 @@ tasks.register<NpmTask>("package") {
     dependsOn(tasks.npmInstall)
     args = listOf("pack", "--silent")
     doLast {
-        buildDir.mkdirs()
+        layout.buildDirectory.asFile.get().mkdirs()
         fileTree(projectDir).matching { include("*.tgz") }.forEach {
             val newName = it.name.replace("hashgraph-mirror-rest-", "hedera-mirror-rest-v")
-            it.renameTo(buildDir.resolve(newName))
+            it.renameTo(layout.buildDirectory.asFile.get().resolve(newName))
         }
     }
 }

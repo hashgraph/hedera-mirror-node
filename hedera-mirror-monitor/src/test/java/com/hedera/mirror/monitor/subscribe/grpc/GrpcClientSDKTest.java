@@ -38,8 +38,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import lombok.CustomLog;
 import lombok.Data;
-import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-@Log4j2
+@CustomLog
 class GrpcClientSDKTest {
 
     private static final Instant START_TIME = Instant.now();

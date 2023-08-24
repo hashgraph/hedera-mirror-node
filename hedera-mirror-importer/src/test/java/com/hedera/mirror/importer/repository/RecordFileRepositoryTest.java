@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,23 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
         var recordFile3 = domainBuilder.recordFile().persist();
 
         assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile3);
+    }
+
+    @Test
+    void findLatestBefore() {
+        assertThat(recordFileRepository.findLatestBefore(DomainUtils.now())).isEmpty();
+
+        domainBuilder.recordFile().persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findLatestBefore(DomainUtils.now()))
+                .get()
+                .isEqualTo(recordFile2);
+
+        var recordFile3 = domainBuilder.recordFile().persist();
+        assertThat(recordFileRepository.findLatestBefore(DomainUtils.now()))
+                .get()
+                .isEqualTo(recordFile3);
     }
 
     @Test

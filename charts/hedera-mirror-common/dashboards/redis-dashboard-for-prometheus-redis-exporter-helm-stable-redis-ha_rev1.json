@@ -49,7 +49,7 @@
     ]
   },
   "description": "Redis Dashboard for Prometheus Redis Exporter 1.x, it works with helm stable/redis-ha exporter.\r\n\r\nIf you missing redis memory utilization, please modify \"maxmemory\" value in values.yaml",
-  "editable": true,
+  "editable": false,
   "gnetId": 11835,
   "graphTooltip": 0,
   "id": null,

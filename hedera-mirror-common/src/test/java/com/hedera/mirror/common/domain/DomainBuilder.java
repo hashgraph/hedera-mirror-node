@@ -120,9 +120,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -131,7 +131,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Component
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
@@ -230,13 +230,11 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<AssessedCustomFee, AssessedCustomFee.AssessedCustomFeeBuilder> assessedCustomFee() {
-        var id = new AssessedCustomFee.Id();
-        id.setCollectorAccountId(entityId(ACCOUNT));
-        id.setConsensusTimestamp(timestamp());
         var builder = AssessedCustomFee.builder()
                 .amount(100L)
+                .collectorAccountId(entityId(ACCOUNT).getId())
+                .consensusTimestamp(timestamp())
                 .effectivePayerAccountIds(List.of(id(), id()))
-                .id(id)
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenId(entityId(TOKEN));
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -988,6 +986,7 @@ public class DomainBuilder {
                 .scheduled(false)
                 .transactionBytes(bytes(100))
                 .transactionHash(bytes(48))
+                .transactionRecordBytes(bytes(200))
                 .type(TransactionType.CRYPTOTRANSFER.getProtoId())
                 .validStartNs(timestamp())
                 .validDurationSeconds(120L);

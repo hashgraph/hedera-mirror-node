@@ -28,8 +28,8 @@ import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -41,7 +41,7 @@ import reactor.core.publisher.Mono;
  * controller.
  */
 @GrpcService
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusServiceImplBase {
 
@@ -90,7 +90,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
                     .setTotal(t.getChunkTotal());
 
             TransactionID transactionID = parseTransactionID(
-                    t.getInitialTransactionId(), t.getTopicId().getEntityNum(), t.getSequenceNumber());
+                    t.getInitialTransactionId(), t.getTopicId().getNum(), t.getSequenceNumber());
             EntityId payerAccountEntity = t.getPayerAccountId();
             var validStartInstant = ProtoUtil.toTimestamp(t.getValidStartTimestamp());
 

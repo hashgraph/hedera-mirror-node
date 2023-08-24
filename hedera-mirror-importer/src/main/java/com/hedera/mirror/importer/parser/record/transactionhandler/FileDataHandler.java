@@ -47,7 +47,7 @@ final class FileDataHandler {
         if (addressBookService.isAddressBook(fileId)) {
             addressBookService.update(fileData);
         } else if (entityProperties.getPersist().isFiles()
-                || (entityProperties.getPersist().isSystemFiles() && fileId.getEntityNum() < 1000)) {
+                || (entityProperties.getPersist().isSystemFiles() && fileId.getNum() < 1000)) {
             entityListener.onFileData(fileData);
         }
     }

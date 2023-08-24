@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -48,12 +48,12 @@ class MirrorEntityAccessTest {
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
     private static final byte[] DATA = BYTES.toArrayUnsafe();
     private static final Address ADDRESS = Address.fromHexString(HEX);
+    private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
+    private static final Long ENTITY_ID = EntityId.of(
+                    ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum(), EntityType.ACCOUNT)
+            .getId();
     private static final Address NON_MIRROR_ADDRESS =
             Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
-
-    private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
-    private static final Long ENTITY_ID =
-            EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
 
     @Mock
     private ContractRepository contractRepository;

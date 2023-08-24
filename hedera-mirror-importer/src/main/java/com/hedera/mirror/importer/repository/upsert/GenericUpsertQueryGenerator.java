@@ -18,15 +18,15 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import java.io.StringWriter;
 import java.text.MessageFormat;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor
 public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
@@ -77,6 +77,9 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
         // {0} is column name and {1} is column default. t or blank is the temporary table alias and e is the existing.
         velocityContext.put("coalesceColumns", metadata.columns("coalesce({0}, e_{0}, {1})"));
+        velocityContext.put(
+                "coalesceHistoryColumns",
+                metadata.columns("coalesce({0}, e_{0}, {1})", c -> !c.isUpdatable(), "coalesce(e_{0}, {0}, {1})"));
         velocityContext.put("conflictColumns", metadata.columns(ColumnMetadata::isId, "{0}"));
         velocityContext.put("existingColumns", closeRange(metadata.columns("e_{0}")));
         velocityContext.put("existingColumnsAs", metadata.columns("e.{0} as e_{0}"));
