@@ -140,7 +140,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         try (var in = precompileTestContract.getInputStream()) {
             compiledPrecompileContractSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
         }
-        deployedPrecompileContract = createContract(compiledPrecompileContractSolidityArtifacts, 0);
+        deployedPrecompileContract = createContract(compiledPrecompileContractSolidityArtifacts, supply);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }
@@ -2177,7 +2177,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         DISSOCIATE_AND_ASSOCIATE("dissociateAndAssociateTokenExternal", 1434814),
         DISSOCIATE_TOKEN("dissociateTokenExternal", 729428),
         DISSOCIATE_TOKENS("dissociateTokensExternal", 730641),
-        FREEZE_TOKEN("freezeTokenTwiceExternal", 54526),
+        FREEZE_TOKEN("freezeTokenExternal", 39339),
         GET_APPROVED("getApprovedExternal", 25192),
         GET_APPROVED_ERC("getApproved", 27393),
         GET_FUNGIBLE_TOKEN_INFO("getInformationForFungibleToken", 58190),
