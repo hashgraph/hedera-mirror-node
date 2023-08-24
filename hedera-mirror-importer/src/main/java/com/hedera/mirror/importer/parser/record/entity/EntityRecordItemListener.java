@@ -519,9 +519,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
+        long spenderId = payerAccountId.getId();
+        if (!tokenTransfers.isEmpty() && recordItem.getTransactionRecord().hasContractCallResult()) {
+            spenderId = EntityId.of(recordItem
+                            .getTransactionRecord()
+                            .getContractCallResult()
+                            .getSenderId())
+                    .getId();
+        }
+        long transferSpenderId = spenderId;
         tokenTransfers.forEach(tokenTransfer -> {
             var tokenId = EntityId.of(tokenTransfer.getToken());
-
             tokenTransfer.getTransfersList().forEach(accountAmount -> {
                 // Emit allowance amount representing approved transfer debit
                 if (accountAmount.getIsApproval() && accountAmount.getAmount() < 0) {
@@ -529,7 +537,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
                             .payerAccountId(payerAccountId)
-                            .spender(payerAccountId.getId())
+                            .spender(transferSpenderId)
                             .tokenId(tokenId.getId())
                             .build();
 
