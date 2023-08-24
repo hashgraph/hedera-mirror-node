@@ -527,7 +527,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .getSenderId())
                     .getId();
         }
-        long transferSenderId = spenderId;
+        long transferSpenderId = spenderId;
         tokenTransfers.forEach(tokenTransfer -> {
             var tokenId = EntityId.of(tokenTransfer.getToken());
             tokenTransfer.getTransfersList().forEach(accountAmount -> {
@@ -537,7 +537,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
                             .payerAccountId(payerAccountId)
-                            .spender(transferSenderId)
+                            .spender(transferSpenderId)
                             .tokenId(tokenId.getId())
                             .build();
 
