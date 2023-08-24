@@ -65,6 +65,7 @@ class TokenDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransact
         var expectedEntity = tokenId.toEntity().toBuilder()
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
 
         // when

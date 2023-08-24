@@ -23,6 +23,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -107,6 +108,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         entity.setBalance(0L);
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
+        entity.setType(EntityType.CONTRACT);
         updateStakingInfo(recordItem, entity);
         createContract(recordItem, entity);
         entityListener.onEntity(entity);

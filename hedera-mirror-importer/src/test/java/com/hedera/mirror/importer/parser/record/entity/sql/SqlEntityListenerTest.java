@@ -751,38 +751,46 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity existingEntityNonce1 = existingEntity.toEntityId().toEntity();
         existingEntityNonce1.setEthereumNonce(100L);
         existingEntityNonce1.setTimestampRange(null);
+        existingEntityNonce1.setType(ACCOUNT);
 
         Entity existingEntityNonce2 = existingEntity.toEntityId().toEntity();
         existingEntityNonce2.setEthereumNonce(101L);
         existingEntityNonce2.setTimestampRange(null);
+        existingEntityNonce2.setType(ACCOUNT);
 
         Entity existingEntityStakePeriodStart1 = existingEntity.toEntityId().toEntity();
         existingEntityStakePeriodStart1.setStakePeriodStart(2L);
         existingEntityStakePeriodStart1.setTimestampRange(null);
+        existingEntityStakePeriodStart1.setType(ACCOUNT);
 
         Entity existingEntityStakePeriodStart2 = existingEntity.toEntityId().toEntity();
         existingEntityStakePeriodStart2.setStakePeriodStart(5L);
         existingEntityStakePeriodStart2.setTimestampRange(null);
+        existingEntityStakePeriodStart2.setType(ACCOUNT);
 
         // Update to non-history field with partial data should be discarded
         Entity nonExistingEntity = domainBuilder.entity().get();
         Entity nonExistingEntityNonce1 = nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityNonce1.setEthereumNonce(200L);
         nonExistingEntityNonce1.setTimestampRange(null);
+        nonExistingEntityNonce1.setType(ACCOUNT);
 
         Entity nonExistingEntityNonce2 = nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityNonce2.setEthereumNonce(201L);
         nonExistingEntityNonce2.setTimestampRange(null);
+        nonExistingEntityNonce2.setType(ACCOUNT);
 
         Entity nonExistingEntityStakePeriodStart1 =
                 nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityStakePeriodStart1.setStakePeriodStart(6L);
         nonExistingEntityStakePeriodStart1.setTimestampRange(null);
+        nonExistingEntityStakePeriodStart1.setType(ACCOUNT);
 
         Entity nonExistingEntityStakePeriodStart2 =
                 nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityStakePeriodStart2.setStakePeriodStart(8L);
         nonExistingEntityStakePeriodStart2.setTimestampRange(null);
+        nonExistingEntityStakePeriodStart2.setType(ACCOUNT);
 
         // when
         sqlEntityListener.onEntity(existingEntityNonce1);
@@ -802,20 +810,24 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity existingEntityNonce3 = existingEntity.toEntityId().toEntity();
         existingEntityNonce3.setEthereumNonce(102L);
         existingEntityNonce3.setTimestampRange(null);
+        existingEntityNonce3.setType(ACCOUNT);
 
         Entity existingEntityStakePeriodStart3 = existingEntity.toEntityId().toEntity();
         existingEntityStakePeriodStart3.setStakePeriodStart(10L);
         existingEntityStakePeriodStart3.setTimestampRange(null);
+        existingEntityStakePeriodStart3.setType(ACCOUNT);
 
         Entity nonExistingEntityNonce3 =
                 domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
         nonExistingEntityNonce3.setEthereumNonce(202L);
         nonExistingEntityNonce3.setTimestampRange(null);
+        nonExistingEntityNonce3.setType(ACCOUNT);
 
         Entity nonExistingEntityStakePeriodStart3 =
                 domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
         nonExistingEntityStakePeriodStart3.setStakePeriodStart(12L);
         nonExistingEntityStakePeriodStart3.setTimestampRange(null);
+        nonExistingEntityStakePeriodStart3.setType(ACCOUNT);
 
         sqlEntityListener.onEntity(existingEntityNonce3);
         sqlEntityListener.onEntity(existingEntityStakePeriodStart3);
@@ -838,22 +850,27 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity entityNonce1 = entity.toEntityId().toEntity();
         entityNonce1.setEthereumNonce(100L);
         entityNonce1.setTimestampRange(null);
+        entityNonce1.setType(ACCOUNT);
 
         Entity entityStakePeriodStart1 = entity.toEntityId().toEntity();
         entityStakePeriodStart1.setStakePeriodStart(2L);
         entityStakePeriodStart1.setTimestampRange(null);
+        entityStakePeriodStart1.setType(ACCOUNT);
 
         Entity entityNonce2 = entity.toEntityId().toEntity();
         entityNonce2.setEthereumNonce(101L);
         entityNonce2.setTimestampRange(null);
+        entityNonce2.setType(ACCOUNT);
 
         Entity entityStakePeriodStart2 = entity.toEntityId().toEntity();
         entityStakePeriodStart2.setStakePeriodStart(7L);
         entityStakePeriodStart2.setTimestampRange(null);
+        entityStakePeriodStart2.setType(ACCOUNT);
 
         Entity entityMemoUpdated = entity.toEntityId().toEntity();
         entityMemoUpdated.setMemo(domainBuilder.text(16));
         entityMemoUpdated.setTimestampLower(domainBuilder.timestamp());
+        entityMemoUpdated.setType(ACCOUNT);
 
         // when
         if (nonHistoryBefore) {
@@ -890,6 +907,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var nonHistoryUpdate = entityId.toEntity();
         nonHistoryUpdate.setStakePeriodStart(120L);
         nonHistoryUpdate.setTimestampRange(null);
+        nonHistoryUpdate.setType(ACCOUNT);
         var historyUpdate = entityId.toEntity();
         historyUpdate.setMemo("Update entity memo");
         historyUpdate.setTimestampRange(Range.atLeast(domainBuilder.timestamp()));
@@ -931,11 +949,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setStakedNodeId(-1L);
         entityUpdate.setStakePeriodStart(domainBuilder.id());
         entityUpdate.setSubmitKey(domainBuilder.key());
+        entityUpdate.setType(ACCOUNT);
 
         Entity entityDelete = entityCreate.toEntityId().toEntity();
         entityDelete.setAlias(entityCreate.getAlias());
         entityDelete.setDeleted(true);
         entityDelete.setTimestampLower(entityCreate.getTimestampLower() + 2);
+        entityDelete.setType(ACCOUNT);
 
         // Expected merged objects
         Entity mergedCreate = TestUtils.clone(entityCreate);

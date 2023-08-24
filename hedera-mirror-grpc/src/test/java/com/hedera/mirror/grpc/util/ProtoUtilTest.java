@@ -62,7 +62,7 @@ class ProtoUtilTest {
         assertException(new ConstraintViolationException(message, null), Status.INVALID_ARGUMENT, message);
         assertException(new IllegalArgumentException(message), Status.INVALID_ARGUMENT, message);
         assertException(new InvalidEntityException(message), Status.INVALID_ARGUMENT, message);
-        assertException(new EntityNotFoundException(entityId), Status.NOT_FOUND, "Account 0.0.1 does not exist");
+        assertException(new EntityNotFoundException(entityId), Status.NOT_FOUND, "0.0.1 does not exist");
         assertException(new NonTransientDataAccessResourceException(message), Status.UNAVAILABLE, DB_ERROR);
         assertException(new QueryTimeoutException(message), Status.RESOURCE_EXHAUSTED, DB_ERROR);
         assertException(new TimeoutException(message), Status.RESOURCE_EXHAUSTED, DB_ERROR);

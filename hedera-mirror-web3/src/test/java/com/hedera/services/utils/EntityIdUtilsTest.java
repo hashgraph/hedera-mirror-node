@@ -169,8 +169,7 @@ class EntityIdUtilsTest {
         assertThat(EntityIdUtils.entityIdFromId(new Id(1L, 2L, 3L)))
                 .returns(1L, EntityId::getShard)
                 .returns(2L, EntityId::getRealm)
-                .returns(3L, EntityId::getNum)
-                .returns(EntityType.UNKNOWN, EntityId::getType);
+                .returns(3L, EntityId::getNum);
     }
 
     @Test
