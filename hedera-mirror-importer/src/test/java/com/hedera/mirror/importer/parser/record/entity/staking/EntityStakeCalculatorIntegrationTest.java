@@ -29,7 +29,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -250,8 +249,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(
-                        ab -> ab.id(new Id(balanceTimestamp, EntityId.of(STAKING_REWARD_ACCOUNT, EntityType.ACCOUNT))))
+                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(STAKING_REWARD_ACCOUNT))))
                 .persist();
         domainBuilder
                 .nodeStake()

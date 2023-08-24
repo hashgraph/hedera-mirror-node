@@ -17,7 +17,6 @@
 package com.hedera.mirror.grpc.listener;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import java.time.Duration;
@@ -85,17 +84,17 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .chunkTotal(2)
                 .consensusTimestamp(1594401417000000000L)
                 .message(new byte[] {1, 2, 3})
-                .payerAccountId(EntityId.of(4294968296L, EntityType.ACCOUNT))
+                .payerAccountId(EntityId.of(4294968296L))
                 .runningHash(new byte[] {4, 5, 6})
                 .runningHashVersion(2)
                 .sequenceNumber(1L)
-                .topicId(EntityId.of(1001L, EntityType.TOPIC))
+                .topicId(EntityId.of(1001L))
                 .validStartTimestamp(1594401416000000000L)
                 .build();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
-                .topicId(EntityId.of(1001L, EntityType.TOPIC))
+                .topicId(EntityId.of(1001L))
                 .build();
 
         StepVerifier.withVirtualTime(() -> topicListener.listen(filter))

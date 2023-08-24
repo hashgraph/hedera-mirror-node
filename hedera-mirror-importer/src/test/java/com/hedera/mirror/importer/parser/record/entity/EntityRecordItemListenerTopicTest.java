@@ -62,7 +62,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
-    static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.9999", EntityType.ACCOUNT);
+    static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.9999");
 
     @ParameterizedTest
     @CsvSource({
@@ -278,7 +278,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var consensusTimestamp = 6_000_000L;
         var responseCode = SUCCESS;
         var memo = "updated-memo";
-        var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityType.ACCOUNT);
+        var autoRenewAccount = EntityId.of(0L, 0L, 1L);
         // Topic does not get stored in the repository beforehand.
 
         var transaction = createUpdateTopicTransaction(
@@ -893,7 +893,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         if (initialTransactionID != null) {
             topicMessage.setInitialTransactionId(initialTransactionID.toByteArray());
         }
-        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityType.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum()));
         topicMessage.setMessage(message.getBytes());
         topicMessage.setPayerAccountId(payerAccountId);
         topicMessage.setSequenceNumber(sequenceNumber);

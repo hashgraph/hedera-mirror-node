@@ -25,7 +25,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -122,12 +121,12 @@ class BatchInserterTest extends IntegrationTest {
     @Test
     void assessedCustomFees() {
         long consensusTimestamp = 10L;
-        EntityId collectorId1 = EntityId.of("0.0.2000", EntityType.ACCOUNT);
-        EntityId collectorId2 = EntityId.of("0.0.2001", EntityType.ACCOUNT);
-        EntityId payerId1 = EntityId.of("0.0.3000", EntityType.ACCOUNT);
-        EntityId payerId2 = EntityId.of("0.0.3001", EntityType.ACCOUNT);
-        EntityId tokenId1 = EntityId.of("0.0.5000", EntityType.TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.5001", EntityType.TOKEN);
+        EntityId collectorId1 = EntityId.of("0.0.2000");
+        EntityId collectorId2 = EntityId.of("0.0.2001");
+        EntityId payerId1 = EntityId.of("0.0.3000");
+        EntityId payerId2 = EntityId.of("0.0.3001");
+        EntityId tokenId1 = EntityId.of("0.0.5000");
+        EntityId tokenId2 = EntityId.of("0.0.5001");
 
         // fee paid in HBAR with empty effective payer list
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();

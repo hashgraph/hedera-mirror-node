@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_F
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -37,8 +36,8 @@ import org.springframework.cache.annotation.Cacheable;
 @CustomLog
 public class RatesAndFeesLoader {
     private final FileDataRepository fileDataRepository;
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
+    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
 
     /**
      * Loads the exchange rates for a given time. Currently, works only with current timestamp.

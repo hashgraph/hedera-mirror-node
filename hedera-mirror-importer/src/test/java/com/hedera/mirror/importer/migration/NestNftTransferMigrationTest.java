@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -242,10 +240,10 @@ class NestNftTransferMigrationTest extends IntegrationTest {
         // expected
         tokenUpdateTx.setNftTransfer(List.of(NftTransfer.builder()
                 .isApproval(false)
-                .receiverAccountId(EntityId.of(newTreasury, ACCOUNT))
-                .senderAccountId(EntityId.of(treasury, ACCOUNT))
+                .receiverAccountId(EntityId.of(newTreasury))
+                .senderAccountId(EntityId.of(treasury))
                 .serialNumber(NftTransfer.WILDCARD_SERIAL_NUMBER)
-                .tokenId(EntityId.of(token1, TOKEN))
+                .tokenId(EntityId.of(token1))
                 .build()));
 
         // at certain point, token1 and token 2 are both deleted, later alice dissociate herself from both.
@@ -280,15 +278,15 @@ class NestNftTransferMigrationTest extends IntegrationTest {
         tokenDissociateTx.setNftTransfer(List.of(
                 NftTransfer.builder()
                         .isApproval(false)
-                        .senderAccountId(EntityId.of(alice, ACCOUNT))
+                        .senderAccountId(EntityId.of(alice))
                         .serialNumber(-2L)
-                        .tokenId(EntityId.of(token1, TOKEN))
+                        .tokenId(EntityId.of(token1))
                         .build(),
                 NftTransfer.builder()
                         .isApproval(false)
-                        .senderAccountId(EntityId.of(alice, ACCOUNT))
+                        .senderAccountId(EntityId.of(alice))
                         .serialNumber(-1L)
-                        .tokenId(EntityId.of(token2, TOKEN))
+                        .tokenId(EntityId.of(token2))
                         .build()));
 
         // when
@@ -378,14 +376,14 @@ class NestNftTransferMigrationTest extends IntegrationTest {
         long tokenId;
 
         public NftTransfer toDomainNftTransfer() {
-            var receiver = receiverAccountId != null ? EntityId.of(receiverAccountId, ACCOUNT) : null;
-            var sender = senderAccountId != null ? EntityId.of(senderAccountId, ACCOUNT) : null;
+            var receiver = receiverAccountId != null ? EntityId.of(receiverAccountId) : null;
+            var sender = senderAccountId != null ? EntityId.of(senderAccountId) : null;
             return NftTransfer.builder()
                     .isApproval(isApproval)
                     .receiverAccountId(receiver)
                     .senderAccountId(sender)
                     .serialNumber(serialNumber)
-                    .tokenId(EntityId.of(tokenId, TOKEN))
+                    .tokenId(EntityId.of(tokenId))
                     .build();
         }
     }

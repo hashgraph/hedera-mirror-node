@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -53,7 +52,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @BeforeEach
     void beforeEach() {
         when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
-                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT)));
+                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM)));
     }
 
     @Override
@@ -102,7 +101,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         var aliasAccount =
                 recordItem.getTransactionBody().getContractUpdateInstance().getAutoRenewAccountId();
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         var expectedEntityTransactions = getExpectedEntityTransactions(aliasAccountId, recordItem, transaction);
         when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
 
@@ -137,7 +136,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         var aliasAccount =
                 recordItem.getTransactionBody().getContractUpdateInstance().getAutoRenewAccountId();
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
 
         // when
@@ -223,7 +222,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(Optional.of(aliasAccountId));
 
@@ -376,7 +375,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(aliasAccountId));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContractUpdate(timestamp, contractId, extraAssertions);

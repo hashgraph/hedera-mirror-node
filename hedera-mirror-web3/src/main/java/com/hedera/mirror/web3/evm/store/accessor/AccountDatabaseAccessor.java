@@ -96,7 +96,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
         return cryptoAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
-                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender(), ACCOUNT)),
+                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
                         CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -106,8 +106,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return tokenAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
                         tokenAllowance -> new FcTokenAllowanceId(
-                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId(), TOKEN)),
-                                entityNumFromId(EntityId.of(tokenAllowance.getSpender(), ACCOUNT))),
+                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
+                                entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
                         AbstractTokenAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -116,8 +116,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId) {
         return nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId).stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
-                        entityNumFromId(EntityId.of(nftAllowance.getTokenId(), TOKEN)),
-                        entityNumFromId(EntityId.of(nftAllowance.getSpender(), ACCOUNT))))
+                        entityNumFromId(EntityId.of(nftAllowance.getTokenId())),
+                        entityNumFromId(EntityId.of(nftAllowance.getSpender()))))
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 

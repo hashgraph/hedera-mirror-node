@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.StreamMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -147,11 +146,11 @@ class RedisEntityListenerTest {
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(consensusTimestamp++);
         topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000"));
         topicMessage.setRunningHash("running hash".getBytes());
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.1001"));
         topicMessage.setValidStartTimestamp(4L);
         return topicMessage;
     }

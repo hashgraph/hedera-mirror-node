@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,7 +54,7 @@ class ProtoUtilTest {
 
     @Test
     void toStatusRuntimeException() {
-        var entityId = EntityId.of(1L, EntityType.ACCOUNT);
+        var entityId = EntityId.of(1L);
         var message = "boom";
 
         assertException(Exceptions.failWithOverflow(message), Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
@@ -101,11 +100,11 @@ class ProtoUtilTest {
 
     @Test
     void toAccountID() {
-        assertThat(ProtoUtil.toAccountID(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT)))
+        assertThat(ProtoUtil.toAccountID(EntityId.of(0L, 0L, 5L)))
                 .returns(0L, AccountID::getShardNum)
                 .returns(0L, AccountID::getRealmNum)
                 .returns(5L, AccountID::getAccountNum);
-        assertThat(ProtoUtil.toAccountID(EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT)))
+        assertThat(ProtoUtil.toAccountID(EntityId.of(1L, 2L, 3L)))
                 .returns(1L, AccountID::getShardNum)
                 .returns(2L, AccountID::getRealmNum)
                 .returns(3L, AccountID::getAccountNum);

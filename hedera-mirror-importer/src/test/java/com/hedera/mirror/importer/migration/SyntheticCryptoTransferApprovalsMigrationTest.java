@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
@@ -71,9 +69,9 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
     private static final AtomicLong count = new AtomicLong(100000);
-    private static final EntityId contractId = EntityId.of("0.0.2119900", CONTRACT);
-    private static final EntityId contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-    private static final EntityId priorContractId = EntityId.of("0.0.2119899", CONTRACT);
+    private static final EntityId contractId = EntityId.of("0.0.2119900");
+    private static final EntityId contractId2 = EntityId.of("0.0.2119901");
+    private static final EntityId priorContractId = EntityId.of("0.0.2119899");
     private static final RecordFile RECORD_FILE = RecordFile.builder()
             .consensusStart(START_TIMESTAMP)
             .consensusEnd(END_TIMESTAMP)
@@ -795,7 +793,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         var id = TokenTransfer.Id.builder()
                 .accountId(entityId)
                 .consensusTimestamp(consensus)
-                .tokenId(domainBuilder.entityId(TOKEN))
+                .tokenId(domainBuilder.entityId())
                 .build();
         return domainBuilder
                 .tokenTransfer()

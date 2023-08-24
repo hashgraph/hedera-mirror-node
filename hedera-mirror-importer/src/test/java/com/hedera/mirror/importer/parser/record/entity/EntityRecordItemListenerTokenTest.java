@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
 import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
@@ -35,7 +34,6 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -117,12 +115,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201, ACCOUNT);
-    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800, EntityType.TOKEN);
-    private static final EntityId FEE_PAYER_1 = EntityId.of(1500, ACCOUNT);
-    private static final EntityId FEE_PAYER_2 = EntityId.of(1501, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800);
+    private static final EntityId FEE_PAYER_1 = EntityId.of(1500);
+    private static final EntityId FEE_PAYER_2 = EntityId.of(1501);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final byte[] METADATA = "METADATA".getBytes();
     private static final long SERIAL_NUMBER_1 = 1L;
@@ -440,7 +438,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean pauseKey,
             List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
         tokenCreate(
                 customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts, autoAssociatedAccounts);
@@ -495,7 +493,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
 
         // when
@@ -1177,10 +1175,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             """)
     void nftUpdateTreasuryWithNftStateChange(boolean explicitAssociation, boolean singleRecordFile) {
         // given
-        var account = domainBuilder.entityId(ACCOUNT);
-        var oldTreasury = domainBuilder.entityId(ACCOUNT);
-        var newTreasury = domainBuilder.entityId(ACCOUNT);
-        var tokenId = domainBuilder.entityId(TOKEN);
+        var account = domainBuilder.entityId();
+        var oldTreasury = domainBuilder.entityId();
+        var newTreasury = domainBuilder.entityId();
+        var tokenId = domainBuilder.entityId();
         var protoAccount =
                 AccountID.newBuilder().setAccountNum(account.getNum()).build();
         var protoOldTreasury =
@@ -3235,9 +3233,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 EntityId.of(TOKEN_ID),
                 EntityId.of(tokenId2));
         assessedCustomFees.forEach(assessedCustomFee -> {
-            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId(), ACCOUNT));
+            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId()));
             entityIds.add(assessedCustomFee.getTokenId());
-            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
+            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id)));
         });
         if (isPrecompile) {
             entityIds.add(EntityId.of(CONTRACT_ID));

@@ -171,7 +171,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
             entityType = EntityType.CONTRACT;
         }
 
-        EntityId entityId = EntityId.of(id, entityType);
+        EntityId entityId = EntityId.of(id);
         Optional<Entity> currentEntity = entityRepository.findById(entityId.getId());
         boolean exists = currentEntity.isPresent();
 

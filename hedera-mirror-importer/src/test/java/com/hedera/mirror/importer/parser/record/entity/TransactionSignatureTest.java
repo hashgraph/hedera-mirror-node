@@ -29,7 +29,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -72,7 +71,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TransactionSignatureTest {
 
     private static final long CONSENSUS_TIMESTAMP = 10L;
-    private static final EntityId ENTITY_ID = EntityId.of("0.0.123", EntityType.UNKNOWN);
+    private static final EntityId ENTITY_ID = EntityId.of("0.0.123");
 
     @Mock
     private AddressBookService addressBookService;

@@ -143,7 +143,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                         ? findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT)
                         : entityRepository
                                 .findByAlias(alias)
-                                .map(id -> EntityId.of(id, ACCOUNT))
+                                .map(id -> EntityId.of(id))
                                 .orElseGet(() -> {
                                     log.error(
                                             RECOVERABLE_ERROR + "Unable to find entity for alias {}",
@@ -177,7 +177,7 @@ public class EntityIdServiceImpl implements EntityIdService {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShard() == shardNum && e.getRealm() == realmNum)
-                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
+                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id)))
                 .orElseGet(() -> {
                     log.error(
                             RECOVERABLE_ERROR + "Entity not found for evmAddress {}", Hex.encodeHexString(evmAddress));
