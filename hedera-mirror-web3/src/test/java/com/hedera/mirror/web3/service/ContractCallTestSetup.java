@@ -1348,7 +1348,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(exchangeRateContractEntityId.getId())
-                        .num(exchangeRateContractEntityId.getEntityNum())
+                        .num(exchangeRateContractEntityId.getNum())
                         .evmAddress(exchangeRteContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
