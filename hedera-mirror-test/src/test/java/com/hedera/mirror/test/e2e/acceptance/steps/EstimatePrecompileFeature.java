@@ -352,9 +352,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void associateTokensWithContract() throws InvalidProtocolBufferException {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
         tokenClient.associate(deployedEstimatePrecompileContract.contractId(), tokenIds.get(0));
+        tokenClient.associate(deployedPrecompileContract.contractId(), tokenIds.get(0));
         tokenClient.associate(deployedEstimatePrecompileContract.contractId(), tokenIds.get(1));
+        tokenClient.associate(deployedPrecompileContract.contractId(), tokenIds.get(1));
         tokenClient.associate(deployedErcTestContract.contractId(), tokenIds.get(0));
         // approve is also needed for the approveNFT function
+        accountClient.approveNftAllSerials(tokenIds.get(1), deployedPrecompileContract.contractId());
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(tokenIds.get(1), deployedEstimatePrecompileContract.contractId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -1925,7 +1928,15 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     @Then("I call estimateGas with redirect transfer function")
-    public void redirectTransferEstimateGas() {
+    public void redirectTransferEstimateGas() throws InvalidProtocolBufferException {
+        tokenClient.grantKyc(tokenIds.get(0), deployedPrecompileContract.contractId());
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                tokenIds.get(0),
+                admin,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()),
+                10);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+
         ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
                         ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER.getFunctionName())
                 .encodeCallWithArgs(
@@ -1972,10 +1983,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect transferFrom NFT function")
     public void redirectTransferFromNonFungibleEstimateGas() {
+        networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(4), receiverAccount.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
                         ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getFunctionName())
                 .encodeCallWithArgs(
-                        asHeadlongAddress(tokenIds.get(1).toSolidityAddress()),
+                        asHeadlongAddress(tokenIds.get(4).toSolidityAddress()),
                         asHeadlongAddress(admin.getAccountId().toSolidityAddress()),
                         asHeadlongAddress(receiverAccount.getAccountId().toSolidityAddress()),
                         new BigInteger("1"));
@@ -1997,7 +2010,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
         validateGasEstimation(
                 Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getActualGas(),
+                ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL.getActualGas(),
                 precompileTestContractSolidityAddress);
     }
 
@@ -2204,23 +2217,23 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         OWNER_OF("getOwnerOf", 27271),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
-        REDIRECT_FOR_TOKEN_ALLOWANCE("allowanceRedirect", 23422),
-        REDIRECT_FOR_TOKEN_APPROVE("approveRedirect", 23422),
-        REDIRECT_FOR_TOKEN_BALANCE_OF("balanceOfRedirect", 23422),
-        REDIRECT_FOR_TOKEN_DECIMALS("decimalsRedirect", 23422),
+        REDIRECT_FOR_TOKEN_ALLOWANCE("allowanceRedirect", 33182),
+        REDIRECT_FOR_TOKEN_APPROVE("approveRedirect", 737257),
+        REDIRECT_FOR_TOKEN_BALANCE_OF("balanceOfRedirect", 32806),
+        REDIRECT_FOR_TOKEN_DECIMALS("decimalsRedirect", 32411),
         REDIRECT_FOR_TOKEN_GET_APPROVED("getApprovedRedirect", 23422),
-        REDIRECT_FOR_TOKEN_GET_OWNER_OF("getOwnerOfRedirect", 23422),
-        REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL("isApprovedForAllRedirect", 23422),
-        REDIRECT_FOR_TOKEN_NAME("nameNFTRedirect", 23422),
-        REDIRECT_FOR_TOKEN_SYMBOL("symbolNFTRedirect", 23422),
+        REDIRECT_FOR_TOKEN_GET_OWNER_OF("getOwnerOfRedirect", 32728),
+        REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL("isApprovedForAllRedirect", 33204),
+        REDIRECT_FOR_TOKEN_NAME("nameNFTRedirect", 33615),
+        REDIRECT_FOR_TOKEN_SYMBOL("symbolNFTRedirect", 33681),
         REDIRECT_FOR_TOKEN_NAME_NFT("nameRedirect", 23422),
         REDIRECT_FOR_TOKEN_SYMBOL_NFT("symbolRedirect", 23422),
-        REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL("setApprovalForAllRedirect", 23422),
+        REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL("setApprovalForAllRedirect", 737243),
         REDIRECT_FOR_TOKEN_TOTAL_SUPPLY("totalSupplyRedirect", 23422),
-        REDIRECT_FOR_TOKEN_TOKEN_URI("tokenURIRedirect", 23422),
-        REDIRECT_FOR_TOKEN_TRANSFER("transferRedirect", 23422),
-        REDIRECT_FOR_TOKEN_TRANSFER_FROM("transferFromRedirect", 23422),
-        REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT("transferFromNFTRedirect", 23422),
+        REDIRECT_FOR_TOKEN_TOKEN_URI("tokenURIRedirect", 33997),
+        REDIRECT_FOR_TOKEN_TRANSFER("transferRedirect", 47048),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM("transferFromRedirect", 47350),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT("transferFromNFTRedirect", 61457),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         SYMBOL("symbol", 27815),
         SYMBOL_NFT("symbolIERC721", 27814),
