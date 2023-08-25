@@ -316,14 +316,13 @@ contract DynamicEthCalls is HederaTokenService {
         if(approved) revert("NFT approval mismatch before transfer");
     }
 
-    // TransferFrom an nft + allowance + ownerOf
+    // TransferFrom an nft + ownerOf
     function transferFromNFTGetAllowance(address token, uint256 serialNumber) external {
         try IERC721(token).transferFrom(IERC721(token).ownerOf(serialNumber), address(this), serialNumber) {
         } catch {
             revert("IERC721: failed to transfer");
         }
         if(IERC721(token).ownerOf(serialNumber) != address(this)) revert("NFT ownership mismatch after transfer");
-        //if(!IERC721(token).isApprovedForAll(IERC721(token).ownerOf(serialNumber), address(this))) revert("NFT approval mismatch before transfer");
     }
 
     // Transfer fungible/non-fungible token + allowance + balance
