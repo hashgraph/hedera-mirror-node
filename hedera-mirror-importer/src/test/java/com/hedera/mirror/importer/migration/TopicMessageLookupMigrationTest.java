@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static com.hedera.mirror.importer.TestUtils.plus;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -108,9 +107,9 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         var partition2 = partitions.get(1);
         long partition1Start = partition1.getTimestampRange().lowerEndpoint();
         long consensusStart = plus(partition2.getTimestampRange().lowerEndpoint(), Duration.ofSeconds(10));
-        var topicId1 = EntityId.of(5000, TOPIC);
-        var topicId2 = EntityId.of(5001, TOPIC);
-        var topicId3 = EntityId.of(5002, TOPIC);
+        var topicId1 = EntityId.of(5000);
+        var topicId2 = EntityId.of(5001);
+        var topicId3 = EntityId.of(5002);
 
         // data in topic_message_lookup table before migration
         domainBuilder.topicMessageLookup().persist();

@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import jakarta.annotation.Resource;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,7 +35,7 @@ import org.springframework.util.CollectionUtils;
 
 class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
 
-    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102", EntityType.FILE);
+    private final EntityId addressBookEntityId102 = EntityId.of("0.0.102");
 
     @Resource
     protected AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
@@ -89,7 +88,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
             throws UnknownHostException {
         long nodeId = nodeAccountId - 3;
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
-        EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityType.ACCOUNT);
+        EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .memo(nodeAccountIdString)

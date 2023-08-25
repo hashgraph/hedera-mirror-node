@@ -63,7 +63,7 @@ class AccountDatabaseAccessorTest {
     private static final long EXPIRATION_TIMESTAMP = 2L;
     private static final long BALANCE = 3L;
     private static final long AUTO_RENEW_PERIOD = 4L;
-    private static final EntityId PROXY_ACCOUNT_ID = new EntityId(SHARD, REALM, 5L, EntityType.ACCOUNT);
+    private static final EntityId PROXY_ACCOUNT_ID = EntityId.of(SHARD, REALM, 5L);
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
     private static final int POSITIVE_BALANCES = 7;
     private static final int NEGATIVE_BALANCES = 8;
@@ -140,9 +140,9 @@ class AccountDatabaseAccessorTest {
                 .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
                 .returns(
                         new Id(
-                                entity.getProxyAccountId().getShardNum(),
-                                entity.getProxyAccountId().getRealmNum(),
-                                entity.getProxyAccountId().getEntityNum()),
+                                entity.getProxyAccountId().getShard(),
+                                entity.getProxyAccountId().getRealm(),
+                                entity.getProxyAccountId().getNum()),
                         Account::getProxy)
                 .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
     }

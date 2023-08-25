@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.converter.EntityIdSerializer.INSTANCE;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -53,7 +52,7 @@ class EntityIdSerializerTest {
     @Test
     void testEntity() throws Exception {
         // when
-        var entity = EntityId.of(10L, 20L, 30L, EntityType.ACCOUNT);
+        var entity = EntityId.of(10L, 20L, 30L);
         INSTANCE.serialize(entity, jsonGenerator, null);
 
         // then

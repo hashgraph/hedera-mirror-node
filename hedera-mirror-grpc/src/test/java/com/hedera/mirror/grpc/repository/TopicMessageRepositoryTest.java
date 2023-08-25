@@ -19,7 +19,6 @@ package com.hedera.mirror.grpc.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
@@ -44,7 +43,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     void findByFilterEmpty() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
-                .topicId(EntityId.of(100L, EntityType.TOPIC))
+                .topicId(EntityId.of(100L))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).isEmpty();
@@ -66,18 +65,15 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findByFilterWithTopicId() {
-        TopicMessage topicMessage1 = domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(1, EntityType.TOPIC)))
-                .block();
-        TopicMessage topicMessage2 = domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(2, EntityType.TOPIC)))
-                .block();
-        TopicMessage topicMessage3 = domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(3, EntityType.TOPIC)))
-                .block();
+        TopicMessage topicMessage1 =
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1))).block();
+        TopicMessage topicMessage2 =
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2))).block();
+        TopicMessage topicMessage3 =
+                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(3))).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicId(EntityId.of(2L, EntityType.TOPIC))
+                .topicId(EntityId.of(2L))
                 .startTime(topicMessage1.getConsensusTimestamp())
                 .build();
 

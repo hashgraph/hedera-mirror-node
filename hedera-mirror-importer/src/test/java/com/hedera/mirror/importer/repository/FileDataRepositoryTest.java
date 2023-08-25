@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.annotation.Resource;
@@ -28,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 class FileDataRepositoryTest extends AbstractRepositoryTest {
 
-    private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101", EntityType.FILE);
-    private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102", EntityType.FILE);
+    private static final EntityId ADDRESS_BOOK_101 = EntityId.of("0.0.101");
+    private static final EntityId ADDRESS_BOOK_102 = EntityId.of("0.0.102");
 
     @Resource
     private FileDataRepository fileDataRepository;
@@ -119,7 +118,7 @@ class FileDataRepositoryTest extends AbstractRepositoryTest {
         FileData fileData = new FileData();
         fileData.setConsensusTimestamp(consensusTimestamp);
         fileData.setFileData("some file data".getBytes());
-        fileData.setEntityId(EntityId.of(0, 0, fileId, EntityType.FILE));
+        fileData.setEntityId(EntityId.of(0, 0, fileId));
         fileData.setTransactionType(transactionType);
         return fileData;
     }

@@ -114,7 +114,6 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
-
             recordItem.addEntityId(senderId);
         }
     }

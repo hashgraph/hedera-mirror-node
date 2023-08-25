@@ -17,13 +17,11 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
@@ -39,14 +37,17 @@ import org.springframework.data.domain.Persistable;
 @Builder
 @Data
 @Entity
+@IdClass(AssessedCustomFee.Id.class)
 @NoArgsConstructor
 public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
-
     private long amount;
+
+    @jakarta.persistence.Id
+    private long collectorAccountId;
+
+    @jakarta.persistence.Id
+    private long consensusTimestamp;
 
     @Builder.Default
     @JsonSerialize(using = ListToStringSerializer.class)
@@ -58,20 +59,28 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
     @JsonIgnore
     @Override
+    public Id getId() {
+        var id = new Id();
+        id.setCollectorAccountId(collectorAccountId);
+        id.setConsensusTimestamp(consensusTimestamp);
+        return id;
+    }
+
+    @JsonIgnore
+    @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
-    @Data
-    @Embeddable
     @AllArgsConstructor
+    @Data
     @NoArgsConstructor
     public static class Id implements Serializable {
 
         @Serial
         private static final long serialVersionUID = -636368167561206418L;
 
-        private EntityId collectorAccountId;
+        private long collectorAccountId;
 
         private long consensusTimestamp;
     }

@@ -298,6 +298,6 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private NftId nftIdFromEntityId(final EntityId entityId, long serialNo) {
-        return new NftId(entityId.getShardNum(), entityId.getRealmNum(), entityId.getEntityNum(), serialNo);
+        return new NftId(entityId.getShard(), entityId.getRealm(), entityId.getNum(), serialNo);
     }
 }

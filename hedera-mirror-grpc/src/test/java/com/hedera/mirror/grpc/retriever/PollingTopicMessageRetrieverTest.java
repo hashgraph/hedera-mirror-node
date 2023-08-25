@@ -17,7 +17,6 @@
 package com.hedera.mirror.grpc.retriever;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
@@ -39,7 +38,7 @@ import reactor.test.StepVerifier;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
-    private static final EntityId TOPIC_ID = EntityId.of(100L, EntityType.TOPIC);
+    private static final EntityId TOPIC_ID = EntityId.of(100L);
     private static final Duration WAIT = Duration.ofSeconds(10L);
 
     private final ReactiveDomainBuilder domainBuilder;
@@ -225,19 +224,13 @@ class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void topicId(boolean throttle) {
-        domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)))
-                .block();
-        domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)))
-                .block();
-        domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(3L, EntityType.TOPIC)))
-                .block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L))).block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L))).block();
+        domainBuilder.topicMessage(t -> t.topicId(EntityId.of(3L))).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
-                .topicId(EntityId.of(2L, EntityType.TOPIC))
+                .topicId(EntityId.of(2L))
                 .build();
 
         StepVerifier.withVirtualTime(() ->

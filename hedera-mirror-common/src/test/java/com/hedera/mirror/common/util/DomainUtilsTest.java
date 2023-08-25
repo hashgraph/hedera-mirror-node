@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.services.stream.proto.HashObject;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -315,7 +314,7 @@ class DomainUtilsTest {
         evmAddress[3] = (byte) shard;
         evmAddress[11] = (byte) realm;
         evmAddress[19] = (byte) num;
-        EntityId expected = EntityId.of(shard, realm, num, EntityType.CONTRACT);
+        EntityId expected = EntityId.of(shard, realm, num);
         assertThat(DomainUtils.fromEvmAddress(evmAddress)).isEqualTo(expected);
 
         evmAddress[0] = (byte) 255;
@@ -333,7 +332,7 @@ class DomainUtilsTest {
 
     @Test
     void toEvmAddressEntityId() {
-        EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
+        EntityId contractId = EntityId.of(1, 2, 255);
         String expected = "00000001000000000000000200000000000000FF";
         assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
         assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress((EntityId) null));

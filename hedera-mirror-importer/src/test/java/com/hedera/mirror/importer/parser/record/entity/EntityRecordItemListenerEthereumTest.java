@@ -59,7 +59,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         var senderId = EntityId.of(functionResult.getSenderId());
         Entity sender = domainBuilder
                 .entity()
-                .customize(e -> e.id(senderId.getId()).num(senderId.getEntityNum()))
+                .customize(e -> e.id(senderId.getId()).num(senderId.getNum()))
                 .persist();
 
         parseRecordItemAndCommit(recordItem);

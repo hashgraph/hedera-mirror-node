@@ -84,7 +84,7 @@ public class ReactiveDomainBuilder {
                 .topicMessage()
                 .customize(e -> e.consensusTimestamp(now + sequenceNumber)
                         .sequenceNumber(++sequenceNumber)
-                        .topicId(EntityId.of(100L, EntityType.TOPIC)))
+                        .topicId(EntityId.of(100L)))
                 .customize(customizer)
                 .get();
         return insert(topicMessage).thenReturn(topicMessage);

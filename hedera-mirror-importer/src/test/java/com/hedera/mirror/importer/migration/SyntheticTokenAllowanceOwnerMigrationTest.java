@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -48,8 +47,8 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
     private Pair<TokenAllowance, List<TokenAllowance>> unaffectedTokenAllowancePair;
     private Pair<TokenAllowance, List<TokenAllowance>> correctTokenAllowancePair;
     private TokenAllowance newTokenAllowance;
-    private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001", CONTRACT);
-    private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001", CONTRACT);
+    private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001");
+    private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001");
     private static final long INCORRECT_OWNER_ACCOUNT_ID = 1001L;
     private static final long OWNER_ACCOUNT_ID = 38L;
     private static final long OWNER_PRE_MIGRATION = 1322L;
@@ -210,7 +209,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         newTokenAllowance = domainBuilder.tokenAllowance().persist();
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(new EntityId(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(0L, 0L, newTokenAllowance.getOwner()))
                         .consensusTimestamp(newTokenAllowance.getTimestampLower()))
                 .persist();
 
@@ -231,8 +230,8 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
             long ownerAccountId, long ownerPreMigration, long contractResultConsensus) {
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(EntityId.of(ownerAccountId, CONTRACT))
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(ownerAccountId))
+                        .payerAccountId(EntityId.of(ownerPreMigration))
                         .consensusTimestamp(contractResultConsensus))
                 .persist();
     }
@@ -241,7 +240,7 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         return domainBuilder
                 .tokenAllowance()
                 .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration))
                         .spender(SPENDER)
                         .timestampRange(Range.atLeast(contractResultConsensus))
                         .tokenId(TOKEN_ID))

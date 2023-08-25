@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -101,7 +100,7 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getEvmAddress()).thenReturn(null);
         when(mockEntity.getAlias()).thenReturn(null);
 
-        final var entityId = new EntityId(1L, 2L, 3L, EntityType.CONTRACT);
+        final var entityId = EntityId.of(1L, 2L, 3L);
         assertThat(entityDatabaseAccessor.evmAddressFromId(entityId)).isEqualTo(toAddress(entityId));
     }
 }

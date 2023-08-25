@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.reader.balance.line;
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import jakarta.inject.Named;
@@ -73,8 +72,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
             return new AccountBalance(
                     balance,
                     Collections.emptyList(),
-                    new AccountBalance.Id(
-                            consensusTimestamp, EntityId.of(shardNum, realmNum, accountNum, EntityType.ACCOUNT)));
+                    new AccountBalance.Id(consensusTimestamp, EntityId.of(shardNum, realmNum, accountNum)));
         } catch (NumberFormatException ex) {
             throw new InvalidDatasetException(INVALID_BALANCE + line, ex);
         }

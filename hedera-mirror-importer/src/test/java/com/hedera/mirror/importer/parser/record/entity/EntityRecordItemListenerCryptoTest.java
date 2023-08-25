@@ -345,14 +345,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var tokenId2 = EntityId.of(recordItemBuilder.tokenId());
         List<NftRemoveAllowance> nftRemoveAllowances = List.of(
                 NftRemoveAllowance.newBuilder()
-                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getEntityNum()))
-                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId1.getEntityNum()))
+                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getNum()))
+                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId1.getNum()))
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
                         .build(),
                 NftRemoveAllowance.newBuilder()
-                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getEntityNum()))
-                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId2.getEntityNum()))
+                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getNum()))
+                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId2.getNum()))
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
                         .addSerialNumbers(2L)
@@ -1103,7 +1103,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        var tokenId = EntityId.of(1020L, EntityType.TOKEN);
+        var tokenId = EntityId.of(1020L);
         long amount = 100L;
 
         TransactionRecord record = buildTransactionRecord(
@@ -1115,7 +1115,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         r.getTransferListBuilder().addAccountAmounts(accountAmount);
                     }
                     r.addTokenTransferLists(TokenTransferList.newBuilder()
-                            .setToken(TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()))
+                            .setToken(TokenID.newBuilder().setTokenNum(tokenId.getNum()))
                             .addTransfers(AccountAmount.newBuilder()
                                     .setAccountID(accountId1)
                                     .setAmount(amount)));
