@@ -99,7 +99,7 @@ class CreateLogicTest {
 
     @BeforeEach
     void setup() {
-        createLogic = new CreateLogic(evmProperties);
+        createLogic = new CreateLogic(evmProperties, new AssociateLogic(evmProperties));
         staticMock = Mockito.mockStatic(Id.class);
         staticToken = Mockito.mockStatic(Token.class);
     }

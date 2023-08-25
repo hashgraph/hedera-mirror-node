@@ -161,6 +161,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
                 .obtainerId(obtainerId)
                 .permanentRemoval(body.getPermanentRemoval())
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
 

@@ -126,6 +126,7 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         var expectedEntity = entityId.toEntity().toBuilder()
                 .deleted(false)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(type)
                 .build();
 
         // when

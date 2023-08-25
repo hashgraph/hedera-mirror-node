@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -61,6 +62,7 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
         entity.setMemo(transactionBody.getMemo());
         entity.setKey(adminKey);
         entity.setSubmitKey(submitKey);
+        entity.setType(EntityType.TOPIC);
         entityListener.onEntity(entity);
     }
 }

@@ -305,6 +305,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         entity.setDeleted(false);
         entity.setMemo("");
         entity.setTimestampRange(Range.atLeast(0L));
+        entity.setType(type);
 
         if (afterReset) {
             Key key =

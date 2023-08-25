@@ -176,6 +176,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
         boolean exists = currentEntity.isPresent();
 
         Entity entity = currentEntity.orElseGet(entityId::toEntity);
+        entity.setType(entityType);
         boolean updated = !exists;
 
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.

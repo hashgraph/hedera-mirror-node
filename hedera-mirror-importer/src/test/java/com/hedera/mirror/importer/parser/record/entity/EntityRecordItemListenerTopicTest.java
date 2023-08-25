@@ -870,9 +870,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
         topic.setDeclineReward(false);
         topic.setMemo(memo);
-        topic.setType(EntityType.TOPIC);
         topic.setStakedNodeId(-1L);
         topic.setStakePeriodStart(-1L);
+        topic.setType(EntityType.TOPIC);
         return topic;
     }
 

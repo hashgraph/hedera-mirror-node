@@ -54,6 +54,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
@@ -105,6 +106,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
+    protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ALIAS =
+            Address.fromHexString("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
@@ -1216,7 +1219,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
                         .num(contractEntityId.getNum())
-                        .evmAddress(contractEvmAddress)
+                        .evmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toArray())
+                        .alias(ByteStringUtils.wrapUnsafely(SENDER_ALIAS.toArrayUnsafe())
+                                .toByteArray())
                         .type(CONTRACT)
                         .balance(1500L))
                 .persist();
@@ -1474,7 +1479,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         0b1111111,
                         new KeyValueWrapper(
                                 false,
-                                contractIdFromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
@@ -1513,7 +1518,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         0b1111111,
                         new KeyValueWrapper(
                                 false,
-                                contractIdFromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
                                 new byte[] {},
                                 new byte[] {},
                                 null))),

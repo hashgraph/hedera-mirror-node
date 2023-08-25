@@ -63,6 +63,7 @@ class FileDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransacti
         var expectedEntity = fileId.toEntity().toBuilder()
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
 
         // when
