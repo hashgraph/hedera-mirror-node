@@ -20,6 +20,7 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 import * as balances from './balances.js';
 import * as balancesAccount from './balancesAccount.js';
+import * as balancesAccountTimestamp from './balancesAccountTimestamp.js';
 import * as balancesTimestamp from './balancesTimestamp.js';
 
 // add test modules here
@@ -27,6 +28,7 @@ const tests = {
   accountsIdTimestampLte,
   balances,
   balancesAccount,
+  balancesAccountTimestamp,
   balancesTimestamp,
 };
 

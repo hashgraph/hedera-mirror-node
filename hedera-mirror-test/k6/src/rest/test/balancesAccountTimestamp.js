@@ -19,17 +19,17 @@ import http from 'k6/http';
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
 import {balanceListName} from '../libex/constants';
 
-const urlTag = '/balances?account.id=eq:{accountId}';
+const urlTag = '/balances?account.id=eq:{accountId}&?timestamp={timestamp}';
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('balancesAccount') // use unique scenario name among all tests
+  .name('balancesAccountTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/balances?account.id=eq:${testParameters['DEFAULT_ACCOUNT_ID']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/balances?account.id=eq:${testParameters['DEFAULT_ACCOUNT_ID']}&timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}`;
     return http.get(url);
   })
-  .requiredParameters('DEFAULT_ACCOUNT_ID')
-  .check('Balances for specific account OK', (r) => isValidListResponse(r, balanceListName))
+  .requiredParameters('DEFAULT_ACCOUNT_ID', 'DEFAULT_BALANCE_TIMESTAMP')
+  .check('Balances for specific account and timestamp OK', (r) => isValidListResponse(r, balanceListName))
   .build();
 
 export {options, run, setup};
