@@ -294,22 +294,38 @@ public class FunctionEncodeDecoder {
     private Tuple[] encodeCryptoTransfer(Object[] parameters) {
         if ((Boolean) parameters[4]) { // means it's a NFT transfer
             return new Tuple[] {
-                Tuple.of(convertAddress((Address) parameters[0]), new Tuple[] {}, new Tuple[] {
-                    Tuple.of(
-                            convertAddress((Address) parameters[1]),
-                            convertAddress((Address) parameters[2]),
-                            parameters[3],
-                            false)
-                })
+                Tuple.of(
+                        // the address of the token
+                        convertAddress((Address) parameters[0]),
+                        // the list of fungible transfers
+                        new Tuple[] {}
+                        // the list of nft transfers
+                        ,
+                        new Tuple[] {
+                            Tuple.of(
+                                    // sender address
+                                    convertAddress((Address) parameters[1]),
+                                    // receiver address
+                                    convertAddress((Address) parameters[2]),
+                                    // nft id
+                                    parameters[3],
+                                    false)
+                        })
             };
         } else {
             return new Tuple[] {
                 Tuple.of(
+                        // the address of the token
                         convertAddress((Address) parameters[0]),
+                        // the list of fungible transfers
+                        // parameters: accountId, amount, isApproval
+                        // when the amount is positive - the address is the receiver (we add amount to the balance)
+                        // when the amount is negative- the address is the sender(we deduct amount from the balance)
                         new Tuple[] {
                             Tuple.of(convertAddress((Address) parameters[1]), -(Long) parameters[3], false),
                             Tuple.of(convertAddress((Address) parameters[2]), parameters[3], false)
                         },
+                        // the list of nft transfers
                         new Tuple[] {})
             };
         }
