@@ -132,13 +132,13 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         Address tokenAddress;
         Address senderAddress;
-        Id ownerId;
+        Id nftOwnerId;
         boolean isFungible;
         Builder transactionBody;
 
         if (bodyParams instanceof ApproveParams approveParams) {
             isFungible = approveParams.isFungible();
-            ownerId = approveParams.ownerId();
+            nftOwnerId = approveParams.ownerId();
             tokenAddress = approveParams.tokenAddress();
             senderAddress = approveParams.senderAddress();
         } else {
@@ -156,7 +156,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         if (approveOp.isFungible()) {
             transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp, operatorId);
         } else {
-            final var nominalOwnerId = ownerId != null ? ownerId : Id.DEFAULT;
+            final var nominalOwnerId = nftOwnerId != null ? nftOwnerId : Id.DEFAULT;
             // Per the ERC-721 spec, "The zero address indicates there is no approved address"; so
             // translate this approveAllowance into a deleteAllowance
             if (isNftApprovalRevocation(approveOp)) {
@@ -175,12 +175,12 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
         final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var store = updater.getStore();
-        final var senderAddress = frame.getSenderAddress();
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
 
         // fields needed to be extracted from transactionBody
         boolean isFungible;
-        Id nftOwnerId = null;
-        Id operatorId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+        Id nftOwnerId = Id.DEFAULT;
+        Id operatorId = Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
         Address spender = Address.ZERO;
         TokenID tokenId;
         long amount = 0;

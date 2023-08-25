@@ -78,9 +78,9 @@ public interface CommonMapper {
         }
 
         var viewModel = new EntityId();
-        viewModel.setShard(source.getShardNum());
-        viewModel.setRealm(source.getRealmNum());
-        viewModel.setNum(source.getEntityNum());
+        viewModel.setShard(source.getShard());
+        viewModel.setRealm(source.getRealm());
+        viewModel.setNum(source.getNum());
         return viewModel;
     }
 

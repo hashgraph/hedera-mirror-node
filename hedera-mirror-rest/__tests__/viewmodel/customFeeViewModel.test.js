@@ -33,165 +33,193 @@ describe('CustomFeeViewModel', () => {
   fixedFeeTestSpecs.forEach((testSpec) => {
     test(`fixed fee in ${testSpec.name}`, () => {
       const input = new CustomFee({
-        all_collectors_are_exempt: true,
-        amount: 15,
-        collector_account_id: 8901,
-        created_timestamp: '10',
-        denominating_token_id: testSpec.dbDenominatingTokenId,
-        token_id: 10015,
+        fixed_fees: [
+          {
+            all_collectors_are_exempt: true,
+            amount: 15,
+            collector_account_id: 8901,
+            denominating_token_id: testSpec.dbDenominatingTokenId,
+          },
+        ],
       });
+
       const expected = {
-        all_collectors_are_exempt: true,
-        amount: 15,
-        collector_account_id: '0.0.8901',
-        denominating_token_id: testSpec.expectedDenominatingTokenId,
+        fixed_fees: [
+          {
+            all_collectors_are_exempt: true,
+            amount: 15,
+            collector_account_id: '0.0.8901',
+            denominating_token_id: testSpec.expectedDenominatingTokenId,
+          },
+        ],
+        fractional_fees: [],
+        royalty_fees: [],
       };
 
       const actual = new CustomFeeViewModel(input);
-
       expect(actual).toEqual(expected);
-      expect(actual.hasFee()).toBeTruthy();
-      expect(actual.isFixedFee()).toBeTruthy();
-      expect(actual.isFractionalFee()).toBeFalsy();
-      expect(actual.isRoyaltyFee()).toBeFalsy();
     });
   });
 
   test('fractional fee', () => {
     const input = new CustomFee({
-      all_collectors_are_exempt: true,
-      amount: 15,
-      amount_denominator: 31,
-      collector_account_id: 8901,
-      created_timestamp: '10',
-      maximum_amount: 101,
-      minimum_amount: 37,
-      net_of_transfers: false,
+      fractional_fees: [
+        {
+          all_collectors_are_exempt: true,
+          collector_account_id: 8901,
+          denominator: 31,
+          maximum_amount: 101,
+          minimum_amount: 37,
+          net_of_transfers: false,
+          numerator: 15,
+        },
+      ],
       token_id: 10015,
     });
+
     const expected = {
-      all_collectors_are_exempt: true,
-      amount: {
-        numerator: 15,
-        denominator: 31,
-      },
-      collector_account_id: '0.0.8901',
-      denominating_token_id: '0.0.10015',
-      maximum: 101,
-      minimum: 37,
-      net_of_transfers: false,
+      fixed_fees: [],
+      fractional_fees: [
+        {
+          all_collectors_are_exempt: true,
+          amount: {
+            denominator: 31,
+            numerator: 15,
+          },
+          collector_account_id: '0.0.8901',
+          denominating_token_id: '0.0.10015',
+          maximum: 101,
+          minimum: 37,
+          net_of_transfers: false,
+        },
+      ],
+      royalty_fees: [],
     };
 
     const actual = new CustomFeeViewModel(input);
-
     expect(actual).toEqual(expected);
-    expect(actual.hasFee()).toBeTruthy();
-    expect(actual.isFixedFee()).toBeFalsy();
-    expect(actual.isFractionalFee()).toBeTruthy();
-    expect(actual.isRoyaltyFee()).toBeFalsy();
   });
 
   test('fractional fee no maximum', () => {
     const input = new CustomFee({
-      all_collectors_are_exempt: false,
-      amount: 15,
-      amount_denominator: 31,
-      collector_account_id: 8901,
-      created_timestamp: '10',
-      minimum_amount: 37,
-      net_of_transfers: true,
+      fractional_fees: [
+        {
+          all_collectors_are_exempt: false,
+          collector_account_id: 8901,
+          denominator: 31,
+          minimum_amount: 37,
+          net_of_transfers: true,
+          numerator: 15,
+        },
+      ],
       token_id: 10015,
     });
+
     const expected = {
-      all_collectors_are_exempt: false,
-      amount: {
-        numerator: 15,
-        denominator: 31,
-      },
-      collector_account_id: '0.0.8901',
-      denominating_token_id: '0.0.10015',
-      minimum: 37,
-      net_of_transfers: true,
+      fixed_fees: [],
+      fractional_fees: [
+        {
+          all_collectors_are_exempt: false,
+          amount: {
+            denominator: 31,
+            numerator: 15,
+          },
+          collector_account_id: '0.0.8901',
+          denominating_token_id: '0.0.10015',
+          maximum: null,
+          minimum: 37,
+          net_of_transfers: true,
+        },
+      ],
+      royalty_fees: [],
     };
 
     const actual = new CustomFeeViewModel(input);
-
     expect(actual).toEqual(expected);
-    expect(actual.hasFee()).toBeTruthy();
-    expect(actual.isFixedFee()).toBeFalsy();
-    expect(actual.isFractionalFee()).toBeTruthy();
-    expect(actual.isRoyaltyFee()).toBeFalsy();
   });
 
   test('royalty fee without fallback', () => {
     const input = new CustomFee({
-      all_collectors_are_exempt: true,
-      collector_account_id: 8901,
-      created_timestamp: '10',
-      royalty_denominator: 31,
-      royalty_numerator: 15,
+      royalty_fees: [
+        {
+          all_collectors_are_exempt: true,
+          collector_account_id: 8901,
+          denominator: 31,
+          numerator: 15,
+        },
+      ],
     });
+
     const expected = {
-      all_collectors_are_exempt: true,
-      amount: {
-        numerator: 15,
-        denominator: 31,
-      },
-      collector_account_id: '0.0.8901',
+      fixed_fees: [],
+      fractional_fees: [],
+      royalty_fees: [
+        {
+          all_collectors_are_exempt: true,
+          amount: {
+            denominator: 31,
+            numerator: 15,
+          },
+          collector_account_id: '0.0.8901',
+          fallback_fee: null,
+        },
+      ],
     };
 
     const actual = new CustomFeeViewModel(input);
-
     expect(actual).toEqual(expected);
-    expect(actual.hasFee()).toBeTruthy();
-    expect(actual.isFixedFee()).toBeFalsy();
-    expect(actual.isFractionalFee()).toBeFalsy();
-    expect(actual.isRoyaltyFee()).toBeTruthy();
   });
 
   fixedFeeTestSpecs.forEach((testSpec) => {
     test(`royalty fee with fallback in ${testSpec.name}`, () => {
       const input = new CustomFee({
-        all_collectors_are_exempt: false,
-        amount: 11,
-        collector_account_id: 8901,
-        created_timestamp: '10',
-        denominating_token_id: testSpec.dbDenominatingTokenId,
-        royalty_denominator: 31,
-        royalty_numerator: 15,
+        royalty_fees: [
+          {
+            all_collectors_are_exempt: false,
+            collector_account_id: 8901,
+            denominator: 31,
+            fallback_fee: {
+              amount: 11,
+              denominating_token_id: testSpec.dbDenominatingTokenId,
+            },
+            numerator: 15,
+          },
+        ],
       });
+
       const expected = {
-        all_collectors_are_exempt: false,
-        amount: {
-          numerator: 15,
-          denominator: 31,
-        },
-        collector_account_id: '0.0.8901',
-        fallback_fee: {
-          amount: 11,
-          denominating_token_id: testSpec.expectedDenominatingTokenId,
-        },
+        fixed_fees: [],
+        fractional_fees: [],
+        royalty_fees: [
+          {
+            all_collectors_are_exempt: false,
+            amount: {
+              denominator: 31,
+              numerator: 15,
+            },
+            collector_account_id: '0.0.8901',
+            fallback_fee: {
+              amount: 11,
+              denominating_token_id: testSpec.expectedDenominatingTokenId,
+            },
+          },
+        ],
       };
 
       const actual = new CustomFeeViewModel(input);
-
       expect(actual).toEqual(expected);
-      expect(actual.hasFee()).toBeTruthy();
-      expect(actual.isFixedFee()).toBeFalsy();
-      expect(actual.isFractionalFee()).toBeFalsy();
-      expect(actual.isRoyaltyFee()).toBeTruthy();
     });
   });
 
   test('empty fee', () => {
-    const input = new CustomFee({
-      created_timestamp: '10',
-      token_id: 10015,
-    });
+    const input = new CustomFee({});
 
     const actual = new CustomFeeViewModel(input);
 
-    expect(actual).toEqual({});
-    expect(actual.hasFee()).toBeFalsy();
+    expect(actual).toEqual({
+      fixed_fees: [],
+      fractional_fees: [],
+      royalty_fees: [],
+    });
   });
 });

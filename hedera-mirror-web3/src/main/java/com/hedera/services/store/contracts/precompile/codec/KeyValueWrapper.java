@@ -87,10 +87,10 @@ public final class KeyValueWrapper {
             byte[] ecdsaSecp256k1,
             ContractID delegatableContractID) {
         var keyCount = 0;
-        if (contractID != null) {
+        if (contractID != null && contractID != ContractID.getDefaultInstance()) {
             keyCount++;
         }
-        if (delegatableContractID != null) {
+        if (delegatableContractID != null && delegatableContractID != ContractID.getDefaultInstance()) {
             keyCount++;
         }
         if (shouldInheritAccountKey) {

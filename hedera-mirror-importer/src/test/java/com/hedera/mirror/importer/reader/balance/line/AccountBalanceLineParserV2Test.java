@@ -100,8 +100,8 @@ class AccountBalanceLineParserV2Test {
 
             assertThat(accountBalance.getBalance()).isEqualTo(expectedBalance);
             assertThat(id).isNotNull();
-            assertThat(id.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
-            assertThat(id.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
+            assertThat(id.getAccountId().getRealm()).isEqualTo(expectedRealm);
+            assertThat(id.getAccountId().getNum()).isEqualTo(expectedAccount);
             assertThat(id.getConsensusTimestamp()).isEqualTo(timestamp);
 
             List<TokenBalance> actualTokenBalanceList = accountBalance.getTokenBalances();
@@ -117,18 +117,18 @@ class AccountBalanceLineParserV2Test {
                     TokenBalance.Id actualId = actualTokenBalance.getId();
 
                     assertThat(expectedTokenBalances)
-                            .containsKey(actualId.getTokenId().getEntityNum());
+                            .containsKey(actualId.getTokenId().getNum());
                     assertThat(actualTokenBalance.getBalance())
                             .isEqualTo(expectedTokenBalances.get(
-                                    actualId.getTokenId().getEntityNum()));
+                                    actualId.getTokenId().getNum()));
                     assertThat(actualId).isNotNull();
                     assertThat(actualId.getConsensusTimestamp()).isEqualTo(timestamp);
-                    assertThat(actualId.getAccountId().getShardNum()).isEqualTo(mirrorProperties.getShard());
-                    assertThat(actualId.getAccountId().getRealmNum()).isEqualTo(expectedRealm);
-                    assertThat(actualId.getAccountId().getEntityNum()).isEqualTo(expectedAccount);
+                    assertThat(actualId.getAccountId().getShard()).isEqualTo(mirrorProperties.getShard());
+                    assertThat(actualId.getAccountId().getRealm()).isEqualTo(expectedRealm);
+                    assertThat(actualId.getAccountId().getNum()).isEqualTo(expectedAccount);
 
-                    assertThat(actualId.getTokenId().getShardNum()).isEqualTo(mirrorProperties.getShard());
-                    assertThat(actualId.getTokenId().getRealmNum()).isEqualTo(expectedRealm);
+                    assertThat(actualId.getTokenId().getShard()).isEqualTo(mirrorProperties.getShard());
+                    assertThat(actualId.getTokenId().getRealm()).isEqualTo(expectedRealm);
                     assertThat(actualId.getTokenId().getType()).isEqualTo(EntityType.TOKEN);
                 }
             } else {

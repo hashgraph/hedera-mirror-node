@@ -63,8 +63,8 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
             .build();
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
+    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
 
     @Resource
     private final FileDataRepository fileDataRepository;

@@ -24,8 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.RequiredArgsConstructor;
-import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -34,8 +32,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-@RequiredArgsConstructor
-abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
+abstract class AsyncJavaMigration<T> extends RepeatableMigration {
 
     private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL =
             """
@@ -62,10 +59,18 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
             where f.installed_rank = last.installed_rank
             """;
 
-    protected final NamedParameterJdbcTemplate jdbcTemplate;
+    protected final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final String schema;
-    private final TransactionOperations transactionOperations;
     private final AtomicBoolean complete = new AtomicBoolean(false);
+
+    protected AsyncJavaMigration(
+            Map<String, MigrationProperties> migrationPropertiesMap,
+            NamedParameterJdbcTemplate namedParameterJdbcTemplate,
+            String schema) {
+        super(migrationPropertiesMap);
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.schema = schema;
+    }
 
     @Override
     public Integer getChecksum() {
@@ -84,10 +89,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         return lastChecksum;
     }
 
-    @Override
-    public MigrationVersion getVersion() {
-        return null; // repeatable
-    }
+    protected abstract TransactionOperations getTransactionOperations();
 
     boolean isComplete() {
         return complete.get();
@@ -95,7 +97,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     public <O> O queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<O> requiredType) {
         try {
-            return jdbcTemplate.queryForObject(sql, paramSource, requiredType);
+            return namedParameterJdbcTemplate.queryForObject(sql, paramSource, requiredType);
         } catch (EmptyResultDataAccessException ex) {
             return null;
         }
@@ -117,22 +119,24 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
     }
 
     protected void migrateAsync() {
-        long count = 0;
-        var last = Optional.of(getInitial());
-        var stopwatch = Stopwatch.createStarted();
         log.info("Starting asynchronous migration");
+
+        long count = 0;
+        var stopwatch = Stopwatch.createStarted();
+        var last = Optional.of(getInitial());
         long minutes = 1L;
 
         try {
             do {
                 final var previous = last;
                 last = Objects.requireNonNullElse(
-                        transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
+                        getTransactionOperations().execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
-                if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
+                long elapsed = stopwatch.elapsed(TimeUnit.MINUTES);
+                if (elapsed >= minutes) {
                     log.info("Completed iteration {} with last value: {}", count, last.orElse(null));
-                    minutes++;
+                    minutes = elapsed + 1;
                 }
             } while (last.isPresent());
 
@@ -151,7 +155,9 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
      *
      * @return The success checksum for the migration
      */
-    protected abstract int getSuccessChecksum();
+    protected final int getSuccessChecksum() {
+        return migrationProperties.getChecksum();
+    }
 
     @Nonnull
     protected abstract Optional<T> migratePartial(T last);
@@ -161,13 +167,13 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
     }
 
     private boolean hasFlywaySchemaHistoryTable() {
-        var exists = jdbcTemplate.queryForObject(
+        var exists = namedParameterJdbcTemplate.queryForObject(
                 CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema), Boolean.class);
         return exists != null && exists;
     }
 
     private void onSuccess() {
         var paramSource = getSqlParamSource().addValue("checksum", getSuccessChecksum());
-        jdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
+        namedParameterJdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
     }
 }

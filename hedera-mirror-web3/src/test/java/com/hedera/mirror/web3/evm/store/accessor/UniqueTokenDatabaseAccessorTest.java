@@ -83,6 +83,6 @@ class UniqueTokenDatabaseAccessorTest {
     private NftId getNftKey(final Nft nft) {
         final var nftId = nft.getId();
         final var tokenId = EntityId.of(nftId.getTokenId(), EntityType.TOKEN);
-        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getEntityNum(), nftId.getSerialNumber());
+        return new NftId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum(), nftId.getSerialNumber());
     }
 }

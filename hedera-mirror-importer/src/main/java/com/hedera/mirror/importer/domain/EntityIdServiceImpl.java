@@ -34,12 +34,12 @@ import jakarta.inject.Named;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-@Log4j2
+@CustomLog
 @Named
 public class EntityIdServiceImpl implements EntityIdService {
 
@@ -114,14 +114,14 @@ public class EntityIdServiceImpl implements EntityIdService {
         switch (type) {
             case ACCOUNT:
                 builder = AccountID.newBuilder()
-                        .setShardNum(entityId.getShardNum())
-                        .setRealmNum(entityId.getRealmNum())
+                        .setShardNum(entityId.getShard())
+                        .setRealmNum(entityId.getRealm())
                         .setAlias(alias);
                 break;
             case CONTRACT:
                 builder = ContractID.newBuilder()
-                        .setShardNum(entityId.getShardNum())
-                        .setRealmNum(entityId.getRealmNum())
+                        .setShardNum(entityId.getShard())
+                        .setRealmNum(entityId.getRealm())
                         .setEvmAddress(alias);
                 break;
             default: {
@@ -176,7 +176,7 @@ public class EntityIdServiceImpl implements EntityIdService {
     private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum, EntityType type) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
-                .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
+                .filter(e -> e.getShard() == shardNum && e.getRealm() == realmNum)
                 .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
                 .orElseGet(() -> {
                     log.error(

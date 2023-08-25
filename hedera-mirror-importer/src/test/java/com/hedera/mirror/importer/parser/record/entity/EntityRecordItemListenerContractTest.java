@@ -202,10 +202,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertContractEntity(parentRecordItem),
                 () -> assertContractCreateResult(transactionBody, record),
-                () -> assertThat(entityRepository.findById(createdId.getEntityNum()))
+                () -> assertThat(entityRepository.findById(createdId.getId()))
                         .get()
                         .returns(1L, Entity::getEthereumNonce),
-                () -> assertThat(entityRepository.findById(parentId.getEntityNum()))
+                () -> assertThat(entityRepository.findById(parentId.getId()))
                         .get()
                         .returns(2L, Entity::getEthereumNonce));
     }
@@ -252,10 +252,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertContractCallResult(transactionBody, record),
-                () -> assertThat(entityRepository.findById(createdId.getEntityNum()))
+                () -> assertThat(entityRepository.findById(createdId.getId()))
                         .get()
                         .returns(1L, Entity::getEthereumNonce),
-                () -> assertThat(entityRepository.findById(parentId.getEntityNum()))
+                () -> assertThat(entityRepository.findById(parentId.getId()))
                         .get()
                         .returns(2L, Entity::getEthereumNonce));
     }
@@ -500,7 +500,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .entity()
                 .customize(c -> c.obtainerId(null)
                         .id(contractId.getId())
-                        .num(contractId.getEntityNum())
+                        .num(contractId.getNum())
                         .stakedNodeId(1L)
                         .type(CONTRACT))
                 .persist();
@@ -644,9 +644,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hasSize(1)
                 .first()
                 .returns(entityId.getId(), Entity::getId)
-                .returns(entityId.getEntityNum(), Entity::getNum)
-                .returns(entityId.getRealmNum(), Entity::getRealm)
-                .returns(entityId.getShardNum(), Entity::getShard)
+                .returns(entityId.getNum(), Entity::getNum)
+                .returns(entityId.getRealm(), Entity::getRealm)
+                .returns(entityId.getShard(), Entity::getShard)
                 .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
                 .returns(null, Entity::getTimestampUpper)
                 .returns(CONTRACT, Entity::getType);
@@ -1171,8 +1171,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(evmAddress, Entity::getEvmAddress)
                 .returns(createdId.getId(), Entity::getId)
                 .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
-                .returns(createdId.getEntityNum(), Entity::getNum)
-                .returns(createdId.getShardNum(), Entity::getShard)
+                .returns(createdId.getNum(), Entity::getNum)
+                .returns(createdId.getShard(), Entity::getShard)
                 .returns(createdId.getType(), Entity::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
@@ -1728,7 +1728,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractID protoContractId = getContractId(CONTRACT_ID, evmAddress);
         var builder = domainBuilder.entity().customize(c -> c.evmAddress(evmAddress)
                 .id(entityId.getId())
-                .num(entityId.getEntityNum())
+                .num(entityId.getNum())
                 .ethereumNonce(1L)
                 .type(CONTRACT));
         if (customizer != null) {

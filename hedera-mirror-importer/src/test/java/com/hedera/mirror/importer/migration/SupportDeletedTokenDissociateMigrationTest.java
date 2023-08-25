@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
@@ -274,7 +273,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             token.setTimestampLower(rs.getLong("modified_timestamp"));
             token.setTokenId(rs.getLong("token_id"));
             token.setTotalSupply(rs.getLong("total_supply"));
-            token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"), EntityType.TOKEN));
+            token.setTreasuryAccountId(EntityId.of(rs.getLong("treasury_account_id"), EntityType.TOKEN));
             token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
             return token;
         });
@@ -510,8 +509,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setId(new TokenTransfer.Id(
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("token_id"), TOKEN),
-                    EntityIdEndec.decode(rs.getLong("account_id"), ACCOUNT)));
+                    EntityId.of(rs.getLong("token_id"), TOKEN),
+                    EntityId.of(rs.getLong("account_id"), ACCOUNT)));
             tokenTransfer.setAmount(rs.getLong("amount"));
             return tokenTransfer;
         });

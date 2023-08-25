@@ -96,7 +96,7 @@ public class TokenRelationship {
                 token.isFrozenByDefault() && token.hasFreezeKey(),
                 !token.hasKycKey(),
                 false,
-                false,
+                true,
                 false,
                 hasAssociation,
                 0);
@@ -109,8 +109,8 @@ public class TokenRelationship {
      * @param hasAssociation
      * @param frozen
      */
-    public TokenRelationship(Token token, Account account, boolean hasAssociation, boolean frozen) {
-        this(token, account, 0, frozen, true, false, false, false, hasAssociation, 0);
+    public TokenRelationship(Token token, Account account, boolean hasAssociation, boolean frozen, boolean kycGranted) {
+        this(token, account, 0, frozen, kycGranted, false, false, false, hasAssociation, 0);
     }
 
     public static TokenRelationship getEmptyTokenRelationship() {

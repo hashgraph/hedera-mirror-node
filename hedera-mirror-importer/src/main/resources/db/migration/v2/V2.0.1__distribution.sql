@@ -35,6 +35,8 @@ select create_distributed_table('crypto_transfer', 'payer_account_id', colocate_
 
 select create_distributed_table('custom_fee', 'token_id', colocate_with => 'entity');
 
+select create_distributed_table('custom_fee_history', 'token_id', colocate_with => 'custom_fee');
+
 select create_distributed_table('entity_history', 'id', colocate_with => 'entity');
 
 select create_distributed_table('entity_stake', 'id', colocate_with => 'entity');

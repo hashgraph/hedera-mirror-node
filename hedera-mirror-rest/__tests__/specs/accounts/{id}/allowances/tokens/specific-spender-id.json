@@ -21,6 +21,22 @@
     ],
     "tokenAllowances": [
       {
+        "amount": 0,
+        "amount_granted": 100,
+        "owner": 1001,
+        "spender": 2001,
+        "token_id": 9998,
+        "timestamp_range": "[1234567890000000001,)"
+      },
+      {
+        "amount": 0,
+        "amount_granted": 0,
+        "owner": 1001,
+        "spender": 2001,
+        "token_id": 9999,
+        "timestamp_range": "[1234567890000000001,)"
+      },
+      {
         "amount": 23,
         "amount_granted": 33,
         "owner": 1001,

@@ -28,8 +28,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -37,7 +38,6 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -78,8 +78,9 @@ class TokenAccessorImplTest {
     private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
-    private static final Long ENTITY_ID =
-            EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
+    private static final Long ENTITY_ID = EntityId.of(
+                    ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum(), EntityType.ACCOUNT)
+            .getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;
     private final DomainBuilder domainBuilder = new DomainBuilder();
@@ -231,15 +232,15 @@ class TokenAccessorImplTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     void infoForTokenCustomFees() {
         final var customFee = new CustomFee();
-        final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
-        customFee.setCollectorAccountId(collectorId);
+        final EntityId collectorId = EntityId.of(1L, 2L, 3L, EntityType.ACCOUNT);
+        customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
-        when(customFeeRepository.findByTokenId(any())).thenReturn(customFeeList);
+        when(customFeeRepository.findById(any())).thenReturn(Optional.of(customFee));
         assertThat(tokenAccessor.infoForTokenCustomFees(TOKEN)).isNotEmpty();
         assertEquals(
                 toAddress(collectorId),

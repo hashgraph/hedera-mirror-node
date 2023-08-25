@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.List;
@@ -47,7 +46,6 @@ import reactor.core.scheduler.Schedulers;
 @Profile("!v2")
 public class TransactionHashBatchInserter implements BatchPersister {
     private final Map<Integer, BatchInserter> shardBatchInserters;
-    private final Timer insertDurationMetric;
     private final String shardedTableName;
     private final Scheduler scheduler;
     private final TransactionHashTxManager transactionManager;
@@ -59,11 +57,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
             TransactionHashTxManager transactionHashTxManager) {
         this.shardedTableName = CaseFormat.UPPER_CAMEL.to(
                 CaseFormat.LOWER_UNDERSCORE, TransactionHash.class.getSimpleName() + "_sharded");
-        this.insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
-                .description("Time to insert transactions into sharded table")
-                .tag("table", this.shardedTableName)
-                .register(meterRegistry);
-        this.scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
+        this.scheduler = Schedulers.newParallel(this.shardedTableName, 8);
         this.transactionManager = transactionHashTxManager;
 
         this.shardBatchInserters = IntStream.range(0, V1_SHARD_COUNT)
@@ -98,7 +92,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
             Mono.when(shardedItems.entrySet().stream().map(this::processShard).toList())
                     .block();
 
-            insertDurationMetric.record(stopwatch.elapsed());
             log.info(
                     "Copied {} rows from {} shards to {} table in {}",
                     items.size(),

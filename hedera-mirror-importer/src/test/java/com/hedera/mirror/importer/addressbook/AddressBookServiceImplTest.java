@@ -943,7 +943,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allMatch(c -> c.getStake() == 1L)
                 .allMatch(c -> c.getTotalStake() == 4L)
-                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allMatch(c -> c.getNodeAccountId().getNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
@@ -1009,7 +1009,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allMatch(c -> c.getStake() == expectedNodeStake)
                 .allMatch(c -> c.getTotalStake() == expectedTotalStake)
-                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allMatch(c -> c.getNodeAccountId().getNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);

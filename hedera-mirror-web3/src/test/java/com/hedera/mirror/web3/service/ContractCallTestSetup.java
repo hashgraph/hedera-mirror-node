@@ -27,6 +27,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -37,12 +38,15 @@ import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FixedFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -50,11 +54,14 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
+import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
@@ -78,6 +85,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
@@ -94,10 +102,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
-    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
+    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
+    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
     protected static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
-    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
+    protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
+    protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ALIAS =
+            Address.fromHexString("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
@@ -106,6 +116,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 750, ACCOUNT));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
     protected static final Address NOT_ASSOCIATED_SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 744, ACCOUNT));
+    protected static final ByteString NOT_ASSOCIATED_SPENDER_PUBLIC_KEY =
+            ByteString.fromHex("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+    protected static final Address NOT_ASSOCIATED_SPENDER_ALIAS = Address.wrap(Bytes.wrap(recoverAddressFromPubKey(
+            NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
     protected static final Address SPENDER_ALIAS = Address.wrap(
@@ -142,21 +156,41 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static Key keyWithECDSASecp256K1 =
+            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
+    protected static final byte[] NEW_ECDSA_KEY = new byte[] {
+        2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
+        68, -87, -110, -13, -115, 74, 86, 90
+    };
     protected static final byte[] ED25519_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+    protected static Key keyWithEd25519 =
+            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
+    protected static final byte[] NEW_ED25519_KEY = new byte[] {
+        -128, -61, -12, 63, 3, -45, 108, 34, 61, -2, -83, -48, -118, 20, 84, 85, 85, 67, -125, 46, 49, 26, 17, -116, 27,
+        25, 38, -95, 50, 77, 40, -38
+    };
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
     protected static final Address ETH_ADDRESS2 = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f226");
     protected static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
+    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1262, CONTRACT));
     protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
     protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260, CONTRACT));
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
+            getFungibleTokenExpiryInUint32Range();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
+            getNonFungibleTokenExpiryInUint32Range();
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
-    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final RoyaltyFeeWrapper ROYALTY_FEE_WRAPPER = getRoyaltyFee();
+    protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
@@ -204,7 +238,40 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setConstant(393746195920L)
+                                            .setGas(116571)
+                                            .setRbh(11657)
+                                            .setSbh(874)
+                                            .setBpt(17485616)
+                                            .setSbpr(437140)
+                                            .setVpt(43714039850L)
+                                            .setBpr(17485616)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
                                             .build())
                                     .build())))
             .setNextFeeSchedule(FeeSchedule.newBuilder()
@@ -249,20 +316,53 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             .setHederaFunctionality(TokenCreate)
                             .addFees(FeeData.newBuilder()
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
                                             .build())
-                                    .build())))
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setConstant(7874923918408L)
+                                            .setGas(2331415)
+                                            .setBpt(349712319)
+                                            .setVpt(874280797002L)
+                                            .setRbh(233142)
+                                            .setSbh(17486)
+                                            .setBpr(349712319)
+                                            .setSbpr(8742808)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setConstant(393746195920L)
+                                            .setGas(116571)
+                                            .setRbh(11657)
+                                            .setSbh(874)
+                                            .setBpt(17485616)
+                                            .setSbpr(437140)
+                                            .setVpt(43714039850L)
+                                            .setBpr(17485616)
+                                            .setMin(0)
+                                            .setMax(1000000000000000L)
+                                            .build())
+                                    .build()))
+                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                            .setHederaFunctionality(EthereumTransaction)
+                            .addFees(FeeData.newBuilder()
+                                    .setServicedata(FeeComponents.newBuilder()
+                                            .setGas(852000)
+                                            .build()))))
             .build();
 
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
-
-    protected static Key keyWithEd25519 =
-            Key.newBuilder().setEd25519(ByteString.copyFrom(ED25519_KEY)).build();
-
-    protected static Key keyWithECDSASecp256K1 =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
 
     protected static Key keyWithDelegatableContractId = Key.newBuilder()
             .setDelegatableContractId(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
@@ -278,16 +378,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected ContractCallService contractCallService;
 
     @Autowired
+    protected JdbcTemplate jdbcTemplate;
+
+    @Autowired
     protected MirrorNodeEvmProperties properties;
     // The contract source `PrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     protected Path CONTRACT_BYTES_PATH;
 
-    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.bin")
-    protected Path NESTED_ETH_CALLS_BYTES_PATH;
+    @Value("classpath:contracts/DynamicEthCalls/DynamicEthCalls.bin")
+    protected Path DYNAMIC_ETH_CALLS_BYTES_PATH;
 
-    @Value("classpath:contracts/NestedEthCalls/NestedEthCalls.json")
-    protected Path NESTED_ETH_CALLS_ABI_PATH;
+    @Value("classpath:contracts/DynamicEthCalls/DynamicEthCalls.json")
+    protected Path DYNAMIC_ETH_CALLS_ABI_PATH;
 
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     protected Path ABI_PATH;
@@ -308,6 +411,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/EthCall/EthCall.bin")
     protected Path ETH_CALL_CONTRACT_BYTES_PATH;
 
+    @Value("classpath:contracts/EthCall/EthCallInit.bin")
+    protected Path ETH_CALL_INIT_CONTRACT_BYTES_PATH;
+
     @Value("classpath:contracts/Reverter/Reverter.bin")
     protected Path REVERTER_CONTRACT_BYTES_PATH;
 
@@ -320,6 +426,76 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/EvmCodes/EvmCodes.json")
     protected Path EVM_CODES_ABI_PATH;
 
+    @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.bin")
+    protected Path NESTED_CALLS_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
+    protected Path NESTED_CALLS_ABI_PATH;
+
+    private static TokenCreateWrapper getFungibleToken() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleToken2() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleToken() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static FixedFeeWrapper getFixedFee() {
+        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
+    }
+
+    private static FractionalFeeWrapper getFractionalFee() {
+        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
+    }
+
+    private static RoyaltyFeeWrapper getRoyaltyFee() {
+        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
+    }
+
+    private static TokenExpiryWrapper getTokenExpiry() {
+        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
+    }
+
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
@@ -330,6 +506,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
+                .gas(15_000_000L)
+                .isStatic(false)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .build();
+    }
+
+    protected CallServiceParameters serviceParametersForTopLevelContractCreate(
+            final Path contractInitCodePath, final CallType callType) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        persistEntities();
+
+        final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .callData(callData)
+                .receiver(Address.ZERO)
                 .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
@@ -356,8 +549,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(receiverEntityId.getId())
-                        .num(receiverEntityId.getEntityNum())
+                        .num(receiverEntityId.getNum())
                         .evmAddress(receiverEvmAddress)
+                        .deleted(false)
                         .type(CONTRACT))
                 .persist();
     }
@@ -370,9 +564,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         precompileContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
-        final var nestedContractId = nestedEthCallContractPresist();
+        final var nestedContractId = dynamicEthCallContractPresist();
+        nestedEthCallsContractPersist();
         fileDataPersist();
 
+        receiverPersist();
         final var senderEntityId = senderEntityPersist();
         final var ownerEntityId = ownerEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
@@ -458,7 +654,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 KEY_PROTO,
-                TokenPauseStatusEnum.PAUSED);
+                TokenPauseStatusEnum.PAUSED,
+                true);
         final var nftEntityId2 = nftPersist(
                 NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -466,7 +663,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 KEY_PROTO,
-                TokenPauseStatusEnum.UNPAUSED);
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
         final var nftEntityId3 = nftPersist(
                 NFT_TRANSFER_ADDRESS,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -474,7 +672,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 KEY_PROTO,
-                TokenPauseStatusEnum.UNPAUSED);
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
         final var nftEntityId4 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -482,7 +681,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 keyWithContractId.toByteArray(),
-                TokenPauseStatusEnum.PAUSED);
+                TokenPauseStatusEnum.PAUSED,
+                true);
         final var nftEntityId5 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -490,7 +690,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 keyWithEd25519.toByteArray(),
-                TokenPauseStatusEnum.PAUSED);
+                TokenPauseStatusEnum.PAUSED,
+                true);
         final var nftEntityId6 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -498,7 +699,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 keyWithECDSASecp256K1.toByteArray(),
-                TokenPauseStatusEnum.PAUSED);
+                TokenPauseStatusEnum.PAUSED,
+                true);
         final var nftEntityId7 = nftPersist(
                 NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -506,7 +708,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 spenderEntityId,
                 ownerEntityId,
                 keyWithDelegatableContractId.toByteArray(),
-                TokenPauseStatusEnum.PAUSED);
+                TokenPauseStatusEnum.PAUSED,
+                true);
 
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
@@ -529,6 +732,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
         tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -554,10 +758,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
         domainBuilder
                 .customFee()
-                .customize(f -> f.collectorAccountId(senderEntityId)
-                        .id(new CustomFee.Id(2L, nftEntityId))
-                        .royaltyDenominator(0L)
-                        .denominatingTokenId(nftEntityId))
+                .customize(f -> f.tokenId(nftEntityId.getId())
+                        .fractionalFees(List.of(FractionalFee.builder()
+                                .collectorAccountId(senderEntityId)
+                                .build())))
                 .persist();
     }
 
@@ -576,7 +780,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .build())
                 .build();
         final var timeStamp = System.currentTimeMillis();
-        final var entityId = new EntityId(0L, 0L, 112L, EntityType.FILE);
+        final var entityId = EntityId.of(0L, 0L, 112L, EntityType.FILE);
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
@@ -600,7 +804,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .entity()
                 .customize(e -> e.id(tokenEntityId.getId())
                         .autoRenewAccountId(autoRenewEntityId.getId())
-                        .num(tokenEntityId.getEntityNum())
+                        .num(tokenEntityId.getNum())
                         .evmAddress(tokenEvmAddress)
                         .type(TOKEN)
                         .balance(1500L)
@@ -664,7 +868,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .tokenAccount()
                 .customize(e -> e.freezeStatus(freezeStatusEnum)
-                        .accountId(contractEntityId.getEntityNum())
+                        .accountId(contractEntityId.getNum())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .balance(10L))
@@ -678,7 +882,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
-                        .num(spenderEntityId.getEntityNum())
+                        .num(spenderEntityId.getNum())
+                        .evmAddress(NOT_ASSOCIATED_SPENDER_ALIAS.toArray())
+                        .alias(NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.toByteArray())
                         .deleted(false))
                 .persist();
         return spenderEntityId;
@@ -691,7 +897,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
-                        .num(spenderEntityId.getEntityNum())
+                        .num(spenderEntityId.getNum())
                         .evmAddress(SPENDER_ALIAS.toArray())
                         .alias(SPENDER_PUBLIC_KEY.toByteArray())
                         .deleted(false))
@@ -719,11 +925,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(senderEntityId.getId())
-                        .num(senderEntityId.getEntityNum())
+                        .num(senderEntityId.getNum())
                         .evmAddress(SENDER_ALIAS.toArray())
                         .deleted(false)
                         .alias(SENDER_PUBLIC_KEY.toByteArray())
-                        .balance(20000L))
+                        .balance(10000 * 100_000_000L))
                 .persist();
         return senderEntityId;
     }
@@ -735,7 +941,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ownerEntityId.getId())
-                        .num(ownerEntityId.getEntityNum())
+                        .num(ownerEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(ownerEntityId))
                         .balance(20000L))
@@ -750,7 +956,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(autoRenewEntityId.getId())
-                        .num(autoRenewEntityId.getEntityNum())
+                        .num(autoRenewEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(autoRenewEntityId)))
                 .persist();
@@ -764,7 +970,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(treasuryEntityId.getId())
-                        .num(treasuryEntityId.getEntityNum())
+                        .num(treasuryEntityId.getNum())
                         .evmAddress(null)
                         .alias(toEvmAddress(treasuryEntityId)))
                 .persist();
@@ -779,7 +985,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final EntityId spenderEntityId,
             final EntityId treasuryId,
             final byte[] key,
-            final TokenPauseStatusEnum pauseStatus) {
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault) {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
@@ -790,7 +997,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(e -> e.id(nftEntityId.getId())
                         .autoRenewAccountId(autoRenewEntityId.getId())
                         .expirationTimestamp(null)
-                        .num(nftEntityId.getEntityNum())
+                        .num(nftEntityId.getNum())
                         .evmAddress(nftEvmAddress)
                         .type(TOKEN)
                         .balance(1500L)
@@ -804,7 +1011,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
                         .kycKey(key)
-                        .freezeDefault(true)
+                        .freezeDefault(freezeDefault)
                         .feeScheduleKey(key)
                         .maxSupply(2000000000L)
                         .name("Hbars")
@@ -841,16 +1048,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntityId.getId())
                         .payerAccountId(senderEntityId)
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(spenderEntityId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
                         .amount(13))
                 .persist();
 
         domainBuilder
                 .nftAllowance()
                 .customize(a -> a.tokenId(nftEntityId.getId())
-                        .spender(spenderEntityId.getEntityNum())
-                        .owner(senderEntityId.getEntityNum())
+                        .spender(spenderEntityId.getNum())
+                        .owner(senderEntityId.getNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();
@@ -866,16 +1073,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .tokenAllowance()
                 .customize(a -> a.tokenId(tokenEntityId.getId())
                         .payerAccountId(senderEntityId)
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(contractId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(contractId.getNum())
                         .amount(20))
                 .persist();
 
         domainBuilder
                 .nftAllowance()
                 .customize(a -> a.tokenId(nftEntityId.getId())
-                        .owner(senderEntityId.getEntityNum())
-                        .spender(contractId.getEntityNum())
+                        .owner(senderEntityId.getNum())
+                        .spender(contractId.getNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
                 .persist();
@@ -889,7 +1096,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(evmCodesContractEntityId.getId())
-                        .num(evmCodesContractEntityId.getEntityNum())
+                        .num(evmCodesContractEntityId.getNum())
                         .evmAddress(evmCodesContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -914,7 +1121,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ethCallContractEntityId.getId())
-                        .num(ethCallContractEntityId.getEntityNum())
+                        .num(ethCallContractEntityId.getNum())
                         .evmAddress(ethCallContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -945,7 +1152,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(reverterContractEntityId.getId())
-                        .num(reverterContractEntityId.getEntityNum())
+                        .num(reverterContractEntityId.getNum())
                         .evmAddress(reverterContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -965,7 +1172,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(stateContractId.getId())
-                        .num(stateContractId.getEntityNum())
+                        .num(stateContractId.getNum())
                         .evmAddress(stateContractAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -977,16 +1184,18 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId nestedEthCallContractPresist() {
-        final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_ETH_CALLS_BYTES_PATH);
-        final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
+    private EntityId dynamicEthCallContractPresist() {
+        final var contractBytes = functionEncodeDecoder.getContractBytes(DYNAMIC_ETH_CALLS_BYTES_PATH);
+        final var contractEntityId = fromEvmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
 
         domainBuilder
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
-                        .num(contractEntityId.getEntityNum())
-                        .evmAddress(contractEvmAddress)
+                        .num(contractEntityId.getNum())
+                        .evmAddress(DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toArray())
+                        .alias(ByteStringUtils.wrapUnsafely(SENDER_ALIAS.toArrayUnsafe())
+                                .toByteArray())
                         .type(CONTRACT)
                         .balance(1500L))
                 .persist();
@@ -1017,7 +1226,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(contractEntityId.getId())
-                        .num(contractEntityId.getEntityNum())
+                        .num(contractEntityId.getNum())
                         .evmAddress(contractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1048,7 +1257,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(modificationContractEntityId.getId())
-                        .num(modificationContractEntityId.getEntityNum())
+                        .num(modificationContractEntityId.getNum())
                         .evmAddress(modificationContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1069,7 +1278,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.id(ercContractEntityId.getId())
-                        .num(ercContractEntityId.getEntityNum())
+                        .num(ercContractEntityId.getNum())
                         .evmAddress(ercContractEvmAddress)
                         .type(CONTRACT)
                         .balance(1500L))
@@ -1093,40 +1302,84 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ercContractEntityId;
     }
 
-    protected void customFeesPersist(final FeeCase feeCase) {
+    private void nestedEthCallsContractPersist() {
+        final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_CALLS_CONTRACT_BYTES_PATH);
+        final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var contractEvmAddress = toEvmAddress(contractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(contractEntityId.getId())
+                        .num(contractEntityId.getNum())
+                        .evmAddress(contractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(contractEntityId.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(contractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+    }
+
+    protected void customFeePersist(final FeeCase feeCase) {
         final var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
-        final var timeStamp = System.currentTimeMillis();
         switch (feeCase) {
-            case ROYALTY_FEE -> domainBuilder
-                    .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .denominatingTokenId(tokenEntityId))
-                    .persist();
-            case FRACTIONAL_FEE -> domainBuilder
-                    .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .denominatingTokenId(tokenEntityId))
-                    .persist();
-            case FIXED_FEE -> domainBuilder
-                    .customFee()
-                    .customize(f -> f.collectorAccountId(collectorAccountId)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .amountDenominator(null)
-                            .royaltyNumerator(0L)
-                            .denominatingTokenId(tokenEntityId))
-                    .persist();
+            case ROYALTY_FEE -> {
+                var royaltyFee = RoyaltyFee.builder()
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
+                        .fallbackFee(FallbackFee.builder()
+                                .amount(100L)
+                                .denominatingTokenId(tokenEntityId)
+                                .build())
+                        .numerator(20L)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.royaltyFees(List.of(royaltyFee)).tokenId(tokenEntityId.getId()))
+                        .persist();
+            }
+            case FRACTIONAL_FEE -> {
+                var fractionalFee = FractionalFee.builder()
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
+                        .minimumAmount(1L)
+                        .maximumAmount(1000L)
+                        .netOfTransfers(true)
+                        .numerator(100L)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.fractionalFees(List.of(fractionalFee)).tokenId(tokenEntityId.getId()))
+                        .persist();
+            }
+            case FIXED_FEE -> {
+                var fixedFee = FixedFee.builder()
+                        .amount(100L)
+                        .collectorAccountId(collectorAccountId)
+                        .denominatingTokenId(tokenEntityId)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.fixedFees(List.of(fixedFee)).tokenId(tokenEntityId.getId()))
+                        .persist();
+            }
             default -> domainBuilder
                     .customFee()
-                    .customize(f -> f.collectorAccountId(null)
-                            .id(new CustomFee.Id(timeStamp, tokenEntityId))
-                            .royaltyDenominator(0L)
-                            .royaltyNumerator(0L)
-                            .denominatingTokenId(tokenEntityId))
+                    .customize(f -> f.tokenId(tokenEntityId.getId()))
                     .persist();
         }
     }
@@ -1149,7 +1402,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private static TokenCreateWrapper getFungibleToken() {
+    private static TokenCreateWrapper getFungibleTokenWithKeys() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111,
+                        new KeyValueWrapper(
+                                false,
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                new byte[] {},
+                                new byte[] {},
+                                null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleTokenExpiryInUint32Range() {
         return new TokenCreateWrapper(
                 true,
                 "Test",
@@ -1162,10 +1438,33 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getNonFungibleToken() {
+    private static TokenCreateWrapper getNonFungibleTokenWithKeys() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111,
+                        new KeyValueWrapper(
+                                false,
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                new byte[] {},
+                                new byte[] {},
+                                null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenExpiryInUint32Range() {
         return new TokenCreateWrapper(
                 false,
                 "TestNFT",
@@ -1178,22 +1477,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static FixedFeeWrapper getFixedFee() {
-        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
-    }
-
-    private static FractionalFeeWrapper getFractionalFee() {
-        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
-    }
-
-    private static RoyaltyFeeWrapper getRoyaltyFee() {
-        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
-    }
-
-    private static TokenExpiryWrapper getTokenExpiry() {
-        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
+                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 }

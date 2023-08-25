@@ -107,6 +107,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
+        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
@@ -125,6 +126,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
+        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();
@@ -144,6 +146,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
+        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
@@ -156,6 +159,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void accountTests() {
         updatedHederaEvmAccount.setBalance(Wei.of(100));
+        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();

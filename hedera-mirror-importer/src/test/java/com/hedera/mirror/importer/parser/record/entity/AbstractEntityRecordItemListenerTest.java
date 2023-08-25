@@ -43,6 +43,8 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.CustomFeeHistoryRepository;
+import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTransactionRepository;
@@ -114,6 +116,12 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
+
+    @Resource
+    protected CustomFeeRepository customFeeRepository;
+
+    @Resource
+    protected CustomFeeHistoryRepository customFeeHistoryRepository;
 
     @Resource
     protected DomainBuilder domainBuilder;
@@ -528,9 +536,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected TransactionID transactionId(EntityId payerAccountId, long validStartTimestamp) {
         var payer = AccountID.newBuilder()
-                .setShardNum(payerAccountId.getShardNum())
-                .setRealmNum(payerAccountId.getRealmNum())
-                .setAccountNum(payerAccountId.getEntityNum())
+                .setShardNum(payerAccountId.getShard())
+                .setRealmNum(payerAccountId.getRealm())
+                .setAccountNum(payerAccountId.getNum())
                 .build();
         return TransactionID.newBuilder()
                 .setAccountID(payer)

@@ -34,10 +34,10 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -46,12 +46,9 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -120,12 +117,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityIdEndec.decode(1201, ACCOUNT);
-    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityIdEndec.decode(9800, EntityType.TOKEN);
-    private static final EntityId FEE_PAYER_1 = EntityIdEndec.decode(1500, ACCOUNT);
-    private static final EntityId FEE_PAYER_2 = EntityIdEndec.decode(1501, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201, ACCOUNT);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800, EntityType.TOKEN);
+    private static final EntityId FEE_PAYER_1 = EntityId.of(1500, ACCOUNT);
+    private static final EntityId FEE_PAYER_2 = EntityId.of(1501, ACCOUNT);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final byte[] METADATA = "METADATA".getBytes();
     private static final long SERIAL_NUMBER_1 = 1L;
@@ -154,86 +151,84 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionRepository transactionRepository;
 
-    private static List<CustomFee> deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+    private static CustomFee deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
-        customFee.setId(new CustomFee.Id(consensusTimestamp, tokenId));
-        customFee.setAllCollectorsAreExempt(false);
-        return List.of(customFee);
+        customFee.setTokenId(tokenId.getId());
+        customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
+        return customFee;
     }
 
-    private static List<CustomFee> nonEmptyCustomFees(long consensusTimestamp, EntityId tokenId, TokenType tokenType) {
-        List<CustomFee> customFees = new ArrayList<>();
-        CustomFee.Id id = new CustomFee.Id(consensusTimestamp, tokenId);
+    private static CustomFee nonEmptyCustomFee(long consensusTimestamp, EntityId tokenId, TokenType tokenType) {
+        var customFee = new CustomFee();
+        customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
+        customFee.setTokenId(tokenId.getId());
         EntityId treasury = PAYER_ACCOUNT_ID;
 
-        CustomFee fixedFee1 = new CustomFee();
+        var fixedFee1 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee1.setAllCollectorsAreExempt(false);
         fixedFee1.setAmount(11L);
         fixedFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1);
-        fixedFee1.setId(id);
-        fixedFee1.setAllCollectorsAreExempt(false);
-        customFees.add(fixedFee1);
+        customFee.addFixedFee(fixedFee1);
 
-        CustomFee fixedFee2 = new CustomFee();
+        var fixedFee2 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee2.setAllCollectorsAreExempt(false);
         fixedFee2.setAmount(12L);
         fixedFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fixedFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-        fixedFee2.setId(id);
-        fixedFee2.setAllCollectorsAreExempt(false);
-        customFees.add(fixedFee2);
+        customFee.addFixedFee(fixedFee2);
 
-        CustomFee fixedFee3 = new CustomFee();
+        var fixedFee3 = new com.hedera.mirror.common.domain.token.FixedFee();
+        fixedFee3.setAllCollectorsAreExempt(true);
         fixedFee3.setAmount(13L);
         fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fixedFee3.setDenominatingTokenId(tokenId);
-        fixedFee3.setId(id);
-        fixedFee3.setAllCollectorsAreExempt(true);
-        customFees.add(fixedFee3);
+        customFee.addFixedFee(fixedFee3);
 
         if (tokenType == FUNGIBLE_COMMON) {
             // fractional fees only apply for fungible tokens
-            CustomFee fractionalFee1 = new CustomFee();
-            fractionalFee1.setAmount(14L);
-            fractionalFee1.setAmountDenominator(31L);
+            var fractionalFee1 = new com.hedera.mirror.common.domain.token.FractionalFee();
+            fractionalFee1.setAllCollectorsAreExempt(false);
             fractionalFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            fractionalFee1.setDenominator(31L);
+            fractionalFee1.setMinimumAmount(1L);
             fractionalFee1.setMaximumAmount(100L);
             fractionalFee1.setNetOfTransfers(true);
-            fractionalFee1.setId(id);
-            fractionalFee1.setAllCollectorsAreExempt(false);
-            customFees.add(fractionalFee1);
+            fractionalFee1.setNumerator(14L);
+            customFee.addFractionalFee(fractionalFee1);
 
-            CustomFee fractionalFee2 = new CustomFee();
-            fractionalFee2.setAmount(15L);
-            fractionalFee2.setAmountDenominator(32L);
+            var fractionalFee2 = new com.hedera.mirror.common.domain.token.FractionalFee();
+            fractionalFee2.setAllCollectorsAreExempt(true);
             fractionalFee2.setCollectorAccountId(treasury);
+            fractionalFee2.setDenominator(32L);
+            fractionalFee2.setMinimumAmount(10L);
             fractionalFee2.setMaximumAmount(110L);
             fractionalFee2.setNetOfTransfers(false);
-            fractionalFee2.setId(id);
-            fractionalFee2.setAllCollectorsAreExempt(true);
-            customFees.add(fractionalFee2);
+            fractionalFee2.setNumerator(15L);
+            customFee.addFractionalFee(fractionalFee2);
         } else {
             // royalty fees only apply for non-fungible tokens
-            CustomFee royaltyFee1 = new CustomFee();
-            royaltyFee1.setRoyaltyNumerator(14L);
-            royaltyFee1.setRoyaltyDenominator(31L);
-            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
-            royaltyFee1.setId(id);
+            var royaltyFee1 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee1.setAllCollectorsAreExempt(false);
-            customFees.add(royaltyFee1);
+            royaltyFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_3);
+            royaltyFee1.setDenominator(31L);
+            royaltyFee1.setNumerator(14L);
+            customFee.addRoyaltyFee(royaltyFee1);
 
             // with fallback fee
-            CustomFee royaltyFee2 = new CustomFee();
-            royaltyFee2.setRoyaltyNumerator(15L);
-            royaltyFee2.setRoyaltyDenominator(32L);
-            royaltyFee2.setCollectorAccountId(treasury);
-            // fallback fee in form of fixed fee
-            royaltyFee2.setAmount(103L);
-            royaltyFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
-            royaltyFee2.setId(id);
+            var royaltyFee2 = new com.hedera.mirror.common.domain.token.RoyaltyFee();
             royaltyFee2.setAllCollectorsAreExempt(true);
-            customFees.add(royaltyFee2);
+            royaltyFee2.setCollectorAccountId(treasury);
+            royaltyFee2.setDenominator(32L);
+            royaltyFee2.setNumerator(15L);
+
+            var fallBackFee = new com.hedera.mirror.common.domain.token.FallbackFee();
+            fallBackFee.setAmount(103L);
+            fallBackFee.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
+            royaltyFee2.setFallbackFee(fallBackFee);
+            customFee.addRoyaltyFee(royaltyFee2);
         }
 
-        return customFees;
+        return customFee;
     }
 
     private static Stream<Arguments> provideTokenCreateFtArguments() {
@@ -245,7 +240,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private static Stream<Arguments> provideTokenCreateArguments(TokenType tokenType) {
-        List<CustomFee> nonEmptyCustomFees = nonEmptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID, tokenType);
+        var nonEmptyCustomFee = nonEmptyCustomFee(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID, tokenType);
         EntityId treasury = PAYER_ACCOUNT_ID;
         // fractional fees only apply for FT, thus FEE_COLLECTOR_ACCOUNT_ID_3 (collector of a fractional fee for FT, and
         // a royalty fee in case of NFT) will be auto enabled only for FT custom fees
@@ -260,7 +255,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(List.of(treasury))
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
+                        .customFees(List.of(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
                         .customFeesDescription("empty custom fees")
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
@@ -269,7 +264,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(nonEmptyCustomFees)
+                        .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
                         .freezeKey(true)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
@@ -280,7 +275,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(nonEmptyCustomFees)
+                        .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
                         .freezeDefault(true)
                         .freezeKey(true)
@@ -292,7 +287,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(nonEmptyCustomFees)
+                        .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
                         .kycKey(true)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
@@ -303,7 +298,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(nonEmptyCustomFees)
+                        .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
@@ -312,7 +307,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(nonEmptyCustomFees)
+                        .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
                         .pauseKey(true)
                         .tokenId(DOMAIN_TOKEN_ID)
@@ -335,17 +330,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(12505L);
+        assessedCustomFee1.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1.getId());
+        assessedCustomFee1.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee1.setEffectivePayerAccountIds(Collections.emptyList());
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee1.setPayerAccountId(PAYER_ACCOUNT_ID);
 
         // paid in FEE_DOMAIN_TOKEN_ID
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(8750L);
+        assessedCustomFee2.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2.getId());
+        assessedCustomFee2.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee2.setEffectivePayerAccountIds(Collections.emptyList());
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
-        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee2.setPayerAccountId(PAYER_ACCOUNT_ID);
+        assessedCustomFee2.setTokenId(FEE_DOMAIN_TOKEN_ID);
         List<AssessedCustomFee> assessedCustomFees = List.of(assessedCustomFee1, assessedCustomFee2);
 
         // build the corresponding protobuf assessed custom fee list
@@ -364,17 +361,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // paid in HBAR, one effective payer
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(12300L);
+        assessedCustomFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_1.getId());
+        assessedCustomFee3.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee3.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId()));
-        assessedCustomFee3.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_1, TRANSFER_TIMESTAMP));
         assessedCustomFee3.setPayerAccountId(PAYER_ACCOUNT_ID);
 
         // paid in FEE_DOMAIN_TOKEN_ID, two effective payers
         AssessedCustomFee assessedCustomFee4 = new AssessedCustomFee();
         assessedCustomFee4.setAmount(8790L);
-        assessedCustomFee4.setId(new AssessedCustomFee.Id(FEE_COLLECTOR_ACCOUNT_ID_2, TRANSFER_TIMESTAMP));
+        assessedCustomFee4.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2.getId());
+        assessedCustomFee4.setConsensusTimestamp(TRANSFER_TIMESTAMP);
         assessedCustomFee4.setEffectivePayerAccountIds(List.of(FEE_PAYER_1.getId(), FEE_PAYER_2.getId()));
-        assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         assessedCustomFee4.setPayerAccountId(PAYER_ACCOUNT_ID);
+        assessedCustomFee4.setTokenId(FEE_DOMAIN_TOKEN_ID);
         List<AssessedCustomFee> assessedCustomFeesWithPayers = List.of(assessedCustomFee3, assessedCustomFee4);
 
         // build the corresponding protobuf assessed custom fee list, with effective payer account ids
@@ -405,17 +404,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private static AccountID convertAccountId(EntityId accountId) {
         return AccountID.newBuilder()
-                .setShardNum(accountId.getShardNum())
-                .setRealmNum(accountId.getRealmNum())
-                .setAccountNum(accountId.getEntityNum())
+                .setShardNum(accountId.getShard())
+                .setRealmNum(accountId.getRealm())
+                .setAccountNum(accountId.getNum())
                 .build();
     }
 
     private static TokenID convertTokenId(EntityId tokenId) {
         return TokenID.newBuilder()
-                .setShardNum(tokenId.getShardNum())
-                .setRealmNum(tokenId.getRealmNum())
-                .setTokenNum(tokenId.getEntityNum())
+                .setShardNum(tokenId.getShard())
+                .setRealmNum(tokenId.getRealm())
+                .setTokenNum(tokenId.getNum())
                 .build();
     }
 
@@ -469,7 +468,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
         assertThat(tokenTransferRepository.count()).isZero();
-        assertCustomFeesInDb(Collections.emptyList());
+        assertCustomFeesInDb(Collections.emptyList(), Collections.emptyList());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -520,7 +519,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 pauseKey ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE;
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0, pauseStatus);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
-        assertCustomFeesInDb(customFees);
+        assertCustomFeesInDb(customFees, Collections.emptyList());
         assertThat(tokenTransferRepository.count()).isZero();
     }
 
@@ -953,18 +952,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
-        List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
-        List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
-        expectedCustomFees.addAll(newCustomFees);
+        var deletedDbCustomFee = deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        var newCustomFee = nonEmptyCustomFee(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
+
         long expectedSupply = tokenType == FUNGIBLE_COMMON ? INITIAL_SUPPLY : 0;
 
         // when
-        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, newCustomFees);
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, List.of(newCustomFee));
 
         // then
         assertEntity(expectedEntity);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
-        assertCustomFeesInDb(expectedCustomFees);
+        deletedDbCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
+        assertCustomFeesInDb(List.of(newCustomFee), List.of(deletedDbCustomFee));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -1178,13 +1178,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var newTreasury = domainBuilder.entityId(ACCOUNT);
         var tokenId = domainBuilder.entityId(TOKEN);
         var protoAccount =
-                AccountID.newBuilder().setAccountNum(account.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(account.getNum()).build();
         var protoOldTreasury =
-                AccountID.newBuilder().setAccountNum(oldTreasury.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(oldTreasury.getNum()).build();
         var protoNewTreasury =
-                AccountID.newBuilder().setAccountNum(newTreasury.getEntityNum()).build();
-        var protoTokenId =
-                TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()).build();
+                AccountID.newBuilder().setAccountNum(newTreasury.getNum()).build();
+        var protoTokenId = TokenID.newBuilder().setTokenNum(tokenId.getNum()).build();
 
         var recordItems = new ArrayList<RecordItem>();
         var tokenCreateRecordItem = recordItemBuilder
@@ -3057,7 +3056,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, pauseStatus);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
-        assertCustomFeesInDb(customFees);
+        assertCustomFeesInDb(customFees, Collections.emptyList());
         assertThat(tokenTransferRepository.count()).isEqualTo(1L);
     }
 
@@ -3172,7 +3171,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 EntityId.of(TOKEN_ID),
                 EntityId.of(tokenId2));
         assessedCustomFees.forEach(assessedCustomFee -> {
-            entityIds.add(assessedCustomFee.getId().getCollectorAccountId());
+            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId(), ACCOUNT));
             entityIds.add(assessedCustomFee.getTokenId());
             assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
         });
@@ -3533,16 +3532,47 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.findById(expected.getId())).get().isEqualTo(expected);
     }
 
-    private void assertCustomFeesInDb(List<CustomFee> expected) {
-        var actual = jdbcTemplate.query(CustomFeeWrapper.SELECT_QUERY, CustomFeeWrapper.ROW_MAPPER);
-        assertThat(actual).map(CustomFeeWrapper::getCustomFee).containsExactlyInAnyOrderElementsOf(expected);
+    private void assertCustomFeesInDb(List<CustomFee> expected, List<CustomFee> expectedHistory) {
+        var listAssert = assertThat(customFeeRepository.findAll()).hasSize(expected.size());
+        for (var result : expected) {
+            listAssert.anySatisfy(fee -> {
+                if (result.getFixedFees() != null) {
+                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
+                }
+                if (result.getFractionalFees() != null) {
+                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
+                }
+                if (result.getRoyaltyFees() != null) {
+                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
+                }
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+            });
+        }
+
+        var historyAssert = assertThat(customFeeHistoryRepository.findAll()).hasSize(expectedHistory.size());
+        for (var result : expectedHistory) {
+            historyAssert.anySatisfy(fee -> {
+                if (result.getFixedFees() != null) {
+                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
+                }
+                if (result.getFractionalFees() != null) {
+                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
+                }
+                if (result.getRoyaltyFees() != null) {
+                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
+                }
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
+                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+            });
+        }
     }
 
     private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {
-        var actual = jdbcTemplate.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
-        assertThat(actual)
-                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
-                .containsExactlyInAnyOrderElementsOf(expected);
+        var actual = jdbcTemplate.query("select * from assessed_custom_fee", rowMapper(AssessedCustomFee.class));
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {
@@ -3705,60 +3735,80 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         return builder.build();
     }
 
-    private com.hederahashgraph.api.proto.java.CustomFee convertCustomFee(CustomFee customFee) {
-        var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder()
-                .setFeeCollectorAccountId(convertAccountId(customFee.getCollectorAccountId()));
-
-        if (customFee.getAmountDenominator() != null) {
-            // fractional fee
-            long maximumAmount = customFee.getMaximumAmount() != null ? customFee.getMaximumAmount() : 0;
-            protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
-                    .setFractionalAmount(Fraction.newBuilder()
-                            .setNumerator(customFee.getAmount())
-                            .setDenominator(customFee.getAmountDenominator()))
-                    .setMaximumAmount(maximumAmount)
-                    .setMinimumAmount(customFee.getMinimumAmount())
-                    .setNetOfTransfers(customFee.getNetOfTransfers()));
-        } else if (customFee.getRoyaltyDenominator() != null) {
-            // royalty fee
-            RoyaltyFee.Builder royaltyFee = RoyaltyFee.newBuilder()
-                    .setExchangeValueFraction(Fraction.newBuilder()
-                            .setNumerator(customFee.getRoyaltyNumerator())
-                            .setDenominator(customFee.getRoyaltyDenominator()));
-            if (customFee.getAmount() != null) {
-                royaltyFee.setFallbackFee(convertFixedFee(customFee));
+    private List<com.hederahashgraph.api.proto.java.CustomFee> convertCustomFee(CustomFee customFee) {
+        List<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees = new ArrayList<>();
+        if (customFee.getFractionalFees() != null) {
+            for (var fractionalFee : customFee.getFractionalFees()) {
+                var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
+                long maximumAmount = fractionalFee.getMaximumAmount();
+                protoCustomFee.setFractionalFee(FractionalFee.newBuilder()
+                        .setFractionalAmount(Fraction.newBuilder()
+                                .setNumerator(fractionalFee.getNumerator())
+                                .setDenominator(fractionalFee.getDenominator()))
+                        .setMaximumAmount(maximumAmount)
+                        .setMinimumAmount(fractionalFee.getMinimumAmount())
+                        .setNetOfTransfers(fractionalFee.isNetOfTransfers()));
+                protoCustomFee.setAllCollectorsAreExempt(fractionalFee.isAllCollectorsAreExempt());
+                protoCustomFee.setFeeCollectorAccountId(convertAccountId(fractionalFee.getCollectorAccountId()));
+                protoCustomFees.add(protoCustomFee.build());
             }
+        }
+        if (customFee.getRoyaltyFees() != null) {
+            for (var royaltyFee : customFee.getRoyaltyFees()) {
+                var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
+                RoyaltyFee.Builder protoRoyaltyFee = RoyaltyFee.newBuilder()
+                        .setExchangeValueFraction(Fraction.newBuilder()
+                                .setNumerator(royaltyFee.getNumerator())
+                                .setDenominator(royaltyFee.getDenominator()));
+                if (royaltyFee.getFallbackFee() != null) {
+                    var amount = royaltyFee.getFallbackFee().getAmount();
+                    var denominatingTokenId = royaltyFee.getFallbackFee().getDenominatingTokenId();
+                    protoRoyaltyFee.setFallbackFee(
+                            convertFixedFee(amount, denominatingTokenId, customFee.getTokenId()));
+                }
 
-            protoCustomFee.setRoyaltyFee(royaltyFee);
-        } else {
-            // fixed fee
-            protoCustomFee.setFixedFee(convertFixedFee(customFee));
+                protoCustomFee.setRoyaltyFee(protoRoyaltyFee);
+                protoCustomFee.setAllCollectorsAreExempt(royaltyFee.isAllCollectorsAreExempt());
+                protoCustomFee.setFeeCollectorAccountId(convertAccountId(royaltyFee.getCollectorAccountId()));
+                protoCustomFees.add(protoCustomFee.build());
+            }
+        }
+        if (customFee.getFixedFees() != null) {
+            for (var fixedFee : customFee.getFixedFees()) {
+                if (fixedFee.getCollectorAccountId() != null) {
+                    var protoCustomFee = com.hederahashgraph.api.proto.java.CustomFee.newBuilder();
+                    protoCustomFee.setAllCollectorsAreExempt(fixedFee.isAllCollectorsAreExempt());
+                    protoCustomFee.setFeeCollectorAccountId(convertAccountId(fixedFee.getCollectorAccountId()));
+                    protoCustomFee.setFixedFee(convertFixedFee(
+                            fixedFee.getAmount(), fixedFee.getDenominatingTokenId(), customFee.getTokenId()));
+                    protoCustomFees.add(protoCustomFee.build());
+                }
+            }
         }
 
-        protoCustomFee.setAllCollectorsAreExempt(customFee.isAllCollectorsAreExempt());
-
-        return protoCustomFee.build();
+        return protoCustomFees;
     }
 
-    private FixedFee.Builder convertFixedFee(CustomFee customFee) {
-        FixedFee.Builder fixedFee = FixedFee.newBuilder().setAmount(customFee.getAmount());
-        EntityId denominatingTokenId = customFee.getDenominatingTokenId();
+    private FixedFee.Builder convertFixedFee(Long amount, EntityId denominatingTokenId, long tokenId) {
+        FixedFee.Builder protoFixedFee = FixedFee.newBuilder().setAmount(amount);
         if (denominatingTokenId != null) {
-            if (denominatingTokenId.equals(customFee.getId().getTokenId())) {
-                fixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());
+            if (denominatingTokenId.equals(tokenId)) {
+                protoFixedFee.setDenominatingTokenId(TokenID.getDefaultInstance());
             } else {
-                fixedFee.setDenominatingTokenId(convertTokenId(denominatingTokenId));
+                protoFixedFee.setDenominatingTokenId(convertTokenId(denominatingTokenId));
             }
         }
 
-        return fixedFee;
+        return protoFixedFee;
     }
 
     private List<com.hederahashgraph.api.proto.java.CustomFee> convertCustomFees(List<CustomFee> customFees) {
-        return customFees.stream()
-                .filter(customFee -> customFee.getAmount() != null || customFee.getRoyaltyDenominator() != null)
-                .map(this::convertCustomFee)
-                .collect(Collectors.toList());
+        List<com.hederahashgraph.api.proto.java.CustomFee> protoCustomFees = new ArrayList<>();
+        for (CustomFee customFee : customFees) {
+            protoCustomFees.addAll(convertCustomFee(customFee));
+        }
+
+        return protoCustomFees;
     }
 
     @Builder

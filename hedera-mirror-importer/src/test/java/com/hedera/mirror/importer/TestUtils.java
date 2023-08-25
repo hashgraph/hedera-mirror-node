@@ -278,7 +278,7 @@ public class TestUtils {
         var entityId = EntityId.of(nodeAccountId, ACCOUNT);
         return ConsensusNodeStub.builder()
                 .nodeAccountId(entityId)
-                .nodeId(entityId.getEntityNum() - 3)
+                .nodeId(entityId.getNum() - 3)
                 .build();
     }
 
@@ -286,7 +286,7 @@ public class TestUtils {
         return pathType == PathType.ACCOUNT_ID
                 ? Path.of(streamType.getNodePrefix() + node.getNodeAccountId().toString())
                 : Path.of(
-                        node.getNodeAccountId().getShardNum().toString(),
+                        String.valueOf(node.getNodeAccountId().getShard()),
                         String.valueOf(node.getNodeId()),
                         streamType.getNodeIdBasedSuffix());
     }
@@ -305,7 +305,7 @@ public class TestUtils {
         return "%s/%d/%d/%s/%s"
                 .formatted(
                         network,
-                        node.getNodeAccountId().getShardNum(),
+                        node.getNodeAccountId().getShard(),
                         node.getNodeId(),
                         streamType.getNodeIdBasedSuffix(),
                         fileName);

@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
@@ -50,7 +51,6 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NetworkFreeze;
@@ -137,6 +137,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<Long, CustomFee> customFeeState;
     private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
@@ -204,6 +205,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        customFeeState = new HashMap<>();
         contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
@@ -311,7 +313,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCustomFee(CustomFee customFee) throws ImporterException {
-        customFees.add(customFee);
+        var merged = customFeeState.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
+        customFees.add(merged);
     }
 
     @Override
@@ -490,6 +493,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void cleanup() {
         try {
             assessedCustomFees.clear();
+            customFeeState.clear();
             contracts.clear();
             contractActions.clear();
             contractLogs.clear();
@@ -609,6 +613,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftState.clear();
             nfts.clear();
         }
+    }
+
+    private CustomFee mergeCustomFee(CustomFee previous, CustomFee current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 
     private ContractState mergeContractState(ContractState previous, ContractState current) {

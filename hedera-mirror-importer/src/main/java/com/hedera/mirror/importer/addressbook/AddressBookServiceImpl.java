@@ -57,8 +57,8 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.cache.annotation.CacheConfig;
@@ -69,7 +69,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
-@Log4j2
+@CustomLog
 @Named
 @CacheConfig(cacheNames = CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 @RequiredArgsConstructor
@@ -408,10 +408,8 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         var nodeId = nodeAddressProto.getNodeId();
         // ensure valid nodeId. In early versions of initial addressBook (entityNum < 20) all nodeIds are set to 0
-        if (nodeId == 0
-                && nodeAccountId.getEntityNum() < 20
-                && nodeAccountId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
-            nodeId = nodeAccountId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
+        if (nodeId == 0 && nodeAccountId.getNum() < 20 && nodeAccountId.getNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+            nodeId = nodeAccountId.getNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
         return Pair.of(nodeId, nodeAccountId);

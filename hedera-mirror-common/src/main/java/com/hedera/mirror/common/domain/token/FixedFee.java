@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.common.domain.token;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
-public class MirrorTransferAllowance {
+@NoArgsConstructor
+@SuperBuilder(toBuilder = true)
+public class FixedFee extends AbstractFee {
 
-    private String owner;
+    private long amount;
 
-    private String spender;
+    private EntityId denominatingTokenId;
 
-    private MirrorTimestampRange timestamp;
+    public boolean isChargedInToken(EntityId tokenId) {
+        return tokenId.equals(denominatingTokenId);
+    }
 }

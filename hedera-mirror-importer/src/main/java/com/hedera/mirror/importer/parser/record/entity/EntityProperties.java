@@ -60,7 +60,7 @@ public class EntityProperties {
 
         private boolean files = true;
 
-        private boolean itemizedTransfers = true;
+        private boolean itemizedTransfers = false;
 
         private boolean pendingReward = true;
 
@@ -97,6 +97,11 @@ public class EntityProperties {
          * If configured the mirror node will store the raw transaction bytes on the transaction table
          */
         private boolean transactionBytes = false;
+
+        /**
+         * If configured the mirror node will store the raw transaction record bytes on the transaction table.
+         */
+        private boolean transactionRecordBytes = false;
 
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);

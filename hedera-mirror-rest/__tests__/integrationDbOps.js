@@ -57,7 +57,7 @@ const v2SchemaConfigs = {
 
 const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
-const dbUrlRegex = /^postgresql:\/\/(.*):(.*)@(.*):(\d+)/;
+const dbUrlRegex = /^postgres:\/\/(.*):(.*)@(.*):(\d+)/;
 
 const extractDbConnectionParams = (url) => {
   const found = url.match(dbUrlRegex);
@@ -105,21 +105,20 @@ const flywayMigrate = async () => {
 
   const flywayConfig = `{
     "flywayArgs": {
+      "baselineOnMigrate": "true",
       "baselineVersion": "${schemaConfigs.baselineVersion}",
       "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
       "placeholders.api-user": "${apiUsername}",
       "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
-      "placeholders.chunkIdInterval": 10000,
-      "placeholders.chunkTimeInterval": 604800000000000,
-      "placeholders.compressionAge": 9007199254740991,
-      "placeholders.cronSchedule": "'@daily'",
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
-      "placeholders.partitionIdInterval": "'1000000'",
-      "placeholders.partitionStartDate": "'0 days'",
-      "placeholders.partitionTimeInterval": "'1 year'",
+      "placeholders.idPartitionSize": 1000000000000000,
+      "placeholders.maxEntityId": 5000000,
+      "placeholders.maxEntityIdRatio": 2.0,
+      "placeholders.partitionStartDate": "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
+      "placeholders.partitionTimeInterval": "'10 years'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "placeholders.schema": "public",
       "placeholders.shardCount": 2,
@@ -183,7 +182,7 @@ const getCleanupSql = async () => {
   cleanupSql.v2 = rows
     .map(
       (row) => `delete
-                                     from ${row.table_name};`
+                from ${row.table_name};`
     )
     .join('\n');
   return cleanupSql.v2;

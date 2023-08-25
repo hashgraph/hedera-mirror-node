@@ -151,7 +151,7 @@ public abstract class AbstractEntity implements History {
     }
 
     public EntityId toEntityId() {
-        return new EntityId(shard, realm, num, type);
+        return EntityId.of(shard, realm, num, type);
     }
 
     @JsonIgnore
