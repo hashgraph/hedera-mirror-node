@@ -19,7 +19,7 @@ import http from 'k6/http';
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
 import {balanceListName} from '../libex/constants';
 
-const urlTag = '/balances?account.id=eq:{accountId}&?timestamp={timestamp}';
+const urlTag = '/balances?account.id=eq:{accountId}&timestamp={timestamp}';
 
 const {options, run, setup} = new RestTestScenarioBuilder()
   .name('balancesAccountTimestamp') // use unique scenario name among all tests
