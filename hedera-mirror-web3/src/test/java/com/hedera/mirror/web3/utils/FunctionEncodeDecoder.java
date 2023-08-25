@@ -291,10 +291,6 @@ public class FunctionEncodeDecoder {
         };
     }
 
-    private Tuple[] encodeCryptoTransferForNFT(Object[] parameters) {
-        return new Tuple[] {};
-    }
-
     private Tuple[] encodeCryptoTransfer(Object[] parameters) {
         if ((Boolean) parameters[4]) { // means it's a NFT transfer
             return new Tuple[] {
