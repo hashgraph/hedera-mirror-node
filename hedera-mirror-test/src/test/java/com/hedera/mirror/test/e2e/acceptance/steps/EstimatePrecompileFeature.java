@@ -866,7 +866,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
-                812000000);
+                820000000);
     }
 
     @Then("I call estimateGas with CreateNFT function")
@@ -877,7 +877,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_NFT.getActualGas(),
-                812000000);
+                820000000);
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
@@ -905,7 +905,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
-                1635000000);
+                1650000000);
     }
 
     @Then("I call estimateGas with WipeTokenAccount function")
@@ -2165,9 +2165,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Getter
     @RequiredArgsConstructor
     private enum ContractMethods {
-        /**
-         * 0-expecting a revert 23422-gas estimation is not calculated
-         */
         ALLOWANCE("allowanceExternal", 25399),
         ALLOWANCE_ERC("allowance", 27481),
         APPROVE("approveExternal", 729571),

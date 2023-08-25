@@ -50,7 +50,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with cryptoTransfer function for nft
     Then I call estimateGas with cryptoTransfer function for fungible tokens
     Then I call estimateGas with mintToken function for fungible token
-#    Then I call estimateGas with mintToken function for NFT
+#    Then I call estimateGas with mintToken function for NFT - disabled due to bug
     Then I call estimateGas with burnToken function for fungible token
     Then I call estimateGas with burnToken function for NFT
     Then I call estimateGas with CreateFungibleToken function
@@ -108,9 +108,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with name function for NFT
     Then I call estimateGas with symbol function for fungible token
     Then I call estimateGas with symbol function for NFT
-    Then I call estimateGas with decimals function for fungible token
-    Then I call estimateGas with totalSupply function for fungible token
-    Then I call estimateGas with totalSupply function for fungible token
     Then I call estimateGas with decimals function for fungible token
     Then I call estimateGas with totalSupply function for fungible token
     Then I call estimateGas with totalSupply function for NFT
