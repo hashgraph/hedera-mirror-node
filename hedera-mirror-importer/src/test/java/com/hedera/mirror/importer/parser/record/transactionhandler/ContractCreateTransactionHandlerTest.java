@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -67,7 +66,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(contractId)).thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT)));
+        when(entityIdService.lookup(contractId)).thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM)));
     }
 
     @Override
@@ -259,7 +258,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         var initCode = DomainUtils.toBytes(
                 recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         when(entityIdService.lookup(aliasAccount)).thenReturn(Optional.of(aliasAccountId));
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
         expectedEntityTransactions.put(

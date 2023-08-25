@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import java.util.Collections;
 import java.util.Set;
@@ -43,7 +42,7 @@ class PersistPropertiesTest {
     void shouldPersistEntityTransaction(String entityIdStr, boolean expected) {
         var persistProperties = new EntityProperties.PersistProperties();
         persistProperties.setEntityTransactions(true);
-        var entityId = entityIdStr != null ? EntityId.of(entityIdStr, EntityType.ACCOUNT) : null;
+        var entityId = entityIdStr != null ? EntityId.of(entityIdStr) : null;
         assertThat(persistProperties.shouldPersistEntityTransaction(entityId)).isEqualTo(expected);
     }
 
@@ -54,11 +53,11 @@ class PersistPropertiesTest {
         assertThat(persistProperties.shouldPersistEntityTransaction(null)).isFalse();
         assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.EMPTY))
                 .isFalse();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(10, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(10)))
                 .isFalse();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(98, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(98)))
                 .isFalse();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(800, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(800)))
                 .isFalse();
     }
 
@@ -66,15 +65,15 @@ class PersistPropertiesTest {
     void shouldPersistEntityTransactionWithCustomExclusion() {
         var persistProperties = new EntityProperties.PersistProperties();
         persistProperties.setEntityTransactions(true);
-        persistProperties.setEntityTransactionExclusion(Set.of(EntityId.of(10, EntityType.ACCOUNT)));
+        persistProperties.setEntityTransactionExclusion(Set.of(EntityId.of(10)));
         assertThat(persistProperties.shouldPersistEntityTransaction(null)).isFalse();
         assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.EMPTY))
                 .isFalse();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(10, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(10)))
                 .isFalse();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(98, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(98)))
                 .isTrue();
-        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(800, EntityType.ACCOUNT)))
+        assertThat(persistProperties.shouldPersistEntityTransaction(EntityId.of(800)))
                 .isTrue();
     }
 

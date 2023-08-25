@@ -223,11 +223,11 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 1, id, entityType));
+        transaction.setEntityId(EntityId.of(0, 1, id));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
-        transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
+        transaction.setNodeAccountId(EntityId.of(0, 1, 3));
+        transaction.setPayerAccountId(EntityId.of(0, 1, 98));
         transaction.setResult(result.getNumber());
         transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
@@ -237,7 +237,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     }
 
     private EntityId entityId(long id, EntityType entityType) {
-        return EntityId.of(0, 1, id, entityType);
+        return EntityId.of(0, 1, id);
     }
 
     private void migrate() throws IOException {
@@ -282,8 +282,8 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         var entity = entityId.toEntity();
         entity.setType(type);
         entity.setMemo("abc" + (char) 0);
-        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT).getId());
-        entity.setProxyAccountId(EntityId.of("4.5.6", EntityType.ACCOUNT));
+        entity.setAutoRenewAccountId(EntityId.of("1.2.3").getId());
+        entity.setProxyAccountId(EntityId.of("4.5.6"));
 
         jdbcOperations.update(
                 "insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num, "
@@ -326,7 +326,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setNum(rs.getLong("entity_num"));
                     entity.setRealm(rs.getLong("entity_realm"));
                     entity.setShard(rs.getLong("entity_shard"));
-                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id"), EntityType.ACCOUNT));
+                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id")));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
                     entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;

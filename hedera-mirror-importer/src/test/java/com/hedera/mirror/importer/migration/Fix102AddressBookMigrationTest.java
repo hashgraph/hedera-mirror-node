@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
@@ -93,7 +92,7 @@ class Fix102AddressBookMigrationTest extends IntegrationTest {
         AddressBook addressBook = new AddressBook();
         addressBook.setEndConsensusTimestamp(endConsensusTimestamp);
         addressBook.setFileData(new byte[] {});
-        addressBook.setFileId(EntityId.of(0, 0, fileId, EntityType.FILE));
+        addressBook.setFileId(EntityId.of(0, 0, fileId));
         addressBook.setStartConsensusTimestamp(startConsensusTimestamp);
         return addressBookRepository.save(addressBook);
     }

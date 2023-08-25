@@ -295,7 +295,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     }
 
     private Entity createEntity(long num, EntityType type, boolean afterReset) {
-        Entity entity = EntityId.of(0L, 0L, num, type).toEntity();
+        Entity entity = EntityId.of(0L, 0L, num).toEntity();
         entity.setDeclineReward(false);
         entity.setNum(num);
         entity.setRealm(0L);
@@ -314,7 +314,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
             entity.setExpirationTimestamp(1L);
             entity.setKey(key.toByteArray());
             entity.setMemo("Bar");
-            entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
+            entity.setProxyAccountId(EntityId.of(0, 0, 3));
         }
 
         entityRepository.save(entity);

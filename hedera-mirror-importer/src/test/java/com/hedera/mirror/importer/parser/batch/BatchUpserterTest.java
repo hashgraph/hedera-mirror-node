@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.batch;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +26,6 @@ import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -566,11 +564,11 @@ class BatchUpserterTest extends IntegrationTest {
     @Test
     void tokenDissociateTransfer() {
         // given
-        var accountId1 = domainBuilder.entityId(ACCOUNT);
-        var accountId2 = domainBuilder.entityId(ACCOUNT);
-        var fungibleToken = domainBuilder.entityId(TOKEN);
-        var nonFungibleToken1 = domainBuilder.entityId(TOKEN);
-        var nonFungibleToken2 = domainBuilder.entityId(TOKEN);
+        var accountId1 = domainBuilder.entityId();
+        var accountId2 = domainBuilder.entityId();
+        var fungibleToken = domainBuilder.entityId();
+        var nonFungibleToken1 = domainBuilder.entityId();
+        var nonFungibleToken2 = domainBuilder.entityId();
 
         // Already deleted
         var nft1 = domainBuilder
@@ -584,8 +582,8 @@ class BatchUpserterTest extends IntegrationTest {
         var nft2 = domainBuilder
                 .nft()
                 .customize(n -> n.accountId(accountId1)
-                        .delegatingSpender(domainBuilder.entityId(ACCOUNT))
-                        .spender(domainBuilder.entityId(ACCOUNT))
+                        .delegatingSpender(domainBuilder.entityId())
+                        .spender(domainBuilder.entityId())
                         .tokenId(nonFungibleToken1.getId()))
                 .persist();
         var nft3 = domainBuilder
@@ -735,9 +733,9 @@ class BatchUpserterTest extends IntegrationTest {
         token.setSupplyType(TokenSupplyTypeEnum.INFINITE);
         token.setSymbol("FOOTOK" + tokenId);
         token.setTimestampLower(3L);
-        token.setTokenId(EntityId.of(tokenId, TOKEN).getId());
+        token.setTokenId(EntityId.of(tokenId).getId());
         token.setTotalSupply(token.getInitialSupply());
-        token.setTreasuryAccountId(EntityId.of(treasuryAccountId, ACCOUNT));
+        token.setTreasuryAccountId(EntityId.of(treasuryAccountId));
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);
         return token;
@@ -758,31 +756,31 @@ class BatchUpserterTest extends IntegrationTest {
             Range<Long> timestampRange) {
         return domainBuilder
                 .tokenAccount()
-                .customize(t -> t.accountId(EntityId.of(accountId, ACCOUNT).getId())
+                .customize(t -> t.accountId(EntityId.of(accountId).getId())
                         .automaticAssociation(false)
                         .associated(associated)
                         .createdTimestamp(createdTimestamp)
                         .freezeStatus(freezeStatus)
                         .kycStatus(kycStatus)
                         .timestampRange(timestampRange)
-                        .tokenId(EntityId.of(tokenId, TOKEN).getId()))
+                        .tokenId(EntityId.of(tokenId).getId()))
                 .get();
     }
 
     private Schedule getSchedule(Long createdTimestamp, String scheduleId, Long executedTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(createdTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123"));
         schedule.setExecutedTimestamp(executedTimestamp);
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
-        schedule.setScheduleId(EntityId.of(scheduleId, EntityType.SCHEDULE));
+        schedule.setPayerAccountId(EntityId.of("0.0.456"));
+        schedule.setScheduleId(EntityId.of(scheduleId));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }
 
     private Nft transferNft(Nft nft) {
         return nft.toBuilder()
-                .accountId(domainBuilder.entityId(ACCOUNT))
+                .accountId(domainBuilder.entityId())
                 .createdTimestamp(null)
                 .deleted(null)
                 .metadata(null)

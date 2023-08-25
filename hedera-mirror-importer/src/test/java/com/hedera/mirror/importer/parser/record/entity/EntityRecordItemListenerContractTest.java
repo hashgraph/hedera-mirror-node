@@ -1694,7 +1694,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 long realm = buffer.getLong();
                 long num = buffer.getLong();
                 if (shard == contractId.getShardNum() && realm == contractId.getRealmNum()) {
-                    return EntityId.of(shard, realm, num, CONTRACT);
+                    return EntityId.of(shard, realm, num);
                 }
 
                 // the create2 evm address

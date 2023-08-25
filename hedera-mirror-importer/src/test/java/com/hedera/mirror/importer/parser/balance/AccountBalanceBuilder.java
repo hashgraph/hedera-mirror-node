@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.importer.parser.balance;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
@@ -56,7 +53,7 @@ public class AccountBalanceBuilder {
         }
 
         public Builder accountId(long accountId) {
-            return accountId(EntityId.of(accountId, ACCOUNT));
+            return accountId(EntityId.of(accountId));
         }
 
         public Builder accountId(EntityId accountId) {
@@ -71,7 +68,7 @@ public class AccountBalanceBuilder {
         }
 
         public Builder tokenBalance(long balance, long tokenId) {
-            return tokenBalance(balance, EntityId.of(tokenId, TOKEN));
+            return tokenBalance(balance, EntityId.of(tokenId));
         }
 
         public Builder tokenBalance(long balance, EntityId tokenId) {

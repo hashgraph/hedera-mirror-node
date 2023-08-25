@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -167,19 +166,19 @@ class CommonParserPropertiesTest {
             String[] entityIds = entityId.split("/");
             EntityId[] createdEntities = new EntityId[entityIds.length];
             for (int i = 0; i < entityIds.length; i++) {
-                createdEntities[i] = EntityId.of(entityIds[i], EntityType.ACCOUNT);
+                createdEntities[i] = EntityId.of(entityIds[i]);
             }
             return Arrays.asList(createdEntities);
         }
 
-        return Collections.singleton(EntityId.of(entityId, EntityType.ACCOUNT));
+        return Collections.singleton(EntityId.of(entityId));
     }
 
     private TransactionFilter filter(String entity, TransactionType type) {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {
-            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity, EntityType.ACCOUNT)));
+            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity)));
         }
 
         if (type != null) {

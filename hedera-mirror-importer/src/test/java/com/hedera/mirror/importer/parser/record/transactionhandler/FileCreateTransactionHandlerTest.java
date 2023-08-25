@@ -108,7 +108,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionPersistFilesFalse() {
         // Given
-        var systemFileId = EntityId.of(0, 0, 120, EntityType.FILE);
+        var systemFileId = EntityId.of(0, 0, 120);
         entityProperties.getPersist().setFiles(false);
         entityProperties.getPersist().setSystemFiles(true);
         var recordItem = recordItemBuilder.fileCreate().build();
@@ -131,7 +131,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionPersistSystemFilesFalse() {
         // Given
-        var fileId = EntityId.of(0, 0, 1001, EntityType.FILE);
+        var fileId = EntityId.of(0, 0, 1001);
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(false);
         var recordItem = recordItemBuilder.fileCreate().build();
@@ -152,7 +152,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionAddressBook() {
         // Given
-        var systemFileId = EntityId.of(0, 0, 102, EntityType.FILE);
+        var systemFileId = EntityId.of(0, 0, 102);
         var recordItem = recordItemBuilder.fileCreate().build();
         var transaction = domainBuilder
                 .transaction()

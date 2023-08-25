@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,7 +86,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId))
                 .get();
-        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        var autoRenewAccountId = EntityId.of(10L);
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
         var treasuryId = EntityId.of(body.getTreasury());
 
@@ -177,7 +176,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var aliasAccount = AccountID.newBuilder().setAlias(alias).build();
-        var aliasAccountId = EntityId.of(10L, ACCOUNT);
+        var aliasAccountId = EntityId.of(10L);
         var recordItem = recordItemBuilder
                 .tokenUpdate()
                 .transactionBody(b -> b.setAutoRenewAccount(aliasAccount).clearTreasury())

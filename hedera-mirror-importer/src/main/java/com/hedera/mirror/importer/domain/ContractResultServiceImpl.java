@@ -288,7 +288,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             var contractLoginfo = functionResult.getLogInfo(index);
             var contractLog = new ContractLog();
             var contractId = EntityId.of(contractLoginfo.getContractID());
-            var rootContractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
+            var rootContractId = EntityId.of(contractResult.getContractId());
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
             contractLog.setContractId(contractId);

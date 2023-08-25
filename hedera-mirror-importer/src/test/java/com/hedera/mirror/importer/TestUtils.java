@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static java.lang.invoke.MethodType.methodType;
 import static org.springframework.data.util.Predicates.negate;
 
@@ -275,7 +274,7 @@ public class TestUtils {
     }
 
     public static ConsensusNode nodeFromAccountId(String nodeAccountId) {
-        var entityId = EntityId.of(nodeAccountId, ACCOUNT);
+        var entityId = EntityId.of(nodeAccountId);
         return ConsensusNodeStub.builder()
                 .nodeAccountId(entityId)
                 .nodeId(entityId.getNum() - 3)

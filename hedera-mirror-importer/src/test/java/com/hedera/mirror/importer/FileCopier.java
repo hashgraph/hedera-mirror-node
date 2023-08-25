@@ -18,7 +18,6 @@ package com.hedera.mirror.importer;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -134,10 +133,9 @@ public class FileCopier {
 
                 if (streamTypeOpt.isPresent()) {
                     var streamType = streamTypeOpt.get();
-                    EntityId nodeEntityId = EntityId.of(
-                            sourceNodeDirName.substring(
-                                    streamType.getNodePrefix().length()),
-                            EntityType.ACCOUNT);
+                    var nodeAccountId = sourceNodeDirName.substring(
+                            streamType.getNodePrefix().length());
+                    EntityId nodeEntityId = EntityId.of(nodeAccountId);
 
                     var destinationNodeIdPath = networkDir.resolve(Path.of(
                             String.valueOf(nodeEntityId.getShard()),

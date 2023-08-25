@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.common.util;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
@@ -267,7 +265,7 @@ public class DomainUtils {
         try {
             if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LENGTH) {
                 ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
-                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
+                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong());
             }
         } catch (InvalidEntityException ex) {
             log.debug("Failed to parse shard.realm.num form evm address into EntityId", ex);
