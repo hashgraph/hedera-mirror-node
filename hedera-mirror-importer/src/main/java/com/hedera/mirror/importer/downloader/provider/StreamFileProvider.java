@@ -19,8 +19,11 @@ package com.hedera.mirror.importer.downloader.provider;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import java.nio.file.Path;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * A stream file provider abstracts away the source of stream files provided by consensus nodes.
@@ -45,4 +48,16 @@ public interface StreamFileProvider {
      * @return The data associated with one or more stream files, wrapped in a Flux
      */
     Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename);
+
+    // For 4613 PoC
+    default Flux<S3Object> listAllPaginated(ConsensusNode node, StreamFilename lastFilename) {
+        return Flux.empty();
+    }
+
+    // For 4613 PoC
+    default Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+        return Mono.empty();
+    }
+
+    record GetObjectResponseWithKey(GetObjectResponse getObjectResponse, String s3Key) {}
 }

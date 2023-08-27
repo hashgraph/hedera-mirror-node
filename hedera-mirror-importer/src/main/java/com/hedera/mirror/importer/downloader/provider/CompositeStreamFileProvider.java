@@ -23,6 +23,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 import jakarta.inject.Named;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
 @Named
@@ -68,6 +70,22 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
                 .flatMapMany(p -> p.list(consensusNode, lastFilename))
+                .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
+    }
+
+    @Override
+    public Flux<S3Object> listAllPaginated(ConsensusNode node, StreamFilename lastFilename) {
+        var index = new AtomicInteger(0);
+        return Mono.fromSupplier(() -> getProvider(index))
+                .flatMapMany(p -> p.listAllPaginated(node, lastFilename))
+                .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
+    }
+
+    @Override
+    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+        var index = new AtomicInteger(0);
+        return Mono.fromSupplier(() -> getProvider(index))
+                .flatMap(p -> p.get(s3Object, downloadBase))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
     }
 

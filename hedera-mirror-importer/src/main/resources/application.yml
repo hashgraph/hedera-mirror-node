@@ -1,6 +1,15 @@
 hedera:
   mirror:
     importer:
+      downloader: # TODO Remove this
+        balance:
+          enabled: false
+        event:
+          enabled: false
+        historical:
+          enabled: true
+        record:
+          enabled: false
       db:
         connectionInitSql: set temp_buffers='256MB'; set timezone TO 'UTC';
         host: 127.0.0.1
