@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -443,7 +442,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         long timestamp = accountBalanceFile.getConsensusTimestamp();
 
         balances.forEach((accountId, balance) -> {
-            var entityId = EntityId.of(accountId, EntityType.ACCOUNT);
+            var entityId = EntityId.of(accountId);
             domainBuilder
                     .accountBalance()
                     .customize(a -> a.balance(balance).id(new AccountBalance.Id(timestamp, entityId)))
@@ -459,8 +458,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         long timestamp = accountBalanceFile.getConsensusTimestamp();
 
         balances.forEach((id, balance) -> {
-            var accountId = EntityId.of(id.getAccountId(), EntityType.ACCOUNT);
-            var tokenId = EntityId.of(id.getTokenId(), EntityType.TOKEN);
+            var accountId = EntityId.of(id.getAccountId());
+            var tokenId = EntityId.of(id.getTokenId());
             domainBuilder
                     .tokenBalance()
                     .customize(a -> a.balance(balance).id(new TokenBalance.Id(timestamp, accountId, tokenId)))
@@ -483,8 +482,8 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
     private void tokenTransfer(long accountNum, long tokenNum, long amount) {
         long timestamp = domainBuilder.timestamp();
-        EntityId accountId = EntityId.of(accountNum, EntityType.ACCOUNT);
-        EntityId tokenId = EntityId.of(tokenNum, EntityType.TOKEN);
+        EntityId accountId = EntityId.of(accountNum);
+        EntityId tokenId = EntityId.of(tokenNum);
         domainBuilder
                 .tokenTransfer()
                 .customize(c -> c.amount(amount).id(new TokenTransfer.Id(timestamp, tokenId, accountId)))

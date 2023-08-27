@@ -115,30 +115,30 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(AccountID accountID) {
-        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityType.ACCOUNT);
+        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
     }
 
     public static EntityId of(ContractID contractID) {
-        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(), EntityType.CONTRACT);
+        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
     }
 
     public static EntityId of(FileID fileID) {
-        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum(), EntityType.FILE);
+        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum());
     }
 
     public static EntityId of(TopicID topicID) {
-        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityType.TOPIC);
+        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum());
     }
 
     public static EntityId of(TokenID tokenID) {
-        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityType.TOKEN);
+        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum());
     }
 
     public static EntityId of(ScheduleID scheduleID) {
-        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum(), EntityType.SCHEDULE);
+        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum());
     }
 
-    public static EntityId of(String entityId, EntityType type) {
+    public static EntityId of(String entityId) {
         List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
@@ -148,17 +148,17 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         }
 
-        return of(parts.get(0), parts.get(1), parts.get(2), type);
+        return of(parts.get(0), parts.get(1), parts.get(2));
     }
 
-    public static EntityId of(long shard, long realm, long num, EntityType type) {
+    public static EntityId of(long shard, long realm, long num) {
         if (num == 0 && realm == 0 && shard == 0) {
             return EMPTY;
         }
         return new EntityId(shard, realm, num);
     }
 
-    public static EntityId of(long id, EntityType type) {
+    public static EntityId of(long id) {
         return new EntityId(id);
     }
 

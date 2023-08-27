@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -35,13 +34,10 @@ class AddressBookRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findLatestTimestamp() {
-        EntityId fileId = EntityId.of(101L, EntityType.FILE);
+        EntityId fileId = EntityId.of(101L);
         assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).isEmpty();
 
-        domainBuilder
-                .addressBook()
-                .customize(a -> a.fileId(EntityId.of(999L, EntityType.FILE)))
-                .persist();
+        domainBuilder.addressBook().customize(a -> a.fileId(EntityId.of(999L))).persist();
         assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).isEmpty();
 
         AddressBook addressBook2 =

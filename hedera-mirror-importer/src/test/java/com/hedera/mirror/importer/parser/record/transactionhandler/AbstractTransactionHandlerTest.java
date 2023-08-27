@@ -219,7 +219,7 @@ abstract class AbstractTransactionHandlerTest {
         EntityId expectedEntityId = null;
         var entityType = getExpectedEntityIdType();
         if (entityType != null) {
-            expectedEntityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, entityType);
+            expectedEntityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM);
         }
         testGetEntityIdHelper(
                 getDefaultTransactionBody().build(),
@@ -315,7 +315,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected Entity getEntity() {
-        EntityId entityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, getExpectedEntityIdType());
+        EntityId entityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM);
         var entity = entityId.toEntity();
         entity.setType(getExpectedEntityIdType());
         return entity;

@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.migration.SidecarContractMigration;
@@ -130,6 +129,6 @@ class ContractResultServiceImplTest {
                 Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, null, false),
-                Arguments.of(contractCreate, EntityId.of(0, 0, 5, EntityType.CONTRACT), false));
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false));
     }
 }

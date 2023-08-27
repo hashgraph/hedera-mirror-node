@@ -111,7 +111,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void updateTransaction(boolean create) {
-        var fileId = EntityId.of(999L, EntityType.FILE);
+        var fileId = EntityId.of(999L);
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
         var expectedValue = new BigInteger(ethereumTransaction.getValue())
@@ -269,7 +269,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionEntityNonceNotUpdated() {
         boolean create = true;
         entityProperties.getPersist().setTrackNonce(false);
-        var fileId = EntityId.of(999L, EntityType.FILE);
+        var fileId = EntityId.of(999L);
 
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)

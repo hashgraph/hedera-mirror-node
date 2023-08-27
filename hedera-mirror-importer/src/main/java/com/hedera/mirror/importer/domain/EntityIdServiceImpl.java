@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
@@ -140,16 +138,13 @@ public class EntityIdServiceImpl implements EntityIdService {
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
                 return alias.length == DomainUtils.EVM_ADDRESS_LENGTH
-                        ? findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT)
-                        : entityRepository
-                                .findByAlias(alias)
-                                .map(id -> EntityId.of(id, ACCOUNT))
-                                .orElseGet(() -> {
-                                    log.error(
-                                            RECOVERABLE_ERROR + "Unable to find entity for alias {}",
-                                            Hex.encodeHexString(alias));
-                                    return null;
-                                });
+                        ? findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum())
+                        : entityRepository.findByAlias(alias).map(EntityId::of).orElseGet(() -> {
+                            log.error(
+                                    RECOVERABLE_ERROR + "Unable to find entity for alias {}",
+                                    Hex.encodeHexString(alias));
+                            return null;
+                        });
             default:
                 log.error(
                         RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}",
@@ -166,18 +161,18 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
                 byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
-                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum(), CONTRACT);
+                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum());
             default:
                 log.error(RECOVERABLE_ERROR + "Invalid ContractID: {}", contractId);
                 return null;
         }
     }
 
-    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum, EntityType type) {
+    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShard() == shardNum && e.getRealm() == realmNum)
-                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
+                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(EntityId::of))
                 .orElseGet(() -> {
                     log.error(
                             RECOVERABLE_ERROR + "Entity not found for evmAddress {}", Hex.encodeHexString(evmAddress));

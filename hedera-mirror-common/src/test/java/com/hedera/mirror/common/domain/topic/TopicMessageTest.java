@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -36,11 +35,11 @@ class TopicMessageTest {
         topicMessage.setChunkTotal(2);
         topicMessage.setConsensusTimestamp(1594401417000000000L);
         topicMessage.setMessage(new byte[] {1, 2, 3});
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
+        topicMessage.setPayerAccountId(EntityId.of("0.1.1000"));
         topicMessage.setRunningHash(new byte[] {4, 5, 6});
         topicMessage.setRunningHashVersion(2);
         topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0.1001"));
         topicMessage.setValidStartTimestamp(1594401416000000000L);
 
         TransactionID transactionID = TransactionID.newBuilder()

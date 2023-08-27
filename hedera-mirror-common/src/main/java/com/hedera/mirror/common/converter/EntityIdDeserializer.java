@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
 
 @SuppressWarnings("java:S6548")
@@ -31,6 +30,6 @@ public class EntityIdDeserializer extends JsonDeserializer<EntityId> {
     @Override
     public EntityId deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
         Long value = jsonParser.readValueAs(Long.class);
-        return value != null ? EntityId.of(value, EntityType.UNKNOWN) : null;
+        return value != null ? EntityId.of(value) : null;
     }
 }

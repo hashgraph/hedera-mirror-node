@@ -49,8 +49,8 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001);
 
     @Resource
     private JdbcOperations jdbcOperations;
@@ -144,7 +144,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
     private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result, TransactionType type) {
         Transaction transaction = new Transaction();
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
+        transaction.setEntityId(EntityId.of(0, 0, entityNum));
         transaction.setNodeAccountId(NODE_ACCOUNT_ID);
         transaction.setPayerAccountId(PAYER_ID);
         transaction.setResult(result.getNumber());

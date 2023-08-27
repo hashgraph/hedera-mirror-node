@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -111,9 +110,9 @@ class TopicMessageLookupEntityListenerTest extends AbstractTopicMessageLookupInt
         long partition2From = partition2.getTimestampRange().lowerEndpoint();
         long consensusStart = partition2From - 1000L;
         long topicId1 = domainBuilder.id();
-        var topicEntityId1 = EntityId.of(topicId1, EntityType.TOPIC);
+        var topicEntityId1 = EntityId.of(topicId1);
         long topicId2 = domainBuilder.id();
-        var topicEntityId2 = EntityId.of(topicId2, EntityType.TOPIC);
+        var topicEntityId2 = EntityId.of(topicId2);
         // existing topic message lookups
         domainBuilder
                 .topicMessageLookup()

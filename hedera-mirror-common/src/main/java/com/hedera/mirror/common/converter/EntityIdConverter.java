@@ -17,7 +17,6 @@
 package com.hedera.mirror.common.converter;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
@@ -42,6 +41,6 @@ public class EntityIdConverter implements AttributeConverter<EntityId, Long> {
         if (encodedId == null) {
             return null;
         }
-        return EntityId.of(encodedId, EntityType.UNKNOWN);
+        return EntityId.of(encodedId);
     }
 }

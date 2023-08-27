@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -408,11 +406,11 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 customFee.addFixedFee(FixedFee.builder()
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                         .amount(migrationCustomFee.amount)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
+                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
                         .denominatingTokenId(
                                 migrationCustomFee.denominatingTokenId == null
                                         ? null
-                                        : EntityId.of(migrationCustomFee.denominatingTokenId, TOKEN))
+                                        : EntityId.of(migrationCustomFee.denominatingTokenId))
                         .build());
             }
             if (migrationCustomFee.amountDenominator != null) {
@@ -422,7 +420,7 @@ class CustomFeesMigrationTest extends IntegrationTest {
                         .minimumAmount(migrationCustomFee.minimumAmount)
                         .netOfTransfers(migrationCustomFee.netOfTransfers)
                         .numerator(migrationCustomFee.amount)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
+                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                         .build());
             }
@@ -430,12 +428,12 @@ class CustomFeesMigrationTest extends IntegrationTest {
                 var royaltyFee = RoyaltyFee.builder()
                         .allCollectorsAreExempt(migrationCustomFee.allCollectorsAreExempt)
                         .denominator(migrationCustomFee.royaltyDenominator)
-                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId, ACCOUNT))
+                        .collectorAccountId(EntityId.of(migrationCustomFee.collectorAccountId))
                         .numerator(migrationCustomFee.royaltyNumerator);
                 if (migrationCustomFee.getAmount() != null) {
                     royaltyFee.fallbackFee(FallbackFee.builder()
                             .amount(migrationCustomFee.amount)
-                            .denominatingTokenId(EntityId.of(migrationCustomFee.denominatingTokenId, TOKEN))
+                            .denominatingTokenId(EntityId.of(migrationCustomFee.denominatingTokenId))
                             .build());
                 }
                 customFee.addRoyaltyFee(royaltyFee.build());

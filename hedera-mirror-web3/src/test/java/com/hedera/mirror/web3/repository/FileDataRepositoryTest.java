@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -63,8 +62,8 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
             .build();
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L, EntityType.FILE);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L, EntityType.FILE);
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
 
     @Resource
     private final FileDataRepository fileDataRepository;
