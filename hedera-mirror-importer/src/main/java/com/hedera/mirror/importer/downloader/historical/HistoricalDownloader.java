@@ -149,23 +149,26 @@ public class HistoricalDownloader {
         }
 
         var toComplete = downloaders.toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(toComplete);
+        CompletableFuture.allOf(toComplete).join();
 
-        // Initial early address book downloaders are launched and doing their thing.
-        // Need to launch download of stream data file from single node, retrying a different node if not found
-        // Now need to monitor the multimap and remote keys that have been successfully downloaded
-        // as well as attempt additional file downloads where the number of key values is less
-        // than consensus.
-        // Also, as the address book grows, the number needed to reach 1/3 stake also increases and download
-        // tasks need to be added to harvest those signature files.
-
-        try {
-            Thread.sleep(600000L);
-        } catch (InterruptedException e) {
-            log.info("Sleep interrupted");
-            Thread.currentThread().interrupt();
-        }
         executorService.shutdownNow();
+    }
+
+    @Scheduled(initialDelay = 5000, fixedDelay = 10000)
+    public void manageDownloads() {
+        log.info("manageDownloads - taking a look!");
+
+        var entryIterator = downloadsInfoMap.entrySet().iterator();
+        while (entryIterator.hasNext()) {
+            var entry = entryIterator.next();
+            var filename = entry.getKey();
+            var fileInfo = entry.getValue();
+            if (fileInfo.getCompletions().size()
+                    >= fileInfo.consensusNodeInfo.nodes().size()) {
+                log.info("Sufficient signature files downloaded for {}", filename);
+                entryIterator.remove();
+            }
+        }
     }
 
     /**
