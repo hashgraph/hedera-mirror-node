@@ -39,6 +39,11 @@ public interface StreamFileProvider {
      */
     Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename);
 
+    // For 4613 PoC
+    default Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+        return Mono.empty();
+    }
+
     /**
      * Lists and downloads signature files for a particular node upon subscription. Uses the provided lastFilename to
      * search for files lexicographically and chronologically after the last confirmed stream file.
@@ -52,11 +57,6 @@ public interface StreamFileProvider {
     // For 4613 PoC
     default Flux<S3Object> listAllPaginated(ConsensusNode node, StreamFilename lastFilename) {
         return Flux.empty();
-    }
-
-    // For 4613 PoC
-    default Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
-        return Mono.empty();
     }
 
     record GetObjectResponseWithKey(GetObjectResponse getObjectResponse, String s3Key) {}

@@ -75,6 +75,30 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     @Override
+    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+        var s3Key = s3Object.key();
+        log.debug("Starting download of {} to {}", s3Key, downloadBase);
+
+        var request = GetObjectRequest.builder()
+                .bucket(commonDownloaderProperties.getBucketName())
+                .key(s3Key)
+                .requestPayer(RequestPayer.REQUESTER)
+                .build();
+
+        var downloadPath = downloadBase.resolve(s3Key);
+        var responseFuture = s3Client.getObject(
+                        request,
+                        AsyncResponseTransformer.toFile(
+                                downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
+                .thenApply(response -> new GetObjectResponseWithKey(response, s3Key));
+
+        return Mono.fromFuture(responseFuture)
+                .timeout(commonDownloaderProperties.getTimeout())
+                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
+                .doOnSuccess(s -> log.debug("Finished downloading {} to {}", s3Key, downloadBase));
+    }
+
+    @Override
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
@@ -142,30 +166,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 })
                 .flatMapIterable(ListObjectsV2Response::contents)
                 .doOnSubscribe(s -> log.debug("Listing files from bucket {} after {}", bucketName, startAfter));
-    }
-
-    @Override
-    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
-        var s3Key = s3Object.key();
-        log.debug("Starting download of {} to {}", s3Key, downloadBase);
-
-        var request = GetObjectRequest.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
-                .key(s3Key)
-                .requestPayer(RequestPayer.REQUESTER)
-                .build();
-
-        var downloadPath = downloadBase.resolve(s3Key);
-        var responseFuture = s3Client.getObject(
-                        request,
-                        AsyncResponseTransformer.toFile(
-                                downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
-                .thenApply(response -> new GetObjectResponseWithKey(response, s3Key));
-
-        return Mono.fromFuture(responseFuture)
-                .timeout(commonDownloaderProperties.getTimeout())
-                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(s -> log.debug("Finished downloading {} to {}", s3Key, downloadBase));
     }
 
     private String getAccountIdPrefix(PathKey key) {

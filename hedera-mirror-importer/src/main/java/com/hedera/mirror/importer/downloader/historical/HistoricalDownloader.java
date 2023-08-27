@@ -17,19 +17,19 @@
 package com.hedera.mirror.importer.downloader.historical;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider.GetObjectResponseWithKey;
 import com.hedera.mirror.importer.leader.Leader;
 import jakarta.inject.Named;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,11 +37,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.CustomLog;
+import lombok.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 @Named
 @CustomLog
@@ -55,8 +59,7 @@ public class HistoricalDownloader {
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
-    private final Multimap<String, GetObjectResponse> downloadsMap =
-            MultimapBuilder.linkedHashKeys().hashSetValues().build();
+    private final ConcurrentMap<String, FileSpecificInfo> downloadsInfoMap = new ConcurrentSkipListMap<>();
     private final int downloadConcurrency = 3;
 
     public HistoricalDownloader(
@@ -69,6 +72,11 @@ public class HistoricalDownloader {
         this.streamFileProvider = streamFileProvider;
         this.streamType = downloaderProperties.getStreamType();
         this.downloadPath = downloaderProperties.getMirrorProperties().getDownloadPath();
+    }
+
+    private static String s3Basename(String s3Key) {
+        var lastSeparatorIndex = s3Key.lastIndexOf(SEPARATOR);
+        return lastSeparatorIndex < 0 ? s3Key : s3Key.substring(lastSeparatorIndex + 1);
     }
 
     @Leader
@@ -115,14 +123,17 @@ public class HistoricalDownloader {
                                             s3Object -> streamFileProvider.get(s3Object, downloadPath),
                                             downloadConcurrency)
                                     .doOnNext(responseWithKey -> {
-                                        var response = responseWithKey.getObjectResponse();
                                         var s3Basename = s3Basename(responseWithKey.s3Key());
-                                        downloadsMap.put(s3Basename, response);
+                                        var downloadInfo = downloadsInfoMap.computeIfAbsent(
+                                                s3Basename, key -> new FileSpecificInfo(nodeInfo));
+                                        downloadInfo.getCompletions().add(responseWithKey);
                                         log.debug(
                                                 "Download completed for node: {}, filename: {}, size: {}",
                                                 node,
                                                 s3Basename,
-                                                response.contentLength());
+                                                responseWithKey
+                                                        .getObjectResponse()
+                                                        .contentLength());
                                     })
                                     .count()
                                     .block();
@@ -158,8 +169,8 @@ public class HistoricalDownloader {
     }
 
     /**
-     * Returns a randomly-selected (and randomly-ordered) collection of ConsensusNode elements from the
-     * input, where the total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
+     * Returns a randomly-selected (and randomly-ordered) collection of ConsensusNode elements from the input, where the
+     * total stake is just enough to meet/exceed the CommonDownloader "downloadRatio" property.
      *
      * @param allNodes the entire set of ConsensusNodes
      * @return a randomly-ordered subcollection
@@ -197,10 +208,20 @@ public class HistoricalDownloader {
         return new ConsensusNodeInfo(Collections.unmodifiableList(nodes), lastEntry);
     }
 
-    public record ConsensusNodeInfo(List<ConsensusNode> nodes, int nextIndex) {}
+    private record ConsensusNodeInfo(List<ConsensusNode> nodes, int nextIndex) {}
 
-    private static String s3Basename(String s3Key) {
-        var lastSeparatorIndex = s3Key.lastIndexOf(SEPARATOR);
-        return lastSeparatorIndex < 0 ? s3Key : s3Key.substring(lastSeparatorIndex + 1);
+    @Value
+    private static class FileSpecificInfo {
+        long startTime;
+        ConsensusNodeInfo consensusNodeInfo;
+        AtomicInteger nextNodeIndex;
+        Set<GetObjectResponseWithKey> completions;
+
+        FileSpecificInfo(ConsensusNodeInfo consensusNodeInfo) {
+            this.consensusNodeInfo = consensusNodeInfo;
+            this.startTime = Instant.now().getEpochSecond();
+            this.nextNodeIndex = new AtomicInteger(consensusNodeInfo.nextIndex());
+            this.completions = ConcurrentHashMap.newKeySet(consensusNodeInfo.nextIndex());
+        }
     }
 }

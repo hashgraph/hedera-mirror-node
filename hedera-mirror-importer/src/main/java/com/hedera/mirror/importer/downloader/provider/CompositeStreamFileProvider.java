@@ -66,6 +66,14 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
     }
 
     @Override
+    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+        var index = new AtomicInteger(0);
+        return Mono.fromSupplier(() -> getProvider(index))
+                .flatMap(p -> p.get(s3Object, downloadBase))
+                .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
+    }
+
+    @Override
     public Flux<StreamFileData> list(ConsensusNode consensusNode, StreamFilename lastFilename) {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
@@ -78,14 +86,6 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
                 .flatMapMany(p -> p.listAllPaginated(node, lastFilename))
-                .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
-    }
-
-    @Override
-    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
-        var index = new AtomicInteger(0);
-        return Mono.fromSupplier(() -> getProvider(index))
-                .flatMap(p -> p.get(s3Object, downloadBase))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
     }
 
