@@ -56,7 +56,7 @@ dependencies {
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.2")
         api("com.graphql-java:graphql-java-extended-scalars:20.2")
-        api("com.graphql-java:graphql-java-extended-validation:20.0")
+        api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.40.0")
         api("com.hedera.hashgraph:sdk:2.27.0")
