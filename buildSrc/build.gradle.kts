@@ -44,9 +44,6 @@ dependencies {
     implementation("org.owasp:dependency-check-gradle:8.4.0")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.2.1.3168")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.2")
-
-    // Temporary until openapi-generator updates to a swagger-parser that is compatible with SnakeYAML 2.0
-    implementation("io.swagger.parser.v3:swagger-parser-v3:2.1.16")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {
