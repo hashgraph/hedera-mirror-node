@@ -26,6 +26,7 @@ import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider.GetObjectResponseWithKey;
 import com.hedera.mirror.importer.leader.Leader;
 import jakarta.inject.Named;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
@@ -44,13 +45,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.Value;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Named
-@Slf4j
+@CustomLog
 public class HistoricalDownloader {
 
     public static final String SEPARATOR = "/";
@@ -123,8 +125,8 @@ public class HistoricalDownloader {
                         try {
                             var count = streamFileProvider
                                     .listAllPaginated(node, startFilename)
-                                    .filter(s3Object -> s3Object.key().endsWith("_sig"))
-                                    .doOnNext(this::selectForDownload)
+                                    .filter(s3Object -> s3Object.key().endsWith(StreamType.SIGNATURE_SUFFIX))
+                                    .doOnNext(this::setupForDownload)
                                     .flatMap(
                                             s3Object -> streamFileProvider.get(s3Object, downloadPath),
                                             downloadConcurrency)
@@ -136,7 +138,7 @@ public class HistoricalDownloader {
                             return count;
                         } catch (Exception e) {
                             log.error("Error downloading signature files for node: {} after {}", node, stopwatch, e);
-                            throw e; // Complete exceptionally
+                            throw e; // Complete exceptionally for now
                         }
                     },
                     executorService));
@@ -148,7 +150,7 @@ public class HistoricalDownloader {
         executorService.shutdownNow();
     }
 
-    @Scheduled(initialDelay = 5000, fixedDelay = 10000)
+    @Scheduled(initialDelay = 20000, fixedDelay = 10000)
     public void manageDownloads() {
         log.info("manageDownloads - taking a look!");
         var stopwatch = Stopwatch.createStarted();
@@ -187,13 +189,23 @@ public class HistoricalDownloader {
         }
     }
 
-    private void selectForDownload(S3Object s3Object) {
-        var s3Basename = s3Basename(s3Object.key());
+    private void setupForDownload(S3Object s3Object) {
+        var s3Key = s3Object.key();
+        var fileDownloadDir = downloadPath.resolve(s3Key).getParent().toFile();
+        try {
+            FileUtils.forceMkdir(fileDownloadDir);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to create local directory for %s".formatted(s3Key), e);
+        }
+
+        var s3Basename = s3Basename(s3Key);
         this.downloadsInfoMap.computeIfAbsent(s3Basename, key -> new FileSpecificInfo(this.nodeInfoRef.get()));
     }
 
     private GetObjectResponseWithKey downloadCompleted(GetObjectResponseWithKey responseWithKey, ConsensusNode node) {
-        var s3Basename = s3Basename(responseWithKey.s3Key());
+        var s3Key = responseWithKey.s3Key();
+
+        var s3Basename = s3Basename(s3Key);
         var downloadInfo = this.downloadsInfoMap.get(s3Basename);
 
         if (downloadInfo != null) { // Consensus not yet met
