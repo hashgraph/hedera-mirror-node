@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -38,7 +37,6 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txn.token.RevokeKycLogic;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -117,9 +115,6 @@ public class RevokeKycPrecompileTest {
     private Store store;
 
     @Mock
-    private Account senderAccount;
-
-    @Mock
     private TokenRelationship tokenRelationship;
 
     @Mock
@@ -162,7 +157,6 @@ public class RevokeKycPrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when
         subject.prepareFields(frame);
@@ -185,9 +179,6 @@ public class RevokeKycPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);

@@ -388,9 +388,6 @@ public class SyntheticTxnFactory {
             TokenCreateWrapper tokenCreateWrapper, TokenCreateTransactionBody.Builder txnBodyBuilder) {
         tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
             final var key = tokenKeyWrapper.key().asGrpc();
-            if (key == null) {
-                return;
-            }
             if (tokenKeyWrapper.isUsedForAdminKey()) {
                 txnBodyBuilder.setAdminKey(key);
             }

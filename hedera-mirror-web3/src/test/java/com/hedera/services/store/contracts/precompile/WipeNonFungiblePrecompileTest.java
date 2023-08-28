@@ -35,7 +35,6 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -129,9 +128,6 @@ class WipeNonFungiblePrecompileTest {
     private Store store;
 
     @Mock
-    private Account senderAccount;
-
-    @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
 
     @Mock
@@ -180,7 +176,6 @@ class WipeNonFungiblePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(NON_FUNGIBLE_WIPE_INPUT, a -> a);
@@ -204,8 +199,6 @@ class WipeNonFungiblePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(NON_FUNGIBLE_WIPE_INPUT, a -> a);

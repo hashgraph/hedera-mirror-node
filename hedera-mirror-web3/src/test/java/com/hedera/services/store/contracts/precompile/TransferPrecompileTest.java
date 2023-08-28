@@ -70,7 +70,6 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -82,7 +81,6 @@ import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.impl.TransferPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -204,9 +202,6 @@ class TransferPrecompileTest {
     @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
 
-    @Mock
-    private Account senderAccount;
-
     private SyntheticTxnFactory syntheticTxnFactory;
 
     private HTSPrecompiledContract subject;
@@ -260,7 +255,6 @@ class TransferPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
@@ -287,7 +281,6 @@ class TransferPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -315,8 +308,6 @@ class TransferPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -343,8 +334,6 @@ class TransferPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -371,8 +360,6 @@ class TransferPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -399,8 +386,6 @@ class TransferPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -430,7 +415,6 @@ class TransferPrecompileTest {
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
         when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, lazyCreationFee));
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
@@ -458,7 +442,6 @@ class TransferPrecompileTest {
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
         when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, lazyCreationFee));
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
@@ -487,7 +470,6 @@ class TransferPrecompileTest {
         final var lazyCreationFee = 500L;
         when(autoCreationLogic.create(any(), any(), any(), any(), any()))
                 .thenReturn(Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, lazyCreationFee));
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
