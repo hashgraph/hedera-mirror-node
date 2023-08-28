@@ -16,7 +16,7 @@ Feature: Account Crypto Allowance Coverage Feature
     When I approve <spender> to transfer up to <approvedAmount> tℏ
     Then the mirror node REST API should confirm the approved <approvedAmount> tℏ crypto allowance
     When I delete the crypto allowance for <spender>
-    Then the mirror node REST API should confirm the crypto allowance deletion
+    Then the mirror node REST API should confirm the crypto allowance no longer exists
     Examples:
       | spender | approvedAmount | recipient | transferAmount |
       | "BOB"   | 100            | "ALICE"   | 1              |

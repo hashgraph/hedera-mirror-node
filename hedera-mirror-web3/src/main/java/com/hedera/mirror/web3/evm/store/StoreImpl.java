@@ -144,13 +144,14 @@ public class StoreImpl implements Store {
 
     @Override
     public void updateTokenRelationship(final TokenRelationship updatedTokenRelationship) {
+        final var persistedTokenRel = updatedTokenRelationship.setNotYetPersisted(false);
         final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        final var tokenRelationshipKey = keyFromRelationship(updatedTokenRelationship);
-        tokenRelationshipAccessor.set(tokenRelationshipKey, updatedTokenRelationship);
+        final var tokenRelationshipKey = keyFromRelationship(persistedTokenRel);
+        tokenRelationshipAccessor.set(tokenRelationshipKey, persistedTokenRel);
 
-        final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(updatedTokenRelationship);
+        final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(persistedTokenRel);
         if (tokenRelationshipKeyWithAlias != tokenRelationshipKey) {
-            tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, updatedTokenRelationship);
+            tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, persistedTokenRel);
         }
     }
 
@@ -173,6 +174,9 @@ public class StoreImpl implements Store {
 
     @Override
     public boolean hasApprovedForAll(Address ownerAddress, AccountID operatorId, TokenID tokenId) {
+        if (Address.ZERO.equals(ownerAddress)) {
+            return false;
+        }
         final Set<FcTokenAllowanceId> approvedForAll =
                 getAccount(ownerAddress, OnMissing.THROW).getApproveForAllNfts();
         return approvedForAll.contains(FcTokenAllowanceId.from(tokenId, operatorId));

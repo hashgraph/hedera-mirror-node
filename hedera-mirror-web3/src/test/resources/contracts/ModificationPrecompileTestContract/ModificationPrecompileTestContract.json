@@ -1194,7 +1194,7 @@
       },
       {
         "internalType": "bytes",
-        "name": "encodedFunctionSelector",
+        "name": "data",
         "type": "bytes"
       }
     ],
@@ -1207,7 +1207,7 @@
       },
       {
         "internalType": "bytes",
-        "name": "response",
+        "name": "result",
         "type": "bytes"
       }
     ],

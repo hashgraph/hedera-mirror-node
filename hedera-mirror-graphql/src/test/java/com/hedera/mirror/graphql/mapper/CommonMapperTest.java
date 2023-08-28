@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.graphql.mapper;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static com.hedera.mirror.graphql.mapper.CommonMapper.CONTRACT_ID;
 import static com.hedera.mirror.graphql.mapper.CommonMapper.KEYS;
 import static com.hedera.mirror.graphql.mapper.CommonMapper.THRESHOLD;
@@ -52,7 +51,7 @@ class CommonMapperTest {
 
     @Test
     void mapEntityId() {
-        var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3", UNKNOWN);
+        var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3");
         assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null))
                 .isNull();
         assertThat(commonMapper.mapEntityId(entityId))

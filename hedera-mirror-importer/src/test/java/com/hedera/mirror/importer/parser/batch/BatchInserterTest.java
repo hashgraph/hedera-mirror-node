@@ -25,13 +25,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -123,32 +121,35 @@ class BatchInserterTest extends IntegrationTest {
     @Test
     void assessedCustomFees() {
         long consensusTimestamp = 10L;
-        EntityId collectorId1 = EntityId.of("0.0.2000", EntityType.ACCOUNT);
-        EntityId collectorId2 = EntityId.of("0.0.2001", EntityType.ACCOUNT);
-        EntityId payerId1 = EntityId.of("0.0.3000", EntityType.ACCOUNT);
-        EntityId payerId2 = EntityId.of("0.0.3001", EntityType.ACCOUNT);
-        EntityId tokenId1 = EntityId.of("0.0.5000", EntityType.TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.5001", EntityType.TOKEN);
+        EntityId collectorId1 = EntityId.of("0.0.2000");
+        EntityId collectorId2 = EntityId.of("0.0.2001");
+        EntityId payerId1 = EntityId.of("0.0.3000");
+        EntityId payerId2 = EntityId.of("0.0.3001");
+        EntityId tokenId1 = EntityId.of("0.0.5000");
+        EntityId tokenId2 = EntityId.of("0.0.5001");
 
         // fee paid in HBAR with empty effective payer list
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(10L);
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(collectorId1, consensusTimestamp));
+        assessedCustomFee1.setCollectorAccountId(collectorId1.getId());
+        assessedCustomFee1.setConsensusTimestamp(consensusTimestamp);
         assessedCustomFee1.setPayerAccountId(payerId1);
 
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(20L);
+        assessedCustomFee2.setCollectorAccountId(collectorId2.getId());
+        assessedCustomFee2.setConsensusTimestamp(consensusTimestamp);
         assessedCustomFee2.setEffectivePayerAccountIds(List.of(payerId1.getId()));
-        assessedCustomFee2.setTokenId(tokenId1);
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(collectorId2, consensusTimestamp));
         assessedCustomFee2.setPayerAccountId(payerId1);
+        assessedCustomFee2.setTokenId(tokenId1);
 
         AssessedCustomFee assessedCustomFee3 = new AssessedCustomFee();
         assessedCustomFee3.setAmount(30L);
+        assessedCustomFee3.setCollectorAccountId(collectorId2.getId());
+        assessedCustomFee3.setConsensusTimestamp(consensusTimestamp);
         assessedCustomFee3.setEffectivePayerAccountIds(List.of(payerId1.getId(), payerId2.getId()));
-        assessedCustomFee3.setTokenId(tokenId2);
-        assessedCustomFee3.setId(new AssessedCustomFee.Id(collectorId2, consensusTimestamp));
         assessedCustomFee3.setPayerAccountId(payerId2);
+        assessedCustomFee3.setTokenId(tokenId2);
 
         List<AssessedCustomFee> assessedCustomFees =
                 List.of(assessedCustomFee1, assessedCustomFee2, assessedCustomFee3);
@@ -157,9 +158,7 @@ class BatchInserterTest extends IntegrationTest {
         batchInserter.persist(assessedCustomFees);
 
         // then
-        var actual = jdbcOperations.query(AssessedCustomFeeWrapper.SELECT_QUERY, AssessedCustomFeeWrapper.ROW_MAPPER);
-        assertThat(actual)
-                .map(AssessedCustomFeeWrapper::getAssessedCustomFee)
+        assertThat(jdbcOperations.query("select * from assessed_custom_fee", rowMapper(AssessedCustomFee.class)))
                 .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
     }
 

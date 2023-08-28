@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +40,7 @@ class EntityIdDeserializerTest {
     void deserialize() throws IOException {
         doReturn(98L).when(jsonParser).readValueAs(Long.class);
         var actual = INSTANCE.deserialize(jsonParser, context());
-        assertThat(actual).isEqualTo(EntityId.of(98L, EntityType.UNKNOWN));
+        assertThat(actual).isEqualTo(EntityId.of(98L));
     }
 
     @Test

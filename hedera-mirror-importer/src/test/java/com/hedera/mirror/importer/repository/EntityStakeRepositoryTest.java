@@ -238,7 +238,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(balanceTimestamp, domainBuilder.entityId(ACCOUNT))))
+                .customize(ab -> ab.id(new AccountBalance.Id(balanceTimestamp, domainBuilder.entityId())))
                 .persist();
 
         transactionOperations.executeWithoutResult(s -> {
@@ -306,7 +306,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         long nodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 1000L;
         long nextNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 2)) + 600L;
         long previousNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 700L;
-        var stakingRewardAccount = EntityId.of(STAKING_REWARD_ACCOUNT, ACCOUNT);
+        var stakingRewardAccount = EntityId.of(STAKING_REWARD_ACCOUNT);
 
         // Alice changed her staking settings after previousNodeStakeTimestamp, then she changed it again after
         // nextNodeStakeTimestamp. In entity state start, alice's stake settings should come from aliceHistory2
@@ -337,7 +337,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .stakedAccountId(domainBuilder.id())
                         .timestampRange(Range.atLeast(aliceHistory2.getTimestampUpper())))
                 .persist();
-        var aliceEntityId = EntityId.of(aliceHistory1.getId(), ACCOUNT);
+        var aliceEntityId = EntityId.of(aliceHistory1.getId());
 
         // Account 800's current end stake period is epochDay - 1 while the latest node stake's epoch day is
         // epochDay + 1, thus entity stake is two staking period behind

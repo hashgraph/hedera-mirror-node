@@ -52,9 +52,9 @@ public final class ProtoUtil {
 
     public static AccountID toAccountID(EntityId entityId) {
         return AccountID.newBuilder()
-                .setShardNum(entityId.getShardNum())
-                .setRealmNum(entityId.getRealmNum())
-                .setAccountNum(entityId.getEntityNum())
+                .setShardNum(entityId.getShard())
+                .setRealmNum(entityId.getRealm())
+                .setAccountNum(entityId.getNum())
                 .build();
     }
 

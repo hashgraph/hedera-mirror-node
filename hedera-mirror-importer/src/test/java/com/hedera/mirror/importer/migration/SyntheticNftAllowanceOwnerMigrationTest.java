@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -42,8 +41,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Tag("migration")
 class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
 
-    private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001", CONTRACT);
-    private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001", CONTRACT);
+    private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001");
+    private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001");
     private static final long INCORRECT_OWNER_ACCOUNT_ID = 1001L;
     private static final long OWNER_ACCOUNT_ID = 38L;
     private static final long OWNER_PRE_MIGRATION = 1322L;
@@ -167,8 +166,8 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         // The contract result for the collided nft allowance
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(EntityId.of(OWNER_ACCOUNT_ID, CONTRACT))
-                        .payerAccountId(EntityId.of(OWNER_PRE_MIGRATION, CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(OWNER_ACCOUNT_ID))
+                        .payerAccountId(EntityId.of(OWNER_PRE_MIGRATION))
                         .consensusTimestamp(CONTRACT_RESULT_CONSENSUS))
                 .persist();
 
@@ -208,7 +207,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         return domainBuilder
                 .nftAllowance()
                 .customize(t -> t.owner(ownerPreMigration)
-                        .payerAccountId(EntityId.of(ownerPreMigration, CONTRACT))
+                        .payerAccountId(EntityId.of(ownerPreMigration))
                         .spender(SPENDER)
                         .timestampRange(Range.atLeast(contractResultConsensus))
                         .tokenId(TOKEN_ID))
@@ -256,7 +255,7 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         newNftAllowance = domainBuilder.nftAllowance().persist();
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(new EntityId(0L, 0L, newNftAllowance.getOwner(), CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(0L, 0L, newNftAllowance.getOwner()))
                         .consensusTimestamp(newNftAllowance.getTimestampLower()))
                 .persist();
 
@@ -271,8 +270,8 @@ class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
         // The contract result for the collided nft allowance
         domainBuilder
                 .contractResult()
-                .customize(c -> c.senderId(EntityId.of(OWNER_ACCOUNT_ID, CONTRACT))
-                        .payerAccountId(EntityId.of(OWNER_PRE_MIGRATION, CONTRACT))
+                .customize(c -> c.senderId(EntityId.of(OWNER_ACCOUNT_ID))
+                        .payerAccountId(EntityId.of(OWNER_PRE_MIGRATION))
                         .consensusTimestamp(CONTRACT_RESULT_CONSENSUS))
                 .persist();
     }

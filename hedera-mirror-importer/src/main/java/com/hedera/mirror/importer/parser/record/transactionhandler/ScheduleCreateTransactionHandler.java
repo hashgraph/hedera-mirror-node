@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -53,6 +54,7 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         entity.setMemo(transactionBody.getMemo());
+        entity.setType(EntityType.SCHEDULE);
         entityListener.onEntity(entity);
     }
 

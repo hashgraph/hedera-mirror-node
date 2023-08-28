@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -385,19 +384,19 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     private void initialSetup() {
         var entity1 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
-        var accountId1 = EntityId.of(entity1.getId(), ACCOUNT);
+        var accountId1 = EntityId.of(entity1.getId());
         var entity2 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
-        var accountId2 = EntityId.of(entity2.getId(), ACCOUNT);
+        var accountId2 = EntityId.of(entity2.getId());
         var entity4 = domainBuilder
                 .entity()
                 .customize(e -> e.type(ACCOUNT).deleted(true))
                 .persist();
-        var accountId4 = EntityId.of(entity4.getId(), ACCOUNT);
+        var accountId4 = EntityId.of(entity4.getId());
         var entity5 = domainBuilder.entity().customize(e -> e.type(ACCOUNT)).persist();
-        var accountId5 = EntityId.of(entity5.getId(), ACCOUNT);
+        var accountId5 = EntityId.of(entity5.getId());
 
-        var tokenId1 = EntityId.of("0.0.1000", TOKEN);
-        var tokenId2 = EntityId.of("0.0.1001", TOKEN);
+        var tokenId1 = EntityId.of("0.0.1000");
+        var tokenId2 = EntityId.of("0.0.1001");
 
         domainBuilder
                 .token()

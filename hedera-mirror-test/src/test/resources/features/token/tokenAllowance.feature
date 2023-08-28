@@ -14,7 +14,7 @@ Feature: Account Crypto Allowance Coverage Feature
     Given I approve <spender> to transfer up to <approvedAmount> of token <tokenName>
     Then the mirror node REST API should confirm the approved allowance <approvedAmount> of <tokenName> for <spender>
     When I delete the allowance on token <tokenName> for <spender>
-    Then the mirror node REST API should confirm the approved allowance 0 of <tokenName> for <spender>
+    Then the mirror node REST API should confirm the approved allowance for <tokenName> and <spender> no longer exists
     Examples:
       | tokenName  | spender | recipient | approvedAmount | transferAmount |
       | "FUNGIBLE" | "BOB"   | "ALICE"   | 10000          | 100            |

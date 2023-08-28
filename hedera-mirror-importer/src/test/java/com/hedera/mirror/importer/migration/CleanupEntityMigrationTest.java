@@ -17,11 +17,11 @@
 package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -161,7 +161,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                     entity.setType(EntityType.fromId(rs.getInt("type")));
                     return entity;
                 },
-                new Object[] {id}));
+                id));
     }
 
     @Test
@@ -439,11 +439,11 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, entityType));
+        transaction.setEntityId(EntityId.of(0, 0, entityNum));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
-        transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
+        transaction.setNodeAccountId(EntityId.of(0, 1, 3));
+        transaction.setPayerAccountId(EntityId.of(0, 1, 98));
         transaction.setResult(result.getNumber());
         transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
@@ -490,8 +490,8 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         entity.setRealm(0L);
         entity.setShard(0L);
         entity.setType(entityType);
-        entity.setAutoRenewAccountId(EntityIdEndec.encode(1, 2, 3));
-        entity.setProxyAccountId(EntityId.of("4.5.6", EntityType.ACCOUNT));
+        entity.setAutoRenewAccountId(EntityId.of(1L, 2L, 3L).getId());
+        entity.setProxyAccountId(EntityId.of("4.5.6"));
         return entity;
     }
 

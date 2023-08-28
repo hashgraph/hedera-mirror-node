@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +35,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @BeforeEach
     void beforeEach() {
         when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
-                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT)));
+                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM)));
     }
 
     @Override

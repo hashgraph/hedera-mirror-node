@@ -24,7 +24,7 @@
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 68,
+  "id": 100,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -88,7 +88,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.5.2-cloud.2.0cb5a501",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -169,7 +169,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.5.2-cloud.2.0cb5a501",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -252,7 +252,7 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.5.2-cloud.2.0cb5a501",
+      "pluginVersion": "10.2.0-59542pre",
       "targets": [
         {
           "datasource": {
@@ -384,13 +384,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -422,7 +423,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -482,18 +483,19 @@
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisGridShow": false,
-            "axisLabel": "Requests per second",
+            "axisLabel": "Gas per second",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -525,7 +527,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": [
           {
@@ -612,18 +614,19 @@
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisGridShow": false,
-            "axisLabel": "Requests per second",
+            "axisLabel": "Gas per second",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -655,7 +658,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -722,13 +725,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -828,13 +832,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -933,13 +938,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1038,13 +1044,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1076,7 +1083,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -1113,7 +1120,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!~\"^2.+\"}[$__rate_interval])) by (status)",
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!~\"^2.+\"}[$__rate_interval])) by (status) > 0",
           "interval": "1m",
           "legendFormat": "{{ status }}",
           "range": true,
@@ -1153,7 +1160,7 @@
       "datasource": {
         "uid": "${prometheus}"
       },
-      "description": "The amount of memory consumed by the app",
+      "description": "The amount of memory consumed by the application",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1168,13 +1175,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1212,17 +1220,23 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 62
       },
       "id": 2,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -1284,13 +1298,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1327,17 +1342,23 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 62
+        "w": 24,
+        "x": 0,
+        "y": 71
       },
       "id": 3,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -1381,12 +1402,13 @@
             "barAlignment": 0,
             "drawStyle": "bars",
             "fillOpacity": 100,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1486,9 +1508,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 71
+        "y": 80
       },
       "id": 7,
       "options": {
@@ -1537,12 +1559,13 @@
             "barAlignment": 0,
             "drawStyle": "bars",
             "fillOpacity": 100,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -1643,9 +1666,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 71
+        "w": 24,
+        "x": 0,
+        "y": 88
       },
       "id": 59,
       "options": {
@@ -1703,13 +1726,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1763,9 +1787,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 79
+        "y": 96
       },
       "id": 15,
       "interval": "1m",
@@ -1850,13 +1874,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -1910,9 +1935,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 79
+        "w": 24,
+        "x": 0,
+        "y": 104
       },
       "id": 72,
       "interval": "1m",
@@ -1925,7 +1950,9 @@
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
           "mode": "multi",
@@ -1996,20 +2023,21 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "spanNulls": false,
+            "spanNulls": 3600000,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -2032,15 +2060,15 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 9,
+        "w": 24,
         "x": 0,
-        "y": 87
+        "y": 112
       },
       "id": 83,
       "options": {
@@ -2057,8 +2085,8 @@
           "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -2068,8 +2096,9 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method)",
-          "legendFormat": "__auto",
+          "expr": "sum(rate(spring_data_repository_invocations_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (repository, method) /\nsum(rate(spring_data_repository_invocations_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (repository, method) > 0",
+          "interval": "",
+          "legendFormat": "{{repository}}.{{method}}",
           "range": true,
           "refId": "A"
         }
@@ -2082,7 +2111,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
-      "description": "The amount of time the process has been running.",
+      "description": "The amount of time the process has been running",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2097,13 +2126,14 @@
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 20,
-            "gradientMode": "opacity",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "lineInterpolation": "linear",
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
@@ -2133,22 +2163,22 @@
               }
             ]
           },
-          "unit": "dtdhms"
+          "unit": "s"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 87
+        "w": 24,
+        "x": 0,
+        "y": 121
       },
       "id": 84,
       "options": {
         "legend": {
           "calcs": [],
-          "displayMode": "table",
-          "placement": "right",
+          "displayMode": "list",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -2163,7 +2193,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "process_uptime_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
+          "expr": "process_uptime_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"} > 0",
           "interval": "",
           "legendFormat": "{{pod}}",
           "range": true,
@@ -2172,333 +2202,6 @@
       ],
       "title": "Uptime",
       "type": "timeseries"
-    },
-    {
-      "collapsed": true,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${prometheus}"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 95
-      },
-      "id": 75,
-      "panels": [
-        {
-          "datasource": {
-            "uid": "${prometheus}"
-          },
-          "description": "The current number of threads in the executor pool",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": false,
-                "axisLabel": "Threads",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 96
-          },
-          "id": 65,
-          "options": {
-            "legend": {
-              "calcs": [
-                "min",
-                "max",
-                "mean"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "9.5.2-cloud.2.0cb5a501",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "${prometheus}"
-              },
-              "expr": "sum(executor_pool_size_threads{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}) by (reactor_scheduler_id)",
-              "interval": "1m",
-              "legendFormat": "{{ reactor_scheduler_id }}",
-              "refId": "A"
-            }
-          ],
-          "title": "Executor Pool",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheus}"
-          },
-          "description": "The amount of time tasks took to execute",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": false,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 96
-          },
-          "id": 67,
-          "options": {
-            "legend": {
-              "calcs": [
-                "min",
-                "max",
-                "mean"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "9.5.2-cloud.2.0cb5a501",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "${prometheus}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(executor_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (reactor_scheduler_id) / sum(rate(executor_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (reactor_scheduler_id)",
-              "interval": "1m",
-              "legendFormat": "{{ reactor_scheduler_id }}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Task Execution Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheus}"
-          },
-          "description": "The number of tasks that are queued for execution",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": false,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 104
-          },
-          "id": 66,
-          "options": {
-            "legend": {
-              "calcs": [
-                "min",
-                "max",
-                "mean"
-              ],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "pluginVersion": "9.5.2-cloud.2.0cb5a501",
-          "targets": [
-            {
-              "datasource": {
-                "uid": "${prometheus}"
-              },
-              "editorMode": "code",
-              "expr": "sum(executor_queued_tasks{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"} >= 0) by (reactor_scheduler_id)",
-              "interval": "1m",
-              "legendFormat": "{{ reactor_scheduler_id }}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Queued Tasks",
-          "type": "timeseries"
-        }
-      ],
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${prometheus}"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "Executor",
-      "type": "row"
     },
     {
       "collapsed": false,
@@ -2510,7 +2213,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 129
       },
       "id": 35,
       "panels": [],
@@ -2546,12 +2249,13 @@
             "barAlignment": 0,
             "drawStyle": "bars",
             "fillOpacity": 100,
-            "gradientMode": "none",
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
+            "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2584,7 +2288,7 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "short"
         },
         "overrides": [
           {
@@ -2683,7 +2387,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 97
+        "y": 130
       },
       "id": 5,
       "options": {
@@ -2705,7 +2409,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(log4j2_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level) > 0",
           "interval": "1m",
           "legendFormat": "{{ level }}",
           "range": true,
@@ -2719,22 +2423,29 @@
       "datasource": {
         "uid": "${loki}"
       },
-      "description": "",
+      "description": "The log events",
       "gridPos": {
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 105
+        "y": 138
       },
       "id": 54,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Explore Logs",
+          "url": "/explore?panes={\"rl3\":{\"datasource\":\"${loki}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{app=\\\"web3\\\", cluster=\\\"${cluster:text}\\\", namespace=\\\"${namespace:text}\\\"} |= ``\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${loki}\"},\"editorMode\":\"builder\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&schemaVersion=1&orgId=1"
+        }
+      ],
       "options": {
         "dedupStrategy": "none",
-        "enableLogDetails": true,
+        "enableLogDetails": false,
         "prettifyLogMessage": false,
         "showCommonLabels": false,
         "showLabels": false,
         "showTime": false,
-        "sortOrder": "Descending",
+        "sortOrder": "Ascending",
         "wrapLogMessage": false
       },
       "targets": [
@@ -2905,7 +2616,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -2924,6 +2635,6 @@
   "timezone": "",
   "title": "Hedera / Mirror / Web3 API",
   "uid": "Si3C9zAnk",
-  "version": 4,
+  "version": 2,
   "weekStart": ""
 }

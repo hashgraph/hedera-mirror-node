@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.FungibleAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
@@ -413,8 +412,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // 3. The current stake period start is before the new stake period start as result of the reward payout
             // Note condition 3 handles the edge case that the staking reward transfer is triggered by an entity update
             // transaction with entity staking changes so the stake period start should be today, not today - 1
-            var entity = EntityId.of(stakingRewardTransfer.getAccountId(), EntityType.ACCOUNT)
-                    .toEntity();
+            var entity = EntityId.of(stakingRewardTransfer.getAccountId()).toEntity();
             entity.setStakePeriodStart(stakePeriodStart);
             entity.setTimestampLower(consensusTimestamp);
             entity.setType(null); // Clear the type since it's uncertain if the entity is ACCOUNT or CONTRACT

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +78,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountNum() {
         AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
-        assertThat(entityIdService.lookup(accountId)).hasValue(EntityId.of(100, ACCOUNT));
+        assertThat(entityIdService.lookup(accountId)).hasValue(EntityId.of(100));
     }
 
     @Test
@@ -156,7 +155,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupContractNum() {
         ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
-        assertThat(entityIdService.lookup(contractId)).hasValue(EntityId.of(100, CONTRACT));
+        assertThat(entityIdService.lookup(contractId)).hasValue(EntityId.of(100));
     }
 
     @Test
@@ -173,7 +172,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         var contractId = ContractID.newBuilder()
                 .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
-        assertThat(entityIdService.lookup(contractId)).hasValue(EntityId.of(100, CONTRACT));
+        assertThat(entityIdService.lookup(contractId)).hasValue(EntityId.of(100));
     }
 
     @Test
@@ -321,7 +320,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         AccountID accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
-        assertThat(entityIdService.lookup(accountId)).hasValue(EntityId.of(100, CONTRACT));
+        assertThat(entityIdService.lookup(accountId)).hasValue(EntityId.of(100));
     }
 
     private AccountID getProtoAccountId(Entity account) {

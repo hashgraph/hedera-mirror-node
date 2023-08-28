@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -48,9 +47,9 @@ class ScheduleRepositoryTest extends AbstractRepositoryTest {
     private Schedule schedule(long consensusTimestamp) {
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);
-        schedule.setCreatorAccountId(EntityId.of("0.0.123", EntityType.ACCOUNT));
-        schedule.setPayerAccountId(EntityId.of("0.0.456", EntityType.ACCOUNT));
-        schedule.setScheduleId(EntityId.of("0.0.789", EntityType.SCHEDULE));
+        schedule.setCreatorAccountId(EntityId.of("0.0.123"));
+        schedule.setPayerAccountId(EntityId.of("0.0.456"));
+        schedule.setScheduleId(EntityId.of("0.0.789"));
         schedule.setTransactionBody("transaction body".getBytes());
         return schedule;
     }

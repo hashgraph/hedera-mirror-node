@@ -195,6 +195,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .createdTimestamp(timestamp)
                 .memo("")
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
 
         // When

@@ -32,7 +32,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -167,10 +166,9 @@ class EntityIdUtilsTest {
     @Test
     void entityIdFromId() {
         assertThat(EntityIdUtils.entityIdFromId(new Id(1L, 2L, 3L)))
-                .returns(1L, EntityId::getShardNum)
-                .returns(2L, EntityId::getRealmNum)
-                .returns(3L, EntityId::getEntityNum)
-                .returns(EntityType.UNKNOWN, EntityId::getType);
+                .returns(1L, EntityId::getShard)
+                .returns(2L, EntityId::getRealm)
+                .returns(3L, EntityId::getNum);
     }
 
     @Test
@@ -180,7 +178,7 @@ class EntityIdUtilsTest {
 
     @Test
     void idFromEntityId() {
-        assertThat(EntityIdUtils.idFromEntityId(new EntityId(1L, 2L, 3L, EntityType.ACCOUNT)))
+        assertThat(EntityIdUtils.idFromEntityId(EntityId.of(1L, 2L, 3L)))
                 .returns(1L, Id::shard)
                 .returns(2L, Id::realm)
                 .returns(3L, Id::num);

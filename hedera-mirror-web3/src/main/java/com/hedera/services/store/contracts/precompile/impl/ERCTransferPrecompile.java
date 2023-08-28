@@ -34,7 +34,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.ledger.TransferLogic;
@@ -162,7 +162,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         try {
             super.run(frame, transactionBody);
         } catch (InvalidTransactionException e) {
-            throw new InvalidTransactionException(e.getMessage(), e.getDetail(), e.getData());
+            throw new InvalidTransactionException(e.getResponseCode(), true);
         }
 
         if (isFungible) {

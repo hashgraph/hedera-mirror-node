@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +40,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     @Test
     void updateTreasury() {
         // given
-        var newTreasury = domainBuilder.entityId(EntityType.ACCOUNT);
-        var oldTreasury = domainBuilder.entityId(EntityType.ACCOUNT);
+        var newTreasury = domainBuilder.entityId();
+        var oldTreasury = domainBuilder.entityId();
         long tokenId = domainBuilder.id();
 
         var tokenAccountNewTreasury = domainBuilder
@@ -65,8 +64,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         var nft3 = domainBuilder
                 .nft()
                 .customize(n -> n.accountId(oldTreasury)
-                        .delegatingSpender(domainBuilder.entityId(EntityType.ACCOUNT))
-                        .spender(domainBuilder.entityId(EntityType.ACCOUNT))
+                        .delegatingSpender(domainBuilder.entityId())
+                        .spender(domainBuilder.entityId())
                         .tokenId(tokenId))
                 .persist();
         // Already owned by new treasury before the update

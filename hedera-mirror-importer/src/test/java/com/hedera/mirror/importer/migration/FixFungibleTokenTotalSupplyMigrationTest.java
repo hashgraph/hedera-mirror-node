@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,14 +63,14 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                         .totalSupply(100_000L - token1DissociateAmount)
                         .treasuryAccountId(treasury))
                 .persist();
-        var token1EntityId = EntityId.of(token1.getTokenId(), TOKEN);
+        var token1EntityId = EntityId.of(token1.getTokenId());
         var token2 = domainBuilder
                 .token()
                 .customize(t -> t.initialSupply(1_000_000_000L)
                         .totalSupply(1_000_000_000L)
                         .treasuryAccountId(treasury))
                 .persist();
-        var token2EntityId = EntityId.of(token2.getTokenId(), TOKEN);
+        var token2EntityId = EntityId.of(token2.getTokenId());
         var token3 = domainBuilder
                 .token()
                 .customize(t -> t.initialSupply(0L)
@@ -79,7 +78,7 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                         .treasuryAccountId(treasury)
                         .type(NON_FUNGIBLE_UNIQUE))
                 .persist(); // nft
-        var token3EntityId = EntityId.of(token3.getTokenId(), TOKEN);
+        var token3EntityId = EntityId.of(token3.getTokenId());
         // token4 created after the last account balance file
         var token4 = domainBuilder
                 .token()
@@ -88,7 +87,7 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                         .totalSupply(1_000_000_000L)
                         .treasuryAccountId(treasury))
                 .persist();
-        var token4EntityId = EntityId.of(token4.getTokenId(), TOKEN);
+        var token4EntityId = EntityId.of(token4.getTokenId());
 
         domainBuilder
                 .recordFile()

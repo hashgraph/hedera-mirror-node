@@ -124,7 +124,7 @@ class AssociateLogicTest {
 
         associateLogic.associate(accountAddress, tokenAddresses, store);
 
-        verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount, true));
+        verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount, true, false, false));
     }
 
     @Test

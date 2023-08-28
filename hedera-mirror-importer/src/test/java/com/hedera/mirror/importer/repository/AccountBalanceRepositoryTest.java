@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +56,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance, int numberOfTokenBalances) {
         AccountBalance.Id id = new AccountBalance.Id();
         id.setConsensusTimestamp(consensusTimestamp);
-        id.setAccountId(EntityId.of(0, 0, accountNum, EntityType.ACCOUNT));
+        id.setAccountId(EntityId.of(0, 0, accountNum));
 
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(balance);
@@ -73,9 +72,9 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         for (int i = 1; i <= numberOfBalances; i++) {
             TokenBalance tokenBalance = new TokenBalance();
             TokenBalance.Id id = new TokenBalance.Id();
-            id.setAccountId(EntityId.of(0, 0, accountNum, EntityType.ACCOUNT));
+            id.setAccountId(EntityId.of(0, 0, accountNum));
             id.setConsensusTimestamp(consensusTimestamp);
-            id.setTokenId(EntityId.of(0, 1, i, EntityType.TOKEN));
+            id.setTokenId(EntityId.of(0, 1, i));
             tokenBalance.setBalance(balance);
             tokenBalance.setId(id);
             tokenBalanceList.add(tokenBalance);

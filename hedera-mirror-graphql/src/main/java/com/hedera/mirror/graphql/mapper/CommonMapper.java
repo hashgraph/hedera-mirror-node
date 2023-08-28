@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.graphql.viewmodel.EntityId;
 import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -68,7 +67,7 @@ public interface CommonMapper {
             return null;
         }
 
-        var eid = com.hedera.mirror.common.domain.entity.EntityId.of(source, EntityType.UNKNOWN);
+        var eid = com.hedera.mirror.common.domain.entity.EntityId.of(source);
         return mapEntityId(eid);
     }
 
@@ -78,9 +77,9 @@ public interface CommonMapper {
         }
 
         var viewModel = new EntityId();
-        viewModel.setShard(source.getShardNum());
-        viewModel.setRealm(source.getRealmNum());
-        viewModel.setNum(source.getEntityNum());
+        viewModel.setShard(source.getShard());
+        viewModel.setRealm(source.getRealm());
+        viewModel.setNum(source.getNum());
         return viewModel;
     }
 

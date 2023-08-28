@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -45,7 +44,7 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {
-        var tokenId = idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN));
+        var tokenId = idFromEntityId(EntityId.of(nft.getTokenId()));
         return new UniqueToken(
                 tokenId,
                 nft.getSerialNumber(),

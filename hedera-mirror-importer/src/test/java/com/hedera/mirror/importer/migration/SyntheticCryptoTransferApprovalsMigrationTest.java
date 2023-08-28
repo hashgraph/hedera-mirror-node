@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
@@ -71,9 +69,9 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
     private static final AtomicLong count = new AtomicLong(100000);
-    private static final EntityId contractId = EntityId.of("0.0.2119900", CONTRACT);
-    private static final EntityId contractId2 = EntityId.of("0.0.2119901", CONTRACT);
-    private static final EntityId priorContractId = EntityId.of("0.0.2119899", CONTRACT);
+    private static final EntityId contractId = EntityId.of("0.0.2119900");
+    private static final EntityId contractId2 = EntityId.of("0.0.2119901");
+    private static final EntityId priorContractId = EntityId.of("0.0.2119899");
     private static final RecordFile RECORD_FILE = RecordFile.builder()
             .consensusStart(START_TIMESTAMP)
             .consensusEnd(END_TIMESTAMP)
@@ -327,12 +325,12 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     }
 
     private void entitySetup() {
-        currentKeyUnaffectedEntity = entityCurrentKey(contractId.getEntityNum());
-        currentKeyAffectedEntity = entityCurrentKey(contractId2.getEntityNum());
+        currentKeyUnaffectedEntity = entityCurrentKey(contractId.getNum());
+        currentKeyAffectedEntity = entityCurrentKey(contractId2.getNum());
         noKeyEntity = entityWithNoKey();
         thresholdTwoKeyEntity = domainBuilder
                 .entity()
-                .customize(e -> e.key(getThresholdTwoKey(contractId.getEntityNum()))
+                .customize(e -> e.key(getThresholdTwoKey(contractId.getNum()))
                         .timestampRange(Range.atLeast(getTimestampWithinBoundary()))
                         .build())
                 .persist();
@@ -347,8 +345,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var pastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var pastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var pastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var pastKeyAffectedEntity = entityPastKey(contractId2.getNum());
 
         return setupCryptoTransfers(
                 contractId,
@@ -371,8 +369,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var tokenPastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var tokenPastKeyAffectedEntity = entityPastKey(contractId2.getNum());
         return setupTokenTransfers(
                 contractId,
                 contractId2,
@@ -394,8 +392,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             Entity currentKeyAffectedEntity,
             Entity noKeyEntity,
             Entity thresholdTwoKeyEntity) {
-        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getEntityNum());
-        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getEntityNum());
+        var nftPastKeyUnaffectedEntity = entityPastKey(contractId.getNum());
+        var nftPastKeyAffectedEntity = entityPastKey(contractId2.getNum());
         return setupTransactionNfts(
                 contractId,
                 priorContractId,
@@ -795,7 +793,7 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
         var id = TokenTransfer.Id.builder()
                 .accountId(entityId)
                 .consensusTimestamp(consensus)
-                .tokenId(domainBuilder.entityId(TOKEN))
+                .tokenId(domainBuilder.entityId())
                 .build();
         return domainBuilder
                 .tokenTransfer()

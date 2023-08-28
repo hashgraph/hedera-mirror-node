@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.converter;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
@@ -27,6 +26,6 @@ import org.springframework.core.convert.converter.Converter;
 public class EntityIdConverter implements Converter<String, EntityId> {
     @Override
     public EntityId convert(String source) {
-        return EntityId.of(source, EntityType.UNKNOWN);
+        return EntityId.of(source);
     }
 }

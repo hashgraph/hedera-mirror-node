@@ -270,12 +270,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
         final var tokenCreateOp = transactionBody.getTokenCreation();
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
 
         /* --- Execute the transaction and capture its results --- */
-        createLogic.create(Instant.now().getEpochSecond(), frame.getSenderAddress(), validator, store, tokenCreateOp);
-        return new TokenCreateResult(tokenIdFromEvmAddress(frame.getSenderAddress()));
+        createLogic.create(Instant.now().getEpochSecond(), senderAddress, validator, store, tokenCreateOp);
+        return new TokenCreateResult(tokenIdFromEvmAddress(senderAddress));
     }
 
     @Override
@@ -309,6 +311,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     @Override
     public void handleSentHbars(final MessageFrame frame, final TransactionBody.Builder transactionBody) {
         final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         final var aliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
@@ -329,7 +333,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
-        final var sender = store.getAccount(frame.getSenderAddress(), OnMissing.THROW);
+        final var sender = store.getAccount(senderAddress, OnMissing.THROW);
         final var updatedSender = sender.setBalance(sender.getBalance() - tinybarsRequirement);
 
         store.updateAccount(updatedSender);

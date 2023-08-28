@@ -154,8 +154,14 @@ public class ContractResultServiceImpl implements ContractResultService {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
         switch (action.getCallerCase()) {
-            case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
-            case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
+            case CALLING_CONTRACT -> {
+                contractAction.setCaller(EntityId.of(action.getCallingContract()));
+                contractAction.setCallerType(EntityType.CONTRACT);
+            }
+            case CALLING_ACCOUNT -> {
+                contractAction.setCaller(EntityId.of(action.getCallingAccount()));
+                contractAction.setCallerType(EntityType.ACCOUNT);
+            }
             default -> log.error(
                     RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}",
                     consensusTimestamp,
@@ -270,6 +276,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 var entity = contractId.toEntity();
                 entity.setEthereumNonce(nonceInfo.getNonce());
                 entity.setTimestampRange(null); // Don't trigger a history row
+                entity.setType(EntityType.CONTRACT);
                 entityListener.onEntity(entity);
             });
         }
@@ -281,7 +288,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             var contractLoginfo = functionResult.getLogInfo(index);
             var contractLog = new ContractLog();
             var contractId = EntityId.of(contractLoginfo.getContractID());
-            var rootContractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
+            var rootContractId = EntityId.of(contractResult.getContractId());
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
             contractLog.setContractId(contractId);
@@ -354,6 +361,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         entity.setDeleted(false);
         entity.setMaxAutomaticTokenAssociations(0);
         entity.setTimestampLower(recordItem.getConsensusTimestamp());
+        entity.setType(EntityType.CONTRACT);
 
         if (recordItem.getTransactionBody().hasContractCreateInstance()) {
             updateContractEntityOnCreate(entity, recordItem);

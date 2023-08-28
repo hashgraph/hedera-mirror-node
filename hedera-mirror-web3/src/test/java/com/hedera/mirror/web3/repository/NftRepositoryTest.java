@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NftRepositoryTest extends Web3IntegrationTest {
-    private final EntityId accountId = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
+
+    private static final EntityId accountId = EntityId.of(0L, 0L, 56L);
     private final NftRepository nftRepository;
 
     @Test
