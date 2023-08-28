@@ -43,7 +43,6 @@ spring:
     placeholders:
       api-password: mirror_api_pass
       api-user: mirror_api
-      autovacuumFreezeMaxAgeInsertOnly: 100000
       db-name: ${hedera.mirror.grpc.db.name}
       db-user: ${hedera.mirror.grpc.db.username}
       idPartitionSize: 1000000000000000
