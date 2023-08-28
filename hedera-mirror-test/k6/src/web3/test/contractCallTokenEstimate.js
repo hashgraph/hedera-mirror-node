@@ -14,18 +14,39 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder} from './common.js';
+import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
 
+const COMMA_SEPARATOR = ',';
 
-const {options, run} = new ContractCallScenarioBuilder()
-                           .block('latest')
-                           .data('4b5c668700000000000000000000000000000000000000000000000000000000000005dd')
-                           .to('00000000000000000000000000000000000005e1')
-                           .from('00000000000000000000000000000000000005dd')
-                           .gas(15000000)
-                           .name('contractCallTokenEstimate')
-                           .value(812000000)
-                           .sleep(1)
-                           .build();
+const allData = getParameterFromEnv(__ENV.DATA, '4b5c668700000000000000000000000000000000000000000000000000000000000004f6'
+                                                + COMMA_SEPARATOR
+                                                + '4b5c6687000000000000000000000000000000000000000000000000000000000000050b');
+const allTo = getParameterFromEnv(__ENV.TO, '00000000000000000000000000000000000004fa'
+                                            + COMMA_SEPARATOR
+                                            + '000000000000000000000000000000000000050f');
+const allFrom = getParameterFromEnv(__ENV.FROM, '00000000000000000000000000000000000004f6'
+                                                + COMMA_SEPARATOR
+                                                + '000000000000000000000000000000000000050b');
 
-export {options, run};
+const BLOCK = __ENV.BLOCK || 'latest';
+const DATA = allData[__VU % allData.length];
+const TO = allTo[__VU % allTo.length];
+const GAS = __ENV.GAS || 15000000;
+const FROM = allFrom[__VU % allFrom.length];
+const VALUE = __ENV.VALUE || 812000000;
+const SLEEP = __ENV.SLEEP || 1;
+
+const params = {
+  BLOCK: BLOCK,
+  DATA: DATA,
+  TO: TO,
+  GAS: GAS,
+  FROM: FROM,
+  VALUE: VALUE,
+  NAME: 'contractCallTokenEstimate',
+  SLEEP: SLEEP
+};
+
+const { options, run } = buildScenario(params);
+
+export { options, run };

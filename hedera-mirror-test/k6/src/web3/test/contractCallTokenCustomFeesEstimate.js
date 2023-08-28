@@ -14,18 +14,39 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder} from './common.js';
+import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
 
+const COMMA_SEPARATOR = ',';
 
-const {options, run} = new ContractCallScenarioBuilder()
-                           .block('latest')
-                           .data('4b5c66870000000000000000000000000000000000000000000000000000000000000511')
-                           .to('0000000000000000000000000000000000000515')
-                           .gas(15000000)
-                           .from('0000000000000000000000000000000000000511')
-                           .value(812000000)
-                           .name('contractCallTokenCustomFeesEstimate')
-                           .sleep(1)
-                           .build();
+const allData = getParameterFromEnv(__ENV.DATA, '8ba74da000000000000000000000000000000000000000000000000000000000000004aa00000000000000000000000000000000000000000000000000000000000004b7'
+                                                + COMMA_SEPARATOR
+                                                + '8ba74da000000000000000000000000000000000000000000000000000000000000004c000000000000000000000000000000000000000000000000000000000000004cd');
+const allTo = getParameterFromEnv(__ENV.TO, '00000000000000000000000000000000000004ae'
+                                            + COMMA_SEPARATOR
+                                            + '00000000000000000000000000000000000004c4');
+const allFrom = getParameterFromEnv(__ENV.FROM, '00000000000000000000000000000000000004aa'
+                                                + COMMA_SEPARATOR
+                                                + '00000000000000000000000000000000000004c0');
 
-export {options, run};
+const BLOCK = __ENV.BLOCK || 'latest';
+const DATA = allData[__VU % allData.length];
+const TO = allTo[__VU % allTo.length];
+const GAS = __ENV.GAS || 15000000;
+const FROM = allFrom[__VU % allFrom.length];
+const VALUE = __ENV.VALUE || 1635000000;
+const SLEEP = __ENV.SLEEP || 1;
+
+const params = {
+  BLOCK: BLOCK,
+  DATA: DATA,
+  TO: TO,
+  GAS: GAS,
+  FROM: FROM,
+  VALUE: VALUE,
+  NAME: 'contractCallTokenCustomFeesEstimate',
+  SLEEP: SLEEP
+};
+
+const { options, run } = buildScenario(params);
+
+export { options, run };

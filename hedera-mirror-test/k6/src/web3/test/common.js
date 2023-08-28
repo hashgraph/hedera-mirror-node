@@ -221,5 +221,47 @@ function ContractCallScenarioBuilder() {
   return this;
 }
 
+function getParameterFromEnv(envVar, defaultValue) {
+  return envVar ? envVar.split(',') : defaultValue.split(',');
+}
 
-export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder, ContractCallScenarioBuilder};
+function buildScenario(params = {}) {
+  const scenarioBuilder = new ContractCallScenarioBuilder();
+
+  if (params.BLOCK) {
+    scenarioBuilder.block(params.BLOCK);
+  }
+
+  if (params.DATA) {
+    scenarioBuilder.data(params.DATA);
+  }
+
+  if (params.TO) {
+    scenarioBuilder.to(params.TO);
+  }
+
+  if (params.GAS) {
+    scenarioBuilder.gas(params.GAS);
+  }
+
+  if (params.FROM) {
+    scenarioBuilder.from(params.FROM);
+  }
+
+  if (params.VALUE) {
+    scenarioBuilder.value(params.VALUE);
+  }
+
+  if (params.NAME) {
+    scenarioBuilder.name(params.NAME);
+  }
+
+  if (params.SLEEP) {
+    scenarioBuilder.sleep(params.SLEEP);
+  }
+
+  return scenarioBuilder.build();
+}
+
+
+export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder, ContractCallScenarioBuilder, getParameterFromEnv, buildScenario};

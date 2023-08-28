@@ -14,18 +14,39 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder} from './common.js';
+import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
 
+const COMMA_SEPARATOR = ',';
 
-const {options, run} = new ContractCallScenarioBuilder()
-                           .block('latest')
-                           .data('d85f74c10000000000000000000000000000000000000000000000000000000000000559')
-                           .to('000000000000000000000000000000000000055d')
-                           .gas(15000000)
-                           .from('0000000000000000000000000000000000000559')
-                           .value(812000000)
-                           .name('contractCallNftEstimate')
-                           .sleep(1)
-                           .build();
+const allData = getParameterFromEnv(__ENV.DATA, 'd85f74c10000000000000000000000000000000000000000000000000000000000000456'
+                                                + COMMA_SEPARATOR
+                                                + 'd85f74c10000000000000000000000000000000000000000000000000000000000000496');
+const allTo = getParameterFromEnv(__ENV.TO, '0000000000000000000000000000000000000410'
+                                            + COMMA_SEPARATOR
+                                            + '000000000000000000000000000000000000049a');
+const allFrom = getParameterFromEnv(__ENV.FROM, '000000000000000000000000000000000000045a'
+                                                + COMMA_SEPARATOR
+                                                + '0000000000000000000000000000000000000496');
 
-export {options, run};
+const BLOCK = __ENV.BLOCK || 'latest';
+const DATA = allData[__VU % allData.length];
+const TO = allTo[__VU % allTo.length];
+const GAS = __ENV.GAS || 15000000;
+const FROM = allFrom[__VU % allFrom.length];
+const VALUE = __ENV.VALUE || 812000000;
+const SLEEP = __ENV.SLEEP || 1;
+
+const params = {
+  BLOCK: BLOCK,
+  DATA: DATA,
+  TO: TO,
+  GAS: GAS,
+  FROM: FROM,
+  VALUE: VALUE,
+  NAME: 'contractCallNftEstimate',
+  SLEEP: SLEEP
+};
+
+const { options, run } = buildScenario(params);
+
+export { options, run };

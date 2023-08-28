@@ -14,16 +14,32 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder} from './common.js';
+import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
 
+const COMMA_SEPARATOR = ',';
 
-const {options, run} = new ContractCallScenarioBuilder()
-                           .block('latest')
-                           .data('9c2192470000000000000000000000000000000000000000000000000000000000000574000000000000000000000000000000000000000000000000000000000000057c')
-                           .to('0000000000000000000000000000000000000573')
-                           .gas(15000000)
-                           .name('contractCallTokenDissociateEstimate')
-                           .sleep(1)
-                           .build();
+const allData = getParameterFromEnv(__ENV.DATA, '9c21924700000000000000000000000000000000000000000000000000000000000004db00000000000000000000000000000000000000000000000000000000000004e3'
+                                                + COMMA_SEPARATOR
+                                                + '9c21924700000000000000000000000000000000000000000000000000000000000004eb00000000000000000000000000000000000000000000000000000000000004f3');
+const allTo = getParameterFromEnv(__ENV.TO, '00000000000000000000000000000000000004da'
+                                            + COMMA_SEPARATOR
+                                            + '00000000000000000000000000000000000004ea');
 
-export {options, run};
+const BLOCK = __ENV.BLOCK || 'latest';
+const DATA = allData[__VU % allData.length];
+const TO = allTo[__VU % allTo.length];
+const GAS = __ENV.GAS || 15000000;
+const SLEEP = __ENV.SLEEP || 1;
+
+const params = {
+  BLOCK: BLOCK,
+  DATA: DATA,
+  TO: TO,
+  GAS: GAS,
+  NAME: 'contractCallTokenDissociateEstimate',
+  SLEEP: SLEEP
+};
+
+const { options, run } = buildScenario(params);
+
+export { options, run };
