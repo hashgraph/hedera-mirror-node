@@ -59,7 +59,7 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
             update token t
             set total_supply = amount
             from final f
-            where t.token_id = f.token_id;
+            where t.token_id = f.token_id
             """;
 
     private final JdbcTemplate jdbcTemplate;
