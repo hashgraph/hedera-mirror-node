@@ -38,6 +38,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
@@ -61,6 +62,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
+    private final BasicHbarCentExchange basicHbarCentExchange;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -74,7 +76,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final ContractRepository contractRepository,
             final ContractStateRepository contractStateRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
-            final PrecompileMapper precompileMapper) {
+            final PrecompileMapper precompileMapper,
+            BasicHbarCentExchange basicHbarCentExchange) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -86,6 +89,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
+        this.basicHbarCentExchange = basicHbarCentExchange;
     }
 
     @Override
@@ -128,7 +132,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evmProperties,
-                        precompileMapper),
+                        precompileMapper,
+                        basicHbarCentExchange),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
