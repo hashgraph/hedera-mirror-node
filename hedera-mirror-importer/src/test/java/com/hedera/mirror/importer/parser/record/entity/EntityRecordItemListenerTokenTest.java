@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
 import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
@@ -35,7 +34,6 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -117,12 +115,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final Timestamp EXPIRY_TIMESTAMP =
             Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200, ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201, ACCOUNT);
-    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800, EntityType.TOKEN);
-    private static final EntityId FEE_PAYER_1 = EntityId.of(1500, ACCOUNT);
-    private static final EntityId FEE_PAYER_2 = EntityId.of(1501, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityId.of(1199);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityId.of(1200);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityId.of(1201);
+    private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityId.of(9800);
+    private static final EntityId FEE_PAYER_1 = EntityId.of(1500);
+    private static final EntityId FEE_PAYER_2 = EntityId.of(1501);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final byte[] METADATA = "METADATA".getBytes();
     private static final long SERIAL_NUMBER_1 = 1L;
@@ -440,7 +438,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean pauseKey,
             List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
         tokenCreate(
                 customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts, autoAssociatedAccounts);
@@ -484,6 +482,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -494,7 +493,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
 
         // when
@@ -916,6 +915,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -943,6 +943,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
         Entity expectedEntity = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -990,6 +991,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_UPDATE_REF_KEY,
                 expectedAutoRenewAccountId,
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD,
@@ -1173,10 +1175,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             """)
     void nftUpdateTreasuryWithNftStateChange(boolean explicitAssociation, boolean singleRecordFile) {
         // given
-        var account = domainBuilder.entityId(ACCOUNT);
-        var oldTreasury = domainBuilder.entityId(ACCOUNT);
-        var newTreasury = domainBuilder.entityId(ACCOUNT);
-        var tokenId = domainBuilder.entityId(TOKEN);
+        var account = domainBuilder.entityId();
+        var oldTreasury = domainBuilder.entityId();
+        var newTreasury = domainBuilder.entityId();
+        var tokenId = domainBuilder.entityId();
         var protoAccount =
                 AccountID.newBuilder().setAccountNum(account.getNum()).build();
         var protoOldTreasury =
@@ -2769,6 +2771,65 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenTransferWithApprovalViaContract() {
+        entityProperties.getPersist().setTrackAllowance(true);
+        // given
+        createAndAssociateToken(
+                TOKEN_ID,
+                FUNGIBLE_COMMON,
+                SYMBOL,
+                CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                PAYER2,
+                false,
+                false,
+                false,
+                INITIAL_SUPPLY);
+
+        // approve allowance for fungible token
+        var allowanceAmount = INITIAL_SUPPLY / 4L;
+        var cryptoApproveAllowanceTransaction = buildTransaction(b -> b.getCryptoApproveAllowanceBuilder()
+                .addTokenAllowances(TokenAllowance.newBuilder()
+                        .setTokenId(TOKEN_ID)
+                        .setOwner(PAYER2)
+                        .setSpender(PAYER)
+                        .setAmount(allowanceAmount)));
+        insertAndParseTransaction(ALLOWANCE_TIMESTAMP, cryptoApproveAllowanceTransaction);
+
+        AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
+
+        // when
+        TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(accountId)
+                        .setAmount(1000)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER2)
+                        .setAmount(-1000)
+                        .setIsApproval(true)
+                        .build())
+                .build();
+
+        Transaction transaction = buildTransaction(builder -> {
+            builder.getCryptoTransferBuilder().addTokenTransfers(transferList1);
+        });
+
+        List<TokenTransferList> transferLists = List.of(transferList1);
+        insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
+            builder.addAllTokenTransferLists(transferLists);
+            buildContractFunctionResult(builder.getContractCallResultBuilder().setSenderId(PAYER));
+        });
+
+        // then
+        assertTokenTransferInRepository(TOKEN_ID, PAYER2, TRANSFER_TIMESTAMP, -1000, true);
+        assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
+        assertTokenAllowanceInRepository(
+                TOKEN_ID, PAYER2, PAYER, allowanceAmount, allowanceAmount - 1000L, ALLOWANCE_TIMESTAMP);
+    }
+
+    @Test
     void tokenWipe() {
         createAndAssociateToken(
                 TOKEN_ID,
@@ -3022,6 +3083,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // given
         Entity expected = createEntity(
                 DOMAIN_TOKEN_ID,
+                TOKEN,
                 TOKEN_REF_KEY,
                 PAYER.getAccountNum(),
                 AUTO_RENEW_PERIOD,
@@ -3171,9 +3233,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 EntityId.of(TOKEN_ID),
                 EntityId.of(tokenId2));
         assessedCustomFees.forEach(assessedCustomFee -> {
-            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId(), ACCOUNT));
+            entityIds.add(EntityId.of(assessedCustomFee.getCollectorAccountId()));
             entityIds.add(assessedCustomFee.getTokenId());
-            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id, ACCOUNT)));
+            assessedCustomFee.getEffectivePayerAccountIds().forEach(id -> entityIds.add(EntityId.of(id)));
         });
         if (isPrecompile) {
             entityIds.add(EntityId.of(CONTRACT_ID));

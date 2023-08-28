@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
@@ -105,6 +106,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify entity count
         Entity expectedEntity = createEntity(
                 EntityId.of(SCHEDULE_ID),
+                SCHEDULE,
                 SCHEDULE_REF_KEY,
                 null,
                 null,
@@ -153,6 +155,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var timestamp = recordItem.getConsensusTimestamp();
         var expectedEntity = createEntity(
                 EntityId.of(SCHEDULE_ID),
+                SCHEDULE,
                 scheduleCreate.getAdminKey(),
                 null,
                 null,
@@ -201,6 +204,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // then
         Entity expected = createEntity(
                 EntityId.of(SCHEDULE_ID),
+                SCHEDULE,
                 SCHEDULE_REF_KEY,
                 null,
                 null,
@@ -270,6 +274,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify entity count
         Entity expected = createEntity(
                 EntityId.of(SCHEDULE_ID),
+                SCHEDULE,
                 SCHEDULE_REF_KEY,
                 null,
                 null,
@@ -402,6 +407,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         // verify entity count
         Entity expected = createEntity(
                 EntityId.of(SCHEDULE_ID),
+                SCHEDULE,
                 SCHEDULE_REF_KEY,
                 null,
                 null,

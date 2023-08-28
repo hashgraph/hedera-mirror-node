@@ -1103,7 +1103,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        var tokenId = EntityId.of(1020L, EntityType.TOKEN);
+        var tokenId = EntityId.of(1020L);
         long amount = 100L;
 
         TransactionRecord record = buildTransactionRecord(

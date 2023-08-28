@@ -36,7 +36,6 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.DOWNLOADED;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.VERIFIED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -227,7 +226,7 @@ class NodeSignatureVerifierTest {
         var fileHash = TestUtils.generateRandomByteArray(48);
         var metadataHash = TestUtils.generateRandomByteArray(48);
         var node = ConsensusNodeStub.builder()
-                .nodeAccountId(EntityId.of("0.0.3", ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.3"))
                 .publicKey(publicKey)
                 .build();
 

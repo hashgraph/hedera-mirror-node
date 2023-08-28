@@ -1173,7 +1173,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(recordItem.getConsensusTimestamp(), Entity::getTimestampLower)
                 .returns(createdId.getNum(), Entity::getNum)
                 .returns(createdId.getShard(), Entity::getShard)
-                .returns(createdId.getType(), Entity::getType);
+                .returns(CONTRACT, Entity::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
         contractAssert.returns(contractCreateInstance.getDeclineReward(), Entity::getDeclineReward);
@@ -1694,7 +1694,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 long realm = buffer.getLong();
                 long num = buffer.getLong();
                 if (shard == contractId.getShardNum() && realm == contractId.getRealmNum()) {
-                    return EntityId.of(shard, realm, num, CONTRACT);
+                    return EntityId.of(shard, realm, num);
                 }
 
                 // the create2 evm address

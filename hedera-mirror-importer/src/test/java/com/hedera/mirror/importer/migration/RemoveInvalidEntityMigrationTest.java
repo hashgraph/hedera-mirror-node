@@ -78,11 +78,11 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationValidEntities() throws Exception {
-        insertEntity(entityId(1, EntityType.ACCOUNT));
-        insertEntity(entityId(2, EntityType.CONTRACT));
-        insertEntity(entityId(3, EntityType.FILE));
-        insertEntity(entityId(4, EntityType.TOPIC));
-        insertEntity(entityId(5, EntityType.TOKEN));
+        insertEntity(1, EntityType.ACCOUNT);
+        insertEntity(2, EntityType.CONTRACT);
+        insertEntity(3, EntityType.FILE);
+        insertEntity(4, EntityType.TOPIC);
+        insertEntity(5, EntityType.TOKEN);
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.add(
@@ -105,16 +105,11 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationInvalidEntities() throws Exception {
-        EntityId typeMismatchedAccountEntityId = entityId(1, EntityType.TOPIC);
-        EntityId typeMismatchedContractEntityId = entityId(2, EntityType.TOKEN);
-        EntityId typeMismatchedFileEntityId = entityId(3, EntityType.CONTRACT);
-        EntityId typeMismatchedTopicEntityId = entityId(4, EntityType.ACCOUNT);
-        EntityId typeMismatchedTokenEntityId = entityId(5, EntityType.FILE);
-        insertEntity(typeMismatchedAccountEntityId);
-        insertEntity(typeMismatchedContractEntityId);
-        insertEntity(typeMismatchedFileEntityId);
-        insertEntity(typeMismatchedTopicEntityId);
-        insertEntity(typeMismatchedTokenEntityId);
+        var typeMismatchedAccountEntityId = insertEntity(1, EntityType.TOPIC);
+        var typeMismatchedContractEntityId = insertEntity(2, EntityType.TOKEN);
+        var typeMismatchedFileEntityId = insertEntity(3, EntityType.CONTRACT);
+        var typeMismatchedTopicEntityId = insertEntity(4, EntityType.ACCOUNT);
+        var typeMismatchedTokenEntityId = insertEntity(5, EntityType.FILE);
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.add(
@@ -158,22 +153,17 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Test
     void verifyEntityTypeMigrationInvalidEntitiesMultiBatch() throws Exception {
-        insertEntity(entityId(1, EntityType.ACCOUNT));
-        insertEntity(entityId(2, EntityType.CONTRACT));
-        insertEntity(entityId(3, EntityType.FILE));
-        insertEntity(entityId(4, EntityType.TOPIC));
-        insertEntity(entityId(5, EntityType.TOKEN));
+        insertEntity(1, EntityType.ACCOUNT);
+        insertEntity(2, EntityType.CONTRACT);
+        insertEntity(3, EntityType.FILE);
+        insertEntity(4, EntityType.TOPIC);
+        insertEntity(5, EntityType.TOKEN);
 
-        EntityId typeMismatchedAccountEntityId = entityId(6, EntityType.TOPIC);
-        EntityId typeMismatchedContractEntityId = entityId(7, EntityType.TOKEN);
-        EntityId typeMismatchedFileEntityId = entityId(8, EntityType.CONTRACT);
-        EntityId typeMismatchedTopicEntityId = entityId(9, EntityType.ACCOUNT);
-        EntityId typeMismatchedTokenEntityId = entityId(10, EntityType.FILE);
-        insertEntity(typeMismatchedAccountEntityId);
-        insertEntity(typeMismatchedContractEntityId);
-        insertEntity(typeMismatchedFileEntityId);
-        insertEntity(typeMismatchedTopicEntityId);
-        insertEntity(typeMismatchedTokenEntityId);
+        var typeMismatchedAccountEntityId = insertEntity(6, EntityType.TOPIC);
+        var typeMismatchedContractEntityId = insertEntity(7, EntityType.TOKEN);
+        var typeMismatchedFileEntityId = insertEntity(8, EntityType.CONTRACT);
+        var typeMismatchedTopicEntityId = insertEntity(9, EntityType.ACCOUNT);
+        var typeMismatchedTokenEntityId = insertEntity(10, EntityType.FILE);
 
         List<Transaction> transactionList = new ArrayList<>();
         transactionList.add(
@@ -233,11 +223,11 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(100L);
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 1, id, entityType));
+        transaction.setEntityId(EntityId.of(0, 1, id));
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
-        transaction.setNodeAccountId(EntityId.of(0, 1, 3, EntityType.ACCOUNT));
-        transaction.setPayerAccountId(EntityId.of(0, 1, 98, EntityType.ACCOUNT));
+        transaction.setNodeAccountId(EntityId.of(0, 1, 3));
+        transaction.setPayerAccountId(EntityId.of(0, 1, 98));
         transaction.setResult(result.getNumber());
         transaction.setType(transactionType.getProtoId());
         transaction.setValidStartNs(20L);
@@ -247,7 +237,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     }
 
     private EntityId entityId(long id, EntityType entityType) {
-        return EntityId.of(0, 1, id, entityType);
+        return EntityId.of(0, 1, id);
     }
 
     private void migrate() throws IOException {
@@ -284,18 +274,16 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
     /**
      * Insert entity object using only columns supported before V_1_36.2
      *
-     * @param entityId entityId domain
+     * @param id long id
+     * @param type EntityType
      */
-    private void insertEntity(EntityId entityId) {
-        Entity entity = new Entity();
-        entity.setId(entityId.getId());
-        entity.setNum(entityId.getNum());
-        entity.setRealm(entityId.getRealm());
-        entity.setShard(entityId.getShard());
-        entity.setType(entityId.getType());
+    private Entity insertEntity(long id, EntityType type) {
+        var entityId = entityId(id, type);
+        var entity = entityId.toEntity();
+        entity.setType(type);
         entity.setMemo("abc" + (char) 0);
-        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT).getId());
-        entity.setProxyAccountId(EntityId.of("4.5.6", EntityType.ACCOUNT));
+        entity.setAutoRenewAccountId(EntityId.of("1.2.3").getId());
+        entity.setProxyAccountId(EntityId.of("4.5.6"));
 
         jdbcOperations.update(
                 "insert into t_entities (auto_renew_account_id, auto_renew_period, deleted, entity_num, "
@@ -316,6 +304,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 entity.getMemo(),
                 entity.getProxyAccountId().getId(),
                 entity.getSubmitKey());
+        return entity;
     }
 
     private int getEntityCount() {
@@ -337,7 +326,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                     entity.setNum(rs.getLong("entity_num"));
                     entity.setRealm(rs.getLong("entity_realm"));
                     entity.setShard(rs.getLong("entity_shard"));
-                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id"), EntityType.ACCOUNT));
+                    entity.setProxyAccountId(EntityId.of(rs.getLong("proxy_account_id")));
                     entity.setSubmitKey(rs.getBytes("submit_key"));
                     entity.setType(EntityType.fromId(rs.getInt("fk_entity_type_id")));
                     return entity;

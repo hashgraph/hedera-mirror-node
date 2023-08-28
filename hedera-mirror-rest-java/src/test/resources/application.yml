@@ -1,0 +1,35 @@
+hedera:
+  mirror:
+    restJava:
+      db:
+        host: ${embedded.postgresql.host}
+        port: ${embedded.postgresql.port}
+        name: ${embedded.postgresql.schema}
+        username: ${embedded.postgresql.user}
+        password: ${embedded.postgresql.password}
+spring:
+  datasource:
+    name: ${hedera.mirror.restJava.db.name}
+    password: ${hedera.mirror.restJava.db.password}
+    url: jdbc:postgresql://${hedera.mirror.restJava.db.host}:${hedera.mirror.restJava.db.port}/${hedera.mirror.restJava.db.name}
+    username: ${hedera.mirror.restJava.db.username}
+  flyway:
+    baselineOnMigrate: true
+    connectRetries: 10
+    placeholders:
+      api-password: mirror_api_pass
+      api-user: mirror_api
+      autovacuumFreezeMaxAgeInsertOnly: 100000
+      db-name: ${hedera.mirror.restJava.db.name}
+      db-user: ${hedera.mirror.restJava.db.username}
+      idPartitionSize: 1000000000000000
+      maxEntityId: 5000000
+      maxEntityIdRatio: 2.0
+      partitionStartDate: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+      partitionTimeInterval: "'10 years'"
+      schema: public
+      shardCount: 2
+      topicRunningHashV2AddedTimestamp: 0
+  test:
+    database:
+      replace: NONE

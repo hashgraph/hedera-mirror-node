@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -111,7 +110,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
                 .build();
         long nextTimestamp = nftTransfer.getConsensusTimestamp() + 10L;
         var nft1 = Nft.builder()
-                .accountId(EntityId.of(nft1Treasury, EntityType.ACCOUNT))
+                .accountId(EntityId.of(nft1Treasury))
                 .createdTimestamp(nftTransfer.getConsensusTimestamp())
                 .deleted(false)
                 .metadata(domainBuilder.bytes(16))
@@ -130,7 +129,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
                 .build();
         nextTimestamp += 10;
         expectedNftHistory.add(nft1.toBuilder()
-                .accountId(EntityId.of(alice, EntityType.ACCOUNT))
+                .accountId(EntityId.of(alice))
                 .timestampRange(Range.closedOpen(nftTransfer.getConsensusTimestamp(), nextTimestamp))
                 .build());
         nftTransfers.add(nftTransfer);
@@ -142,7 +141,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
                 .senderAccountId(alice)
                 .build());
         var expectedNft1 = nft1.toBuilder()
-                .accountId(EntityId.of(bob, EntityType.ACCOUNT))
+                .accountId(EntityId.of(bob))
                 .timestampRange(Range.atLeast(nextTimestamp))
                 .build();
 
@@ -156,7 +155,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
                 .build();
         nextTimestamp = nftTransfer.getConsensusTimestamp() + 15L;
         var nft2 = Nft.builder()
-                .accountId(EntityId.of(nft2Treasury, EntityType.ACCOUNT))
+                .accountId(EntityId.of(nft2Treasury))
                 .createdTimestamp(nftTransfer.getConsensusTimestamp())
                 .deleted(false)
                 .metadata(domainBuilder.bytes(16))
@@ -188,13 +187,13 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
                 .tokenId(domainBuilder.id())
                 .build();
         var expectedNft3 = Nft.builder()
-                .accountId(EntityId.of(nft3Treasury, EntityType.ACCOUNT))
+                .accountId(EntityId.of(nft3Treasury))
                 .createdTimestamp(nftTransfer.getConsensusTimestamp())
-                .delegatingSpender(domainBuilder.entityId(EntityType.ACCOUNT))
+                .delegatingSpender(domainBuilder.entityId())
                 .deleted(false)
                 .metadata(domainBuilder.bytes(16))
                 .serialNumber(nftTransfer.getSerialNumber())
-                .spender(domainBuilder.entityId(EntityType.ACCOUNT))
+                .spender(domainBuilder.entityId())
                 .timestampRange(Range.atLeast(nftTransfer.getConsensusTimestamp()))
                 .tokenId(nftTransfer.getTokenId())
                 .build();

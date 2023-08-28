@@ -17,10 +17,8 @@
 package com.hedera.mirror.common.domain.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.converter.EntityTypeSerializer;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,7 +47,7 @@ import lombok.Value;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class EntityId implements Serializable, Comparable<EntityId> {
 
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L, EntityType.ACCOUNT);
+    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L);
 
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;
@@ -75,21 +73,17 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     private final long realm;
     private final long num;
 
-    @JsonSerialize(using = EntityTypeSerializer.class)
-    private final EntityType type;
-
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final String cachedString = String.format("%d.%d.%d", shard, realm, num);
 
-    private EntityId(long shard, long realm, long num, EntityType type) {
+    private EntityId(long shard, long realm, long num) {
         id = encode(shard, realm, num);
         this.num = num;
         this.realm = realm;
         this.shard = shard;
-        this.type = type;
     }
 
-    private EntityId(long id, EntityType type) {
+    private EntityId(long id) {
         if (id < 0) {
             throw new InvalidEntityException("Entity ID can not be negative: " + id);
         }
@@ -98,7 +92,6 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
         this.num = id & NUM_MASK;
         this.realm = (id >> NUM_BITS) & REALM_MASK;
         this.shard = id >> (REALM_BITS + NUM_BITS);
-        this.type = type;
     }
 
     /**
@@ -122,30 +115,30 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(AccountID accountID) {
-        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityType.ACCOUNT);
+        return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
     }
 
     public static EntityId of(ContractID contractID) {
-        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(), EntityType.CONTRACT);
+        return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
     }
 
     public static EntityId of(FileID fileID) {
-        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum(), EntityType.FILE);
+        return of(fileID.getShardNum(), fileID.getRealmNum(), fileID.getFileNum());
     }
 
     public static EntityId of(TopicID topicID) {
-        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum(), EntityType.TOPIC);
+        return of(topicID.getShardNum(), topicID.getRealmNum(), topicID.getTopicNum());
     }
 
     public static EntityId of(TokenID tokenID) {
-        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), EntityType.TOKEN);
+        return of(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum());
     }
 
     public static EntityId of(ScheduleID scheduleID) {
-        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum(), EntityType.SCHEDULE);
+        return of(scheduleID.getShardNum(), scheduleID.getRealmNum(), scheduleID.getScheduleNum());
     }
 
-    public static EntityId of(String entityId, EntityType type) {
+    public static EntityId of(String entityId) {
         List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
@@ -155,18 +148,18 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);
         }
 
-        return of(parts.get(0), parts.get(1), parts.get(2), type);
+        return of(parts.get(0), parts.get(1), parts.get(2));
     }
 
-    public static EntityId of(long shard, long realm, long num, EntityType type) {
+    public static EntityId of(long shard, long realm, long num) {
         if (num == 0 && realm == 0 && shard == 0) {
             return EMPTY;
         }
-        return new EntityId(shard, realm, num, type);
+        return new EntityId(shard, realm, num);
     }
 
-    public static EntityId of(long id, EntityType type) {
-        return new EntityId(id, type);
+    public static EntityId of(long id) {
+        return new EntityId(id);
     }
 
     public static boolean isEmpty(EntityId entityId) {
@@ -180,7 +173,6 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
         entity.setRealm(realm);
         entity.setShard(shard);
         entity.setTimestampRange(DEFAULT_RANGE);
-        entity.setType(type);
         return entity;
     }
 

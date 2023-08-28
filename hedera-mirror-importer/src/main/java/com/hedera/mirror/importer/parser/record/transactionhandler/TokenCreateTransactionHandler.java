@@ -22,6 +22,7 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -90,6 +91,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         entity.setMemo(transactionBody.getMemo());
+        entity.setType(EntityType.TOKEN);
         entityListener.onEntity(entity);
     }
 

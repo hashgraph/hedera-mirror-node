@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -162,7 +161,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
             addressBookEntryList.add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp)
                     .nodeId(nodeId)
                     .memo("0.0." + nodeAccountId)
-                    .nodeAccountId(EntityId.of("0.0." + nodeAccountId, EntityType.ACCOUNT))));
+                    .nodeAccountId(EntityId.of("0.0." + nodeAccountId))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -186,7 +185,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                 .description("address book entry")
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
-                .nodeAccountId(EntityId.of("0.0.5", EntityType.ACCOUNT))
+                .nodeAccountId(EntityId.of("0.0.5"))
                 .nodeCertHash("nodeCertHash".getBytes())
                 .nodeId(5L)
                 .stake(5L);

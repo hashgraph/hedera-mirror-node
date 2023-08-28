@@ -21,7 +21,6 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDU
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.NotNull;
 import java.util.EnumSet;
@@ -51,8 +50,7 @@ public class EntityProperties {
          * A set of entity ids to exclude from entity_transaction table
          */
         @NotNull
-        private Set<EntityId> entityTransactionExclusion =
-                Set.of(EntityId.of(98, EntityType.ACCOUNT), EntityId.of(800, EntityType.ACCOUNT));
+        private Set<EntityId> entityTransactionExclusion = Set.of(EntityId.of(98), EntityId.of(800));
 
         private boolean entityTransactions = false;
 

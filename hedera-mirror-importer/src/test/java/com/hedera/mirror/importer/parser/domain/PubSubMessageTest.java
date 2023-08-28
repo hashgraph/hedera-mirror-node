@@ -224,7 +224,7 @@ class PubSubMessageTest {
                     "shardNum" : 0,
                     "realmNum" : 0,
                     "entityNum" : 20,
-                    "type" : 4
+                    "type" : 0
                   },
                   "transactionType" : 10,
                 """;

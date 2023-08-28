@@ -23,7 +23,6 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -108,8 +107,8 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
                 .amountGranted(2500L)
                 .timestampRange(Range.atLeast(history.getTimestampUpper()));
         var current1 = domainBuilder.wrap(builder, builder::build).persist();
-        var owner1 = EntityId.of(current1.getOwner(), EntityType.ACCOUNT);
-        var spender1 = EntityId.of(current1.getSpender(), EntityType.ACCOUNT);
+        var owner1 = EntityId.of(current1.getOwner());
+        var spender1 = EntityId.of(current1.getSpender());
         // A transfer using allowance
         var cryptoTransferBuilder = CryptoTransfer.builder()
                 .amount(-5)
@@ -143,7 +142,7 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
                 .cryptoAllowance()
                 .customize(ca -> ca.amount(3300 + amountTracked).amountGranted(3300L))
                 .persist();
-        var spender2 = EntityId.of(current2.getSpender(), EntityType.ACCOUNT);
+        var spender2 = EntityId.of(current2.getSpender());
         // A transfer using allowance, but with a timestamp before current2, i.e., using allowance before current2,
         // the migration should exclude it
         cryptoTransferBuilder
