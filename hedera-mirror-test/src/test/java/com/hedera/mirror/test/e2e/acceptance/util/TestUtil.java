@@ -72,25 +72,25 @@ public class TestUtil {
         return output.toString();
     }
 
-    public static Address asHeadlongAddress(String address) {
+    public static Address asAddress(String address) {
         final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
     public static Tuple accountAmount(String account, Long amount, boolean isApproval) {
-        return Tuple.of(asHeadlongAddress(account), amount, isApproval);
+        return Tuple.of(asAddress(account), amount, isApproval);
     }
 
     public static Tuple nftAmount(String sender, String receiver, Long serialNumber, boolean isApproval) {
-        return Tuple.of(asHeadlongAddress(sender), asHeadlongAddress(receiver), serialNumber, isApproval);
+        return Tuple.of(asAddress(sender), asAddress(receiver), serialNumber, isApproval);
     }
 
-    public static Address[] asHeadlongAddressArray(List<String> addressStrings) {
-        return addressStrings.stream().map(addr -> asHeadlongAddress(addr)).toArray(Address[]::new);
+    public static Address[] asAddressArray(List<String> addressStrings) {
+        return addressStrings.stream().map(addr -> asAddress(addr)).toArray(Address[]::new);
     }
 
-    public static byte[][] asHeadlongByteArray(List<String> hexStringList) {
+    public static byte[][] asByteArray(List<String> hexStringList) {
         return hexStringList.stream()
                 .map(hexString -> Bytes.fromHexString(hexString).toArrayUnsafe())
                 .toArray(byte[][]::new);
@@ -121,7 +121,7 @@ public class TestUtil {
         private Address token;
 
         public TokenTransferListBuilder forToken(final String token) {
-            this.token = asHeadlongAddress(token);
+            this.token = asAddress(token);
             return this;
         }
 

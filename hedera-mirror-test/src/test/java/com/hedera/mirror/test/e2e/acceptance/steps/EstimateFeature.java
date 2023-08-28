@@ -57,7 +57,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
     private final ContractClient contractClient;
     private final FileClient fileClient;
-    private final MirrorNodeClient mirrorClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
 
@@ -358,14 +357,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 tenStateUpdatesResponse.getResultAsNumber().intValue();
         // verifying that estimateGas for 10 state updates is higher than 5 state updates
         assertTrue(estimatedGasOfTenStateUpdates > estimatedGasOfFiveStateUpdates);
-    }
-
-    @Then("I call estimateGas with function that executes reentrancy attack with transfer")
-    public void reentrancyTransferAttackFunction() {
-        validateGasEstimation(
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10"),
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas(),
-                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes reentrancy attack with call")

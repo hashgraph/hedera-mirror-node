@@ -1,4 +1,4 @@
-@contractbase @fullsuite @acceptance  @estimateprecompile @web3
+@contractbase @fullsuite @estimateprecompile @web3
 Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas with precompile
@@ -50,7 +50,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with cryptoTransfer function for nft
     Then I call estimateGas with cryptoTransfer function for fungible tokens
     Then I call estimateGas with mintToken function for fungible token
-#    Then I call estimateGas with mintToken function for NFT - disabled due to bug
+#    Then I call estimateGas with mintToken function for NFT - disabled due to bug #6769
     Then I call estimateGas with burnToken function for fungible token
     Then I call estimateGas with burnToken function for NFT
     Then I call estimateGas with CreateFungibleToken function

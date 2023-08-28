@@ -24,15 +24,11 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import java.nio.ByteBuffer;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-@CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 abstract class AbstractEstimateFeature extends AbstractFeature {
 
     protected int lowerDeviation;
