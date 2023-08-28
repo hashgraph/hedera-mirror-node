@@ -115,7 +115,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     public RunResult run(final MessageFrame frame, TransactionBody transactionBody) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `run`");
 
-        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var store = updater.getStore();
         final var senderAddress = unalias(frame.getSenderAddress(), updater);
 
