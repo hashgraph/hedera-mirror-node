@@ -1554,7 +1554,6 @@ public class Token {
         if (hasFreezeKey() && frozenByDefault) {
             newRel = newRel.setFrozen(true);
         }
-        newRel = newRel.setKycGranted(!hasKycKey()).setAutomaticAssociation(automaticAssociation);
         return newRel;
     }
 
