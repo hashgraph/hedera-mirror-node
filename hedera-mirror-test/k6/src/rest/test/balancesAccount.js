@@ -17,7 +17,7 @@
 import http from 'k6/http';
 
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
-import {balanceListName} from '../libex/constants';
+import {balanceListName} from '../libex/constants.js';
 
 const urlTag = '/balances?account.id=eq:{accountId}';
 
