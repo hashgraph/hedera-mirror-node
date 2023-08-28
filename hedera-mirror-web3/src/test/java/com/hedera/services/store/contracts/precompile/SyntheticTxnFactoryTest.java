@@ -59,6 +59,7 @@ import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -797,20 +798,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(payer, txnBody.getAutoRenewAccount());
 
         // keys assertions
-        assertTrue(txnBody.hasAdminKey());
-        assertEquals(adminKey.asGrpc(), txnBody.getAdminKey());
-        assertTrue(txnBody.hasKycKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
-        assertTrue(txnBody.hasFreezeKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
-        assertTrue(txnBody.hasWipeKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
-        assertTrue(txnBody.hasSupplyKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
-        assertTrue(txnBody.hasFeeScheduleKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
-        assertTrue(txnBody.hasPauseKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+        assertKeys(txnBody, adminKey, multiKey);
 
         // assert custom fees
         assertEquals(2, txnBody.getCustomFeesCount());
@@ -850,20 +838,7 @@ class SyntheticTxnFactoryTest {
         assertFalse(txnBody.hasAutoRenewAccount());
 
         // keys assertions
-        assertTrue(txnBody.hasAdminKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getAdminKey());
-        assertTrue(txnBody.hasKycKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
-        assertTrue(txnBody.hasFreezeKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
-        assertTrue(txnBody.hasWipeKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
-        assertTrue(txnBody.hasSupplyKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
-        assertTrue(txnBody.hasFeeScheduleKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
-        assertTrue(txnBody.hasPauseKey());
-        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+        assertKeys(txnBody, multiKey, multiKey);
 
         // assert custom fees
         assertEquals(2, txnBody.getCustomFeesCount());
@@ -876,5 +851,22 @@ class SyntheticTxnFactoryTest {
                 .setAccountID(accountID)
                 .setAmount(amount)
                 .build();
+    }
+
+    private void assertKeys(TokenCreateTransactionBody txnBody, KeyValueWrapper adminKey, KeyValueWrapper multiKey) {
+        assertTrue(txnBody.hasAdminKey());
+        assertEquals(adminKey.asGrpc(), txnBody.getAdminKey());
+        assertTrue(txnBody.hasKycKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
+        assertTrue(txnBody.hasFreezeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
+        assertTrue(txnBody.hasWipeKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
+        assertTrue(txnBody.hasSupplyKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+        assertTrue(txnBody.hasFeeScheduleKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+        assertTrue(txnBody.hasPauseKey());
+        assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
     }
 }

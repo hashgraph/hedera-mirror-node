@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -105,9 +104,6 @@ class DissociatePrecompileTest {
 
     @Mock
     private Store store;
-
-    @Mock
-    private Account senderAccount;
 
     @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
@@ -212,8 +208,6 @@ class DissociatePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
@@ -240,8 +234,6 @@ class DissociatePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
-
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
@@ -336,8 +328,6 @@ class DissociatePrecompileTest {
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void givenPricingUtilsContext() {

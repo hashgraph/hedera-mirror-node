@@ -43,7 +43,6 @@ import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -53,8 +52,8 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -265,7 +264,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         try {
             tokenCreateOp.setAllInheritedKeysTo(((CreateParams) bodyParams).senderAccountKey());
         } catch (DecoderException e) {
-            throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
+            throw new InvalidTransactionException(e.getMessage(), ResponseCodeEnum.FAIL_INVALID);
         }
 
         return syntheticTxnFactory.createTokenCreate(tokenCreateOp);

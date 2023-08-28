@@ -50,7 +50,6 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenModificationResult;
@@ -194,9 +193,6 @@ class MintPrecompileTest {
     private Store store;
 
     @Mock
-    private Account senderAccount;
-
-    @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
 
     @Mock
@@ -265,7 +261,6 @@ class MintPrecompileTest {
 
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
@@ -290,7 +285,6 @@ class MintPrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         // when:
         subject.prepareFields(frame);
@@ -316,8 +310,6 @@ class MintPrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a);
@@ -433,7 +425,6 @@ class MintPrecompileTest {
         when(store.getToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
         when(store.getTokenRelationship(new TokenRelationshipKey(tokenAddress, treasuryAddress), OnMissing.THROW))
                 .thenReturn(tokenRelationship);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void prepareStoreForFungibleMint(final long newTotalSupply) {

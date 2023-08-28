@@ -31,8 +31,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -46,7 +44,6 @@ import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -110,12 +107,6 @@ class TokenUpdateKeysPrecompileTest {
 
     @Mock
     private TransactionBody.Builder transactionBodyBuilder;
-
-    @Mock
-    private Store store;
-
-    @Mock
-    private Account senderAccount;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -201,7 +192,6 @@ class TokenUpdateKeysPrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);
-
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
@@ -242,8 +232,6 @@ class TokenUpdateKeysPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

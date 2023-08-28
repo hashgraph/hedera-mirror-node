@@ -29,8 +29,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -41,7 +39,6 @@ import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.impl.SystemContractAbis;
 import com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -100,12 +97,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
-
-    @Mock
-    private Store store;
-
-    @Mock
-    private Account senderAccount;
 
     @Mock
     private TokenUpdateLogic tokenUpdateLogic;
@@ -221,8 +212,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(worldUpdater.getStore()).willReturn(store);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

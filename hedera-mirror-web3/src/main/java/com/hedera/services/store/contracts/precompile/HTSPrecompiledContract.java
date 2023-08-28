@@ -41,7 +41,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.Redirect
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.CreateParams;
@@ -102,7 +101,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
     private Address senderAddress;
-    private JKey senderAccountKey;
 
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -370,8 +368,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
-                this.transactionBody =
-                        precompile.body(input, aliasResolver, new CreateParams(functionId, senderAccountKey));
+                this.transactionBody = precompile.body(
+                        input,
+                        aliasResolver,
+                        new CreateParams(
+                                functionId,
+                                store.getAccount(senderAddress, OnMissing.THROW).getKey()));
             }
             default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
@@ -388,7 +390,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
         this.store = updater.getStore();
         this.mirrorNodeEvmProperties = updater.aliases();
-        this.senderAccountKey = store.getAccount(senderAddress, OnMissing.THROW).getKey();
     }
 
     private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
