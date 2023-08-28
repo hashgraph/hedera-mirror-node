@@ -33,12 +33,12 @@ public class StreamSourceProperties {
 
     @DurationMin(seconds = 1)
     @NotNull
-    private Duration connectionTimeout = Duration.ofSeconds(5L);
+    private Duration connectionTimeout = Duration.ofSeconds(10L);
 
     private SourceCredentials credentials;
 
     @Min(0)
-    private int maxConcurrency = 1000; // aws sdk default = 50
+    private int maxConcurrency = 2000; // aws sdk default = 50
 
     private String projectId;
 

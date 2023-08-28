@@ -43,12 +43,14 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.CustomLog;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Named
-@CustomLog
+@Slf4j
 public class HistoricalDownloader {
 
     public static final String SEPARATOR = "/";
@@ -60,6 +62,7 @@ public class HistoricalDownloader {
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
     private final ConcurrentMap<String, FileSpecificInfo> downloadsInfoMap = new ConcurrentSkipListMap<>();
+    private final AtomicReference<ConsensusNodeInfo> nodeInfoRef = new AtomicReference<>();
     private final int downloadConcurrency = 3;
 
     public HistoricalDownloader(
@@ -89,12 +92,11 @@ public class HistoricalDownloader {
 
     public void downloadAll(StreamFilename startFilename) {
 
-        /* NOTE: For part (6413), the address book will not change while downloading since the data files
+        /* NOTE: For first part (6413), the address book will not change while downloading since the data files
          * are not being imported.
          *
          * NOTE: AddressBookServiceImpl.getNodes() is @Cacheable. When an address book update is detected
-         * (update to file ID 102), AddressBookServiceImpl.update() evicts all cache entries.  Not sure if
-         * there is any eviction policy that affects things in between.
+         * (update to file ID 102), AddressBookServiceImpl.update() evicts all cache entries.
          *
          * Starting with the initial address book (network specific genesis classpath resource or property), the address
          * book changes over time as file update transactions are processed. It seems that as the address book
@@ -105,8 +107,11 @@ public class HistoricalDownloader {
          * each invocation of downloadNextBatch(), which is pretty frequent, but certainly not each signature
          * file listed. Maybe utilize an epoch minute or hour cache key or something?
          */
+        //        var nodeInfo = partialCollection(consensusNodeService.getNodes());
         var nodeInfo = partialCollection(
                 List.of(consensusNodeService.getNodes().iterator().next())); // TODO Single node for initial debug
+        nodeInfoRef.set(nodeInfo);
+
         Set<CompletableFuture<Long>> downloaders = new HashSet<>(nodeInfo.nextIndex);
         for (int nodeIdx = 0; nodeIdx < nodeInfo.nextIndex; nodeIdx++) {
             var node = nodeInfo.nodes().get(nodeIdx);
@@ -119,22 +124,11 @@ public class HistoricalDownloader {
                             var count = streamFileProvider
                                     .listAllPaginated(node, startFilename)
                                     .filter(s3Object -> s3Object.key().endsWith("_sig"))
+                                    .doOnNext(this::selectForDownload)
                                     .flatMap(
                                             s3Object -> streamFileProvider.get(s3Object, downloadPath),
                                             downloadConcurrency)
-                                    .doOnNext(responseWithKey -> {
-                                        var s3Basename = s3Basename(responseWithKey.s3Key());
-                                        var downloadInfo = downloadsInfoMap.computeIfAbsent(
-                                                s3Basename, key -> new FileSpecificInfo(nodeInfo));
-                                        downloadInfo.getCompletions().add(responseWithKey);
-                                        log.debug(
-                                                "Download completed for node: {}, filename: {}, size: {}",
-                                                node,
-                                                s3Basename,
-                                                responseWithKey
-                                                        .getObjectResponse()
-                                                        .contentLength());
-                                    })
+                                    .doOnNext(responseWithKey -> downloadCompleted(responseWithKey, node))
                                     .count()
                                     .block();
 
@@ -157,18 +151,64 @@ public class HistoricalDownloader {
     @Scheduled(initialDelay = 5000, fixedDelay = 10000)
     public void manageDownloads() {
         log.info("manageDownloads - taking a look!");
+        var stopwatch = Stopwatch.createStarted();
+
+        long downloadsRemoved = 0L;
+
+        var now = Instant.now().getEpochSecond();
+        var shouldBeDoneTime = now - 60L;
 
         var entryIterator = downloadsInfoMap.entrySet().iterator();
         while (entryIterator.hasNext()) {
             var entry = entryIterator.next();
             var filename = entry.getKey();
             var fileInfo = entry.getValue();
-            if (fileInfo.getCompletions().size()
-                    >= fileInfo.consensusNodeInfo.nodes().size()) {
+
+            // It's not just count, but stake...  TBD
+            var completionsCount = fileInfo.getCompletions().size();
+            var requiredCompletionsCount = fileInfo.consensusNodeInfo.nodes().size();
+
+            if (completionsCount >= requiredCompletionsCount) {
                 log.info("Sufficient signature files downloaded for {}", filename);
+                fileInfo.getCompletions().clear();
                 entryIterator.remove();
+                downloadsRemoved++;
+                continue;
+            }
+
+            /*
+             * Consensus has not yet been reached in terms of the number of files (nodes) downloaded. If we
+             * "should" be done by now, then perhaps one or more of the 1/3 stake of nodes does not have the
+             * file and did not request to download it.
+             */
+            if (fileInfo.startTime < shouldBeDoneTime) {
+                log.info("File {} has only {} of {} completions", filename, completionsCount, requiredCompletionsCount);
             }
         }
+    }
+
+    private void selectForDownload(S3Object s3Object) {
+        var s3Basename = s3Basename(s3Object.key());
+        this.downloadsInfoMap.computeIfAbsent(s3Basename, key -> new FileSpecificInfo(this.nodeInfoRef.get()));
+    }
+
+    private GetObjectResponseWithKey downloadCompleted(GetObjectResponseWithKey responseWithKey, ConsensusNode node) {
+        var s3Basename = s3Basename(responseWithKey.s3Key());
+        var downloadInfo = this.downloadsInfoMap.get(s3Basename);
+
+        if (downloadInfo != null) { // Consensus not yet met
+            downloadInfo.getCompletions().add(responseWithKey);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "Download completed for node: {}, filename: {}, size: {}",
+                    node,
+                    s3Basename,
+                    responseWithKey.getObjectResponse().contentLength());
+        }
+
+        return responseWithKey;
     }
 
     /**

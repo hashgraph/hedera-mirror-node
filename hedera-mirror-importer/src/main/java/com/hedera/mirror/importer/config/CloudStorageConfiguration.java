@@ -91,6 +91,8 @@ class CloudStorageConfiguration {
         var httpClient = NettyNioAsyncHttpClient.builder()
                 .connectionTimeout(sourceProperties.getConnectionTimeout())
                 .maxConcurrency(sourceProperties.getMaxConcurrency())
+                .maxPendingConnectionAcquires(500)
+                .connectionAcquisitionTimeout(Duration.ofSeconds(10))
                 .connectionMaxIdleTime(Duration.ofSeconds(5)) // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
