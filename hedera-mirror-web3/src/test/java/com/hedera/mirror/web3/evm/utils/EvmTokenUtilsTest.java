@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -50,7 +49,7 @@ class EvmTokenUtilsTest {
 
         assertThat(EvmTokenUtils.toAddress(contractId).toArrayUnsafe()).isEqualTo(contractAddress);
 
-        EntityId accountId = EntityId.of(shard, realm, accountNum, EntityType.ACCOUNT);
+        EntityId accountId = EntityId.of(shard, realm, accountNum);
         byte[] accountAddress = new byte[20];
         accountAddress[3] = (byte) shard;
         accountAddress[11] = (byte) realm;
@@ -138,7 +137,7 @@ class EvmTokenUtilsTest {
     @Test
     void entityIdFromAddress() {
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
-        EntityId entityId = EntityId.of(0, 0, 1221, EntityType.CONTRACT);
+        EntityId entityId = EntityId.of(0, 0, 1221);
 
         assertThat(EvmTokenUtils.entityIdFromEvmAddress(contractAddress)).isEqualTo(entityId);
     }
@@ -157,7 +156,7 @@ class EvmTokenUtilsTest {
 
     @Test
     void entityIdFromEmptyAddress() {
-        EntityId entityId = EntityId.of(0, 0, 0, EntityType.CONTRACT);
+        EntityId entityId = EntityId.of(0, 0, 0);
         assertThat(EvmTokenUtils.entityIdFromEvmAddress(EMPTY_ADDRESS)).isEqualTo(entityId);
     }
 }

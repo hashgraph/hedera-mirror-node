@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -278,10 +277,10 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         listAssert
                 .extracting(AddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
-                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset), EntityType.ACCOUNT));
+                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset)));
 
         assertThat(addressBookServiceEndpointRepository.findAll()).isEmpty();
     }
@@ -333,10 +332,10 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         listAssert
                 .extracting(AddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
-                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset), EntityType.ACCOUNT),
-                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset), EntityType.ACCOUNT));
+                        EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)),
+                        EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset)));
 
         IterableAssert<AddressBookServiceEndpoint> serviceListAssert = assertThat(
                         addressBookServiceEndpointRepository.findAll())
@@ -370,7 +369,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .nodeId(nodeId)
                 .memo(accountId)
                 .nodeCertHash("nodeCertHash".getBytes())
-                .nodeAccountId(EntityId.of(accountId, EntityType.ACCOUNT))
+                .nodeAccountId(EntityId.of(accountId))
                 .publicKey("rsa+public/key");
 
         AtomicLong idCount = new AtomicLong(id);

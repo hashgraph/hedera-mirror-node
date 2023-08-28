@@ -24,7 +24,6 @@ import com.hedera.mirror.api.proto.ConsensusTopicQuery;
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
 import com.hedera.mirror.api.proto.ReactorConsensusServiceGrpc;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
@@ -224,7 +223,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                         .chunkNum(1)
                         .chunkTotal(2)
                         .validStartTimestamp(now)
-                        .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
+                        .payerAccountId(EntityId.of(1L))
                         .consensusTimestamp(now + 1))
                 .block();
         domainBuilder
@@ -232,7 +231,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                         .chunkNum(2)
                         .chunkTotal(2)
                         .validStartTimestamp(now + 1)
-                        .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
+                        .payerAccountId(EntityId.of(1L))
                         .consensusTimestamp(now + 2))
                 .block();
         domainBuilder
@@ -243,7 +242,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                         .chunkNum(1)
                         .chunkTotal(3)
                         .validStartTimestamp(now + 3)
-                        .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
+                        .payerAccountId(EntityId.of(1L))
                         .consensusTimestamp(now + 4))
                 .block();
 
@@ -253,14 +252,14 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                         .chunkNum(2)
                         .chunkTotal(3)
                         .validStartTimestamp(now + 4)
-                        .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
+                        .payerAccountId(EntityId.of(1L))
                         .consensusTimestamp(now + 5 * NANOS_PER_SECOND)
                         .initialTransactionId(null)),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(7)
                         .chunkNum(3)
                         .chunkTotal(3)
                         .validStartTimestamp(now + 5)
-                        .payerAccountId(EntityId.of(1L, EntityType.ACCOUNT))
+                        .payerAccountId(EntityId.of(1L))
                         .consensusTimestamp(now + 6 * NANOS_PER_SECOND)
                         .initialTransactionId(new byte[] {1, 2})),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now + 7 * NANOS_PER_SECOND)));

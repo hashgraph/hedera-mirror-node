@@ -19,13 +19,12 @@ package com.hedera.mirror.common.domain.token;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import org.junit.jupiter.api.Test;
 
 class TokenAccountTest {
 
-    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101", EntityType.TOKEN);
-    private final EntityId ACCOUNT_ID = EntityId.of("0.0.102", EntityType.ACCOUNT);
+    private final EntityId FOO_COIN_ID = EntityId.of("0.0.101");
+    private final EntityId ACCOUNT_ID = EntityId.of("0.0.102");
 
     @Test
     void createValidTokenAccount() {

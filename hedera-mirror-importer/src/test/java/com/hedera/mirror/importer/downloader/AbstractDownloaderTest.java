@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.downloader;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -190,7 +189,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                         @SuppressWarnings("deprecation")
                         var id = e.hasNodeAccountId()
                                 ? EntityId.of(e.getNodeAccountId())
-                                : EntityId.of(e.getMemo().toStringUtf8(), FILE);
+                                : EntityId.of(e.getMemo().toStringUtf8());
                         return ConsensusNodeStub.builder()
                                 .nodeAccountId(id)
                                 .nodeId(id.getNum() - 3)

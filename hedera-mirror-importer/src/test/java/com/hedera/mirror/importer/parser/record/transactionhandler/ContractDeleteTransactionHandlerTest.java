@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -51,8 +50,8 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     @BeforeEach
     void beforeEach() {
         when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
-                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT)));
-        when(entityIdService.lookup(obtainerId)).thenReturn(Optional.of(EntityId.of(OBTAINER_NUM, CONTRACT)));
+                .thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM)));
+        when(entityIdService.lookup(obtainerId)).thenReturn(Optional.of(EntityId.of(OBTAINER_NUM)));
     }
 
     @Override
@@ -82,7 +81,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         List<UpdateEntityTestSpec> specs = new ArrayList<>();
         Entity expected = getExpectedEntityWithTimestamp();
         expected.setDeleted(true);
-        expected.setObtainerId(EntityId.of(OBTAINER_NUM, EntityType.ACCOUNT));
+        expected.setObtainerId(EntityId.of(OBTAINER_NUM));
         expected.setPermanentRemoval(false);
 
         specs.add(UpdateEntityTestSpec.builder()
