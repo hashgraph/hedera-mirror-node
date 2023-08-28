@@ -33,8 +33,9 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
             """
             with snapshot_timestamp as (
               select max(consensus_timestamp) as timestamp
-              from account_balance_file
+              from account_balance
               where consensus_timestamp <= (select max(consensus_end) from record_file)
+               and account_id = 2
             ), token_balance_sum as (
               select token_id, sum(balance) amount
               from token_balance
@@ -58,7 +59,7 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
             update token t
             set total_supply = amount
             from final f
-            where t.token_id = f.token_id
+            where t.token_id = f.token_id;
             """;
 
     private final JdbcTemplate jdbcTemplate;
