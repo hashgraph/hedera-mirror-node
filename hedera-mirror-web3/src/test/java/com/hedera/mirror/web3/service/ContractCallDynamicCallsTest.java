@@ -88,6 +88,26 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         PAUSE_UNPAUSE_NFT("pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS}, null),
         FREEZE_UNFREEZE_NFT(
                 "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ALIAS}, null),
+        ASSOCIATE_TRANSFER_NFT(
+                "associateTokenTransfer",
+                new Object[] {
+                    NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ZERO,
+                    BigInteger.ONE
+                },
+                null),
+        ASSOCIATE_TRANSFER_FUNGIBLE_TOKEN(
+                "associateTokenTransfer",
+                new Object[] {
+                    TREASURY_TOKEN_ADDRESS,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ONE,
+                    BigInteger.ZERO
+                },
+                null),
         ASSOCIATE_DISSOCIATE_TRANSFER_FUNGIBLE_TOKEN_FAIL(
                 "associateTokenDissociateFailTransfer",
                 new Object[] {

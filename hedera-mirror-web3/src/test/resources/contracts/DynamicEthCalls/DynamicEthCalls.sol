@@ -210,4 +210,23 @@ contract NestedEthCalls is HederaTokenService {
             if(IERC721(token).getApproved(serialNumber) == spender) revert("NFT allowance mismatch after transfer");
         }
     }
+
+    // Associate fungible/non-fungible token transfer + transfer
+    function associateTokenTransfer(address token, address from, address to, uint256 amount, uint256 serialNumber) external {
+        address[] memory tokens = new address[](1);
+        tokens[0] = token;
+        int responseCode = HederaTokenService.associateTokens(to, tokens);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to associate tokens");
+
+        if(amount > 0 && serialNumber == 0) {
+            uint256 balanceBeforeTransfer = IERC20(token).balanceOf(to);
+            responseCode = HederaTokenService.transferToken(token, from, to, int64(uint64(amount)));
+            if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to transfer fungible token");
+            if(IERC20(token).balanceOf(to) != balanceBeforeTransfer + amount) revert("Balance mismatch after transfer");
+        } else {
+            responseCode = HederaTokenService.transferNFT(token, IERC721(token).ownerOf(serialNumber), to, int64(int256(serialNumber)));
+            if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to transfer NFT");
+            if(IERC721(token).ownerOf(serialNumber) != to) revert("NFT ownership mismatch after transfer");
+        }
+    }
 }
