@@ -173,15 +173,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261));
-    protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258, CONTRACT));
-    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1262, CONTRACT));
-    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS =
-            toAddress(EntityId.of(0, 0, 1264, CONTRACT));
-    protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259, CONTRACT));
-    protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260, CONTRACT));
-    protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263, CONTRACT));
-    protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045, CONTRACT));
-    protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261, CONTRACT));
+    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
