@@ -20,6 +20,8 @@ import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountInfo;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -196,22 +198,28 @@ public class AccountClient extends AbstractNetworkClient {
             publicKeyList.addAll(keyList);
         }
 
-        AccountCreateTransaction accountCreateTransaction = getAccountCreateTransaction(
-                initialBalance, publicKeyList, receiverSigRequired, memo == null ? "" : memo);
-
-        var response = executeTransactionAndRetrieveReceipt(
-                accountCreateTransaction, receiverSigRequired ? KeyList.of(privateKey) : null);
-        TransactionReceipt receipt = response.getReceipt();
-        AccountId newAccountId = receipt.accountId;
-
-        // verify accountId
-        if (receipt.accountId == null) {
-            throw new NetworkException(String.format(
-                    "Receipt for %s returned no accountId, receipt: %s", response.getTransactionId(), receipt));
+        AccountId newAccountId;
+        NetworkTransactionResponse response;
+        if (keyType == Key.KeyCase.ED25519) {
+            Transaction<?> transaction = getAccountCreateTransaction(
+                    initialBalance, publicKeyList, receiverSigRequired, memo == null ? "" : memo);
+            response = executeTransactionAndRetrieveReceipt(
+                    transaction, receiverSigRequired ? KeyList.of(privateKey) : null);
+            TransactionReceipt receipt = response.getReceipt();
+            newAccountId = receipt.accountId;
+            if (receipt.accountId == null) {
+                throw new NetworkException(String.format(
+                        "Receipt for %s returned no accountId, receipt: %s", response.getTransactionId(), receipt));
+            }
+        } else {
+            AccountId accountIdFromEvmAddress = AccountId.fromEvmAddress(privateKey.getPublicKey().toEvmAddress());
+            response = sendCryptoTransfer(accountIdFromEvmAddress, initialBalance);
+            AccountInfo accountInfo = getAccountInfo(accountIdFromEvmAddress);
+            newAccountId = new AccountId(accountInfo.accountId.num);
         }
 
         log.info("Created new account {} with {} via {}", newAccountId, initialBalance, response.getTransactionId());
-        var accountId = new ExpandedAccountId(newAccountId, privateKey);
+        ExpandedAccountId accountId = new ExpandedAccountId(newAccountId, privateKey);
         accountIds.add(accountId);
         return accountId;
     }

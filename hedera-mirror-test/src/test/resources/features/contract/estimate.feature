@@ -1,4 +1,4 @@
-@contractbase @fullsuite @estimate @web3
+@contractbase @fullsuite @estimate @web3 @mycustomrun
 Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas
@@ -35,3 +35,5 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that executes reentrancy attack with call
     Then I call estimateGas with function that executes positive nested calls
     Then I call estimateGas with function that executes limited nested calls
+    Then I call estimateGas with IERC20 token "FUNGIBLE" transfer using long zero address as receiver
+    Then I call estimateGas with IERC20 token "FUNGIBLE" transfer using evm address as receiver
