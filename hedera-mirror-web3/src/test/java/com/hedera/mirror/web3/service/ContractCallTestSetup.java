@@ -724,38 +724,37 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
-        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN, true);
+        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN, true);
+        tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(modificationContract, tokenEntityIdNotAssociated, TokenFreezeStatusEnum.UNFROZEN, false);
-        tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
-        tokenAccountPersist(treasuryEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(nestedContractId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(nestedContractId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(nestedContractId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(nestedContractId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(treasuryEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
-        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN, true);
-        tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN, true);
+        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
@@ -856,17 +855,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private void tokenAccountPersist(
-            final EntityId senderEntityId,
-            final EntityId tokenEntityId,
-            final TokenFreezeStatusEnum freezeStatus,
-            final boolean associated) {
+            final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccount()
                 .customize(e -> e.freezeStatus(freezeStatus)
                         .accountId(senderEntityId.getId())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
-                        .associated(associated)
+                        .associated(true)
                         .balance(12L))
                 .persist();
     }
