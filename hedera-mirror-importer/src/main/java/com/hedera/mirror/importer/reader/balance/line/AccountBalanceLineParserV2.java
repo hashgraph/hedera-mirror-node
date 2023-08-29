@@ -21,7 +21,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hederahashgraph.api.proto.java.TokenBalances;
@@ -82,7 +81,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
                         line, mirrorProperties.getShard(), shardNum));
             }
 
-            EntityId accountId = EntityId.of(shardNum, realmNum, accountNum, EntityType.ACCOUNT);
+            EntityId accountId = EntityId.of(shardNum, realmNum, accountNum);
 
             List<TokenBalance> tokenBalances = hasTokenBalance
                     ? parseTokenBalanceList(parts.get(4), consensusTimestamp, accountId)

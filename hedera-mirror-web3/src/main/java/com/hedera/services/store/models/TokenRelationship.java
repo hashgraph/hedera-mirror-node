@@ -102,6 +102,17 @@ public class TokenRelationship {
                 0);
     }
 
+    /**
+     * Constructor for creating new TokenRelationship with AssociatePrecompile
+     * @param token
+     * @param account
+     * @param hasAssociation
+     * @param frozen
+     */
+    public TokenRelationship(Token token, Account account, boolean hasAssociation, boolean frozen, boolean kycGranted) {
+        this(token, account, 0, frozen, kycGranted, false, false, false, hasAssociation, 0);
+    }
+
     public static TokenRelationship getEmptyTokenRelationship() {
         return new TokenRelationship(new Token(Id.DEFAULT), new Account(0L, Id.DEFAULT, 0L), false);
     }

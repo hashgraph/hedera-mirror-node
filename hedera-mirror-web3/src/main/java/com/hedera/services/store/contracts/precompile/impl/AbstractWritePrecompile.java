@@ -17,12 +17,22 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
+/**
+ * This class is a modified copy of AllowancePrecompile from hedera-services repo.
+ *
+ * Differences with the original:
+ *  1. Implements a modified {@link Precompile} interface
+ *  2. Added util method to unalias given address
+ */
 public abstract class AbstractWritePrecompile implements Precompile {
     protected static final String FAILURE_MESSAGE = "Invalid full prefix for %s precompile!";
     protected final PrecompilePricingUtils pricingUtils;
@@ -42,5 +52,9 @@ public abstract class AbstractWritePrecompile implements Precompile {
             final HederaEvmContractAliases mirrorEvmContractAliases) {
         return pricingUtils.computeGasRequirement(
                 blockTimestamp, this, transactionBody, store, mirrorEvmContractAliases);
+    }
+
+    protected Address unalias(Address addressOrAlias, HederaEvmStackedWorldStateUpdater updater) {
+        return Address.wrap(Bytes.wrap(updater.permissivelyUnaliased(addressOrAlias.toArray())));
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -53,6 +54,7 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setObtainerId(obtainerId);
         }
 
+        entity.setType(EntityType.ACCOUNT);
         entityListener.onEntity(entity);
         recordItem.addEntityId(obtainerId);
     }

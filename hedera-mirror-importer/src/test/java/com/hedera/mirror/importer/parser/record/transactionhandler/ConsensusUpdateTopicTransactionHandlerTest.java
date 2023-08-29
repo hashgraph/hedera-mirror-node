@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,7 +69,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
-        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        var autoRenewAccountId = EntityId.of(10L);
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId);
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(autoRenewAccountId));
 
@@ -98,7 +97,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(topicId))
                 .get();
-        var autoRenewAccountId = EntityId.of(10L, ACCOUNT);
+        var autoRenewAccountId = EntityId.of(10L);
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, autoRenewAccountId);
         when(entityIdService.lookup(aliasAccountId)).thenReturn(Optional.of(autoRenewAccountId));
 
@@ -172,9 +171,9 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .returns(false, Entity::getDeleted)
                 .satisfies(e -> assertThat(e.getExpirationTimestamp()).isPositive())
                 .returns(topicId.getId(), Entity::getId)
-                .returns(topicId.getEntityNum(), Entity::getNum)
-                .returns(topicId.getRealmNum(), Entity::getRealm)
-                .returns(topicId.getShardNum(), Entity::getShard)
+                .returns(topicId.getNum(), Entity::getNum)
+                .returns(topicId.getRealm(), Entity::getRealm)
+                .returns(topicId.getShard(), Entity::getShard)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
                 .returns(TOPIC, Entity::getType)));
     }

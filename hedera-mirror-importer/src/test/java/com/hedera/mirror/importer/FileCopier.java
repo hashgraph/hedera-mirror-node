@@ -18,21 +18,20 @@ package com.hedera.mirror.importer;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.function.Function;
+import lombok.CustomLog;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
-@Log4j2
+@CustomLog
 @Value
 public class FileCopier {
 
@@ -134,14 +133,13 @@ public class FileCopier {
 
                 if (streamTypeOpt.isPresent()) {
                     var streamType = streamTypeOpt.get();
-                    EntityId nodeEntityId = EntityId.of(
-                            sourceNodeDirName.substring(
-                                    streamType.getNodePrefix().length()),
-                            EntityType.ACCOUNT);
+                    var nodeAccountId = sourceNodeDirName.substring(
+                            streamType.getNodePrefix().length());
+                    EntityId nodeEntityId = EntityId.of(nodeAccountId);
 
                     var destinationNodeIdPath = networkDir.resolve(Path.of(
-                            String.valueOf(nodeEntityId.getShardNum()),
-                            String.valueOf(nodeEntityId.getEntityNum() - 3L), // Node ID
+                            String.valueOf(nodeEntityId.getShard()),
+                            String.valueOf(nodeEntityId.getNum() - 3L), // Node ID
                             streamType.getNodeIdBasedSuffix()));
 
                     FileUtils.copyDirectory(sourceNodeDir, destinationNodeIdPath.toFile());

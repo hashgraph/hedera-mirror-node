@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -61,7 +60,7 @@ class UniqueTokenDatabaseAccessorTest {
 
         assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
                         uniqueToken)
-                .returns(idFromEntityId(EntityId.of(nft.getTokenId(), EntityType.TOKEN)), UniqueToken::getTokenId)
+                .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
                 .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
                 .returns(new RichInstant(createdTimestampSecs, createdTimestampNanos), UniqueToken::getCreationTime)
                 .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
@@ -82,7 +81,7 @@ class UniqueTokenDatabaseAccessorTest {
 
     private NftId getNftKey(final Nft nft) {
         final var nftId = nft.getId();
-        final var tokenId = EntityId.of(nftId.getTokenId(), EntityType.TOKEN);
-        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getEntityNum(), nftId.getSerialNumber());
+        final var tokenId = EntityId.of(nftId.getTokenId());
+        return new NftId(tokenId.getShard(), tokenId.getRealm(), tokenId.getNum(), nftId.getSerialNumber());
     }
 }

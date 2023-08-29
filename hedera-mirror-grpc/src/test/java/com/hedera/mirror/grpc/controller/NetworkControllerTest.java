@@ -35,13 +35,13 @@ import io.grpc.StatusRuntimeException;
 import jakarta.annotation.Resource;
 import java.net.InetAddress;
 import java.time.Duration;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-@Log4j2
+@CustomLog
 class NetworkControllerTest extends GrpcIntegrationTest {
 
     private static final Duration WAIT = Duration.ofSeconds(10L);
@@ -106,7 +106,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         AddressBookEntry addressBookEntry2 = addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .build();
 
@@ -125,7 +125,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         addressBookEntry();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .setLimit(1)
                 .build();
@@ -152,7 +152,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .persist();
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
-                        .setFileNum(addressBook.getFileId().getEntityNum())
+                        .setFileNum(addressBook.getFileId().getNum())
                         .build())
                 .build();
 

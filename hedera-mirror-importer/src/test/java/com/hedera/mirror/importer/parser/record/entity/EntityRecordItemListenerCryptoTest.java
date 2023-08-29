@@ -96,6 +96,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -121,6 +122,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setEntityTransactions(true);
         entityProperties.getPersist().setItemizedTransfers(true);
         entityProperties.getPersist().setTransactionBytes(false);
+        entityProperties.getPersist().setTransactionRecordBytes(false);
     }
 
     @AfterEach
@@ -343,14 +345,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var tokenId2 = EntityId.of(recordItemBuilder.tokenId());
         List<NftRemoveAllowance> nftRemoveAllowances = List.of(
                 NftRemoveAllowance.newBuilder()
-                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getEntityNum()))
-                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId1.getEntityNum()))
+                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getNum()))
+                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId1.getNum()))
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
                         .build(),
                 NftRemoveAllowance.newBuilder()
-                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getEntityNum()))
-                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId2.getEntityNum()))
+                        .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getNum()))
+                        .setTokenId(TokenID.newBuilder().setTokenNum(tokenId2.getNum()))
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
                         .addSerialNumbers(2L)
@@ -1101,7 +1103,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        var tokenId = EntityId.of(1020L, EntityType.TOKEN);
+        var tokenId = EntityId.of(1020L);
         long amount = 100L;
 
         TransactionRecord record = buildTransactionRecord(
@@ -1113,7 +1115,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         r.getTransferListBuilder().addAccountAmounts(accountAmount);
                     }
                     r.addTokenTransferLists(TokenTransferList.newBuilder()
-                            .setToken(TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()))
+                            .setToken(TokenID.newBuilder().setTokenNum(tokenId.getNum()))
                             .addTransfers(AccountAmount.newBuilder()
                                     .setAccountID(accountId1)
                                     .setAmount(amount)));
@@ -1471,6 +1473,24 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void persistTransactionRecordBytes(boolean persist) {
+        // given
+        entityProperties.getPersist().setTransactionRecordBytes(persist);
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        var transactionRecordBytes = persist ? recordItem.getRecordBytes() : null;
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getTransactionRecordBytes)
+                .containsOnly(transactionRecordBytes);
     }
 
     @SuppressWarnings("deprecation")

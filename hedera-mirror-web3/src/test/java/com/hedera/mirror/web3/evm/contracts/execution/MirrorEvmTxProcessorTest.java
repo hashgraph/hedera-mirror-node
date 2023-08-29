@@ -32,6 +32,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
+import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -41,7 +42,10 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.contracts.execution.LivePricesSource;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -121,6 +125,9 @@ class MirrorEvmTxProcessorTest {
     private PrecompileMapper precompileMapper;
 
     @Mock
+    private BasicHbarCentExchange basicHbarCentExchange;
+
+    @Mock
     private AbstractAutoCreationLogic autoCreationLogic;
 
     @Mock
@@ -128,6 +135,15 @@ class MirrorEvmTxProcessorTest {
 
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
+
+    @Mock
+    private PrngLogic prngLogic;
+
+    @Mock
+    private LivePricesSource livePricesSource;
+
+    @Mock
+    private PrecompilePricingUtils pricingUtils;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
@@ -155,7 +171,11 @@ class MirrorEvmTxProcessorTest {
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evmProperties,
-                        precompileMapper),
+                        precompileMapper,
+                        basicHbarCentExchange,
+                        prngLogic,
+                        livePricesSource,
+                        pricingUtils),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

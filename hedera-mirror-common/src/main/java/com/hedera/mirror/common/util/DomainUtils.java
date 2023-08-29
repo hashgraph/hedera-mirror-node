@@ -16,11 +16,10 @@
 
 package com.hedera.mirror.common.util;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.exception.ProtobufException;
@@ -51,6 +50,11 @@ public class DomainUtils {
     public static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final char NULL_CHARACTER = (char) 0;
     private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD
+
+    static {
+        // Ensure it's eagerly instantiated since it is used for the conversion of JSONB data into domain objects.
+        ObjectToStringSerializer.init();
+    }
 
     /**
      * Convert bytes to hex.
@@ -261,7 +265,7 @@ public class DomainUtils {
         try {
             if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LENGTH) {
                 ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
-                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
+                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong());
             }
         } catch (InvalidEntityException ex) {
             log.debug("Failed to parse shard.realm.num form evm address into EntityId", ex);
@@ -286,7 +290,7 @@ public class DomainUtils {
             throw new InvalidEntityException("Empty contractId");
         }
 
-        return toEvmAddress(contractId.getShardNum().intValue(), contractId.getRealmNum(), contractId.getEntityNum());
+        return toEvmAddress(Long.valueOf(contractId.getShard()).intValue(), contractId.getRealm(), contractId.getNum());
     }
 
     private static byte[] toEvmAddress(int shard, long realm, long num) {

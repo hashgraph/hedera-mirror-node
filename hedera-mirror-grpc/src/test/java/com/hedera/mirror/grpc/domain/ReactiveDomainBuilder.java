@@ -29,15 +29,15 @@ import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Log4j2
+@CustomLog
 @Named("grpcDomainBuilder")
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -84,7 +84,7 @@ public class ReactiveDomainBuilder {
                 .topicMessage()
                 .customize(e -> e.consensusTimestamp(now + sequenceNumber)
                         .sequenceNumber(++sequenceNumber)
-                        .topicId(EntityId.of(100L, EntityType.TOPIC)))
+                        .topicId(EntityId.of(100L)))
                 .customize(customizer)
                 .get();
         return insert(topicMessage).thenReturn(topicMessage);

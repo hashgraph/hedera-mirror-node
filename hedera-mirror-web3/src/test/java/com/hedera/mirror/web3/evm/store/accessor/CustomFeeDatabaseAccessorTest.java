@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
@@ -53,11 +52,11 @@ class CustomFeeDatabaseAccessorTest {
 
     private final long tokenId = 123L;
 
-    private final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+    private final EntityId collectorId = EntityId.of(1L, 2L, 3L);
 
     private final Address collectorAddress = toAddress(collectorId);
 
-    private final EntityId denominatingTokenId = new EntityId(11L, 12L, 13L, EntityType.TOKEN);
+    private final EntityId denominatingTokenId = EntityId.of(11L, 12L, 13L);
 
     private CustomFee customFee;
 

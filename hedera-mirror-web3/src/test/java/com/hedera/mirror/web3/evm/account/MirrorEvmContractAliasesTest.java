@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -54,7 +53,7 @@ class MirrorEvmContractAliasesTest {
     private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
     private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
 
-    private static final EntityId entityId = new EntityId(0L, 0L, 3L, EntityType.TOKEN);
+    private static final EntityId entityId = EntityId.of(0L, 0L, 3L);
     private static final Id id = new Id(0L, 0L, 3L);
 
     @Mock

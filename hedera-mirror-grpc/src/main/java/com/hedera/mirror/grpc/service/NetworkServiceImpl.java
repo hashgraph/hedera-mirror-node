@@ -18,7 +18,6 @@ package com.hedera.mirror.grpc.service;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
@@ -32,9 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.validation.annotation.Validated;
@@ -43,7 +42,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.retry.Jitter;
 import reactor.retry.Repeat;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 @Validated
@@ -52,7 +51,7 @@ public class NetworkServiceImpl implements NetworkService {
     static final String INVALID_FILE_ID = "Not a valid address book file";
     private static final long NODE_STAKE_EMPTY_TABLE_TIMESTAMP = 0L;
     private static final Collection<EntityId> VALID_FILE_IDS =
-            Set.of(EntityId.of(0L, 0L, 101L, EntityType.FILE), EntityId.of(0L, 0L, 102L, EntityType.FILE));
+            Set.of(EntityId.of(0L, 0L, 101L), EntityId.of(0L, 0L, 102L));
 
     private final AddressBookProperties addressBookProperties;
     private final AddressBookRepository addressBookRepository;

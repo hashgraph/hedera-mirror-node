@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.EntityNotFoundException;
@@ -85,20 +84,18 @@ class NetworkServiceTest extends GrpcIntegrationTest {
 
     @Test
     void addressBookNotFound() {
-        AddressBookFilter filter = AddressBookFilter.builder()
-                .fileId(EntityId.of(102L, EntityType.FILE))
-                .build();
+        AddressBookFilter filter =
+                AddressBookFilter.builder().fileId(EntityId.of(102L)).build();
 
         assertThatThrownBy(() -> networkService.getNodes(filter))
                 .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("File 0.0.102 does not exist");
+                .hasMessage("0.0.102 does not exist");
     }
 
     @Test
     void invalidAddressBookFile() {
-        AddressBookFilter filter = AddressBookFilter.builder()
-                .fileId(EntityId.of(999L, EntityType.FILE))
-                .build();
+        AddressBookFilter filter =
+                AddressBookFilter.builder().fileId(EntityId.of(999L)).build();
 
         assertThatThrownBy(() -> networkService.getNodes(filter))
                 .isInstanceOf(IllegalArgumentException.class)

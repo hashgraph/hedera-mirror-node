@@ -42,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -171,7 +170,7 @@ class RecordItemTest {
                 .transaction(transaction)
                 .transactionRecord(transactionRecord)
                 .build();
-        var account = EntityId.of(id, EntityType.ACCOUNT);
+        var account = EntityId.of(id);
         var expected = accept
                 ? Map.of(
                         id,

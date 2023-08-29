@@ -268,9 +268,14 @@ public class AccountFeature extends AbstractFeature {
         setCryptoAllowance(spender, 0);
     }
 
-    @Then("the mirror node REST API should confirm the crypto allowance deletion")
+    @Then("the mirror node REST API should confirm the crypto allowance no longer exists")
     public void verifyCryptoAllowanceDelete() {
-        verifyMirrorAPIApprovedCryptoAllowanceResponse(0L, 0L);
+        verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
+
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = spenderAccountId.getAccountId().toString();
+        var mirrorCryptoAllowanceResponse = mirrorClient.getAccountCryptoAllowanceBySpender(owner, spender);
+        assertThat(mirrorCryptoAllowanceResponse.getAllowances()).isEmpty();
     }
 
     private void setCryptoAllowance(String accountName, long amount) {

@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -172,11 +171,12 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
             entityType = EntityType.CONTRACT;
         }
 
-        EntityId entityId = EntityIdEndec.decode(id, entityType);
+        EntityId entityId = EntityId.of(id);
         Optional<Entity> currentEntity = entityRepository.findById(entityId.getId());
         boolean exists = currentEntity.isPresent();
 
         Entity entity = currentEntity.orElseGet(entityId::toEntity);
+        entity.setType(entityType);
         boolean updated = !exists;
 
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.

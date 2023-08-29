@@ -19,7 +19,6 @@ import httpErrors from 'http-errors';
 import _ from 'lodash';
 import log4js from 'log4js';
 import * as math from 'mathjs';
-import fetch from 'node-fetch';
 import parseDuration from 'parse-duration';
 import prettyMilliseconds from 'pretty-ms';
 import querystring from 'querystring';

@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -38,7 +39,9 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -61,6 +64,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
+    private final BasicHbarCentExchange basicHbarCentExchange;
+    private final PrngLogic prngLogic;
+    private final LivePricesSource livePricesSource;
+    private final PrecompilePricingUtils pricingUtils;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -74,7 +81,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final ContractRepository contractRepository,
             final ContractStateRepository contractStateRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
-            final PrecompileMapper precompileMapper) {
+            final PrecompileMapper precompileMapper,
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final PrngLogic prngLogic,
+            final LivePricesSource livePricesSource,
+            final PrecompilePricingUtils pricingUtils) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -86,6 +97,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
+        this.basicHbarCentExchange = basicHbarCentExchange;
+        this.prngLogic = prngLogic;
+        this.livePricesSource = livePricesSource;
+        this.pricingUtils = pricingUtils;
     }
 
     @Override
@@ -128,7 +143,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evmProperties,
-                        precompileMapper),
+                        precompileMapper,
+                        basicHbarCentExchange,
+                        prngLogic,
+                        livePricesSource,
+                        pricingUtils),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

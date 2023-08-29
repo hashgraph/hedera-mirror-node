@@ -54,6 +54,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -244,10 +245,12 @@ class StoreImplTest {
 
     @Test
     void updateTokenRelationship() {
-        final var tokenRel = new TokenRelationship(
+        var tokenRel = new TokenRelationship(
                 new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
+        // tokenRel is now persisted in store
+        tokenRel = tokenRel.setNotYetPersisted(false);
         assertEquals(
                 tokenRel,
                 subject.getTokenRelationship(
@@ -309,5 +312,20 @@ class StoreImplTest {
         final var token = new com.hedera.services.store.models.Token(TOKEN_ID);
         assertThatThrownBy(() -> subject.loadUniqueTokens(token, serials))
                 .isInstanceOf(InvalidTransactionException.class);
+    }
+
+    @Test
+    void hasApprovedForAll() {
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(accountModel.getId()).thenReturn(12L);
+        when(accountModel.getNum()).thenReturn(12L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
+        when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
+                .thenReturn(associationsCount);
+        var accountId = EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS);
+        var tokenId = EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS);
+        assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();
+        assertThat(subject.hasApprovedForAll(ACCOUNT_ADDRESS, accountId, tokenId))
+                .isFalse();
     }
 }

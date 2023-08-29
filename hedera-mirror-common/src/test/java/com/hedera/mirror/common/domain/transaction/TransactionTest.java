@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -50,6 +49,7 @@ class TransactionTest {
                       "scheduled": false,
                       "transaction_bytes": "FxgZ",
                       "transaction_hash": "Ghsc",
+                      "transaction_record_bytes": "HR4f",
                       "type": 29,
                       "valid_duration_seconds": 30,
                       "valid_start_ns": 31
@@ -72,7 +72,7 @@ class TransactionTest {
         var domainBuilder = new DomainBuilder();
         var itemizedTransfer1 = ItemizedTransfer.builder()
                 .amount(domainBuilder.id())
-                .entityId(domainBuilder.entityId(EntityType.ACCOUNT))
+                .entityId(domainBuilder.entityId())
                 .isApproval(false)
                 .build();
         transaction.addItemizedTransfer(itemizedTransfer1);
@@ -80,7 +80,7 @@ class TransactionTest {
 
         var itemizedTransfer2 = ItemizedTransfer.builder()
                 .amount(domainBuilder.id())
-                .entityId(domainBuilder.entityId(EntityType.ACCOUNT))
+                .entityId(domainBuilder.entityId())
                 .isApproval(true)
                 .build();
         transaction.addItemizedTransfer(itemizedTransfer2);
@@ -108,32 +108,32 @@ class TransactionTest {
         var transaction = getTransaction();
         var itemizedTransfer1 = ItemizedTransfer.builder()
                 .amount(-200L)
-                .entityId(EntityId.of(50, EntityType.ACCOUNT))
+                .entityId(EntityId.of(50))
                 .isApproval(true)
                 .build();
         transaction.addItemizedTransfer(itemizedTransfer1);
 
         var itemizedTransfer2 = ItemizedTransfer.builder()
                 .amount(200L)
-                .entityId(EntityId.of(51, EntityType.ACCOUNT))
+                .entityId(EntityId.of(51))
                 .isApproval(false)
                 .build();
         transaction.addItemizedTransfer(itemizedTransfer2);
 
         var nftTransfer1 = new NftTransfer();
         nftTransfer1.setIsApproval(false);
-        nftTransfer1.setReceiverAccountId(EntityId.of(10L, EntityType.ACCOUNT));
-        nftTransfer1.setSenderAccountId(EntityId.of(11L, EntityType.ACCOUNT));
+        nftTransfer1.setReceiverAccountId(EntityId.of(10L));
+        nftTransfer1.setSenderAccountId(EntityId.of(11L));
         nftTransfer1.setSerialNumber(12L);
-        nftTransfer1.setTokenId(EntityId.of(13L, EntityType.TOKEN));
+        nftTransfer1.setTokenId(EntityId.of(13L));
         transaction.addNftTransfer(nftTransfer1);
 
         NftTransfer nftTransfer2 = new NftTransfer();
         nftTransfer2.setIsApproval(true);
-        nftTransfer2.setReceiverAccountId(EntityId.of(14L, EntityType.ACCOUNT));
-        nftTransfer2.setSenderAccountId(EntityId.of(15L, EntityType.ACCOUNT));
+        nftTransfer2.setReceiverAccountId(EntityId.of(14L));
+        nftTransfer2.setSenderAccountId(EntityId.of(15L));
         nftTransfer2.setSerialNumber(16L);
-        nftTransfer2.setTokenId(EntityId.of(17L, EntityType.TOKEN));
+        nftTransfer2.setTokenId(EntityId.of(17L));
         transaction.addNftTransfer(nftTransfer2);
 
         // when
@@ -162,20 +162,21 @@ class TransactionTest {
         var transaction = new Transaction();
         transaction.setConsensusTimestamp(1684791152000000000L);
         transaction.setChargedTxFee(1L);
-        transaction.setEntityId(EntityId.of(2L, EntityType.ACCOUNT));
+        transaction.setEntityId(EntityId.of(2L));
         transaction.setErrata(ErrataType.INSERT);
         transaction.setIndex(4);
         transaction.setInitialBalance(5L);
         transaction.setMemo(new byte[] {6, 7, 8});
         transaction.setMaxFee(9L);
-        transaction.setNodeAccountId(EntityId.of(3L, EntityType.ACCOUNT));
+        transaction.setNodeAccountId(EntityId.of(3L));
         transaction.setNonce(19);
         transaction.setParentConsensusTimestamp(20L);
-        transaction.setPayerAccountId(EntityId.of(21L, EntityType.ACCOUNT));
+        transaction.setPayerAccountId(EntityId.of(21L));
         transaction.setResult(22);
         transaction.setScheduled(false);
         transaction.setTransactionBytes(new byte[] {23, 24, 25});
         transaction.setTransactionHash(new byte[] {26, 27, 28});
+        transaction.setTransactionRecordBytes(new byte[] {29, 30, 31});
         transaction.setType(29);
         transaction.setValidDurationSeconds(30L);
         transaction.setValidStartNs(31L);

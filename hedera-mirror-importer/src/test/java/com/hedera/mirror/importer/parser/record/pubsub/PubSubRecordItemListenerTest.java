@@ -31,7 +31,6 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -127,7 +126,7 @@ class PubSubRecordItemListenerTest {
                 TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes())
                         .getBodyBytes()),
                 SignatureMap.getDefaultInstance());
-        var entityId = EntityId.of(10, EntityType.ACCOUNT);
+        var entityId = EntityId.of(10);
         var transactionType = recordItem.getTransactionType();
         var transactionRecord = recordItem.getTransactionRecord();
         return new PubSubMessage(
