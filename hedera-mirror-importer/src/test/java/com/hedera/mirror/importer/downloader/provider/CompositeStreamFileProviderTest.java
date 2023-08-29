@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
@@ -160,8 +161,8 @@ class CompositeStreamFileProviderTest {
 
     @Test
     void list() {
-        when(streamFileProvider1.list(NODE, FILENAME)).thenReturn(Flux.just(DATA));
-        StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.list(NODE, FILENAME))
+        when(streamFileProvider1.list(NODE, FILENAME, USE_DEFAULT_BATCH_SIZE)).thenReturn(Flux.just(DATA));
+        StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.list(NODE, FILENAME, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(WAIT)
                 .expectNext(DATA)
                 .expectComplete()
@@ -170,9 +171,10 @@ class CompositeStreamFileProviderTest {
 
     @Test
     void listRecovers() {
-        when(streamFileProvider1.list(NODE, FILENAME)).thenReturn(Flux.error(new IllegalStateException("error")));
-        when(streamFileProvider2.list(NODE, FILENAME)).thenReturn(Flux.just(DATA));
-        StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.list(NODE, FILENAME))
+        when(streamFileProvider1.list(NODE, FILENAME, USE_DEFAULT_BATCH_SIZE))
+                .thenReturn(Flux.error(new IllegalStateException("error")));
+        when(streamFileProvider2.list(NODE, FILENAME, USE_DEFAULT_BATCH_SIZE)).thenReturn(Flux.just(DATA));
+        StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.list(NODE, FILENAME, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(WAIT)
                 .expectNext(DATA)
                 .expectComplete()

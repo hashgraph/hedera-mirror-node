@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.downloader.balance;
 
+import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
+
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
@@ -27,17 +29,21 @@ import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import lombok.CustomLog;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.scheduling.annotation.Scheduled;
 
-@CustomLog
 @Named
 public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, AccountBalance> {
 
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final AtomicBoolean accountBalanceFileExists = new AtomicBoolean(false);
+
     @SuppressWarnings("java:S107")
     public AccountBalancesDownloader(
+            AccountBalanceFileRepository accountBalanceFileRepository,
             ConsensusNodeService consensusNodeService,
             BalanceDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry,
@@ -57,6 +63,7 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
                 streamFileNotifier,
                 streamFileProvider,
                 streamFileReader);
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
     }
 
     @Override
@@ -64,5 +71,31 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
     @Scheduled(fixedDelayString = "#{@balanceDownloaderProperties.getFrequency().toMillis()}")
     public void download() {
         downloadNextBatch();
+    }
+
+    @Override
+    protected int getBatchSize() {
+        // when account balances downloader is disabled, override batch size to 1 so at most one account balance file
+        // gets downloaded
+        return downloaderProperties.isEnabled() ? USE_DEFAULT_BATCH_SIZE : 1;
+    }
+
+    @Override
+    protected boolean shouldDownload() {
+        if (downloaderProperties.isEnabled()) {
+            return true;
+        }
+
+        if (accountBalanceFileExists.get()) {
+            return false;
+        }
+
+        if (accountBalanceFileRepository.findLatest().isPresent() || verifiedCount.get() > 0) {
+            log.info("Disable downloader since there is at least one account balance file parsed or verified");
+            accountBalanceFileExists.set(true);
+            return false;
+        }
+
+        return true;
     }
 }

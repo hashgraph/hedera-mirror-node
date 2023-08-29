@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
+import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
@@ -64,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -98,10 +100,13 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
+    protected final AtomicLong verifiedCount = new AtomicLong(0);
+
     private final ConsensusNodeService consensusNodeService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     private final MirrorProperties mirrorProperties;
     private final StreamType streamType;
+
     // Metrics
     private final MeterRegistry meterRegistry;
     private final Map<Long, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
@@ -163,7 +168,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     public abstract void download();
 
     protected void downloadNextBatch() {
-        if (!downloaderProperties.isEnabled()) {
+        if (!shouldDownload()) {
             return;
         }
 
@@ -189,6 +194,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         }
     }
 
+    protected int getBatchSize() {
+        return USE_DEFAULT_BATCH_SIZE;
+    }
+
     /**
      * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
      *
@@ -208,6 +217,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         // The custom comparator ensures there is no duplicate key-value pairs and randomly sorts the values associated
         // with the same key
         return TreeMultimap.create(Ordering.natural(), STREAM_FILE_SIGNATURE_COMPARATOR);
+    }
+
+    protected boolean shouldDownload() {
+        return downloaderProperties.isEnabled();
     }
 
     /**
@@ -234,7 +247,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 try {
                     var count = streamFileProvider
-                            .list(node, startAfterFilename)
+                            .list(node, startAfterFilename, getBatchSize())
                             .doOnNext(s -> {
                                 try {
                                     var streamFileSignature = signatureFileReader.read(s);
@@ -444,6 +457,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         copy.setBytes(null);
         copy.setItems(null);
         lastStreamFile.set(Optional.of(copy));
+
+        verifiedCount.getAndIncrement();
     }
 
     /**

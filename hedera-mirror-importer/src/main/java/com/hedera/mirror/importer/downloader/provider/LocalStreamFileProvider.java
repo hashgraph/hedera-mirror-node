@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
+import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.domain.StreamFilename.FileType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.FileOperationException;
@@ -33,41 +34,38 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @CustomLog
-@RequiredArgsConstructor
-public class LocalStreamFileProvider implements StreamFileProvider {
+public class LocalStreamFileProvider extends AbstractStreamFileProvider {
 
     static final String STREAMS = "streams";
 
-    private final CommonDownloaderProperties commonDownloaderProperties;
+    public LocalStreamFileProvider(CommonDownloaderProperties properties) {
+        super(properties);
+    }
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath =
-                commonDownloaderProperties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        var basePath = properties.getMirrorProperties().getDataPath().resolve(STREAMS);
         return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
-                .timeout(commonDownloaderProperties.getTimeout())
+                .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
-        // Number of items we plan do download in a single batch times two for file plus signature.
-        var batchSize = commonDownloaderProperties.getBatchSize() * 2;
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename, int batchSize) {
+        int listBatchSize = getListBatchSize(batchSize);
         var startAfter = lastFilename.getFilenameAfter();
         var streamType = lastFilename.getStreamType();
 
-        var startingPathType = commonDownloaderProperties.getPathType();
-        var basePath =
-                commonDownloaderProperties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        var startingPathType = properties.getPathType();
+        var basePath = properties.getMirrorProperties().getDataPath().resolve(STREAMS);
         var prefixPathRef = new AtomicReference<>(getPrefixPath(startingPathType, node, streamType));
 
         return Mono.fromSupplier(() -> getDirectory(basePath, prefixPathRef.get(), lastFilename))
-                .timeout(commonDownloaderProperties.getTimeout())
+                .timeout(properties.getTimeout())
                 .flatMapIterable(dir -> Arrays.asList(dir.listFiles(f -> matches(startAfter, f))))
                 .switchIfEmpty(Flux.defer(() -> {
                     // Since local FS access is fast and cheap (unlike S3), no refresh interval, state nor
@@ -83,10 +81,11 @@ public class LocalStreamFileProvider implements StreamFileProvider {
                     return Flux.empty();
                 }))
                 .sort()
-                .take(batchSize)
-                .map(file -> StreamFilename.from(prefixPathRef.get().toString(), file.getName(), File.separator))
+                .take(listBatchSize)
+                .map(file -> toStreamFilename(prefixPathRef.get().toString(), file.getName()))
+                .filter(s -> s != EPOCH && s.getFileType() == FileType.SIGNATURE)
                 .map(streamFilename -> StreamFileData.from(basePath, streamFilename))
-                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
+                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", listBatchSize, startAfter));
     }
 
     Path getPrefixPath(PathType pathType, ConsensusNode node, StreamType streamType) {
@@ -94,9 +93,8 @@ public class LocalStreamFileProvider implements StreamFileProvider {
             case ACCOUNT_ID, AUTO -> Path.of(
                     streamType.getPath(), streamType.getNodePrefix() + node.getNodeAccountId());
             case NODE_ID -> Path.of(
-                    commonDownloaderProperties.getMirrorProperties().getNetwork(),
-                    String.valueOf(
-                            commonDownloaderProperties.getMirrorProperties().getShard()),
+                    properties.getMirrorProperties().getNetwork(),
+                    String.valueOf(properties.getMirrorProperties().getShard()),
                     String.valueOf(node.getNodeId()),
                     streamType.getNodeIdBasedSuffix());
         };
@@ -135,6 +133,15 @@ public class LocalStreamFileProvider implements StreamFileProvider {
             return false;
         }
 
-        return name.endsWith(SIGNATURE_SUFFIX);
+        return true;
+    }
+
+    private StreamFilename toStreamFilename(String path, String filename) {
+        try {
+            return StreamFilename.from(path, filename, File.separator);
+        } catch (Exception e) {
+            log.warn("Unable to parse stream filename for {}", filename, e);
+            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
+        }
     }
 }

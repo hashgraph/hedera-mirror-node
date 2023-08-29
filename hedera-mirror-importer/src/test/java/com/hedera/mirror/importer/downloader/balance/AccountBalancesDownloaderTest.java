@@ -31,14 +31,19 @@ import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanceFile> {
+
+    @Mock
+    private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
@@ -51,6 +56,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
                 new BalanceParserProperties(), new AccountBalanceLineParserV1(mirrorProperties));
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         return new AccountBalancesDownloader(
+                accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
                 meterRegistry,
@@ -88,6 +94,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         downloader = new AccountBalancesDownloader(
+                accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
                 meterRegistry,

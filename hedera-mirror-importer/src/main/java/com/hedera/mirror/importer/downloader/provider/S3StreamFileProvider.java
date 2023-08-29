@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -44,21 +43,25 @@ import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
-@RequiredArgsConstructor
-public final class S3StreamFileProvider implements StreamFileProvider {
+public final class S3StreamFileProvider extends AbstractStreamFileProvider {
 
     public static final String SEPARATOR = "/";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
-    private final CommonDownloaderProperties commonDownloaderProperties;
+
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
+
+    public S3StreamFileProvider(CommonDownloaderProperties properties, S3AsyncClient s3Client) {
+        super(properties);
+        this.s3Client = s3Client;
+    }
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
 
         var s3Key = streamFilename.getFilePath();
         var request = GetObjectRequest.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
+                .bucket(properties.getBucketName())
                 .key(s3Key)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
@@ -67,32 +70,30 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         return Mono.fromFuture(responseFuture)
                 .map(r -> new StreamFileData(
                         streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
-                .timeout(commonDownloaderProperties.getTimeout())
+                .timeout(properties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
-        // Number of items we plan do download in a single batch times 2 for file + sig.
-        int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename, int batchSize) {
         var key = new PathKey(node, lastFilename.getStreamType());
+        int listBatchSize = getListBatchSize(batchSize);
         var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
         var prefix = getPrefix(key, pathResult.getPathType());
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
+                .bucket(properties.getBucketName())
                 .prefix(prefix)
                 .delimiter(SEPARATOR)
                 .startAfter(startAfter)
-                .maxKeys(batchSize)
+                .maxKeys(listBatchSize)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
         return Mono.fromFuture(s3Client.listObjectsV2(listRequest))
-                .timeout(commonDownloaderProperties.getTimeout())
+                .timeout(properties.getTimeout())
                 .doOnNext(l -> {
                     pathResult.update(!l.contents().isEmpty());
                     log.debug("Returned {} s3 objects", l.contents().size());
@@ -103,10 +104,11 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
-                        batchSize,
-                        commonDownloaderProperties.getBucketName(),
+                        listBatchSize,
+                        properties.getBucketName(),
                         startAfter))
-                .switchIfEmpty(Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename) : Flux.empty()));
+                .switchIfEmpty(
+                        Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename, batchSize) : Flux.empty()));
     }
 
     private String getAccountIdPrefix(PathKey key) {
@@ -116,8 +118,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     private String getNodeIdPrefix(PathKey key) {
-        var network = commonDownloaderProperties.getMirrorProperties().getNetwork();
-        var shard = commonDownloaderProperties.getMirrorProperties().getShard();
+        var network = properties.getMirrorProperties().getNetwork();
+        var shard = properties.getMirrorProperties().getShard();
         var streamFolder = key.type().getNodeIdBasedSuffix();
         return TEMPLATE_NODE_ID_PREFIX.formatted(network, shard, key.node().getNodeId(), streamFolder);
     }
@@ -148,11 +150,11 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         @Nullable
         private volatile Instant expiration;
 
-        private volatile PathType pathType = commonDownloaderProperties.getPathType();
+        private volatile PathType pathType = properties.getPathType();
 
         private PathResult() {
-            if (commonDownloaderProperties.getPathType() == PathType.AUTO) {
-                this.expiration = Instant.now().plus(commonDownloaderProperties.getPathRefreshInterval());
+            if (properties.getPathType() == PathType.AUTO) {
+                this.expiration = Instant.now().plus(properties.getPathRefreshInterval());
                 this.pathType = PathType.ACCOUNT_ID;
             }
         }
@@ -178,7 +180,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             // If ACCOUNT_ID auto mode interval has expired, try NODE_ID if no files were found
             var now = Instant.now();
             if (now.isAfter(expiration)) {
-                expiration = now.plus(commonDownloaderProperties.getPathRefreshInterval());
+                expiration = now.plus(properties.getPathRefreshInterval());
                 if (!found) {
                     pathType = PathType.NODE_ID;
                 }

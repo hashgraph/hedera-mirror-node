@@ -62,6 +62,8 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
 
     private Long nodeId;
 
+    private boolean synthetic;
+
     private int timeOffset;
 
     @Override

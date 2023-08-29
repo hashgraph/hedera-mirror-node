@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface RecordFileRepository extends StreamFileRepository<RecordFile, Long>, RetentionRepository {
 
+    @Query(value = "select * from record_file order by consensus_end limit 1", nativeQuery = true)
+    Optional<RecordFile> findFirst();
+
     @Override
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();

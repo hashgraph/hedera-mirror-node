@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
+
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
@@ -39,7 +41,6 @@ import reactor.test.StepVerifier;
  */
 class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
-    private FileCopier nodeIdFileCopier;
     private Map<ConsensusNode, NodeInfo> nodeInfoMap;
 
     @Override
@@ -51,7 +52,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
         var nodeIdFromPath = Path.of("data", "hip679", "provider-auto", "demo");
         var network = properties.getMirrorProperties().getNetwork();
-        nodeIdFileCopier = FileCopier.create(
+        var nodeIdFileCopier = FileCopier.create(
                         TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
                 .to(properties.getBucketName(), network);
 
@@ -118,7 +119,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         // Find files in legacy node account ID bucket structure the first time
         var accountIdData1 = streamFileData(node, accountIdFileCopier, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var accountIdData2 = streamFileData(node, accountIdFileCopier, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(accountIdData1)
                 .expectNext(accountIdData2)
@@ -134,7 +135,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
         var nodeIdData2 = streamFileData(node, nodeIdFileCopier, "2022-12-25T09_14_28.278703292Z.rcd_sig");
         var lastAccountIdFilename = accountIdData2.getStreamFilename();
 
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastAccountIdFilename))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastAccountIdFilename, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(nodeIdData1)
                 .expectNext(nodeIdData2)

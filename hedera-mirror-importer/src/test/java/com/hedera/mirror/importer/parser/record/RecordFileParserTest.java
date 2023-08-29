@@ -17,7 +17,9 @@
 package com.hedera.mirror.importer.parser.record;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -57,12 +59,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Flux;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, RecordFileParser> {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Mock
     private RecordFileRepository recordFileRepository;
@@ -105,6 +111,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.all());
         return new RecordFileParser(
+                applicationEventPublisher,
                 new SimpleMeterRegistry(),
                 parserProperties,
                 recordFileRepository,

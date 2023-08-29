@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
+import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
@@ -39,10 +40,10 @@ import reactor.test.StepVerifier;
 
 abstract class AbstractStreamFileProviderTest {
 
+    protected Path bucketRootPath;
+
     @TempDir
     protected Path dataPath;
-
-    protected Path bucketRootPath;
 
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties properties;
@@ -105,6 +106,22 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         var fileCopier = getFileCopier(node);
         list(fileCopier, node);
+    }
+
+    @Test
+    void listNonDefaultBatchSize() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        fileCopier.copy();
+        streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd.gz");
+        var sig1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
+        streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, 1))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(sig1)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -177,7 +194,7 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
                 .expectNext(data2)
@@ -189,7 +206,7 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var lastFilename = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data)
                 .expectComplete()
@@ -199,7 +216,7 @@ abstract class AbstractStreamFileProviderTest {
     protected final void listNotFound(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
         var lastFilename = StreamFilename.from("2100-01-01T01_01_01.000000001Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0)
                 .expectComplete()
@@ -209,7 +226,7 @@ abstract class AbstractStreamFileProviderTest {
     protected final void listError(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
         dataPath.toFile().setExecutable(false);
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectError(RuntimeException.class)
                 .verify(Duration.ofSeconds(10L));
@@ -225,7 +242,7 @@ abstract class AbstractStreamFileProviderTest {
                 .createNewFile();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, USE_DEFAULT_BATCH_SIZE))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
                 .expectNext(data2)
