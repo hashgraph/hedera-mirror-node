@@ -237,7 +237,7 @@ class MirrorHTSPrecompiledContractTest {
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
-        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.FAIL_INVALID));
+        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_FEE_SUBMITTED));
         assertThat(expectedResult).isEqualTo(precompileResult);
     }
 

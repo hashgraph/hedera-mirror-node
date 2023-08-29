@@ -64,7 +64,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var inputData = frame.getInputData();
         final var wrapper = decodeTokenAllowance(inputData);
         final var allowances = updater.tokenAccessor()

@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TREASURY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -73,11 +74,16 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         // the lower timestamp is the consensus timestamp of the previous NodeStakeUpdateTransaction
         long entityStakeLowerTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 20L;
         var account800 = domainBuilder
-                .entity()
-                .customize(e ->
-                        e.id(STAKING_REWARD_ACCOUNT).num(STAKING_REWARD_ACCOUNT).stakedNodeId(-1L))
+                .entity(STAKING_REWARD_ACCOUNT, domainBuilder.timestamp())
                 .persist();
         var entityStake800 = fromEntity(account800)
+                .customize(es -> es.endStakePeriod(epochDay - 1)
+                        .pendingReward(0L)
+                        .stakeTotalStart(0L)
+                        .timestampRange(Range.atLeast(entityStakeLowerTimestamp)))
+                .persist();
+        var treasury = domainBuilder.entity(TREASURY, domainBuilder.timestamp()).persist();
+        var entityStakeTreasury = fromEntity(treasury)
                 .customize(es -> es.endStakePeriod(epochDay - 1)
                         .pendingReward(0L)
                         .stakeTotalStart(0L)
@@ -131,14 +137,14 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         long account3Balance = 300 * TINYBARS_IN_ONE_HBAR;
         long accountId4 = domainBuilder.id();
 
-        // account balance file
-        domainBuilder
-                .accountBalanceFile()
-                .customize(abf -> abf.consensusTimestamp(balanceTimestamp))
-                .persist();
+        // account balance
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new Id(balanceTimestamp, account800.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(balanceTimestamp, treasury.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -154,7 +160,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                 .persist();
 
         long creditAmount = 50 * TINYBARS_IN_ONE_HBAR;
-        // crypto transfers right after the account balance file and before the node stake update
+        // crypto transfers right after the account balance snapshot timestamp and before the node stake update
         persistCryptoTransfer(-2 * creditAmount, accountId4, balanceTimestamp + 1);
         persistCryptoTransfer(creditAmount, account2.getId(), balanceTimestamp + 1);
         persistCryptoTransfer(creditAmount, account3.getId(), balanceTimestamp + 1);
@@ -188,6 +194,11 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                         .stakeTotalStart(0L)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
                 .get();
+        var expectedEntityStakeTreasury = fromEntity(treasury)
+                .customize(es -> es.endStakePeriod(endStakePeriod)
+                        .stakeTotalStart(0L)
+                        .timestampRange(Range.atLeast(nodeStakeTimestamp)))
+                .get();
 
         // when
         // The staking period epochDay just ended
@@ -211,10 +222,13 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                                 expectedEntityStake1,
                                 expectedEntityStake2,
                                 expectedEntityStake3,
-                                expectedEntityStake800));
+                                expectedEntityStake800,
+                                expectedEntityStakeTreasury));
         entityStake1.setTimestampUpper(nodeStakeTimestamp);
         entityStake800.setTimestampUpper(nodeStakeTimestamp);
-        assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrder(entityStake1, entityStake800);
+        entityStakeTreasury.setTimestampUpper(nodeStakeTimestamp);
+        assertThat(findHistory(EntityStake.class))
+                .containsExactlyInAnyOrder(entityStake1, entityStake800, entityStakeTreasury);
     }
 
     @Test
@@ -231,25 +245,28 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         // for some reason, when the NodeStakeUpdate transaction for end period epochDay is processed, there should be
         // entity stake calculation done for two periods, epochDay - 1 and epochDay
         long balanceTimestamp = secondLastNodeStakeTimestamp - 2000L;
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(STAKING_REWARD_ACCOUNT)
-                        .num(STAKING_REWARD_ACCOUNT)
-                        .timestampRange(Range.atLeast(balanceTimestamp - 5000)))
-                .persist();
-        var entityStake = domainBuilder
+        domainBuilder.entity(STAKING_REWARD_ACCOUNT, balanceTimestamp - 5000).persist();
+        var entityStake800 = domainBuilder
                 .entityStake()
                 .customize(e -> e.endStakePeriod(epochDay - 2)
                         .id(STAKING_REWARD_ACCOUNT)
                         .timestampRange(Range.atLeast(secondLastNodeStakeTimestamp)))
                 .persist();
-        domainBuilder
-                .accountBalanceFile()
-                .customize(abf -> abf.consensusTimestamp(balanceTimestamp))
+        domainBuilder.entity(TREASURY, balanceTimestamp - 6000).persist();
+        var entityStakeTreasury = domainBuilder
+                .entityStake()
+                .customize(e -> e.endStakePeriod(epochDay - 2)
+                        .id(TREASURY)
+                        .timestampRange(Range.atLeast(secondLastNodeStakeTimestamp)))
                 .persist();
+        // account balance
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(STAKING_REWARD_ACCOUNT))))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(TREASURY))))
                 .persist();
         domainBuilder
                 .nodeStake()
@@ -273,21 +290,33 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         persistRecordItem(recordItem);
 
         // then
-        var expectedCurrent = entityStake.toBuilder()
+        var expectedEntityStake800 = entityStake800.toBuilder()
+                .endStakePeriod(epochDay)
+                .timestampRange(Range.atLeast(nodeStakeTimestamp))
+                .build();
+        var expectedEntityStakeTreasury = entityStakeTreasury.toBuilder()
                 .endStakePeriod(epochDay)
                 .timestampRange(Range.atLeast(nodeStakeTimestamp))
                 .build();
         var expectedHistory = List.of(
-                entityStake.toBuilder()
+                entityStake800.toBuilder()
                         .timestampRange(Range.closedOpen(secondLastNodeStakeTimestamp, lastNodeStakeTimestamp))
                         .build(),
-                entityStake.toBuilder()
+                entityStake800.toBuilder()
+                        .endStakePeriod(epochDay - 1)
+                        .timestampRange(Range.closedOpen(lastNodeStakeTimestamp, nodeStakeTimestamp))
+                        .build(),
+                entityStakeTreasury.toBuilder()
+                        .timestampRange(Range.closedOpen(secondLastNodeStakeTimestamp, lastNodeStakeTimestamp))
+                        .build(),
+                entityStakeTreasury.toBuilder()
                         .endStakePeriod(epochDay - 1)
                         .timestampRange(Range.closedOpen(lastNodeStakeTimestamp, nodeStakeTimestamp))
                         .build());
         await().atMost(Durations.FIVE_SECONDS)
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .untilAsserted(() -> assertThat(entityStakeRepository.findAll()).containsExactly(expectedCurrent));
+                .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
+                        .containsExactlyInAnyOrder(expectedEntityStake800, expectedEntityStakeTreasury));
         assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 

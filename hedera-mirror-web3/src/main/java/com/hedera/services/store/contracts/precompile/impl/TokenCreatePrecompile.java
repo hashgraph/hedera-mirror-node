@@ -269,8 +269,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(MessageFrame frame, TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var store = updater.getStore();
         final var tokenCreateOp = transactionBody.getTokenCreation();
         final var senderAddress = unalias(frame.getSenderAddress(), updater);
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
@@ -310,8 +310,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public void handleSentHbars(final MessageFrame frame, final TransactionBody.Builder transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var updater = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater());
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var store = updater.getStore();
         final var senderAddress = unalias(frame.getSenderAddress(), updater);
         final var aliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();

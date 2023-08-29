@@ -22,17 +22,26 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import jakarta.inject.Named;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
- *  1. Remove unused methods: activeRate, activeRates, updateRates, fcActiveRates
+ *  1. Remove unused methods: activeRates, updateRates, fcActiveRates
  *  2. Use RatesAndFeesLoader for the calculations
  */
 @Named
 @RequiredArgsConstructor
 public final class BasicHbarCentExchange implements HbarCentExchange {
     private final RatesAndFeesLoader ratesAndFeesLoader;
+
+    @Override
+    public ExchangeRate activeRate(final Instant now) {
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
+        final var exchangeRates = ratesAndFeesLoader.loadExchangeRates(DomainUtils.timestampInNanosMax(timestamp));
+        return rateAt(now.getEpochSecond(), exchangeRates);
+    }
 
     @Override
     public ExchangeRate rate(final Timestamp now) {

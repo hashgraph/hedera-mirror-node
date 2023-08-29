@@ -31,7 +31,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.24.1")
+    set("protobufVersion", "3.24.2")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.0-RC9")
@@ -55,8 +55,8 @@ dependencies {
         api("com.google.guava:guava:32.1.2-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.2")
-        api("com.graphql-java:graphql-java-extended-scalars:20.2")
-        api("com.graphql-java:graphql-java-extended-validation:20.0")
+        api("com.graphql-java:graphql-java-extended-scalars:21.0")
+        api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.40.0")
         api("com.hedera.hashgraph:sdk:2.27.0")
@@ -70,7 +70,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.13.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.57.2")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.1")
+        api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.2")
         api("io.projectreactor:reactor-core-micrometer:1.0.9")
         api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -91,9 +91,9 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.5")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
-        api("org.testcontainers:junit-jupiter:1.18.3")
+        api("org.testcontainers:junit-jupiter:1.19.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.130")
+        api("software.amazon.awssdk:bom:2.20.135")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
