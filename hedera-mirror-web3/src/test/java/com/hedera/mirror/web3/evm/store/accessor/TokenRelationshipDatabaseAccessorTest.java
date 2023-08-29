@@ -87,6 +87,7 @@ class TokenRelationshipDatabaseAccessorTest {
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
                         .returns(true, TokenRelationship::isFrozen)
+                        .returns(true, TokenRelationship::hasAssociation)
                         .returns(true, TokenRelationship::isKycGranted)
                         .returns(false, TokenRelationship::isDestroyed)
                         .returns(false, TokenRelationship::isNotYetPersisted)
@@ -112,6 +113,7 @@ class TokenRelationshipDatabaseAccessorTest {
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
                         .returns(true, TokenRelationship::isFrozen)
+                        .returns(true, TokenRelationship::hasAssociation)
                         .returns(true, TokenRelationship::isKycGranted)
                         .returns(false, TokenRelationship::isDestroyed)
                         .returns(false, TokenRelationship::isNotYetPersisted)
@@ -137,6 +139,33 @@ class TokenRelationshipDatabaseAccessorTest {
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
                         .returns(true, TokenRelationship::isFrozen)
+                        .returns(true, TokenRelationship::hasAssociation)
+                        .returns(false, TokenRelationship::isKycGranted)
+                        .returns(false, TokenRelationship::isDestroyed)
+                        .returns(false, TokenRelationship::isNotYetPersisted)
+                        .returns(true, TokenRelationship::isAutomaticAssociation)
+                        .returns(0L, TokenRelationship::getBalanceChange));
+    }
+
+    @Test
+    void getWhenNotAssociated() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(false)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .kycStatus(TokenKycStatusEnum.REVOKED)
+                        .automaticAssociation(true))
+                .get();
+
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
+                        .returns(account, TokenRelationship::getAccount)
+                        .returns(token, TokenRelationship::getToken)
+                        .returns(true, TokenRelationship::isFrozen)
+                        .returns(false, TokenRelationship::hasAssociation)
                         .returns(false, TokenRelationship::isKycGranted)
                         .returns(false, TokenRelationship::isDestroyed)
                         .returns(false, TokenRelationship::isNotYetPersisted)
@@ -162,17 +191,5 @@ class TokenRelationshipDatabaseAccessorTest {
                         .returns(false, TokenRelationship::isFrozen)
                         .returns(false, TokenRelationship::isKycGranted)
                         .returns(false, TokenRelationship::isAutomaticAssociation));
-    }
-
-    @Test
-    void getEmptyIfTokenNotAssociated() {
-        final var tokenAccount =
-                domainBuilder.tokenAccount().customize(t -> t.associated(false)).get();
-
-        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
-
-        assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
-                .isEmpty();
     }
 }
