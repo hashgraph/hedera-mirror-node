@@ -3,7 +3,7 @@
 -- -------------------
 --
 create
-or replace function apply_vacuum_settings_for_partitioned_tables(parent regclass, vacuum_settings text)
+or replace function apply_vacuum_settings_for_partitioned_table(parent regclass, vacuum_settings text)
     returns void as
 $$
 declare
@@ -23,43 +23,37 @@ end;
 $$
 language plpgsql;
 
+-- Vacuum settings for partitioned tables
 
-create or replace function apply_vacuum_settings() returns void as
-$$
-begin
-    -- auto vacuum per each account balance snapshot if there are at least 10000 accounts' balance inserted
-    perform apply_vacuum_settings_for_partitioned_tables('account_balance'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=10000');
-    -- based on 12 contract actions per smart contract transaction and max 300 TPS
-    perform apply_vacuum_settings_for_partitioned_tables('contract_action'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=2160000');
-    -- base on average of 3 contract logs per smart contract transaction and max 300 TPS
-    perform apply_vacuum_settings_for_partitioned_tables('contract_log'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=540000');
-    -- max 300 smart contract transactions per second
-    perform apply_vacuum_settings_for_partitioned_tables('contract_result'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=180000');
-    -- based on average of 10 state changes per smart contract transaction and max 300 TPS
-    perform apply_vacuum_settings_for_partitioned_tables('contract_state_change'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=1800000');
-    -- autovacuum every 10 minutes at 10K TPS with average of 4 crypto transfers per transaction
-    perform apply_vacuum_settings_for_partitioned_tables('crypto_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=24000000');
-    -- adjust when ethereum transaction TPS becomes higher
-    perform apply_vacuum_settings_for_partitioned_tables('ethereum_transaction'::regclass, 'autovacuum_vacuum_insert_scale_factor=0.1');
-    -- autovacuum every 60 minutes with 2s interval record files
-    perform apply_vacuum_settings_for_partitioned_tables('record_file'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=1800');
-    -- threshold set based on recent stats so the table has about 2 to 3 automatic vacuums per day, adjust if there's more
-    -- daily staking reward claims
-    perform apply_vacuum_settings_for_partitioned_tables('staking_reward_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=4000');
-    -- autovacuum per each token balance snapshot if there are at least 10000 account token balance inserted
-    perform apply_vacuum_settings_for_partitioned_tables('token_balance'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=10000');
-    -- autovacuum every 10 minutes at 10K TPS crypto transfer transactions with two token transfer rows per transaction
-    perform apply_vacuum_settings_for_partitioned_tables('token_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=12000000');
-    -- autovacuum every 10 minutes at 10K TPS consensus submit message transactions
-    perform apply_vacuum_settings_for_partitioned_tables('topic_message'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=6000000');
-    -- autovacuum every 10 minutes at 10K TPS
-    perform apply_vacuum_settings_for_partitioned_tables('transaction'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=6000000');
-end;
-$$
-language plpgsql;
+-- auto vacuum per each account balance snapshot if there are at least 10000 accounts' balance inserted
+select apply_vacuum_settings_for_partitioned_table('account_balance'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=10000');
+-- based on 12 contract actions per smart contract transaction and max 300 TPS
+select apply_vacuum_settings_for_partitioned_table('contract_action'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=2160000');
+-- base on average of 3 contract logs per smart contract transaction and max 300 TPS
+select apply_vacuum_settings_for_partitioned_table('contract_log'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=540000');
+-- max 300 smart contract transactions per second
+select apply_vacuum_settings_for_partitioned_table('contract_result'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=180000');
+-- based on average of 10 state changes per smart contract transaction and max 300 TPS
+select apply_vacuum_settings_for_partitioned_table('contract_state_change'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=1800000');
+-- autovacuum every 10 minutes at 10K TPS with average of 4 crypto transfers per transaction
+select apply_vacuum_settings_for_partitioned_table('crypto_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=24000000');
+-- adjust when ethereum transaction TPS becomes higher
+select apply_vacuum_settings_for_partitioned_table('ethereum_transaction'::regclass, 'autovacuum_vacuum_insert_scale_factor=0.1');
+-- autovacuum every 60 minutes with 2s interval record files
+select apply_vacuum_settings_for_partitioned_table('record_file'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=1800');
+-- threshold set based on recent stats so the table has about 2 to 3 automatic vacuums per day, adjust if there's more
+-- daily staking reward claims
+select apply_vacuum_settings_for_partitioned_table('staking_reward_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=4000');
+-- autovacuum per each token balance snapshot if there are at least 10000 account token balance inserted
+select apply_vacuum_settings_for_partitioned_table('token_balance'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=10000');
+-- autovacuum every 10 minutes at 10K TPS crypto transfer transactions with two token transfer rows per transaction
+select apply_vacuum_settings_for_partitioned_table('token_transfer'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=12000000');
+-- autovacuum every 10 minutes at 10K TPS consensus submit message transactions
+select apply_vacuum_settings_for_partitioned_table('topic_message'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=6000000');
+-- autovacuum every 10 minutes at 10K TPS
+select apply_vacuum_settings_for_partitioned_table('transaction'::regclass, 'autovacuum_vacuum_insert_scale_factor=0, autovacuum_vacuum_insert_threshold=6000000');
 
-select apply_vacuum_settings_for_partitioned_tables();
-
+drop function apply_vacuum_settings_for_partitioned_table;
 -- Vacuum settings for non-partitioned tables
 
 -- auto vacuum daily with 15-minute interval account balance files
