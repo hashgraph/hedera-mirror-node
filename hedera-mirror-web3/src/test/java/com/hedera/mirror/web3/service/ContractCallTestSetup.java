@@ -174,6 +174,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261));
+    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
@@ -402,6 +403,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     protected Path ERC_ABI_PATH;
 
+    // The contract source `ExchangeRatePrecompile.sol` is in test resources
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.bin")
+    protected Path EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.json")
+    protected Path EXCHANGE_RATE_PRECOMPILE_ABI_PATH;
+
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
     protected Path ETH_CALL_CONTRACT_BYTES_PATH;
@@ -557,6 +565,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         reverterContractPersist();
         stateContractPersist();
         precompileContractPersist();
+        systemExchangeRateContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
@@ -1400,6 +1409,43 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
 
         domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+    }
+
+    private EntityId systemExchangeRateContractPersist() {
+        final var exchangeRateContractBytes =
+                functionEncodeDecoder.getContractBytes(EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH);
+        final var exchangeRateContractEntityId =
+                fromEvmAddress(EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var exchangeRteContractEvmAddress = toEvmAddress(exchangeRateContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(exchangeRateContractEntityId.getId())
+                        .num(exchangeRateContractEntityId.getNum())
+                        .evmAddress(exchangeRteContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(exchangeRateContractEntityId.getId()).runtimeBytecode(exchangeRateContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(exchangeRateContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(exchangeRateContractBytes))
+                .persist();
+        return exchangeRateContractEntityId;
     }
 
     protected void customFeePersist(final FeeCase feeCase) {

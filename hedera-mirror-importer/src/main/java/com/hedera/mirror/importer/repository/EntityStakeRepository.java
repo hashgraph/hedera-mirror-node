@@ -60,10 +60,10 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
           order by epoch_day
           limit 1
         ), balance_timestamp as (
-             select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
-             from account_balance_file abf, end_period ep
-             where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
-             order by abf.consensus_timestamp desc
+             select ab.consensus_timestamp
+             from account_balance ab, end_period ep
+             where ab.account_id = 2 and ab.consensus_timestamp <= ep.consensus_timestamp
+             order by ab.consensus_timestamp desc
              limit 1
         ), entity_state as (
           select
@@ -107,7 +107,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
           select entity_id, sum(amount) as change
           from crypto_transfer ct, balance_timestamp bt, end_period ep
           where ct.consensus_timestamp <= ep.consensus_timestamp
-            and ct.consensus_timestamp > bt.adjusted_consensus_timestamp
+            and ct.consensus_timestamp > bt.consensus_timestamp
           group by entity_id
            order by entity_id
          ) balance_change on entity_id = id,

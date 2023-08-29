@@ -58,6 +58,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     private boolean dynamicEvmVersion = true;
 
+    @Min(1)
+    private long exchangeRateGasReq = 100;
+
     @NotBlank
     private String evmVersion = EVM_VERSION;
 
@@ -192,6 +195,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     public int maxCustomFeesAllowed() {
         return maxCustomFeesAllowed;
+    }
+
+    public long exchangeRateGasReq() {
+        return exchangeRateGasReq;
     }
 
     @Getter
