@@ -466,9 +466,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
         }),
         CRYPTO_TRANSFER_TOKENS(
-                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L}),
+                "cryptoTransferExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
-                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L}),
+                "cryptoTransferExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}),
         TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
             NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
         }),

@@ -41,6 +41,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -121,6 +122,9 @@ class MirrorEvmTxProcessorTest {
     private PrecompileMapper precompileMapper;
 
     @Mock
+    private BasicHbarCentExchange basicHbarCentExchange;
+
+    @Mock
     private AbstractAutoCreationLogic autoCreationLogic;
 
     @Mock
@@ -155,7 +159,8 @@ class MirrorEvmTxProcessorTest {
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evmProperties,
-                        precompileMapper),
+                        precompileMapper,
+                        basicHbarCentExchange),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

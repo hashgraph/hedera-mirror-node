@@ -54,7 +54,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
@@ -96,7 +96,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -197,7 +196,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final var hederaTokenStore = initializeHederaTokenStore(store);
         final var impliedValidity = extrapolateValidityDetailsFromSyntheticTxn(transactionBody);
         if (impliedValidity != OK) {
-            throw new InvalidTransactionException(impliedValidity, StringUtils.EMPTY, StringUtils.EMPTY);
+            throw new InvalidTransactionException(impliedValidity, true);
         }
 
         final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
