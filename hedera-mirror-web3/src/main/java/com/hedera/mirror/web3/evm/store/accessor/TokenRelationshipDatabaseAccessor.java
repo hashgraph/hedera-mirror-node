@@ -46,7 +46,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
         return findAccount(tokenRelationshipKey.accountAddress())
                 .flatMap(account -> findToken(tokenRelationshipKey.tokenAddress())
                         .flatMap(token -> findTokenAccount(token, account)
-                                .filter(tokenAccount -> tokenAccount.getAssociated())
+                                .filter(AbstractTokenAccount::getAssociated)
                                 .map(tokenAccount -> new TokenRelationship(
                                         token,
                                         account,
