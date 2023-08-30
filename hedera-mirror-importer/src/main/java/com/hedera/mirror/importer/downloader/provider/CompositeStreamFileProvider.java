@@ -23,14 +23,11 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.StreamSourceProperties;
 import jakarta.inject.Named;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import lombok.CustomLog;
 import lombok.Value;
 import org.springframework.context.annotation.Primary;
@@ -38,6 +35,7 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
@@ -68,18 +66,11 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+    public Mono<GetObjectResponse> getAsFile(S3Object s3Object) {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
-                .flatMap(p -> p.get(s3Object, downloadBase))
+                .flatMap(p -> p.getAsFile(s3Object))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
-    }
-
-    @Override
-    public CompletableFuture<GetObjectResponseWithKey> get(
-            String s3Key, Path downloadBase, Consumer<GetObjectResponseWithKey> completionHandler) {
-        var index = new AtomicInteger(0);
-        return getProvider(index).get(s3Key, downloadBase, completionHandler);
     }
 
     @Override

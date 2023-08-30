@@ -35,6 +35,7 @@ public class CacheConfiguration {
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
     public static final String CACHE_MANAGER_TABLE_TIME_PARTITION = "cacheManagerTableTimePartition";
+    public static final String CACHE_MANAGER_STREAM_DOWNLOADER = "cacheManagerStreamDownloder";
 
     @Bean(EXPIRE_AFTER_5M)
     @Primary
@@ -55,6 +56,13 @@ public class CacheConfiguration {
     CacheManager cacheManagerTableTimePartition() {
         var caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=50,expireAfterWrite=1d");
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_STREAM_DOWNLOADER)
+    CacheManager cacheManagerStreamDownloder() {
+        var caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification("maximumSize=5000,expireAfterWrite=1m");
         return caffeineCacheManager;
     }
 }

@@ -43,6 +43,8 @@ logging:
   level:
     root: warn
     com.hedera.mirror.importer: info
+    com.hedera.mirror.importer.downloader.historical: info
+    com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider: info
     org.flywaydb.core.internal.command.DbMigrate: info
     org.springframework.cloud.kubernetes.fabric8.config: error
     #org.hibernate.type.descriptor.sql.BasicBinder: trace

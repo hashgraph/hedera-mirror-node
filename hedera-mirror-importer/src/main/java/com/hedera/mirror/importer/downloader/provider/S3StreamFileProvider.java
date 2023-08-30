@@ -25,12 +25,9 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
@@ -41,6 +38,7 @@ import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -77,7 +75,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
+    public Mono<GetObjectResponse> getAsFile(S3Object s3Object) {
+        var downloadBase = commonDownloaderProperties.getMirrorProperties().getDownloadPath();
         var s3Key = s3Object.key();
         log.trace("Starting download of {} to {}", s3Key, downloadBase);
 
@@ -89,49 +88,15 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         var downloadPath = downloadBase.resolve(s3Key);
         var responseFuture = s3Client.getObject(
-                        request,
-                        AsyncResponseTransformer.toFile(
-                                downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
-                .thenApply(response -> new GetObjectResponseWithKey(response, s3Key));
+                request,
+                AsyncResponseTransformer.toFile(
+                        downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()));
 
         return Mono.fromFuture(responseFuture)
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(r -> log.debug(
-                        "Finished downloading {} to {}, size {}",
-                        s3Key,
-                        downloadBase,
-                        r.getObjectResponse().contentLength()));
-    }
-
-    public CompletableFuture<GetObjectResponseWithKey> get(
-            String s3Key, Path downloadBase, Consumer<GetObjectResponseWithKey> completionHandler) {
-        log.trace("Starting download of {} to {}", s3Key, downloadBase);
-
-        var request = GetObjectRequest.builder()
-                .bucket(commonDownloaderProperties.getBucketName())
-                .key(s3Key)
-                .requestPayer(RequestPayer.REQUESTER)
-                .build();
-
-        var downloadPath = downloadBase.resolve(s3Key);
-        return s3Client.getObject(
-                        request,
-                        AsyncResponseTransformer.toFile(
-                                downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
-                .thenApply(response -> new GetObjectResponseWithKey(response, s3Key))
-                .whenComplete((responseWithKey, exception) -> {
-                    if (exception != null) { // Will get retried using different node prefix
-                        log.debug("Failed to download key {}, msg: {}", s3Key, exception.getMessage());
-                    } else {
-                        log.debug(
-                                "Finished downloading {} to {}, size {}",
-                                s3Key,
-                                downloadBase,
-                                responseWithKey.getObjectResponse().contentLength());
-                        completionHandler.accept(responseWithKey);
-                    }
-                });
+                .doOnSuccess(r ->
+                        log.debug("Finished downloading {} to {}, size {}", s3Key, downloadBase, r.contentLength()));
     }
 
     @Override
