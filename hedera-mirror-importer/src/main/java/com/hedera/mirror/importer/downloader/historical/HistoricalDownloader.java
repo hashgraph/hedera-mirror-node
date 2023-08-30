@@ -65,7 +65,7 @@ public class HistoricalDownloader {
     private final StreamType streamType;
     private final ConcurrentMap<String, FileSpecificInfo> downloadsInfoMap = new ConcurrentSkipListMap<>();
     private final AtomicReference<ConsensusNodeInfo> nodeInfoRef = new AtomicReference<>();
-    private final int downloadConcurrency = 1; // Debug, make a property
+    private final int downloadConcurrency = 3; // Debug, make a property
 
     public HistoricalDownloader(
             ConsensusNodeService consensusNodeService,
@@ -101,8 +101,10 @@ public class HistoricalDownloader {
     // Run once
     @Scheduled(initialDelay = 1000 * 5, fixedDelay = Long.MAX_VALUE)
     public void downloadAll() {
+        var stopwatch = Stopwatch.createStarted();
         log.info("Starting download from epoc for stream type {}", streamType);
         downloadAll(StreamFilename.EPOCH);
+        log.info("Total download time {}", stopwatch);
     }
 
     public void downloadAll(StreamFilename startFilename) {
@@ -123,9 +125,7 @@ public class HistoricalDownloader {
          * file listed. Maybe utilize an epoch minute or hour cache key or something?
          */
         var nodeInfo = partialCollection(consensusNodeService.getNodes());
-        //        var nodeInfo = partialCollection(
-        //                List.of(consensusNodeService.getNodes().iterator().next())); // TODO Single node for initial
-        // debug
+        //        var nodeInfo = partialCollection(List.of(consensusNodeService.getNodes().iterator().next()));
         nodeInfoRef.set(nodeInfo);
 
         List<CompletableFuture<Long>> downloaders = new ArrayList<>(nodeInfo.nextIndex);
@@ -261,7 +261,11 @@ public class HistoricalDownloader {
             }
         }
 
-        log.info("This cycle - downloads completed: {}, downloads started: {}", downloadsCompleted, downloadsStarted);
+        log.info(
+                "This cycle - downloads completed: {}, data downloads started: {}, in: {}",
+                downloadsCompleted,
+                downloadsStarted,
+                stopwatch);
     }
 
     private void setupForSignatureDownload(S3Object signatureFileObject, S3Object dataFileObject) {

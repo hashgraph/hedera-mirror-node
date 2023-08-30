@@ -124,6 +124,11 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     if (exception != null) { // Will get retried using different node prefix
                         log.debug("Failed to download key {}, msg: {}", s3Key, exception.getMessage());
                     } else {
+                        log.debug(
+                                "Finished downloading {} to {}, size {}",
+                                s3Key,
+                                downloadBase,
+                                responseWithKey.getObjectResponse().contentLength());
                         completionHandler.accept(responseWithKey);
                     }
                 });
