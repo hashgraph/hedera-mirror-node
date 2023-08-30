@@ -20,6 +20,8 @@ import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
@@ -57,6 +59,11 @@ public interface StreamFileProvider {
     // For 4613 PoC
     default Flux<S3Object> listAllPaginated(ConsensusNode node, StreamFilename lastFilename) {
         return Flux.empty();
+    }
+
+    default CompletableFuture<GetObjectResponseWithKey> get(
+            String s3Key, Path downloadBase, Consumer<GetObjectResponseWithKey> completionHandler) {
+        return null;
     }
 
     record GetObjectResponseWithKey(GetObjectResponse getObjectResponse, String s3Key) {}

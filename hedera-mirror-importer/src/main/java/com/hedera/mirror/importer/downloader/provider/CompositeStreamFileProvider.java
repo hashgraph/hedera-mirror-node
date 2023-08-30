@@ -27,8 +27,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import lombok.CustomLog;
 import lombok.Value;
 import org.springframework.context.annotation.Primary;
@@ -71,6 +73,13 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         return Mono.fromSupplier(() -> getProvider(index))
                 .flatMap(p -> p.get(s3Object, downloadBase))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
+    }
+
+    @Override
+    public CompletableFuture<GetObjectResponseWithKey> get(
+            String s3Key, Path downloadBase, Consumer<GetObjectResponseWithKey> completionHandler) {
+        var index = new AtomicInteger(0);
+        return getProvider(index).get(s3Key, downloadBase, completionHandler);
     }
 
     @Override

@@ -28,7 +28,9 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
@@ -77,7 +79,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     @Override
     public Mono<GetObjectResponseWithKey> get(S3Object s3Object, Path downloadBase) {
         var s3Key = s3Object.key();
-        log.debug("Starting download of {} to {}", s3Key, downloadBase);
+        log.trace("Starting download of {} to {}", s3Key, downloadBase);
 
         var request = GetObjectRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
@@ -95,7 +97,36 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         return Mono.fromFuture(responseFuture)
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
-                .doOnSuccess(s -> log.debug("Finished downloading {} to {}", s3Key, downloadBase));
+                .doOnSuccess(r -> log.debug(
+                        "Finished downloading {} to {}, size {}",
+                        s3Key,
+                        downloadBase,
+                        r.getObjectResponse().contentLength()));
+    }
+
+    public CompletableFuture<GetObjectResponseWithKey> get(
+            String s3Key, Path downloadBase, Consumer<GetObjectResponseWithKey> completionHandler) {
+        log.trace("Starting download of {} to {}", s3Key, downloadBase);
+
+        var request = GetObjectRequest.builder()
+                .bucket(commonDownloaderProperties.getBucketName())
+                .key(s3Key)
+                .requestPayer(RequestPayer.REQUESTER)
+                .build();
+
+        var downloadPath = downloadBase.resolve(s3Key);
+        return s3Client.getObject(
+                        request,
+                        AsyncResponseTransformer.toFile(
+                                downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()))
+                .thenApply(response -> new GetObjectResponseWithKey(response, s3Key))
+                .whenComplete((responseWithKey, exception) -> {
+                    if (exception != null) { // Will get retried using different node prefix
+                        log.debug("Failed to download key {}, msg: {}", s3Key, exception.getMessage());
+                    } else {
+                        completionHandler.accept(responseWithKey);
+                    }
+                });
     }
 
     @Override
@@ -152,16 +183,11 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         return Flux.from(s3Client.listObjectsV2Paginator(listRequest))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .doOnNext(r -> {
-                    if (log.isDebugEnabled()) {
-                        var contents = r.contents();
-                        if (contents.isEmpty()) {
-                            log.debug("Next batch of s3 objects is empty");
-                        } else {
-                            log.debug(
-                                    "Next batch of {} s3 objects, starting with: {}",
-                                    contents.size(),
-                                    contents.get(0).key());
-                        }
+                    if (log.isDebugEnabled() && !r.contents().isEmpty()) {
+                        log.debug(
+                                "Next batch of {} s3 objects, starting with: {}",
+                                r.contents().size(),
+                                r.contents().get(0).key());
                     }
                 })
                 .flatMapIterable(ListObjectsV2Response::contents)

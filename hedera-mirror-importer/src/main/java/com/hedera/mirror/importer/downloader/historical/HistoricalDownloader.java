@@ -24,6 +24,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider.GetObjectResponseWithKey;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.leader.Leader;
 import jakarta.inject.Named;
 import java.io.IOException;
@@ -34,7 +35,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -65,7 +65,7 @@ public class HistoricalDownloader {
     private final StreamType streamType;
     private final ConcurrentMap<String, FileSpecificInfo> downloadsInfoMap = new ConcurrentSkipListMap<>();
     private final AtomicReference<ConsensusNodeInfo> nodeInfoRef = new AtomicReference<>();
-    private final int downloadConcurrency = 3;
+    private final int downloadConcurrency = 1; // Debug, make a property
 
     public HistoricalDownloader(
             ConsensusNodeService consensusNodeService,
@@ -82,6 +82,19 @@ public class HistoricalDownloader {
     private static String s3Basename(String s3Key) {
         var lastSeparatorIndex = s3Key.lastIndexOf(SEPARATOR);
         return lastSeparatorIndex < 0 ? s3Key : s3Key.substring(lastSeparatorIndex + 1);
+    }
+
+    private static String s3Prefix(String s3Key) {
+        var lastSeparatorIndex = s3Key.lastIndexOf(SEPARATOR);
+        return lastSeparatorIndex < 0 ? null : s3Key.substring(0, lastSeparatorIndex + 1);
+    }
+
+    private static boolean isSignatureFileObject(S3Object s3Object) {
+        return isSignatureFileName(s3Object.key());
+    }
+
+    private static boolean isSignatureFileName(String filename) {
+        return filename.endsWith(StreamType.SIGNATURE_SUFFIX);
     }
 
     @Leader
@@ -109,28 +122,64 @@ public class HistoricalDownloader {
          * each invocation of downloadNextBatch(), which is pretty frequent, but certainly not each signature
          * file listed. Maybe utilize an epoch minute or hour cache key or something?
          */
-        //        var nodeInfo = partialCollection(consensusNodeService.getNodes());
-        var nodeInfo = partialCollection(
-                List.of(consensusNodeService.getNodes().iterator().next())); // TODO Single node for initial debug
+        var nodeInfo = partialCollection(consensusNodeService.getNodes());
+        //        var nodeInfo = partialCollection(
+        //                List.of(consensusNodeService.getNodes().iterator().next())); // TODO Single node for initial
+        // debug
         nodeInfoRef.set(nodeInfo);
 
-        Set<CompletableFuture<Long>> downloaders = new HashSet<>(nodeInfo.nextIndex);
+        List<CompletableFuture<Long>> downloaders = new ArrayList<>(nodeInfo.nextIndex);
         for (int nodeIdx = 0; nodeIdx < nodeInfo.nextIndex; nodeIdx++) {
             var node = nodeInfo.nodes().get(nodeIdx);
 
             downloaders.add(CompletableFuture.supplyAsync(
                     () -> {
-                        var stopwatch = Stopwatch.createStarted();
+                        log.info("Downloading signatures for node {}", node);
 
+                        var stopwatch = Stopwatch.createStarted();
+                        AtomicReference<S3Object> previousDataFileObjectRef = new AtomicReference<>();
+
+                        /*
+                         * The node specific directory hierarchy within the S3 bucket contains both the signature and
+                         * stream data files. A common timestamp forms the first part of the pair of signature and
+                         * data files. In the listing of objects returned from S3, the data file precedes the
+                         * signature file.
+                         *
+                         * 2019-10-11T13_32_41.443132Z.rcd
+                         * 2019-10-11T13_32_41.443132Z.rcd_sig
+                         *  ...
+                         * 2023-05-11T00_00_00.296936002Z.rcd.gz
+                         * 2023-05-11T00_00_00.296936002Z.rcd_sig
+                         *  ...
+                         * 2019-10-11T15_30_00.026419Z_Balances.csv
+                         * 2019-10-11T15_30_00.026419Z_Balances.csv_sig
+                         *
+                         * The signature file protobufs are not processed, so version and compressor information
+                         * is not explicitly known. So, the file preceding a signature file is the assumed to be
+                         * the related data file. It is possible that a consensus node, due to some malfunction
+                         * perhaps, failed to upload the data file. In that case the mapped FileSpecificInfo will
+                         * contain a null reference which will get set later for another consensus node that
+                         * did provide the data file.
+                         *
+                         * NOTE: Need to integrate with sidecar files.
+                         */
                         try {
                             var count = streamFileProvider
                                     .listAllPaginated(node, startFilename)
-                                    .filter(s3Object -> s3Object.key().endsWith(StreamType.SIGNATURE_SUFFIX))
-                                    .doOnNext(this::setupForDownload)
+                                    .log()
+                                    .doOnNext(s3Object -> {
+                                        if (isSignatureFileObject(s3Object)) {
+                                            setupForSignatureDownload(
+                                                    s3Object, previousDataFileObjectRef.getAndSet(null));
+                                        } else {
+                                            previousDataFileObjectRef.set(s3Object);
+                                        }
+                                    })
+                                    .filter(HistoricalDownloader::isSignatureFileObject)
                                     .flatMap(
                                             s3Object -> streamFileProvider.get(s3Object, downloadPath),
                                             downloadConcurrency)
-                                    .doOnNext(responseWithKey -> downloadCompleted(responseWithKey, node))
+                                    .doOnNext(this::objectDownloadCompleted)
                                     .count()
                                     .block();
 
@@ -146,16 +195,18 @@ public class HistoricalDownloader {
 
         var toComplete = downloaders.toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(toComplete).join();
+        // And do what with the returned counts? Sum -> total sig files downloaded
 
         executorService.shutdownNow();
     }
 
     @Scheduled(initialDelay = 20000, fixedDelay = 10000)
     public void manageDownloads() {
-        log.info("manageDownloads - taking a look!");
+        log.trace("manageDownloads - taking a look!");
         var stopwatch = Stopwatch.createStarted();
 
-        long downloadsRemoved = 0L;
+        long downloadsCompleted = 0L;
+        long downloadsStarted = 0L;
 
         var now = Instant.now().getEpochSecond();
         var shouldBeDoneTime = now - 60L;
@@ -166,61 +217,84 @@ public class HistoricalDownloader {
             var filename = entry.getKey();
             var fileInfo = entry.getValue();
 
-            // It's not just count, but stake...  TBD
-            var completionsCount = fileInfo.getCompletions().size();
-            var requiredCompletionsCount = fileInfo.consensusNodeInfo.nodes().size();
+            /*
+             * If a sufficient number of signature files have been successfully download, it is time to
+             * kick of the download of the stream data file.
+             */
+            if (fileInfo.isConsensusReached()) {
+                if (isSignatureFileName(filename)) {
+                    var signatureFileS3Key =
+                            fileInfo.getCompletions().iterator().next().s3Key();
+                    var dataFileS3Key = s3Prefix(signatureFileS3Key)
+                            + fileInfo.getDataFileBaseNameRef().get();
+                    log.info(
+                            "Sufficient signature files downloaded for {}, starting data download {}",
+                            filename,
+                            dataFileS3Key);
+                    streamFileProvider.get(dataFileS3Key, downloadPath, this::objectDownloadCompletedConsumer);
+                    downloadsStarted++;
+                } else {
+                    log.debug("Data file downloaded for {}", filename);
+                }
 
-            if (completionsCount >= requiredCompletionsCount) {
-                log.info("Sufficient signature files downloaded for {}", filename);
                 fileInfo.getCompletions().clear();
                 entryIterator.remove();
-                downloadsRemoved++;
+                downloadsCompleted++;
                 continue;
             }
 
             /*
              * Consensus has not yet been reached in terms of the number of files (nodes) downloaded. If we
              * "should" be done by now, then perhaps one or more of the 1/3 stake of nodes does not have the
-             * file and did not request to download it.
+             * file and did not request to download it, or encountered an error.
              */
             if (fileInfo.startTime < shouldBeDoneTime) {
-                log.info("File {} has only {} of {} completions", filename, completionsCount, requiredCompletionsCount);
+                // It's not just count, but stake...  TBD
+                var completions = fileInfo.getCompletions();
+                var completionsCount = completions.size();
+                var requiredCompletionsCount = fileInfo.consensusNodeInfo.nextIndex;
+
+                log.debug(
+                        "File {} has only {} of {} completions", filename, completionsCount, requiredCompletionsCount);
+                // TODO take action - download additional consensus file(s), or for data file, try another
+                // node prefix.
             }
         }
+
+        log.info("This cycle - downloads completed: {}, downloads started: {}", downloadsCompleted, downloadsStarted);
     }
 
-    private void setupForDownload(S3Object s3Object) {
-        var s3Key = s3Object.key();
-        var fileDownloadDir = downloadPath.resolve(s3Key).getParent().toFile();
+    private void setupForSignatureDownload(S3Object signatureFileObject, S3Object dataFileObject) {
+        var signatureFileKey = signatureFileObject.key();
+        var fileDownloadDir = downloadPath.resolve(signatureFileKey).getParent().toFile();
         try {
             FileUtils.forceMkdir(fileDownloadDir);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to create local directory for %s".formatted(s3Key), e);
+            throw new FileOperationException("Unable to create local directory %s".formatted(fileDownloadDir), e);
         }
 
-        var s3Basename = s3Basename(s3Key);
-        this.downloadsInfoMap.computeIfAbsent(s3Basename, key -> new FileSpecificInfo(this.nodeInfoRef.get()));
+        var fileInfo = this.downloadsInfoMap.computeIfAbsent(
+                s3Basename(signatureFileKey), key -> new FileSpecificInfo(this.nodeInfoRef.get(), dataFileObject));
+
+        if (dataFileObject != null) {
+            fileInfo.getDataFileBaseNameRef().compareAndSet(null, s3Basename(dataFileObject.key()));
+        }
     }
 
-    private GetObjectResponseWithKey downloadCompleted(GetObjectResponseWithKey responseWithKey, ConsensusNode node) {
+    private GetObjectResponseWithKey objectDownloadCompleted(GetObjectResponseWithKey responseWithKey) {
         var s3Key = responseWithKey.s3Key();
 
-        var s3Basename = s3Basename(s3Key);
-        var downloadInfo = this.downloadsInfoMap.get(s3Basename);
-
-        if (downloadInfo != null) { // Consensus not yet met
+        var downloadInfo = this.downloadsInfoMap.get(s3Basename(s3Key));
+        if (downloadInfo != null) { // Consensus not yet reached
             downloadInfo.getCompletions().add(responseWithKey);
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug(
-                    "Download completed for node: {}, filename: {}, size: {}",
-                    node,
-                    s3Basename,
-                    responseWithKey.getObjectResponse().contentLength());
-        }
-
+        log.debug("Download completed for {}", s3Key);
         return responseWithKey;
+    }
+
+    private void objectDownloadCompletedConsumer(GetObjectResponseWithKey responseWithKey) {
+        objectDownloadCompleted(responseWithKey);
     }
 
     /**
@@ -267,16 +341,23 @@ public class HistoricalDownloader {
 
     @Value
     private static class FileSpecificInfo {
-        long startTime;
-        ConsensusNodeInfo consensusNodeInfo;
-        AtomicInteger nextNodeIndex;
         Set<GetObjectResponseWithKey> completions;
+        ConsensusNodeInfo consensusNodeInfo;
+        AtomicReference<String> dataFileBaseNameRef;
+        AtomicInteger nextNodeIndex;
+        long startTime;
 
-        FileSpecificInfo(ConsensusNodeInfo consensusNodeInfo) {
+        FileSpecificInfo(ConsensusNodeInfo consensusNodeInfo, S3Object dataFileObject) {
             this.consensusNodeInfo = consensusNodeInfo;
+            this.dataFileBaseNameRef =
+                    new AtomicReference<>(dataFileObject == null ? null : s3Basename(dataFileObject.key()));
             this.startTime = Instant.now().getEpochSecond();
             this.nextNodeIndex = new AtomicInteger(consensusNodeInfo.nextIndex());
             this.completions = ConcurrentHashMap.newKeySet(consensusNodeInfo.nextIndex());
+        }
+
+        boolean isConsensusReached() {
+            return completions.size() >= consensusNodeInfo.nextIndex;
         }
     }
 }
