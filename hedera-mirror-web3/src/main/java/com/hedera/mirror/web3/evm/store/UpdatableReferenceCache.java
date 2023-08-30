@@ -65,15 +65,9 @@ public class UpdatableReferenceCache<K> {
      */
     public void fill(@NonNull final K key, final Object value) {
         switch (getCacheLineState(key).state()) {
-            case NOT_YET_FETCHED -> {
-                original.get().put(key, value);
-            }
-            case MISSING, PRESENT -> {
-                throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
-            }
-            case UPDATED, DELETED -> {
-                throw new UpdatableCacheUsageException("Trying to override an updated entry");
-            }
+            case NOT_YET_FETCHED -> original.get().put(key, value);
+            case MISSING, PRESENT -> throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
+            case UPDATED, DELETED -> throw new UpdatableCacheUsageException("Trying to override an updated entry");
             case INVALID -> throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }
     }

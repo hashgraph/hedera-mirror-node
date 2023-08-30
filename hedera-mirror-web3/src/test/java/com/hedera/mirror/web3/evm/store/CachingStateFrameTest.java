@@ -195,6 +195,8 @@ class CachingStateFrameTest {
         assertThat(actual).isEmpty();
     }
 
+    // Test commit properly updates upstream frames
+
     @Test
     void commitCallsUpstreamUpdate() {
         final var actual = new StringBuilder(500);
@@ -205,8 +207,6 @@ class CachingStateFrameTest {
 
         assertThat(actual).hasToString("U;");
     }
-
-    // Test commit properly updates upstream frames
 
     /** A no-additional-behavior-at-all subclass of the abstract `CachingStateFrame`, suitable for constructor tests. */
     static class BareCachingStateFrame<K> extends CachingStateFrame<K> {

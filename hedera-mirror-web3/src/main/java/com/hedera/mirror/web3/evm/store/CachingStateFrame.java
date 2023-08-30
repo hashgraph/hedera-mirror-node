@@ -138,6 +138,7 @@ public abstract class CachingStateFrame<K> {
     }
 
     /** Signals that a type error occurred with the _value_ type */
+    @SuppressWarnings("java:S110")
     public static class CacheAccessIncorrectTypeException extends EvmException {
 
         @Serial

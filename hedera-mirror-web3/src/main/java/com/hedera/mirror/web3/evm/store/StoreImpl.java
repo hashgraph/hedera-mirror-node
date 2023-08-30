@@ -188,7 +188,6 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    @Deprecated
     public void commit() {
         if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
             stackedStateFrames.top().commit();

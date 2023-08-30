@@ -47,28 +47,7 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
                 final var upstreamAccessor = upstreamFrame.getAccessor(klass);
                 final var upstreamValue = upstreamAccessor.get(key);
 
-                // We need to make sure that we don't cache null value for a key when
-                // the key belongs to an entity type different than the accessor type we want to use
-                if (entityDatabaseAccessor.isPresent()) {
-                    if (upstreamAccessor instanceof DatabaseAccessor<?, ?>) {
-                        final var entity = entityDatabaseAccessor.get().get(key);
-                        if (entity.isEmpty()) {
-                            cache.fill(key, upstreamValue.orElse(null));
-                        } else {
-                            final var entityType = entity.get().getType();
-
-                            if (EntityType.ACCOUNT.equals(entityType)
-                                            && upstreamAccessor instanceof AccountDatabaseAccessor
-                                    || EntityType.TOKEN.equals(entityType)
-                                            && upstreamAccessor instanceof TokenDatabaseAccessor) {
-                                cache.fill(key, upstreamValue.orElse(null));
-                            }
-                        }
-                    }
-                } else {
-                    cache.fill(key, upstreamValue.orElse(null));
-                }
-
+                fillCache(upstreamAccessor, key, cache, upstreamValue);
                 return upstreamValue;
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
@@ -95,5 +74,32 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         throw new UnsupportedOperationException("Cannot commit to a R/O cache");
+    }
+
+    private void fillCache(
+            final Accessor<?, ?> upstreamAccessor,
+            final K key,
+            final UpdatableReferenceCache<K> cache,
+            final Optional<?> upstreamValue) {
+        // We need to make sure that we don't cache null value for a key when
+        // the key belongs to an entity type different than the accessor type we want to use
+        if (entityDatabaseAccessor.isPresent()) {
+            if (upstreamAccessor instanceof DatabaseAccessor<?, ?>) {
+                final var entity = entityDatabaseAccessor.get().get(key);
+                if (entity.isEmpty()) {
+                    cache.fill(key, upstreamValue.orElse(null));
+                } else {
+                    final var entityType = entity.get().getType();
+
+                    if (EntityType.ACCOUNT.equals(entityType) && upstreamAccessor instanceof AccountDatabaseAccessor
+                            || EntityType.TOKEN.equals(entityType)
+                                    && upstreamAccessor instanceof TokenDatabaseAccessor) {
+                        cache.fill(key, upstreamValue.orElse(null));
+                    }
+                }
+            }
+        } else {
+            cache.fill(key, upstreamValue.orElse(null));
+        }
     }
 }

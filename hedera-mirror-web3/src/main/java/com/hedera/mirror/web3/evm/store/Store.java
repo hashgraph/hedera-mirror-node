@@ -79,7 +79,6 @@ public interface Store {
      * so we don't utilize the commit functionality
      *
      */
-    @Deprecated(since = "0.88.0")
     void commit();
 
     /**
