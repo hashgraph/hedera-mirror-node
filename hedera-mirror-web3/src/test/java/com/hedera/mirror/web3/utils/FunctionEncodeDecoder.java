@@ -97,7 +97,7 @@ public class FunctionEncodeDecoder {
     public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
             "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String TRIPLE_BOOL = "(bool,bool,bool)";
-    private static final String BYTES_32 = "(bytes32)";
+    private static final String BYTES32 = "(bytes32)";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
 
@@ -156,7 +156,7 @@ public class FunctionEncodeDecoder {
     private Tuple encodeTupleParameters(final String tupleSig, final Object... parameters) {
         return switch (tupleSig) {
             case ADDRESS -> Tuple.of(convertAddress((Address) parameters[0]));
-            case STRING, UINT8, BOOL, INT64, BYTES_32 -> Tuple.of(parameters[0]);
+            case STRING, UINT8, BOOL, INT64, BYTES32 -> Tuple.of(parameters[0]);
             case UINT256, INT -> Tuple.of(BigInteger.valueOf((long) parameters[0]));
             case ADDRESS_DUO -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]));

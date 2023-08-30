@@ -37,7 +37,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Random;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -73,7 +72,6 @@ class PrngSystemPrecompiledContractTest {
     private LivePricesSource livePricesSource;
 
     private PrngSystemPrecompiledContract subject;
-    private final Random r = new Random();
 
     @BeforeEach
     void setUp() {
