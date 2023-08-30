@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -152,8 +153,8 @@ class TokenAccessorImplTest {
     }
 
     @AfterEach
-    public void clean() {
-        store.cleanThread();
+    void clean() {
+        ThreadLocalHolder.cleanThread();
     }
 
     @Test

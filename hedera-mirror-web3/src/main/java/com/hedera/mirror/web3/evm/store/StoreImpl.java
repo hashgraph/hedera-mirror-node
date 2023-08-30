@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -64,13 +65,17 @@ public class StoreImpl implements Store {
 
     @Override
     public Token getToken(final Address address, final OnMissing throwIfMissing) {
-        final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
-        final var token = tokenAccessor.get(address);
+        try {
+            final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
+            final var token = tokenAccessor.get(address);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return token.orElseThrow(() -> missingEntityException(Token.class, address));
-        } else {
-            return token.orElse(Token.getEmptyToken());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return token.orElseThrow(() -> missingEntityException(Token.class, address));
+            } else {
+                return token.orElse(Token.getEmptyToken());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return Token.getEmptyToken();
         }
     }
 
@@ -219,11 +224,6 @@ public class StoreImpl implements Store {
         }
 
         return token.setLoadedUniqueTokens(loadedUniqueTokens);
-    }
-
-    @Override
-    public void cleanThread() {
-        stackedStateFrames.cleanThread();
     }
 
     /**

@@ -17,9 +17,9 @@
 package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases.aliases;
-import static com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases.pendingAliases;
-import static com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases.pendingRemovals;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.aliases;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingAliases;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingRemovals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -75,7 +76,7 @@ class MirrorEvmContractAliasesTest {
 
     @AfterEach
     void clean() {
-        MirrorEvmContractAliases.cleanThread();
+        ThreadLocalHolder.cleanThread();
     }
 
     @Test

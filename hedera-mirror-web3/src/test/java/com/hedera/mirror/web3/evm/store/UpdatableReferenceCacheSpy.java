@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.current;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.original;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Objects;

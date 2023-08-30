@@ -69,7 +69,7 @@ public abstract class CachingStateFrame<K> {
         if (accessor != null) {
             return accessor;
         }
-        throw new CacheAccessIncorrectType("%s values aren't cached here".formatted(klass.getName()));
+        throw new CacheAccessIncorrectTypeException("%s values aren't cached here".formatted(klass.getName()));
     }
 
     /** Do the actual commit of entries from a descendant cache level to this one. */
@@ -114,10 +114,6 @@ public abstract class CachingStateFrame<K> {
         return accessors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, kv -> kv.getValue().cache));
     }
 
-    protected void cleanThread() {
-        accessors.values().forEach(AccessorImpl::cleanThread);
-    }
-
     /** Strongly-typed access to values stored in this `CachingStateFrame`.
      *
      * A `CachingStateFrame` can cache values of several _different_ types.  For type safety you want, as a caller
@@ -139,22 +135,19 @@ public abstract class CachingStateFrame<K> {
 
         /** Delete the value associated with this key from this `CachingStateFrame`, respecting stacked-cache behavior */
         void delete(@NonNull final K key);
-
-        /** Clean the thread local cache */
-        void cleanThread();
     }
 
     /** Signals that a type error occurred with the _value_ type */
-    public static class CacheAccessIncorrectType extends EvmException {
+    public static class CacheAccessIncorrectTypeException extends EvmException {
 
         @Serial
         private static final long serialVersionUID = 8163169205069277937L;
 
-        public CacheAccessIncorrectType(@NonNull final String message) {
+        public CacheAccessIncorrectTypeException(@NonNull final String message) {
             super(message);
         }
 
-        public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
+        public CacheAccessIncorrectTypeException(@NonNull final String message, @NonNull final Throwable cause) {
             super(message, cause);
         }
     }
@@ -183,7 +176,7 @@ public abstract class CachingStateFrame<K> {
             try {
                 return oe.flatMap(o -> Optional.of(klass.cast(o)));
             } catch (final ClassCastException ex) {
-                throw new CacheAccessIncorrectType(
+                throw new CacheAccessIncorrectTypeException(
                         "Accessor for class %s fetched object of class %s"
                                 .formatted(
                                         klass.getTypeName(), oe.get().getClass().getTypeName()),
@@ -195,7 +188,7 @@ public abstract class CachingStateFrame<K> {
         @Override
         public void set(@NonNull final K key, @NonNull V value) {
             if (!klass.isInstance(value)) {
-                throw new CacheAccessIncorrectType("Trying to store %s in accessor for class %s"
+                throw new CacheAccessIncorrectTypeException("Trying to store %s in accessor for class %s"
                         .formatted(value.getClass().getTypeName(), klass.getTypeName()));
             }
             setValue(klass, cache, key, value);
@@ -206,12 +199,6 @@ public abstract class CachingStateFrame<K> {
         public void delete(@NonNull final K key) {
             // Can't check type of value matches because we don't have one
             deleteValue(klass, cache, key);
-        }
-
-        /** Clean the thread local cache */
-        @Override
-        public void cleanThread() {
-            cache.cleanThread();
         }
     }
 }

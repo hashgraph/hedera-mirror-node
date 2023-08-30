@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import jakarta.inject.Named;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -63,13 +64,13 @@ public class StackedStateFrames<K> {
         }
 
         final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
-        stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), valueClasses);
-        stack = new RWCachingStateFrame<>(Optional.of(stackBase), valueClasses);
+        stackBase = new ROCachingStateFrame<>(Optional.of(database), getEntityDatabaseAccessor(), valueClasses);
+        stack = new RWCachingStateFrame<>(Optional.of(stackBase), getEntityDatabaseAccessor(), valueClasses);
 
-        //        push();
-        // TODO update javadoc
-        // Initial state is just the R/O cache on top of the database.  You really need to do a
-        // `push()` before you can expect to write anything to this state
+        // Initial state is R/W cache layer on top of a R/O cache on top of the database. You can directly start
+        // updating values when
+        // the store is initialized. You can also use push() to create a new R/W cache layer on top of the stack,
+        // so that you can rollback specific changes from a nested transaction
     }
 
     /** Return the "visible"/"effective" height of the stacked cache _only including_ those frames you've pushed on top
@@ -97,7 +98,7 @@ public class StackedStateFrames<K> {
     /** Push a new RW-frame cache on top of the stacked cache. */
     @NonNull
     public CachingStateFrame<K> push() {
-        stack = new RWCachingStateFrame<>(Optional.of(stack), valueClasses);
+        stack = new RWCachingStateFrame<>(Optional.of(stack), getEntityDatabaseAccessor(), valueClasses);
         return stack;
     }
 
@@ -118,18 +119,13 @@ public class StackedStateFrames<K> {
      * using this method.)
      */
     public void resetToBase() {
-        stack = new RWCachingStateFrame<>(Optional.of(stackBase), valueClasses);
+        stack = new RWCachingStateFrame<>(Optional.of(stackBase), getEntityDatabaseAccessor(), valueClasses);
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
     @NonNull
     public Class<?>[] getValueClasses() {
         return valueClasses;
-    }
-
-    public void cleanThread() {
-        stack.cleanThread();
-        stackBase.cleanThread();
     }
 
     /** It may happen that you want to push some special frame type on the stack, not a standard `RWCachingStateFrame`.
@@ -155,5 +151,13 @@ public class StackedStateFrames<K> {
     CachingStateFrame<K> replaceEntireStack(@NonNull final CachingStateFrame<K> frame) {
         stack = stackBase = frame;
         return stack;
+    }
+
+    private Optional<EntityDatabaseAccessor> getEntityDatabaseAccessor() {
+        final var accessor = accessors.stream()
+                .filter(EntityDatabaseAccessor.class::isInstance)
+                .distinct()
+                .findFirst();
+        return accessor.map(EntityDatabaseAccessor.class::cast);
     }
 }

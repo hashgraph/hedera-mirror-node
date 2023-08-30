@@ -169,7 +169,8 @@ public class EvmConfiguration {
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final StaticBlockMetaSource blockMetaSource,
-            final AbstractCodeCache abstractCodeCache) {
+            final AbstractCodeCache abstractCodeCache,
+            final MirrorOperationTracer mirrorOperationTracer) {
         return new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,
@@ -185,6 +186,7 @@ public class EvmConfiguration {
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
-                abstractCodeCache);
+                abstractCodeCache,
+                mirrorOperationTracer);
     }
 }

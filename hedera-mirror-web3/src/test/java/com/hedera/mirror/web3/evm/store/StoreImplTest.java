@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +30,7 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -116,9 +117,6 @@ class StoreImplTest {
     private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Mock
     private NftRepository nftRepository;
 
     @Mock
@@ -161,18 +159,20 @@ class StoreImplTest {
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
                 tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
+        final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
-                uniqueTokenDatabaseAccessor);
+                uniqueTokenDatabaseAccessor,
+                entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         subject = new StoreImpl(stackedStateFrames);
     }
 
     @AfterEach
-    public void clean() {
-        subject.cleanThread();
+    void clean() {
+        ThreadLocalHolder.cleanThread();
     }
 
     @Test
@@ -333,11 +333,11 @@ class StoreImplTest {
                 Address.ZERO,
                 EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
                 EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertEquals(false, result);
+        assertFalse(result);
         result = subject.hasApprovedForAll(
                 ACCOUNT_ADDRESS,
                 EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
                 EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertEquals(false, result);
+        assertFalse(result);
     }
 }

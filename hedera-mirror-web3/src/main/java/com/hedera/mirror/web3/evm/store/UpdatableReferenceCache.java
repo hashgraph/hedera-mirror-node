@@ -16,11 +16,12 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.current;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.original;
+
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState;
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import java.io.Serial;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.NonNull;
 
 /**
@@ -42,14 +43,6 @@ import lombok.NonNull;
  */
 public class UpdatableReferenceCache<K> {
 
-    @NonNull
-    protected static final ThreadLocal<Map<Object, Object>> original =
-            ThreadLocal.withInitial(HashMap::new); // "missing" denoted by null values here
-
-    @NonNull
-    protected static final ThreadLocal<Map<Object, Object>> current =
-            ThreadLocal.withInitial(HashMap::new); // "deleted" denoted by null values here
-
     private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
 
     @NonNull
@@ -60,24 +53,11 @@ public class UpdatableReferenceCache<K> {
      * Create an `UpdatableReferenceCache` for holding the cached value of some type. */
     UpdatableReferenceCache() {}
 
-    public void cleanThread() {
-        original.remove();
-        current.remove();
-    }
-
     /**
      * Get from the cache
      */
     public Entry get(@NonNull final K key) {
         return getCacheLineState(key);
-    }
-
-    public Object getFromCurrent(final Object key) {
-        return current.get().get(key);
-    }
-
-    public Object getFromOriginal(final Object key) {
-        return original.get().get(key);
     }
 
     /**
@@ -86,19 +66,13 @@ public class UpdatableReferenceCache<K> {
     public void fill(@NonNull final K key, final Object value) {
         switch (getCacheLineState(key).state()) {
             case NOT_YET_FETCHED -> {
-                if (value != null) {
-                    original.get().put(key, value);
-                }
+                original.get().put(key, value);
             }
             case MISSING, PRESENT -> {
-                if (!original.get().containsKey(key)) {
-                    throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
-                }
+                throw new UpdatableCacheUsageException("Trying to override a lower-level entry");
             }
             case UPDATED, DELETED -> {
-                if (!original.get().containsKey(key)) {
-                    throw new UpdatableCacheUsageException("Trying to override an updated entry");
-                }
+                throw new UpdatableCacheUsageException("Trying to override an updated entry");
             }
             case INVALID -> throw new IllegalStateException(INVALID_STATE_MESSAGE);
         }

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -118,6 +119,9 @@ class MirrorEvmTxProcessorTest {
     private BlockMetaSource blockMetaSource;
 
     @Mock
+    private MirrorOperationTracer mirrorOperationTracer;
+
+    @Mock
     private PrecompileMapper precompileMapper;
 
     @Mock
@@ -159,7 +163,8 @@ class MirrorEvmTxProcessorTest {
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
-                new AbstractCodeCache(10, hederaEvmEntityAccess));
+                new AbstractCodeCache(10, hederaEvmEntityAccess),
+                mirrorOperationTracer);
 
         DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);

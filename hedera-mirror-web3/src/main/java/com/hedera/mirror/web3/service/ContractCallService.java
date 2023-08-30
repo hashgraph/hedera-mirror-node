@@ -23,7 +23,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -45,7 +45,7 @@ public class ContractCallService {
 
     private final Counter.Builder gasCounter =
             Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
-    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
+    private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
 
@@ -105,7 +105,7 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessorFacade.execute(
+            transactionResult = mirrorEvmTxProcessor.execute(
                     params.getSender(),
                     params.getReceiver(),
                     params.isEstimate() ? estimatedGas : params.getGas(),

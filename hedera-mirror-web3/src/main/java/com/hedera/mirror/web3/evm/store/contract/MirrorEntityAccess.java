@@ -20,7 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectType;
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -88,7 +88,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         try {
             final var maybeToken = store.getToken(address, OnMissing.DONT_THROW);
             return !maybeToken.isEmptyToken();
-        } catch (CacheAccessIncorrectType e) {
+        } catch (CacheAccessIncorrectTypeException e) {
             // We found an entry from the state, but it's not a token. Thus, we return false.
             return false;
         }

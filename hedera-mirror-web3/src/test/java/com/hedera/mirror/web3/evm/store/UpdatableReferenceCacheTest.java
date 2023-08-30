@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,7 +44,6 @@ class UpdatableReferenceCacheTest {
     ///// Common types/values/methods for this test start here:
 
     static final String THIS_KEY = "THIS KEY";
-    static final String NEW_KEY = "NEW_KEY";
     static final Long ORIGINAL_VALUE = 10L;
     static final Long UPDATED_VALUE = -25L;
     static final Long NEW_VALUE = -100L;
@@ -53,8 +53,8 @@ class UpdatableReferenceCacheTest {
     SoftAssertions softly;
 
     @AfterEach
-    public void clean() {
-        sut.cleanThread();
+    void clean() {
+        ThreadLocalHolder.cleanThread();
     }
 
     void setInitialCacheLineState(@NonNull final ValueIs originalValueIs, @NonNull final ValueIs currentValueIs) {
@@ -148,19 +148,9 @@ class UpdatableReferenceCacheTest {
 
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
-        if (state == ValueState.INVALID) {
-            assertThatExceptionOfType(IllegalStateException.class).isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
-        } else if (originalValueIs == ValueIs.MISSING) {
-            // Validate that we don't add new entry
-            assertThat(sut.getOriginal().get()).isEmpty();
-        } else if (currentValueIs == ValueIs.MISSING) {
-            // Validate that we don't add new entry
-            assertThat(sut.getCurrent().get()).isEmpty();
-        } else {
-            // Validate that we don't add new entry
-            assertThat(sut.getOriginal().get().size()).isOne();
-            assertThat(sut.getCurrent().get().size()).isOne();
-        }
+        assertThatExceptionOfType(
+                        state == ValueState.INVALID ? IllegalStateException.class : UpdatableCacheUsageException.class)
+                .isThrownBy(() -> sut.fill(THIS_KEY, NEW_VALUE));
     }
 
     @Test

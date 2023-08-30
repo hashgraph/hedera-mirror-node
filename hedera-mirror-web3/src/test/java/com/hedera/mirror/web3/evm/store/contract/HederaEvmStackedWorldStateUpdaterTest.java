@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -83,7 +84,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EntityAddressSequencer entityAddressSequencer;
 
     @Mock
-    private EntityDatabaseAccessor entityDatabaseAccessor;
+    private EntityRepository entityRepository;
 
     private Store store;
 
@@ -91,8 +92,10 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        final List<DatabaseAccessor<Object, ?>> accessors =
-                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
+        final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(
+                entityDatabaseAccessor,
+                new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
         store.wrap();

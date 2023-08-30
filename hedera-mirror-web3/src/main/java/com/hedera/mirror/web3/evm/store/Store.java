@@ -93,8 +93,6 @@ public interface Store {
 
     boolean exists(AccountID accountID);
 
-    void cleanThread();
-
     enum OnMissing {
         THROW,
         DONT_THROW

@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.evm.account;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.aliases;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingAliases;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingRemovals;
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
 import com.hedera.mirror.web3.evm.store.Store;
@@ -26,11 +29,7 @@ import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.inject.Named;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,17 +38,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
-    static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
-    static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
-    static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
-
     final Store store;
-
-    public static void cleanThread() {
-        aliases.remove();
-        pendingAliases.remove();
-        pendingRemovals.remove();
-    }
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);

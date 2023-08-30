@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectType;
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -246,7 +246,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         try {
             token = store.getToken(address, OnMissing.DONT_THROW);
-        } catch (CacheAccessIncorrectType e) {
+        } catch (CacheAccessIncorrectTypeException e) {
             throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID, "Not a token address.", "");
         }
 

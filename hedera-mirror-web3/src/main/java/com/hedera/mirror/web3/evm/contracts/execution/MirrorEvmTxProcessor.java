@@ -16,7 +16,11 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.isCreate;
+
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -42,9 +46,9 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
-    private static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
+    private final MirrorOperationTracer operationTracer;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -56,16 +60,13 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final AbstractCodeCache codeCache) {
+            final AbstractCodeCache codeCache,
+            final MirrorOperationTracer operationTracer) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
-        //        this.isCreate = isCreate;
-    }
-
-    public static void cleanThread() {
-        isCreate.remove();
+        this.operationTracer = operationTracer;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -79,8 +80,10 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
+        super.setOperationTracer(operationTracer);
+        setIsCreate(Address.ZERO.equals(receiver));
 
-        return super.execute(
+        final var result = super.execute(
                 sender,
                 receiver,
                 gasPrice,
@@ -89,13 +92,15 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 callData,
                 isStatic,
                 aliasManager.resolveForEvm(receiver));
+
+        ThreadLocalHolder.cleanThread();
+        return result;
     }
 
+    @SuppressWarnings("java:S5411")
     @Override
     protected HederaFunctionality getFunctionType() {
-        return Boolean.TRUE.equals(isCreate.get())
-                ? HederaFunctionality.ContractCreate
-                : HederaFunctionality.ContractCall;
+        return isCreate.get() ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @Override
@@ -129,6 +134,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     }
 
     public void setIsCreate(boolean isCreate) {
-        MirrorEvmTxProcessor.isCreate.set(isCreate);
+        ThreadLocalHolder.isCreate.set(isCreate);
     }
 }
