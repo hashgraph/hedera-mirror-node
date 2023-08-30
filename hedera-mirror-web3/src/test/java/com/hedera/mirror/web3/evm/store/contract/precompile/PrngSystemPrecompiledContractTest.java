@@ -25,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.Hash;

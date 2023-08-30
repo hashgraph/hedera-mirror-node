@@ -22,10 +22,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
-import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Optional;
@@ -38,11 +38,14 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * System contract to generate random numbers. This will generate 256-bit pseudorandom number when
- * no range is provided using n-3 record's running hash. If 32-bit integer "range" and 256-bit
- * "seed" is provided returns a pseudorandom 32-bit integer X belonging to [0, range).
+ * This is a modified copy of the PRNGSystemPrecompiledContract class from the hedera-services repository.
+ *
+ * The main differences from the original version are as follows:
+ * 1. The seed is generated based on the running hash of the latest record file retrieved from the database.
+ * 2. The childRecord logic has been removed.
  */
 public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
@@ -75,6 +78,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     }
 
     @Override
+    @NotNull
     public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
         gasRequirement =
                 calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));

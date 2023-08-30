@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.config;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
@@ -99,6 +98,7 @@ import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.util.PrngLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -118,12 +118,12 @@ public class ServicesConfiguration {
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
-            BasicFcfsUsagePrices usagePricesProvider, BasicHbarCentExchange hbarCentExchange) {
+            final BasicFcfsUsagePrices usagePricesProvider, final BasicHbarCentExchange hbarCentExchange) {
         return new GasCalculatorHederaV22(usagePricesProvider, hbarCentExchange);
     }
 
     @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicFcfsUsagePrices basicFcfsUsagePrices(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicFcfsUsagePrices(ratesAndFeesLoader);
     }
 
@@ -134,7 +134,7 @@ public class ServicesConfiguration {
 
     @Bean
     PricedUsageCalculator pricedUsageCalculator(
-            AccessorBasedUsages accessorBasedUsages, OverflowCheckingCalc overflowCheckingCalc) {
+            final AccessorBasedUsages accessorBasedUsages, final OverflowCheckingCalc overflowCheckingCalc) {
         return new PricedUsageCalculator(accessorBasedUsages, overflowCheckingCalc);
     }
 
@@ -165,11 +165,11 @@ public class ServicesConfiguration {
 
     @Bean
     UsageBasedFeeCalculator usageBasedFeeCalculator(
-            HbarCentExchange hbarCentExchange,
-            UsagePricesProvider usagePricesProvider,
-            PricedUsageCalculator pricedUsageCalculator,
-            Set<QueryResourceUsageEstimator> queryResourceUsageEstimators,
-            List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
+            final HbarCentExchange hbarCentExchange,
+            final UsagePricesProvider usagePricesProvider,
+            final PricedUsageCalculator pricedUsageCalculator,
+            final Set<QueryResourceUsageEstimator> queryResourceUsageEstimators,
+            final List<TxnResourceUsageEstimator> txnResourceUsageEstimators) {
         final Map<HederaFunctionality, List<TxnResourceUsageEstimator>> txnUsageEstimators =
                 new EnumMap<>(HederaFunctionality.class);
 
@@ -197,7 +197,8 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    LivePricesSource livePricesSource(HbarCentExchange hbarCentExchange, UsagePricesProvider usagePricesProvider) {
+    LivePricesSource livePricesSource(
+            final HbarCentExchange hbarCentExchange, final UsagePricesProvider usagePricesProvider) {
         return new LivePricesSource(hbarCentExchange, usagePricesProvider);
     }
 
@@ -232,30 +233,36 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    GetTxnRecordResourceUsage getTxnRecordResourceUsage(CryptoFeeBuilder cryptoFeeBuilder) {
+    GetTxnRecordResourceUsage getTxnRecordResourceUsage(final CryptoFeeBuilder cryptoFeeBuilder) {
         return new GetTxnRecordResourceUsage(cryptoFeeBuilder);
     }
 
     @Bean
-    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+    BasicHbarCentExchange basicHbarCentExchange(final RatesAndFeesLoader ratesAndFeesLoader) {
         return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 
     @Bean
     GetApprovedPrecompile getApprovedPrecompile(
-            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
         return new GetApprovedPrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 
     @Bean
     AllowancePrecompile allowancePrecompile(
-            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
         return new AllowancePrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 
     @Bean
     IsApprovedForAllPrecompile isApprovedForAllPrecompile(
-            SyntheticTxnFactory syntheticTxnFactory, EncodingFacade encoder, PrecompilePricingUtils pricingUtils) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
         return new IsApprovedForAllPrecompile(syntheticTxnFactory, encoder, pricingUtils);
     }
 
@@ -301,7 +308,7 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    AssociateLogic associateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    AssociateLogic associateLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new AssociateLogic(mirrorNodeEvmProperties);
     }
 
@@ -312,26 +319,28 @@ public class ServicesConfiguration {
 
     @Bean
     AutoCreationLogic autocreationLogic(
-            FeeCalculator feeCalculator, EvmProperties evmProperties, SyntheticTxnFactory syntheticTxnFactory) {
+            final FeeCalculator feeCalculator,
+            final EvmProperties evmProperties,
+            final SyntheticTxnFactory syntheticTxnFactory) {
         return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
     @Bean
     MintPrecompile mintPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            EncodingFacade encodingFacade,
-            SyntheticTxnFactory syntheticTxnFactory,
-            MintLogic mintLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final EncodingFacade encodingFacade,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MintLogic mintLogic) {
         return new MintPrecompile(precompilePricingUtils, encodingFacade, syntheticTxnFactory, mintLogic);
     }
 
     @Bean
-    MintLogic mintLogic(OptionValidator optionValidator) {
+    MintLogic mintLogic(final OptionValidator optionValidator) {
         return new MintLogic(optionValidator);
     }
 
     @Bean
-    BurnLogic burnLogic(OptionValidator optionValidator) {
+    BurnLogic burnLogic(final OptionValidator optionValidator) {
         return new BurnLogic(optionValidator);
     }
 
@@ -341,7 +350,7 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TransferLogic transferLogic(AutoCreationLogic autoCreationLogic) {
+    TransferLogic transferLogic(final AutoCreationLogic autoCreationLogic) {
         return new TransferLogic(autoCreationLogic);
     }
 
@@ -482,23 +491,23 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    WipeLogic wipeLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+    WipeLogic wipeLogic(final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         return new WipeLogic(mirrorNodeEvmProperties);
     }
 
     @Bean
     WipeFungiblePrecompile wipeFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
     @Bean
     WipeNonFungiblePrecompile wipeNonFungiblePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WipeLogic wipeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WipeLogic wipeLogic) {
         return new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
     }
 
@@ -517,12 +526,12 @@ public class ServicesConfiguration {
 
     @Bean
     TokenCreatePrecompile tokenCreatePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            EncodingFacade encodingFacade,
-            SyntheticTxnFactory syntheticTxnFactory,
-            OptionValidator validator,
-            CreateLogic createLogic,
-            FeeCalculator feeCalculator) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final EncodingFacade encodingFacade,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final OptionValidator validator,
+            final CreateLogic createLogic,
+            final FeeCalculator feeCalculator) {
         return new TokenCreatePrecompile(
                 precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic, feeCalculator);
     }
@@ -544,9 +553,9 @@ public class ServicesConfiguration {
 
     @Bean
     DeleteTokenPrecompile deleteTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            DeleteLogic deleteLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final DeleteLogic deleteLogic) {
         return new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
     }
 
@@ -570,9 +579,9 @@ public class ServicesConfiguration {
 
     @Bean
     FreezeTokenPrecompile freezeTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            FreezeLogic freezeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final FreezeLogic freezeLogic) {
         return new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
     }
 
@@ -583,9 +592,9 @@ public class ServicesConfiguration {
 
     @Bean
     UnfreezeTokenPrecompile unfreezeTokenPrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            UnfreezeLogic unfreezeLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final UnfreezeLogic unfreezeLogic) {
         return new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
     }
 
@@ -596,40 +605,41 @@ public class ServicesConfiguration {
 
     @Bean
     PausePrecompile pausePrecompile(
-            PrecompilePricingUtils precompilePricingUtils,
-            SyntheticTxnFactory syntheticTxnFactory,
-            PauseLogic pauseLogic) {
+            final PrecompilePricingUtils precompilePricingUtils,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PauseLogic pauseLogic) {
         return new PausePrecompile(precompilePricingUtils, syntheticTxnFactory, pauseLogic);
     }
 
     @Bean
-    TokenUpdateLogic tokenUpdateLogic(MirrorNodeEvmProperties mirrorNodeEvmProperties, OptionValidator validator) {
+    TokenUpdateLogic tokenUpdateLogic(
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties, final OptionValidator validator) {
         return new TokenUpdateLogic(mirrorNodeEvmProperties, validator);
     }
 
     @Bean
     TokenUpdatePrecompile tokenUpdatePrecompile(
-            PrecompilePricingUtils pricingUtils,
-            TokenUpdateLogic tokenUpdateLogic,
-            SyntheticTxnFactory syntheticTxnFactory,
-            MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            ContextOptionValidator contextOptionValidator) {
+            final PrecompilePricingUtils pricingUtils,
+            final TokenUpdateLogic tokenUpdateLogic,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final ContextOptionValidator contextOptionValidator) {
         return new TokenUpdatePrecompile(
                 pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
     }
 
     @Bean
-    PrngLogic prngLogic(RecordFileRepository recordFileRepository) {
+    PrngLogic prngLogic(final RecordFileRepository recordFileRepository) {
         return new PrngLogic(recordFileRepository);
     }
 
     @Bean
     UpdateTokenExpiryInfoPrecompile updateTokenExpiryInfoPrecompile(
-            TokenUpdateLogic tokenUpdateLogic,
-            MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            ContextOptionValidator contextOptionValidator,
-            SyntheticTxnFactory syntheticTxnFactory,
-            PrecompilePricingUtils precompilePricingUtils) {
+            final TokenUpdateLogic tokenUpdateLogic,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final ContextOptionValidator contextOptionValidator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils precompilePricingUtils) {
         return new UpdateTokenExpiryInfoPrecompile(
                 tokenUpdateLogic,
                 mirrorNodeEvmProperties,
@@ -640,11 +650,11 @@ public class ServicesConfiguration {
 
     @Bean
     TokenUpdateKeysPrecompile tokenUpdateKeysPrecompile(
-            SyntheticTxnFactory syntheticTxnFactory,
-            PrecompilePricingUtils precompilePricingUtils,
-            TokenUpdateLogic tokenUpdateLogic,
-            OptionValidator optionValidator,
-            MirrorNodeEvmProperties evmProperties) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final PrecompilePricingUtils precompilePricingUtils,
+            final TokenUpdateLogic tokenUpdateLogic,
+            final OptionValidator optionValidator,
+            final MirrorNodeEvmProperties evmProperties) {
         return new TokenUpdateKeysPrecompile(
                 syntheticTxnFactory, precompilePricingUtils, tokenUpdateLogic, optionValidator, evmProperties);
     }

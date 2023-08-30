@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.utils;
+package com.hedera.services.txns.util;
 
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This is a modified copy of the PRNGLogic class from the hedera-services repository.
+ *
+ * The main differences from the original version are as follows:
+ * - Instead of using runningHashLeaf, this modified version uses the RecordFileRepository to obtain the latest Record.
+ * - It extracts the relevant hash from this Record and then returns it as a byte array.
+ */
 public class PrngLogic {
     private static final Logger log = LogManager.getLogger(PrngLogic.class);
 
@@ -37,10 +44,19 @@ public class PrngLogic {
                 .findLatest()
                 .orElseThrow(() -> new MissingResultException("No record file available."));
         latestRunningHash = latestRecordFile.getHash();
-        if (latestRunningHash == null) {
+        if (latestRunningHash == null || isZeroedHash(latestRunningHash.getBytes())) {
             log.info("No record running hash available to generate random number");
             return MISSING_BYTES;
         }
         return latestRunningHash.getBytes();
+    }
+
+    private boolean isZeroedHash(final byte[] hashBytes) {
+        for (final byte b : hashBytes) {
+            if (b != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 }
