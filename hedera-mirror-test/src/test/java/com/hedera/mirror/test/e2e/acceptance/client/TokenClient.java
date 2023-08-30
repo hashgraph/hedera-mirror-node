@@ -120,8 +120,8 @@ public class TokenClient extends AbstractNetworkClient {
         return createToken(
                 expandedAccountId,
                 tokenNameEnum.symbol,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
+                tokenNameEnum.tokenFreezeStatus.getNumber(),
+                tokenNameEnum.tokenKycStatus.getNumber(),
                 expandedAccountId,
                 1_000_000,
                 TokenSupplyType.INFINITE,
@@ -358,18 +358,6 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse grantKyc(TokenId tokenId, ContractId contractId)
-            throws InvalidProtocolBufferException {
-        TokenGrantKycTransaction tokenGrantKycTransaction = new TokenGrantKycTransaction()
-                .setAccountId(AccountId.fromBytes(contractId.toBytes()))
-                .setTokenId(tokenId)
-                .setTransactionMemo(getMemo("Grant kyc for token"));
-
-        var response = executeTransactionAndRetrieveReceipt(tokenGrantKycTransaction);
-        log.info("Granted KYC for account {} with token {} via {}", contractId, tokenId, response.getTransactionId());
-        return response;
-    }
-
     public NetworkTransactionResponse revokeKyc(TokenId tokenId, AccountId accountId) {
         TokenRevokeKycTransaction tokenRevokeKycTransaction = new TokenRevokeKycTransaction()
                 .setAccountId(accountId)
@@ -596,11 +584,15 @@ public class TokenClient extends AbstractNetworkClient {
     @RequiredArgsConstructor
     @Getter
     public enum TokenNameEnum {
-        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON),
-        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE);
+        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.FreezeNotApplicable),
+        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.FreezeNotApplicable),
+        FUNGIBLE_KYC_UNFROZEN("fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+        NFT_KYC_UNFROZEN("nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
 
         private final String symbol;
         private final TokenType tokenType;
+        private final TokenKycStatus tokenKycStatus;
+        private final TokenFreezeStatus tokenFreezeStatus;
 
         @Override
         public String toString() {
