@@ -16,6 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.codec;
 
-import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.models.Account;
 
-public record CreateParams(int functionId, JKey senderAccountKey) implements BodyParams {}
+public record CreateParams(int functionId, Account account) implements BodyParams {}

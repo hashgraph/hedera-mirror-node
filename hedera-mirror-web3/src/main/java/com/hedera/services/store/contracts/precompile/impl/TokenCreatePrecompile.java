@@ -67,8 +67,10 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,13 +78,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -232,7 +234,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        final var functionId = ((CreateParams) bodyParams).functionId();
+        final var createParams = ((CreateParams) bodyParams);
+        final var functionId = createParams.functionId();
         final var tokenCreateOp =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
@@ -262,8 +265,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         verifySolidityInput(Objects.requireNonNull(tokenCreateOp));
         try {
-            tokenCreateOp.setAllInheritedKeysTo(((CreateParams) bodyParams).senderAccountKey());
-        } catch (DecoderException e) {
+            replaceInheritedProperties(createParams.account(), tokenCreateOp);
+        } catch (InvalidKeyException e) {
             throw new InvalidTransactionException(e.getMessage(), ResponseCodeEnum.FAIL_INVALID);
         }
 
@@ -756,5 +759,18 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 }
             }
         }
+    }
+
+    private void replaceInheritedProperties(Account account, TokenCreateWrapper tokenCreateOp)
+            throws InvalidKeyException {
+        if (account == null) {
+            return;
+        }
+
+        if (!tokenCreateOp.hasAutoRenewAccount()) {
+            tokenCreateOp.inheritAutoRenewAccount(EntityIdUtils.toGrpcAccountId(account.getId()));
+        }
+
+        tokenCreateOp.setAllInheritedKeysTo(account.getKey());
     }
 }

@@ -32,12 +32,13 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.jproto.JContractIDKey;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -387,12 +388,12 @@ class TokenCreateWrapperTest {
         final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(Collections.emptyList());
         assertTrue(wrapper.hasAutoRenewAccount());
         assertEquals(toGrpcAccountId(12345), wrapper.getExpiry().autoRenewAccount());
-        wrapper.inheritAutoRenewAccount(10);
+        wrapper.inheritAutoRenewAccount(AccountID.newBuilder().setAccountNum(10).build());
         assertEquals(toGrpcAccountId(10), wrapper.getExpiry().autoRenewAccount());
     }
 
     @Test
-    void setInheritedKeysToSpecificKeyWorksAsExpected() throws DecoderException {
+    void setInheritedKeysToSpecificKeyWorksAsExpected() throws InvalidKeyException {
         // given
         final var key = new JContractIDKey(contractID);
         final var wrapper = createTokenCreateWrapperWithKeys(List.of(

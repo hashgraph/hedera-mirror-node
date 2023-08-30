@@ -71,6 +71,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -628,7 +629,9 @@ class TokenCreatePrecompileTest {
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
 
         subject.prepareFields(frame);
         subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
@@ -645,6 +648,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -674,6 +679,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -695,6 +703,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -717,6 +727,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -733,6 +746,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -762,6 +777,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -791,6 +808,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -813,6 +832,8 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -835,6 +856,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -856,6 +880,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -877,6 +904,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -893,6 +923,9 @@ class TokenCreatePrecompileTest {
         prepareStaticContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -919,7 +952,7 @@ class TokenCreatePrecompileTest {
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(frame.getRemainingGas()).willReturn(10_000_000L);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         // when:
         final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
 
@@ -949,7 +982,7 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreate(eq(CREATE_FUNGIBLE_NO_FEES_INPUT), any()))
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
-        given(store.getAccount(frame.getSenderAddress(), OnMissing.THROW)).willReturn(senderAccount);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         givenIfDelegateCall();
 
         // when:

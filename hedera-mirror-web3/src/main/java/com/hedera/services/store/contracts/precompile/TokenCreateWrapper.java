@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.jproto.JKey;
@@ -32,9 +31,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;
@@ -155,7 +154,7 @@ public class TokenCreateWrapper {
         this.royaltyFees = royaltyFees;
     }
 
-    public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+    public void setAllInheritedKeysTo(final JKey senderKey) throws InvalidKeyException {
         for (final var tokenKey : tokenKeys) {
             if (tokenKey.key().isShouldInheritAccountKeySet()) {
                 tokenKey.key().setInheritedKey(JKey.mapJKey(senderKey));
@@ -171,8 +170,8 @@ public class TokenCreateWrapper {
         return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
     }
 
-    public void inheritAutoRenewAccount(final int code) {
-        expiry.setAutoRenewAccount(toGrpcAccountId(code));
+    public void inheritAutoRenewAccount(final AccountID accountID) {
+        expiry.setAutoRenewAccount(accountID);
     }
 
     public static final class FixedFeeWrapper {

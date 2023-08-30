@@ -371,9 +371,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody = precompile.body(
                         input,
                         aliasResolver,
-                        new CreateParams(
-                                functionId,
-                                store.getAccount(senderAddress, OnMissing.THROW).getKey()));
+                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW)));
             }
             default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();

@@ -89,9 +89,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import java.security.InvalidKeyException;
 import java.util.EnumSet;
 import java.util.function.UnaryOperator;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1332,7 +1332,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInvalidExpiry() throws DecoderException {
+    void updateRejectsInvalidExpiry() throws InvalidKeyException {
         var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setAdminKey(JKey.mapKey(key));
         final var op = updateWith(NO_KEYS, misc, true, true, false).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(expiry - 1))
@@ -1362,7 +1362,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void cannotUpdateImmutableTokenWithNewFeeScheduleKey() throws DecoderException {
+    void cannotUpdateImmutableTokenWithNewFeeScheduleKey() throws InvalidKeyException {
         var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setFeeScheduleKey(JKey.mapKey(key));
 
         final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
@@ -1379,7 +1379,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void cannotUpdateImmutableTokenWithNewPauseKey() throws DecoderException {
+    void cannotUpdateImmutableTokenWithNewPauseKey() throws InvalidKeyException {
         var token = new Token(Id.fromGrpcToken(misc)).setExpiry(expiry).setPauseKey(JKey.mapKey(key));
 
         final var op = updateWith(NO_KEYS, misc, false, false, false).toBuilder()
@@ -1411,7 +1411,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() throws DecoderException {
+    void cannotUpdateNewPauseKeyIfTokenHasNoPauseKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc))
                 .setExpiry(expiry)
@@ -1445,7 +1445,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInvalidNewAutoRenewPeriod() throws DecoderException {
+    void updateRejectsInvalidNewAutoRenewPeriod() throws InvalidKeyException {
         var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0L);
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc))
@@ -1480,7 +1480,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInappropriateKycKey() throws DecoderException {
+    void updateRejectsInappropriateKycKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
         final var op = updateWith(EnumSet.of(KeyType.KYC), misc, false, false, false);
@@ -1494,7 +1494,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInappropriateFreezeKey() throws DecoderException {
+    void updateRejectsInappropriateFreezeKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
 
@@ -1509,7 +1509,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInappropriateWipeKey() throws DecoderException {
+    void updateRejectsInappropriateWipeKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
 
@@ -1524,7 +1524,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsInappropriateSupplyKey() throws DecoderException {
+    void updateRejectsInappropriateSupplyKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var token = new Token(Id.fromGrpcToken(misc)).setAdminKey(jKey);
 
@@ -1539,7 +1539,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRejectsZeroTokenBalanceKey() throws DecoderException {
+    void updateRejectsZeroTokenBalanceKey() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var account = new Account(0L, Id.fromGrpcAccount(newTreasury), 0L);
         var token = new Token(Id.fromGrpcToken(nonfungible))
@@ -1568,7 +1568,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateHappyPathIgnoresZeroExpiry() throws DecoderException {
+    void updateHappyPathIgnoresZeroExpiry() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var newJkey = JKey.mapKey(newKey);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
@@ -1606,7 +1606,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateRemovesAdminKeyWhenAppropos() throws DecoderException {
+    void updateRemovesAdminKeyWhenAppropos() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
         var token = new Token(Id.fromGrpcToken(misc))
@@ -1632,7 +1632,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateHappyPathWorksForEverythingWithNewExpiry() throws DecoderException {
+    void updateHappyPathWorksForEverythingWithNewExpiry() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var newJkey = JKey.mapKey(newKey);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
@@ -1674,7 +1674,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateHappyPathWorksWithNewMemo() throws DecoderException {
+    void updateHappyPathWorksWithNewMemo() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
         var token = new Token(Id.fromGrpcToken(misc))
@@ -1701,7 +1701,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateHappyPathWorksWithNewMemoForNonfungible() throws DecoderException {
+    void updateHappyPathWorksWithNewMemoForNonfungible() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);
         var token = new Token(Id.fromGrpcToken(misc))
@@ -1728,7 +1728,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void updateHappyPathWorksWithNewAutoRenewAccount() throws DecoderException {
+    void updateHappyPathWorksWithNewAutoRenewAccount() throws InvalidKeyException {
         var jKey = JKey.mapKey(key);
         var newJkey = JKey.mapKey(newKey);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(treasury), 0L);

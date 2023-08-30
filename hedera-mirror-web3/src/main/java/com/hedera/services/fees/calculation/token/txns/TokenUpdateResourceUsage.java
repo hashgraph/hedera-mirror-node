@@ -32,11 +32,11 @@ import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.commons.codec.DecoderException;
 
 /**
  * Copied ResourceUsage type from hedera-services. Differences with the original:
@@ -90,7 +90,7 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
             try {
                 final var key = JKey.mapJKey(getter.apply(info));
                 return Optional.of(key);
-            } catch (DecoderException e) {
+            } catch (InvalidKeyException e) {
                 // empty
             }
         }
