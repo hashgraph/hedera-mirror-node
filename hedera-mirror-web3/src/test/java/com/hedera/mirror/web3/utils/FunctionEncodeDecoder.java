@@ -97,6 +97,7 @@ public class FunctionEncodeDecoder {
     public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
             "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String TRIPLE_BOOL = "(bool,bool,bool)";
+    private static final String BYTES_32 = "(bytes32)";
 
     private final Map<String, String> functionsAbi = new HashMap<>();
 
@@ -108,15 +109,15 @@ public class FunctionEncodeDecoder {
     public byte[] getContractBytes(final Path contractPath) {
         try {
             return Hex.decode(Files.readAllBytes(contractPath));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Bytes functionHashFor(final String functionName, final Path contractPath, final Object... parameters) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
-        Function function = Function.fromJson(jsonFunction);
-        Tuple parametersBytes = encodeTupleParameters(function.getInputs().getCanonicalType(), parameters);
+        final Function function = Function.fromJson(jsonFunction);
+        final Tuple parametersBytes = encodeTupleParameters(function.getInputs().getCanonicalType(), parameters);
 
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
     }
@@ -124,12 +125,12 @@ public class FunctionEncodeDecoder {
     public Bytes functionHashWithEmptyDataFor(
             final String functionName, final Path contractPath, final Object... parameters) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
-        Function function = Function.fromJson(jsonFunction);
+        final Function function = Function.fromJson(jsonFunction);
         return Bytes.wrap(encodeCall(function).array());
     }
 
-    public ByteBuffer encodeCall(Function function) {
-        ByteBuffer dest = ByteBuffer.allocate(function.selector().length + 3200);
+    public ByteBuffer encodeCall(final Function function) {
+        final ByteBuffer dest = ByteBuffer.allocate(function.selector().length + 3200);
         dest.put(function.selector());
         return dest;
     }
@@ -148,14 +149,14 @@ public class FunctionEncodeDecoder {
     public Tuple decodeResult(final String functionName, final Path contractPath, final String response) {
         final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
 
-        Function function = Function.fromJson(jsonFunction);
+        final Function function = Function.fromJson(jsonFunction);
         return function.decodeReturn(FastHex.decode(response.replace("0x", "")));
     }
 
     private Tuple encodeTupleParameters(final String tupleSig, final Object... parameters) {
         return switch (tupleSig) {
             case ADDRESS -> Tuple.of(convertAddress((Address) parameters[0]));
-            case STRING, UINT8, BOOL, INT64 -> Tuple.of(parameters[0]);
+            case STRING, UINT8, BOOL, INT64, BYTES_32 -> Tuple.of(parameters[0]);
             case UINT256, INT -> Tuple.of(BigInteger.valueOf((long) parameters[0]));
             case ADDRESS_DUO -> Tuple.of(
                     convertAddress((Address) parameters[0]), convertAddress((Address) parameters[1]));
@@ -291,7 +292,7 @@ public class FunctionEncodeDecoder {
         };
     }
 
-    private Tuple[] encodeCryptoTransfer(Object[] parameters) {
+    private Tuple[] encodeCryptoTransfer(final Object[] parameters) {
         if ((Boolean) parameters[4]) { // means it's a NFT transfer
             return new Tuple[] {
                 Tuple.of(
@@ -334,10 +335,10 @@ public class FunctionEncodeDecoder {
     private String getFunctionAbi(final String functionName, final Path contractPath) {
 
         try (final var in = new FileInputStream(contractPath.toString())) {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode rootNode = mapper.readTree(in);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode rootNode = mapper.readTree(in);
 
-            JsonNode functionNode = StreamSupport.stream(rootNode.spliterator(), false)
+            final JsonNode functionNode = StreamSupport.stream(rootNode.spliterator(), false)
                     .filter(node -> node.get("name").asText().equals(functionName))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Function not found: " + functionName));
@@ -345,12 +346,12 @@ public class FunctionEncodeDecoder {
             functionsAbi.put(functionName, functionNode.toString());
 
             return functionNode.toString();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return "Failed to parse";
         }
     }
 
-    private Tuple encodeToken(TokenCreateWrapper tokenCreateWrapper) {
+    private Tuple encodeToken(final TokenCreateWrapper tokenCreateWrapper) {
         return Tuple.of(
                 tokenCreateWrapper.getName(),
                 tokenCreateWrapper.getSymbol(),
@@ -387,7 +388,7 @@ public class FunctionEncodeDecoder {
                         tokenCreateWrapper.getExpiry().autoRenewPeriod()));
     }
 
-    private Tuple[] encodeFixedFee(FixedFeeWrapper fixedFeeWrapper) {
+    private Tuple[] encodeFixedFee(final FixedFeeWrapper fixedFeeWrapper) {
         final var customFee = fixedFeeWrapper.asGrpc();
         return new Tuple[] {
             Tuple.of(
@@ -400,7 +401,7 @@ public class FunctionEncodeDecoder {
         };
     }
 
-    private Tuple[] encodeFractionalFee(FractionalFeeWrapper fractionalFeeWrapper) {
+    private Tuple[] encodeFractionalFee(final FractionalFeeWrapper fractionalFeeWrapper) {
         return new Tuple[] {
             Tuple.of(
                     fractionalFeeWrapper.numerator(),
@@ -415,7 +416,7 @@ public class FunctionEncodeDecoder {
         };
     }
 
-    private Tuple[] encodeRoyaltyFee(RoyaltyFeeWrapper royaltyFeeWrapper) {
+    private Tuple[] encodeRoyaltyFee(final RoyaltyFeeWrapper royaltyFeeWrapper) {
         return new Tuple[] {
             Tuple.of(
                     royaltyFeeWrapper.numerator(),
@@ -434,7 +435,7 @@ public class FunctionEncodeDecoder {
         };
     }
 
-    private Tuple encodeTokenExpiry(TokenExpiryWrapper tokenExpiryWrapper) {
+    private Tuple encodeTokenExpiry(final TokenExpiryWrapper tokenExpiryWrapper) {
         return Tuple.of(
                 tokenExpiryWrapper.second(),
                 convertAddress(EntityIdUtils.asTypedEvmAddress(tokenExpiryWrapper.autoRenewAccount())),

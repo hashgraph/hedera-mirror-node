@@ -19,6 +19,8 @@ package com.hedera.mirror.web3.evm.config;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.evm.utils.PrngLogic;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
@@ -614,6 +616,11 @@ public class ServicesConfiguration {
             ContextOptionValidator contextOptionValidator) {
         return new TokenUpdatePrecompile(
                 pricingUtils, tokenUpdateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
+    }
+
+    @Bean
+    PrngLogic prngLogic(RecordFileRepository recordFileRepository) {
+        return new PrngLogic(recordFileRepository);
     }
 
     @Bean

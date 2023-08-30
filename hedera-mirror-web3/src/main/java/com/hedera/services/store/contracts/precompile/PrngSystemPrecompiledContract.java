@@ -22,14 +22,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.PrngLogic;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
-import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
-import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.node.app.service.mono.txns.util.PrngLogic;
+import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
@@ -40,35 +35,37 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 /**
  * System contract to generate random numbers. This will generate 256-bit pseudorandom number when
  * no range is provided using n-3 record's running hash. If 32-bit integer "range" and 256-bit
  * "seed" is provided returns a pseudorandom 32-bit integer X belonging to [0, range).
  */
-public class PrngSystemPrecompiledContract {
+public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
     private static final String PRECOMPILE_NAME = "PRNG";
-    // random256BitGenerator(uint256)
 
-    static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
+    // random256BitGenerator(uint256)
+    public static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
     public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
-    private final PrngLogic prngLogic;
-    private final EntityCreator creator;
+
     private final LivePricesSource livePricesSource;
     private final PrecompilePricingUtils pricingUtils;
-    private final MirrorNodeEvmProperties evmProperties;
+    private final PrngLogic prngLogic;
+
     private long gasRequirement;
 
     public PrngSystemPrecompiledContract(
-            final MirrorNodeEvmProperties evmProperties,
+            final GasCalculator gasCalculator,
             final PrngLogic prngLogic,
             final LivePricesSource livePricesSource,
             final PrecompilePricingUtils pricingUtils) {
-        this.evmProperties = evmProperties;
-        this.prngLogic = prngLogic;
+        super(PRECOMPILE_NAME, gasCalculator);
         this.livePricesSource = livePricesSource;
+        this.prngLogic = prngLogic;
         this.pricingUtils = pricingUtils;
     }
 
@@ -79,61 +76,45 @@ public class PrngSystemPrecompiledContract {
 
     @Override
     public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
-        final var gasNeeded =
+        gasRequirement =
                 calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));
-        final var result = computePrngResult(gasNeeded, input, frame);
-
-        if (frame.isStatic()) {
-            final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-            if (!proxyUpdater.isInTransaction()) {
-                // This thread is answering a ContractCallLocal query; don't create a record or
-                // change
-                // instance fields, just return the gas required and output for the given input
-                return result.getLeft();
-            }
-        }
-        final var randomNum = result.getLeft().getOutput();
-
-        final var parentUpdater = updater.parentUpdater();
-        if (parentUpdater.isPresent()) {
-            final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-            parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody());
-        } else {
-            throw new InvalidTransactionException("PRNG precompile frame had no parent updater", FAIL_INVALID);
-        }
-
+        final var result = computePrngResult(gasRequirement, input, frame);
         return result.getLeft();
     }
 
-    Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
+    public Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
             final long gasNeeded, final Bytes input, final MessageFrame frame) {
         try {
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
-            return Pair.of(PrecompileContractResult.success(randomNum), null);
+            return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);
         } catch (final InvalidTransactionException e) {
             return Pair.of(
-                    PrecompileContractResult.halt(null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
+                    PrecompiledContract.PrecompileContractResult.halt(
+                            null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
                     e.getResponseCode());
         } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
             return Pair.of(
-                    PrecompileContractResult.halt(null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
+                    PrecompiledContract.PrecompileContractResult.halt(
+                            null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
                     FAIL_INVALID);
         }
     }
 
-    @VisibleForTesting
-    Bytes generatePseudoRandomData(final Bytes input) {
+    public Bytes generatePseudoRandomData(final Bytes input) {
         final var selector = input.getInt(0);
-        return switch (selector) {
-            case PSEUDORANDOM_SEED_GENERATOR_SELECTOR -> random256BitGenerator();
-            default -> null;
-        };
+        return selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR ? random256BitGenerator() : null;
+    }
+
+    public long calculateGas(final Instant now) {
+        final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
+        final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
+        return feesInTinyCents / currentGasPriceInTinyCents;
     }
 
     private Bytes random256BitGenerator() {
-        final var hashBytes = prngLogic.getNMinus3RunningHashBytes();
+        final var hashBytes = prngLogic.getLatestRecordRunningHashBytes();
         if (isEmptyOrNull(hashBytes)) {
             return null;
         }
@@ -142,32 +123,5 @@ public class PrngSystemPrecompiledContract {
 
     private boolean isEmptyOrNull(final byte[] hashBytes) {
         return hashBytes == null || hashBytes.length == 0;
-    }
-
-    @VisibleForTesting
-    long calculateGas(final Instant now) {
-        final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
-        final var currentGasPriceInTinyCents = livePricesSource.currentGasPriceInTinycents(now, ContractCall);
-        return feesInTinyCents / currentGasPriceInTinyCents;
-    }
-
-    private void trackPrngOutput(final Bytes input, final Bytes randomNum) {
-        final var selector = input.getInt(0);
-        if (randomNum == null) {
-            return;
-        }
-        if (selector == PSEUDORANDOM_SEED_GENERATOR_SELECTOR) {
-            effectsTracker.trackRandomBytes(randomNum.toArray());
-        }
-    }
-
-    //    @VisibleForTesting
-    //    TransactionBody.Builder synthBody() {
-    //        return TransactionBody.newBuilder().setUtilPrng(UtilPrngTransactionBody.newBuilder());
-    //    }
-
-    @VisibleForTesting
-    public void setGasRequirement(final long gasRequirement) {
-        this.gasRequirement = gasRequirement;
     }
 }
