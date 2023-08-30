@@ -27,6 +27,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.utils.EntityNum;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -648,6 +649,60 @@ public class Account extends HederaEvmAccount {
     public Account decrementUsedAutomaticAssociations() {
         var count = getAlreadyUsedAutomaticAssociations();
         return setAlreadyUsedAutomaticAssociations(--count);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Account account = (Account) o;
+        return expiry == account.expiry
+                && balance == account.balance
+                && deleted == account.deleted
+                && ownedNfts == account.ownedNfts
+                && autoRenewSecs == account.autoRenewSecs
+                && autoAssociationMetadata == account.autoAssociationMetadata
+                && numAssociations == account.numAssociations
+                && numPositiveBalances == account.numPositiveBalances
+                && numTreasuryTitles == account.numTreasuryTitles
+                && ethereumNonce == account.ethereumNonce
+                && isSmartContract == account.isSmartContract
+                && createdTimestamp == account.createdTimestamp
+                && Objects.equals(entityId, account.entityId)
+                && Objects.equals(id, account.id)
+                && Objects.equals(proxy, account.proxy)
+                && Objects.equals(accountAddress, account.accountAddress)
+                && Objects.equals(cryptoAllowances, account.cryptoAllowances)
+                && Objects.equals(fungibleTokenAllowances, account.fungibleTokenAllowances)
+                && Objects.equals(approveForAllNfts, account.approveForAllNfts)
+                && Objects.equals(key, account.key);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                super.hashCode(),
+                entityId,
+                id,
+                expiry,
+                balance,
+                deleted,
+                ownedNfts,
+                autoRenewSecs,
+                proxy,
+                accountAddress,
+                autoAssociationMetadata,
+                cryptoAllowances,
+                fungibleTokenAllowances,
+                approveForAllNfts,
+                numAssociations,
+                numPositiveBalances,
+                numTreasuryTitles,
+                ethereumNonce,
+                isSmartContract,
+                key,
+                createdTimestamp);
     }
 
     @Override
