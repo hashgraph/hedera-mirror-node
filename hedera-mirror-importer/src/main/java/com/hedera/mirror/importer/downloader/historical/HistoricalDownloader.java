@@ -101,6 +101,9 @@ public class HistoricalDownloader {
     }
 
     public void downloadAll(StreamFilename startFilename) {
+        if (!downloaderProperties.isEnabled()) {
+            return;
+        }
 
         var methodStopwatch = Stopwatch.createStarted();
         log.info("Starting download from {} for stream type {}", startFilename, streamType);
@@ -155,7 +158,10 @@ public class HistoricalDownloader {
                                     .doOnNext(response -> {
                                         var fileCount = fileCounter.incrementAndGet();
                                         if (fileCount % 1000 == 0) {
-                                            log.info("Node {} cumulative total of {} files", nodeInfo, fileCount);
+                                            log.info(
+                                                    "Node {} downloaded cumulative total of {} files",
+                                                    nodeInfo,
+                                                    fileCount);
                                         }
                                     })
                                     .count()
