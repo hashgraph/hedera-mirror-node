@@ -36,33 +36,34 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final Store store;
 
+    // We should check only accounts usability
     @Override
     public boolean isUsable(final Address address) {
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
         final var balance = account.getBalance();
+        final var isDeleted = account.isDeleted();
 
-        if (!account.isEmptyAccount() || Address.ZERO.equals(address)) {
-            return balance >= 0L;
-        } else {
-            final var token = store.getToken(address, OnMissing.DONT_THROW);
-            if (token.isEmptyToken()) {
-                return false;
-            }
-
-            final var expirationTimestamp = token.getExpiry();
-            final var createdTimestamp = token.getCreatedTimestamp();
-            final var autoRenewPeriod = token.getAutoRenewPeriod();
-
-            final var currentTime = Instant.now().getEpochSecond();
-
-            if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
-                return false;
-            }
-
-            return createdTimestamp == 0L
-                    || autoRenewPeriod == 0L
-                    || (createdTimestamp + autoRenewPeriod) > currentTime;
+        if (isDeleted) {
+            return false;
         }
+
+        if (balance > 0) {
+            return true;
+        }
+
+        final var expirationTimestamp = account.getExpiry();
+        final var createdTimestamp = account.getCreatedTimestamp();
+        final var autoRenewPeriod = account.getAutoRenewSecs();
+        final var currentTime = Instant.now().getEpochSecond();
+        if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
+            return false;
+        }
+
+        if (createdTimestamp == 0L) {
+            return false;
+        }
+
+        return autoRenewPeriod == 0L || (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override

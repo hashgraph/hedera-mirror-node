@@ -97,28 +97,20 @@ class MirrorEntityAccessTest {
     void isNotUsableWithWrongAlias() {
         final var address = Address.fromHexString("0x3232134567785444e");
         when(store.getAccount(address, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(address, OnMissing.DONT_THROW)).thenReturn(Token.getEmptyToken());
         final var result = mirrorEntityAccess.isUsable(address);
         assertThat(result).isFalse();
     }
 
     @Test
     void isNotUsableWithExpiredTimestamp() {
-        final long expiredTimestamp = Instant.MIN.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getExpiry()).thenReturn(expiredTimestamp);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
 
     @Test
     void isNotUsableWithExpiredTimestampAndNullBalance() {
-        final long expiredTimestamp = Instant.MIN.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getExpiry()).thenReturn(expiredTimestamp);
-        when(token.getExpiry()).thenReturn(1L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
@@ -126,11 +118,10 @@ class MirrorEntityAccessTest {
     @Test
     void isUsableWithNotExpiredTimestamp() {
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getExpiry()).thenReturn(expiredTimestamp);
-        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(token.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getExpiry()).thenReturn(expiredTimestamp);
+        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(account.getAutoRenewSecs()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
@@ -139,46 +130,39 @@ class MirrorEntityAccessTest {
     void isNotUsableWithExpiredAutoRenewTimestamp() {
         final long autoRenewPeriod = Instant.MAX.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond() - 1000L);
-        when(token.getAutoRenewPeriod()).thenReturn(autoRenewPeriod);
-        when(token.getExpiry()).thenReturn(1L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
     }
 
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(token.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
-        when(token.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(account.getAutoRenewSecs()).thenReturn(Instant.MAX.getEpochSecond());
+        when(account.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
     void isUsableWithEmptyExpiryAndAutoRenewPeriod() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(token.getAutoRenewPeriod()).thenReturn(0L);
-        when(token.getExpiry()).thenReturn(0L);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(account.getAutoRenewSecs()).thenReturn(0L);
+        when(account.getExpiry()).thenReturn(0L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isUsableWithEmptyExpiryAndAutoRenewAndCreatedTimestampPeriod() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        when(store.getToken(ADDRESS, OnMissing.DONT_THROW)).thenReturn(token);
-        when(token.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(token.getAutoRenewPeriod()).thenReturn(0L);
-        when(token.getExpiry()).thenReturn(0L);
-        when(token.getCreatedTimestamp()).thenReturn(0L);
+    void isNotUsableWithEmptyExpiryAndAutoRenewAndCreatedTimestampPeriod() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(account.getAutoRenewSecs()).thenReturn(0L);
+        when(account.getExpiry()).thenReturn(0L);
+        when(account.getCreatedTimestamp()).thenReturn(0L);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isTrue();
+        assertThat(result).isFalse();
     }
 
     @Test

@@ -31,8 +31,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import lombok.Getter;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -49,26 +48,65 @@ import org.hyperledger.besu.datatypes.Address;
  * 6. Added factory method that returns empty instance
  * 7. Added isEmptyAccount() method
  */
+@Getter
 public class Account extends HederaEvmAccount {
     private final Long entityId;
+
+    @Getter
     private final Id id;
+
+    @Getter
     private final long expiry;
+
+    @Getter
     private final long balance;
+
+    @Getter
     private final boolean deleted;
+
+    @Getter
     private final long ownedNfts;
+
+    @Getter
     private final long autoRenewSecs;
+
+    @Getter
     private final Id proxy;
+
+    @Getter
     private final Address accountAddress;
+
+    @Getter
     private final int autoAssociationMetadata;
+
+    @Getter
     private final SortedMap<EntityNum, Long> cryptoAllowances;
+
+    @Getter
     private final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+
+    @Getter
     private final SortedSet<FcTokenAllowanceId> approveForAllNfts;
+
+    @Getter
     private final int numAssociations;
+
+    @Getter
     private final int numPositiveBalances;
+
+    @Getter
     private final int numTreasuryTitles;
+
+    @Getter
     private final long ethereumNonce;
+
     private final boolean isSmartContract;
+
+    @Getter
     private final JKey key;
+
+    @Getter
+    private final long createdTimestamp;
 
     @SuppressWarnings("java:S107")
     public Account(
@@ -90,7 +128,8 @@ public class Account extends HederaEvmAccount {
             int numTreasuryTitles,
             long ethereumNonce,
             boolean isSmartContract,
-            JKey key) {
+            JKey key,
+            long createdTimestamp) {
         super(id.asEvmAddress());
         setAlias(alias);
         this.entityId = entityId;
@@ -112,6 +151,7 @@ public class Account extends HederaEvmAccount {
         this.ethereumNonce = ethereumNonce;
         this.isSmartContract = isSmartContract;
         this.key = key;
+        this.createdTimestamp = createdTimestamp;
     }
 
     /**
@@ -138,7 +178,8 @@ public class Account extends HederaEvmAccount {
                 0,
                 0L,
                 false,
-                null);
+                null,
+                0L);
     }
 
     public static Account getEmptyAccount() {
@@ -177,7 +218,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -208,7 +250,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -239,7 +282,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -271,7 +315,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -302,7 +347,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -333,7 +379,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -364,7 +411,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -396,7 +444,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -428,7 +477,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -460,7 +510,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -491,7 +542,8 @@ public class Account extends HederaEvmAccount {
                 newNumTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     /**
@@ -522,7 +574,8 @@ public class Account extends HederaEvmAccount {
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
-                oldAccount.key);
+                oldAccount.key,
+                oldAccount.createdTimestamp);
     }
 
     public int getMaxAutomaticAssociations() {
@@ -540,40 +593,16 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewAutoAssociationMetadata(this, updatedAutoAssociationMetadata);
     }
 
-    public int getAutoAssociationMetadata() {
-        return autoAssociationMetadata;
-    }
-
     public Account setAutoAssociationMetadata(int newAutoAssociationMetadata) {
         return createNewAccountWithNewAutoAssociationMetadata(this, newAutoAssociationMetadata);
-    }
-
-    public Long getEntityId() {
-        return entityId;
-    }
-
-    public Id getId() {
-        return id;
-    }
-
-    public long getExpiry() {
-        return expiry;
     }
 
     public Account setExpiry(long expiry) {
         return createNewAccountWithNewExpiry(this, expiry);
     }
 
-    public long getBalance() {
-        return balance;
-    }
-
     public Account setBalance(long balance) {
         return createNewAccountWithNewBalance(this, balance);
-    }
-
-    public boolean isDeleted() {
-        return deleted;
     }
 
     public Account setDeleted(boolean deleted) {
@@ -592,91 +621,33 @@ public class Account extends HederaEvmAccount {
         return createNewAccountWithNewCryptoAllowances(this, cryptoAllowances);
     }
 
-    public long getOwnedNfts() {
-        return ownedNfts;
-    }
-
     public Account setOwnedNfts(long newOwnedNfts) {
         return createNewAccountWithNewOwnedNfts(this, newOwnedNfts);
-    }
-
-    public long getAutoRenewSecs() {
-        return autoRenewSecs;
-    }
-
-    public Id getProxy() {
-        return proxy;
-    }
-
-    public Address getAccountAddress() {
-        return accountAddress;
-    }
-
-    public SortedMap<EntityNum, Long> getCryptoAllowances() {
-        return cryptoAllowances;
-    }
-
-    public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
-        return fungibleTokenAllowances;
     }
 
     public Account setFungibleTokenAllowances(SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
         return createNewAccountWithNewFungibleTokenAllowances(this, fungibleTokenAllowances);
     }
 
-    public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
-        return approveForAllNfts;
-    }
-
     public Account setApproveForAllNfts(SortedSet<FcTokenAllowanceId> approveForAllNfts) {
         return createNewAccountWithNewApproveForAllNfts(this, approveForAllNfts);
-    }
-
-    public int getNumAssociations() {
-        return numAssociations;
     }
 
     public Account setNumAssociations(int numAssociations) {
         return createNewAccountWithNumAssociations(this, numAssociations);
     }
 
-    public int getNumTreasuryTitles() {
-        return numTreasuryTitles;
-    }
-
     public Account setNumTreasuryTitles(int numTreasuryTitles) {
         return createNewAccountWithNewNumTreasuryTitles(this, numTreasuryTitles);
-    }
-
-    public int getNumPositiveBalances() {
-        return numPositiveBalances;
     }
 
     public Account setNumPositiveBalances(int newNumPositiveBalances) {
         return createNewAccountWithNewPositiveBalances(this, newNumPositiveBalances);
     }
 
-    public long getEthereumNonce() {
-        return ethereumNonce;
-    }
-
     public Account decrementUsedAutomaticAssociations() {
         var count = getAlreadyUsedAutomaticAssociations();
         return setAlreadyUsedAutomaticAssociations(--count);
-    }
-
-    public JKey getKey() {
-        return this.key;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override

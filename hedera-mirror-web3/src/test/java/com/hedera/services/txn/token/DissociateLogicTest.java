@@ -221,7 +221,8 @@ class DissociateLogicTest {
                 0,
                 0,
                 false,
-                null);
+                null,
+                0L);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
@@ -257,7 +258,8 @@ class DissociateLogicTest {
                 0,
                 0,
                 false,
-                null);
+                null,
+                0L);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
