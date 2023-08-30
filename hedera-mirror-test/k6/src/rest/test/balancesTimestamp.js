@@ -22,7 +22,7 @@ import {balanceListName} from '../libex/constants.js';
 const urlTag = '/balances?timestamp=X';
 
 const {options, run, setup} = new RestTestScenarioBuilder()
-  .name('balances_with_timestamp') // use unique scenario name among all tests
+  .name('balancesWithTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL_PREFIX']}/balances?timestamp=${testParameters['DEFAULT_BALANCE_TIMESTAMP']}&limit=${testParameters['DEFAULT_LIMIT']}`;

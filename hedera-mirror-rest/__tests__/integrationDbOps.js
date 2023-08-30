@@ -111,7 +111,6 @@ const flywayMigrate = async () => {
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
       "placeholders.api-user": "${apiUsername}",
-      "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
       "placeholders.idPartitionSize": 1000000000000000,

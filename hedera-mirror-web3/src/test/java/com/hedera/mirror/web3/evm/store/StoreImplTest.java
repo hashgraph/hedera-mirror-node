@@ -20,7 +20,6 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -329,15 +328,10 @@ class StoreImplTest {
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
-        var result = subject.hasApprovedForAll(
-                Address.ZERO,
-                EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
-                EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertFalse(result);
-        result = subject.hasApprovedForAll(
-                ACCOUNT_ADDRESS,
-                EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
-                EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertFalse(result);
+        var accountId = EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS);
+        var tokenId = EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS);
+        assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();
+        assertThat(subject.hasApprovedForAll(ACCOUNT_ADDRESS, accountId, tokenId))
+                .isFalse();
     }
 }

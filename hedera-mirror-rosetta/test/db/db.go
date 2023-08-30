@@ -247,10 +247,9 @@ func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, para
 	}
 
 	args := map[string]string{
-		"password":                  params.password,
-		"placeholders.api-password": "mirror_api",
-		"placeholders.api-user":     "mirror_api_password",
-		"placeholders.autovacuumFreezeMaxAgeInsertOnly": "100000",
+		"password":                                      params.password,
+		"placeholders.api-password":                     "mirror_api",
+		"placeholders.api-user":                         "mirror_api_password",
 		"placeholders.idPartitionSize":                  "1000000000000000",
 		"placeholders.maxEntityId":                      "5000000",
 		"placeholders.maxEntityIdRatio":                 "2.0",

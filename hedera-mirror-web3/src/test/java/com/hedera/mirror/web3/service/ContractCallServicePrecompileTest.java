@@ -28,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,7 +49,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
                 "GET_INFORMATION_FOR_TOKEN_NFT"
             })
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(ContractReadFunctions contractFunc) {
+    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
@@ -70,10 +69,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
@@ -95,10 +93,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
@@ -111,10 +108,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
@@ -427,6 +423,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}),
         ASSOCIATE_TOKENS(
                 "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
+        HRC_ASSOCIATE_REDIRECT("associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED}),
         MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
         MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
             NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
@@ -434,6 +431,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}),
         DISSOCIATE_TOKENS(
                 "dissociateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
+        HRC_DISSOCIATE_REDIRECT("dissociateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
         BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
         WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L}),
         WIPE_NFT_TOKEN(
@@ -466,9 +464,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
         }),
         CRYPTO_TRANSFER_TOKENS(
-                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L}),
+                "cryptoTransferExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
-                "cryptoTransferExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L}),
+                "cryptoTransferExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}),
         TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
             NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
         }),

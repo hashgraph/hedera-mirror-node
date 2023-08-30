@@ -17,6 +17,7 @@
 import http from 'k6/http';
 
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {balanceListName} from '../libex/constants.js';
 
 const urlTag = '/balances?account.id=eq:{accountId}';
 
@@ -28,7 +29,7 @@ const {options, run, setup} = new RestTestScenarioBuilder()
     return http.get(url);
   })
   .requiredParameters('DEFAULT_ACCOUNT_ID')
-  .check('Balances for specific account OK', (r) => isValidListResponse(r, 'balances'))
+  .check('Balances for specific account OK', (r) => isValidListResponse(r, balanceListName))
   .build();
 
 export {options, run, setup};
