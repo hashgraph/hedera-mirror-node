@@ -1,7 +1,8 @@
 hedera:
   mirror:
     importer:
-      downloader: # TODO Remove this
+      downloader:
+        downloadRatio: 0.34
         balance:
           enabled: false
         event:

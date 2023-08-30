@@ -28,6 +28,7 @@ import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
@@ -150,12 +151,17 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
+        var nodeInfo = "%s (%s)".formatted(node, node.getNodeAccountId());
+        var pageCounter = new AtomicLong(0L);
         return Flux.from(s3Client.listObjectsV2Paginator(listRequest))
                 .timeout(commonDownloaderProperties.getTimeout())
                 .doOnNext(r -> {
-                    if (log.isDebugEnabled() && !r.contents().isEmpty()) {
-                        log.debug(
-                                "Next batch of {} s3 objects, starting with: {}",
+                    var pageCount = pageCounter.incrementAndGet();
+                    if (!r.contents().isEmpty()) {
+                        log.info(
+                                "Node {} loaded page {} of {} S3 objects, starting with: {}",
+                                nodeInfo,
+                                pageCount,
                                 r.contents().size(),
                                 r.contents().get(0).key());
                     }

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
 import org.apache.commons.io.FileUtils;
 import org.springframework.cache.Cache;
@@ -62,7 +63,7 @@ public class HistoricalDownloader {
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
     private final Cache dataDownloadsCache;
-    private final int downloadConcurrency = 3; // Debug, make a property
+    private final int downloadConcurrency = 5; // Debug, make a property
 
     public HistoricalDownloader(
             ConsensusNodeService consensusNodeService,
@@ -102,7 +103,7 @@ public class HistoricalDownloader {
     public void downloadAll(StreamFilename startFilename) {
 
         var methodStopwatch = Stopwatch.createStarted();
-        log.info("Starting download from {}} for stream type {}", startFilename, streamType);
+        log.info("Starting download from {} for stream type {}", startFilename, streamType);
 
         /* NOTE: For first part (6413), the address book will not change while downloading since the data files
          * are not being imported.
@@ -119,15 +120,21 @@ public class HistoricalDownloader {
          * each invocation of downloadNextBatch(), which is pretty frequent, but certainly not each signature
          * file listed. Maybe utilize an epoch minute or hour cache key or something?
          */
-        var nodes = partialCollection(consensusNodeService.getNodes());
-        //        var nodes = partialCollection(List.of(consensusNodeService.getNodes().iterator().next()));
-
+        var allNodes = consensusNodeService.getNodes();
+        var nodes = partialCollection(allNodes);
         List<CompletableFuture<Long>> nodeDownloaders = new ArrayList<>(nodes.size());
+
+        log.info(
+                "{} of {} node downloaders required to meet downloadRatio {}",
+                nodes.size(),
+                allNodes.size(),
+                downloaderProperties.getCommon().getDownloadRatio());
 
         for (var node : nodes) {
             nodeDownloaders.add(CompletableFuture.supplyAsync(
                     () -> {
-                        log.info("Downloading files for node {}", node);
+                        var nodeInfo = "%s (%s)".formatted(node, node.getNodeAccountId());
+                        log.info("Downloading files for node {}", nodeInfo);
                         var stopwatch = Stopwatch.createStarted();
 
                         var prefix = getPrefix(node, streamType);
@@ -139,19 +146,25 @@ public class HistoricalDownloader {
                                     "Unable to create local directory %s".formatted(filesDownloadDir), e);
                         }
 
+                        var fileCounter = new AtomicLong(0L);
                         try {
                             var count = streamFileProvider
                                     .listAllPaginated(node, startFilename)
-                                    .log()
                                     .filter(this::isDownloadProspect)
                                     .flatMap(streamFileProvider::getAsFile, downloadConcurrency)
+                                    .doOnNext(response -> {
+                                        var fileCount = fileCounter.incrementAndGet();
+                                        if (fileCount % 1000 == 0) {
+                                            log.info("Node {} cumulative total of {} files", nodeInfo, fileCount);
+                                        }
+                                    })
                                     .count()
                                     .block();
 
-                            log.info("Downloaded {} files for node: {} in {}", count, node, stopwatch);
+                            log.info("Downloaded {} files for node: {} in {}", count, nodeInfo, stopwatch);
                             return count;
                         } catch (Exception e) {
-                            log.error("Error downloading files for node: {} after {}", node, stopwatch, e);
+                            log.error("Error downloading files for node: {} after {}", nodeInfo, stopwatch, e);
                             throw e; // Complete exceptionally for now
                         }
                     },
