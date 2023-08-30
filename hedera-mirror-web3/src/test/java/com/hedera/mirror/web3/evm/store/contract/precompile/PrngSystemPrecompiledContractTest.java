@@ -32,6 +32,7 @@ import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
@@ -40,6 +41,7 @@ import java.util.Random;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +90,22 @@ class PrngSystemPrecompiledContractTest {
 
         final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertEquals(32, result.toArray().length);
+    }
+
+    @Test
+    void testComputePrngResult_Throws_InvalidTransactionException() {
+        // Given low remaining gas
+        given(frame.getRemainingGas()).willReturn(500L);
+
+        // When
+        final var result = subject.computePrngResult(1000L, random256BitGeneratorInput(), frame);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(
+                ExceptionalHaltReason.INVALID_OPERATION,
+                result.getLeft().getHaltReason().orElse(null));
+        assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getRight());
     }
 
     @Test
