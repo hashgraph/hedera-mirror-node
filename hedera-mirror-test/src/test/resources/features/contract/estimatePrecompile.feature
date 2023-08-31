@@ -8,6 +8,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Given I successfully create fungible tokens
     Given I successfully create non fungible tokens
     Given I mint and verify a new nft
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     And I set lower deviation at 5% and upper deviation at 20%
     Then I call estimateGas with associate function for fungible token
     Then I call estimateGas with associate function for NFT
@@ -15,21 +16,30 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with dissociate token function without association for NFT
     Then I call estimateGas with nested associate function that executes it twice for fungible token
     Then I call estimateGas with nested associate function that executes it twice for NFT
+    And I associate the receiver account with the fungible token
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with dissociate token function for fungible token
+    And I associate the receiver account with the NFT
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with dissociate token function for NFT
     Then I call estimateGas with dissociate and associate nested function for fungible token
     Then I call estimateGas with dissociate and associate nested function for NFT
     Then I call estimateGas with approve function without association
     Then I call estimateGas with approveNFT function without association
     Then I call estimateGas with setApprovalForAll function without association
-    Then I associate contracts with the tokens and approve the all nft serials
+    And I associate contracts with the tokens and approve all nft serials
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with approve function
     Then I call estimateGas with approveNFT function
     Then I call estimateGas with ERC approve function
     Then I call estimateGas with setApprovalForAll function
     Then I call estimateGas with transferFrom function without approval
     Then I call estimateGas with ERC transferFrom function without approval
+    And I approve receiver account to use the NFT with id 1
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferFromNFT function
+    And I approve receiver account to use fungible token
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferFrom function
     Then I call estimateGas with ERC transferFrom function
     Then I call estimateGas with transferFrom function with more than the approved allowance
@@ -37,12 +47,22 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with transferFromNFT with invalid serial number
     Then I call estimateGas with transferToken function
     Then I call estimateGas with transferNFT function
+    And I approve receiver account to use fungible token and transfer fungible token to the erc contract
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with ERC transfer function
     Then I call estimateGas with associateTokens function for fungible tokens
     Then I call estimateGas with associateTokens function for NFTs
+    And I associate the fungible_kyc_unfrozen token with the receiver account
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with dissociateTokens function for fungible tokens
+    And I associate the nft_kyc_unfrozen with the receiver account
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with dissociateTokens function for NFTs
+    And I associate and approve the second receiver to use the fungible_kyc_unfrozen token
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferTokens function
+    And I mint a new NFT and approve second receiver account to all serial numbers
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferNFTs function
     Then I call estimateGas with cryptoTransfer function for hbars
     Then I call estimateGas with cryptoTransfer function for nft
@@ -55,8 +75,12 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with CreateNFT function
     Then I call estimateGas with CreateFungibleToken function with custom fees
     Then I call estimateGas with CreateNFT function with custom fees
+    And I approve and transfer fungible tokens to receiver account
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with WipeTokenAccount function
     Then I call estimateGas with WipeTokenAccount function with invalid amount
+    And I transfer NFT to receiver account
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with WipeNFTAccount function
     Then I call estimateGas with WipeNFTAccount function with invalid serial number
     Then I call estimateGas with GrantKYC function for fungible token
@@ -133,6 +157,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with redirect getOwnerOf function
     Then I call estimateGas with redirect tokenURI function
     Then I call estimateGas with redirect isApprovedForAll function
+    And I transfer fungible token to the precompile contract
+    Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with redirect transfer function
     Then I call estimateGas with redirect transferFrom function
     Then I call estimateGas with redirect approve function

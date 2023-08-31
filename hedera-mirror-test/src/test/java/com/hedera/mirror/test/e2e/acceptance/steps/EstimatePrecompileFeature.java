@@ -141,7 +141,11 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void mintNft() {
         tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
         networkTransactionResponse = tokenClient.mint(nonFungibleKycUnfrozenTokenId, RandomUtils.nextBytes(4));
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @Then("the mirror node REST API should return status {int} for the HAPI transaction")
+    public void verifyMirrorAPIResponses(int status) {
+        verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
     @And("I set lower deviation at {int}% and upper deviation at {int}%")
@@ -227,12 +231,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
     }
 
+    @And("I associate the receiver account with the fungible token")
+    public void associateReceiverWithFungibleEstimateGas() {
+        // associating the token with the token address
+        networkTransactionResponse = tokenClient.associate(receiverAccount, fungibleTokenId);
+    }
+
     @Then("I call estimateGas with dissociate token function for fungible token")
     public void dissociateFunctionEstimateGas() {
-        // associating the token with the address
-        networkTransactionResponse = tokenClient.associate(receiverAccount, fungibleTokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.DISSOCIATE_TOKEN)
                 .encodeCallWithArgs(
@@ -245,12 +251,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with dissociate token function for NFT")
-    public void dissociateFunctionNFTEstimateGas() {
+    @And("I associate the receiver account with the NFT")
+    public void associateReceiverWithNonFungibleEstimateGas() {
         // associating the NFT with the address
         networkTransactionResponse = tokenClient.associate(receiverAccount, nonFungibleTokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
 
+    @Then("I call estimateGas with dissociate token function for NFT")
+    public void dissociateFunctionNFTEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.DISSOCIATE_TOKEN)
                 .encodeCallWithArgs(
@@ -329,7 +337,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I associate contracts with the tokens and approve the all nft serials")
+    @Then("I associate contracts with the tokens and approve all nft serials")
     public void associateTokensWithContract() throws InvalidProtocolBufferException {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
         tokenClient.associate(deployedErcTestContract.contractId(), fungibleTokenId);
@@ -342,7 +350,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(nonFungibleKycUnfrozenTokenId,
                         deployedEstimatePrecompileContract.contractId());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I call estimateGas with approve function")
@@ -427,10 +434,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(encodedFunctionCall, ercTestContractSolidityAddress);
     }
 
+    @And("I approve receiver account to use fungible token")
+    public void approveFungibleWithReceiver() {
+        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 10);
+    }
+
     @Then("I call estimateGas with transferFrom function")
     public void transferFromEstimateGas() {
-        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 10);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.TRANSFER_FROM)
                 .encodeCallWithArgs(
@@ -485,13 +495,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(encodedFunctionCall, ercTestContractSolidityAddress);
     }
 
+    @And("I approve receiver account to use the NFT with id 1")
+    public void approveNonFungibleWithReceiver() {
+        NftId id = new NftId(nonFungibleTokenId, firstNftSerialNumber);
+        networkTransactionResponse = accountClient.approveNft(id, receiverAccount.getAccountId());
+    }
+
     @Then("I call estimateGas with transferFromNFT function")
     public void transferFromNFTEstimateGas() {
-        NftId id = new NftId(nonFungibleTokenId, firstNftSerialNumber);
-
-        networkTransactionResponse = accountClient.approveNft(id, receiverAccount.getAccountId());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.TRANSFER_FROM_NFT)
                 .encodeCallWithArgs(
@@ -550,16 +561,18 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with ERC transfer function")
-    public void ercTransferEstimateGas() {
+    @And("I approve receiver account to use fungible token and transfer fungible token to the erc contract")
+    public void approveAndTransferFungibleToken() {
         accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 50L);
         networkTransactionResponse = tokenClient.transferFungibleToken(
                 fungibleTokenId,
                 admin,
                 AccountId.fromString(deployedErcTestContract.contractId().toString()),
                 10);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
 
+    @Then("I call estimateGas with ERC transfer function")
+    public void ercTransferEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TRANSFER_ERC)
                 .encodeCallWithArgs(
                         asAddress(fungibleTokenId.toSolidityAddress()),
@@ -604,11 +617,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
+    @And("I associate the fungible_kyc_unfrozen token with the receiver account")
+    public void associateFungibleKycUnfrozenTokenWithReceiverAccount() {
+        networkTransactionResponse = tokenClient.associate(receiverAccount, fungibleKycUnfrozenTokenId);
+    }
+
     @Then("I call estimateGas with dissociateTokens function for fungible tokens")
     public void dissociateTokensEstimateGas() {
-        networkTransactionResponse = tokenClient.associate(receiverAccount, fungibleKycUnfrozenTokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.DISSOCIATE_TOKENS)
                 .encodeCallWithArgs(
@@ -623,12 +638,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
+    @And("I associate the nft_kyc_unfrozen with the receiver account")
+    public void associateNonFungibleKycUnfrozenTokenWithReceiverAccount() {
+        networkTransactionResponse = tokenClient.associate(receiverAccount, nonFungibleKycUnfrozenTokenId);
+    }
+
     @Then("I call estimateGas with dissociateTokens function for NFTs")
     public void dissociateNFTEstimateGas() {
-        // associating tokens with the address
-        networkTransactionResponse = tokenClient.associate(receiverAccount, nonFungibleKycUnfrozenTokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.DISSOCIATE_TOKENS)
                 .encodeCallWithArgs(
@@ -643,12 +659,15 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with transferTokens function")
-    public void transferTokensEstimateGas() {
+    @And("I associate and approve the second receiver to use the fungible_kyc_unfrozen token")
+    public void associateAndApproveFungibleKycUnfrozenTokenWithReceiverAccount() {
         tokenClient.associate(secondReceiverAccount, fungibleTokenId);
         networkTransactionResponse =
                 accountClient.approveToken(fungibleTokenId, secondReceiverAccount.getAccountId(), 10);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @Then("I call estimateGas with transferTokens function")
+    public void transferTokensEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.TRANSFER_TOKENS)
                 .encodeCallWithArgs(
@@ -665,14 +684,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with transferNFTs function")
-    public void transferNFTsEstimateGas() {
+    @And("I mint a new NFT and approve second receiver account to all serial numbers")
+    public void mintAndApproveAllSerialsToSecondReceiver() {
         tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
         accountClient.approveNftAllSerials(nonFungibleTokenId, receiverAccount.getAccountId());
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(nonFungibleTokenId, secondReceiverAccount.getAccountId());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
 
+    @Then("I call estimateGas with transferNFTs function")
+    public void transferNFTsEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.TRANSFER_NFTS)
                 .encodeCallWithArgs(
@@ -851,13 +872,15 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 1650000000);
     }
 
+    @And("I approve and transfer fungible tokens to receiver account")
+    public void approveAndTransferFungibleTokensToReceiverAccount() {
+        accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 100);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                fungibleTokenId, admin, receiverAccount.getAccountId(), 10);
+    }
+
     @Then("I call estimateGas with WipeTokenAccount function")
     public void wipeTokenAccountEstimateGas() {
-        accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 10_000_00L);
-        networkTransactionResponse = tokenClient.transferFungibleToken(
-                fungibleTokenId, admin, receiverAccount.getAccountId(), 3_000_0L);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.WIPE_TOKEN_ACCOUNT)
                 .encodeCallWithArgs(
@@ -883,15 +906,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with WipeNFTAccount function")
-    public void wipeNFTAccountEstimateGas() {
+    @And("I transfer NFT to receiver account")
+    public void transferNonFungibleToReceiverAccount() {
         networkTransactionResponse = tokenClient.transferNonFungibleToken(
                 nonFungibleTokenId,
                 admin,
                 receiverAccount.getAccountId(),
                 Collections.singletonList(firstNftSerialNumber));
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
 
+    @Then("I call estimateGas with WipeNFTAccount function")
+    public void wipeNFTAccountEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
                 ContractMethods.WIPE_NFT_ACCOUNT)
                 .encodeCallWithArgs(
@@ -1831,15 +1856,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 precompileTestContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with redirect transfer function")
-    public void redirectTransferEstimateGas() {
+    @And("I transfer fungible token to the precompile contract")
+    public void transferFungibleToPrecompileContract() {
         networkTransactionResponse = tokenClient.transferFungibleToken(
                 fungibleTokenId,
                 admin,
                 AccountId.fromString(deployedPrecompileContract.contractId().toString()),
                 10);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
 
+    @Then("I call estimateGas with redirect transfer function")
+    public void redirectTransferEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
                 ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER)
                 .encodeCallWithArgs(
