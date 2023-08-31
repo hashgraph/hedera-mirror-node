@@ -6,7 +6,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Given I create erc test contract with 0 balance
     Given I successfully create Precompile contract with 0 balance
     Given I successfully create fungible tokens
-    Given I successfully non fungible tokens
+    Given I successfully create non fungible tokens
     Given I mint and verify a new nft
     And I set lower deviation at 5% and upper deviation at 20%
     Then I call estimateGas with associate function for fungible token

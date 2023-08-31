@@ -148,7 +148,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .tokenId();
     }
 
-    @Given("I successfully non fungible tokens")
+    @Given("I successfully create non fungible tokens")
     public void createNonFungibleToken() {
         nonFungibleKycUnfrozenTokenId = tokenClient
                 .getToken(NFT_KYC_UNFROZEN)
