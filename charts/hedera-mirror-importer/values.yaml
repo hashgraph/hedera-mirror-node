@@ -111,7 +111,6 @@ config:
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
-  SPRING_CLOUD_KUBERNETES_ENABLED: "true"
   SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/usr/etc/hedera/"
   # FOO:
   #   valueFrom:
