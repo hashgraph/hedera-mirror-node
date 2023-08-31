@@ -87,6 +87,7 @@ public class EvmOperationConstructionUtil {
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1));
     }
 
+    @SuppressWarnings("java:S107")
     public static Map<String, Provider<MessageCallProcessor>> mcps(
             final GasCalculator gasCalculator,
             final AbstractAutoCreationLogic autoCreationLogic,
