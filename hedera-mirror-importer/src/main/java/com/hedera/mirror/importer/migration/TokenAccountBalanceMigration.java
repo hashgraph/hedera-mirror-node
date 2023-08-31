@@ -88,7 +88,7 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.67.1");
+        return MigrationVersion.fromVersion("1.86.0");
     }
 
     @Override

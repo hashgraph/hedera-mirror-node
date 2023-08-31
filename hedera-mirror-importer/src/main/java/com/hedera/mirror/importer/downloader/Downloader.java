@@ -390,7 +390,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             try {
                 var dataFilename = signature.getDataFilename();
                 var node = signature.getNode();
-                var streamFileData = streamFileProvider.get(node, dataFilename).block();
+                var streamFileData = Objects.requireNonNull(
+                        streamFileProvider.get(node, dataFilename).block());
                 T streamFile = streamFileReader.read(streamFileData);
                 streamFile.setNodeId(nodeId);
 
