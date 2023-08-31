@@ -26,7 +26,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -43,18 +42,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             value = ContractReadFunctions.class,
             mode = Mode.EXCLUDE,
             names = {
-                "GET_CUSTOM_FEES_FOR_TOKEN",
                 "GET_FUNGIBLE_TOKEN_INFO",
                 "GET_NFT_INFO",
                 "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
                 "GET_INFORMATION_FOR_TOKEN_NFT"
             })
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
@@ -62,10 +61,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
     void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -80,14 +79,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             final SupportedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var value =
-                switch (contractFunc) {
-                    case CREATE_FUNGIBLE_TOKEN,
-                            CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
-                            CREATE_NON_FUNGIBLE_TOKEN,
-                            CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
-                    default -> 0L;
-                };
+        final long value = getValue(contractFunc);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value);
 
@@ -114,63 +106,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(FeeCase.class)
-    void customFeesEthCall(final FeeCase feeCase) {
-        final var functionName = "getCustomFeesForToken";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeePersist(feeCase);
-
-        final var callResult = contractCallService.processCall(serviceParameters);
-        final var decodeResult = functionEncodeDecoder.decodeResult(functionName, ABI_PATH, callResult);
-        final Tuple[] fixedFee = decodeResult.get(0);
-        final Tuple[] fractionalFee = decodeResult.get(1);
-        final Tuple[] royaltyFee = decodeResult.get(2);
-
-        switch (feeCase) {
-            case FIXED_FEE -> {
-                assertThat((long) fixedFee[0].get(0)).isEqualTo(100L);
-                assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(1))
-                        .isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
-                assertThat((boolean) fixedFee[0].get(2)).isFalse();
-                assertThat((boolean) fixedFee[0].get(3)).isFalse();
-                assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(4))
-                        .isEqualTo(convertAddress(SENDER_ALIAS));
-            }
-            case FRACTIONAL_FEE -> {
-                assertThat((long) fractionalFee[0].get(0)).isEqualTo(100L);
-                assertThat((long) fractionalFee[0].get(1)).isEqualTo(10L);
-                assertThat((long) fractionalFee[0].get(2)).isEqualTo(1L);
-                assertThat((long) fractionalFee[0].get(3)).isEqualTo(1000L);
-                assertThat((boolean) fractionalFee[0].get(4)).isTrue();
-                assertThat((com.esaulpaugh.headlong.abi.Address) fractionalFee[0].get(5))
-                        .isEqualTo(convertAddress(SENDER_ALIAS));
-            }
-            case ROYALTY_FEE -> {
-                assertThat((long) royaltyFee[0].get(0)).isEqualTo(20L);
-                assertThat((long) royaltyFee[0].get(1)).isEqualTo(10L);
-                assertThat((long) royaltyFee[0].get(2)).isEqualTo(100L);
-                assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(3))
-                        .isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
-                assertThat((boolean) royaltyFee[0].get(4)).isFalse();
-                assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(5))
-                        .isEqualTo(convertAddress(SENDER_ALIAS));
-            }
-        }
-    }
-
-    @ParameterizedTest
     @CsvSource({"getInformationForFungibleToken,false", "getInformationForNonFungibleToken,true"})
     void getTokenInfo(final String functionName, final boolean isNft) {
         final var functionHash = isNft
-                ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
-                : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
+                ? functionEncodeDecoder.functionHashFor(
+                        functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, NFT_ADDRESS, 1L)
+                : functionEncodeDecoder.functionHashFor(
+                        functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
         customFeePersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final Tuple decodeResult = functionEncodeDecoder
-                .decodeResult(functionName, ABI_PATH, callResult)
+                .decodeResult(functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, callResult)
                 .get(0);
         final Tuple tokenInfo = decodeResult.get(0);
         final Tuple hederaToken = tokenInfo.get(0);
@@ -228,11 +177,39 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(
+            value = SupportedContractModificationFunctions.class,
+            mode = Mode.INCLUDE,
+            names = {
+                "MINT_TOKEN",
+                "MINT_NFT_TOKEN",
+                "BURN_TOKEN",
+                "BURN_NFT_TOKEN",
+                "CREATE_FUNGIBLE_TOKEN",
+                "CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES",
+                "CREATE_NON_FUNGIBLE_TOKEN",
+                "CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES"
+            })
+    void supportedContractModificationFunctionsResponseBodyTest(
+            final SupportedContractModificationFunctions contractFunc) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+        final long value = getValue(contractFunc);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, value);
+        final var expectedResult = functionEncodeDecoder.encodedResultFor(
+                contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.expectedResult);
+        final var result = contractCallService.processCall(serviceParameters);
+        assertThat(result).isEqualTo(expectedResult);
+    }
+
     @Test
     void nftInfoForInvalidSerialNo() {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "getInformationForNonFungibleToken", PRECOMPILE_TEST_CONTRACT_ABI_PATH, NFT_ADDRESS, 4L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -240,9 +217,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void tokenInfoForNonTokenAccount() {
-        final var functionHash =
-                functionEncodeDecoder.functionHashFor("getInformationForFungibleToken", ABI_PATH, SENDER_ADDRESS);
-        final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "getInformationForFungibleToken", PRECOMPILE_TEST_CONTRACT_ABI_PATH, SENDER_ADDRESS);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(InvalidTransactionException.class);
@@ -258,6 +236,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage(ERROR_MESSAGE);
+    }
+
+    private static long getValue(SupportedContractModificationFunctions contractFunc) {
+        return switch (contractFunc) {
+            case CREATE_FUNGIBLE_TOKEN,
+                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                    CREATE_NON_FUNGIBLE_TOKEN,
+                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
+            default -> 0L;
+        };
     }
 
     @RequiredArgsConstructor
@@ -280,19 +268,19 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_ADMIN_KEY_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 1L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_FREEZE_KEY_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 4L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_WIPE_KEY_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 8L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_SUPPLY_KEY_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 16L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_ADMIN_KEY_WITH_ED25519_KEY(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 1L},
@@ -328,31 +316,31 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_ADMIN_KEY_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 1L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_FREEZE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 4L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_WIPE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 8L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_SUPPLY_KEY_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 16L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_KYC_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 2L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_FEE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 32L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 64L},
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         GET_TOKEN_KYC_KEY_FOR_NFT_WITH_ED25519_KEY(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 2L},
@@ -380,15 +368,15 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_KYC_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 2L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_FEE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 32L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
         GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
             1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
@@ -415,98 +403,187 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
-        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}),
-        DELETE_ALLOWANCE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}),
-        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
-        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}),
-        SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}),
-        ASSOCIATE_TOKEN("associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}),
+        APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}, new Object[] {}),
+        DELETE_ALLOWANCE(
+                "approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}, new Object[] {}),
+        DELETE_ALLOWANCE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}, new Object[] {}),
+        APPROVE_NFT("approveNFTExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, 1L}, new Object[] {}),
+        SET_APPROVAL_FOR_ALL(
+                "setApprovalForAllExternal", new Object[] {NFT_ADDRESS, TREASURY_ADDRESS, true}, new Object[] {}),
+        ASSOCIATE_TOKEN(
+                "associateTokenExternal", new Object[] {SPENDER_ALIAS, FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
         ASSOCIATE_TOKENS(
-                "associateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}}),
-        HRC_ASSOCIATE_REDIRECT("associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED}),
-        MINT_TOKEN("mintTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]}),
-        MINT_NFT_TOKEN("mintTokenExternal", new Object[] {
-            NFT_ADDRESS, 0L, new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
-        }),
-        DISSOCIATE_TOKEN("dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}),
+                "associateTokensExternal",
+                new Object[] {SPENDER_ALIAS, new Address[] {FUNGIBLE_TOKEN_ADDRESS}},
+                new Object[] {}),
+        HRC_ASSOCIATE_REDIRECT(
+                "associateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED}, new Object[] {}),
+        MINT_TOKEN(
+                "mintTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0]},
+                new Object[] {SUCCESS_RESULT, 12445L, new long[0]}),
+        MINT_NFT_TOKEN(
+                "mintTokenExternal",
+                new Object[] {
+                    NFT_ADDRESS,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {SUCCESS_RESULT, 1_000_000_000L + 1, new long[] {1L}}),
+        DISSOCIATE_TOKEN(
+                "dissociateTokenExternal", new Object[] {SPENDER_ALIAS, TREASURY_TOKEN_ADDRESS}, new Object[] {}),
         DISSOCIATE_TOKENS(
-                "dissociateTokensExternal", new Object[] {SPENDER_ALIAS, new Address[] {TREASURY_TOKEN_ADDRESS}}),
-        HRC_DISSOCIATE_REDIRECT("dissociateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}),
-        BURN_TOKEN("burnTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]}),
-        WIPE_TOKEN("wipeTokenAccountExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L}),
+                "dissociateTokensExternal",
+                new Object[] {SPENDER_ALIAS, new Address[] {TREASURY_TOKEN_ADDRESS}},
+                new Object[] {}),
+        HRC_DISSOCIATE_REDIRECT("dissociateWithRedirect", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        BURN_TOKEN(
+                "burnTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 1L, new long[0]},
+                new Object[] {SUCCESS_RESULT, 12345L - 1}),
+        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}, new Object[] {
+            SUCCESS_RESULT, 1_000_000_000L - 1
+        }),
+        WIPE_TOKEN(
+                "wipeTokenAccountExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 1L},
+                new Object[] {}),
         WIPE_NFT_TOKEN(
                 "wipeTokenAccountNFTExternal",
-                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ALIAS, new long[] {1}}),
-        BURN_NFT_TOKEN("burnTokenExternal", new Object[] {NFT_ADDRESS, 0L, new long[] {1}}),
-        REVOKE_TOKEN_KYC("revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}),
-        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}),
-        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        FREEZE_TOKEN("freezeTokenExternal", new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS}),
-        UNFREEZE_TOKEN("unfreezeTokenExternal", new Object[] {FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS}),
-        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}),
-        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}),
+                new Object[] {NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY, SENDER_ALIAS, new long[] {1}},
+                new Object[] {}),
+        REVOKE_TOKEN_KYC(
+                "revokeTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Object[] {}),
+        GRANT_TOKEN_KYC("grantTokenKycExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Object[] {}),
+        DELETE_TOKEN("deleteTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        FREEZE_TOKEN(
+                "freezeTokenExternal",
+                new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS},
+                new Object[] {}),
+        UNFREEZE_TOKEN(
+                "unfreezeTokenExternal", new Object[] {FROZEN_FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS}, new Object[] {}),
+        PAUSE_TOKEN("pauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        UNPAUSE_TOKEN("unpauseTokenExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        CREATE_FUNGIBLE_TOKEN("createFungibleTokenExternal", new Object[] {FUNGIBLE_TOKEN, 10L, 10}, new Object[] {
+            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
+        }),
         CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createFungibleTokenWithCustomFeesExternal",
-                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER}),
-        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}),
+                new Object[] {FUNGIBLE_TOKEN, 10L, 10, FIXED_FEE_WRAPPER, FRACTIONAL_FEE_WRAPPER},
+                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
+        CREATE_NON_FUNGIBLE_TOKEN("createNonFungibleTokenExternal", new Object[] {NON_FUNGIBLE_TOKEN}, new Object[] {
+            SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS
+        }),
         CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES(
                 "createNonFungibleTokenWithCustomFeesExternal",
-                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER}),
+                new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
+                new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
         TRANSFER_TOKEN(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, RECEIVER_ADDRESS, 1L}),
+                "transferTokenExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, RECEIVER_ADDRESS, 1L},
+                new Object[] {}),
         TRANSFER_TOKEN_WITH(
-                "transferTokenExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L}),
-        TRANSFER_TOKENS("transferTokensExternal", new Object[] {
-            TREASURY_TOKEN_ADDRESS, new Address[] {OWNER_ADDRESS, SPENDER_ALIAS}, new long[] {1L, -1L}
-        }),
-        TRANSFER_TOKENS_WITH_ALIAS("transferTokensExternal", new Object[] {
-            TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
-        }),
+                "transferTokenExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
+                new Object[] {}),
+        TRANSFER_TOKENS(
+                "transferTokensExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {OWNER_ADDRESS, SPENDER_ALIAS}, new long[] {1L, -1L}
+                },
+                new Object[] {}),
+        TRANSFER_TOKENS_WITH_ALIAS(
+                "transferTokensExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, new Address[] {SPENDER_ALIAS, SENDER_ALIAS}, new long[] {1L, -1L}
+                },
+                new Object[] {}),
         CRYPTO_TRANSFER_TOKENS(
                 "cryptoTransferExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}),
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false},
+                new Object[] {}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
                 "cryptoTransferExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}),
-        TRANSFER_NFT_TOKENS("transferNFTsExternal", new Object[] {
-            NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
-        }),
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false},
+                new Object[] {}),
+        TRANSFER_NFT_TOKENS(
+                "transferNFTsExternal",
+                new Object[] {
+                    NFT_TRANSFER_ADDRESS, new Address[] {OWNER_ADDRESS}, new Address[] {SPENDER_ALIAS}, new long[] {1}
+                },
+                new Object[] {}),
         TRANSFER_NFT_TOKEN(
-                "transferNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
-        TRANSFER_FROM("transferFromExternal", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L}),
+                "transferNFTExternal",
+                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
+        TRANSFER_FROM(
+                "transferFromExternal",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
         TRANSFER_FROM_NFT(
-                "transferFromNFTExternal", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
-        UPDATE_TOKEN_INFO("updateTokenInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN2}),
+                "transferFromNFTExternal",
+                new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
+        UPDATE_TOKEN_INFO(
+                "updateTokenInfoExternal",
+                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, FUNGIBLE_TOKEN2},
+                new Object[] {}),
         UPDATE_TOKEN_EXPIRY(
-                "updateTokenExpiryInfoExternal", new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER}),
-        UPDATE_TOKEN_KEYS_CONTRACT_ADDRESS("updateTokenKeysExternal", new Object[] {
-            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-            new Object[] {
-                new Object[] {0b1111111, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
-            }
-        }),
-        UPDATE_TOKEN_KEYS_DELEGATABLE_CONTRACT_ID("updateTokenKeysExternal", new Object[] {
-            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-            new Object[] {
-                new Object[] {0b1111111, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
-            }
-        }),
-        UPDATE_TOKEN_KEYS_ED25519("updateTokenKeysExternal", new Object[] {
-            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-            new Object[] {
-                new Object[] {0b1111111, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}}
-            }
-        }),
-        UPDATE_TOKEN_KEYS_ECDSA("updateTokenKeysExternal", new Object[] {
-            UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
-            new Object[] {
-                new Object[] {0b1111111, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}}
-            }
-        });
+                "updateTokenExpiryInfoExternal",
+                new Object[] {UNPAUSED_FUNGIBLE_TOKEN_ADDRESS, TOKEN_EXPIRY_WRAPPER},
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_CONTRACT_ADDRESS(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            0b1111111,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_DELEGATABLE_CONTRACT_ID(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            0b1111111,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_ED25519(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            0b1111111, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
+                        }
+                    }
+                },
+                new Object[] {}),
+        UPDATE_TOKEN_KEYS_ECDSA(
+                "updateTokenKeysExternal",
+                new Object[] {
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    new Object[] {
+                        new Object[] {
+                            0b1111111, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}
+                        }
+                    }
+                },
+                new Object[] {});
 
         private final String name;
         private final Object[] functionParameters;
+        private final Object[] expectedResult;
     }
 
     @RequiredArgsConstructor

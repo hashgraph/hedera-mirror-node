@@ -97,7 +97,11 @@ public class FunctionEncodeDecoder {
     public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
             "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String TRIPLE_BOOL = "(bool,bool,bool)";
-
+    private static final String INT256_INT64_INT64_ARRAY = "(int256,int64,int64[])";
+    private static final String INT256_INT64 = "(int256,int64)";
+    private static final String INT256_ADDRESS = "(int256,address)";
+    private static final String FIXED_FEE_FRACTIONAL_FEE_ROYALTY_FEE =
+            "((int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[])";
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -286,7 +290,13 @@ public class FunctionEncodeDecoder {
                             .toList()
                             .toArray(new Tuple[((Object[]) parameters[1]).length]),
                     BigInteger.valueOf((long) parameters[2]));
-            case TRIPLE_BOOL -> Tuple.of(parameters[0], parameters[1], parameters[2]);
+            case TRIPLE_BOOL, INT256_INT64_INT64_ARRAY -> Tuple.of(parameters[0], parameters[1], parameters[2]);
+            case INT256_INT64 -> Tuple.of(parameters[0], parameters[1]);
+            case INT256_ADDRESS -> Tuple.of(parameters[0], convertAddress((Address) parameters[1]));
+            case FIXED_FEE_FRACTIONAL_FEE_ROYALTY_FEE -> Tuple.of(
+                    encodeFixedFee((Object[]) parameters[0]),
+                    encodeFractionalFee((Object[]) parameters[1]),
+                    encodeRoyaltyFee((Object[]) parameters[2]));
             default -> Tuple.EMPTY;
         };
     }
@@ -400,6 +410,15 @@ public class FunctionEncodeDecoder {
         };
     }
 
+    private Tuple[] encodeFixedFee(Object[] fixedFee) {
+        return fixedFee.length > 0
+                ? new Tuple[] {
+                    Tuple.of(fixedFee[0], convertAddress((Address) fixedFee[1]), false, false, convertAddress((Address)
+                            fixedFee[4]))
+                }
+                : new Tuple[0];
+    }
+
     private Tuple[] encodeFractionalFee(FractionalFeeWrapper fractionalFeeWrapper) {
         return new Tuple[] {
             Tuple.of(
@@ -413,6 +432,20 @@ public class FunctionEncodeDecoder {
                                     ? EntityIdUtils.asTypedEvmAddress(fractionalFeeWrapper.feeCollector())
                                     : Address.ZERO))
         };
+    }
+
+    private Tuple[] encodeFractionalFee(Object[] fractionalFee) {
+        return fractionalFee.length > 0
+                ? new Tuple[] {
+                    Tuple.of(
+                            fractionalFee[0],
+                            fractionalFee[1],
+                            fractionalFee[2],
+                            fractionalFee[3],
+                            fractionalFee[4],
+                            convertAddress(fractionalFee[5] != null ? (Address) fractionalFee[5] : Address.ZERO))
+                }
+                : new Tuple[0];
     }
 
     private Tuple[] encodeRoyaltyFee(RoyaltyFeeWrapper royaltyFeeWrapper) {
@@ -432,6 +465,20 @@ public class FunctionEncodeDecoder {
                                     ? EntityIdUtils.asTypedEvmAddress(royaltyFeeWrapper.feeCollector())
                                     : Address.ZERO))
         };
+    }
+
+    private Tuple[] encodeRoyaltyFee(Object[] royaltyFee) {
+        return royaltyFee.length > 0
+                ? new Tuple[] {
+                    Tuple.of(
+                            royaltyFee[0],
+                            royaltyFee[1],
+                            royaltyFee[2],
+                            convertAddress((Address) royaltyFee[3]),
+                            false,
+                            convertAddress(royaltyFee[4] != null ? (Address) royaltyFee[4] : Address.ZERO))
+                }
+                : new Tuple[0];
     }
 
     private Tuple encodeTokenExpiry(TokenExpiryWrapper tokenExpiryWrapper) {
