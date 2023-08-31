@@ -299,6 +299,7 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTokenIds((List.of(token)))
                 .setTransactionMemo(getMemo("Associate w token"));
         var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction);
+        log.info("Associated contract {} with token {} via {}", contractId, token, response.getTransactionId());
         return response;
     }
 
