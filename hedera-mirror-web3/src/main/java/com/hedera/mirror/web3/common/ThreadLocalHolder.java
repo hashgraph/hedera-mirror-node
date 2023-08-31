@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,28 +29,20 @@ import org.hyperledger.besu.datatypes.Address;
 public class ThreadLocalHolder {
 
     @NonNull
-    public static final ThreadLocal<Map<Object, Object>> original =
-            ThreadLocal.withInitial(HashMap::new); // "missing" denoted by null values here
-
-    @NonNull
-    public static final ThreadLocal<Map<Object, Object>> current =
-            ThreadLocal.withInitial(HashMap::new); // "deleted" denoted by null values here
-
-    @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
 
     public static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
     public static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
     public static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
+    /** Current top of stack (which is all linked together) */
+    @NonNull
+    public static final ThreadLocal<CachingStateFrame<Object>> stack = ThreadLocal.withInitial(() -> null);
 
     private ThreadLocalHolder() {}
 
     public static void cleanThread() {
+        stack.remove();
         isCreate.remove();
-
-        original.remove();
-        current.remove();
-
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();

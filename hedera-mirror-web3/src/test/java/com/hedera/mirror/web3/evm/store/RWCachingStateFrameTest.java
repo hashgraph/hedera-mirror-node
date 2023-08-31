@@ -41,7 +41,7 @@ class RWCachingStateFrameTest {
     void setValueSetsTheValue() {
         final Integer k = 555;
         final Character v = 'C';
-        final var sut = new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new RWCachingStateFrame<Integer>(Optional.empty(), Character.class);
         sut.setValue(Character.class, mockCache, k, v);
         verify(mockCache, times(1)).update(k, v);
     }
@@ -49,7 +49,7 @@ class RWCachingStateFrameTest {
     @Test
     void deleteValueDeletesTheValue() {
         final Integer k = 555;
-        final var sut = new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new RWCachingStateFrame<Integer>(Optional.empty(), Character.class);
         sut.deleteValue(Character.class, mockCache, k);
         verify(mockCache, times(1)).delete(k);
     }
@@ -60,8 +60,7 @@ class RWCachingStateFrameTest {
         final var otherFrame2 =
                 new BottomCachingStateFrame<Integer>(Optional.empty(), Character.class, BigInteger.class);
 
-        final var sut =
-                new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class, String.class);
+        final var sut = new RWCachingStateFrame<Integer>(Optional.empty(), Character.class, String.class);
 
         assertThatIllegalStateException().isThrownBy(() -> sut.updatesFromDownstream(otherFrame1));
         assertThatIllegalStateException().isThrownBy(() -> sut.updatesFromDownstream(otherFrame2));
@@ -92,8 +91,7 @@ class RWCachingStateFrameTest {
         final var downstreamInternalCaches =
                 Map.of(Character.class, caches.get(CacheKind.downC), String.class, caches.get(CacheKind.downS));
 
-        final var sut = Mockito.spy(
-                new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class, String.class));
+        final var sut = Mockito.spy(new RWCachingStateFrame<Integer>(Optional.empty(), Character.class, String.class));
 
         doReturn(downstreamInternalCaches).when(downstreamFrame).getInternalCaches();
         doReturn(sutInternalCaches).when(sut).getInternalCaches();

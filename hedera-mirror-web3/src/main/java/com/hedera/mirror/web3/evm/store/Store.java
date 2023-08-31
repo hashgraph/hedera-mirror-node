@@ -35,6 +35,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public interface Store {
 
+    void initializeStack();
+
     Account getAccount(Address address, OnMissing throwIfMissing);
 
     /**

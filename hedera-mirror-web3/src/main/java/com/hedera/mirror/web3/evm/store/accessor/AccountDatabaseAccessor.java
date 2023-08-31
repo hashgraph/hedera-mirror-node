@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.jproto.JKey;
@@ -64,6 +65,10 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private Account accountFromEntity(Entity entity) {
+        if (TOKEN.equals(entity.getType())) {
+            throw new WrongTypeException("Trying to map token to account");
+        }
+
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
         return new Account(
                 entity.getEvmAddress() != null && entity.getEvmAddress().length > 0

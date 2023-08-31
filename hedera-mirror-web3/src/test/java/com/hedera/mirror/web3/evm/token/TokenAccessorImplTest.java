@@ -149,6 +149,7 @@ class TokenAccessorImplTest {
                 new UniqueTokenDatabaseAccessor(nftRepository));
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
+        store.initializeStack();
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 

@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.common.ThreadLocalHolder.isCreate;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -49,6 +50,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final MirrorOperationTracer operationTracer;
+    private final StoreImpl store;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -61,12 +63,14 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
-            final MirrorOperationTracer operationTracer) {
+            final MirrorOperationTracer operationTracer,
+            final StoreImpl store) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.operationTracer = operationTracer;
+        this.store = store;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -82,6 +86,8 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         super.setupFields(receiver.equals(Address.ZERO));
         super.setOperationTracer(operationTracer);
         setIsCreate(Address.ZERO.equals(receiver));
+
+        store.initializeStack();
 
         final var result = super.execute(
                 sender,

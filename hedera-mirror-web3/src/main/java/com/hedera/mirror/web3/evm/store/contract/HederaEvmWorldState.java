@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -60,7 +61,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final TokenAccessor tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final Store store) {
+            final StoreImpl store) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;
@@ -69,6 +70,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
         this.entityAddressSequencer = entityAddressSequencer;
         this.store = store;
+        store.initializeStack();
+        store.wrap();
     }
 
     public Account get(final Address address) {

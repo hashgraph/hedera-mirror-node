@@ -48,7 +48,7 @@ class ROCachingStateFrameTest {
 
         final var upstreamFrame = new CannedCachingStateFrame(Optional.empty());
         when(mockCache.get(k)).thenReturn(new Entry(NOT_YET_FETCHED, null));
-        final var sut = new ROCachingStateFrame<>(Optional.of(upstreamFrame), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<>(Optional.of(upstreamFrame), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
 
         assertThat(actual).isEmpty();
@@ -62,7 +62,7 @@ class ROCachingStateFrameTest {
 
         final var upstreamFrame = new CannedCachingStateFrame(Optional.of(v));
         when(mockCache.get(k)).thenReturn(new Entry(NOT_YET_FETCHED, null));
-        final var sut = new ROCachingStateFrame<>(Optional.of(upstreamFrame), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<>(Optional.of(upstreamFrame), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
 
         assertThat(actual).contains(v);
@@ -77,7 +77,7 @@ class ROCachingStateFrameTest {
         final Integer k = 555;
         final Character v = 'C';
         when(mockCache.get(k)).thenReturn(new Entry(state, v));
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
         assertThat(actual).contains(v);
     }
@@ -89,7 +89,7 @@ class ROCachingStateFrameTest {
     void getValidOfMissingOrDeletedEntryReturnsEmpty(ValueState state) {
         final Integer k = 555;
         when(mockCache.get(k)).thenReturn(new Entry(state, null));
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
         assertThat(actual).isEmpty();
     }
@@ -98,14 +98,14 @@ class ROCachingStateFrameTest {
     void getValueOfInvalidEntryThrows() {
         final Integer k = 555;
         when(mockCache.get(k)).thenReturn(new Entry(INVALID, null));
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.getValue(Character.class, mockCache, k));
     }
 
     @Test
     void setValueIsNotAllowed() {
         final var cache = new UpdatableReferenceCache<Integer>();
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> sut.setValue(Character.class, cache, 1, 'C'));
     }
@@ -113,14 +113,14 @@ class ROCachingStateFrameTest {
     @Test
     void deleteValueIsNotAllowed() {
         final var cache = new UpdatableReferenceCache<Integer>();
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> sut.deleteValue(Character.class, cache, 1));
     }
 
     @Test
     void updatesFromDownstreamIsNotAllowed() {
-        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> sut.updatesFromDownstream(sut));
     }
 

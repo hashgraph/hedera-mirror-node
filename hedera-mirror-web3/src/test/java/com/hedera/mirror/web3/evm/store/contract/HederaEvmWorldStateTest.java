@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -101,7 +100,7 @@ class HederaEvmWorldStateTest {
     @Mock
     private NftRepository nftRepository;
 
-    private Store store;
+    private StoreImpl store;
 
     private HederaEvmWorldState subject;
 

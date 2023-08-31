@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import java.util.Optional;
 import lombok.NonNull;
 
@@ -24,10 +23,8 @@ import lombok.NonNull;
 public class RWCachingStateFrame<K> extends ROCachingStateFrame<K> {
 
     public RWCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame,
-            final Optional<EntityDatabaseAccessor> entityDatabaseAccessor,
-            @NonNull final Class<?>... klassesToCache) {
-        super(upstreamFrame, entityDatabaseAccessor, klassesToCache);
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
+        super(upstreamFrame, klassesToCache);
     }
 
     @Override

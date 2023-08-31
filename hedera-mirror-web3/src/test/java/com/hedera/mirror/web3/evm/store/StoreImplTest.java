@@ -167,6 +167,7 @@ class StoreImplTest {
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         subject = new StoreImpl(stackedStateFrames);
+        subject.initializeStack();
     }
 
     @AfterEach

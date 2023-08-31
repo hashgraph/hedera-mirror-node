@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -49,6 +50,13 @@ public class StoreImpl implements Store {
 
     public StoreImpl(final StackedStateFrames<Object> stackedStateFrames) {
         this.stackedStateFrames = stackedStateFrames;
+    }
+
+    @Override
+    public void initializeStack() {
+        if (stack.get() == null) {
+            stack.set(stackedStateFrames.getStackBase());
+        }
     }
 
     @Override

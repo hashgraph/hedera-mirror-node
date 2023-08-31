@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -137,6 +138,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
+    @Mock
+    private StoreImpl store;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
@@ -169,7 +173,8 @@ class MirrorEvmTxProcessorTest {
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
-                mirrorOperationTracer);
+                mirrorOperationTracer,
+                store);
 
         DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);

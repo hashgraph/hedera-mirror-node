@@ -108,6 +108,7 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
+        store.initializeStack();
         store.wrap();
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }

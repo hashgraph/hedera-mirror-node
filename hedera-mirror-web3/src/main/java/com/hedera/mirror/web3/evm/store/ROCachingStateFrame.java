@@ -16,25 +16,18 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
+import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import java.util.Optional;
+import lombok.CustomLog;
 import lombok.NonNull;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and disallows updates/deletes. */
+@CustomLog
 public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
 
-    private final Optional<EntityDatabaseAccessor> entityDatabaseAccessor;
-
     public ROCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame,
-            final Optional<EntityDatabaseAccessor> entityDatabaseAccessor,
-            @NonNull final Class<?>... klassesToCache) {
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         super(upstreamFrame, klassesToCache);
-        this.entityDatabaseAccessor = entityDatabaseAccessor;
     }
 
     @Override
@@ -45,10 +38,13 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
         return switch (entry.state()) {
             case NOT_YET_FETCHED -> upstreamFrame.flatMap(upstreamFrame -> {
                 final var upstreamAccessor = upstreamFrame.getAccessor(klass);
-                final var upstreamValue = upstreamAccessor.get(key);
-
-                fillCache(upstreamAccessor, key, cache, upstreamValue);
-                return upstreamValue;
+                try {
+                    final var upstreamValue = upstreamAccessor.get(key);
+                    cache.fill(key, upstreamValue.orElse(null));
+                    return upstreamValue;
+                } catch (final WrongTypeException e) {
+                    throw new CacheAccessIncorrectTypeException(e.getMessage());
+                }
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
             case MISSING, DELETED -> Optional.empty();
@@ -74,32 +70,5 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         throw new UnsupportedOperationException("Cannot commit to a R/O cache");
-    }
-
-    private void fillCache(
-            final Accessor<?, ?> upstreamAccessor,
-            final K key,
-            final UpdatableReferenceCache<K> cache,
-            final Optional<?> upstreamValue) {
-        // We need to make sure that we don't cache null value for a key when
-        // the key belongs to an entity type different than the accessor type we want to use
-        if (entityDatabaseAccessor.isPresent()) {
-            if (upstreamAccessor instanceof DatabaseAccessor<?, ?>) {
-                final var entity = entityDatabaseAccessor.get().get(key);
-                if (entity.isEmpty()) {
-                    cache.fill(key, upstreamValue.orElse(null));
-                } else {
-                    final var entityType = entity.get().getType();
-
-                    if (EntityType.ACCOUNT.equals(entityType) && upstreamAccessor instanceof AccountDatabaseAccessor
-                            || EntityType.TOKEN.equals(entityType)
-                                    && upstreamAccessor instanceof TokenDatabaseAccessor) {
-                        cache.fill(key, upstreamValue.orElse(null));
-                    }
-                }
-            }
-        } else {
-            cache.fill(key, upstreamValue.orElse(null));
-        }
     }
 }

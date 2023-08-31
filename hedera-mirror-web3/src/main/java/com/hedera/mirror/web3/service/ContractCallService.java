@@ -24,6 +24,7 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -48,6 +49,7 @@ public class ContractCallService {
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
+    private final StoreImpl store;
 
     public String processCall(final CallServiceParameters params) {
         var stopwatch = Stopwatch.createStarted();

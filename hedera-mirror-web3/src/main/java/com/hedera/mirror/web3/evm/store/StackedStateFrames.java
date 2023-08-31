@@ -16,13 +16,15 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import jakarta.inject.Named;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.NonNull;
 
 @Named
@@ -30,21 +32,19 @@ public class StackedStateFrames<K> {
 
     /** All the database accessors for the value types this stacked cache can hold */
     @NonNull
-    protected final List<DatabaseAccessor<K, ?>> accessors;
+    protected final List<DatabaseAccessor<Object, ?>> accessors;
     /** All the `Class`es for the value types this stacked cache can hold */
     @NonNull
     protected final Class<?>[] valueClasses;
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
+    @Getter
     @NonNull
-    protected CachingStateFrame<K> stackBase;
-    /** Current top of stack (which is all linked together) */
-    @NonNull
-    protected CachingStateFrame<K> stack;
+    protected CachingStateFrame<Object> stackBase;
 
     /** Create a `StackedStackFrames` stacked cache at base level given the database accessors for all the value
      * types this cache will hold.
      */
-    public StackedStateFrames(@NonNull final List<DatabaseAccessor<K, ?>> accessors) {
+    public StackedStateFrames(@NonNull final List<DatabaseAccessor<Object, ?>> accessors) {
         this.accessors = accessors;
         this.valueClasses = accessors.stream()
                 .map(DatabaseAccessor::getValueClass)
@@ -63,51 +63,49 @@ public class StackedStateFrames<K> {
             throw new IllegalArgumentException("Key types for all accessors must be the same");
         }
 
-        final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
-        stackBase = new ROCachingStateFrame<>(Optional.of(database), getEntityDatabaseAccessor(), valueClasses);
-        stack = new RWCachingStateFrame<>(Optional.of(stackBase), getEntityDatabaseAccessor(), valueClasses);
+        final var database = new DatabaseBackedStateFrame<Object>(accessors, valueClasses);
+        stackBase = new ROCachingStateFrame<Object>(Optional.of(database), valueClasses);
 
-        // Initial state is R/W cache layer on top of a R/O cache on top of the database. You can directly start
-        // updating values when
-        // the store is initialized. You can also use push() to create a new R/W cache layer on top of the stack,
-        // so that you can rollback specific changes from a nested transaction
+        // Initial state is a R/O cache on top of the database. You should use push() to create a new R/W cache layer on
+        // top of the stack,
+        // so that you can commit specific changes from a nested transaction
     }
 
     /** Return the "visible"/"effective" height of the stacked cache _only including_ those frames you've pushed on top
      * of it (after initial construction).
      */
     public int height() {
-        return stack.height() - stackBase.height();
+        return stack.get().height() - stackBase.height();
     }
 
     /** Return the _total_ height (aka depth) of the stacked cache _including_ the always-present stack base of a
      * RO-cache frame on top of the DB-based frame.
      */
     public int cachedFramesDepth() {
-        return stack.height();
+        return stack.get().height();
     }
 
     /** Get the top of the stacked cache.  (Make your queries of the cache here, at the top: they'll be propagated
      * upstream as needed.)
      */
     @NonNull
-    public CachingStateFrame<K> top() {
-        return stack;
+    public CachingStateFrame<Object> top() {
+        return stack.get();
     }
 
     /** Push a new RW-frame cache on top of the stacked cache. */
     @NonNull
-    public CachingStateFrame<K> push() {
-        stack = new RWCachingStateFrame<>(Optional.of(stack), getEntityDatabaseAccessor(), valueClasses);
-        return stack;
+    public CachingStateFrame<Object> push() {
+        stack.set(new RWCachingStateFrame<Object>(Optional.of(stack.get()), valueClasses));
+        return stack.get();
     }
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        if (stack == stackBase) {
+        if (stack.get() == stackBase) {
             throw new EmptyStackException();
         }
-        stack = stack.getUpstream().orElseThrow(EmptyStackException::new);
+        stack.set(stack.get().getUpstream().orElseThrow(EmptyStackException::new));
     }
 
     /** Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
@@ -119,7 +117,7 @@ public class StackedStateFrames<K> {
      * using this method.)
      */
     public void resetToBase() {
-        stack = new RWCachingStateFrame<>(Optional.of(stackBase), getEntityDatabaseAccessor(), valueClasses);
+        stack.set(new RWCachingStateFrame<Object>(Optional.of(stackBase), valueClasses));
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -134,12 +132,12 @@ public class StackedStateFrames<K> {
      */
     @VisibleForTesting
     @NonNull
-    CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
+    CachingStateFrame<Object> push(@NonNull final CachingStateFrame<Object> frame) {
         if (!frame.getUpstream().equals(Optional.of(stack))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         }
-        stack = frame;
-        return stack;
+        stack.set(frame);
+        return stack.get();
     }
 
     /** For test purposes only you may want to step on the entire stack, including the stack base. (You might want to
@@ -148,16 +146,9 @@ public class StackedStateFrames<K> {
      */
     @VisibleForTesting
     @NonNull
-    CachingStateFrame<K> replaceEntireStack(@NonNull final CachingStateFrame<K> frame) {
-        stack = stackBase = frame;
-        return stack;
-    }
-
-    private Optional<EntityDatabaseAccessor> getEntityDatabaseAccessor() {
-        final var accessor = accessors.stream()
-                .filter(EntityDatabaseAccessor.class::isInstance)
-                .distinct()
-                .findFirst();
-        return accessor.map(EntityDatabaseAccessor.class::cast);
+    CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
+        stack.set(frame);
+        stackBase = frame;
+        return stack.get();
     }
 }

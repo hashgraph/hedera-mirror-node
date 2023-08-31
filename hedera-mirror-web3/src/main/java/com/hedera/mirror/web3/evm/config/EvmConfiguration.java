@@ -172,7 +172,8 @@ public class EvmConfiguration {
             final StaticBlockMetaSource blockMetaSource,
             final AbstractCodeCache abstractCodeCache,
             final MirrorOperationTracer mirrorOperationTracer,
-            final BasicHbarCentExchange basicHbarCentExchange) {
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final StoreImpl store) {
         return new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,
@@ -190,6 +191,7 @@ public class EvmConfiguration {
                 blockMetaSource,
                 mirrorEvmContractAliases,
                 abstractCodeCache,
-                mirrorOperationTracer);
+                mirrorOperationTracer,
+                store);
     }
 }

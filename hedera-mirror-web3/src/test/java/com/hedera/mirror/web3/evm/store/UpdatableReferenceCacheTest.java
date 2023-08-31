@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.impl.UpdatableReferenceCacheLineState.Entry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,8 +30,6 @@ import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,11 +48,6 @@ class UpdatableReferenceCacheTest {
 
     @InjectSoftAssertions
     SoftAssertions softly;
-
-    @AfterEach
-    void clean() {
-        ThreadLocalHolder.cleanThread();
-    }
 
     void setInitialCacheLineState(@NonNull final ValueIs originalValueIs, @NonNull final ValueIs currentValueIs) {
         switch (originalValueIs) {
@@ -125,8 +117,8 @@ class UpdatableReferenceCacheTest {
     @Test
     void fillWhileNotYetFetchedIsOkTest() {
         sut.fill(THIS_KEY, ORIGINAL_VALUE);
-        assertThat(sut.getOriginal().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, ORIGINAL_VALUE);
-        assertThat(sut.getCurrent().get()).isEmpty();
+        assertThat(sut.getOriginal()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, ORIGINAL_VALUE);
+        assertThat(sut.getCurrent()).isEmpty();
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2})")
@@ -185,7 +177,7 @@ class UpdatableReferenceCacheTest {
 
         sut.update(THIS_KEY, NEW_VALUE);
         softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(ValueState.UPDATED, NEW_VALUE));
-        softly.assertThat(sut.getCurrent().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
+        softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
     }
 
     @Test
@@ -206,7 +198,7 @@ class UpdatableReferenceCacheTest {
                 .as("PRESENT, overwriting with same value")
                 .isInstanceOf(UpdatableCacheUsageException.class)
                 .hasMessageContaining("Trying to update");
-        softly.assertThat(sut.getOriginal().get())
+        softly.assertThat(sut.getOriginal())
                 .as("PRESENT, overwriting with same value didn't change k/v")
                 .containsOnlyKeys(THIS_KEY)
                 .containsEntry(THIS_KEY, ORIGINAL_VALUE);
@@ -238,8 +230,8 @@ class UpdatableReferenceCacheTest {
         sut.delete(THIS_KEY);
         softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(endState, null));
         if (keyInCurrentAtEnd)
-            softly.assertThat(sut.getCurrent().get()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
-        else softly.assertThat(sut.getCurrent().get()).isEmpty();
+            softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
+        else softly.assertThat(sut.getCurrent()).isEmpty();
     }
 
     @Test
@@ -277,12 +269,7 @@ class UpdatableReferenceCacheTest {
                 .hasMessageContaining("deleted");
     }
 
-    /**
-     * Using ThreadLocals currently utilize one single RWCachingStateFrame,
-     * so unless we see a need to have stacked RWCachingStateFrames, we don't currently utilize
-     * {@link UpdatableReferenceCache#coalesceFrom(UpdatableReferenceCache)}.*/
     @Test
-    @Disabled
     void coalesceFromTest() {
 
         final var src = new UpdatableReferenceCacheSpy(); // maps String->Long
@@ -305,7 +292,7 @@ class UpdatableReferenceCacheTest {
                 .addNullToCurrent("SUT NULL VALUE C")
                 .addNullToCurrent("BOTH NULL VALUE C");
 
-        final var expectedOriginal = new HashMap<>(sut.getOriginal().get());
+        final var expectedOriginal = new HashMap<>(sut.getOriginal());
         // spotless:off
         final var expectedCurrent = makeMapOf(
                 String.class, Object.class,
@@ -319,11 +306,11 @@ class UpdatableReferenceCacheTest {
 
         sut.coalesceFrom(src);
 
-        softly.assertThat(sut.getOriginal().get())
+        softly.assertThat(sut.getOriginal())
                 .as("original map is not touched by coalesce")
                 .isEqualTo(expectedOriginal);
 
-        softly.assertThat(sut.getCurrent().get())
+        softly.assertThat(sut.getCurrent())
                 .as("current map is merged by coalesce")
                 .isEqualTo(expectedCurrent);
     }

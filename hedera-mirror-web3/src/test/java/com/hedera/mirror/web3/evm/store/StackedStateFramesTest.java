@@ -33,8 +33,8 @@ class StackedStateFramesTest {
     @Test
     void constructionHappyPath() {
 
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {}, new BareDatabaseAccessor<Integer, String>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var sut = new StackedStateFrames<>(accessors);
 
@@ -57,11 +57,11 @@ class StackedStateFramesTest {
 
     @Test
     void constructWithDuplicatedValueTypesFails() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {},
-                new BareDatabaseAccessor<Integer, String>() {},
-                new BareDatabaseAccessor<Integer, List<Integer>>() {},
-                new BareDatabaseAccessor<Integer, String>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {},
+                new BareDatabaseAccessor<Object, String>() {},
+                new BareDatabaseAccessor<Object, List<Integer>>() {},
+                new BareDatabaseAccessor<Object, String>() {});
 
         assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<>(accessors));
     }
@@ -69,16 +69,16 @@ class StackedStateFramesTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
     void constructWithDifferingKeyTypesFails() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {}, (BareDatabaseAccessor<Integer, Character>)
-                        (BareDatabaseAccessor) new BareDatabaseAccessor<Long, String>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {}, (BareDatabaseAccessor<Object, Character>)
+                        (BareDatabaseAccessor) new BareDatabaseAccessor<Object, String>() {});
 
         assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<>(accessors));
     }
 
     @Test
     void pushAndPopDoSo() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
         final var rwOnTop = sut.top();
 
@@ -96,7 +96,7 @@ class StackedStateFramesTest {
 
     @Test
     void resetToBaseDoes() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
         final var rwOnTopOfBase = sut.top();
 
@@ -114,9 +114,9 @@ class StackedStateFramesTest {
 
     @Test
     void forcePushOfSpecificFrameWithProperUpstream() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Optional.empty(), Character.class);
+        final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
         assertThat(sut.height()).isEqualTo(2);
         assertThat(actual).isEqualTo(newTos);
@@ -124,20 +124,18 @@ class StackedStateFramesTest {
 
     @Test
     void forcePushOfSpecificFrameWithBadUpstream() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
         final var newTos = new RWCachingStateFrame<>(
-                Optional.of(new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class)),
-                Optional.empty(),
-                Character.class);
+                Optional.of(new RWCachingStateFrame<Object>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
     }
 
     @Test
     void replaceEntireStack() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var newStack = new RWCachingStateFrame<Integer>(Optional.empty(), Optional.empty(), Character.class);
+        final var newStack = new RWCachingStateFrame<Object>(Optional.empty(), Character.class);
         sut.replaceEntireStack(newStack);
         assertThat(sut.height()).isZero();
         assertThat(sut.cachedFramesDepth()).isEqualTo(1);
