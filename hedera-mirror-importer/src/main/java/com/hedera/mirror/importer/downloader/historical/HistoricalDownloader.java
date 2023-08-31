@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.leader.Leader;
@@ -58,7 +57,7 @@ public class HistoricalDownloader {
 
     private final ConsensusNodeService consensusNodeService;
     private final Path downloadPath;
-    private final DownloaderProperties downloaderProperties;
+    private final HistoricalDownloaderProperties downloaderProperties;
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
@@ -105,8 +104,14 @@ public class HistoricalDownloader {
             return;
         }
 
+        var stopAtPrefix = downloaderProperties.getStopAtPrefix();
         var methodStopwatch = Stopwatch.createStarted();
-        log.info("Starting download from {} for stream type {}", startFilename, streamType);
+
+        log.info(
+                "Starting download from {} {} for stream type {}",
+                startFilename,
+                stopAtPrefix != null ? "until prefix %s".formatted(stopAtPrefix) : "",
+                streamType);
 
         /* NOTE: For first part (6413), the address book will not change while downloading since the data files
          * are not being imported.
@@ -149,10 +154,13 @@ public class HistoricalDownloader {
                                     "Unable to create local directory %s".formatted(filesDownloadDir), e);
                         }
 
+                        var stopAtKeyPrefix = stopAtPrefix != null ? prefix + stopAtPrefix : null;
                         var fileCounter = new AtomicLong(0L);
                         try {
                             var count = streamFileProvider
                                     .listAllPaginated(node, startFilename)
+                                    .takeWhile(s3Object -> stopAtKeyPrefix == null
+                                            || !s3Object.key().startsWith(stopAtKeyPrefix))
                                     .filter(this::isDownloadProspect)
                                     .flatMap(streamFileProvider::getAsFile, downloadConcurrency)
                                     .doOnNext(response -> {

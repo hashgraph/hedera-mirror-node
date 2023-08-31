@@ -41,6 +41,8 @@ public class HistoricalDownloaderProperties implements DownloaderProperties {
 
     private boolean enabled = true;
 
+    private String stopAtPrefix = null;
+
     private Duration frequency = null;
 
     private boolean persistBytes = false;
