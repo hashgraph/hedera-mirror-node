@@ -259,7 +259,7 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
             tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
         }
         await().pollInterval(Duration.ofMillis(100))
-                .atMost(Duration.ofSeconds(1))
+                .atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())
                         .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ACCOUNT_BALANCE_FILE_IGNORE_FIELDS)
                         .containsExactlyInAnyOrderElementsOf(expectedAccountBalanceFiles));

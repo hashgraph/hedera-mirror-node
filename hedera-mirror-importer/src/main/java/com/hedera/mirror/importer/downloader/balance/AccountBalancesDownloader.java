@@ -20,8 +20,10 @@ import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
@@ -40,6 +42,7 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AtomicBoolean accountBalanceFileExists = new AtomicBoolean(false);
+    private final AtomicBoolean verified = new AtomicBoolean(false);
 
     @SuppressWarnings("java:S107")
     public AccountBalancesDownloader(
@@ -81,6 +84,12 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
     }
 
     @Override
+    protected void onVerified(StreamFileData streamFileData, AccountBalanceFile streamFile, ConsensusNode node) {
+        super.onVerified(streamFileData, streamFile, node);
+        verified.set(true);
+    }
+
+    @Override
     protected boolean shouldDownload() {
         if (downloaderProperties.isEnabled()) {
             return true;
@@ -90,7 +99,7 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
             return false;
         }
 
-        if (accountBalanceFileRepository.findLatest().isPresent() || verifiedCount.get() > 0) {
+        if (accountBalanceFileRepository.findLatest().isPresent() || verified.get()) {
             log.info("Disable downloader since there is at least one account balance file parsed or verified");
             accountBalanceFileExists.set(true);
             return false;

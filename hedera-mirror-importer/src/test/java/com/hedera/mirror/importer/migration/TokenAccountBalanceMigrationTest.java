@@ -446,11 +446,10 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .persist();
 
         // A synthetic account balance file
-        long syntheticBalanceTimestamp =
-                accountBalanceTimestamp + Duration.ofHours(1).toNanos();
         domainBuilder
                 .accountBalanceFile()
-                .customize(a -> a.consensusTimestamp(syntheticBalanceTimestamp).synthetic(true))
+                .customize(
+                        a -> a.consensusTimestamp(accountBalanceTimestamp + 20).synthetic(true))
                 .persist();
 
         var tokenBalanceId = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId1);

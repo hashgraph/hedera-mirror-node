@@ -65,7 +65,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -100,7 +99,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
-    protected final AtomicLong verifiedCount = new AtomicLong(0);
 
     private final ConsensusNodeService consensusNodeService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
@@ -458,8 +456,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         copy.setBytes(null);
         copy.setItems(null);
         lastStreamFile.set(Optional.of(copy));
-
-        verifiedCount.getAndIncrement();
     }
 
     /**

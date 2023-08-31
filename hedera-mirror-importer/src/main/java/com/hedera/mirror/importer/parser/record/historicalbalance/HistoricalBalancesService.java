@@ -29,6 +29,8 @@ import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.time.Instant;
 import lombok.CustomLog;
@@ -75,11 +77,16 @@ public class HistoricalBalancesService {
     private final RecordFileRepository recordFileRepository;
     private final TransactionTemplate transactionTemplate;
 
+    // metrics
+    private final Timer generateDurationMetricFailure;
+    private final Timer generateDurationMetricSuccess;
+
     private FluxSink<Long> consensusEndSink;
 
     public HistoricalBalancesService(
             AccountBalanceFileRepository accountBalanceFileRepository,
             JdbcTemplate jdbcTemplate,
+            MeterRegistry meterRegistry,
             PlatformTransactionManager platformTransactionManager,
             HistoricalBalancesProperties properties,
             RecordFileRepository recordFileRepository) {
@@ -102,10 +109,18 @@ public class HistoricalBalancesService {
                 // Drop the oldest to minimize the delay of generating next historical balances
                 .onBackpressureBuffer(bufferSize, BufferOverflowStrategy.DROP_OLDEST)
                 // Ensure generate runs in the same thread
-                .publishOn(Schedulers.newSingle("Historical balances service"))
+                .publishOn(Schedulers.newSingle("historical-balances-service"))
                 .doOnNext(this::generate)
                 .doOnError(t -> log.error("Error processing data triggered by parsed record file", t))
                 .subscribe();
+
+        // metrics
+        var generateDurationTimerBuilder = Timer.builder("hedera.mirror.historicalbalances.duration")
+                .description("The duration in seconds it took to generate historical balances information");
+        generateDurationMetricFailure =
+                generateDurationTimerBuilder.tag("success", "false").register(meterRegistry);
+        generateDurationMetricSuccess =
+                generateDurationTimerBuilder.tag("success", "true").register(meterRegistry);
     }
 
     /**
@@ -136,6 +151,7 @@ public class HistoricalBalancesService {
         }
 
         var stopwatch = Stopwatch.createStarted();
+        boolean success = false;
         try {
             log.info("Generating historical balances after processing record file with consensusEnd {}", consensusEnd);
 
@@ -174,8 +190,13 @@ public class HistoricalBalancesService {
                         timestamp,
                         stopwatch);
             });
+
+            success = true;
         } catch (Exception e) {
             log.error("Failed to generate historical balances in {}", stopwatch, e);
+        } finally {
+            var timer = success ? generateDurationMetricSuccess : generateDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
         }
     }
 }
