@@ -37,7 +37,6 @@ const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc2064864
 
 const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
-  await loadAccountBalanceFiles(testDataJson.accountBalanceFile);
   await loadAddressBooks(testDataJson.addressbooks);
   await loadAddressBookEntries(testDataJson.addressbookentries);
   await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
@@ -78,15 +77,6 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
-  }
-};
-const loadAccountBalanceFiles = async (accountBalanceFiles) => {
-  if (accountBalanceFiles == null) {
-    return;
-  }
-
-  for (const accountBalanceFile of accountBalanceFiles) {
-    await addAccountBalanceFile(accountBalanceFile);
   }
 };
 
@@ -636,30 +626,6 @@ const addAccount = async (account) => {
     account
   );
 };
-
-const defaultAccountBalanceFile = {
-  bytes: '0x010102020303',
-  consensus_timestamp: 0,
-  count: 0,
-  name: 'Balance File name',
-  node_id: 0,
-  file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
-  load_end: 1629298236,
-  load_start: 1629298233,
-  time_offset: 0,
-};
-
-const accountBalanceFileFields = Object.keys(defaultAccountBalanceFile);
-
-const addAccountBalanceFile = async (accountBalanceFile) => {
-  accountBalanceFile = {
-    ...defaultAccountBalanceFile,
-    ...accountBalanceFile,
-  };
-
-  await insertDomainObject('account_balance_file', accountBalanceFileFields, accountBalanceFile);
-};
-
 const addAssessedCustomFee = async (assessedCustomFee) => {
   assessedCustomFee = {
     effective_payer_account_ids: [],
@@ -740,13 +706,6 @@ const setAccountBalance = async (balance) => {
     `insert into account_balance (consensus_timestamp, account_id, balance)
     values ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
-  );
-
-  await pool.query(
-    `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_id)
-    values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {

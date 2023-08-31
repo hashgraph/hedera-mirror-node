@@ -383,21 +383,18 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity() {
-        long id = id();
-        long timestamp = timestamp();
-
+    public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity(long id, long createdTimestamp) {
         var builder = Entity.builder()
                 .alias(key())
-                .autoRenewAccountId(id())
+                .autoRenewAccountId(id)
                 .autoRenewPeriod(1800L)
                 .balance(tinybar())
-                .createdTimestamp(timestamp)
+                .createdTimestamp(createdTimestamp)
                 .declineReward(false)
                 .deleted(false)
                 .ethereumNonce(1L)
                 .evmAddress(evmAddress())
-                .expirationTimestamp(timestamp + 30_000_000L)
+                .expirationTimestamp(createdTimestamp + 30_000_000L)
                 .id(id)
                 .key(key())
                 .maxAutomaticTokenAssociations(1)
@@ -412,10 +409,14 @@ public class DomainBuilder {
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
-                .timestampRange(Range.atLeast(timestamp))
+                .timestampRange(Range.atLeast(createdTimestamp))
                 .type(ACCOUNT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity() {
+        return entity(id(), timestamp());
     }
 
     public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder<?, ?>> entityHistory() {

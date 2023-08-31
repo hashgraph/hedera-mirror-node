@@ -86,6 +86,7 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import java.util.Optional;
@@ -262,7 +263,7 @@ class TransferPrecompileTest {
                 .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
-        Assertions.assertEquals(HTSTestsUtil.failResult, result);
+        Assertions.assertEquals(UInt256.valueOf(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS_VALUE), result);
     }
 
     @Test

@@ -130,6 +130,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(0, 0, 1061));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
             toAddress(EntityId.of(0, 0, 1060));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1054));
@@ -139,6 +140,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
+    protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1053));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1057));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1058));
@@ -173,6 +175,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045));
     protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261));
+    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
+    protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1265));
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
@@ -357,7 +361,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
-
     protected static Key keyWithDelegatableContractId = Key.newBuilder()
             .setDelegatableContractId(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
@@ -388,18 +391,33 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.json")
     protected Path ABI_PATH;
+
+    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.json")
+    protected Path REDIRECT_CONTRACT_ABI_PATH;
+
+    @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.bin")
+    protected Path REDIRECT_CONTRACT_BYTES_PATH;
+
     // The contract source `ModificationPrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
     protected Path MODIFICATION_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
     protected Path MODIFICATION_CONTRACT_ABI_PATH;
+
     // The contract source `ERCTestContract.sol` is in test resources
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
     protected Path ERC_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     protected Path ERC_ABI_PATH;
+
+    // The contract source `ExchangeRatePrecompile.sol` is in test resources
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.bin")
+    protected Path EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.json")
+    protected Path EXCHANGE_RATE_PRECOMPILE_ABI_PATH;
 
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
@@ -556,10 +574,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         reverterContractPersist();
         stateContractPersist();
         precompileContractPersist();
+        systemExchangeRateContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
+        final var redirectContract = redirectContractPersist();
         fileDataPersist();
 
         receiverPersist();
@@ -588,6 +608,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 ownerEntityId,
                 KEY_PROTO,
                 FUNGIBLE_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED);
+        final var tokenEntityIdNotAssociated = fungibleTokenPersist(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED);
@@ -705,26 +732,39 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.PAUSED,
                 true);
 
+        final var nftEntityId8 = nftPersistWithoutKycKey(
+                NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
+
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, frozenFungibleTokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(modificationContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(modificationContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+
         tokenAccountPersist(treasuryEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
@@ -733,18 +773,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
 
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContract, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, nestedContractId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
+        allowancesPersist(ownerEntityId, redirectContract, tokenEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
+        contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
     }
@@ -887,7 +932,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Nullable
     private EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
-        final var spenderEvmAddress = toEvmAddress(spenderEntityId);
         domainBuilder
                 .entity()
                 .customize(e -> e.id(spenderEntityId.getId())
@@ -969,6 +1013,68 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .alias(toEvmAddress(treasuryEntityId)))
                 .persist();
         return treasuryEntityId;
+    }
+
+    @Nullable
+    private EntityId nftPersistWithoutKycKey(
+            final Address nftAddress,
+            final Address autoRenewAddress,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final EntityId treasuryId,
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault) {
+        final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
+                        .expirationTimestamp(null)
+                        .num(nftEntityId.getNum())
+                        .evmAddress(nftEvmAddress)
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .memo("TestMemo"))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .treasuryAccountId(treasuryId)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(null)
+                        .freezeDefault(freezeDefault)
+                        .feeScheduleKey(key)
+                        .maxSupply(2000000000L)
+                        .name("Hbars")
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .pauseStatus(pauseStatus)
+                        .wipeKey(key)
+                        .supplyKey(key)
+                        .symbol("HBAR")
+                        .wipeKey(key))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntityId.getId()))
+                .persist();
+        return nftEntityId;
     }
 
     @Nullable
@@ -1296,6 +1402,41 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ercContractEntityId;
     }
 
+    private EntityId redirectContractPersist() {
+        final var redirectContractBytes = functionEncodeDecoder.getContractBytes(REDIRECT_CONTRACT_BYTES_PATH);
+        final var redirectContractEntityId = fromEvmAddress(REDIRECT_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var redirectContractEvmAddress = toEvmAddress(redirectContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(redirectContractEntityId.getId())
+                        .num(redirectContractEntityId.getNum())
+                        .evmAddress(redirectContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(redirectContractEntityId.getId()).runtimeBytecode(redirectContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(redirectContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(redirectContractBytes))
+                .persist();
+        return redirectContractEntityId;
+    }
+
     private void nestedEthCallsContractPersist() {
         final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_CALLS_CONTRACT_BYTES_PATH);
         final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
@@ -1327,12 +1468,49 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
     }
 
+    private EntityId systemExchangeRateContractPersist() {
+        final var exchangeRateContractBytes =
+                functionEncodeDecoder.getContractBytes(EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH);
+        final var exchangeRateContractEntityId =
+                fromEvmAddress(EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var exchangeRteContractEvmAddress = toEvmAddress(exchangeRateContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(exchangeRateContractEntityId.getId())
+                        .num(exchangeRateContractEntityId.getNum())
+                        .evmAddress(exchangeRteContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(exchangeRateContractEntityId.getId()).runtimeBytecode(exchangeRateContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(exchangeRateContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(exchangeRateContractBytes))
+                .persist();
+        return exchangeRateContractEntityId;
+    }
+
     protected void customFeePersist(final FeeCase feeCase) {
         final var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
         switch (feeCase) {
             case ROYALTY_FEE -> {
-                var royaltyFee = RoyaltyFee.builder()
+                final var royaltyFee = RoyaltyFee.builder()
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .fallbackFee(FallbackFee.builder()
@@ -1347,7 +1525,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .persist();
             }
             case FRACTIONAL_FEE -> {
-                var fractionalFee = FractionalFee.builder()
+                final var fractionalFee = FractionalFee.builder()
                         .collectorAccountId(collectorAccountId)
                         .denominator(10L)
                         .minimumAmount(1L)
@@ -1361,7 +1539,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .persist();
             }
             case FIXED_FEE -> {
-                var fixedFee = FixedFee.builder()
+                final var fixedFee = FixedFee.builder()
                         .amount(100L)
                         .collectorAccountId(collectorAccountId)
                         .denominatingTokenId(tokenEntityId)
@@ -1472,5 +1650,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 List.of(),
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+    /**
+     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
+     *
+     * @param actualGas   The actual gas used.
+     * @param expectedGas The expected gas used from the initial call.
+     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
+     */
+    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
+        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
     }
 }

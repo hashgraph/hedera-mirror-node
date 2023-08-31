@@ -157,7 +157,7 @@ const getBalances = async (req, res) => {
 const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
   const query = `
     select consensus_timestamp
-    from account_balance_file
+    from account_balance
      ${tsQuery ? ' where ' : ''} ${tsQuery}
     order by consensus_timestamp ${order}
     limit 1`;

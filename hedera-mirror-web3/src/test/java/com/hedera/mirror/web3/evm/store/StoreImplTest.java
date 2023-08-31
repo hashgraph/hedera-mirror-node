@@ -322,15 +322,10 @@ class StoreImplTest {
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
                 .thenReturn(associationsCount);
-        var result = subject.hasApprovedForAll(
-                Address.ZERO,
-                EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
-                EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertEquals(false, result);
-        result = subject.hasApprovedForAll(
-                ACCOUNT_ADDRESS,
-                EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS),
-                EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS));
-        assertEquals(false, result);
+        var accountId = EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS);
+        var tokenId = EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS);
+        assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();
+        assertThat(subject.hasApprovedForAll(ACCOUNT_ADDRESS, accountId, tokenId))
+                .isFalse();
     }
 }
