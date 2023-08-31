@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
@@ -25,7 +29,6 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -138,20 +141,20 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Given("I successfully create fungible tokens")
     public void createFungibleToken() {
         fungibleKycUnfrozenTokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf("FUNGIBLE_KYC_UNFROZEN"))
+                .getToken(FUNGIBLE_KYC_UNFROZEN)
                 .tokenId();
         fungibleTokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf("FUNGIBLE"))
+                .getToken(FUNGIBLE)
                 .tokenId();
     }
 
     @Given("I successfully non fungible tokens")
     public void createNonFungibleToken() {
         nonFungibleKycUnfrozenTokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf("NFT_KYC_UNFROZEN"))
+                .getToken(NFT_KYC_UNFROZEN)
                 .tokenId();
         nonFungibleTokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf("NFT"))
+                .getToken(NFT)
                 .tokenId();
     }
 
