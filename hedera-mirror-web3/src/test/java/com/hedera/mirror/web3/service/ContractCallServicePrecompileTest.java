@@ -19,7 +19,9 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.mirror.web3.utils.FunctionEncodeDecoder.convertAddress;
+import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
+import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -52,6 +54,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        switch (contractFunc) {
+            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE -> customFeePersist(FIXED_FEE);
+            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE -> customFeePersist(FRACTIONAL_FEE);
+            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE -> customFeePersist(ROYALTY_FEE);
+        }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
 
@@ -377,7 +384,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "getTokenKeyPublic",
                 new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
                 new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_CUSTOM_FEES_FOR_TOKEN("getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
+        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE(
+                "getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
+                    new Object[] {100L, FUNGIBLE_TOKEN_ADDRESS, false, false, SENDER_ALIAS},
+                    new Object[0],
+                    new Object[0]
+                }),
+        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE(
+                "getCustomFeesForToken",
+                new Object[] {FUNGIBLE_TOKEN_ADDRESS},
+                new Object[] {new Object[0], new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS}, new Object[0]}),
+        GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE(
+                "getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
+                    new Object[0], new Object[0], new Object[] {20L, 10L, 100L, FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}
+                }),
         GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
             1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
         }),
