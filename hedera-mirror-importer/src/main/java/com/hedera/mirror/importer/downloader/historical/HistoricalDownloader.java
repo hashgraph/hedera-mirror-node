@@ -62,7 +62,6 @@ public class HistoricalDownloader {
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
     private final Cache dataDownloadsCache;
-    private final int downloadConcurrency = 5; // Debug, make a property
 
     public HistoricalDownloader(
             ConsensusNodeService consensusNodeService,
@@ -105,13 +104,14 @@ public class HistoricalDownloader {
         }
 
         var stopAtPrefix = downloaderProperties.getStopAtPrefix();
-        var methodStopwatch = Stopwatch.createStarted();
-
+        var downloadConcurrency = downloaderProperties.getDownloadConcurrency();
         log.info(
-                "Starting download from {} {} for stream type {}",
+                "Starting download from {} {}for stream type {}",
                 startFilename,
-                stopAtPrefix != null ? "until prefix %s".formatted(stopAtPrefix) : "",
+                stopAtPrefix != null ? "until prefix %s ".formatted(stopAtPrefix) : "",
                 streamType);
+
+        var methodStopwatch = Stopwatch.createStarted();
 
         /* NOTE: For first part (6413), the address book will not change while downloading since the data files
          * are not being imported.
