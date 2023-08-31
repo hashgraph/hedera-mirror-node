@@ -21,9 +21,6 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStrin
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
@@ -34,10 +31,8 @@ import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.After;
@@ -72,19 +67,14 @@ public class ERCContractFeature extends AbstractFeature {
     private static final String TOTAL_SUPPLY_SELECTOR = "e4dc2aa4";
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
     private final AccountClient accountClient;
     private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final List<TokenId> tokenIds = new CopyOnWriteArrayList<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
 
-    private CompiledSolidityArtifact compiledSolidityArtifact;
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSerials;
@@ -334,9 +324,8 @@ public class ERCContractFeature extends AbstractFeature {
     @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
         try (var in = ercContract.getInputStream()) {
-            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedErcContract = createContract(in, 0);
         }
-        deployedErcContract = createContract(compiledSolidityArtifact, 0);
         ercTestContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }
 

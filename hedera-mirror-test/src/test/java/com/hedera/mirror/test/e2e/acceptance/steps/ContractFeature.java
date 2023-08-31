@@ -18,20 +18,21 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
@@ -57,11 +58,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
     private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
     private static final String GET_SENDER_SELECTOR = "5e01eb5a";
     private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
@@ -74,7 +70,6 @@ public class ContractFeature extends AbstractFeature {
     private final ContractClient contractClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
-    private final AcceptanceTestProperties acceptanceTestProperties;
     private final Web3Properties web3Properties;
     private String create2ChildContractEvmAddress;
     private String create2ChildContractEntityId;
@@ -89,8 +84,7 @@ public class ContractFeature extends AbstractFeature {
     @Given("I successfully create a contract from the parent contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
         try (var in = parentContract.getInputStream()) {
-            var parentCompiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-            deployedParentContract = createContract(parentCompiledSolidityArtifact, initialBalance);
+            deployedParentContract = createContract(in, initialBalance);
         }
     }
 

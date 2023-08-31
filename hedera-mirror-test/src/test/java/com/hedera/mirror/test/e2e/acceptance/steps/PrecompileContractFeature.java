@@ -27,9 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.FastHex;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
@@ -43,10 +40,8 @@ import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -56,10 +51,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -82,14 +77,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final long firstNftSerialNumber = 1;
     private final List<TokenId> tokenIds = new ArrayList<>();
     private final ContractClient contractClient;
     private final TokenClient tokenClient;
-    private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
     private ExpandedAccountId ecdsaEaId;
@@ -97,20 +88,14 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Resource precompileTestContract;
 
-    private CompiledSolidityArtifact compiledSolidityArtifact;
     private DeployedContract deployedPrecompileContract;
     private String precompileTestContractSolidityAddress;
 
-    @Before
-    public void initialization() throws Exception {
-        try (var in = precompileTestContract.getInputStream()) {
-            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-        }
-    }
-
     @Given("I successfully create and verify a precompile contract from contract bytes")
-    public void createNewContract() {
-        deployedPrecompileContract = createContract(compiledSolidityArtifact, 0);
+    public void createNewContract() throws IOException {
+        try (var in = precompileTestContract.getInputStream()) {
+            deployedPrecompileContract = createContract(in, 0);
+        }
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }
@@ -1052,10 +1037,14 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
-        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
-                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
-                .findFirst();
-
+        Optional<Object> function;
+        try (var in = precompileTestContract.getInputStream()) {
+            function = Arrays.stream(readCompiledArtifact(in).getAbi())
+                    .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
+                    .findFirst();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         try {
             String abiFunctionAsJsonString = (new JSONObject((Map) function.get())).toString();
             return Function.fromJson(abiFunctionAsJsonString)

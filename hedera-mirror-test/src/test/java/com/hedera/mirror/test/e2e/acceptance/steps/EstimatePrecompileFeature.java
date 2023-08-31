@@ -34,18 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -69,16 +64,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EstimatePrecompileFeature extends AbstractEstimateFeature {
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[]{};
 
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
     private static final long firstNftSerialNumber = 1;
     private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
     private TokenId fungibleKycUnfrozenTokenId;
@@ -95,16 +86,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private String estimatePrecompileContractSolidityAddress;
     private String ercTestContractSolidityAddress;
     private String precompileTestContractSolidityAddress;
-    private CompiledSolidityArtifact compiledEstimatePrecompileSolidityArtifacts;
-    private CompiledSolidityArtifact compiledErcTestContractSolidityArtifacts;
-    private CompiledSolidityArtifact compiledPrecompileContractSolidityArtifacts;
+
 
     @Given("I create estimate precompile contract with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
         try (var in = estimatePrecompileTestContract.getInputStream()) {
-            compiledEstimatePrecompileSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedEstimatePrecompileContract = createContract(in, supply);
         }
-        deployedEstimatePrecompileContract = createContract(compiledEstimatePrecompileSolidityArtifacts, supply);
         estimatePrecompileContractSolidityAddress =
                 deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
@@ -115,18 +103,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Given("I create erc test contract with {int} balance")
     public void createNewERCContract(int supply) throws IOException {
         try (var in = ercTestContract.getInputStream()) {
-            compiledErcTestContractSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedErcTestContract = createContract(in, supply);
         }
-        deployedErcTestContract = createContract(compiledErcTestContractSolidityArtifacts, supply);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract with {int} balance")
     public void createNewPrecompileTestContract(int supply) throws IOException {
         try (var in = precompileTestContract.getInputStream()) {
-            compiledPrecompileContractSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedPrecompileContract = createContract(in, supply);
         }
-        deployedPrecompileContract = createContract(compiledPrecompileContractSolidityArtifacts, supply);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }
@@ -1943,20 +1929,35 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     public Function getFunctionFromEstimateArtifact(ContractMethods contractMethod) {
-        String json = getAbiFunctionAsJsonString(compiledEstimatePrecompileSolidityArtifacts,
-                contractMethod.getFunctionName());
+        String json;
+        try (var in = estimatePrecompileTestContract.getInputStream()) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in),
+                    contractMethod.getFunctionName());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return Function.fromJson(json);
     }
 
     public Function getFunctionFromErcArtifact(ContractMethods contractMethod) {
-        String json = getAbiFunctionAsJsonString(compiledErcTestContractSolidityArtifacts,
-                contractMethod.getFunctionName());
+        String json;
+        try (var in = ercTestContract.getInputStream()) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in),
+                    contractMethod.getFunctionName());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return Function.fromJson(json);
     }
 
     public Function getFunctionFromPrecompileArtifact(ContractMethods contractMethod) {
-        String json = getAbiFunctionAsJsonString(compiledPrecompileContractSolidityArtifacts,
-                contractMethod.getFunctionName());
+        String json;
+        try (var in = precompileTestContract.getInputStream()) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in),
+                    contractMethod.getFunctionName());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return Function.fromJson(json);
     }
 

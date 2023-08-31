@@ -22,16 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -51,18 +46,11 @@ import org.springframework.core.io.Resource;
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static DeployedContract deployedContract;
     private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-    private CompiledSolidityArtifact ercArtifacts;
-    private CompiledSolidityArtifact precompileArtifacts;
-    private CompiledSolidityArtifact estimateArtifacts;
     private String ercContractAddress;
     private String precompileContractAddress;
     private String estimateContractAddress;
@@ -101,27 +89,24 @@ public class CallFeature extends AbstractFeature {
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
         try (var in = ercTestContract.getInputStream()) {
-            ercArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedContract = createContract(in, 0);
         }
-        deployedContract = createContract(ercArtifacts, 0);
         ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
         try (var in = precompileTestContract.getInputStream()) {
-            precompileArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedContract = createContract(in, 0);
         }
-        deployedContract = createContract(precompileArtifacts, 0);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
         try (var in = estimateGasTestContract.getInputStream()) {
-            estimateArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
+            deployedContract = createContract(in, 1000000);
         }
-        deployedContract = createContract(estimateArtifacts, 1000000);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }

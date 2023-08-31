@@ -15,6 +15,8 @@
  */
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -25,11 +27,14 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -41,7 +46,8 @@ abstract class AbstractFeature {
     protected ContractClient contractClient;
     @Autowired
     protected FileClient fileClient;
-
+    @Autowired
+    protected ObjectMapper mapper;
 
     protected MirrorTransaction verifyMirrorTransactionsResponse(MirrorNodeClient mirrorClient, int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
@@ -68,7 +74,8 @@ abstract class AbstractFeature {
         return mirrorTransaction;
     }
 
-    protected DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
+    protected DeployedContract createContract(InputStream in, int initialBalance) throws IOException {
+        CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
         var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
@@ -94,6 +101,7 @@ abstract class AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         return fileId;
     }
+
     protected ContractId verifyCreateContractNetworkResponse() {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -101,8 +109,12 @@ abstract class AbstractFeature {
         assertNotNull(contractId);
         return contractId;
     }
+
     protected record DeployedContract(FileId fileId, ContractId contractId,
                                       CompiledSolidityArtifact compiledSolidityArtifact) {
     }
 
+    protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
+        return mapper.readValue(in, CompiledSolidityArtifact.class);
+    }
 }

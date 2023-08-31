@@ -21,13 +21,7 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStrin
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.en.And;
@@ -44,26 +38,18 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EstimateFeature extends AbstractEstimateFeature {
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
-    private final ContractClient contractClient;
-    private final FileClient fileClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
 
-    private CompiledSolidityArtifact compiledSolidityArtifacts;
     private String newAccountEvnAddress;
 
     @Given("I successfully create contract from contract bytes with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
         try (var in = estimateGasTestContract.getInputStream()) {
-            compiledSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-            createContract(compiledSolidityArtifacts, supply);
+            deployedContract = createContract(in, supply);
         }
-        deployedContract = createContract(compiledSolidityArtifacts, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvnAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
