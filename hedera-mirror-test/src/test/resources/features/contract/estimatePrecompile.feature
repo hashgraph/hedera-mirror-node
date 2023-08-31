@@ -1,4 +1,4 @@
-@contractbase @fullsuite @estimateprecompile @web3
+@contractbase @fullsuite @estimateprecompile @web3 @acceptance
 Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas with precompile
