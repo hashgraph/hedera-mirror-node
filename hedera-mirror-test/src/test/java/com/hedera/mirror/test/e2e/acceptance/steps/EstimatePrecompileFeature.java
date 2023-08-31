@@ -108,7 +108,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void createNewEstimateContract(int supply) throws IOException {
         try (var in = estimatePrecompileTestContract.getInputStream()) {
             compiledEstimatePrecompileSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-            createContract(compiledEstimatePrecompileSolidityArtifacts, supply);
         }
         deployedEstimatePrecompileContract = createContract(compiledEstimatePrecompileSolidityArtifacts, supply);
         estimatePrecompileContractSolidityAddress =
@@ -122,7 +121,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void createNewERCContract(int supply) throws IOException {
         try (var in = ercTestContract.getInputStream()) {
             compiledErcTestContractSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-            createContract(compiledErcTestContractSolidityArtifacts, supply);
         }
         deployedErcTestContract = createContract(compiledErcTestContractSolidityArtifacts, supply);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
