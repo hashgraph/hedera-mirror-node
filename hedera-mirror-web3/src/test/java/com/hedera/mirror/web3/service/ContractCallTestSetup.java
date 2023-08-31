@@ -141,6 +141,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
+    protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1053));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1057));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1058));
@@ -812,6 +813,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 TokenPauseStatusEnum.PAUSED,
                 true);
 
+        final var nftEntityId8 = nftPersistWithoutKycKey(
+                NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
+
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
@@ -843,6 +854,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -1081,6 +1094,68 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .alias(toEvmAddress(treasuryEntityId)))
                 .persist();
         return treasuryEntityId;
+    }
+
+    @Nullable
+    private EntityId nftPersistWithoutKycKey(
+            final Address nftAddress,
+            final Address autoRenewAddress,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final EntityId treasuryId,
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault) {
+        final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
+                        .expirationTimestamp(null)
+                        .num(nftEntityId.getNum())
+                        .evmAddress(nftEvmAddress)
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .memo("TestMemo"))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .treasuryAccountId(treasuryId)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(null)
+                        .freezeDefault(freezeDefault)
+                        .feeScheduleKey(key)
+                        .maxSupply(2000000000L)
+                        .name("Hbars")
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .pauseStatus(pauseStatus)
+                        .wipeKey(key)
+                        .supplyKey(key)
+                        .symbol("HBAR")
+                        .wipeKey(key))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntityId.getId()))
+                .persist();
+        return nftEntityId;
     }
 
     @Nullable

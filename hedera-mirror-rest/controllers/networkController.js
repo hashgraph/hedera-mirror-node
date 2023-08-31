@@ -174,7 +174,7 @@ class NetworkController extends BaseController {
           null,
           params,
           conditions,
-          'abf.consensus_timestamp',
+          'ab.consensus_timestamp',
           params.length + 1
         );
       } else if (filter.key === filterKeys.Q) {
