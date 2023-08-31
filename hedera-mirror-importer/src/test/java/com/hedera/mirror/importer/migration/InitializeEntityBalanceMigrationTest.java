@@ -310,6 +310,14 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
         persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
 
+        // A synthetic account balance file
+        long syntheticBalanceTimestamp =
+                accountBalanceTimestamp2 + Duration.ofHours(1).toNanos();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(syntheticBalanceTimestamp).synthetic(true))
+                .persist();
+
         // Set expected balances
         account.setBalance(505L);
         accountDeleted.setBalance(20L);

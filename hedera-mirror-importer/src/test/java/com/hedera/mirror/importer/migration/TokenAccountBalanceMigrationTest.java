@@ -62,6 +62,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
+
     private TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
@@ -442,6 +443,14 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         accountBalanceFile2 = domainBuilder
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp))
+                .persist();
+
+        // A synthetic account balance file
+        long syntheticBalanceTimestamp =
+                accountBalanceTimestamp + Duration.ofHours(1).toNanos();
+        domainBuilder
+                .accountBalanceFile()
+                .customize(a -> a.consensusTimestamp(syntheticBalanceTimestamp).synthetic(true))
                 .persist();
 
         var tokenBalanceId = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId1);

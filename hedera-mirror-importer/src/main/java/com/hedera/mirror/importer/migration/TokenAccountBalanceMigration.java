@@ -37,6 +37,7 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
                 from account_balance_file
                 join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
                   on consensus_timestamp + time_offset <= consensus_end
+                where synthetic is false
                 order by consensus_timestamp desc
                 limit 1
             ),
