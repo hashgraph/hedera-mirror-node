@@ -37,6 +37,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import java.time.Duration;
 import java.util.Collections;
@@ -61,18 +62,21 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final HistoricalBalancesProperties properties;
     private final RecordFileRepository recordFileRepository;
+    private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TransactionTemplate transactionTemplate;
 
     private Entity account;
-    private Entity contract;
     private TokenAccount tokenAccount;
+
+    private List<Entity> entities;
+    private List<TokenAccount> tokenAccounts;
 
     @BeforeEach
     void setup() {
         // common database setup
         account = domainBuilder.entity().persist();
-        contract = domainBuilder
+        var contract = domainBuilder
                 .entity()
                 .customize(e -> e.deleted(null).type(CONTRACT))
                 .persist();
@@ -84,6 +88,10 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
                 .customize(ta -> ta.accountId(account.getId()))
                 .persist();
         domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+
+        // Only entities with valid balance
+        entities = Lists.newArrayList(account, contract);
+        tokenAccounts = Lists.newArrayList(tokenAccount);
     }
 
     @ParameterizedTest
@@ -108,6 +116,14 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
         // balance changes
         account.setBalance(account.getBalance() + 5);
         entityRepository.save(account);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 18);
+        tokenAccountRepository.save(tokenAccount);
+        // new entity, tokenAccount
+        entities.add(domainBuilder.entity().persist());
+        tokenAccounts.add(domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(account.getId()))
+                .persist());
 
         // process a record file which doesn't reach the next balances snapshot interval
         var existingAccountBalanceFiles = Lists.newArrayList(accountBalanceFileRepository.findAll());
@@ -234,14 +250,13 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
         // then, a synthetic account balance file, account balance, and token balance should generate
         expectedAccountBalanceFiles.add(AccountBalanceFile.builder()
                 .consensusTimestamp(balanceTimestamp)
-                .count(2L)
+                .count((long) entities.size())
                 .nodeId(INVALID_NODE_ID)
                 .synthetic(true)
                 .build());
-        expectedAccountBalances.add(getAccountBalance(balanceTimestamp, account));
-        expectedAccountBalances.add(getAccountBalance(balanceTimestamp, contract));
+        entities.forEach(entity -> expectedAccountBalances.add(getAccountBalance(balanceTimestamp, entity)));
         if (properties.isTokenBalances()) {
-            expectedTokenBalances.add(getTokenBalance(balanceTimestamp, tokenAccount));
+            tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
         }
         await().pollInterval(Duration.ofMillis(100))
                 .atMost(Duration.ofSeconds(1))

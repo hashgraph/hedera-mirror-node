@@ -204,6 +204,13 @@ class MirrorDateRangePropertiesProcessorTest {
         }
     }
 
+    @ParameterizedTest(name = "timestamp {0} does not pass empty filter")
+    @ValueSource(longs = {-10L, 0L, 1L, 10L, 8L, 100L})
+    void emptyFilter(long timestamp) {
+        DateRangeFilter filter = DateRangeFilter.empty();
+        assertThat(filter.filter(timestamp)).isFalse();
+    }
+
     @ParameterizedTest(name = "filter [{0}, {1}], timestamp {2}, pass: {3}")
     @CsvSource(
             value = {
