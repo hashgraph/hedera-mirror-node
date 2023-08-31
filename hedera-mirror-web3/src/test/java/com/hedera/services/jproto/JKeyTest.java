@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
+import java.security.InvalidKeyException;
 import java.util.Arrays;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.Test;
 
 class JKeyTest {
@@ -51,7 +51,7 @@ class JKeyTest {
 
         // expect:
         assertThrows(
-                DecoderException.class,
+                InvalidKeyException.class,
                 () -> JKey.convertKey(keyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
     }
@@ -63,7 +63,7 @@ class JKeyTest {
 
         // expect:
         assertThrows(
-                DecoderException.class,
+                InvalidKeyException.class,
                 () -> JKey.convertJKey(jKeyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
     }
