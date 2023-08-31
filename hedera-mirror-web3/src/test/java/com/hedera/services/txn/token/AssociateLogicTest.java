@@ -118,13 +118,16 @@ class AssociateLogicTest {
 
     @Test
     void canAssociateWithNewToken() {
-        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
         final var modifiedAccount = setupAccount(1);
+        final var newRel =
+                new TokenRelationship(token, modifiedAccount, 0, false, false, false, false, false, false, 0);
         setupToken();
+        when(mirrorNodeEvmProperties.getMaxTokensPerAccount()).thenReturn(1000);
+        when(token.newRelationshipWith(modifiedAccount, false)).thenReturn(newRel);
 
         associateLogic.associate(accountAddress, tokenAddresses, store);
 
-        verify(store).updateTokenRelationship(new TokenRelationship(token, modifiedAccount, true, false, false));
+        verify(store).updateTokenRelationship(newRel);
     }
 
     @Test

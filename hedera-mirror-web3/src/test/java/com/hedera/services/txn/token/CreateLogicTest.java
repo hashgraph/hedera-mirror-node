@@ -33,6 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyF
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -153,6 +154,8 @@ class CreateLogicTest {
                         any(long.class)))
                 .thenReturn(token);
         given(token.getId()).willReturn(tokenId);
+        given(token.newEnabledRelationship(any()))
+                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, true, 0));
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(treasuryId);
         given(token.getCustomFees()).willReturn(Collections.emptyList());
@@ -182,6 +185,8 @@ class CreateLogicTest {
                         any(Account.class),
                         any(long.class)))
                 .thenReturn(token);
+        given(token.newEnabledRelationship(any()))
+                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, true, 0));
         given(token.getId()).willReturn(tokenId);
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(treasuryId);
@@ -204,6 +209,8 @@ class CreateLogicTest {
         staticMock.when(() -> Id.fromGrpcAccount(any())).thenReturn(treasuryId).thenReturn(accountId);
         staticMock.when(() -> Id.fromGrpcToken(any())).thenReturn(tokenId);
         given(tokenId.asEvmAddress()).willReturn(tokenAddress);
+        given(token.newEnabledRelationship(any()))
+                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, true, 0));
         given(store.getAccount(any(), any())).willReturn(treasury).willReturn(account);
         given(op.hasAutoRenewAccount()).willReturn(true);
         staticToken.when(Token::getEmptyToken).thenCallRealMethod();
