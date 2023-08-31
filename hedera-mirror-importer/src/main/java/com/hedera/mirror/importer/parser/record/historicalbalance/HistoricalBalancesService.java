@@ -25,8 +25,6 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamFilename.FileType;
 import com.hedera.mirror.importer.exception.ParserException;
-import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParsedEvent;
-import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -70,7 +68,6 @@ public class HistoricalBalancesService {
             where associated is true
             order by account_id, token_id
             """;
-    private static final long NOT_SET = 0;
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -78,9 +75,7 @@ public class HistoricalBalancesService {
     private final RecordFileRepository recordFileRepository;
     private final TransactionTemplate transactionTemplate;
 
-    private long count = 0;
-    private long lastTimestamp = NOT_SET;
-    private FluxSink<ParsedStreamFile> parsedStreamFileSink;
+    private FluxSink<Long> consensusEndSink;
 
     public HistoricalBalancesService(
             AccountBalanceFileRepository accountBalanceFileRepository,
@@ -103,56 +98,40 @@ public class HistoricalBalancesService {
         int bufferSize =
                 (int) (properties.getTransactionTimeout().multipliedBy(2).toSeconds()
                         / StreamType.RECORD.getFileCloseInterval().toSeconds());
-        Flux.<ParsedStreamFile>create(sink -> this.parsedStreamFileSink = sink)
-                // Ensure generate runs in the same thread
-                .publishOn(Schedulers.newSingle("Historical balances service"))
+        Flux.<Long>create(sink -> this.consensusEndSink = sink)
                 // Drop the oldest to minimize the delay of generating next historical balances
                 .onBackpressureBuffer(bufferSize, BufferOverflowStrategy.DROP_OLDEST)
+                // Ensure generate runs in the same thread
+                .publishOn(Schedulers.newSingle("Historical balances service"))
                 .doOnNext(this::generate)
-                .doOnError(t -> log.error("Error processing ParsedStreamFile", t))
+                .doOnError(t -> log.error("Error processing data triggered by parsed record file", t))
                 .subscribe();
     }
 
     /**
-     * Listens on {@link AccountBalanceFileParsedEvent} and emits a {@link ParsedStreamFile} element.
-     *
-     * @param event The account balance file parsed event published by {@link AccountBalanceFileParser}
-     */
-    @Async
-    @TransactionalEventListener
-    public void onAccountBalanceFileParsed(AccountBalanceFileParsedEvent event) {
-        parsedStreamFileSink.next(new ParsedStreamFile(event.getConsensusTimestamp(), StreamType.BALANCE));
-    }
-
-    /**
-     * Listens on {@link RecordFileParsedEvent} and emits a {@link ParsedStreamFile} element to trigger historical
-     * balances generation.
+     * Listens on {@link RecordFileParsedEvent} and emits the consensusEnd to trigger historical balances generation.
      *
      * @param event The record file parsed event published by {@link RecordFileParser}
      */
     @Async
     @TransactionalEventListener
     public void onRecordFileParsed(RecordFileParsedEvent event) {
-        parsedStreamFileSink.next(new ParsedStreamFile(event.getConsensusEnd(), StreamType.RECORD));
+        consensusEndSink.next(event.getConsensusEnd());
     }
 
-    private void generate(ParsedStreamFile parsedStreamFile) {
-        if (parsedStreamFile.type == StreamType.BALANCE) {
-            if (count == 0) {
-                // Only initialize lastTimestamp to the parsed account balance file's consensus timestamp if no
-                // historical balances info has generated. Note if there are account balance files in db before importer
-                // starts, account balances downloader won't run thus no AccountBalanceFileParsedEvent will get fired
-                lastTimestamp = parsedStreamFile.consensusTimestamp;
-                log.info("Initialize lastTimestamp to {} from the first parsed account balance file", lastTimestamp);
-            }
-
-            return;
-        }
-
-        initializeLastTimestamp();
-
-        long consensusEnd = parsedStreamFile.consensusTimestamp;
-        if (consensusEnd - lastTimestamp < properties.getMinFrequency().toNanos()) {
+    private void generate(long consensusEnd) {
+        boolean shouldGenerate = accountBalanceFileRepository
+                .findLatest()
+                .map(AccountBalanceFile::getConsensusTimestamp)
+                .or(() -> recordFileRepository
+                        .findFirst()
+                        .map(RecordFile::getConsensusEnd)
+                        .map(timestamp ->
+                                timestamp + properties.getInitialDelay().toNanos()))
+                .filter(lastTimestamp -> consensusEnd - lastTimestamp
+                        >= properties.getMinFrequency().toNanos())
+                .isPresent();
+        if (!shouldGenerate) {
             return;
         }
 
@@ -187,8 +166,6 @@ public class HistoricalBalancesService {
                         .build();
                 accountBalanceFileRepository.save(accountBalanceFile);
 
-                count++;
-                lastTimestamp = timestamp;
                 log.info(
                         "Generated historical account balance file {} with {} account balances and {} token balances for timestamp {} in {}",
                         filename,
@@ -201,37 +178,4 @@ public class HistoricalBalancesService {
             log.error("Failed to generate historical balances in {}", stopwatch, e);
         }
     }
-
-    private void initializeLastTimestamp() {
-        if (lastTimestamp != NOT_SET) {
-            return;
-        }
-
-        // Initialize last timestamp to the consensus timestamp of the latest account balance file in database if
-        // present, otherwise the consensus end of the first record file plus initial delay
-        accountBalanceFileRepository
-                .findLatest()
-                .map(accountBalanceFile -> {
-                    long timestamp = accountBalanceFile.getConsensusTimestamp();
-                    log.info(
-                            "Initialize lastTimestamp to {} - the latest account balance file {}'s timestamp",
-                            timestamp,
-                            accountBalanceFile.getName());
-                    return timestamp;
-                })
-                .or(() -> recordFileRepository.findFirst().map(recordFile -> {
-                    long consensusEnd = recordFile.getConsensusEnd();
-                    long timestamp = consensusEnd + properties.getInitialDelay().toNanos();
-                    log.info(
-                            "Initialize lastTimestamp to {} - the first record file {}'s consensus end {} + initial delay {}",
-                            timestamp,
-                            recordFile.getName(),
-                            consensusEnd,
-                            properties.getInitialDelay());
-                    return timestamp;
-                }))
-                .ifPresent(timestamp -> lastTimestamp = timestamp);
-    }
-
-    private record ParsedStreamFile(long consensusTimestamp, StreamType type) {}
 }

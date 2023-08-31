@@ -28,8 +28,6 @@ hedera:
               syntheticContractResults: true
             redis:
               enabled: false
-          historicalBalances:
-            enabled: false
           pubsub:
             topicName: testTopic
           retry:

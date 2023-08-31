@@ -16,14 +16,24 @@
 
 package com.hedera.mirror.importer.repository;
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
+import static com.hedera.mirror.importer.repository.AccountBalanceFileRepository.CACHE_NAME;
+
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import java.util.Optional;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+@CacheConfig(cacheNames = CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 public interface AccountBalanceFileRepository
         extends StreamFileRepository<AccountBalanceFile, Long>, RetentionRepository {
 
+    String CACHE_NAME = "accountBalanceFiles";
+
+    @Cacheable(key = "'latest'")
     @Override
     @Query(value = "select * from account_balance_file order by consensus_timestamp desc limit 1", nativeQuery = true)
     Optional<AccountBalanceFile> findLatest();
@@ -45,4 +55,9 @@ public interface AccountBalanceFileRepository
     @Override
     @Query("delete from AccountBalanceFile where consensusTimestamp <= ?1")
     int prune(long consensusTimestamp);
+
+    @CacheEvict(allEntries = true)
+    @Modifying
+    @Override
+    <S extends AccountBalanceFile> S save(S accountBalanceFile);
 }

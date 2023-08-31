@@ -32,7 +32,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParsedEvent;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -48,8 +47,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalBalancesServiceTest extends IntegrationTest {
@@ -58,30 +57,26 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final EntityRepository entityRepository;
-    private final JdbcTemplate jdbcTemplate;
-    private final PlatformTransactionManager platformTransactionManager;
     private final HistoricalBalancesProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
+    private final TransactionTemplate transactionTemplate;
 
     private Entity account;
     private Entity contract;
-    private HistoricalBalancesService historicalBalancesService;
     private TokenAccount tokenAccount;
 
     @BeforeEach
     void setup() {
-        historicalBalancesService = new HistoricalBalancesService(
-                accountBalanceFileRepository,
-                jdbcTemplate,
-                platformTransactionManager,
-                properties,
-                recordFileRepository);
-
         // common database setup
         account = domainBuilder.entity().persist();
-        contract = domainBuilder.entity().customize(e -> e.type(CONTRACT)).persist();
+        contract = domainBuilder
+                .entity()
+                .customize(e -> e.deleted(null).type(CONTRACT))
+                .persist();
+        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         domainBuilder.entity().customize(e -> e.balance(null)).persist();
         domainBuilder.entity().customize(e -> e.type(TOPIC)).persist();
         tokenAccount = domainBuilder
@@ -99,7 +94,9 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
 
         // when
         parseRecordFile(null);
-        var firstAccountBalanceFile = parseAccountBalanceFile(); // Download and parse the first account balance file
+        // Download and parse the first account balance file
+        var firstAccountBalanceFile = accountBalanceFileRepository.save(
+                domainBuilder.accountBalanceFile().get());
 
         // then
         verifyNoNewAccountBalanceFile(List.of(firstAccountBalanceFile));
@@ -201,24 +198,20 @@ class HistoricalBalancesServiceTest extends IntegrationTest {
         verifyGeneratedBalances(balanceTimestamp);
     }
 
-    private AccountBalanceFile parseAccountBalanceFile() {
-        var file = domainBuilder.accountBalanceFile().persist();
-        historicalBalancesService.onAccountBalanceFileParsed(
-                new AccountBalanceFileParsedEvent(this, file.getConsensusTimestamp()));
-        return file;
-    }
-
     private RecordFile parseRecordFile(final Long consensusEnd) {
-        var recordFile = domainBuilder
-                .recordFile()
-                .customize(rf -> {
-                    if (consensusEnd != null) {
-                        rf.consensusEnd(consensusEnd).consensusStart(consensusEnd - 100);
-                    }
-                })
-                .persist();
-        historicalBalancesService.onRecordFileParsed(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
-        return recordFile;
+        return transactionTemplate.execute(t -> {
+            var recordFile = domainBuilder
+                    .recordFile()
+                    .customize(rf -> {
+                        if (consensusEnd != null) {
+                            rf.consensusEnd(consensusEnd).consensusStart(consensusEnd - 100);
+                        }
+                    })
+                    .get();
+            recordFileRepository.save(recordFile);
+            applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
+            return recordFile;
+        });
     }
 
     private void verifyNoNewAccountBalanceFile(List<AccountBalanceFile> existingAccountBalanceFiles) {
