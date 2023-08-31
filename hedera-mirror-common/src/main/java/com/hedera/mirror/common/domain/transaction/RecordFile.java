@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Strings;
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
@@ -33,7 +31,6 @@ import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -53,8 +50,6 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     public static final Version HAPI_VERSION_NOT_SET = new Version(0, 0, 0);
     public static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
-
-    private static final String EMPTY_HASH = Strings.repeat("00", 48);
 
     @Getter(lazy = true)
     @Transient
@@ -142,15 +137,18 @@ public class RecordFile implements StreamFile<RecordItem> {
         return StreamType.RECORD;
     }
 
+    private Version hapiVersion() {
+        if (hapiVersionMajor == null || hapiVersionMinor == null || hapiVersionPatch == null) {
+            return HAPI_VERSION_NOT_SET;
+        }
+
+        return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
+    }
+
     public void finishLoad(long count) {
         this.count = count;
         loadEnd = Instant.now().getEpochSecond();
         logsBloom = logsBloomAggregator.getBloom();
-    }
-
-    @JsonIgnore
-    public boolean isGenesis() {
-        return Objects.equals(previousHash, EMPTY_HASH);
     }
 
     public void processItem(final RecordItem recordItem) {
@@ -174,13 +172,5 @@ public class RecordFile implements StreamFile<RecordItem> {
             return transactionRecord.getContractCallResult();
         }
         return null;
-    }
-
-    private Version hapiVersion() {
-        if (hapiVersionMajor == null || hapiVersionMinor == null || hapiVersionPatch == null) {
-            return HAPI_VERSION_NOT_SET;
-        }
-
-        return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
     }
 }
