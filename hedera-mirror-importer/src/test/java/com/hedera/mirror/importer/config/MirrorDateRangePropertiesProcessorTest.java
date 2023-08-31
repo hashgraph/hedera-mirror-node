@@ -84,11 +84,7 @@ class MirrorDateRangePropertiesProcessorTest {
         downloaderPropertiesList =
                 List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
         mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(
-                mirrorProperties,
-                downloaderPropertiesList,
-                accountBalanceFileRepository,
-                eventFileRepository,
-                recordFileRepository);
+                mirrorProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);
@@ -206,13 +202,6 @@ class MirrorDateRangePropertiesProcessorTest {
             assertThatThrownBy(() -> mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isInstanceOf(InvalidConfigurationException.class);
         }
-    }
-
-    @ParameterizedTest(name = "timestamp {0} does not pass empty filter")
-    @ValueSource(longs = {-10L, 0L, 1L, 10L, 8L, 100L})
-    void emptyFilter(long timestamp) {
-        DateRangeFilter filter = DateRangeFilter.empty();
-        assertThat(filter.filter(timestamp)).isFalse();
     }
 
     @ParameterizedTest(name = "filter [{0}, {1}], timestamp {2}, pass: {3}")

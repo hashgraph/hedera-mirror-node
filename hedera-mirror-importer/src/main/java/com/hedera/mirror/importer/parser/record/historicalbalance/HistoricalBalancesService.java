@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.historicalbalance;
 
+import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID_NODE_ID;
+
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
@@ -38,14 +40,16 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import reactor.core.publisher.BufferOverflowStrategy;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
-@ConditionalOnProperty(prefix = "hedera.mirror.importer.parser.record.historical-balances", name = "enabled")
+@ConditionalOnProperty(
+        prefix = "hedera.mirror.importer.parser.record.historical-balances",
+        name = "enabled",
+        matchIfMissing = true)
 @CustomLog
 @Named
 public class HistoricalBalancesService {
@@ -70,10 +74,9 @@ public class HistoricalBalancesService {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformTransactionManager platformTransactionManager;
     private final HistoricalBalancesProperties properties;
     private final RecordFileRepository recordFileRepository;
-    private final TransactionDefinition transactionDefinition;
+    private final TransactionTemplate transactionTemplate;
 
     private long count = 0;
     private long lastTimestamp = NOT_SET;
@@ -87,28 +90,24 @@ public class HistoricalBalancesService {
             RecordFileRepository recordFileRepository) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.jdbcTemplate = jdbcTemplate;
-        this.platformTransactionManager = platformTransactionManager;
         this.properties = properties;
         this.recordFileRepository = recordFileRepository;
 
         // Set repeatable read isolation level and transaction timeout
-        var definition = new DefaultTransactionDefinition();
-        definition.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
-        definition.setTimeout((int) properties.getTransactionTimeout().toSeconds());
-        this.transactionDefinition = definition;
+        this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        this.transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+        this.transactionTemplate.setTimeout(
+                (int) properties.getTransactionTimeout().toSeconds());
 
-        // A backpressure buffer to hold parsed record files for half of the min frequency plus the transaction timeout
-        int bufferSize = (int) (properties
-                        .getMinFrequency()
-                        .dividedBy(2)
-                        .plus(properties.getTransactionTimeout())
-                        .toSeconds()
-                / StreamType.RECORD.getFileCloseInterval().toSeconds());
+        // A backpressure buffer to hold parsed record files for the period twice of the transaction timeout
+        int bufferSize =
+                (int) (properties.getTransactionTimeout().multipliedBy(2).toSeconds()
+                        / StreamType.RECORD.getFileCloseInterval().toSeconds());
         Flux.<ParsedStreamFile>create(sink -> this.parsedStreamFileSink = sink)
-                // drop the oldest to minimize the delay of generating next historical balances
+                // Ensure generate runs in the same thread
+                .publishOn(Schedulers.newSingle("Historical balances service"))
+                // Drop the oldest to minimize the delay of generating next historical balances
                 .onBackpressureBuffer(bufferSize, BufferOverflowStrategy.DROP_OLDEST)
-                // ensure doGenerate runs on a single thread
-                .subscribeOn(Schedulers.newSingle("Historical balances service"))
                 .doOnNext(this::generate)
                 .doOnError(t -> log.error("Error processing ParsedStreamFile", t))
                 .subscribe();
@@ -140,10 +139,11 @@ public class HistoricalBalancesService {
     private void generate(ParsedStreamFile parsedStreamFile) {
         if (parsedStreamFile.type == StreamType.BALANCE) {
             if (count == 0) {
-                // only initialize lastTimestamp to the parsed account balance file's consensus timestamp if no
+                // Only initialize lastTimestamp to the parsed account balance file's consensus timestamp if no
                 // historical balances info has generated. Note if there are account balance files in db before importer
                 // starts, account balances downloader won't run thus no AccountBalanceFileParsedEvent will get fired
                 lastTimestamp = parsedStreamFile.consensusTimestamp;
+                log.info("Initialize lastTimestamp to {} from the first parsed account balance file", lastTimestamp);
             }
 
             return;
@@ -160,16 +160,14 @@ public class HistoricalBalancesService {
         try {
             log.info("Generating historical balances after processing record file with consensusEnd {}", consensusEnd);
 
-            var transactionTemplate = new TransactionTemplate(platformTransactionManager, transactionDefinition);
             transactionTemplate.executeWithoutResult(t -> {
                 long loadStart = Instant.now().getEpochSecond();
                 long timestamp = recordFileRepository
                         .findLatest()
                         .map(RecordFile::getConsensusEnd)
-                        // this should never happen since the function is triggered after a record file is parsed
+                        // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
                 int accountBalancesCount = jdbcTemplate.update(GENERATE_ACCOUNT_BALANCES_SQL, timestamp);
-
                 int tokenBalancesCount = 0;
                 if (properties.isTokenBalances()) {
                     tokenBalancesCount = jdbcTemplate.update(GENERATE_TOKEN_BALANCES_SQL, timestamp);
@@ -184,7 +182,7 @@ public class HistoricalBalancesService {
                         .loadStart(loadStart)
                         .loadEnd(loadEnd)
                         .name(filename)
-                        .nodeId(-1L)
+                        .nodeId(INVALID_NODE_ID)
                         .synthetic(true)
                         .build();
                 accountBalanceFileRepository.save(accountBalanceFile);
@@ -209,14 +207,14 @@ public class HistoricalBalancesService {
             return;
         }
 
-        // initialize last timestamp to the consensus timestamp of the latest account balance file in database if
+        // Initialize last timestamp to the consensus timestamp of the latest account balance file in database if
         // present, otherwise the consensus end of the first record file plus initial delay
         accountBalanceFileRepository
                 .findLatest()
                 .map(accountBalanceFile -> {
                     long timestamp = accountBalanceFile.getConsensusTimestamp();
                     log.info(
-                            "Initialize lastTimestamp to {} - account balance file {}'s timestamp",
+                            "Initialize lastTimestamp to {} - the latest account balance file {}'s timestamp",
                             timestamp,
                             accountBalanceFile.getName());
                     return timestamp;

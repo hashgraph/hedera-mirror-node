@@ -39,10 +39,10 @@ public class HistoricalBalancesProperties {
 
     private boolean enabled = true;
 
-    @DurationMin(minutes = 1)
+    @DurationMin(minutes = 2)
     @DurationUnit(ChronoUnit.MINUTES)
     @NotNull
-    private Duration initialDelay = Duration.ofMinutes(5);
+    private Duration initialDelay = Duration.ofMinutes(2);
 
     @DurationMin(minutes = 15)
     @DurationUnit(ChronoUnit.MINUTES)
