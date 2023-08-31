@@ -44,7 +44,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
