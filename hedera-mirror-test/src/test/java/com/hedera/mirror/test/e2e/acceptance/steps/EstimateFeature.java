@@ -413,44 +413,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 contractSolidityAddress);
     }
 
-    private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
-        var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                null);
-        var contractId = verifyCreateContractNetworkResponse();
-
-        return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-    }
-
-    private FileId persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        return fileId;
-    }
-
-    private ContractId verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-        return contractId;
-    }
-
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
@@ -492,7 +454,4 @@ public class EstimateFeature extends AbstractEstimateFeature {
         private final String selector;
         private final int actualGas;
     }
-
-    private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

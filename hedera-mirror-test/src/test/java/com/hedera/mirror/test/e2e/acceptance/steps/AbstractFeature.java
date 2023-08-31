@@ -15,21 +15,33 @@
  */
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import java.util.List;
 import lombok.CustomLog;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 abstract class AbstractFeature {
     protected NetworkTransactionResponse networkTransactionResponse;
+    protected ContractId contractId;
+    @Autowired
+    protected ContractClient contractClient;
+    @Autowired
+    protected FileClient fileClient;
+
 
     protected MirrorTransaction verifyMirrorTransactionsResponse(MirrorNodeClient mirrorClient, int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
@@ -55,4 +67,42 @@ abstract class AbstractFeature {
 
         return mirrorTransaction;
     }
+
+    protected DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
+        var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
+                null);
+        contractId = verifyCreateContractNetworkResponse();
+        return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+    }
+
+    protected FileId persistContractBytes(String contractContents) {
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        var fileId = networkTransactionResponse.getReceipt().fileId;
+        assertNotNull(fileId);
+        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        return fileId;
+    }
+    protected ContractId verifyCreateContractNetworkResponse() {
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        var contractId = networkTransactionResponse.getReceipt().contractId;
+        assertNotNull(contractId);
+        return contractId;
+    }
+    protected record DeployedContract(FileId fileId, ContractId contractId,
+                                      CompiledSolidityArtifact compiledSolidityArtifact) {
+    }
+
 }

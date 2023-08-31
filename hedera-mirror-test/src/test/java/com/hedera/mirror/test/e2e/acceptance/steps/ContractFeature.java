@@ -70,7 +70,7 @@ public class ContractFeature extends AbstractFeature {
     private static final String WRONG_SELECTOR = "000000";
     private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
     private static final int EVM_ADDRESS_SALT = 42;
-    private static DeployedContract deployedParentContract;
+    private DeployedContract deployedParentContract;
     private final AccountClient accountClient;
     private final ContractClient contractClient;
     private final FileClient fileClient;
@@ -301,7 +301,7 @@ public class ContractFeature extends AbstractFeature {
         assertNotNull(transactions);
         assertEquals(2, transactions.size());
         assertEquals(
-                deployedParentContract.contractId.toString(),
+                deployedParentContract.contractId().toString(),
                 transactions.get(0).getEntityId());
         assertEquals("CONTRACTCALL", transactions.get(0).getName());
         assertEquals(create2ChildContractEntityId, transactions.get(1).getEntityId());
@@ -326,44 +326,6 @@ public class ContractFeature extends AbstractFeature {
     @When("I successfully delete the child contract by calling it and causing it to self destruct")
     public void deleteChildContractUsingSelfDestruct() {
         executeSelfDestructTransaction();
-    }
-
-    private ContractId verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-        return contractId;
-    }
-
-    private FileId persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        return fileId;
-    }
-
-    private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
-        var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                null);
-
-        var contractId = verifyCreateContractNetworkResponse();
-        return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
     }
 
     private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
@@ -547,10 +509,4 @@ public class ContractFeature extends AbstractFeature {
         CREATION,
         CALL
     }
-
-    /*
-     * Static state to persist across contract Cucumber scenarios.
-     */
-    private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }
