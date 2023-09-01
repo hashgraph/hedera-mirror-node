@@ -53,6 +53,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -61,13 +62,15 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFe
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -75,6 +78,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.security.InvalidKeyException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -230,7 +234,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
     @Override
     public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
-        final var functionId = ((FunctionParam) bodyParams).functionId();
+        final var createParams = ((CreateParams) bodyParams);
+        final var functionId = createParams.functionId();
         final var tokenCreateOp =
                 switch (functionId) {
                     case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN -> decodeFungibleCreate(input, aliasResolver);
@@ -259,6 +264,12 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 };
 
         verifySolidityInput(Objects.requireNonNull(tokenCreateOp));
+        try {
+            replaceInheritedProperties(createParams.account(), tokenCreateOp);
+        } catch (InvalidKeyException e) {
+            throw new InvalidTransactionException(e.getMessage(), ResponseCodeEnum.FAIL_INVALID);
+        }
+
         return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
     }
 
@@ -748,5 +759,18 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 }
             }
         }
+    }
+
+    private void replaceInheritedProperties(Account account, TokenCreateWrapper tokenCreateOp)
+            throws InvalidKeyException {
+        if (account == null) {
+            return;
+        }
+
+        if (!tokenCreateOp.hasAutoRenewAccount()) {
+            tokenCreateOp.inheritAutoRenewAccount(EntityIdUtils.toGrpcAccountId(account.getId()));
+        }
+
+        tokenCreateOp.setAllInheritedKeysTo(account.getKey());
     }
 }
