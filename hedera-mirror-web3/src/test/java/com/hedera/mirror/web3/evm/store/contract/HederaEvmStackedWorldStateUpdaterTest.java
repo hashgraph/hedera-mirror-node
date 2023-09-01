@@ -101,7 +101,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
         store.initializeStack();
-        store.wrap();
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
