@@ -39,7 +39,6 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
@@ -79,7 +78,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class PrecompileContractFeature extends AbstractFeature {
     private static final long firstNftSerialNumber = 1;
     private final List<TokenId> tokenIds = new ArrayList<>();
-    private final ContractClient contractClient;
     private final TokenClient tokenClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
@@ -93,9 +91,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Given("I successfully create and verify a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
-        try (var in = precompileTestContract.getInputStream()) {
-            deployedPrecompileContract = createContract(in, 0);
-        }
+        deployedPrecompileContract = createContract(precompileTestContract, 0);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }

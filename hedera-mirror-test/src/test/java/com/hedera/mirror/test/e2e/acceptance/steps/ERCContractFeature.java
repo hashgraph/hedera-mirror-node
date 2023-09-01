@@ -30,7 +30,6 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
@@ -69,7 +68,6 @@ public class ERCContractFeature extends AbstractFeature {
     private static final int MAX_SUPPLY = 1;
 
     private final AccountClient accountClient;
-    private final ContractClient contractClient;
     private final List<TokenId> tokenIds = new CopyOnWriteArrayList<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
     private final MirrorNodeClient mirrorClient;
@@ -323,9 +321,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
-        try (var in = ercContract.getInputStream()) {
-            deployedErcContract = createContract(in, 0);
-        }
+        deployedErcContract = createContract(ercContract, 0);
         ercTestContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }
 

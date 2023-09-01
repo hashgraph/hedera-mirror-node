@@ -18,9 +18,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.hedera.hashgraph.sdk.AccountId;
@@ -28,9 +28,7 @@ import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
@@ -67,8 +65,6 @@ public class ContractFeature extends AbstractFeature {
     private static final int EVM_ADDRESS_SALT = 42;
     private DeployedContract deployedParentContract;
     private final AccountClient accountClient;
-    private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final Web3Properties web3Properties;
     private String create2ChildContractEvmAddress;
@@ -83,9 +79,7 @@ public class ContractFeature extends AbstractFeature {
 
     @Given("I successfully create a contract from the parent contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
-        try (var in = parentContract.getInputStream()) {
-            deployedParentContract = createContract(in, initialBalance);
-        }
+        deployedParentContract = createContract(parentContract, initialBalance);
     }
 
     @Given("I successfully call the contract")
