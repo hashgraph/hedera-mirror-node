@@ -16,8 +16,7 @@
 
 package com.hedera.services.txns.util;
 
-import com.hedera.mirror.web3.evm.exception.MissingResultException;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,30 +24,27 @@ import org.apache.logging.log4j.Logger;
  * This is a modified copy of the PRNGLogic class from the hedera-services repository.
  *
  * The main differences from the original version are as follows:
- * - Instead of using runningHashLeaf, this modified version uses the RecordFileRepository to obtain the latest Record.
- * - It extracts the relevant hash from this Record and then returns it as a byte array.
+ * - RunningHashLeafSupplier returns the latest RecordFile's running hash.
+ * - Removed unused logic.
  */
 public class PrngLogic {
     private static final Logger log = LogManager.getLogger(PrngLogic.class);
 
     public static final byte[] MISSING_BYTES = new byte[0];
-    private final RecordFileRepository recordFileRepository;
+    private final Supplier<byte[]> runningHashLeafSupplier;
 
-    public PrngLogic(final RecordFileRepository recordFileRepository) {
-        this.recordFileRepository = recordFileRepository;
+    public PrngLogic(final Supplier<byte[]> runningHashLeafSupplier) {
+        this.runningHashLeafSupplier = runningHashLeafSupplier;
     }
 
     public final byte[] getLatestRecordRunningHashBytes() {
-        final String latestRunningHash;
-        final var latestRecordFile = recordFileRepository
-                .findLatest()
-                .orElseThrow(() -> new MissingResultException("No record file available."));
-        latestRunningHash = latestRecordFile.getHash();
-        if (latestRunningHash == null || isZeroedHash(latestRunningHash.getBytes())) {
+        final byte[] latestRunningHashBytes;
+        latestRunningHashBytes = runningHashLeafSupplier.get();
+        if (latestRunningHashBytes == null || isZeroedHash(latestRunningHashBytes)) {
             log.info("No record running hash available to generate random number");
             return MISSING_BYTES;
         }
-        return latestRunningHash.getBytes();
+        return latestRunningHashBytes;
     }
 
     private boolean isZeroedHash(final byte[] hashBytes) {

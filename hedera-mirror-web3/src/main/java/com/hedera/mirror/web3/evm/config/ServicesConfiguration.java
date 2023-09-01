@@ -106,6 +106,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -630,7 +631,11 @@ public class ServicesConfiguration {
 
     @Bean
     PrngLogic prngLogic(final RecordFileRepository recordFileRepository) {
-        return new PrngLogic(recordFileRepository);
+        return new PrngLogic(() -> recordFileRepository
+                .findLatest()
+                .flatMap(recordFile -> Optional.ofNullable(recordFile.getHash()))
+                .map(String::getBytes)
+                .orElse(null));
     }
 
     @Bean
