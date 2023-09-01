@@ -28,23 +28,21 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
-import reactor.core.publisher.BufferOverflowStrategy;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.scheduler.Schedulers;
 
 @ConditionalOnProperty(
         prefix = "hedera.mirror.importer.parser.record.historical-balances",
@@ -52,48 +50,33 @@ import reactor.core.scheduler.Schedulers;
         matchIfMissing = true)
 @CustomLog
 @Named
-public class HistoricalBalancesService {
-
-    private static final String GENERATE_ACCOUNT_BALANCES_SQL =
-            """
-            insert into account_balance (account_id, balance, consensus_timestamp)
-            select id, balance, ?
-            from entity
-            where deleted is not true and balance is not null and type in ('ACCOUNT', 'CONTRACT')
-            order by id
-            """;
-    private static final String GENERATE_TOKEN_BALANCES_SQL =
-            """
-            insert into token_balance (account_id, balance, consensus_timestamp, token_id)
-            select account_id, balance, ?, token_id
-            from token_account
-            where associated is true
-            order by account_id, token_id
-            """;
+public class HistoricalBalanceService {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
-    private final JdbcTemplate jdbcTemplate;
+    private final AccountBalanceRepository accountBalanceRepository;
     private final HistoricalBalancesProperties properties;
     private final RecordFileRepository recordFileRepository;
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private final TokenBalanceRepository tokenBalanceRepository;
     private final TransactionTemplate transactionTemplate;
 
     // metrics
     private final Timer generateDurationMetricFailure;
     private final Timer generateDurationMetricSuccess;
 
-    private FluxSink<Long> consensusEndSink;
-
-    public HistoricalBalancesService(
+    public HistoricalBalanceService(
             AccountBalanceFileRepository accountBalanceFileRepository,
-            JdbcTemplate jdbcTemplate,
+            AccountBalanceRepository accountBalanceRepository,
             MeterRegistry meterRegistry,
             PlatformTransactionManager platformTransactionManager,
             HistoricalBalancesProperties properties,
-            RecordFileRepository recordFileRepository) {
+            RecordFileRepository recordFileRepository,
+            TokenBalanceRepository tokenBalanceRepository) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
-        this.jdbcTemplate = jdbcTemplate;
+        this.accountBalanceRepository = accountBalanceRepository;
         this.properties = properties;
         this.recordFileRepository = recordFileRepository;
+        this.tokenBalanceRepository = tokenBalanceRepository;
 
         // Set repeatable read isolation level and transaction timeout
         this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
@@ -101,21 +84,8 @@ public class HistoricalBalancesService {
         this.transactionTemplate.setTimeout(
                 (int) properties.getTransactionTimeout().toSeconds());
 
-        // A backpressure buffer to hold parsed record files for the period twice of the transaction timeout
-        int bufferSize =
-                (int) (properties.getTransactionTimeout().multipliedBy(2).toSeconds()
-                        / StreamType.RECORD.getFileCloseInterval().toSeconds());
-        Flux.<Long>create(sink -> this.consensusEndSink = sink)
-                // Drop the oldest to minimize the delay of generating next historical balances
-                .onBackpressureBuffer(bufferSize, BufferOverflowStrategy.DROP_OLDEST)
-                // Ensure generate runs in the same thread
-                .publishOn(Schedulers.newSingle("historical-balances-service"))
-                .doOnNext(this::generate)
-                .doOnError(t -> log.error("Error processing data triggered by parsed record file", t))
-                .subscribe();
-
         // metrics
-        var generateDurationTimerBuilder = Timer.builder("hedera.mirror.historicalbalances.duration")
+        var generateDurationTimerBuilder = Timer.builder("hedera.mirror.importer.historicalbalance")
                 .description("The duration in seconds it took to generate historical balances information");
         generateDurationMetricFailure =
                 generateDurationTimerBuilder.tag("success", "false").register(meterRegistry);
@@ -124,37 +94,27 @@ public class HistoricalBalancesService {
     }
 
     /**
-     * Listens on {@link RecordFileParsedEvent} and emits the consensusEnd to trigger historical balances generation.
+     * Listens on {@link RecordFileParsedEvent} and generate historical balance at configured frequency.
      *
      * @param event The record file parsed event published by {@link RecordFileParser}
      */
     @Async
     @TransactionalEventListener
     public void onRecordFileParsed(RecordFileParsedEvent event) {
-        consensusEndSink.next(event.getConsensusEnd());
-    }
-
-    private void generate(long consensusEnd) {
-        boolean shouldGenerate = accountBalanceFileRepository
-                .findLatest()
-                .map(AccountBalanceFile::getConsensusTimestamp)
-                .or(() -> recordFileRepository
-                        .findFirst()
-                        .map(RecordFile::getConsensusEnd)
-                        .map(timestamp ->
-                                timestamp + properties.getInitialDelay().toNanos()))
-                .filter(lastTimestamp -> consensusEnd - lastTimestamp
-                        >= properties.getMinFrequency().toNanos())
-                .isPresent();
-        if (!shouldGenerate) {
+        if (running.compareAndExchange(false, true)) {
             return;
         }
 
         var stopwatch = Stopwatch.createStarted();
-        boolean success = false;
-        try {
-            log.info("Generating historical balances after processing record file with consensusEnd {}", consensusEnd);
+        Timer timer = null;
 
+        try {
+            long consensusEnd = event.getConsensusEnd();
+            if (!shouldGenerate(consensusEnd)) {
+                return;
+            }
+
+            log.info("Generating historical balances after processing record file with consensusEnd {}", consensusEnd);
             transactionTemplate.executeWithoutResult(t -> {
                 long loadStart = Instant.now().getEpochSecond();
                 long timestamp = recordFileRepository
@@ -162,10 +122,10 @@ public class HistoricalBalancesService {
                         .map(RecordFile::getConsensusEnd)
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
-                int accountBalancesCount = jdbcTemplate.update(GENERATE_ACCOUNT_BALANCES_SQL, timestamp);
+                int accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
                 int tokenBalancesCount = 0;
                 if (properties.isTokenBalances()) {
-                    tokenBalancesCount = jdbcTemplate.update(GENERATE_TOKEN_BALANCES_SQL, timestamp);
+                    tokenBalancesCount = tokenBalanceRepository.balanceSnapshot(timestamp);
                 }
 
                 long loadEnd = Instant.now().getEpochSecond();
@@ -183,20 +143,37 @@ public class HistoricalBalancesService {
                 accountBalanceFileRepository.save(accountBalanceFile);
 
                 log.info(
-                        "Generated historical account balance file {} with {} account balances and {} token balances for timestamp {} in {}",
+                        "Generated historical account balance file {} with {} account balances and {} token balances in {}",
                         filename,
                         accountBalancesCount,
                         tokenBalancesCount,
-                        timestamp,
                         stopwatch);
             });
 
-            success = true;
+            timer = generateDurationMetricSuccess;
         } catch (Exception e) {
             log.error("Failed to generate historical balances in {}", stopwatch, e);
+            timer = generateDurationMetricFailure;
         } finally {
-            var timer = success ? generateDurationMetricSuccess : generateDurationMetricFailure;
-            timer.record(stopwatch.elapsed());
+            running.set(false);
+
+            if (timer != null) {
+                timer.record(stopwatch.elapsed());
+            }
         }
+    }
+
+    private boolean shouldGenerate(long consensusEnd) {
+        return accountBalanceFileRepository
+                .findLatest()
+                .map(AccountBalanceFile::getConsensusTimestamp)
+                .or(() -> recordFileRepository
+                        .findFirst()
+                        .map(RecordFile::getConsensusEnd)
+                        .map(timestamp ->
+                                timestamp + properties.getInitialDelay().toNanos()))
+                .filter(lastTimestamp -> consensusEnd - lastTimestamp
+                        >= properties.getMinFrequency().toNanos())
+                .isPresent();
     }
 }

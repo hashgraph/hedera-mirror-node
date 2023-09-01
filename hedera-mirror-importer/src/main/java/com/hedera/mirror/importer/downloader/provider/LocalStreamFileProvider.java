@@ -34,17 +34,17 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @CustomLog
-public class LocalStreamFileProvider extends AbstractStreamFileProvider {
+@RequiredArgsConstructor
+public class LocalStreamFileProvider implements StreamFileProvider {
 
     static final String STREAMS = "streams";
 
-    public LocalStreamFileProvider(CommonDownloaderProperties properties) {
-        super(properties);
-    }
+    private final CommonDownloaderProperties properties;
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
@@ -55,8 +55,9 @@ public class LocalStreamFileProvider extends AbstractStreamFileProvider {
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename, int batchSize) {
-        int listBatchSize = getListBatchSize(batchSize);
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
+        // Number of items we plan do download in a single batch times two for file plus signature.
+        var batchSize = properties.getBatchSize() * 2;
         var startAfter = lastFilename.getFilenameAfter();
         var streamType = lastFilename.getStreamType();
 
@@ -81,11 +82,11 @@ public class LocalStreamFileProvider extends AbstractStreamFileProvider {
                     return Flux.empty();
                 }))
                 .sort()
-                .take(listBatchSize)
+                .take(batchSize)
                 .map(file -> toStreamFilename(prefixPathRef.get().toString(), file.getName()))
                 .filter(s -> s != EPOCH && s.getFileType() == FileType.SIGNATURE)
                 .map(streamFilename -> StreamFileData.from(basePath, streamFilename))
-                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", listBatchSize, startAfter));
+                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
     }
 
     Path getPrefixPath(PathType pathType, ConsensusNode node, StreamType streamType) {

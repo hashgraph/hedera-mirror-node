@@ -16,24 +16,15 @@
 
 package com.hedera.mirror.importer.repository;
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
-import static com.hedera.mirror.importer.repository.RecordFileRepository.CACHE_NAME;
-
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import java.util.Optional;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-@CacheConfig(cacheNames = CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
 public interface RecordFileRepository extends StreamFileRepository<RecordFile, Long>, RetentionRepository {
 
-    String CACHE_NAME = "recordFiles";
-
-    @Cacheable(key = "'first'", unless = "#result == null")
     @Query(value = "select r from RecordFile r order by r.consensusEnd limit 1")
     Optional<RecordFile> findFirst();
 

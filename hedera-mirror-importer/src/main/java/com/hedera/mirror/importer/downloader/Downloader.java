@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.downloader;
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
-import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
@@ -192,10 +191,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         }
     }
 
-    protected int getBatchSize() {
-        return USE_DEFAULT_BATCH_SIZE;
-    }
-
     /**
      * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
      *
@@ -245,7 +240,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 try {
                     var count = streamFileProvider
-                            .list(node, startAfterFilename, getBatchSize())
+                            .list(node, startAfterFilename)
+                            .take(downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1)
                             .doOnNext(s -> {
                                 try {
                                     var streamFileSignature = signatureFileReader.read(s);

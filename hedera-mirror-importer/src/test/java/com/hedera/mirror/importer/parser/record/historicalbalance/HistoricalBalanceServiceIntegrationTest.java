@@ -52,7 +52,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class HistoricalBalancesServiceTest extends IntegrationTest {
+class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
     private static final String[] ACCOUNT_BALANCE_FILE_IGNORE_FIELDS = new String[] {"loadStart", "loadEnd", "name"};
 

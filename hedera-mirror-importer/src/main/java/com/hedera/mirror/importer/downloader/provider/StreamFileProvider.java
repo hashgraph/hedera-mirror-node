@@ -27,8 +27,6 @@ import reactor.core.publisher.Mono;
  */
 public interface StreamFileProvider {
 
-    int USE_DEFAULT_BATCH_SIZE = 0;
-
     /**
      * Fetches a stream file from a particular node upon subscription.
      *
@@ -44,9 +42,7 @@ public interface StreamFileProvider {
      *
      * @param node         the consensus node to search
      * @param lastFilename the filename of the last downloaded stream file
-     * @param batchSize    the number of the signatures files to process in a batch. If 0, the value from configuration
-     *                     is used
      * @return The data associated with one or more stream files, wrapped in a Flux
      */
-    Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename, int batchSize);
+    Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename);
 }

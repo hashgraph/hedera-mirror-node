@@ -34,10 +34,6 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.accountBalanceFile().persist();
         var latest = domainBuilder.accountBalanceFile().persist();
         assertThat(accountBalanceFileRepository.findLatest()).get().isEqualTo(latest);
-
-        latest = accountBalanceFileRepository.save(
-                domainBuilder.accountBalanceFile().get());
-        assertThat(accountBalanceFileRepository.findLatest()).get().isEqualTo(latest);
     }
 
     @Test

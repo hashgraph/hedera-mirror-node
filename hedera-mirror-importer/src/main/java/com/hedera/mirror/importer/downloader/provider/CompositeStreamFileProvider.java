@@ -64,10 +64,10 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode consensusNode, StreamFilename lastFilename, int batchSize) {
+    public Flux<StreamFileData> list(ConsensusNode consensusNode, StreamFilename lastFilename) {
         var index = new AtomicInteger(0);
         return Mono.fromSupplier(() -> getProvider(index))
-                .flatMapMany(p -> p.list(consensusNode, lastFilename, batchSize))
+                .flatMapMany(p -> p.list(consensusNode, lastFilename))
                 .retryWhen(Retry.from(s -> s.map(r -> shouldRetry(r, index))));
     }
 

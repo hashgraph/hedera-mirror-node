@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,31 @@ import org.springframework.beans.factory.annotation.Autowired;
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     private final AccountBalanceRepository accountBalanceRepository;
+
+    @Test
+    void balanceSnapshot() {
+        long timestamp = 100;
+        assertThat(accountBalanceRepository.balanceSnapshot(timestamp)).isZero();
+
+        var account = domainBuilder.entity().persist();
+        var contract = domainBuilder
+                .entity()
+                .customize(e -> e.deleted(null).type(EntityType.CONTRACT))
+                .persist();
+        domainBuilder.entity().customize(e -> e.balance(null)).persist();
+        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        domainBuilder.entity().customize(e -> e.type(EntityType.TOPIC)).persist();
+        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+
+        var expected = Stream.of(account, contract)
+                .map(e -> AccountBalance.builder()
+                        .balance(e.getBalance())
+                        .id(new AccountBalance.Id(timestamp, e.toEntityId()))
+                        .build())
+                .toList();
+        assertThat(accountBalanceRepository.balanceSnapshot(timestamp)).isEqualTo(expected.size());
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+    }
 
     @Test
     void findByConsensusTimestamp() {

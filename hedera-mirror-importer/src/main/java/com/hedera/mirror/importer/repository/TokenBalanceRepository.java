@@ -20,8 +20,25 @@ import com.hedera.mirror.common.domain.balance.TokenBalance;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id>, RetentionRepository {
+public interface TokenBalanceRepository
+        extends BalanceSnapshotRepository, CrudRepository<TokenBalance, TokenBalance.Id>, RetentionRepository {
+
+    @Modifying
+    @Override
+    @Query(
+            value =
+                    """
+        insert into token_balance (account_id, balance, consensus_timestamp, token_id)
+        select account_id, balance, :consensusTimestamp, token_id
+        from token_account
+        where associated is true
+        order by account_id, token_id
+        """,
+            nativeQuery = true)
+    @Transactional
+    int balanceSnapshot(long consensusTimestamp);
 
     @Modifying
     @Override

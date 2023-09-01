@@ -18,6 +18,9 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance.Id;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenBalanceRepository tokenBalanceRepository;
+
+    @Test
+    void balanceSnapshot() {
+        long timestamp = 100;
+        assertThat(tokenBalanceRepository.balanceSnapshot(timestamp)).isZero();
+
+        var tokenAccount = domainBuilder.tokenAccount().persist();
+        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+        assertThat(tokenBalanceRepository.balanceSnapshot(timestamp)).isOne();
+        assertThat(tokenBalanceRepository.findAll())
+                .containsExactly(TokenBalance.builder()
+                        .balance(tokenAccount.getBalance())
+                        .id(new Id(
+                                timestamp,
+                                EntityId.of(tokenAccount.getAccountId()),
+                                EntityId.of(tokenAccount.getTokenId())))
+                        .build());
+    }
 
     @Test
     void prune() {

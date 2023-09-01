@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.balance;
 
-import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
-
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
@@ -74,13 +72,6 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
     @Scheduled(fixedDelayString = "#{@balanceDownloaderProperties.getFrequency().toMillis()}")
     public void download() {
         downloadNextBatch();
-    }
-
-    @Override
-    protected int getBatchSize() {
-        // when account balances downloader is disabled, override batch size to 1 so at most one account balance file
-        // gets downloaded
-        return downloaderProperties.isEnabled() ? USE_DEFAULT_BATCH_SIZE : 1;
     }
 
     @Override

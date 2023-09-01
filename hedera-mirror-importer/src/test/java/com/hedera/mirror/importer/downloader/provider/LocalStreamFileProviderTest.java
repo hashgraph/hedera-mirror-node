@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.downloader.provider.StreamFileProvider.USE_DEFAULT_BATCH_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.StreamType;
@@ -71,7 +70,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         var node = node(accountId);
         getFileCopier(node).copy();
         var lastFilename = StreamFilename.from(Instant.now().toString().replace(':', '_') + ".rcd.gz");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename, USE_DEFAULT_BATCH_SIZE))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
                 .thenAwait(Duration.ofSeconds(10))
                 .expectNextCount(0)
                 .expectComplete()
@@ -99,7 +98,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         var node = node(accountId);
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH, USE_DEFAULT_BATCH_SIZE))
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
                 .expectNext(data2)

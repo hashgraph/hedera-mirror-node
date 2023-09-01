@@ -54,10 +54,10 @@ public class HistoricalBalancesProperties {
     @DurationMin(seconds = 30)
     @DurationUnit(ChronoUnit.SECONDS)
     @NotNull
-    protected Duration transactionTimeout = Duration.ofSeconds(300);
+    private Duration transactionTimeout = Duration.ofMinutes(5);
 
     @PostConstruct
-    private void init() {
+    void init() {
         if (balanceDownloaderProperties.isEnabled() && isEnabled()) {
             throw new IllegalArgumentException(
                     "The two configuration properties can't be both true: hedera.mirror.importer.downloader.balance.enabled and hedera.mirror.importer.parser.record.historicalBalances.enabled");

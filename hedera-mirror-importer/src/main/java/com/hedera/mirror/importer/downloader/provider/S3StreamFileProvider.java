@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -43,19 +44,15 @@ import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @CustomLog
-public final class S3StreamFileProvider extends AbstractStreamFileProvider {
+@RequiredArgsConstructor
+public final class S3StreamFileProvider implements StreamFileProvider {
 
     public static final String SEPARATOR = "/";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
-
+    private final CommonDownloaderProperties properties;
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
-
-    public S3StreamFileProvider(CommonDownloaderProperties properties, S3AsyncClient s3Client) {
-        super(properties);
-        this.s3Client = s3Client;
-    }
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
 
@@ -76,9 +73,11 @@ public final class S3StreamFileProvider extends AbstractStreamFileProvider {
     }
 
     @Override
-    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename, int batchSize) {
+    public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
+        // Number of items we plan do download in a single batch times 2 for file + sig.
+        int batchSize = properties.getBatchSize() * 2;
+
         var key = new PathKey(node, lastFilename.getStreamType());
-        int listBatchSize = getListBatchSize(batchSize);
         var pathResult = paths.computeIfAbsent(key, k -> new PathResult());
         var prefix = getPrefix(key, pathResult.getPathType());
         var startAfter = prefix + lastFilename.getFilenameAfter();
@@ -88,7 +87,7 @@ public final class S3StreamFileProvider extends AbstractStreamFileProvider {
                 .prefix(prefix)
                 .delimiter(SEPARATOR)
                 .startAfter(startAfter)
-                .maxKeys(listBatchSize)
+                .maxKeys(batchSize)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
 
@@ -104,11 +103,10 @@ public final class S3StreamFileProvider extends AbstractStreamFileProvider {
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
                 .doOnSubscribe(s -> log.debug(
                         "Searching for the next {} files after {}/{}",
-                        listBatchSize,
+                        batchSize,
                         properties.getBucketName(),
                         startAfter))
-                .switchIfEmpty(
-                        Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename, batchSize) : Flux.empty()));
+                .switchIfEmpty(Flux.defer(() -> pathResult.fallback() ? list(node, lastFilename) : Flux.empty()));
     }
 
     private String getAccountIdPrefix(PathKey key) {
