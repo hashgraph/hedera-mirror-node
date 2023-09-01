@@ -197,7 +197,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
-        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

@@ -43,6 +43,7 @@ import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
+import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -353,6 +354,24 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
+            }
+            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input,
+                        aliasResolver,
+                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW)));
             }
             default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();

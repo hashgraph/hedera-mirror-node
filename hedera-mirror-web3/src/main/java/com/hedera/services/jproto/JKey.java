@@ -19,10 +19,10 @@ package com.hedera.services.jproto;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.codec.DecoderException;
 
 /**
  * Maps to proto Key.
@@ -38,9 +38,9 @@ public abstract class JKey {
      *
      * @param key the proto Key to be converted
      * @return the generated JKey instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    public static JKey mapKey(Key key) throws DecoderException {
+    public static JKey mapKey(Key key) throws InvalidKeyException {
         return convertKey(key, 1);
     }
 
@@ -49,9 +49,9 @@ public abstract class JKey {
      *
      * @param jkey the JKey to be converted
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    public static Key mapJKey(JKey jkey) throws DecoderException {
+    public static Key mapJKey(JKey jkey) throws InvalidKeyException {
         return convertJKey(jkey, 1);
     }
 
@@ -61,11 +61,11 @@ public abstract class JKey {
      * @param key   the current proto Key to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
      * @return the converted JKey instance
-     * @throws org.apache.commons.codec.DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    public static JKey convertKey(Key key, int depth) throws DecoderException {
+    public static JKey convertKey(Key key, int depth) throws InvalidKeyException {
         if (depth > MAX_KEY_DEPTH) {
-            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+            throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
         if (!(key.hasThresholdKey() || key.hasKeyList())) {
@@ -87,11 +87,11 @@ public abstract class JKey {
      * @param jkey  the current JKey to be converted
      * @param depth current level that is to be verified. The first level has a value of 1.
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    public static Key convertJKey(JKey jkey, int depth) throws DecoderException {
+    public static Key convertJKey(JKey jkey, int depth) throws InvalidKeyException {
         if (depth > MAX_KEY_DEPTH) {
-            throw new DecoderException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
+            throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
         if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
@@ -114,9 +114,9 @@ public abstract class JKey {
      *
      * @param jkey JKey object to be converted
      * @return the converted proto Key instance
-     * @throws DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    static Key convertJKeyBasic(JKey jkey) throws DecoderException {
+    static Key convertJKeyBasic(JKey jkey) throws InvalidKeyException {
         Key rv;
         if (jkey.hasEd25519Key()) {
             rv = Key.newBuilder()
@@ -135,7 +135,7 @@ public abstract class JKey {
                     .setDelegatableContractId(jkey.getDelegatableContractIdKey().getContractID())
                     .build();
         } else {
-            throw new DecoderException("Key type not implemented: key=" + jkey);
+            throw new InvalidKeyException("Key type not implemented: key=" + jkey);
         }
 
         return rv;
@@ -146,9 +146,9 @@ public abstract class JKey {
      *
      * @param key proto Key to be converted
      * @return the converted JKey instance
-     * @throws org.apache.commons.codec.DecoderException on an inconvertible given key
+     * @throws InvalidKeyException on an inconvertible given key
      */
-    private static JKey convertBasic(Key key) throws org.apache.commons.codec.DecoderException {
+    private static JKey convertBasic(Key key) throws InvalidKeyException {
         JKey rv;
         if (!key.getEd25519().isEmpty()) {
             byte[] pubKeyBytes = key.getEd25519().toByteArray();
@@ -161,7 +161,7 @@ public abstract class JKey {
         } else if (key.getDelegatableContractId().getContractNum() != 0) {
             rv = new JDelegatableContractIDKey(key.getDelegatableContractId());
         } else {
-            throw new org.apache.commons.codec.DecoderException("Key type not implemented: key=" + key);
+            throw new InvalidKeyException("Key type not implemented: key=" + key);
         }
 
         return rv;
@@ -240,7 +240,7 @@ public abstract class JKey {
         }
         try {
             return Objects.equals(mapJKey(this), mapJKey((JKey) other));
-        } catch (DecoderException ignore) {
+        } catch (InvalidKeyException ignore) {
             return false;
         }
     }
@@ -249,7 +249,7 @@ public abstract class JKey {
     public int hashCode() {
         try {
             return Objects.hashCode(mapJKey(this));
-        } catch (DecoderException ignore) {
+        } catch (InvalidKeyException ignore) {
             return Integer.MIN_VALUE;
         }
     }
