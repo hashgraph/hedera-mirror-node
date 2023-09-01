@@ -70,6 +70,7 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
@@ -89,16 +90,17 @@ import org.springframework.beans.factory.annotation.Value;
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected static final long expiry = 1_234_567_890L;
+    // Exchange rates from local node.
     protected static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(1)
-                    .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .setCentEquiv(12)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(2)
-                    .setHbarEquiv(31)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                    .setCentEquiv(15)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .build();
     protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
@@ -246,8 +248,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenMint)
                             .addFees(FeeData.newBuilder()
+                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setBpt(40000000000L)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setMax(1000000000000000L)
+                                            .setBpt(160000000000L)
+                                            .setMin(0)
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenBurn)
@@ -307,8 +321,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenMint)
                             .addFees(FeeData.newBuilder()
+                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setBpt(40000000000L)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .setBpt(160000000000L)
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(CryptoTransfer)

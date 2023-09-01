@@ -33,6 +33,7 @@ import com.hedera.services.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.SubType;
 import java.util.List;
 
 /**
@@ -138,8 +139,13 @@ public final class TokenOpsUsage {
             final SigUsage sigUsage,
             final BaseTransactionMeta baseMeta,
             final TokenMintMeta tokenMintMeta,
-            final UsageAccumulator accumulator) {
-        accumulator.resetForTransaction(baseMeta, sigUsage);
+            final UsageAccumulator accumulator,
+            final SubType subType) {
+        if (SubType.TOKEN_NON_FUNGIBLE_UNIQUE.equals(subType)) {
+            accumulator.reset();
+        } else {
+            accumulator.resetForTransaction(baseMeta, sigUsage);
+        }
 
         accumulator.addBpt(tokenMintMeta.getBpt());
         accumulator.addRbs(tokenMintMeta.getRbs());
