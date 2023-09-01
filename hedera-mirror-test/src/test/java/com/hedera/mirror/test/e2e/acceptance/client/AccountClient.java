@@ -16,10 +16,12 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -258,6 +260,20 @@ public class AccountClient extends AbstractNetworkClient {
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, spender);
 
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info(
+                "Approved spender {} an allowance for all serial numbers on {} via {}",
+                spender,
+                tokenId,
+                response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, ContractId spender)
+            throws InvalidProtocolBufferException {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, AccountId.fromBytes(spender.toBytes()));
         var response = executeTransactionAndRetrieveReceipt(transaction);
         log.info(
                 "Approved spender {} an allowance for all serial numbers on {} via {}",

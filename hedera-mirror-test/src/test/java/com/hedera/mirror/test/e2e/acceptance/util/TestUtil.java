@@ -16,13 +16,23 @@
 
 package com.hedera.mirror.test.e2e.acceptance.util;
 
+import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.proto.Key;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.json.JSONObject;
 
 @UtilityClass
 public class TestUtil {
@@ -60,5 +70,78 @@ public class TestUtil {
             output.append((char) Integer.parseInt(str, 16));
         }
         return output.toString();
+    }
+
+    public static Address asAddress(String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Tuple accountAmount(String account, Long amount, boolean isApproval) {
+        return Tuple.of(asAddress(account), amount, isApproval);
+    }
+
+    public static Tuple nftAmount(String sender, String receiver, Long serialNumber, boolean isApproval) {
+        return Tuple.of(asAddress(sender), asAddress(receiver), serialNumber, isApproval);
+    }
+
+    public static Address[] asAddressArray(List<String> addressStrings) {
+        return addressStrings.stream().map(addr -> asAddress(addr)).toArray(Address[]::new);
+    }
+
+    public static byte[][] asByteArray(List<String> hexStringList) {
+        return hexStringList.stream()
+                .map(hexString -> Bytes.fromHexString(hexString).toArrayUnsafe())
+                .toArray(byte[][]::new);
+    }
+
+    public static long[] asLongArray(final List<Long> longList) {
+        return longList.stream().mapToLong(Long::longValue).toArray();
+    }
+
+    public static String getAbiFunctionAsJsonString(
+            CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
+        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
+                .filter(item -> {
+                    Object name = ((LinkedHashMap) item).get("name");
+                    return name != null && name.equals(functionName);
+                })
+                .findFirst();
+
+        if (function.isPresent()) {
+            return (new JSONObject((Map) function.get())).toString();
+        } else {
+            throw new IllegalStateException("Function " + functionName + " is not present in the ABI.");
+        }
+    }
+
+    public static class TokenTransferListBuilder {
+        private Tuple tokenTransferList;
+        private Address token;
+
+        public TokenTransferListBuilder forToken(final String token) {
+            this.token = asAddress(token);
+            return this;
+        }
+
+        public TokenTransferListBuilder forTokenAddress(final Address token) {
+            this.token = token;
+            return this;
+        }
+
+        public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
+            return this;
+        }
+
+        public TokenTransferListBuilder withNftTransfers(final Tuple... nftTransfers) {
+            this.tokenTransferList = Tuple.of(token, new Tuple[] {}, nftTransfers);
+            return this;
+        }
+
+        public Tuple build() {
+            return tokenTransferList;
+        }
     }
 }
