@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -60,9 +61,9 @@ class AccountDatabaseAccessorTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final long SHARD = 0L;
     private static final long REALM = 1L;
-    private static final long EXPIRATION_TIMESTAMP = 2L;
+    private static final long EXPIRATION_TIMESTAMP = 2_000_000_000L;
     private static final long BALANCE = 3L;
-    private static final long AUTO_RENEW_PERIOD = 4L;
+    private static final long AUTO_RENEW_PERIOD = 4_000_000_000L;
     private static final EntityId PROXY_ACCOUNT_ID = EntityId.of(SHARD, REALM, 5L);
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
     private static final int POSITIVE_BALANCES = 7;
@@ -135,7 +136,9 @@ class AccountDatabaseAccessorTest {
     void accountFieldsMatchEntityFields() {
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Account::getId)
-                .returns(entity.getExpirationTimestamp(), Account::getExpiry)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Account::getExpiry)
                 .returns(entity.getBalance(), Account::getBalance)
                 .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
                 .returns(
@@ -150,8 +153,9 @@ class AccountDatabaseAccessorTest {
     @Test
     void whenExpirationTimestampIsNullThenExpiryIsBasedOnCreatedAndRenewTimestamps() {
         entity.setExpirationTimestamp(null);
-        entity.setCreatedTimestamp(987L);
-        long expectedExpiry = entity.getCreatedTimestamp() + TimeUnit.SECONDS.toNanos(entity.getAutoRenewPeriod());
+        entity.setCreatedTimestamp(987_000_000L);
+        long expectedExpiry = TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
+                + entity.getAutoRenewPeriod();
 
         assertThat(accountAccessor.get(ADDRESS))
                 .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, Account::getExpiry));
@@ -168,7 +172,9 @@ class AccountDatabaseAccessorTest {
         entity.setProxyAccountId(null);
 
         assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(Entity.DEFAULT_EXPIRY_TIMESTAMP, Account::getExpiry)
+                .returns(
+                        TimeUnit.SECONDS.convert(AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP, TimeUnit.NANOSECONDS),
+                        Account::getExpiry)
                 .returns(0L, Account::getBalance)
                 .returns(false, Account::isDeleted)
                 .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)

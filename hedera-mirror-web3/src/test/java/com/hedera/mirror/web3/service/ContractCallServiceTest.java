@@ -28,6 +28,7 @@ import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -288,8 +289,24 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void estimateGasForDirectCreateContractDeploy() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
 
-        final var serviceParameters =
-                serviceParametersForTopLevelContractCreate(ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS);
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS, SENDER_ADDRESS);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasForDirectCreateContractDeployWithMissingSender() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS, Address.ZERO);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(

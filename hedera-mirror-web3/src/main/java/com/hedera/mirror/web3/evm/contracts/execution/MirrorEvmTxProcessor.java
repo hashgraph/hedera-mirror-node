@@ -31,6 +31,7 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
@@ -80,7 +81,8 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final long value,
             final Bytes callData,
             final Instant consensusTime,
-            final boolean isStatic) {
+            final boolean isStatic,
+            final boolean isEstimate) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
@@ -88,6 +90,11 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         setIsCreate(Address.ZERO.equals(receiver));
 
         store.initializeStack();
+        store.wrap();
+        if (isEstimate) {
+            final var defaultAccount = Account.getDefaultAccount();
+            store.updateAccount(defaultAccount);
+        }
 
         final var result = super.execute(
                 sender,

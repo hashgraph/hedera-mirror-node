@@ -191,8 +191,8 @@ class MirrorEvmTxProcessorTest {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
-        var result =
-                mirrorEvmTxProcessor.execute(sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true);
+        var result = mirrorEvmTxProcessor.execute(
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, true);
 
         assertThat(result)
                 .isNotNull()

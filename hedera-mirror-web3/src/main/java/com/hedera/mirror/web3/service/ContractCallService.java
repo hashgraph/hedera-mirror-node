@@ -61,7 +61,7 @@ public class ContractCallService {
                 return stringResult;
             }
 
-            final var ethCallTxnResult = doProcessCall(params, params.getGas());
+            final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
             validateResult(ethCallTxnResult, params.getCallType());
 
             final var callResult = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
@@ -84,7 +84,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private String estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas(), true);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -96,7 +96,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas),
+                gas -> doProcessCall(params, gas, true),
                 gasUsedByInitialCall,
                 params.getGas());
 
@@ -104,7 +104,7 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(
-            final CallServiceParameters params, final long estimatedGas) {
+            final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
             transactionResult = mirrorEvmTxProcessor.execute(
@@ -114,7 +114,8 @@ public class ContractCallService {
                     params.getValue(),
                     params.getCallData(),
                     Instant.now(),
-                    params.isStatic());
+                    params.isStatic(),
+                    isEstimate);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
         }

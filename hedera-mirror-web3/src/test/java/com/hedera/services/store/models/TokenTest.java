@@ -72,7 +72,8 @@ class TokenTest {
             defaultIntValue,
             0L,
             false,
-            null);
+            null,
+            0L);
     private Account nonTreasuryAccount = new Account(
             ByteString.EMPTY,
             0L,
@@ -92,7 +93,8 @@ class TokenTest {
             defaultIntValue,
             0L,
             false,
-            null);
+            null,
+            0L);
 
     private Token subject;
     private TokenRelationship treasuryRel;
