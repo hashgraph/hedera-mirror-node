@@ -226,6 +226,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var startAfterFilename = getStartAfterFilename();
         var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
+        // Limit to 1 signature file if downloader is disabled
+        long listLimit = downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1;
         var nodes = partialCollection(consensusNodeService.getNodes());
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
@@ -241,7 +243,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 try {
                     var count = streamFileProvider
                             .list(node, startAfterFilename)
-                            .take(downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1)
+                            .take(listLimit)
                             .doOnNext(s -> {
                                 try {
                                     var streamFileSignature = signatureFileReader.read(s);
