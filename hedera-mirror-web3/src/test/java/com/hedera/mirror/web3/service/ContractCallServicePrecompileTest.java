@@ -556,7 +556,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
                         new Object[] {
-                            0b1111111,
+                            АLL_CASES_KEY_TYPE,
                             new Object[] {
                                 false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
                             }
@@ -570,7 +570,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
                         new Object[] {
-                            0b1111111,
+                            АLL_CASES_KEY_TYPE,
                             new Object[] {
                                 false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
                             }
@@ -584,7 +584,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
                         new Object[] {
-                            0b1111111, new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {false, Address.ZERO, NEW_ED25519_KEY, new byte[0], Address.ZERO}
                         }
                     }
                 },
@@ -595,7 +596,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
                         new Object[] {
-                            0b1111111, new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}
+                            АLL_CASES_KEY_TYPE,
+                            new Object[] {false, Address.ZERO, new byte[0], NEW_ECDSA_KEY, Address.ZERO}
                         }
                     }
                 },
