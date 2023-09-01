@@ -119,6 +119,7 @@ class HederaEvmWorldStateTest {
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
         store = new StoreImpl(accessors);
+        store.wrap();
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,

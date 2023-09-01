@@ -584,6 +584,51 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
+    private static TokenCreateWrapper getFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    /**
+     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
+     *
+     * @param actualGas   The actual gas used.
+     * @param expectedGas The expected gas used from the initial call.
+     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
+     */
+    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
+        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
+    }
+
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
@@ -627,7 +672,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         serviceParameters.getValue(),
                         serviceParameters.getCallData(),
                         Instant.now(),
-                        serviceParameters.isStatic())
+                        serviceParameters.isStatic(),
+                        true)
                 .getGasUsed();
     }
 
@@ -1651,50 +1697,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
-    }
-
-    private static TokenCreateWrapper getFungibleTokenInheritKeys() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    /**
-     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
-     *
-     * @param actualGas   The actual gas used.
-     * @param expectedGas The expected gas used from the initial call.
-     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
-     */
-    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
-        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
     }
 }

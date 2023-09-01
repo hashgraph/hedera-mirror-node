@@ -40,6 +40,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     @Override
     public boolean isUsable(final Address address) {
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
+
         final var balance = account.getBalance();
         final var isDeleted = account.isDeleted();
 
@@ -51,19 +52,11 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return true;
         }
 
-        final var expirationTimestamp = account.getExpiry();
-        final var createdTimestamp = account.getCreatedTimestamp();
-        final var autoRenewPeriod = account.getAutoRenewSecs();
-        final var currentTime = Instant.now().getEpochSecond();
-        if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
+        if (Address.ZERO.equals(address)) {
             return false;
         }
 
-        if (createdTimestamp == 0L) {
-            return false;
-        }
-
-        return autoRenewPeriod == 0L || (createdTimestamp + autoRenewPeriod) > currentTime;
+        return account.getExpiry() >= Instant.now().getEpochSecond();
     }
 
     @Override

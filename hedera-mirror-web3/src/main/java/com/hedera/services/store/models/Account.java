@@ -53,60 +53,42 @@ import org.hyperledger.besu.datatypes.Address;
 public class Account extends HederaEvmAccount {
     private final Long entityId;
 
-    @Getter
     private final Id id;
 
-    @Getter
     private final long expiry;
 
-    @Getter
     private final long balance;
 
-    @Getter
     private final boolean deleted;
 
-    @Getter
     private final long ownedNfts;
 
-    @Getter
     private final long autoRenewSecs;
 
-    @Getter
     private final Id proxy;
 
-    @Getter
     private final Address accountAddress;
 
-    @Getter
     private final int autoAssociationMetadata;
 
-    @Getter
     private final SortedMap<EntityNum, Long> cryptoAllowances;
 
-    @Getter
     private final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 
-    @Getter
     private final SortedSet<FcTokenAllowanceId> approveForAllNfts;
 
-    @Getter
     private final int numAssociations;
 
-    @Getter
     private final int numPositiveBalances;
 
-    @Getter
     private final int numTreasuryTitles;
 
-    @Getter
     private final long ethereumNonce;
 
     private final boolean isSmartContract;
 
-    @Getter
     private final JKey key;
 
-    @Getter
     private final long createdTimestamp;
 
     @SuppressWarnings("java:S107")
@@ -185,6 +167,10 @@ public class Account extends HederaEvmAccount {
 
     public static Account getEmptyAccount() {
         return new Account(0L, Id.DEFAULT, 0L);
+    }
+
+    public static Account getDefaultAccount() {
+        return new Account(0L, Id.DEFAULT, 1_000_000L);
     }
 
     public boolean isEmptyAccount() {

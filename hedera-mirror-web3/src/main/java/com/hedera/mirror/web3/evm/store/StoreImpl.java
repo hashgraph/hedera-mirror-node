@@ -51,10 +51,6 @@ public class StoreImpl implements Store {
 
     @Override
     public Account getAccount(final Address address, final OnMissing throwIfMissing) {
-        if (Address.ZERO.equals(address)) {
-            return Account.getEmptyAccount();
-        }
-
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         final var account = accountAccessor.get(address);
 

@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
+import static com.hedera.mirror.common.domain.entity.AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
@@ -120,8 +121,6 @@ class MirrorEntityAccessTest {
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         when(account.getExpiry()).thenReturn(expiredTimestamp);
-        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(account.getAutoRenewSecs()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
@@ -137,32 +136,17 @@ class MirrorEntityAccessTest {
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(account.getAutoRenewSecs()).thenReturn(Instant.MAX.getEpochSecond());
         when(account.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
 
     @Test
-    void isUsableWithEmptyExpiryAndAutoRenewPeriod() {
+    void isUsableWithEmptyExpiry() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(account.getAutoRenewSecs()).thenReturn(0L);
-        when(account.getExpiry()).thenReturn(0L);
+        when(account.getExpiry()).thenReturn(DEFAULT_EXPIRY_TIMESTAMP);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
-    }
-
-    @Test
-    void isNotUsableWithEmptyExpiryAndAutoRenewAndCreatedTimestampPeriod() {
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
-        when(account.getAutoRenewSecs()).thenReturn(0L);
-        when(account.getExpiry()).thenReturn(0L);
-        when(account.getCreatedTimestamp()).thenReturn(0L);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isFalse();
     }
 
     @Test

@@ -74,9 +74,9 @@ public class EvmOperationConstructionUtil {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
         return Map.of(
                 EVM_VERSION_0_30,
-                () -> new MirrorEvmContractCreationCallProcessor(gasCalculator, evm, true, List.of(), 1),
+                () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1),
                 EVM_VERSION_0_34,
-                () -> new MirrorEvmContractCreationCallProcessor(gasCalculator, evm, true, List.of(), 1));
+                () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1));
     }
 
     public static Map<String, Provider<MessageCallProcessor>> mcps(
