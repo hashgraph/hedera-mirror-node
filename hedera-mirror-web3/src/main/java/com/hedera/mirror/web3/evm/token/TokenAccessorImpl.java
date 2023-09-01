@@ -24,11 +24,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
@@ -41,7 +39,6 @@ import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -244,11 +241,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
         Token token;
 
-        try {
-            token = store.getToken(address, OnMissing.DONT_THROW);
-        } catch (CacheAccessIncorrectTypeException e) {
-            throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID, "Not a token address.", "");
-        }
+        token = store.getToken(address, OnMissing.DONT_THROW);
 
         if (token.isEmptyToken()) {
             return Optional.empty();

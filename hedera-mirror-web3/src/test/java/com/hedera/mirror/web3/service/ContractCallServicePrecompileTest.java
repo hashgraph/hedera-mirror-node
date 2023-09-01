@@ -117,9 +117,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @EnumSource(FeeCase.class)
     void customFeesEthCall(final FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeePersist(feeCase);
+        customFeePersistAll();
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final var decodeResult = functionEncodeDecoder.decodeResult(functionName, ABI_PATH, callResult);
@@ -166,7 +167,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 ? functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
                 : functionEncodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(functionHash, CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeePersist(FRACTIONAL_FEE);
+
+        customFeePersist(FeeCase.FRACTIONAL_FEE, FUNGIBLE_TOKEN_ID);
+        nftCustomFeePersist(SENDER_ID, NFT_ID);
 
         final var callResult = contractCallService.processCall(serviceParameters);
         final Tuple decodeResult = functionEncodeDecoder

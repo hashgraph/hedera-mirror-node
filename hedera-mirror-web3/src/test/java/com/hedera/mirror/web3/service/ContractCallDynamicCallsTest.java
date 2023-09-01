@@ -120,9 +120,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "IERC20: failed to transfer"),
         ASSOCIATE_DISSOCIATE_TRANSFER_NFT_FAIL(
                 "associateTokenDissociateFailTransfer",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ZERO, BigInteger.ONE
-                },
+                new Object[] {NFT_TRANSFER_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, BigInteger.ZERO, BigInteger.ONE},
                 "IERC721: failed to transfer"),
         APPROVE_FUNGIBLE_TOKEN_GET_ALLOWANCE(
                 "approveTokenGetAllowance",

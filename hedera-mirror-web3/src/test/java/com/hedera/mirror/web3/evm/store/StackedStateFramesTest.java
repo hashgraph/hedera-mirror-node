@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -37,19 +38,19 @@ class StackedStateFramesTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var sut = new StackedStateFrames<>(accessors);
+        stack.set(sut.getStackBase());
 
         final var softly = new SoftAssertions();
-        softly.assertThat(sut.height()).as("visible height").isOne();
-        softly.assertThat(sut.cachedFramesDepth()).as("true height").isEqualTo(3);
-        softly.assertThat(sut.top()).as("RW on top").isInstanceOf(RWCachingStateFrame.class);
+        softly.assertThat(sut.height()).as("visible height").isZero();
+        softly.assertThat(sut.cachedFramesDepth()).as("true height").isEqualTo(2);
+        softly.assertThat(sut.top()).as("RO on top").isInstanceOf(ROCachingStateFrame.class);
         softly.assertThat(sut.top().getUpstream())
-                .as("RO is upstream of RW")
-                .containsInstanceOf(ROCachingStateFrame.class);
+                .as("DB at very bottom")
+                .containsInstanceOf(DatabaseBackedStateFrame.class);
         softly.assertThat(sut.getValueClasses())
                 .as("value classes correct")
                 .containsExactlyInAnyOrder(Character.class, String.class);
         softly.assertAll();
-        sut.pop();
         assertThatExceptionOfType(EmptyStackException.class)
                 .as("cannot pop bare stack")
                 .isThrownBy(sut::pop);
@@ -71,7 +72,7 @@ class StackedStateFramesTest {
     void constructWithDifferingKeyTypesFails() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, (BareDatabaseAccessor<Object, Character>)
-                        (BareDatabaseAccessor) new BareDatabaseAccessor<Object, String>() {});
+                        (BareDatabaseAccessor) new BareDatabaseAccessor<Long, String>() {});
 
         assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<>(accessors));
     }
@@ -80,45 +81,49 @@ class StackedStateFramesTest {
     void pushAndPopDoSo() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var rwOnTop = sut.top();
+        final var roOnTopOfBase = sut.top();
 
-        assertThat(sut.height()).isOne();
+        assertThat(sut.height()).isZero();
         sut.push();
-        assertThat(sut.height()).isEqualTo(2);
-        assertThat(sut.cachedFramesDepth()).isEqualTo(4);
-        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
-        assertThat(sut.top().getUpstream()).contains(rwOnTop);
-        sut.pop();
-        assertThat(sut.height()).isOne();
+        assertThat(sut.height()).isEqualTo(1);
         assertThat(sut.cachedFramesDepth()).isEqualTo(3);
-        assertThat(sut.top()).isEqualTo(rwOnTop);
+        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
+        assertThat(sut.top().getUpstream()).contains(roOnTopOfBase);
+        sut.pop();
+        assertThat(sut.height()).isZero();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
+        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
     }
 
     @Test
     void resetToBaseDoes() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
-        final var rwOnTopOfBase = sut.top();
+        stack.set(sut.getStackBase());
+
+        final var roOnTopOfBase = sut.top();
 
         sut.push();
         sut.push();
         sut.push();
-        assertThat(sut.height()).isEqualTo(4);
+        assertThat(sut.height()).isEqualTo(3);
         assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
 
         sut.resetToBase();
-        assertThat(sut.height()).isOne();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
-        assertThat(sut.top()).isInstanceOf(rwOnTopOfBase.getClass());
+        assertThat(sut.height()).isZero();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
+        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
     }
 
     @Test
     void forcePushOfSpecificFrameWithProperUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
+        stack.set(sut.getStackBase());
+
         final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
-        assertThat(sut.height()).isEqualTo(2);
+        assertThat(sut.height()).isEqualTo(1);
         assertThat(actual).isEqualTo(newTos);
     }
 

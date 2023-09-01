@@ -61,13 +61,17 @@ public class StoreImpl implements Store {
 
     @Override
     public Account getAccount(final Address address, final OnMissing throwIfMissing) {
-        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        final var account = accountAccessor.get(address);
+        try {
+            final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
+            final var account = accountAccessor.get(address);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return account.orElseThrow(() -> missingEntityException(Account.class, address));
-        } else {
-            return account.orElse(Account.getEmptyAccount());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return account.orElseThrow(() -> missingEntityException(Account.class, address));
+            } else {
+                return account.orElse(Account.getEmptyAccount());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return Account.getEmptyAccount();
         }
     }
 

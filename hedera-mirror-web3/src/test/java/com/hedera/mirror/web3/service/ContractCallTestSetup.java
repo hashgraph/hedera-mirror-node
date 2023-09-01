@@ -108,6 +108,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ALIAS =
             Address.fromHexString("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742));
+    protected static final EntityId SENDER_ID = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
+    protected static final FractionalFee FRACTIONAL_FEE = FractionalFee.builder()
+            .collectorAccountId(SENDER_ID)
+            .denominator(10L)
+            .minimumAmount(1L)
+            .maximumAmount(1000L)
+            .netOfTransfers(true)
+            .numerator(100L)
+            .build();
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
     protected static final Address SENDER_ALIAS = Address.wrap(
@@ -126,7 +135,24 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743));
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046));
+    protected static final EntityId FUNGIBLE_TOKEN_ID = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
+    protected static final FixedFee FIXED_FEE = FixedFee.builder()
+            .amount(100L)
+            .collectorAccountId(SENDER_ID)
+            .denominatingTokenId(FUNGIBLE_TOKEN_ID)
+            .build();
+    protected static final RoyaltyFee ROYALTY_FEE = RoyaltyFee.builder()
+            .collectorAccountId(SENDER_ID)
+            .denominator(10L)
+            .fallbackFee(FallbackFee.builder()
+                    .amount(100L)
+                    .denominatingTokenId(FUNGIBLE_TOKEN_ID)
+                    .build())
+            .numerator(20L)
+            .build();
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(0, 0, 1042));
+    protected static final EntityId FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_ID =
+            fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY.toArrayUnsafe());
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
@@ -139,6 +165,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
             toAddress(EntityId.of(0, 0, 1056));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
+    protected static final EntityId NFT_ID = fromEvmAddress(NFT_ADDRESS.toArrayUnsafe());
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
     protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
@@ -358,7 +385,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                             .setGas(852000)
                                             .build()))))
             .build();
-
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
@@ -395,28 +421,24 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.bin")
     protected Path REDIRECT_CONTRACT_BYTES_PATH;
-
     // The contract source `ModificationPrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.bin")
     protected Path MODIFICATION_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ModificationPrecompileTestContract/ModificationPrecompileTestContract.json")
     protected Path MODIFICATION_CONTRACT_ABI_PATH;
-
     // The contract source `ERCTestContract.sol` is in test resources
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.bin")
     protected Path ERC_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     protected Path ERC_ABI_PATH;
-
     // The contract source `ExchangeRatePrecompile.sol` is in test resources
     @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.bin")
     protected Path EXCHANGE_RATE_PRECOMPILE_CONTRACT_BYTES_PATH;
 
     @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.json")
     protected Path EXCHANGE_RATE_PRECOMPILE_ABI_PATH;
-
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
     protected Path ETH_CALL_CONTRACT_BYTES_PATH;
@@ -582,6 +604,17 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 List.of(),
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    /**
+     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
+     *
+     * @param actualGas   The actual gas used.
+     * @param expectedGas The expected gas used from the initial call.
+     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
+     */
+    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
+        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
     }
 
     @AfterEach
@@ -860,7 +893,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        nftCustomFeePersist(senderEntityId, nftEntityId);
+        //        nftCustomFeePersist(senderEntityId, nftEntityId);
 
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContract, tokenEntityId, nftEntityId);
@@ -875,7 +908,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         feeSchedulesPersist();
     }
 
-    private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
+    protected void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
         domainBuilder
                 .customFee()
                 .customize(f -> f.tokenId(nftEntityId.getId())
@@ -909,7 +942,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId fungibleTokenPersist(
+    protected EntityId fungibleTokenPersist(
             final EntityId treasuryId,
             final byte[] key,
             final Address tokenAddress,
@@ -1054,7 +1087,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @Nullable
-    private EntityId ownerEntityPersist() {
+    protected EntityId ownerEntityPersist() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1586,55 +1619,29 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return exchangeRateContractEntityId;
     }
 
-    protected void customFeePersist(final FeeCase feeCase) {
-        final var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
-        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
-        switch (feeCase) {
-            case ROYALTY_FEE -> {
-                final var royaltyFee = RoyaltyFee.builder()
-                        .collectorAccountId(collectorAccountId)
-                        .denominator(10L)
-                        .fallbackFee(FallbackFee.builder()
-                                .amount(100L)
-                                .denominatingTokenId(tokenEntityId)
-                                .build())
-                        .numerator(20L)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.royaltyFees(List.of(royaltyFee)).tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            case FRACTIONAL_FEE -> {
-                final var fractionalFee = FractionalFee.builder()
-                        .collectorAccountId(collectorAccountId)
-                        .denominator(10L)
-                        .minimumAmount(1L)
-                        .maximumAmount(1000L)
-                        .netOfTransfers(true)
-                        .numerator(100L)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.fractionalFees(List.of(fractionalFee)).tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            case FIXED_FEE -> {
-                final var fixedFee = FixedFee.builder()
-                        .amount(100L)
-                        .collectorAccountId(collectorAccountId)
-                        .denominatingTokenId(tokenEntityId)
-                        .build();
-                domainBuilder
-                        .customFee()
-                        .customize(f -> f.fixedFees(List.of(fixedFee)).tokenId(tokenEntityId.getId()))
-                        .persist();
-            }
-            default -> domainBuilder
-                    .customFee()
-                    .customize(f -> f.tokenId(tokenEntityId.getId()))
-                    .persist();
+    protected void customFeePersist(FeeCase fee, EntityId token) {
+        final var customFeeBuilder = domainBuilder.customFee();
+
+        switch (fee) {
+            case FIXED_FEE -> customFeeBuilder.customize(
+                    f -> f.fixedFees(List.of(FIXED_FEE)).tokenId(token.getId()));
+            case FRACTIONAL_FEE -> customFeeBuilder.customize(
+                    f -> f.fractionalFees(List.of(FRACTIONAL_FEE)).tokenId(token.getId()));
+            case ROYALTY_FEE -> customFeeBuilder.customize(
+                    f -> f.royaltyFees(List.of(ROYALTY_FEE)).tokenId(token.getId()));
         }
+
+        customFeeBuilder.persist();
+    }
+
+    protected void customFeePersistAll() {
+        domainBuilder
+                .customFee()
+                .customize(f -> f.fixedFees(List.of(FIXED_FEE))
+                        .fractionalFees(List.of(FRACTIONAL_FEE))
+                        .royaltyFees(List.of(ROYALTY_FEE))
+                        .tokenId(FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_ID.getId()))
+                .persist();
     }
 
     protected void exchangeRatesPersist() {
@@ -1653,16 +1660,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
-    }
-
-    /**
-     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
-     *
-     * @param actualGas   The actual gas used.
-     * @param expectedGas The expected gas used from the initial call.
-     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
-     */
-    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
-        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
     }
 }

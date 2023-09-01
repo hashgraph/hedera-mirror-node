@@ -117,7 +117,7 @@ public class StackedStateFrames<K> {
      * using this method.)
      */
     public void resetToBase() {
-        stack.set(new RWCachingStateFrame<Object>(Optional.of(stackBase), valueClasses));
+        stack.set(stackBase);
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -133,7 +133,7 @@ public class StackedStateFrames<K> {
     @VisibleForTesting
     @NonNull
     CachingStateFrame<Object> push(@NonNull final CachingStateFrame<Object> frame) {
-        if (!frame.getUpstream().equals(Optional.of(stack))) {
+        if (!frame.getUpstream().equals(Optional.of(stack.get()))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         }
         stack.set(frame);
