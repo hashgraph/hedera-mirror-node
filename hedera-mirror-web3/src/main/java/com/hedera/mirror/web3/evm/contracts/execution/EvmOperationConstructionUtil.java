@@ -134,7 +134,6 @@ public class EvmOperationConstructionUtil {
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
                 evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
-        // final var prngPrecompiledContract
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
