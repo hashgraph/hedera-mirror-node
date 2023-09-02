@@ -63,8 +63,8 @@ public class StackedStateFrames<K> {
             throw new IllegalArgumentException("Key types for all accessors must be the same");
         }
 
-        final var database = new DatabaseBackedStateFrame<Object>(accessors, valueClasses);
-        stackBase = new ROCachingStateFrame<Object>(Optional.of(database), valueClasses);
+        final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
+        stackBase = new ROCachingStateFrame<>(Optional.of(database), valueClasses);
 
         // Initial state is a R/O cache on top of the database. You should use push() to create a new R/W cache layer on
         // top of the stack,
@@ -72,8 +72,8 @@ public class StackedStateFrames<K> {
     }
 
     public CachingStateFrame<Object> getEmptyStackBase() {
-        final var database = new DatabaseBackedStateFrame<Object>(accessors, valueClasses);
-        return new ROCachingStateFrame<Object>(Optional.of(database), valueClasses);
+        final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
+        return new ROCachingStateFrame<>(Optional.of(database), valueClasses);
     }
 
     /** Return the "visible"/"effective" height of the stacked cache _only including_ those frames you've pushed on top
@@ -101,7 +101,7 @@ public class StackedStateFrames<K> {
     /** Push a new RW-frame cache on top of the stacked cache. */
     @NonNull
     public CachingStateFrame<Object> push() {
-        stack.set(new RWCachingStateFrame<Object>(Optional.of(stack.get()), valueClasses));
+        stack.set(new RWCachingStateFrame<>(Optional.of(stack.get()), valueClasses));
         return stack.get();
     }
 
