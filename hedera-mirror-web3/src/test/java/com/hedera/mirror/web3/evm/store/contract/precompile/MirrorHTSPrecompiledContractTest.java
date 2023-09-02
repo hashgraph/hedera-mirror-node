@@ -26,13 +26,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -68,8 +66,6 @@ class MirrorHTSPrecompiledContractTest {
     private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
     private static final Pair<Long, Bytes> FAILURE_RESULT = Pair.of(0L, null);
 
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
-
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
 
@@ -100,12 +96,6 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private HederaEvmWorldStateTokenAccount account;
 
-    @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Mock
-    private EntityAddressSequencer entityAddressSequencer;
-
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
@@ -123,7 +113,7 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
         store.initializeStack(true);
         store.wrap(); // Create top-level RWCachingStateFrame

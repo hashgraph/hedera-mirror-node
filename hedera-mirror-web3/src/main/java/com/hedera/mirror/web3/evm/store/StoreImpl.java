@@ -46,9 +46,9 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class StoreImpl implements Store {
 
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final StackedStateFrames stackedStateFrames;
 
-    public StoreImpl(final StackedStateFrames<Object> stackedStateFrames) {
+    public StoreImpl(final StackedStateFrames stackedStateFrames) {
         this.stackedStateFrames = stackedStateFrames;
     }
 

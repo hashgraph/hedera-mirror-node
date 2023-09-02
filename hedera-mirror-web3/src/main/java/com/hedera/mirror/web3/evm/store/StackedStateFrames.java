@@ -28,7 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 
 @Named
-public class StackedStateFrames<K> {
+public class StackedStateFrames {
 
     /** All the database accessors for the value types this stacked cache can hold */
     @NonNull

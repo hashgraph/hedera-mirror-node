@@ -165,7 +165,7 @@ class StoreImplTest {
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor,
                 entityDatabaseAccessor);
-        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames);
         subject.initializeStack(false);
     }

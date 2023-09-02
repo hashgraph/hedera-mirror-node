@@ -120,7 +120,7 @@ class HederaEvmWorldStateTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        final var stackedStateFrames = new StackedStateFrames<>(accessors);
+        final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
         store.initializeStack(true);
         store.wrap();
