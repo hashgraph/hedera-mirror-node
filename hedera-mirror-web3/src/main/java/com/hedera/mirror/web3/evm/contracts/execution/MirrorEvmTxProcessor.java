@@ -89,7 +89,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         super.setOperationTracer(operationTracer);
         setIsCreate(Address.ZERO.equals(receiver));
 
-        store.initializeStack();
+        store.initializeStack(isEstimate);
         store.wrap();
         if (isEstimate) {
             final var defaultAccount = Account.getDefaultAccount();

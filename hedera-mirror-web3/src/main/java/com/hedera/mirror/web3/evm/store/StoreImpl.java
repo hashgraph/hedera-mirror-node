@@ -53,9 +53,13 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void initializeStack() {
+    public void initializeStack(boolean isEstimateGas) {
         if (stack.get() == null) {
-            stack.set(stackedStateFrames.getStackBase());
+            if (isEstimateGas) {
+                stack.set(stackedStateFrames.getStackBase());
+            } else {
+                stack.set(stackedStateFrames.getEmptyStackBase());
+            }
         }
     }
 

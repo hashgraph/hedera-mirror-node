@@ -35,7 +35,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public interface Store {
 
-    void initializeStack();
+    void initializeStack(boolean isEstimateGas);
 
     Account getAccount(Address address, OnMissing throwIfMissing);
 

@@ -21,15 +21,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class StackedStateFramesTest {
+
+    @AfterEach
+    void clean() {
+        ThreadLocalHolder.cleanThread();
+    }
 
     @Test
     void constructionHappyPath() {
@@ -81,6 +88,8 @@ class StackedStateFramesTest {
     void pushAndPopDoSo() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
+        stack.set(sut.getStackBase());
+
         final var roOnTopOfBase = sut.top();
 
         assertThat(sut.height()).isZero();
@@ -131,6 +140,7 @@ class StackedStateFramesTest {
     void forcePushOfSpecificFrameWithBadUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames<>(accessors);
+        stack.set(sut.getStackBase());
         final var newTos = new RWCachingStateFrame<>(
                 Optional.of(new RWCachingStateFrame<Object>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));

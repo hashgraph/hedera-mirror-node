@@ -100,7 +100,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
-        store.initializeStack();
+        store.initializeStack(false);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,

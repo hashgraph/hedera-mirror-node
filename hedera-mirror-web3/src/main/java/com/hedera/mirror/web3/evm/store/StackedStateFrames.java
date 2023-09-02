@@ -71,6 +71,11 @@ public class StackedStateFrames<K> {
         // so that you can commit specific changes from a nested transaction
     }
 
+    public CachingStateFrame<Object> getEmptyStackBase() {
+        final var database = new DatabaseBackedStateFrame<Object>(accessors, valueClasses);
+        return new ROCachingStateFrame<Object>(Optional.of(database), valueClasses);
+    }
+
     /** Return the "visible"/"effective" height of the stacked cache _only including_ those frames you've pushed on top
      * of it (after initial construction).
      */

@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -52,6 +53,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,8 +125,8 @@ class MirrorHTSPrecompiledContractTest {
 
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
+        store.initializeStack(true);
         store.wrap(); // Create top-level RWCachingStateFrame
-
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
@@ -136,6 +138,11 @@ class MirrorHTSPrecompiledContractTest {
                         mirrorNodeEvmProperties,
                         precompileMapper,
                         new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
+    }
+
+    @AfterEach
+    void clean() {
+        ThreadLocalHolder.cleanThread();
     }
 
     @Test

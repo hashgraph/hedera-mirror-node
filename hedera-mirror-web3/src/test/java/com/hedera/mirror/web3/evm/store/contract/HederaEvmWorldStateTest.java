@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -50,6 +51,7 @@ import java.util.Collections;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,6 +122,8 @@ class HederaEvmWorldStateTest {
                 uniqueTokenDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames<>(accessors);
         store = new StoreImpl(stackedStateFrames);
+        store.initializeStack(true);
+        store.wrap();
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
@@ -129,6 +133,11 @@ class HederaEvmWorldStateTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
+    }
+
+    @AfterEach
+    void clean() {
+        ThreadLocalHolder.cleanThread();
     }
 
     @Test

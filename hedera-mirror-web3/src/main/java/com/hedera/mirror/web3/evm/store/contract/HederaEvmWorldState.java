@@ -70,8 +70,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
         this.entityAddressSequencer = entityAddressSequencer;
         this.store = store;
-        store.initializeStack();
-        store.wrap();
     }
 
     public Account get(final Address address) {
