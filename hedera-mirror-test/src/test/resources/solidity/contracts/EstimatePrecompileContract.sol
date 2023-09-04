@@ -18,6 +18,10 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     int32 decimals = 8;
     bool freezeDefaultStatus = false;
 
+    address constant PRECOMPILE_ADDRESS = address(0x169);
+    address constant PRECOMPILE_ADDRESS_2 = address(0x168);
+    uint256 constant TINY_PARTS_PER_WHOLE = 100_000_000;
+
     // Helper function to handle the common logic
     function handleResponseCode(int responseCode) internal pure {
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -378,5 +382,40 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         (int responseCode, bool approved) = HederaTokenService.isApprovedForAll(token, owner, operator);
         handleResponseCode(responseCode);
         return approved;
+    }
+
+    function getPseudorandomSeed() external returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        randomBytes = abi.decode(result, (bytes32));
+    }
+
+    /**
+     * Returns a pseudorandom number in the range [lo, hi) using the seed generated from "getPseudorandomSeed"
+     */
+    function getPseudorandomNumber(uint32 lo, uint32 hi) external returns (uint32) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        uint32 choice;
+        assembly {
+            choice := mload(add(result, 0x20))
+        }
+        return lo + (choice % (hi - lo));
+    }
+
+    function tinycentsToTinybars(uint256 tinycents) external returns (uint256 tinybars) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS_2.call(
+            abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
+        require(success);
+        tinybars = abi.decode(result, (uint256));
+    }
+
+    function tinybarsToTinycents(uint256 tinybars) external returns (uint256 tinycents) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS_2.call(
+            abi.encodeWithSignature("tinybarsToTinycents(uint256)", tinybars));
+        require(success);
+        tinycents = abi.decode(result, (uint256));
     }
 }
