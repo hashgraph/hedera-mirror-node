@@ -130,9 +130,20 @@ class PrngSystemPrecompiledContractTest {
     }
 
     @Test
-    void invalidHashReturnsSentinelOutputs() {
+    void nullHashReturnsSentinelOutputs() {
         // Override the Supplier to return null for this test
         Supplier<byte[]> nullReturningSupplier = () -> null;
+        final var prngLogic = new PrngLogic(nullReturningSupplier);
+        subject = new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, pricingUtils);
+
+        final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertNull(result);
+    }
+
+    @Test
+    void zeroedHashReturnsSentinelOutputs() {
+        // Override the Supplier to return zeroed hash for this test
+        Supplier<byte[]> nullReturningSupplier = () -> new byte[48];
         final var prngLogic = new PrngLogic(nullReturningSupplier);
         subject = new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, pricingUtils);
 
