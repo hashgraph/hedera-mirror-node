@@ -39,8 +39,10 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
                             CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
                             CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 10000 * 100_000_000L;
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 10000 * 100_000_000L;
                     default -> 0L;
                 };
         final var serviceParameters =
@@ -60,8 +62,10 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
                             CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
                             CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS -> 3050 * 100_000_000L;
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 3050 * 100_000_000L;
                     default -> 0L;
                 };
         final var serviceParameters =
@@ -847,6 +851,10 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
                 new Object[] {FUNGIBLE_TOKEN_WITH_KEYS, 10L, 10},
                 new Object[] {true, true, true}),
+        CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS(
+                "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
+                new Object[] {FUNGIBLE_TOKEN_INHERIT_KEYS, 10L, 10},
+                new Object[] {true, true, true}),
         CREATE_FUNGIBLE_TOKEN_NO_KEYS(
                 "createFungibleTokenAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
                 new Object[] {FUNGIBLE_TOKEN, 10L, 10},
@@ -854,6 +862,10 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS(
                 "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
                 new Object[] {NON_FUNGIBLE_TOKEN_WITH_KEYS, 10L, 10},
+                new Object[] {true, true, true}),
+        CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS(
+                "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",
+                new Object[] {NON_FUNGIBLE_TOKEN_INHERIT_KEYS, 10L, 10},
                 new Object[] {true, true, true}),
         CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS(
                 "createNFTAndGetIsTokenAndGetDefaultFreezeStatusAndGetDefaultKycStatus",

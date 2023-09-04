@@ -40,6 +40,7 @@ import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -100,7 +101,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final Instant consensusTimestamp,
-            final boolean isStatic) {
+            final boolean isStatic,
+            final boolean isEstimate) {
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final var store = new StoreImpl(databaseAccessors);
@@ -111,6 +113,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
+        store.wrap();
         final var worldState = new HederaEvmWorldState(
                 mirrorEntityAccess,
                 evmProperties,
@@ -142,6 +145,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         processor.setOperationTracer(mirrorOperationTracer);
 
+        // In case of eth_estimateGas we add a default account with zero address to cover cases with missing sender
+        if (isEstimate) {
+            final var defaultAccount = Account.getDefaultAccount();
+            store.updateAccount(defaultAccount);
+        }
         return processor.execute(sender, receiver, providedGasLimit, value, callData, consensusTimestamp, isStatic);
     }
 }

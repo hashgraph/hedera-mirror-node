@@ -59,7 +59,8 @@ class AccountTest {
                 numTreasuryTitles,
                 0L,
                 false,
-                null);
+                null,
+                0L);
     }
 
     @Test

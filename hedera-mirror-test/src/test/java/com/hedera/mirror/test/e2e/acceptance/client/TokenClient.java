@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -118,8 +120,8 @@ public class TokenClient extends AbstractNetworkClient {
         return createToken(
                 expandedAccountId,
                 tokenNameEnum.symbol,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
+                tokenNameEnum.tokenFreezeStatus.getNumber(),
+                tokenNameEnum.tokenKycStatus.getNumber(),
                 expandedAccountId,
                 1_000_000,
                 TokenSupplyType.INFINITE,
@@ -134,7 +136,7 @@ public class TokenClient extends AbstractNetworkClient {
             int freezeStatus,
             int kycStatus,
             ExpandedAccountId treasuryAccount,
-            int initialSupply,
+            long initialSupply,
             TokenSupplyType tokenSupplyType,
             long maxSupply,
             TokenType tokenType,
@@ -221,7 +223,7 @@ public class TokenClient extends AbstractNetworkClient {
             int freezeStatus,
             int kycStatus,
             ExpandedAccountId treasuryAccount,
-            int initialSupply,
+            long initialSupply,
             TokenSupplyType tokenSupplyType,
             long maxSupply,
             List<CustomFee> customFees) {
@@ -287,6 +289,17 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
         log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
         tokenAccounts.add(new TokenAccount(token, accountId));
+        return response;
+    }
+
+    public NetworkTransactionResponse associate(ContractId contractId, TokenId token)
+            throws InvalidProtocolBufferException {
+        TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
+                .setAccountId(AccountId.fromBytes(contractId.toBytes()))
+                .setTokenIds((List.of(token)))
+                .setTransactionMemo(getMemo("Associate w token"));
+        var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction);
+        log.info("Associated contract {} with token {} via {}", contractId, token, response.getTransactionId());
         return response;
     }
 
@@ -572,11 +585,25 @@ public class TokenClient extends AbstractNetworkClient {
     @RequiredArgsConstructor
     @Getter
     public enum TokenNameEnum {
-        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON),
-        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE);
+        FUNGIBLE(
+                "fungible",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        NFT(
+                "non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        FUNGIBLE_KYC_UNFROZEN(
+                "fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+        NFT_KYC_UNFROZEN(
+                "nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
 
         private final String symbol;
         private final TokenType tokenType;
+        private final TokenKycStatus tokenKycStatus;
+        private final TokenFreezeStatus tokenFreezeStatus;
 
         @Override
         public String toString() {
