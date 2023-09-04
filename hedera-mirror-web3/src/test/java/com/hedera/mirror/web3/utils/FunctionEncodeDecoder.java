@@ -49,6 +49,7 @@ import lombok.NoArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 @NoArgsConstructor
 @Named
@@ -102,6 +103,12 @@ public class FunctionEncodeDecoder {
     private static final String INT256_ADDRESS = "(int256,address)";
     private static final String FIXED_FEE_FRACTIONAL_FEE_ROYALTY_FEE =
             "((int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[])";
+    private static final String TOKEN_INFO =
+            "(((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,bool,bool,bool,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[],string))";
+    private static final String FUNGIBLE_TOKEN_INFO =
+            "((((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,bool,bool,bool,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[],string),int32))";
+    private static final String NFT_TOKEN_INFO =
+            "((((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),int64,bool,bool,bool,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[],(int64,int64,int64,address,bool,address)[],string),int64,address,int64,bytes,address))";
     private final Map<String, String> functionsAbi = new HashMap<>();
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
@@ -297,8 +304,36 @@ public class FunctionEncodeDecoder {
                     encodeFixedFee((Object[]) parameters[0]),
                     encodeFractionalFee((Object[]) parameters[1]),
                     encodeRoyaltyFee((Object[]) parameters[2]));
+            case TOKEN_INFO -> Tuple.of(encodeTokenInfo(parameters));
+            case FUNGIBLE_TOKEN_INFO -> Tuple.of(Tuple.of(encodeTokenInfo((Object[]) parameters[0]), parameters[1]));
+            case NFT_TOKEN_INFO -> Tuple.of(encodeNftTokenInfo(parameters));
+
             default -> Tuple.EMPTY;
         };
+    }
+
+    private Tuple encodeNftTokenInfo(Object[] parameters) {
+        return Tuple.of(
+                encodeTokenInfo((Object[]) parameters[0]),
+                parameters[1],
+                convertAddress((Address) parameters[2]),
+                parameters[3],
+                parameters[4],
+                convertAddress((Address) parameters[5]));
+    }
+
+    @NotNull
+    private Tuple encodeTokenInfo(Object[] parameters) {
+        return Tuple.of(
+                encodeToken((TokenCreateWrapper) parameters[0]),
+                parameters[1],
+                parameters[2],
+                parameters[3],
+                parameters[4],
+                new Tuple[0],
+                encodeFractionalFee((Object[]) parameters[5]),
+                new Tuple[0],
+                parameters[6]);
     }
 
     private Tuple[] encodeCryptoTransfer(Object[] parameters) {

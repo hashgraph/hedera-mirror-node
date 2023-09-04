@@ -204,10 +204,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getFungibleTokenExpiryInUint32Range();
+    protected static final TokenCreateWrapper FUNGIBLE_HBAR_TOKEN_AND_KEYS = getFungibleHbarsTokenWrapper();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getNonFungibleTokenExpiryInUint32Range();
+    protected static final TokenCreateWrapper NFT_HBAR_TOKEN_AND_KEYS = getNftHbarTokenAndKeysHbarsTokenWrapper();
 
     // Custom Fee wrappers
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
@@ -835,7 +837,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.tokenId(nftEntityId.getId())
                         .fractionalFees(List.of(FractionalFee.builder()
                                 .collectorAccountId(senderEntityId)
-                                .build())))
+                                .build()))
+                        .royaltyFees(List.of())
+                        .fixedFees(List.of()))
                 .persist();
     }
 
@@ -1052,6 +1056,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .feeScheduleKey(key)
                         .supplyType(TokenSupplyTypeEnum.INFINITE)
                         .maxSupply(2525L)
+                        .initialSupply(10_000_000L)
                         .name("Hbars")
                         .totalSupply(12345L)
                         .decimals(12)
@@ -1091,6 +1096,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .type(TOKEN)
                         .balance(1500L)
                         .key(key)
+                        .expirationTimestamp(9999999999999L)
                         .memo("TestMemo"))
                 .persist();
 
@@ -1620,6 +1626,58 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 false,
                 List.of(),
                 new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleHbarsTokenWrapper() {
+        final var keyValue =
+                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
+        return new TokenCreateWrapper(
+                true,
+                "Hbars",
+                "HBAR",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "TestMemo",
+                false,
+                BigInteger.valueOf(10_000_000L),
+                BigInteger.valueOf(12L),
+                2525L,
+                true,
+                List.of(
+                        new TokenKeyWrapper(0b0000001, keyValue),
+                        new TokenKeyWrapper(0b0000010, keyValue),
+                        new TokenKeyWrapper(0b0000100, keyValue),
+                        new TokenKeyWrapper(0b0001000, keyValue),
+                        new TokenKeyWrapper(0b0010000, keyValue),
+                        new TokenKeyWrapper(0b0100000, keyValue),
+                        new TokenKeyWrapper(0b1000000, keyValue)),
+                new TokenExpiryWrapper(
+                        9_999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+    }
+
+    private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper() {
+        final var keyValue =
+                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
+        return new TokenCreateWrapper(
+                false,
+                "Hbars",
+                "HBAR",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "TestMemo",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                2_000_000_000L,
+                true,
+                List.of(
+                        new TokenKeyWrapper(0b0000001, keyValue),
+                        new TokenKeyWrapper(0b0000010, keyValue),
+                        new TokenKeyWrapper(0b0000100, keyValue),
+                        new TokenKeyWrapper(0b0001000, keyValue),
+                        new TokenKeyWrapper(0b0010000, keyValue),
+                        new TokenKeyWrapper(0b0100000, keyValue),
+                        new TokenKeyWrapper(0b1000000, keyValue)),
+                new TokenExpiryWrapper(
+                        9999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
     }
 
     // Get Custom Fee Wrappers

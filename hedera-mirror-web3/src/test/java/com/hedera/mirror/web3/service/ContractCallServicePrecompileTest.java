@@ -18,21 +18,18 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.mirror.web3.utils.FunctionEncodeDecoder.convertAddress;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
@@ -40,15 +37,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @ParameterizedTest
-    @EnumSource(
-            value = ContractReadFunctions.class,
-            mode = Mode.EXCLUDE,
-            names = {
-                "GET_FUNGIBLE_TOKEN_INFO",
-                "GET_NFT_INFO",
-                "GET_INFORMATION_FOR_TOKEN_FUNGIBLE",
-                "GET_INFORMATION_FOR_TOKEN_NFT"
-            })
+    @EnumSource(ContractReadFunctions.class)
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
@@ -56,7 +45,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
         switch (contractFunc) {
             case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE -> customFeePersist(FIXED_FEE);
-            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE -> customFeePersist(FRACTIONAL_FEE);
+            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,
+                    GET_INFORMATION_FOR_TOKEN_FUNGIBLE,
+                    GET_INFORMATION_FOR_TOKEN_NFT,
+                    GET_FUNGIBLE_TOKEN_INFO,
+                    GET_NFT_INFO -> customFeePersist(FRACTIONAL_FEE);
             case GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE -> customFeePersist(ROYALTY_FEE);
         }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -110,78 +103,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource({"getInformationForFungibleToken,false", "getInformationForNonFungibleToken,true"})
-    void getTokenInfo(final String functionName, final boolean isNft) {
-        final var functionHash = isNft
-                ? functionEncodeDecoder.functionHashFor(
-                        functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, NFT_ADDRESS, 1L)
-                : functionEncodeDecoder.functionHashFor(
-                        functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
-        customFeePersist(FRACTIONAL_FEE);
-
-        final var callResult = contractCallService.processCall(serviceParameters);
-        final Tuple decodeResult = functionEncodeDecoder
-                .decodeResult(functionName, PRECOMPILE_TEST_CONTRACT_ABI_PATH, callResult)
-                .get(0);
-        final Tuple tokenInfo = decodeResult.get(0);
-        final Tuple hederaToken = tokenInfo.get(0);
-        final boolean deleted = tokenInfo.get(2);
-        final boolean defaultKycStatus = tokenInfo.get(3);
-        final boolean pauseStatus = tokenInfo.get(4);
-        final Tuple[] fractionalFees = tokenInfo.get(6);
-        final String ledgerId = tokenInfo.get(8);
-        final String name = hederaToken.get(0);
-        final String symbol = hederaToken.get(1);
-        final com.esaulpaugh.headlong.abi.Address treasury = hederaToken.get(2);
-        final String memo = hederaToken.get(3);
-        final boolean supplyType = hederaToken.get(4);
-        final long maxSupply = hederaToken.get(5);
-        final boolean freezeStatus = hederaToken.get(6);
-        final Tuple expiry = hederaToken.get(8);
-        final com.esaulpaugh.headlong.abi.Address autoRenewAccount = expiry.get(1);
-        final long autoRenewPeriod = expiry.get(2);
-
-        assertThat(deleted).isFalse();
-        assertThat(defaultKycStatus).isFalse();
-        assertThat(pauseStatus).isTrue();
-        assertThat(fractionalFees).isNotEmpty();
-        assertThat(ledgerId).isEqualTo("0x01");
-        assertThat(name).isEqualTo("Hbars");
-        assertThat(symbol).isEqualTo("HBAR");
-        assertThat(treasury).isEqualTo(convertAddress(OWNER_ADDRESS));
-        assertThat(memo).isEqualTo("TestMemo");
-        assertThat(freezeStatus).isTrue();
-        assertThat(autoRenewPeriod).isEqualTo(1800L);
-
-        if (isNft) {
-            final long serialNum = decodeResult.get(1);
-            final com.esaulpaugh.headlong.abi.Address owner = decodeResult.get(2);
-            final long creationTime = decodeResult.get(3);
-            final byte[] metadata = decodeResult.get(4);
-            final com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
-
-            assertThat(serialNum).isEqualTo(1L);
-            assertThat(owner).isEqualTo(convertAddress(OWNER_ADDRESS));
-            assertThat(creationTime).isEqualTo(1475067194L);
-            assertThat(metadata).isNotEmpty();
-            assertThat(spender).isEqualTo(convertAddress(SPENDER_ADDRESS));
-            assertThat(maxSupply).isEqualTo(2000000000L);
-            assertThat(supplyType).isTrue();
-            assertThat(autoRenewAccount).isEqualTo(convertAddress(AUTO_RENEW_ACCOUNT_ADDRESS));
-        } else {
-            final int decimals = decodeResult.get(1);
-            final long totalSupply = tokenInfo.get(1);
-            assertThat(decimals).isEqualTo(12);
-            assertThat(totalSupply).isEqualTo(12345L);
-            assertThat(maxSupply).isEqualTo(2525L);
-            assertThat(supplyType).isFalse();
-            assertThat(autoRenewAccount).isEqualTo(convertAddress(AUTO_RENEW_ACCOUNT_ADDRESS));
-        }
     }
 
     @ParameterizedTest
@@ -409,12 +330,53 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         HTS_IS_APPROVED_FOR_ALL(
                 "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
                 }),
-        GET_FUNGIBLE_TOKEN_INFO(
-                "getInformationForFungibleToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
-        GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS, 1L}, new Object[] {}),
+        GET_FUNGIBLE_TOKEN_INFO("getInformationForFungibleToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
+            new Object[] {
+                FUNGIBLE_HBAR_TOKEN_AND_KEYS,
+                12345L,
+                false,
+                false,
+                true,
+                new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
+                "0x01"
+            },
+            12
+        }),
+        GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS, 1L}, new Object[] {
+            new Object[] {
+                NFT_HBAR_TOKEN_AND_KEYS,
+                1_000_000_000L,
+                false,
+                false,
+                true,
+                new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
+                "0x01"
+            },
+            1L,
+            OWNER_ADDRESS,
+            1475067194L,
+            "NFT_METADATA_URI".getBytes(),
+            SPENDER_ADDRESS
+        }),
         GET_INFORMATION_FOR_TOKEN_FUNGIBLE(
-                "getInformationForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {}),
-        GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {});
+                "getInformationForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
+                    FUNGIBLE_HBAR_TOKEN_AND_KEYS,
+                    12345L,
+                    false,
+                    false,
+                    true,
+                    new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
+                    "0x01"
+                }),
+        GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {
+            NFT_HBAR_TOKEN_AND_KEYS,
+            1_000_000_000L,
+            false,
+            false,
+            true,
+            new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
+            "0x01"
+        });
 
         private final String name;
         private final Object[] functionParameters;
