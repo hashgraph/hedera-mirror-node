@@ -70,6 +70,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
@@ -89,16 +90,18 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected static final long expiry = 1_234_567_890L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
+
+    // Exchange rates from local node.
     protected static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(1)
-                    .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                    .setCentEquiv(12)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(2)
-                    .setHbarEquiv(31)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                    .setCentEquiv(15)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .build();
 
@@ -166,6 +169,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             toAddress(EntityId.of(0, 0, 1060));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(0, 0, 1061));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
+    protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
 
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -205,11 +209,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getFungibleTokenExpiryInUint32Range();
     protected static final TokenCreateWrapper FUNGIBLE_HBAR_TOKEN_AND_KEYS = getFungibleHbarsTokenWrapper();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_INHERIT_KEYS = getFungibleTokenInheritKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getNonFungibleTokenExpiryInUint32Range();
     protected static final TokenCreateWrapper NFT_HBAR_TOKEN_AND_KEYS = getNftHbarTokenAndKeysHbarsTokenWrapper();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_INHERIT_KEYS = getNonFungibleTokenInheritKeys();
 
     // Custom Fee wrappers
     protected static final FixedFeeWrapper FIXED_FEE_WRAPPER = getFixedFee();
@@ -244,8 +250,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenMint)
                             .addFees(FeeData.newBuilder()
+                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setBpt(40000000000L)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setMax(1000000000000000L)
+                                            .setBpt(160000000000L)
+                                            .setMin(0)
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenBurn)
@@ -305,8 +323,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(TokenMint)
                             .addFees(FeeData.newBuilder()
+                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
                                     .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNodedata(FeeComponents.newBuilder()
+                                            .setBpt(40000000000L)
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .build())
+                                    .setNetworkdata(FeeComponents.newBuilder()
+                                            .setMax(1000000000000000L)
+                                            .setMin(0)
+                                            .setBpt(160000000000L)
                                             .build())))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(CryptoTransfer)
@@ -487,8 +517,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForTopLevelContractCreate(
-            final Path contractInitCodePath, final CallType callType) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+            final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
+        final var sender = new HederaEvmAccount(senderAddress);
         persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
@@ -512,7 +542,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         serviceParameters.getValue(),
                         serviceParameters.getCallData(),
                         Instant.now(),
-                        serviceParameters.isStatic())
+                        serviceParameters.isStatic(),
+                        true)
                 .getGasUsed();
     }
 
@@ -690,7 +721,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 keyWithDelegatableContractId.toByteArray(),
                 TokenPauseStatusEnum.PAUSED,
                 true);
-
+        final var nftEntityId8 = nftPersistWithoutKycKey(
+                NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
         final var ethAccount = ethAccountPersist(358L, ETH_ADDRESS);
 
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
@@ -724,6 +763,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ownerEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, nftEntityId2, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
@@ -1135,6 +1176,68 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return nftEntityId;
     }
 
+    @Nullable
+    private EntityId nftPersistWithoutKycKey(
+            final Address nftAddress,
+            final Address autoRenewAddress,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final EntityId treasuryId,
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault) {
+        final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
+                        .expirationTimestamp(null)
+                        .num(nftEntityId.getNum())
+                        .evmAddress(nftEvmAddress)
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .memo("TestMemo"))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .treasuryAccountId(treasuryId)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(null)
+                        .freezeDefault(freezeDefault)
+                        .feeScheduleKey(key)
+                        .maxSupply(2000000000L)
+                        .name("Hbars")
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .pauseStatus(pauseStatus)
+                        .wipeKey(key)
+                        .supplyKey(key)
+                        .symbol("HBAR")
+                        .wipeKey(key))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntityId.getId()))
+                .persist();
+        return nftEntityId;
+    }
+
     // Allowances persist
     private void allowancesPersist(
             final EntityId senderEntityId,
@@ -1445,6 +1548,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .num(contractEntityId.getNum())
                         .evmAddress(contractEvmAddress)
                         .type(CONTRACT)
+                        .key(Key.newBuilder()
+                                .setEd25519(ByteString.copyFrom(Arrays.copyOfRange(KEY_PROTO, 3, KEY_PROTO.length)))
+                                .build()
+                                .toByteArray())
                         .balance(1500L))
                 .persist();
 
@@ -1654,6 +1761,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         9_999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
     }
 
+    private static TokenCreateWrapper getFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
     private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper() {
         final var keyValue =
                 new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
@@ -1678,6 +1802,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new TokenKeyWrapper(0b1000000, keyValue)),
                 new TokenExpiryWrapper(
                         9999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
     // Get Custom Fee Wrappers
