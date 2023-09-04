@@ -261,7 +261,8 @@ public class FunctionEncodeDecoder {
                     parameters[2],
                     parameters[3]);
             case TRANSFER_LIST_TOKEN_TRANSFER_LIST -> Tuple.of(
-                    Tuple.of((Object) new Tuple[] {}), encodeCryptoTransfer(parameters));
+                    encodeCryptoTransfer((Object[]) parameters[0]),
+                    encodeCryptoTokenTransfer((Object[]) parameters[1]));
             case ADDRESS_ARRAY_OF_KEYS -> Tuple.of(
                     convertAddress((Address) parameters[0]),
                     Arrays.stream((Object[]) parameters[1])
@@ -336,7 +337,20 @@ public class FunctionEncodeDecoder {
                 parameters[6]);
     }
 
-    private Tuple[] encodeCryptoTransfer(Object[] parameters) {
+    private Tuple encodeCryptoTransfer(Object[] parameters) {
+        if (parameters.length == 0) {
+            return Tuple.of((Object) new Tuple[0]);
+        }
+        return Tuple.of((Object) new Tuple[] {
+            Tuple.of(convertAddress((Address) parameters[0]), -(Long) parameters[2], false),
+            Tuple.of(convertAddress((Address) parameters[1]), parameters[2], false)
+        });
+    }
+
+    private Tuple[] encodeCryptoTokenTransfer(Object[] parameters) {
+        if (parameters.length == 0) {
+            return new Tuple[] {};
+        }
         if ((Boolean) parameters[4]) { // means it's a NFT transfer
             return new Tuple[] {
                 Tuple.of(

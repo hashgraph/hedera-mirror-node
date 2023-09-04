@@ -480,11 +480,35 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new Object[] {}),
         CRYPTO_TRANSFER_TOKENS(
                 "cryptoTransferExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false},
+                new Object[] {
+                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
+                },
                 new Object[] {}),
         CRYPTO_TRANSFER_TOKENS_WITH_ALIAS(
                 "cryptoTransferExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false},
+                new Object[] {
+                    new Object[] {}, new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 5L, false}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_HBARS_AND_TOKENS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, OWNER_ADDRESS, 5L, false}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_HBARS(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {SENDER_ALIAS, OWNER_ADDRESS, 5L},
+                    new Object[] {}
+                },
+                new Object[] {}),
+        CRYPTO_TRANSFER_NFT(
+                "cryptoTransferExternal",
+                new Object[] {
+                    new Object[] {}, new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L, true}
+                },
                 new Object[] {}),
         TRANSFER_NFT_TOKENS(
                 "transferNFTsExternal",
