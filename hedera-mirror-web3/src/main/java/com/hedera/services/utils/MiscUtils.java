@@ -63,10 +63,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.DataCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.InvalidKeyException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import org.apache.commons.codec.DecoderException;
 
 public final class MiscUtils {
 
@@ -161,7 +161,7 @@ public final class MiscUtils {
     public static JKey asFcKeyUnchecked(final Key key) {
         try {
             return mapKey(key);
-        } catch (final DecoderException impermissible) {
+        } catch (final InvalidKeyException impermissible) {
             throw new IllegalArgumentException("Key " + key + " should have been decode-able!", impermissible);
         }
     }
@@ -173,7 +173,7 @@ public final class MiscUtils {
                 return Optional.empty();
             }
             return Optional.of(fcKey);
-        } catch (final DecoderException ignore) {
+        } catch (final InvalidKeyException ignore) {
             return Optional.empty();
         }
     }

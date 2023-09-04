@@ -183,7 +183,7 @@ public class AccessorBasedUsages {
     private void estimateTokenMint(
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into, Store store) {
         final var tokenMintMeta = opUsageCtxHelper.metaForTokenMint(accessor, store);
-        tokenOpsUsage.tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, into);
+        tokenOpsUsage.tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, into, accessor.getSubType());
     }
 
     private void estimateTokenWipe(

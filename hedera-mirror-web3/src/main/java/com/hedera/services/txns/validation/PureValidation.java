@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.services.jproto.JKey;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.codec.DecoderException;
+import java.security.InvalidKeyException;
 
 /**
  * Copied type from hedera-services.
@@ -43,7 +43,7 @@ public final class PureValidation {
                 return failure;
             }
             return OK;
-        } catch (DecoderException e) {
+        } catch (InvalidKeyException e) {
             return failure;
         }
     }

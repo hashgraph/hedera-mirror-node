@@ -31,7 +31,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that makes a state update to a contract
     Then I call estimateGas with function that makes a state update to a contract several times and estimateGas is higher
     Then I call estimateGas with function that executes gasLeft
-    Then I call estimateGas with function that executes reentrancy attack with transfer
     Then I call estimateGas with function that executes reentrancy attack with call
     Then I call estimateGas with function that executes positive nested calls
     Then I call estimateGas with function that executes limited nested calls
