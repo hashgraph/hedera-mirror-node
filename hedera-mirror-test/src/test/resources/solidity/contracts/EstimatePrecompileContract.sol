@@ -384,7 +384,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         return approved;
     }
 
-    function getPseudorandomSeed() external returns (bytes32 randomBytes) {
+    function getPseudoRandomSeed() external returns (bytes32 randomBytes) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
             abi.encodeWithSignature("getPseudorandomSeed()"));
         require(success);
@@ -394,7 +394,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     /**
      * Returns a pseudorandom number in the range [lo, hi) using the seed generated from "getPseudorandomSeed"
      */
-    function getPseudorandomNumber(uint32 lo, uint32 hi) external returns (uint32) {
+    function getPseudoRandomNumber(uint32 lo, uint32 hi) external returns (uint32) {
         (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
             abi.encodeWithSignature("getPseudorandomSeed()"));
         require(success);
