@@ -49,6 +49,7 @@ import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -636,6 +637,16 @@ public class ServicesConfiguration {
                 .flatMap(recordFile -> Optional.ofNullable(recordFile.getHash()))
                 .map(String::getBytes)
                 .orElse(null));
+    }
+
+    @Bean
+    PrngSystemPrecompiledContract prngSystemPrecompiledContract(
+            final GasCalculatorHederaV22 gasCalculatorHederaV22,
+            final PrngLogic prngLogic,
+            final LivePricesSource livePricesSource,
+            final PrecompilePricingUtils precompilePricingUtils) {
+        return new PrngSystemPrecompiledContract(
+                gasCalculatorHederaV22, prngLogic, livePricesSource, precompilePricingUtils);
     }
 
     @Bean

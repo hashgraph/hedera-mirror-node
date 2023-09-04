@@ -100,7 +100,7 @@ class SyntheticTxnFactoryTest {
     public static final Id payerId = Id.fromGrpcAccount(payer);
     public static final Id senderId = Id.fromGrpcAccount(sender);
 
-    private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
+    private SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
     @Test
     void createsExpectedCryptoCreateWithEDKeyAlias() {

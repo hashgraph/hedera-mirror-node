@@ -40,10 +40,9 @@ import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hedera.services.txns.util.PrngLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -66,9 +65,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
     private final BasicHbarCentExchange basicHbarCentExchange;
-    private final PrngLogic prngLogic;
-    private final LivePricesSource livePricesSource;
-    private final PrecompilePricingUtils pricingUtils;
+    private final PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -84,9 +81,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngLogic prngLogic,
-            final LivePricesSource livePricesSource,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -99,9 +94,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
         this.basicHbarCentExchange = basicHbarCentExchange;
-        this.prngLogic = prngLogic;
-        this.livePricesSource = livePricesSource;
-        this.pricingUtils = pricingUtils;
+        this.prngSystemPrecompiledContract = prngSystemPrecompiledContract;
     }
 
     @Override
@@ -148,9 +141,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngLogic,
-                        livePricesSource,
-                        pricingUtils),
+                        prngSystemPrecompiledContract),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
