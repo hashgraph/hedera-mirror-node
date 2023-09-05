@@ -20,7 +20,7 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 import * as contractCallEstimateFungibleTokenCustomFees from './contractCallEstimateFungibleTokenCustomFees.js';
 import * as contractCallEstimateCreateNft from './contractCallEstimateCreateNft.js';
 import * as contractCallEstimateNftCustomFees from './contractCallEstimateNftCustomFees.js';
-import * as contractCallTokenDissociateEstimate from './contractCallTokenDissociateEstimate.js';
+import * as contractCallEstimateTokenDissociate from './contractCallEstimateTokenDissociate.js';
 import * as contractCallEstimateCreateFungibleToken from './contractCallEstimateCreateFungibleToken.js';
 
 const testsEstimate = {
@@ -28,7 +28,7 @@ const testsEstimate = {
   contractCallEstimateNftCustomFees,
   contractCallEstimateCreateNft,
   contractCallEstimateCreateFungibleToken,
-  contractCallTokenDissociateEstimate,
+  contractCallEstimateTokenDissociate,
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(testsEstimate);

@@ -40,7 +40,7 @@ const params = {
   DATA: DATA,
   TO: TO,
   GAS: GAS,
-  NAME: 'contractCallTokenDissociateEstimate',
+  NAME: 'contractCallEstimateTokenDissociate',
   SLEEP: SLEEP,
 };
 
