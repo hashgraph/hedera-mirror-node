@@ -17,7 +17,7 @@
 import {buildScenario} from './common.js';
 import {SharedArray} from 'k6/data';
 
-const allData = new SharedArray('estimateCreateNFT', function () {
+const allData = new SharedArray('contractCallEstimateTokenDissociate', () => {
   return JSON.parse(open('./data/estimate.json')).estimateTokenDissociate;
 });
 
