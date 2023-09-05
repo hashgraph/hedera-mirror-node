@@ -14,42 +14,24 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
+import {buildScenario} from './common.js';
+import {SharedArray} from 'k6/data';
 
-const COMMA_SEPARATOR = ',';
+const allData = new SharedArray('estimateCreateNFT', function () {
+  return JSON.parse(open('./data/estimate.json')).estimateCreateFungibleTokenWithCustomFees;
+});
 
-const allData = getParameterFromEnv(
-  __ENV.DATA,
-  '8ba74da0000000000000000000000000000000000000000000000000000000000000050f0000000000000000000000000000000000000000000000000000000000000518' +
-    COMMA_SEPARATOR +
-    '8ba74da0000000000000000000000000000000000000000000000000000000000000051d0000000000000000000000000000000000000000000000000000000000000526'
-);
-const allTo = getParameterFromEnv(
-  __ENV.TO,
-  '0000000000000000000000000000000000000511' + COMMA_SEPARATOR + '000000000000000000000000000000000000051f'
-);
-const allFrom = getParameterFromEnv(
-  __ENV.FROM,
-  '000000000000000000000000000000000000050f' + COMMA_SEPARATOR + '000000000000000000000000000000000000051d'
-);
-
-const BLOCK = __ENV.BLOCK || 'latest';
-const DATA = allData[__VU % allData.length];
-const TO = allTo[__VU % allTo.length];
-const GAS = __ENV.GAS || 15000000;
-const FROM = allFrom[__VU % allFrom.length];
-const VALUE = __ENV.VALUE || 1635000000;
-const SLEEP = __ENV.SLEEP || 1;
+const data = allData[__VU % allData.length];
 
 const params = {
-  BLOCK: BLOCK,
-  DATA: DATA,
-  TO: TO,
-  GAS: GAS,
-  FROM: FROM,
-  VALUE: VALUE,
-  NAME: 'contractCallEstimateFungibleTokenCustomFees',
-  SLEEP: SLEEP,
+  BLOCK: data.block,
+  DATA: data.data,
+  TO: data.to,
+  GAS: data.gas,
+  FROM: data.from,
+  VALUE: data.value,
+  NAME: data.name,
+  SLEEP: data.sleep,
 };
 
 const {options, run} = buildScenario(params);

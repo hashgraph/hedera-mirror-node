@@ -14,42 +14,24 @@
  * limitations under the License.
  */
 
-import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from './common.js';
+import {buildScenario} from './common.js';
+import {SharedArray} from 'k6/data';
 
-const COMMA_SEPARATOR = ',';
+const allData = new SharedArray('estimateCreateNFT', function () {
+  return JSON.parse(open('./data/estimate.json')).estimateCreateFungibleToken;
+});
 
-const allData = getParameterFromEnv(
-  __ENV.DATA,
-  '4b5c66870000000000000000000000000000000000000000000000000000000000000547' +
-    COMMA_SEPARATOR +
-    '4b5c66870000000000000000000000000000000000000000000000000000000000000555'
-);
-const allTo = getParameterFromEnv(
-  __ENV.TO,
-  '0000000000000000000000000000000000000549' + COMMA_SEPARATOR + '0000000000000000000000000000000000000557'
-);
-const allFrom = getParameterFromEnv(
-  __ENV.FROM,
-  '0000000000000000000000000000000000000547' + COMMA_SEPARATOR + '0000000000000000000000000000000000000555'
-);
-
-const BLOCK = __ENV.BLOCK || 'latest';
-const DATA = allData[__VU % allData.length];
-const TO = allTo[__VU % allTo.length];
-const GAS = __ENV.GAS || 15000000;
-const FROM = allFrom[__VU % allFrom.length];
-const VALUE = __ENV.VALUE || 820000000;
-const SLEEP = __ENV.SLEEP || 1;
+const data = allData[__VU % allData.length];
 
 const params = {
-  BLOCK: BLOCK,
-  DATA: DATA,
-  TO: TO,
-  GAS: GAS,
-  FROM: FROM,
-  VALUE: VALUE,
-  NAME: 'contractCallEstimateCreateFungibleToken',
-  SLEEP: SLEEP,
+  BLOCK: data.block,
+  DATA: data.data,
+  TO: data.to,
+  GAS: data.gas,
+  FROM: data.from,
+  VALUE: data.value,
+  NAME: data.name,
+  SLEEP: data.sleep,
 };
 
 const {options, run} = buildScenario(params);
