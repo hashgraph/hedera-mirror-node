@@ -17,12 +17,14 @@
 package com.hedera.mirror.web3.evm.store;
 
 import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.stackBase;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -54,9 +56,13 @@ public class StoreImpl implements Store {
 
     @Override
     public void initializeStack(boolean isEstimateGas) {
+        if (stackBase.get() == null) {
+            stackBase.set(stackedStateFrames.getEmptyStackBase());
+        }
+
         if (stack.get() == null) {
             if (isEstimateGas) {
-                stack.set(stackedStateFrames.getStackBase());
+                stack.set(ThreadLocalHolder.stackBase.get());
             } else {
                 stack.set(stackedStateFrames.getEmptyStackBase());
             }

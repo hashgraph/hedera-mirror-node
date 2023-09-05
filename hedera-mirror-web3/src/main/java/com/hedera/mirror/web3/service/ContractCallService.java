@@ -23,6 +23,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -58,6 +59,7 @@ public class ContractCallService {
         try {
             if (params.isEstimate()) {
                 stringResult = estimateGas(params);
+                ThreadLocalHolder.cleanStackBase();
                 return stringResult;
             }
 

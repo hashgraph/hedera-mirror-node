@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.store;
 
 import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.stackBase;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -24,7 +25,6 @@ import jakarta.inject.Named;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
-import lombok.Getter;
 import lombok.NonNull;
 
 @Named
@@ -36,10 +36,6 @@ public class StackedStateFrames {
     /** All the `Class`es for the value types this stacked cache can hold */
     @NonNull
     protected final Class<?>[] valueClasses;
-    /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
-    @Getter
-    @NonNull
-    protected CachingStateFrame<Object> stackBase;
 
     /** Create a `StackedStackFrames` stacked cache at base level given the database accessors for all the value
      * types this cache will hold.
@@ -63,9 +59,6 @@ public class StackedStateFrames {
             throw new IllegalArgumentException("Key types for all accessors must be the same");
         }
 
-        final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
-        stackBase = new ROCachingStateFrame<>(Optional.of(database), valueClasses);
-
         // Initial state is a R/O cache on top of the database. You should use push() to create a new R/W cache layer on
         // top of the stack,
         // so that you can commit specific changes from a nested transaction
@@ -80,7 +73,7 @@ public class StackedStateFrames {
      * of it (after initial construction).
      */
     public int height() {
-        return stack.get().height() - stackBase.height();
+        return stack.get().height() - stackBase.get().height();
     }
 
     /** Return the _total_ height (aka depth) of the stacked cache _including_ the always-present stack base of a
@@ -107,7 +100,7 @@ public class StackedStateFrames {
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        if (stack.get() == stackBase) {
+        if (stack.get() == stackBase.get()) {
             throw new EmptyStackException();
         }
         stack.set(stack.get().getUpstream().orElseThrow(EmptyStackException::new));
@@ -122,7 +115,7 @@ public class StackedStateFrames {
      * using this method.)
      */
     public void resetToBase() {
-        stack.set(stackBase);
+        stack.set(stackBase.get());
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -153,7 +146,7 @@ public class StackedStateFrames {
     @NonNull
     CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
         stack.set(frame);
-        stackBase = frame;
+        stackBase.set(frame);
         return stack.get();
     }
 }

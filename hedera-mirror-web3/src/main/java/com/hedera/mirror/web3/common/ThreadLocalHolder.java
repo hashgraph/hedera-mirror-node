@@ -28,6 +28,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class ThreadLocalHolder {
 
+    /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
     @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
 
@@ -38,13 +39,22 @@ public class ThreadLocalHolder {
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stack = ThreadLocal.withInitial(() -> null);
 
+    /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
+    @NonNull
+    public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
+
     private ThreadLocalHolder() {}
 
     public static void cleanThread() {
         stack.remove();
+        stackBase.remove();
         isCreate.remove();
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();
+    }
+
+    public static void cleanStackBase() {
+        stackBase.remove();
     }
 }
