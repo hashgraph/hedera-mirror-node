@@ -417,6 +417,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected Entity createEntity(
             EntityId entityId,
+            EntityType entityType,
             Key adminKey,
             Long autoRenewAccountId,
             Long autoRenewPeriod,
@@ -442,8 +443,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setSubmitKey(submitKeyBytes);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
+        entity.setType(entityType);
 
-        if (entity.getType() == EntityType.ACCOUNT) {
+        if (entityType == EntityType.ACCOUNT) {
             entity.setEthereumNonce(0L);
         }
 
@@ -536,9 +538,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected TransactionID transactionId(EntityId payerAccountId, long validStartTimestamp) {
         var payer = AccountID.newBuilder()
-                .setShardNum(payerAccountId.getShardNum())
-                .setRealmNum(payerAccountId.getRealmNum())
-                .setAccountNum(payerAccountId.getEntityNum())
+                .setShardNum(payerAccountId.getShard())
+                .setRealmNum(payerAccountId.getRealm())
+                .setAccountNum(payerAccountId.getNum())
                 .build();
         return TransactionID.newBuilder()
                 .setAccountID(payer)

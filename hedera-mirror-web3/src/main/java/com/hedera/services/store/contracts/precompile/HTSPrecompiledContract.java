@@ -24,6 +24,8 @@ import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -41,6 +43,7 @@ import com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.contracts.precompile.codec.ApproveForAllParams;
 import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
+import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
@@ -69,13 +72,16 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContrac
  * This class is a modified copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
  * adapter interface which is used by
  * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services package.
- *
- * Differences with the original class:
- * 1. Use abstraction for the state by introducing {@link Store} interface.
- * 2. Use workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the need of having separate precompile classes
+ * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services
+ * package.
+ * <p>
+ * Differences with the original class: 1. Use abstraction for the state by introducing {@link Store} interface. 2. Use
+ * workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the
+ * need of having separate precompile classes
  */
 public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
+
+    public static final TupleType redirectType = TupleType.parse("(int32,bytes)");
 
     public static final PrecompileContractResult INVALID_DELEGATE = new PrecompileContractResult(
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
@@ -123,7 +129,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
     @Override
     public Pair<Long, Bytes> computeCosted(
-            Bytes input, MessageFrame frame, ViewGasCalculator viewGasCalculator, TokenAccessor tokenAccessor) {
+            final Bytes input,
+            final MessageFrame frame,
+            final ViewGasCalculator viewGasCalculator,
+            final TokenAccessor tokenAccessor) {
         this.viewGasCalculator = viewGasCalculator;
         this.tokenAccessor = tokenAccessor;
 
@@ -171,7 +180,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 : PrecompileContractResult.success(result);
     }
 
-    public boolean unqualifiedDelegateDetected(MessageFrame frame) {
+    public boolean unqualifiedDelegateDetected(final MessageFrame frame) {
         // if the first message frame is not a delegate, it's not a delegate
         if (!isDelegateCall(frame)) {
             return false;
@@ -206,6 +215,16 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
+
+            final var inputData = frame.getInputData();
+            if (inputData != null) {
+                final var redirect = getRedirectTarget(inputData);
+                final var isExplicitRedirect = isTokenProxyRedirect(inputData) && redirect.massagedInput() != null;
+                if (isExplicitRedirect) {
+                    final var signatureTuple = Tuple.of(ResponseCodeEnum.SUCCESS_VALUE, result.toArray());
+                    result = Bytes.wrap(redirectType.encode(signatureTuple).array());
+                }
+            }
         } catch (final InvalidTransactionException e) {
             final var status = e.getResponseCode();
             result = precompile.getFailureResultFor(status);
@@ -221,24 +240,18 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
-    @SuppressWarnings({"java:S1301", "java:S3776"})
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 
         final int functionId = input.getInt(0);
         switch (functionId) {
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                RedirectTarget target;
-                try {
-                    target = DescriptorUtils.getRedirectTarget(input);
-                } catch (final Exception e) {
-                    throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
-                }
-                var isExplicitRedirectCall = target.massagedInput() != null;
+                final var target = getRedirectTarget(input);
+                final var isExplicitRedirectCall = target.massagedInput() != null;
                 if (isExplicitRedirectCall) {
                     input = target.massagedInput();
                 }
-                var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
-                var nestedFunctionSelector = target.descriptor();
+                final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
+                final var nestedFunctionSelector = target.descriptor();
                 switch (nestedFunctionSelector) {
                         // cases will be added with the addition of precompiles using redirect operations
                     case AbiConstants.ABI_ID_ERC_APPROVE -> {
@@ -342,6 +355,24 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 this.transactionBody = precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
             }
+            case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
+                    AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
+                this.precompile = precompileMapper.lookup(functionId).orElseThrow();
+                this.transactionBody = precompile.body(
+                        input,
+                        aliasResolver,
+                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW)));
+            }
             default -> {
                 this.precompile = precompileMapper.lookup(functionId).orElseThrow();
                 this.transactionBody = precompile.body(input, aliasResolver, new FunctionParam(functionId));
@@ -359,25 +390,48 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.mirrorNodeEvmProperties = updater.aliases();
     }
 
-    private Pair<Long, Bytes> handleReadsFromDynamicContext(final Bytes input, @NonNull final MessageFrame frame) {
+    private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
         Pair<Long, Bytes> resultFromExecutor = Pair.of(-1L, Bytes.EMPTY);
-        if (isTokenProxyRedirect(input)) {
-            final var executor =
-                    infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
-            resultFromExecutor = executor.computeCosted();
 
-            if (resultFromExecutor.getRight() == null) {
-                throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+        if (isTokenProxyRedirect(input)) {
+            final var target = getRedirectTarget(input);
+            final var isExplicitRedirectCall = target.massagedInput() != null;
+            if (isExplicitRedirectCall) {
+                input = target.massagedInput();
+            }
+
+            resultFromExecutor = computeUsingRedirectExecutor(input, frame);
+
+            if (isExplicitRedirectCall) {
+                final var signatureTuple = Tuple.of(
+                        ResponseCodeEnum.SUCCESS_VALUE,
+                        resultFromExecutor.getRight().toArray());
+                final var encodedBytes =
+                        Bytes.wrap(redirectType.encode(signatureTuple).array());
+
+                resultFromExecutor = Pair.of(resultFromExecutor.getLeft(), encodedBytes);
             }
         } else if (isViewFunction(input)) {
             final var executor = infrastructureFactory.newViewExecutor(input, frame, viewGasCalculator, tokenAccessor);
             resultFromExecutor = executor.computeCosted();
         }
+
         return resultFromExecutor;
     }
 
-    private boolean isNestedFunctionSelectorForWrite(Bytes input) {
-        RedirectTarget target;
+    private Pair<Long, Bytes> computeUsingRedirectExecutor(final Bytes input, final MessageFrame frame) {
+        final var executor = infrastructureFactory.newRedirectExecutor(input, frame, viewGasCalculator, tokenAccessor);
+        final var result = executor.computeCosted();
+
+        if (result.getRight() == null) {
+            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+        }
+
+        return result;
+    }
+
+    private boolean isNestedFunctionSelectorForWrite(final Bytes input) {
+        final RedirectTarget target;
         try {
             target = DescriptorUtils.getRedirectTarget(input);
         } catch (final Exception e) {
@@ -387,10 +441,20 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return switch (nestedFunctionSelector) {
             case AbiConstants.ABI_ID_ERC_APPROVE,
                     AbiConstants.ABI_ID_ERC_TRANSFER,
+                    AbiConstants.ABI_ID_HRC_ASSOCIATE,
+                    AbiConstants.ABI_ID_HRC_DISSOCIATE,
                     AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
                     AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
             default -> false;
         };
+    }
+
+    private static RedirectTarget getRedirectTarget(final Bytes input) {
+        try {
+            return DescriptorUtils.getRedirectTarget(input);
+        } catch (final Exception e) {
+            throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+        }
     }
 
     private long defaultGas() {

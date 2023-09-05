@@ -69,6 +69,7 @@ class CryptoDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
                 .deleted(true)
                 .obtainerId(obtainerId)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, obtainerId);
         when(entityIdService.lookup(body.getTransferAccountID())).thenReturn(Optional.of(obtainerId));

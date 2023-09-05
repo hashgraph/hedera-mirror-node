@@ -23,7 +23,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,6 +31,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
+
+    public static final String REDIRECT_SUFFIX = "Redirect";
+    public static final String NON_STATIC_SUFFIX = "NonStatic";
 
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")
@@ -59,10 +61,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @ParameterizedTest
@@ -75,10 +76,41 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(ErcContractReadOnlyFunctions.class)
+    void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
+        final var functionName = ercFunction.name + REDIRECT_SUFFIX;
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(ErcContractModificationFunctions.class)
+    void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
+        final var functionName = ercFunction.name + "Redirect";
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @Test
@@ -116,7 +148,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
 
         public String getName(final boolean isStatic) {
-            return isStatic ? name : name + "NonStatic";
+            return isStatic ? name : name + NON_STATIC_SUFFIX;
         }
     }
 
@@ -128,7 +160,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         APPROVE_WITH_ALIAS("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS, 2L}),
         TRANSFER("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM("transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),
-        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ADDRESS, 1L}),
+        TRANSFER_FROM_NFT("transferFromNFT", new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L}),
         TRANSFER_WITH_ALIAS("transfer", new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         TRANSFER_FROM_WITH_ALIAS(
                 "transferFrom", new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 2L}),

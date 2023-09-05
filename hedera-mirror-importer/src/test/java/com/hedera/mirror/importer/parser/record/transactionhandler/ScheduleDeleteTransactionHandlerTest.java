@@ -62,6 +62,7 @@ class ScheduleDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         var expectedEntity = scheduleId.toEntity().toBuilder()
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
 
         // when

@@ -48,6 +48,10 @@ public class ObjectToStringSerializer extends JsonSerializer<Object> {
         JsonConfiguration.INSTANCE.getObjectMapperWrapper().setObjectMapper(OBJECT_MAPPER);
     }
 
+    public static void init() {
+        // Called by other classes to ensure the static initializer runs
+    }
+
     @Override
     public void serialize(Object o, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         var json = OBJECT_MAPPER.writeValueAsString(o);

@@ -69,10 +69,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -84,10 +83,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @Test
@@ -116,10 +114,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @Test
@@ -159,10 +156,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     @Test
@@ -247,10 +243,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -265,10 +260,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -284,6 +278,21 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasForDirectCreateContractDeploy() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
+
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS, SENDER_ADDRESS);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
         assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
@@ -293,17 +302,16 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void estimateGasForDirectCreateContractDeploy() {
+    void estimateGasForDirectCreateContractDeployWithMissingSender() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
 
-        final var serviceParameters =
-                serviceParametersForTopLevelContractCreate(ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS);
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS, Address.ZERO);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
@@ -357,10 +365,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }

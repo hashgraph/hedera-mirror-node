@@ -51,7 +51,7 @@ import reactor.test.StepVerifier;
 class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     private static final Duration WAIT = Duration.ofSeconds(10L);
-    private static final EntityId topicId = EntityId.of(100L, EntityType.TOPIC);
+    private static final EntityId topicId = EntityId.of(100L);
 
     private final long now = DomainUtils.now();
     private final long future = now + 30L * NANOS_PER_SECOND;
@@ -137,9 +137,8 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
     @Test
     void topicNotFound() {
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicId(EntityId.of(999L, EntityType.TOPIC))
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().topicId(EntityId.of(999L)).build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
                 .thenAwait(WAIT)
@@ -150,9 +149,8 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     @Test
     void topicNotFoundWithCheckTopicExistsFalse() {
         grpcProperties.setCheckTopicExists(false);
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicId(EntityId.of(999L, EntityType.TOPIC))
-                .build();
+        TopicMessageFilter filter =
+                TopicMessageFilter.builder().topicId(EntityId.of(999L)).build();
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
                 .expectSubscription()
@@ -419,26 +417,23 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         domainBuilder.entity(e -> e.num(1L).id(1L)).block();
         domainBuilder.entity(e -> e.num(2L).id(2L)).block();
         domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC)).sequenceNumber(1))
+                .topicMessage(t -> t.topicId(EntityId.of(1L)).sequenceNumber(1))
                 .block();
         domainBuilder
-                .topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC)).sequenceNumber(1))
+                .topicMessage(t -> t.topicId(EntityId.of(2L)).sequenceNumber(1))
                 .block();
 
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(1L, EntityType.TOPIC))
-                        .sequenceNumber(2)
-                        .consensusTimestamp(future + 1)),
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(2L, EntityType.TOPIC))
-                        .sequenceNumber(2)
-                        .consensusTimestamp(future + 2)),
-                domainBuilder.topicMessage(t -> t.topicId(EntityId.of(3L, EntityType.TOPIC))
-                        .sequenceNumber(1)
-                        .consensusTimestamp(future + 3)));
+                domainBuilder.topicMessage(
+                        t -> t.topicId(EntityId.of(1L)).sequenceNumber(2).consensusTimestamp(future + 1)),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(EntityId.of(2L)).sequenceNumber(2).consensusTimestamp(future + 2)),
+                domainBuilder.topicMessage(
+                        t -> t.topicId(EntityId.of(3L)).sequenceNumber(1).consensusTimestamp(future + 3)));
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(0)
-                .topicId(EntityId.of(1L, EntityType.TOPIC))
+                .topicId(EntityId.of(1L))
                 .build();
 
         StepVerifier.withVirtualTime(
@@ -668,7 +663,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .sequenceNumber(sequenceNumber)
                 .message(new byte[] {0, 1, 2})
                 .runningHash(new byte[] {3, 4, 5})
-                .topicId(EntityId.of(100L, EntityType.TOPIC))
+                .topicId(EntityId.of(100L))
                 .runningHashVersion(2)
                 .build();
     }

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.graphql.util;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -76,10 +75,9 @@ class GraphQlUtilsTest {
                 EntityIdInput.builder().withShard(0L).withRealm(0L).withNum(3L).build();
         assertThat(GraphQlUtils.toEntityId(input))
                 .isNotNull()
-                .returns(input.getShard(), EntityId::getShardNum)
-                .returns(input.getRealm(), EntityId::getRealmNum)
-                .returns(input.getNum(), EntityId::getEntityNum)
-                .returns(UNKNOWN, EntityId::getType);
+                .returns(input.getShard(), EntityId::getShard)
+                .returns(input.getRealm(), EntityId::getRealm)
+                .returns(input.getNum(), EntityId::getNum);
     }
 
     @Test

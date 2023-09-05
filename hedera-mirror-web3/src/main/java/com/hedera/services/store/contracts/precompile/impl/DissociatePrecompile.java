@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.E
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_HRC_DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
@@ -62,12 +63,12 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams) {
+    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver, final BodyParams bodyParams) {
         TokenID tokenId = null;
-        Address callerAccountAddress;
+        final Address callerAccountAddress;
         AccountID callerAccountID = null;
 
-        if (bodyParams instanceof HrcParams hrcParams) {
+        if (bodyParams instanceof final HrcParams hrcParams) {
             tokenId = hrcParams.token();
             callerAccountAddress = hrcParams.senderAddress();
             callerAccountID =
@@ -83,17 +84,17 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
 
     @Override
     public long getGasRequirement(
-            long blockTimestamp,
-            Builder transactionBody,
-            Store store,
-            HederaEvmContractAliases hederaEvmContractAliases) {
+            final long blockTimestamp,
+            final Builder transactionBody,
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
         return pricingUtils.computeGasRequirement(
                 blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
     }
 
     @Override
     public Set<Integer> getFunctionSelectors() {
-        return Set.of(ABI_ID_DISSOCIATE_TOKEN);
+        return Set.of(ABI_ID_DISSOCIATE_TOKEN, ABI_ID_HRC_DISSOCIATE);
     }
 
     public static Dissociation decodeDissociate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {

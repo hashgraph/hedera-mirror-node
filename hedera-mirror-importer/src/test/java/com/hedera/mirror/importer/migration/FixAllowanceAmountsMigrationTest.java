@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -49,7 +48,7 @@ import org.springframework.util.StreamUtils;
 @TestPropertySource(properties = "spring.flyway.target=1.84.1")
 class FixAllowanceAmountsMigrationTest extends IntegrationTest {
 
-    private static final EntityId PAYER = EntityId.of("0.0.1001", ACCOUNT);
+    private static final EntityId PAYER = EntityId.of("0.0.1001");
 
     private static final String PRE_MIGRATION_ALLOWANCES =
             """

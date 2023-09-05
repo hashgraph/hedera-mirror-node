@@ -87,10 +87,10 @@ public final class KeyValueWrapper {
             byte[] ecdsaSecp256k1,
             ContractID delegatableContractID) {
         var keyCount = 0;
-        if (contractID != null) {
+        if (contractID != null && contractID != ContractID.getDefaultInstance()) {
             keyCount++;
         }
-        if (delegatableContractID != null) {
+        if (delegatableContractID != null && delegatableContractID != ContractID.getDefaultInstance()) {
             keyCount++;
         }
         if (shouldInheritAccountKey) {
@@ -126,6 +126,10 @@ public final class KeyValueWrapper {
         } else {
             return isDelegatableContractIdSet() ? KeyValueType.DELEGATABLE_CONTRACT_ID : KeyValueType.INVALID_KEY;
         }
+    }
+
+    public void setInheritedKey(final Key key) {
+        this.inheritedKey = key;
     }
 
     public KeyValueType getKeyValueType() {

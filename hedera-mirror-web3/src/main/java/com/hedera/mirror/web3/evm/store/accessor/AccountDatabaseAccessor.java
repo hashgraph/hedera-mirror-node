@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -71,7 +72,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                         : ByteString.EMPTY,
                 entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
-                entity.getEffectiveExpiration(),
+                TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId()),
@@ -86,7 +87,10 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
-                parseJkey(entity.getKey()));
+                parseJkey(entity.getKey()),
+                entity.getCreatedTimestamp() != null
+                        ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
+                        : 0L);
     }
 
     private long getOwnedNfts(Long accountId) {
@@ -96,7 +100,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
         return cryptoAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
-                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender(), ACCOUNT)),
+                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
                         CryptoAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -106,8 +110,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return tokenAllowanceRepository.findByOwner(ownerId).stream()
                 .collect(Collectors.toMap(
                         tokenAllowance -> new FcTokenAllowanceId(
-                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId(), TOKEN)),
-                                entityNumFromId(EntityId.of(tokenAllowance.getSpender(), ACCOUNT))),
+                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
+                                entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
                         AbstractTokenAllowance::getAmount,
                         NO_DUPLICATE_MERGE_FUNCTION,
                         TreeMap::new));
@@ -116,13 +120,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId) {
         return nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId).stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
-                        entityNumFromId(EntityId.of(nftAllowance.getTokenId(), TOKEN)),
-                        entityNumFromId(EntityId.of(nftAllowance.getSpender(), ACCOUNT))))
+                        entityNumFromId(EntityId.of(nftAllowance.getTokenId())),
+                        entityNumFromId(EntityId.of(nftAllowance.getSpender()))))
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
     private EntityNum entityNumFromId(EntityId entityId) {
-        return EntityNum.fromLong(entityId.getEntityNum());
+        return EntityNum.fromLong(entityId.getNum());
     }
 
     private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {

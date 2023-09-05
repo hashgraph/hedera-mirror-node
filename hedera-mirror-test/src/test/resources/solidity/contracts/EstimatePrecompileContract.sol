@@ -26,132 +26,102 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
     }
 
     // associate & dissociate
-    function associateTokenExternal(address account, address token) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.associateToken(account, token);
+    function associateTokenExternal(address account, address token) external {
+        int responseCode = HederaTokenService.associateToken(account, token);
         handleResponseCode(responseCode);
     }
 
-    function nestedAssociateTokenExternal(address account, address token) external
-    returns (int responseCode)
-    {
+    function nestedAssociateTokenExternal(address account, address token) external {
         HederaTokenService.associateToken(account, token);
-        responseCode = HederaTokenService.associateToken(account, token);
+        int responseCode = HederaTokenService.associateToken(account, token);
         handleResponseCode(responseCode);
     }
 
-    function dissociateAndAssociateTokenExternal(address account, address token) external
-    returns (int responseCode)
-    {
+    function dissociateAndAssociateTokenExternal(address account, address token) external {
         HederaTokenService.dissociateToken(account, token);
-        responseCode = HederaTokenService.associateToken(account, token);
+        int responseCode = HederaTokenService.associateToken(account, token);
         handleResponseCode(responseCode);
     }
 
-    function dissociateTokenExternal(address account, address token) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.dissociateToken(account, token);
+    function dissociateTokenExternal(address account, address token) external {
+        int responseCode = HederaTokenService.dissociateToken(account, token);
         handleResponseCode(responseCode);
     }
     //associate & dissociate - many
-    function associateTokensExternal(address account, address[] memory tokens) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.associateTokens(account, tokens);
+    function associateTokensExternal(address account, address[] memory tokens) external {
+        int responseCode = HederaTokenService.associateTokens(account, tokens);
         handleResponseCode(responseCode);
     }
 
-    function dissociateTokensExternal(address account, address[] memory tokens) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.dissociateTokens(account, tokens);
+    function dissociateTokensExternal(address account, address[] memory tokens) external {
+        int responseCode = HederaTokenService.dissociateTokens(account, tokens);
         handleResponseCode(responseCode);
     }
 
     //approve
-    function approveExternal(address token, address spender, uint256 amount) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.approve(token, spender, amount);
+    function approveExternal(address token, address spender, uint256 amount) external {
+        int responseCode = HederaTokenService.approve(token, spender, amount);
         handleResponseCode(responseCode);
     }
 
-    function approveNFTExternal(address token, address approved, uint256 serialNumber) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
+    function approveNFTExternal(address token, address approved, uint256 serialNumber) external {
+        int responseCode = HederaTokenService.approveNFT(token, approved, serialNumber);
         handleResponseCode(responseCode);
     }
 
     //transfer
-    function transferFromExternal(address token, address from, address to, uint256 amount) external
-    returns (int responseCode)
-    {
-        responseCode = this.transferFrom(token, from, to, amount);
+    function transferFromExternal(address token, address from, address to, uint256 amount) external {
+        int responseCode = this.transferFrom(token, from, to, amount);
         handleResponseCode(responseCode);
     }
 
-    function transferFromNFTExternal(address token, address from, address to, uint256 serialNumber) external
-    returns (int responseCode)
-    {
-        responseCode = this.transferFromNFT(token, from, to, serialNumber);
+    function transferFromNFTExternal(address token, address from, address to, uint256 serialNumber) external {
+        int responseCode = this.transferFromNFT(token, from, to, serialNumber);
         handleResponseCode(responseCode);
     }
 
-    function transferTokenExternal(address token, address sender, address receiver, int64 amount) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.transferToken(token, sender, receiver, amount);
+    function transferTokenExternal(address token, address sender, address receiver, int64 amount) external {
+        int responseCode = HederaTokenService.transferToken(token, sender, receiver, amount);
         handleResponseCode(responseCode);
     }
 
-    function transferNFTExternal(address token, address sender, address receiver, int64 serialNumber) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.transferNFT(token, sender, receiver, serialNumber);
+    function transferNFTExternal(address token, address sender, address receiver, int64 serialNumber) external {
+        int responseCode = HederaTokenService.transferNFT(token, sender, receiver, serialNumber);
         handleResponseCode(responseCode);
     }
 
     //transfer-many
-    function transferTokensExternal(address token, address[] memory accountIds, int64[] memory amounts) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.transferTokens(token, accountIds, amounts);
+    function transferTokensExternal(address token, address[] memory accountIds, int64[] memory amounts) external {
+        int responseCode = HederaTokenService.transferTokens(token, accountIds, amounts);
         handleResponseCode(responseCode);
     }
 
-    function transferNFTsExternal(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.transferNFTs(token, sender, receiver, serialNumber);
+    function transferNFTsExternal(address token, address[] memory sender, address[] memory receiver, int64[] memory serialNumber) external {
+        int responseCode = HederaTokenService.transferNFTs(token, sender, receiver, serialNumber);
         handleResponseCode(responseCode);
     }
 
-    function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.cryptoTransfer(transferList, tokenTransfers);
+    function cryptoTransferExternal(IHederaTokenService.TransferList memory transferList, IHederaTokenService.TokenTransferList[] memory tokenTransfers) external {
+        int responseCode = HederaTokenService.cryptoTransfer(transferList, tokenTransfers);
         handleResponseCode(responseCode);
     }
 
     function mintTokenExternal(address token, int64 amount, bytes[] memory metadata) external
-    returns (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers)
-    {
-        (responseCode, newTotalSupply, serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
+    returns (int64 newTotalSupply, int64[] memory serialNumbers) {
+        (int responseCode, int64 internalNewTotalSupply, int64[] memory internalSerialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
         handleResponseCode(responseCode);
+        return (internalNewTotalSupply, internalSerialNumbers);
     }
 
     function burnTokenExternal(address token, int64 amount, int64[] memory serialNumbers) external
-    returns (int responseCode, int64 newTotalSupply)
-    {
-        (responseCode, newTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);
+    returns (int64 newTotalSupply) {
+        (int responseCode, int64 internalNewTotalSupply) = HederaTokenService.burnToken(token, amount, serialNumbers);
         handleResponseCode(responseCode);
+        return internalNewTotalSupply;
     }
 
     //create operations
-    function createFungibleTokenPublic(address treasury) public payable {
+    function createFungibleTokenPublic(address treasury) public payable returns (address) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
         keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
@@ -167,13 +137,15 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
-        (int responseCode, address tokenAddress) =
+        (int responseCode, address createdTokenAddress) =
                             HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
 
         handleResponseCode(responseCode);
+
+        return createdTokenAddress;
     }
 
-    function createNonFungibleTokenPublic(address treasury) public payable {
+    function createNonFungibleTokenPublic(address treasury) public payable returns (address) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
         keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
@@ -189,13 +161,15 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
-        (int responseCode, address tokenAddress) =
+        (int responseCode, address createdTokenAddress) =
                             HederaTokenService.createNonFungibleToken(token);
 
         handleResponseCode(responseCode);
+
+        return createdTokenAddress;
     }
 
-    function createFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable {
+    function createFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable returns (address){
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.ADMIN, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
@@ -213,13 +187,15 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](1);
         fractionalFees[0] = IHederaTokenService.FractionalFee(4, 5, 10, 30, false, treasury);
 
-        (int responseCode, address tokenAddress) =
+        (int responseCode, address createdTokenAddress) =
                             HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
 
         handleResponseCode(responseCode);
+
+        return createdTokenAddress;
     }
 
-    function createNonFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable {
+    function createNonFungibleTokenWithCustomFeesPublic(address treasury, address fixedFeeTokenAddress) public payable returns (address){
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
         keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
@@ -241,135 +217,91 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         IHederaTokenService.RoyaltyFee[] memory royaltyFees = new IHederaTokenService.RoyaltyFee[](1);
         royaltyFees[0] = IHederaTokenService.RoyaltyFee(4, 5, 10, fixedFeeTokenAddress, false, treasury);
 
-        (int responseCode, address tokenAddress) =
+        (int responseCode, address createdTokenAddress) =
                             HederaTokenService.createNonFungibleTokenWithCustomFees(token, fixedFees, royaltyFees);
 
         handleResponseCode(responseCode);
+
+        return createdTokenAddress;
     }
 
-    function wipeTokenAccountExternal(address token, address account, int64 amount) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
+    function wipeTokenAccountExternal(address token, address account, int64 amount) external {
+        int responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
         handleResponseCode(responseCode);
     }
 
-    function wipeTokenAccountNFTExternal(address token, address account, int64[] memory serialNumbers) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
+    function wipeTokenAccountNFTExternal(address token, address account, int64[] memory serialNumbers) external {
+        int responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
         handleResponseCode(responseCode);
     }
 
-    function setApprovalForAllExternal(address token, address account, bool approved) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.setApprovalForAll(token, account, approved);
+    function setApprovalForAllExternal(address token, address account, bool approved) external {
+        int responseCode = HederaTokenService.setApprovalForAll(token, account, approved);
         handleResponseCode(responseCode);
     }
 
-    function grantTokenKycExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.grantTokenKyc(token, account);
+    function grantTokenKycExternal(address token, address account) external {
+        int responseCode = HederaTokenService.grantTokenKyc(token, account);
         handleResponseCode(responseCode);
     }
 
-    function revokeTokenKycExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.revokeTokenKyc(token, account);
+    function revokeTokenKycExternal(address token, address account) external {
+        int responseCode = HederaTokenService.revokeTokenKyc(token, account);
         handleResponseCode(responseCode);
     }
 
-    function nestedGrantAndRevokeTokenKYCExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
+    function nestedGrantAndRevokeTokenKYCExternal(address token, address account) external {
         HederaTokenService.grantTokenKyc(token, account);
-        responseCode = HederaTokenService.revokeTokenKyc(token, account);
+        int responseCode = HederaTokenService.revokeTokenKyc(token, account);
         handleResponseCode(responseCode);
     }
 
-    function freezeTokenExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.freezeToken(token, account);
+    function freezeTokenExternal(address token, address account) external {
+        int responseCode = HederaTokenService.freezeToken(token, account);
         handleResponseCode(responseCode);
     }
 
-    function unfreezeTokenExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        responseCode = HederaTokenService.unfreezeToken(token, account);
+    function unfreezeTokenExternal(address token, address account) external {
+        int responseCode = HederaTokenService.unfreezeToken(token, account);
         handleResponseCode(responseCode);
     }
 
-    function nestedFreezeUnfreezeTokenExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
+    function nestedFreezeUnfreezeTokenExternal(address token, address account) external {
         HederaTokenService.freezeToken(token, account);
-        responseCode = HederaTokenService.unfreezeToken(token, account);
+        int responseCode = HederaTokenService.unfreezeToken(token, account);
         handleResponseCode(responseCode);
     }
 
-    function freezeTokenTwiceExternal(address token, address account) external
-    returns (int64 responseCode)
-    {
-        HederaTokenService.freezeToken(token, account);
-        responseCode = HederaTokenService.freezeToken(token, account);
+    function deleteTokenExternal(address token) external {
+        int responseCode = HederaTokenService.deleteToken(token);
         handleResponseCode(responseCode);
     }
 
-    function deleteTokenExternal(address token) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.deleteToken(token);
+    function pauseTokenExternal(address token) external {
+        int responseCode = HederaTokenService.pauseToken(token);
         handleResponseCode(responseCode);
     }
 
-    function deleteTokenTwiceExternal(address token) external
-    returns (int responseCode)
-    {
-        HederaTokenService.deleteToken(token);
-        responseCode = HederaTokenService.deleteToken(token);
+    function unpauseTokenExternal(address token) external {
+        int responseCode = HederaTokenService.unpauseToken(token);
         handleResponseCode(responseCode);
     }
 
-    function pauseTokenExternal(address token) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.pauseToken(token);
-        handleResponseCode(responseCode);
-    }
-
-    function unpauseTokenExternal(address token) external
-    returns (int responseCode)
-    {
-        responseCode = HederaTokenService.unpauseToken(token);
-        handleResponseCode(responseCode);
-    }
-
-    function nestedPauseUnpauseTokenExternal(address token) external
-    returns (int responseCode)
-    {
+    function nestedPauseUnpauseTokenExternal(address token) external {
         HederaTokenService.pauseToken(token);
-        responseCode = HederaTokenService.unpauseToken(token);
+        int responseCode = HederaTokenService.unpauseToken(token);
         handleResponseCode(responseCode);
     }
 
-    function updateTokenExpiryInfoExternal(address token, address treasury) external
-    returns (int responseCode)
-    {
+    function updateTokenExpiryInfoExternal(address token, address treasury) external {
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
             0, treasury, 9000
         );
-        responseCode = HederaTokenService.updateTokenExpiryInfo(token, expiry);
+        int responseCode = HederaTokenService.updateTokenExpiryInfo(token, expiry);
         handleResponseCode(responseCode);
     }
 
-    function updateTokenInfoExternal(address token, address treasury) external
-    returns (int responseCode)
-    {
+    function updateTokenInfoExternal(address token, address treasury) external {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.PAUSE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
         keys[1] = getSingleKey(KeyType.KYC, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
@@ -385,62 +317,66 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
             name, symbol, treasury, memo, true, maxSupply, freezeDefaultStatus, keys, expiry
         );
 
-        responseCode = HederaTokenService.updateTokenInfo(token, tokenInfo);
+        int responseCode = HederaTokenService.updateTokenInfo(token, tokenInfo);
         handleResponseCode(responseCode);
     }
 
-    function updateTokenKeysExternal(address token) external
-    returns (int responseCode)
-    {
+    function updateTokenKeysExternal(address token) external {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](4);
         keys[0] = getSingleKey(KeyType.KYC, KeyValueType.SECP256K1, abi.encodePacked(hex"02e35698a0273a8c6509ae4716c26a52eebca73e5de2c6677b189ef40f6fcd1fed"));
         keys[1] = getSingleKey(KeyType.FREEZE, KeyValueType.SECP256K1, abi.encodePacked(hex"02e35698a0273a8c6509ae4716c26a52eebca73e5de2c6677b189ef40f6fcd1fed"));
         keys[2] = getSingleKey(KeyType.SUPPLY, KeyValueType.SECP256K1, abi.encodePacked(hex"02e35698a0273a8c6509ae4716c26a52eebca73e5de2c6677b189ef40f6fcd1fed"));
         keys[3] = getSingleKey(KeyType.WIPE, KeyValueType.SECP256K1, abi.encodePacked(hex"02e35698a0273a8c6509ae4716c26a52eebca73e5de2c6677b189ef40f6fcd1fed"));
 
-        responseCode = HederaTokenService.updateTokenKeys(token, keys);
+        int responseCode = HederaTokenService.updateTokenKeys(token, keys);
         handleResponseCode(responseCode);
     }
 
     function getTokenExpiryInfoExternal(address token) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.getTokenExpiryInfo(token);
+    returns(int64, address, int64) {
+        (int responseCode, IHederaTokenService.Expiry memory expiryInfo) = HederaTokenService.getTokenExpiryInfo(token);
         handleResponseCode(responseCode);
+        return (
+            expiryInfo.second,
+            expiryInfo.autoRenewAccount,
+            expiryInfo.autoRenewPeriod
+        );
     }
 
-    function isTokenExternal(address token) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.isToken(token);
+    function isTokenExternal(address token) external returns(bool) {
+        (int responseCode, bool isTokenFlag) = HederaTokenService.isToken(token);
         handleResponseCode(responseCode);
+        return isTokenFlag;
     }
 
     function getTokenKeyExternal(address token, uint keyType) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.getTokenKey(token, keyType);
+    returns(bool, address, bytes memory, bytes memory, address) {
+        (int responseCode, IHederaTokenService.KeyValue memory key) = HederaTokenService.getTokenKey(token, keyType);
         handleResponseCode(responseCode);
+        return (
+            key.inheritAccountKey,
+            key.contractId,
+            key.ed25519,
+            key.ECDSA_secp256k1,
+            key.delegatableContractId
+        );
     }
 
-    function allowanceExternal(address token, address owner, address spender) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.allowance(token, owner, spender);
+    function allowanceExternal(address token, address owner, address spender) external returns(uint256) {
+        (int responseCode, uint256 amount) = HederaTokenService.allowance(token, owner, spender);
         handleResponseCode(responseCode);
+        return amount;
     }
 
-    function getApprovedExternal(address token, uint256 serialNumber) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.getApproved(token, serialNumber);
+    function getApprovedExternal(address token, uint256 serialNumber) external returns(address) {
+        (int responseCode, address approvedAddress) = HederaTokenService.getApproved(token, serialNumber);
         handleResponseCode(responseCode);
+        return approvedAddress;
     }
 
-    function isApprovedForAllExternal(address token, address owner, address operator) external
-    returns(int responseCode)
-    {
-        (responseCode, ) = HederaTokenService.isApprovedForAll(token, owner, operator);
+    function isApprovedForAllExternal(address token, address owner, address operator) external returns(bool) {
+        (int responseCode, bool approved) = HederaTokenService.isApprovedForAll(token, owner, operator);
         handleResponseCode(responseCode);
+        return approved;
     }
 }

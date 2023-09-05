@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -33,7 +32,7 @@ import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.codec.DecoderException;
+import java.security.InvalidKeyException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -54,7 +53,7 @@ class MirrorEvmContractAliasesTest {
     private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
     private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
 
-    private static final EntityId entityId = new EntityId(0L, 0L, 3L, EntityType.TOKEN);
+    private static final EntityId entityId = EntityId.of(0L, 0L, 3L);
     private static final Id id = new Id(0L, 0L, 3L);
 
     @Mock
@@ -197,7 +196,7 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, InvalidKeyException {
         final byte[] ECDSA_PUBLIC_KEY =
                 Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
         Address recoveredAddress = Address.fromHexString("0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b");

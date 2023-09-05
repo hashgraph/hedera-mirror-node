@@ -193,10 +193,10 @@ class OpUsageCtxHelperTest {
         final var tokenMintMeta = subject.metaForTokenMint(accessor, store);
 
         // then:
-        assertEquals(34, tokenMintMeta.getBpt());
+        assertEquals(1, tokenMintMeta.getBpt());
         assertEquals(TOKEN_NON_FUNGIBLE_UNIQUE, tokenMintMeta.getSubType());
-        assertEquals(12345670, tokenMintMeta.getRbs());
-        assertEquals(80, tokenMintMeta.getTransferRecordDb());
+        assertEquals(0, tokenMintMeta.getRbs());
+        assertEquals(0, tokenMintMeta.getTransferRecordDb());
     }
 
     private TokenMintTransactionBody getUniqueTokenMintOp() {

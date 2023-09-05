@@ -28,8 +28,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -80,7 +78,7 @@ class TokenAccessorImplTest {
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
     private static final Long ENTITY_ID =
-            EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(), ENTITY.getEntityNum());
+            EntityId.of(ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum()).getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;
     private final DomainBuilder domainBuilder = new DomainBuilder();
@@ -232,9 +230,8 @@ class TokenAccessorImplTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     void infoForTokenCustomFees() {
         final var customFee = new CustomFee();
-        final EntityId collectorId = new EntityId(1L, 2L, 3L, EntityType.ACCOUNT);
+        final EntityId collectorId = EntityId.of(1L, 2L, 3L);
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
-        List customFeeList = List.of(customFee);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(null);

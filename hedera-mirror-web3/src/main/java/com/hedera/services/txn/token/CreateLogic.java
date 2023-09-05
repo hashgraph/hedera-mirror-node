@@ -56,9 +56,11 @@ import org.hyperledger.besu.datatypes.Address;
 public class CreateLogic {
 
     private final MirrorNodeEvmProperties dynamicProperties;
+    private final AssociateLogic associateLogic;
 
-    public CreateLogic(final MirrorNodeEvmProperties dynamicProperties) {
+    public CreateLogic(final MirrorNodeEvmProperties dynamicProperties, final AssociateLogic associateLogic) {
         this.dynamicProperties = dynamicProperties;
+        this.associateLogic = associateLogic;
     }
 
     public void create(
@@ -122,7 +124,6 @@ public class CreateLogic {
 
     private List<TokenRelationship> getNewRelationships(
             final Token provisionalToken, final Store store, final TokenCreateTransactionBody op) {
-        final var associateLogic = new AssociateLogic(dynamicProperties);
         final var newRels = listFrom(provisionalToken, store, associateLogic);
         if (op.getInitialSupply() > 0) {
             // Treasury relationship is always first

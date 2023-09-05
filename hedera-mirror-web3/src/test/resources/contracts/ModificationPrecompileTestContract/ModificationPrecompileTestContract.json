@@ -130,6 +130,25 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
+      }
+    ],
+    "name": "associateWithRedirect",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "result",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
       },
       {
         "internalType": "int64",
@@ -1061,19 +1080,14 @@
         "internalType": "address",
         "name": "token",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
       }
     ],
-    "name": "freezeTokenExternal",
+    "name": "dissociateWithRedirect",
     "outputs": [
       {
-        "internalType": "int64",
-        "name": "responseCode",
-        "type": "int64"
+        "internalType": "bytes",
+        "name": "result",
+        "type": "bytes"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1092,12 +1106,12 @@
         "type": "address"
       }
     ],
-    "name": "getBalanceOfWithDirectRedirect",
+    "name": "freezeTokenExternal",
     "outputs": [
       {
-        "internalType": "bytes",
-        "name": "result",
-        "type": "bytes"
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
       }
     ],
     "stateMutability": "nonpayable",
@@ -1201,9 +1215,9 @@
     "name": "redirectForToken",
     "outputs": [
       {
-        "internalType": "int64",
+        "internalType": "int256",
         "name": "responseCode",
-        "type": "int64"
+        "type": "int256"
       },
       {
         "internalType": "bytes",

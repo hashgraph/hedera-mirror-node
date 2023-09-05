@@ -19,27 +19,15 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStringRightPad;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -50,27 +38,16 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EstimateFeature extends AbstractEstimateFeature {
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
-    private final ContractClient contractClient;
-    private final FileClient fileClient;
-    private final MirrorNodeClient mirrorClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
 
-    private CompiledSolidityArtifact compiledSolidityArtifacts;
     private String newAccountEvnAddress;
 
     @Given("I successfully create contract from contract bytes with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
-        try (var in = estimateGasTestContract.getInputStream()) {
-            compiledSolidityArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-            createContract(compiledSolidityArtifacts, supply);
-        }
-        deployedContract = createContract(compiledSolidityArtifacts, supply);
+        deployedContract = createContract(estimateGasTestContract, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvnAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
@@ -360,14 +337,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
         assertTrue(estimatedGasOfTenStateUpdates > estimatedGasOfFiveStateUpdates);
     }
 
-    @Then("I call estimateGas with function that executes reentrancy attack with transfer")
-    public void reentrancyTransferAttackFunction() {
-        validateGasEstimation(
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10"),
-                ContractMethods.REENTRANCY_TRANSFER_ATTACK.getActualGas(),
-                contractSolidityAddress);
-    }
-
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
         validateGasEstimation(
@@ -422,44 +391,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 contractSolidityAddress);
     }
 
-    private DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
-        var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                null);
-        var contractId = verifyCreateContractNetworkResponse();
-
-        return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-    }
-
-    private FileId persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        return fileId;
-    }
-
-    private ContractId verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-        return contractId;
-    }
-
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
@@ -501,7 +432,4 @@ public class EstimateFeature extends AbstractEstimateFeature {
         private final String selector;
         private final int actualGas;
     }
-
-    private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

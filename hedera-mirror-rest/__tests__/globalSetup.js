@@ -22,7 +22,7 @@ import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
 const dbNamePrefix = 'test';
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'mirrornodeswirldslabs/citus:11.2.0-alpine';
+const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.0.0';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
@@ -53,16 +53,10 @@ const createDbContainer = async (maxWorkers) => {
       const query = `
         create extension if not exists btree_gist;
         create extension if not exists citus;
-        create schema if not exists partman authorization ${poolConfig.user};
-        create extension if not exists pg_partman schema partman;
-        alter schema partman owner to ${poolConfig.user};
         grant create on database ${dbName} to ${poolConfig.user};
-        grant all on schema partman to ${poolConfig.user};
-        grant all on all tables in schema partman to ${poolConfig.user};
-        grant execute on all functions in schema partman to ${poolConfig.user};
-        grant execute on all procedures in schema partman to ${poolConfig.user};
         grant all on schema public to ${poolConfig.user};
-        grant temporary on database ${dbName} to ${poolConfig.user};`;
+        grant temporary on database ${dbName} to ${poolConfig.user};
+        alter type timestamptz owner to ${poolConfig.user}`;
 
       const workerPool = new pg.Pool({...poolConfig, database: dbName});
       await workerPool.query(query);

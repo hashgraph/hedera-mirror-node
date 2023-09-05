@@ -117,7 +117,7 @@ class NetworkNodeService extends BaseService {
     where (${NetworkNodeService.unreleasedSupplyAccounts('account_id')})
       and consensus_timestamp = (
       select max(consensus_timestamp)
-      from account_balance_file abf
+      from account_balance ab
       where `;
 
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {

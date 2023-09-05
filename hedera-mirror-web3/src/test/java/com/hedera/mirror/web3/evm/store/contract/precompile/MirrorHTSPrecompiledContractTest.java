@@ -195,7 +195,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.getStore()).willReturn(store);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
-        given(worldUpdater.getStore()).willReturn(store);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -237,7 +236,7 @@ class MirrorHTSPrecompiledContractTest {
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
-        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.FAIL_INVALID));
+        final var expectedResult = Pair.of(0L, EncodingFacade.resultFrom(ResponseCodeEnum.INVALID_FEE_SUBMITTED));
         assertThat(expectedResult).isEqualTo(precompileResult);
     }
 

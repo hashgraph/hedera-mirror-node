@@ -57,7 +57,7 @@ public final class NewRels {
             return;
         }
         final var newRelationship = associateLogic
-                .associateWith(account, List.of(provisionalToken), store)
+                .associateWith(account, List.of(provisionalToken), store, true)
                 .get(0);
         newRelations.add(newRelationship);
         associatedSoFar.add(accountId);

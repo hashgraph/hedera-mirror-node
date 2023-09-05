@@ -207,8 +207,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to create
-     * an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
+     * Store transfers in the transactions.itemized_transfers column if applicable. This will allow the rest-api to
+     * create an itemized set of transfers that reflects explicit transfers, threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
     private void processItemizedTransfers(RecordItem recordItem, Transaction transaction) {
@@ -519,9 +519,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var tokenTransfers = recordItem.getTransactionBody().getCryptoTransfer().getTokenTransfersList();
+        long spenderId = payerAccountId.getId();
+        if (!tokenTransfers.isEmpty() && recordItem.getTransactionRecord().hasContractCallResult()) {
+            spenderId = EntityId.of(recordItem
+                            .getTransactionRecord()
+                            .getContractCallResult()
+                            .getSenderId())
+                    .getId();
+        }
+        long transferSpenderId = spenderId;
         tokenTransfers.forEach(tokenTransfer -> {
             var tokenId = EntityId.of(tokenTransfer.getToken());
-
             tokenTransfer.getTransfersList().forEach(accountAmount -> {
                 // Emit allowance amount representing approved transfer debit
                 if (accountAmount.getIsApproval() && accountAmount.getAmount() < 0) {
@@ -529,7 +537,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                             .amount(accountAmount.getAmount())
                             .owner(EntityId.of(accountAmount.getAccountID()).getId())
                             .payerAccountId(payerAccountId)
-                            .spender(payerAccountId.getId())
+                            .spender(transferSpenderId)
                             .tokenId(tokenId.getId())
                             .build();
 
@@ -719,9 +727,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 var tokenId = EntityId.of(protoAssessedCustomFee.getTokenId());
                 var assessedCustomFee = new AssessedCustomFee();
                 assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
-                assessedCustomFee.setId(new AssessedCustomFee.Id(collectorAccountId, consensusTimestamp));
-                assessedCustomFee.setTokenId(tokenId);
+                assessedCustomFee.setCollectorAccountId(collectorAccountId.getId());
+                assessedCustomFee.setConsensusTimestamp(consensusTimestamp);
                 assessedCustomFee.setPayerAccountId(recordItem.getPayerAccountId());
+                assessedCustomFee.setTokenId(tokenId);
 
                 if (protoAssessedCustomFee.getEffectivePayerAccountIdCount() > 0) {
                     var effectivePayerEntityIds = new ArrayList<Long>();

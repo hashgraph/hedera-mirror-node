@@ -29,7 +29,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
@@ -312,15 +311,15 @@ class AddressBookServiceImplTest extends IntegrationTest {
 
     @Test
     void isAddressBook() {
-        EntityId fileID = EntityId.of(0, 0, 234, EntityType.FILE);
+        EntityId fileID = EntityId.of(0, 0, 234);
         boolean isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isFalse();
 
-        fileID = EntityId.of(0, 0, 101, EntityType.FILE);
+        fileID = EntityId.of(0, 0, 101);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
 
-        fileID = EntityId.of(0, 0, 102, EntityType.FILE);
+        fileID = EntityId.of(0, 0, 102);
         isAddressBook = addressBookService.isAddressBook(fileID);
         assertThat(isAddressBook).isTrue();
     }
@@ -943,7 +942,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allMatch(c -> c.getStake() == 1L)
                 .allMatch(c -> c.getTotalStake() == 4L)
-                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allMatch(c -> c.getNodeAccountId().getNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
@@ -1009,7 +1008,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allMatch(c -> c.getStake() == expectedNodeStake)
                 .allMatch(c -> c.getTotalStake() == expectedTotalStake)
-                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allMatch(c -> c.getNodeAccountId().getNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);

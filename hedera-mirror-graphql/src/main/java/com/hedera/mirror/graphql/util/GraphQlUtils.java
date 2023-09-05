@@ -18,7 +18,6 @@ package com.hedera.mirror.graphql.util;
 
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.graphql.viewmodel.HbarUnit;
 import com.hedera.mirror.graphql.viewmodel.Node;
 import java.nio.charset.StandardCharsets;
@@ -76,7 +75,7 @@ public class GraphQlUtils {
     }
 
     public static EntityId toEntityId(com.hedera.mirror.graphql.viewmodel.EntityIdInput entityId) {
-        return EntityId.of(entityId.getShard(), entityId.getRealm(), entityId.getNum(), EntityType.UNKNOWN);
+        return EntityId.of(entityId.getShard(), entityId.getRealm(), entityId.getNum());
     }
 
     public static void validateOneOf(Object... values) {

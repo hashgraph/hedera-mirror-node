@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -68,8 +67,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
 class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
-    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
+    private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001);
 
     private final @Owner JdbcOperations jdbcOperations;
 
@@ -200,15 +199,17 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
         AssessedCustomFee assessedCustomFee1 = new AssessedCustomFee();
         assessedCustomFee1.setAmount(receivedAmount);
+        assessedCustomFee1.setCollectorAccountId(receiverId.getId());
+        assessedCustomFee1.setConsensusTimestamp(transfer1.getConsensusTimestamp());
         assessedCustomFee1.setEffectivePayerAccountIds(List.of(senderId.getId()));
-        assessedCustomFee1.setId(new AssessedCustomFee.Id(receiverId, transfer1.getConsensusTimestamp()));
         assessedCustomFee1.setPayerAccountId(tokenId);
         assessedCustomFee1.setTokenId(tokenId);
 
         AssessedCustomFee assessedCustomFee2 = new AssessedCustomFee();
         assessedCustomFee2.setAmount(receivedAmount);
+        assessedCustomFee2.setCollectorAccountId(receiverId.getId());
+        assessedCustomFee2.setConsensusTimestamp(transfer5.getConsensusTimestamp());
         assessedCustomFee2.setEffectivePayerAccountIds(List.of(senderId.getId()));
-        assessedCustomFee2.setId(new AssessedCustomFee.Id(receiverId, transfer5.getConsensusTimestamp()));
         assessedCustomFee2.setPayerAccountId(tokenId);
         assessedCustomFee2.setTokenId(tokenId);
 
@@ -445,14 +446,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
     private void persistAssessedCustomFees(List<AssessedCustomFee> assessedCustomFees) throws IOException {
         for (AssessedCustomFee assessedCustomFee : assessedCustomFees) {
-            var id = assessedCustomFee.getId();
             jdbcOperations.update(
                     "insert into assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id,"
                             + "effective_payer_account_ids)"
                             + " values (?,?,?,?,?::bigint[])",
                     assessedCustomFee.getAmount(),
-                    id.getCollectorAccountId().getId(),
-                    id.getConsensusTimestamp(),
+                    assessedCustomFee.getCollectorAccountId(),
+                    assessedCustomFee.getConsensusTimestamp(),
                     assessedCustomFee.getTokenId().getId(),
                     longListSerializer(assessedCustomFee.getEffectivePayerAccountIds()));
         }
@@ -511,14 +511,12 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         return jdbcOperations.query("select * from assessed_custom_fee", (rs, rowNum) -> {
             List<Long> effectivePayers = Arrays.asList(
                     (Long[]) rs.getArray("effective_payer_account_ids").getArray());
-            EntityId sender = ObjectUtils.isNotEmpty(effectivePayers)
-                    ? EntityIdEndec.decode(effectivePayers.get(0), EntityType.ACCOUNT)
-                    : null;
-            EntityId receiver = EntityIdEndec.decode(rs.getLong("collector_account_id"), EntityType.ACCOUNT);
+            EntityId sender = ObjectUtils.isNotEmpty(effectivePayers) ? EntityId.of(effectivePayers.get(0)) : null;
+            EntityId receiver = EntityId.of(rs.getLong("collector_account_id"));
             SharedTransfer sharedTransfer = new SharedTransfer(
                     rs.getLong("amount"),
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
             return sharedTransfer;
@@ -528,12 +526,12 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     private List<SharedTransfer> findCryptoTransfers() {
         return jdbcOperations.query("select * from crypto_transfer", (rs, rowNum) -> {
             Long amount = rs.getLong("amount");
-            EntityId sender = amount < 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
-            EntityId receiver = amount > 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
+            EntityId sender = amount < 0 ? EntityId.of(rs.getLong("entity_id")) : null;
+            EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("entity_id")) : null;
             SharedTransfer sharedTransfer = new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
             return sharedTransfer;
@@ -545,9 +543,9 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
             SharedTransfer sharedTransfer = new SharedTransfer(
                     rs.getLong("serial_number"),
                     rs.getLong("consensus_timestamp"),
-                    EntityId.of(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
-                    EntityId.of(rs.getLong("receiver_account_id"), EntityType.ACCOUNT),
-                    EntityId.of(rs.getLong("sender_account_id"), EntityType.ACCOUNT));
+                    EntityId.of(rs.getLong("payer_account_id")),
+                    EntityId.of(rs.getLong("receiver_account_id")),
+                    EntityId.of(rs.getLong("sender_account_id")));
             return sharedTransfer;
         });
     }
@@ -555,12 +553,12 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     private List<SharedTransfer> findNonFeeTransfersAsSharedTransfers() {
         return jdbcOperations.query("select * from non_fee_transfer", (rs, rowNum) -> {
             Long amount = rs.getLong("amount");
-            EntityId sender = amount < 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
-            EntityId receiver = amount > 0 ? EntityIdEndec.decode(rs.getLong("entity_id"), EntityType.ACCOUNT) : null;
+            EntityId sender = amount < 0 ? EntityId.of(rs.getLong("entity_id")) : null;
+            EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("entity_id")) : null;
             SharedTransfer sharedTransfer = new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), EntityType.ACCOUNT),
+                    EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
             return sharedTransfer;
@@ -570,12 +568,12 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
     private List<SharedTransfer> findTokenTransfers() {
         return jdbcOperations.query("select * from token_transfer", (rs, rowNum) -> {
             Long amount = rs.getLong("amount");
-            EntityId sender = amount < 0 ? EntityIdEndec.decode(rs.getLong("account_id"), EntityType.ACCOUNT) : null;
-            EntityId receiver = amount > 0 ? EntityIdEndec.decode(rs.getLong("account_id"), EntityType.ACCOUNT) : null;
+            EntityId sender = amount < 0 ? EntityId.of(rs.getLong("account_id")) : null;
+            EntityId receiver = amount > 0 ? EntityId.of(rs.getLong("account_id")) : null;
             SharedTransfer sharedTransfer = new SharedTransfer(
                     amount,
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("payer_account_id"), TOKEN),
+                    EntityId.of(rs.getLong("payer_account_id")),
                     receiver,
                     sender);
             return sharedTransfer;

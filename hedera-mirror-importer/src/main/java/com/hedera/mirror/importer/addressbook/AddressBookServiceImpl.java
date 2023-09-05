@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -76,8 +75,8 @@ import org.springframework.util.CollectionUtils;
 public class AddressBookServiceImpl implements AddressBookService {
 
     public static final String CACHE_NAME = "nodes";
-    public static final EntityId FILE_101 = EntityId.of(0, 0, 101, EntityType.FILE);
-    public static final EntityId FILE_102 = EntityId.of(0, 0, 102, EntityType.FILE);
+    public static final EntityId FILE_101 = EntityId.of(0, 0, 101);
+    public static final EntityId FILE_102 = EntityId.of(0, 0, 102);
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
     private final AddressBookRepository addressBookRepository;
@@ -401,17 +400,15 @@ public class AddressBookServiceImpl implements AddressBookService {
     @SuppressWarnings({"deprecation", "java:S1874"})
     private Pair<Long, EntityId> getNodeIds(NodeAddress nodeAddressProto) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
-        EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId.of(memo, EntityType.ACCOUNT);
+        EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId.of(memo);
         var nodeAccountId = nodeAddressProto.hasNodeAccountId()
                 ? EntityId.of(nodeAddressProto.getNodeAccountId())
                 : memoNodeAccountId;
 
         var nodeId = nodeAddressProto.getNodeId();
         // ensure valid nodeId. In early versions of initial addressBook (entityNum < 20) all nodeIds are set to 0
-        if (nodeId == 0
-                && nodeAccountId.getEntityNum() < 20
-                && nodeAccountId.getEntityNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
-            nodeId = nodeAccountId.getEntityNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
+        if (nodeId == 0 && nodeAccountId.getNum() < 20 && nodeAccountId.getNum() != INITIAL_NODE_ID_ACCOUNT_ID_OFFSET) {
+            nodeId = nodeAccountId.getNum() - INITIAL_NODE_ID_ACCOUNT_ID_OFFSET;
         }
 
         return Pair.of(nodeId, nodeAccountId);

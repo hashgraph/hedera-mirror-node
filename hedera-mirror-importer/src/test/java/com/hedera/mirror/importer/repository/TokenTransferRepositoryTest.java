@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +34,7 @@ class TokenTransferRepositoryTest extends AbstractRepositoryTest {
                 .tokenTransfer()
                 .customize(t -> {
                     var id = tokenTransfer1.getId().toBuilder()
-                            .accountId(domainBuilder.entityId(EntityType.ACCOUNT))
+                            .accountId(domainBuilder.entityId())
                             .build();
                     t.id(id);
                 })

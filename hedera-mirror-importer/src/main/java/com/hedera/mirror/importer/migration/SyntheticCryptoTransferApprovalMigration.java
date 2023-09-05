@@ -17,32 +17,43 @@
 package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.db.DBProperties;
+import com.hedera.mirror.importer.exception.ImporterException;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
 import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long> {
+public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration<Long>
+        implements RecordStreamFileListener {
 
+    static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
+    private final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
     static final long LOWER_BOUND_TIMESTAMP = 1680284879342064922L;
-    // This problem was fixed by services release 0.38.10, this is last timestamp before that release
+    // This problem was fixed by services release 0.38.6,protobuf release 0.38.10, this is last timestamp before that
+    // release
     static final long UPPER_BOUND_TIMESTAMP = 1686243920981874002L;
     private static final long TIMESTAMP_INCREMENT =
             Duration.ofDays(1).toNanos(); // 1 day in nanoseconds which will yield 69 async iterations
@@ -141,6 +152,30 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             update token_transfer set is_approval = true where consensus_timestamp = :consensus_timestamp and token_id = :token_id and account_id = :sender
             """;
 
+    private final RecordFileRepository recordFileRepository;
+
+    @Override
+    public void onEnd(RecordFile streamFile) throws ImporterException {
+        if (streamFile == null) {
+            return;
+        }
+
+        // The services version 0.38.0 has the fixes this migration solves.
+        try {
+            if (streamFile.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_38_0)
+                    && executed.compareAndSet(false, true)) {
+                var latestFile = recordFileRepository.findLatestBefore(streamFile.getConsensusStart());
+                if (latestFile
+                        .filter(f -> f.getHapiVersion().isLessThan(HAPI_VERSION_0_38_0))
+                        .isPresent()) {
+                    doMigrate();
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error executing the migration again after consensus_timestamp {}", streamFile.getConsensusEnd());
+        }
+    }
+
     private enum TRANSFER_TYPE {
         CRYPTO_TRANSFER,
         NFT_TRANSFER,
@@ -159,10 +194,12 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     @Lazy
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
+            RecordFileRepository recordFileRepository,
             MirrorProperties mirrorProperties,
             NamedParameterJdbcTemplate transferJdbcTemplate,
             TransactionOperations transactionOperations) {
         super(mirrorProperties.getMigration(), transferJdbcTemplate, dbProperties.getSchema());
+        this.recordFileRepository = recordFileRepository;
         this.mirrorProperties = mirrorProperties;
         this.transferJdbcTemplate = transferJdbcTemplate;
         this.transactionOperations = transactionOperations;

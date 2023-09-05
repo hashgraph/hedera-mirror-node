@@ -20,22 +20,12 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStrin
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -43,7 +33,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -56,18 +45,10 @@ import org.springframework.core.io.Resource;
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static DeployedContract deployedContract;
-    private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-    private CompiledSolidityArtifact ercArtifacts;
-    private CompiledSolidityArtifact precompileArtifacts;
-    private CompiledSolidityArtifact estimateArtifacts;
     private String ercContractAddress;
     private String precompileContractAddress;
     private String estimateContractAddress;
@@ -105,28 +86,19 @@ public class CallFeature extends AbstractFeature {
 
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
-        try (var in = ercTestContract.getInputStream()) {
-            ercArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-        }
-        deployedContract = createContract(ercArtifacts, 0);
+        deployedContract = createContract(ercTestContract, 0);
         ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
-        try (var in = precompileTestContract.getInputStream()) {
-            precompileArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-        }
-        deployedContract = createContract(precompileArtifacts, 0);
+        deployedContract = createContract(precompileTestContract, 0);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        try (var in = estimateGasTestContract.getInputStream()) {
-            estimateArtifacts = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-        }
-        deployedContract = createContract(estimateArtifacts, 1000000);
+        deployedContract = createContract(estimateGasTestContract, 1000000);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
@@ -255,7 +227,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.HTS_IS_KYC_SELECTOR.getSelector()
+                .data(ContractMethods.HTS_IS_KYC_GRANTED_SELECTOR.getSelector()
                         + to32BytesString(tokenId.toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
@@ -264,7 +236,7 @@ public class CallFeature extends AbstractFeature {
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsBoolean()).isFalse();
+        assertThat(response.getResultAsBoolean()).isTrue();
     }
 
     // ETHCALL-028
@@ -384,43 +356,6 @@ public class CallFeature extends AbstractFeature {
         assertEquals(Integer.parseInt(balances[1], 16), 990000);
     }
 
-    protected DeployedContract createContract(CompiledSolidityArtifact compiledSolidityArtifact, int initialBalance) {
-        var fileId = persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                null);
-        var contractId = verifyCreateContractNetworkResponse();
-        return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-    }
-
-    private ContractId verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-        return contractId;
-    }
-
-    private FileId persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        var fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        return fileId;
-    }
-
     private void validateAddresses(String[] addresses) {
         assertNotEquals(addresses[0], addresses[1]);
         assertTrue(addresses[0].matches(HEX_REGEX));
@@ -436,7 +371,7 @@ public class CallFeature extends AbstractFeature {
         IERC721_TOKEN_BALANCE_OF_SELECTOR("063c7dcf"),
         HTS_IS_TOKEN_SELECTOR("bff9834f"),
         HTS_IS_FROZEN_SELECTOR("565ca6fa"),
-        HTS_IS_KYC_SELECTOR("bc2fb00e"),
+        HTS_IS_KYC_GRANTED_SELECTOR("bc2fb00e"),
         HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR("319a8723"),
         HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR("fd4d1c26"),
         UPDATE_COUNTER_SELECTOR("c648049d"),
@@ -446,7 +381,4 @@ public class CallFeature extends AbstractFeature {
         TRANSFER_SELECTOR("39a92ada");
         private final String selector;
     }
-
-    private record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

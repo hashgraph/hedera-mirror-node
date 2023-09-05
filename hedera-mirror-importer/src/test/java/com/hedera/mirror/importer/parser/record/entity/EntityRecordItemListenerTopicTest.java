@@ -62,7 +62,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
-    static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.9999", EntityType.ACCOUNT);
+    static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.9999");
 
     @ParameterizedTest
     @CsvSource({
@@ -278,7 +278,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var consensusTimestamp = 6_000_000L;
         var responseCode = SUCCESS;
         var memo = "updated-memo";
-        var autoRenewAccount = EntityId.of(0L, 0L, 1L, EntityType.ACCOUNT);
+        var autoRenewAccount = EntityId.of(0L, 0L, 1L);
         // Topic does not get stored in the repository beforehand.
 
         var transaction = createUpdateTopicTransaction(
@@ -488,7 +488,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         TransactionID initialTransactionId = null;
         if (chunkNum != null) {
             initialTransactionId = createTransactionID(
-                    PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+                    PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
         }
         var topicMessage = createTopicMessage(
                 topicId,
@@ -529,8 +529,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(
-                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var topicMessage = createTopicMessage(
                 TOPIC_ID,
@@ -575,8 +575,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(
-                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(
@@ -612,8 +612,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(
-                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(
@@ -673,8 +673,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var scheduled = false;
         var nonce = 0;
 
-        TransactionID initialTransactionId = createTransactionID(
-                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(
@@ -707,8 +707,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
-        TransactionID initialTransactionId = createTransactionID(
-                PAYER_ACCOUNT_ID.getEntityNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        TransactionID initialTransactionId =
+                createTransactionID(PAYER_ACCOUNT_ID.getNum(), TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         createTopicMessage(
                 TOPIC_ID,
@@ -870,9 +870,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
         topic.setDeclineReward(false);
         topic.setMemo(memo);
-        topic.setType(EntityType.TOPIC);
         topic.setStakedNodeId(-1L);
         topic.setStakePeriodStart(-1L);
+        topic.setType(EntityType.TOPIC);
         return topic;
     }
 
@@ -893,7 +893,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         if (initialTransactionID != null) {
             topicMessage.setInitialTransactionId(initialTransactionID.toByteArray());
         }
-        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityType.TOPIC));
+        topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum()));
         topicMessage.setMessage(message.getBytes());
         topicMessage.setPayerAccountId(payerAccountId);
         topicMessage.setSequenceNumber(sequenceNumber);

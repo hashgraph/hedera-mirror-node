@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
@@ -47,7 +48,7 @@ class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndelet
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return EntityType.TOPIC;
+        return TOPIC;
     }
 
     @Test
@@ -64,6 +65,7 @@ class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndelet
         var expectedEntity = topicId.toEntity().toBuilder()
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(getExpectedEntityIdType())
                 .build();
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 

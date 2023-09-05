@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMON;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
@@ -24,8 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -66,9 +63,9 @@ import org.springframework.test.context.TestPropertySource;
 class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
-    private static final EntityId TREASURY = EntityId.of("0.0.200", ACCOUNT);
-    private static final EntityId NEW_TREASURY = EntityId.of("0.0.201", ACCOUNT);
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
+    private static final EntityId TREASURY = EntityId.of("0.0.200");
+    private static final EntityId NEW_TREASURY = EntityId.of("0.0.201");
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
 
     @Resource
     @Owner
@@ -89,13 +86,13 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         //   - deleted, account1's token dissociate doesn't include token transfer, account2's dissociate happened
         //     before token deletion
         //   - still alive
-        EntityId account1 = EntityId.of("0.0.210", ACCOUNT);
-        EntityId account2 = EntityId.of("0.0.211", ACCOUNT);
-        EntityId ftId1 = EntityId.of("0.0.500", TOKEN);
-        EntityId ftId2 = EntityId.of("0.0.501", TOKEN);
-        EntityId nftId1 = EntityId.of("0.0.502", TOKEN);
-        EntityId nftId2 = EntityId.of("0.0.503", TOKEN);
-        EntityId nftId3 = EntityId.of("0.0.504", TOKEN);
+        EntityId account1 = EntityId.of("0.0.210");
+        EntityId account2 = EntityId.of("0.0.211");
+        EntityId ftId1 = EntityId.of("0.0.500");
+        EntityId ftId2 = EntityId.of("0.0.501");
+        EntityId nftId1 = EntityId.of("0.0.502");
+        EntityId nftId2 = EntityId.of("0.0.503");
+        EntityId nftId3 = EntityId.of("0.0.504");
 
         Token ftClass1 = token(10L, ftId1, FUNGIBLE_COMMON);
         Token ftClass2 = token(15L, ftId2, FUNGIBLE_COMMON);
@@ -249,14 +246,14 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     public Collection<MigrationTokenAccount> findAllTokenAccounts() {
         return jdbcOperations.query("select * from token_account", (rs, rowNum) -> {
             var tokenAccount = new MigrationTokenAccount();
-            tokenAccount.setAccountId(EntityId.of(rs.getLong("account_id"), ACCOUNT));
+            tokenAccount.setAccountId(EntityId.of(rs.getLong("account_id")));
             tokenAccount.setAssociated(rs.getBoolean("associated"));
             tokenAccount.setAutomaticAssociation(rs.getBoolean("automatic_association"));
             tokenAccount.setCreatedTimestamp(rs.getLong("created_timestamp"));
             tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
             tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
             tokenAccount.setModifiedTimestamp(rs.getLong("modified_timestamp"));
-            tokenAccount.setTokenId(EntityId.of(rs.getLong("token_id"), TOKEN));
+            tokenAccount.setTokenId(EntityId.of(rs.getLong("token_id")));
             return tokenAccount;
         });
     }
@@ -274,7 +271,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             token.setTimestampLower(rs.getLong("modified_timestamp"));
             token.setTokenId(rs.getLong("token_id"));
             token.setTotalSupply(rs.getLong("total_supply"));
-            token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"), EntityType.TOKEN));
+            token.setTreasuryAccountId(EntityId.of(rs.getLong("treasury_account_id")));
             token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
             return token;
         });
@@ -494,10 +491,10 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         return jdbcOperations.query("select * from transaction", (rs, rowNum) -> {
             Transaction transaction = new Transaction();
             transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
-            transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityType.ACCOUNT));
+            transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id")));
             transaction.setMemo(rs.getBytes("transaction_bytes"));
-            transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
-            transaction.setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
+            transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id")));
+            transaction.setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id")));
             transaction.setResult(rs.getInt("result"));
             transaction.setType(rs.getInt("type"));
             transaction.setValidStartNs(rs.getLong("valid_start_ns"));
@@ -510,8 +507,8 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setId(new TokenTransfer.Id(
                     rs.getLong("consensus_timestamp"),
-                    EntityIdEndec.decode(rs.getLong("token_id"), TOKEN),
-                    EntityIdEndec.decode(rs.getLong("account_id"), ACCOUNT)));
+                    EntityId.of(rs.getLong("token_id")),
+                    EntityId.of(rs.getLong("account_id"))));
             tokenTransfer.setAmount(rs.getLong("amount"));
             return tokenTransfer;
         });

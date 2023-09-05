@@ -18,6 +18,8 @@
  * ‍
  */
 
+import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
+
 plugins {
     id("com.gorylenko.gradle-git-properties")
     id("docker-conventions")
@@ -46,7 +48,7 @@ tasks.register<Tar>("package") {
     archiveFileName = "${name}.tgz"
     compression = Compression.GZIP
     into("/${name}") {
-        from("${buildDir}/libs")
+        from("${layout.buildDirectory.asFile.get()}/libs")
         exclude("*-plain.jar")
         include("*.jar")
     }
@@ -55,3 +57,38 @@ tasks.register<Tar>("package") {
         include("**/*")
     }
 }
+
+// Export the function as an extra property
+val configureOpenApi by extra(
+    fun(extension: OpenApiGeneratorGenerateExtension) {
+        val openApiPackage = "com.hedera.mirror.rest"
+        extension.apiPackage = "${openApiPackage}.api"
+        extension.configOptions =
+            mapOf(
+                "developerEmail" to "mirrornode@hedera.com",
+                "developerName" to "Hedera Mirror Node Team",
+                "developerOrganization" to "Hedera Hashgraph",
+                "developerOrganizationUrl" to "https://github.com/hashgraph/hedera-mirror-node",
+                "interfaceOnly" to "true",
+                "licenseName" to "Apache License 2.0",
+                "licenseUrl" to "https://www.apache.org/licenses/LICENSE-2.0.txt",
+                "openApiNullable" to "false",
+                "performBeanValidation" to "true",
+                "useBeanValidation" to "true",
+                "useJakartaEe" to "true",
+            )
+        extension.generateApiTests = false
+        extension.generateModelTests = false
+        extension.generatorName = "java"
+        extension.inputSpec = rootDir
+            .resolve("hedera-mirror-rest")
+            .resolve("api")
+            .resolve("v1")
+            .resolve("openapi.yml")
+            .absolutePath
+        extension.invokerPackage = "${openApiPackage}.handler"
+        extension.library = "webclient"
+        extension.modelPackage = "${openApiPackage}.model"
+        extension.typeMappings = mapOf("Timestamp" to "String")
+    }
+)

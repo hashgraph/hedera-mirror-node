@@ -38,7 +38,9 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -61,6 +63,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
     private final TraceProperties traceProperties;
+    private final BasicHbarCentExchange basicHbarCentExchange;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -74,7 +77,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final ContractRepository contractRepository,
             final ContractStateRepository contractStateRepository,
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
-            final PrecompileMapper precompileMapper) {
+            final PrecompileMapper precompileMapper,
+            BasicHbarCentExchange basicHbarCentExchange) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -86,6 +90,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.contractRepository = contractRepository;
         this.contractStateRepository = contractStateRepository;
         this.databaseAccessors = databaseAccessors;
+        this.basicHbarCentExchange = basicHbarCentExchange;
     }
 
     @Override
@@ -96,7 +101,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final Instant consensusTimestamp,
-            final boolean isStatic) {
+            final boolean isStatic,
+            final boolean isEstimate) {
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final var store = new StoreImpl(databaseAccessors);
@@ -107,6 +113,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
         final var mirrorOperationTracer = new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
 
+        store.wrap();
         final var worldState = new HederaEvmWorldState(
                 mirrorEntityAccess,
                 evmProperties,
@@ -128,7 +135,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evmProperties,
-                        precompileMapper),
+                        precompileMapper,
+                        basicHbarCentExchange),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
@@ -137,6 +145,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         processor.setOperationTracer(mirrorOperationTracer);
 
+        // In case of eth_estimateGas we add a default account with zero address to cover cases with missing sender
+        if (isEstimate) {
+            final var defaultAccount = Account.getDefaultAccount();
+            store.updateAccount(defaultAccount);
+        }
         return processor.execute(sender, receiver, providedGasLimit, value, callData, consensusTimestamp, isStatic);
     }
 }

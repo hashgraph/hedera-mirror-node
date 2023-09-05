@@ -43,7 +43,7 @@ class SystemDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(contractId)).thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT)));
+        when(entityIdService.lookup(contractId)).thenReturn(Optional.of(EntityId.of(DEFAULT_ENTITY_NUM)));
     }
 
     @Override
@@ -77,9 +77,7 @@ class SystemDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
                 .build();
 
         testGetEntityIdHelper(
-                transactionBody,
-                getDefaultTransactionRecord().build(),
-                EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, EntityType.CONTRACT));
+                transactionBody, getDefaultTransactionRecord().build(), EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM));
     }
 
     @ParameterizedTest
@@ -103,7 +101,7 @@ class SystemDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
             names = {"CONTRACT", "FILE"})
     void updateTransactionSuccessful(EntityType type) {
         long id = domainBuilder.id();
-        var entityId = EntityId.of(id, type);
+        var entityId = EntityId.of(id);
         var recordItem = recordItemBuilder
                 .systemDelete()
                 .transactionBody(b -> {
@@ -122,6 +120,7 @@ class SystemDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
         var expectedEntity = entityId.toEntity().toBuilder()
                 .deleted(true)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(type)
                 .build();
 
         // when

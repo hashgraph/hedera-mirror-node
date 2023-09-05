@@ -1,20 +1,10 @@
--- Spring takes care of creating the database and owner in tests, but on a real database these commands should still be ran.
--- create user mirror_node with login createrole password 'mirror_node_pass';
--- grant mirror_node to postgres;
--- create database mirror_node with owner mirror_node;
-
 -- Add extensions
 create extension if not exists pg_stat_statements;
 
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
-
--- Create users
-create user mirror_grpc with login password 'mirror_grpc_pass' in role readonly;
 create user mirror_importer with login password 'mirror_importer_pass' in role readwrite;
-create user mirror_rosetta with login password 'mirror_rosetta_pass' in role readonly;
-create user mirror_web3 with login password 'mirror_web3_pass' in role readonly;
 
 -- Create schema
 create schema if not exists public authorization mirror_node;

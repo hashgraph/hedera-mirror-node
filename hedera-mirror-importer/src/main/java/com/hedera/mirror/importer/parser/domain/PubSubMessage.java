@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.parser.serializer.ProtoJsonSerializer;
+import com.hedera.mirror.importer.parser.serializer.PubSubEntityIdSerializer;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -31,6 +32,7 @@ public class PubSubMessage {
     private final Long consensusTimestamp;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonSerialize(using = PubSubEntityIdSerializer.class)
     private final EntityId entity;
 
     private final int transactionType;
