@@ -17,14 +17,14 @@
 import {getSequentialTestScenarios} from '../../lib/common.js';
 
 // import test modules
-import * as contractCallTokenCustomFeesEstimate from './contractCallTokenCustomFeesEstimate.js';
+import * as contractCallEstimateFungibleTokenCustomFees from './contractCallEstimateFungibleTokenCustomFees.js';
 import * as contractCallNftEstimate from './contractCallNftEstimate.js';
 import * as contractCallEstimateNftCustomFees from './contractCallEstimateNftCustomFees.js';
 import * as contractCallTokenDissociateEstimate from './contractCallTokenDissociateEstimate.js';
 import * as contractCallTokenEstimate from './contractCallTokenEstimate.js';
 
 const testsEstimate = {
-  contractCallTokenCustomFeesEstimate,
+  contractCallEstimateFungibleTokenCustomFees,
   contractCallEstimateNftCustomFees,
   contractCallNftEstimate,
   contractCallTokenEstimate,
