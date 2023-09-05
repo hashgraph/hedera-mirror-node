@@ -321,7 +321,14 @@ public class AddressBookServiceImpl implements AddressBookService {
                 fileData.getTransactionType()));
         if (addressBook != null) {
             addressBook = addressBookRepository.save(addressBook);
-            log.info("Saved new address book to db: {}", addressBook);
+            var nodeIds = addressBook.getEntries().stream()
+                    .map(AddressBookEntry::getNodeId)
+                    .collect(Collectors.toCollection(TreeSet::new));
+            log.info(
+                    "Processed new address book at timestamp {} with {} nodes: {}",
+                    addressBook.getEndConsensusTimestamp(),
+                    addressBook.getNodeCount(),
+                    nodeIds);
 
             // update previous addressBook
             updatePreviousAddressBook(fileData);

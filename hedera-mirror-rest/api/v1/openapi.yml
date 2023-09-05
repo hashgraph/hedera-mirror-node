@@ -2373,7 +2373,7 @@ components:
       type: string
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
-      example: "0.1.2"
+      example: "0.0.2"
       nullable: true
     EntityIdQuery:
       type: string
@@ -2622,12 +2622,12 @@ components:
           example: ProtobufEncoded
         key:
           type: string
-          example: 010101
+          example: "421050820e1485acdd59726088e0e4a2130ebbbb70009f640ad95c78dd5a7b38"
     Links:
       type: object
       properties:
         next:
-          example: "/api/v1/transactions?timestamp=lt:1657598275.517984411"
+          example: null
           nullable: true
           type: string
     NetworkNode:
@@ -3058,7 +3058,7 @@ components:
       example:
         account_id: 0.0.1000
         amount: 10
-        timestamp: 1234567890.000000001
+        timestamp: "1234567890.000000001"
     StakingRewardTransfer:
       type: object
       description: A staking reward transfer
@@ -3295,7 +3295,7 @@ components:
       example:
         automatic_association: true
         balance: 5
-        created_timestamp: 123456789.000000001
+        created_timestamp: "123456789.000000001"
         freeze_status: UNFROZEN
         kyc_status: GRANTED
         token_id: 0.0.27335

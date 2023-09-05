@@ -2341,7 +2341,7 @@
               "tooltip": false,
               "viz": false
             },
-            "insertNulls": false,
+            "insertNulls": 3600000,
             "lineInterpolation": "smooth",
             "lineWidth": 1,
             "pointSize": 5,
@@ -2368,7 +2368,7 @@
               }
             ]
           },
-          "unit": "s"
+          "unit": "short"
         },
         "overrides": []
       },
