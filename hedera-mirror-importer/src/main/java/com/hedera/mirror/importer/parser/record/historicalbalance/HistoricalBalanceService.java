@@ -54,7 +54,7 @@ public class HistoricalBalanceService {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
-    private final HistoricalBalancesProperties properties;
+    private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -69,7 +69,7 @@ public class HistoricalBalanceService {
             AccountBalanceRepository accountBalanceRepository,
             MeterRegistry meterRegistry,
             PlatformTransactionManager platformTransactionManager,
-            HistoricalBalancesProperties properties,
+            HistoricalBalanceProperties properties,
             RecordFileRepository recordFileRepository,
             TokenBalanceRepository tokenBalanceRepository) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
@@ -81,6 +81,7 @@ public class HistoricalBalanceService {
         // Set repeatable read isolation level and transaction timeout
         this.transactionTemplate = new TransactionTemplate(platformTransactionManager);
         this.transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+        this.transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.transactionTemplate.setTimeout(
                 (int) properties.getTransactionTimeout().toSeconds());
 

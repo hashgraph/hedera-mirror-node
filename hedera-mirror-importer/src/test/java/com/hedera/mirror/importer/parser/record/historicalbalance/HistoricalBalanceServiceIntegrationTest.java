@@ -39,10 +39,10 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,7 +60,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EntityRepository entityRepository;
-    private final HistoricalBalancesProperties properties;
+    private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -232,8 +232,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
     private void verifyNoNewAccountBalanceFile(List<AccountBalanceFile> existingAccountBalanceFiles) {
         // best effort to check that no new account balance file for 500ms
-        await().pollInterval(Duration.ofMillis(100))
-                .during(Duration.ofMillis(500))
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .during(Durations.FIVE_HUNDRED_MILLISECONDS)
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())
                         .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ACCOUNT_BALANCE_FILE_IGNORE_FIELDS)
                         .containsExactlyInAnyOrderElementsOf(existingAccountBalanceFiles));
@@ -258,8 +258,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         if (properties.isTokenBalances()) {
             tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
         }
-        await().pollInterval(Duration.ofMillis(100))
-                .atMost(Duration.ofSeconds(5))
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .atMost(Durations.FIVE_SECONDS)
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())
                         .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ACCOUNT_BALANCE_FILE_IGNORE_FIELDS)
                         .containsExactlyInAnyOrderElementsOf(expectedAccountBalanceFiles));

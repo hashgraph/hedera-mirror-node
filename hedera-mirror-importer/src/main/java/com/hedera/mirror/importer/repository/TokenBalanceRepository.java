@@ -28,6 +28,7 @@ public interface TokenBalanceRepository
     @Modifying
     @Override
     @Query(
+            nativeQuery = true,
             value =
                     """
         insert into token_balance (account_id, balance, consensus_timestamp, token_id)
@@ -35,8 +36,7 @@ public interface TokenBalanceRepository
         from token_account
         where associated is true
         order by account_id, token_id
-        """,
-            nativeQuery = true)
+        """)
     @Transactional
     int balanceSnapshot(long consensusTimestamp);
 

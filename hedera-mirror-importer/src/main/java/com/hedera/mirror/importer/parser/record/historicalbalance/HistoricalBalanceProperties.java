@@ -33,7 +33,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.importer.parser.record.historical-balances")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
-public class HistoricalBalancesProperties {
+public class HistoricalBalanceProperties {
 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
 

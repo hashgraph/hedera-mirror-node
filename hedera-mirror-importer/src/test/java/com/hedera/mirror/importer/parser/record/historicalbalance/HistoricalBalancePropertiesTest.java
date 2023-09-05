@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class HistoricalBalancesPropertiesTest extends IntegrationTest {
+class HistoricalBalancePropertiesTest extends IntegrationTest {
 
-    private final HistoricalBalancesProperties properties;
+    private final HistoricalBalanceProperties properties;
 
     @Test
     void conflictConfig() {

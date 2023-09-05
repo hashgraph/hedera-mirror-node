@@ -63,13 +63,13 @@ class HistoricalBalanceServiceTest {
             semaphore.acquire();
             return Optional.empty();
         });
-        var historicalBalancesProperties = new HistoricalBalancesProperties(balanceDownloaderProperties);
+        var historicalBalanceProperties = new HistoricalBalanceProperties(balanceDownloaderProperties);
         var service = new HistoricalBalanceService(
                 accountBalanceFileRepository,
                 accountBalanceRepository,
                 new SimpleMeterRegistry(),
                 platformTransactionManager,
-                historicalBalancesProperties,
+                historicalBalanceProperties,
                 recordFileRepository,
                 tokenBalanceRepository);
 
@@ -77,7 +77,7 @@ class HistoricalBalanceServiceTest {
         var event = new RecordFileParsedEvent(
                 this,
                 lastBalanceTimestamp
-                        + historicalBalancesProperties.getMinFrequency().toNanos());
+                        + historicalBalanceProperties.getMinFrequency().toNanos());
         Runnable runnable = () -> service.onRecordFileParsed(event);
         var task1 = pool.submit(runnable);
         var task2 = pool.submit(runnable);

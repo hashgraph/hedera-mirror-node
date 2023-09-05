@@ -30,15 +30,15 @@ public interface AccountBalanceRepository
     @Modifying
     @Override
     @Query(
+            nativeQuery = true,
             value =
                     """
         insert into account_balance (account_id, balance, consensus_timestamp)
-            select id, balance, :consensusTimestamp
-            from entity
-            where deleted is not true and balance is not null and type in ('ACCOUNT', 'CONTRACT')
-            order by id
-        """,
-            nativeQuery = true)
+        select id, balance, :consensusTimestamp
+        from entity
+        where deleted is not true and balance is not null and type in ('ACCOUNT', 'CONTRACT')
+        order by id
+        """)
     @Transactional
     int balanceSnapshot(long consensusTimestamp);
 
