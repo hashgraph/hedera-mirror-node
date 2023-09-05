@@ -67,7 +67,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.jproto.JKey;
@@ -1063,9 +1063,9 @@ class HederaTokenStoreTest {
 
     @Test
     void applicationRejectsMissing() {
-        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willThrow(InvalidTransactionException.class);
+        given(store.getToken(asTypedEvmAddress(misc), OnMissing.THROW)).willThrow(MirrorEvmTransactionException.class);
 
-        assertThrows(InvalidTransactionException.class, () -> subject.apply(misc, change));
+        assertThrows(MirrorEvmTransactionException.class, () -> subject.apply(misc, change));
     }
 
     @Test

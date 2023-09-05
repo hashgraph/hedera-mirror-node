@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toMap;
 
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -47,9 +47,10 @@ public class ResponseCodeUtil {
                     INSUFFICIENT_BALANCES_FOR_STORAGE_RENT,
                     INVALID_TRANSACTION)
             .collect(toMap(
-                    status -> new BytesKey(new InvalidTransactionException(status, StringUtils.EMPTY, StringUtils.EMPTY)
-                            .messageBytes()
-                            .toArrayUnsafe()),
+                    status ->
+                            new BytesKey(new MirrorEvmTransactionException(status, StringUtils.EMPTY, StringUtils.EMPTY)
+                                    .messageBytes()
+                                    .toArrayUnsafe()),
                     status -> status));
 
     public static ResponseCodeEnum getStatusOrDefault(final HederaEvmTransactionProcessingResult result) {

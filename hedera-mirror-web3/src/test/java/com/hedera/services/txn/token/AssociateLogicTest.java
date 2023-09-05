@@ -28,7 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -72,7 +72,7 @@ class AssociateLogicTest {
         when(store.getAccount(accountAddress, OnMissing.THROW))
                 .thenThrow(getException(Account.class.getName(), accountAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
-                .isInstanceOf(InvalidTransactionException.class)
+                .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
                         String.format(
@@ -85,7 +85,7 @@ class AssociateLogicTest {
         when(store.getToken(tokenAddress, OnMissing.THROW))
                 .thenThrow(getException(Token.class.getName(), tokenAddress));
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
-                .isInstanceOf(InvalidTransactionException.class)
+                .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasFieldOrPropertyWithValue(
                         "detail",
                         String.format("Entity of type %s with id %s is missing", Token.class.getName(), tokenAddress));
@@ -159,8 +159,8 @@ class AssociateLogicTest {
         when(tokenId.asEvmAddress()).thenReturn(tokenAddress);
     }
 
-    private InvalidTransactionException getException(final String type, Object id) {
-        return new InvalidTransactionException(
+    private MirrorEvmTransactionException getException(final String type, Object id) {
+        return new MirrorEvmTransactionException(
                 FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
     }
 }

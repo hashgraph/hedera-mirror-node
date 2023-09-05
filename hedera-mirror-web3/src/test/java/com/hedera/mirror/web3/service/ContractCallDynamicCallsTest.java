@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,9 +40,9 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                    .isInstanceOf(InvalidTransactionException.class)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
                     .satisfies(ex -> {
-                        InvalidTransactionException exception = (InvalidTransactionException) ex;
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                         assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
                     });
         } else {
@@ -124,6 +126,16 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     NFT_TRANSFER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ZERO, BigInteger.ONE
                 },
                 "IERC721: failed to transfer"),
+        ASSOCIATE_TRANSFER_NFT_EXCEPTION(
+                "associateTokenTransfer",
+                new Object[] {
+                    toAddress(EntityId.of(0, 0, 1)), // Not persisted address
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ZERO,
+                    BigInteger.ONE
+                },
+                "Failed to associate tokens"),
         APPROVE_FUNGIBLE_TOKEN_GET_ALLOWANCE(
                 "approveTokenGetAllowance",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},

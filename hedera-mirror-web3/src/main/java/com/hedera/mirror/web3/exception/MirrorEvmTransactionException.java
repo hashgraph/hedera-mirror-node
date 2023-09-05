@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import org.apache.tuweni.bytes.Bytes;
 
 @SuppressWarnings("java:S110")
-public class InvalidTransactionException extends EvmException {
+public class MirrorEvmTransactionException extends EvmException {
 
     @Serial
     private static final long serialVersionUID = 2244739157125796266L;
@@ -31,13 +31,14 @@ public class InvalidTransactionException extends EvmException {
     private final String detail;
     private final String data;
 
-    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail, final String hexData) {
+    public MirrorEvmTransactionException(
+            final ResponseCodeEnum responseCode, final String detail, final String hexData) {
         super(responseCode.name());
         this.detail = detail;
         this.data = hexData;
     }
 
-    public InvalidTransactionException(final String message, final String detail, final String hexData) {
+    public MirrorEvmTransactionException(final String message, final String detail, final String hexData) {
         super(message);
         this.detail = detail;
         this.data = hexData;
