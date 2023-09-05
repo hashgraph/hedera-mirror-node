@@ -102,7 +102,7 @@ function ContractCallTestScenarioBuilder() {
   return this;
 }
 
-function ContractCallScenarioBuilder() {
+function ContractCallEstimateScenarioBuilder() {
   this._name = null;
   this._selector = null;
   this._args = null;
@@ -226,7 +226,7 @@ function getParameterFromEnv(envVar, defaultValue) {
 }
 
 function buildScenario(params = {}) {
-  const scenarioBuilder = new ContractCallScenarioBuilder();
+  const scenarioBuilder = new ContractCallEstimateScenarioBuilder();
 
   if (params.BLOCK) {
     scenarioBuilder.block(params.BLOCK);
@@ -267,7 +267,7 @@ export {
   isNonErrorResponse,
   jsonPost,
   ContractCallTestScenarioBuilder,
-  ContractCallScenarioBuilder,
+  ContractCallEstimateScenarioBuilder,
   getParameterFromEnv,
   buildScenario,
 };
