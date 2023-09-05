@@ -18,7 +18,7 @@ import {buildScenario} from './common.js';
 import {SharedArray} from 'k6/data';
 
 const allData = new SharedArray('contractCallEstimateFungibleTokenCustomFees', () => {
-  return JSON.parse(open('./data/estimate.json')).estimateCreateFungibleTokenWithCustomFees;
+  return JSON.parse(open('./resources/estimate.json')).estimateCreateFungibleTokenWithCustomFees;
 });
 
 const data = allData[__VU % allData.length];

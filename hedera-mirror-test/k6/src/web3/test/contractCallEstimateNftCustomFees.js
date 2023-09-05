@@ -18,7 +18,7 @@ import {buildScenario} from './common.js';
 import {SharedArray} from 'k6/data';
 
 const allData = new SharedArray('contractCallEstimateNftCustomFees', () => {
-  return JSON.parse(open('./data/estimate.json')).estimateCreateNFTWithCustomFees;
+  return JSON.parse(open('./resources/estimate.json')).estimateCreateNFTWithCustomFees;
 });
 
 const data = allData[__VU % allData.length];

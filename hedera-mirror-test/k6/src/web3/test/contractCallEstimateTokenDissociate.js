@@ -18,7 +18,7 @@ import {buildScenario} from './common.js';
 import {SharedArray} from 'k6/data';
 
 const allData = new SharedArray('contractCallEstimateTokenDissociate', () => {
-  return JSON.parse(open('./data/estimate.json')).estimateTokenDissociate;
+  return JSON.parse(open('./resources/estimate.json')).estimateTokenDissociate;
 });
 
 const data = allData[__VU % allData.length];
