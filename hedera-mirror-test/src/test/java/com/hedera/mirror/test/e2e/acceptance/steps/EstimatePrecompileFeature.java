@@ -39,6 +39,7 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -92,7 +93,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
-        secondReceiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.ALICE);
+        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.DAVE);
     }
 
     @Given("I create erc test contract with {int} balance")
