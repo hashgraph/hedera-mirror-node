@@ -48,7 +48,7 @@ const params = {
   GAS: GAS,
   FROM: FROM,
   VALUE: VALUE,
-  NAME: 'contractCallNftEstimate',
+  NAME: 'contractCallEstimateCreateNft',
   SLEEP: SLEEP,
 };
 

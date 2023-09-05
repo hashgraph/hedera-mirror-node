@@ -52,7 +52,7 @@ DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallEstimateNftCusto
 DEFAULT_DURATION=10s \
 DEFAULT_VUS=2 \
 BASE_URL=http://localhost:8545 \
-DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallNftEstimate.js
+DEFAULT_START_ACCOUNT=0.0.2 k6 run -v src/web3/test/contractCallEstimateCreateNft.js
 ```
 
 ```shell
