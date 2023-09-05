@@ -7,7 +7,7 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed ato in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -18,22 +18,27 @@ import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from '.
 
 const COMMA_SEPARATOR = ',';
 
-const allData = getParameterFromEnv(__ENV.DATA, 'd85f74c10000000000000000000000000000000000000000000000000000000000000456'
-                                                + COMMA_SEPARATOR
-                                                + 'd85f74c10000000000000000000000000000000000000000000000000000000000000496');
-const allTo = getParameterFromEnv(__ENV.TO, '0000000000000000000000000000000000000410'
-                                            + COMMA_SEPARATOR
-                                            + '000000000000000000000000000000000000049a');
-const allFrom = getParameterFromEnv(__ENV.FROM, '000000000000000000000000000000000000045a'
-                                                + COMMA_SEPARATOR
-                                                + '0000000000000000000000000000000000000496');
+const allData = getParameterFromEnv(
+  __ENV.DATA,
+  'd85f74c1000000000000000000000000000000000000000000000000000000000000052b' +
+    COMMA_SEPARATOR +
+    'd85f74c10000000000000000000000000000000000000000000000000000000000000539'
+);
+const allTo = getParameterFromEnv(
+  __ENV.TO,
+  '000000000000000000000000000000000000052d' + COMMA_SEPARATOR + '000000000000000000000000000000000000053b'
+);
+const allFrom = getParameterFromEnv(
+  __ENV.FROM,
+  '000000000000000000000000000000000000052b' + COMMA_SEPARATOR + '0000000000000000000000000000000000000539'
+);
 
 const BLOCK = __ENV.BLOCK || 'latest';
 const DATA = allData[__VU % allData.length];
 const TO = allTo[__VU % allTo.length];
 const GAS = __ENV.GAS || 15000000;
 const FROM = allFrom[__VU % allFrom.length];
-const VALUE = __ENV.VALUE || 812000000;
+const VALUE = __ENV.VALUE || 820000000;
 const SLEEP = __ENV.SLEEP || 1;
 
 const params = {
@@ -44,9 +49,9 @@ const params = {
   FROM: FROM,
   VALUE: VALUE,
   NAME: 'contractCallNftEstimate',
-  SLEEP: SLEEP
+  SLEEP: SLEEP,
 };
 
-const { options, run } = buildScenario(params);
+const {options, run} = buildScenario(params);
 
-export { options, run };
+export {options, run};

@@ -16,7 +16,6 @@
 
 import {getSequentialTestScenarios} from '../../lib/common.js';
 
-
 // import test modules
 import * as contractCallTokenCustomFeesEstimate from './contractCallTokenCustomFeesEstimate.js';
 import * as contractCallNftEstimate from './contractCallNftEstimate.js';

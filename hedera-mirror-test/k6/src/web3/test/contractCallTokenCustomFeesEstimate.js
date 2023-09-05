@@ -7,7 +7,7 @@
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed ato in writing, software
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -18,15 +18,20 @@ import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from '.
 
 const COMMA_SEPARATOR = ',';
 
-const allData = getParameterFromEnv(__ENV.DATA, '8ba74da000000000000000000000000000000000000000000000000000000000000004aa00000000000000000000000000000000000000000000000000000000000004b7'
-                                                + COMMA_SEPARATOR
-                                                + '8ba74da000000000000000000000000000000000000000000000000000000000000004c000000000000000000000000000000000000000000000000000000000000004cd');
-const allTo = getParameterFromEnv(__ENV.TO, '00000000000000000000000000000000000004ae'
-                                            + COMMA_SEPARATOR
-                                            + '00000000000000000000000000000000000004c4');
-const allFrom = getParameterFromEnv(__ENV.FROM, '00000000000000000000000000000000000004aa'
-                                                + COMMA_SEPARATOR
-                                                + '00000000000000000000000000000000000004c0');
+const allData = getParameterFromEnv(
+  __ENV.DATA,
+  '8ba74da0000000000000000000000000000000000000000000000000000000000000050f0000000000000000000000000000000000000000000000000000000000000518' +
+    COMMA_SEPARATOR +
+    '8ba74da0000000000000000000000000000000000000000000000000000000000000051d0000000000000000000000000000000000000000000000000000000000000526'
+);
+const allTo = getParameterFromEnv(
+  __ENV.TO,
+  '0000000000000000000000000000000000000511' + COMMA_SEPARATOR + '000000000000000000000000000000000000051f'
+);
+const allFrom = getParameterFromEnv(
+  __ENV.FROM,
+  '000000000000000000000000000000000000050f' + COMMA_SEPARATOR + '000000000000000000000000000000000000051d'
+);
 
 const BLOCK = __ENV.BLOCK || 'latest';
 const DATA = allData[__VU % allData.length];
@@ -44,9 +49,9 @@ const params = {
   FROM: FROM,
   VALUE: VALUE,
   NAME: 'contractCallTokenCustomFeesEstimate',
-  SLEEP: SLEEP
+  SLEEP: SLEEP,
 };
 
-const { options, run } = buildScenario(params);
+const {options, run} = buildScenario(params);
 
-export { options, run };
+export {options, run};

@@ -134,7 +134,7 @@ function getSequentialTestScenarios(tests) {
       const func = testModule[scenario.exec];
       funcs[scenarioName] = func;
       if (func && func.requiredParameters) {
-         func.requiredParameters.forEach((param) => requiredParameters.add(param));
+        func.requiredParameters.forEach((param) => requiredParameters.add(param));
       }
       scenarios[scenarioName] = scenario;
 

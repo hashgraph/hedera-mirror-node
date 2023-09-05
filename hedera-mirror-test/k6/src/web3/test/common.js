@@ -17,7 +17,7 @@
 import http from 'k6/http';
 import {check} from 'k6';
 import * as utils from '../../lib/common.js';
-import { sleep } from 'k6';
+import {sleep} from 'k6';
 
 const resultField = 'result';
 
@@ -216,7 +216,7 @@ function ContractCallScenarioBuilder() {
   this.sleep = function (sleep) {
     this._sleep = sleep;
     return this;
-  }
+  };
 
   return this;
 }
@@ -263,5 +263,11 @@ function buildScenario(params = {}) {
   return scenarioBuilder.build();
 }
 
-
-export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder, ContractCallScenarioBuilder, getParameterFromEnv, buildScenario};
+export {
+  isNonErrorResponse,
+  jsonPost,
+  ContractCallTestScenarioBuilder,
+  ContractCallScenarioBuilder,
+  getParameterFromEnv,
+  buildScenario,
+};

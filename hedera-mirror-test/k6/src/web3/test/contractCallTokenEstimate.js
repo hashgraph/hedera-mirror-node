@@ -18,22 +18,27 @@ import {ContractCallScenarioBuilder, buildScenario, getParameterFromEnv} from '.
 
 const COMMA_SEPARATOR = ',';
 
-const allData = getParameterFromEnv(__ENV.DATA, '4b5c668700000000000000000000000000000000000000000000000000000000000004f6'
-                                                + COMMA_SEPARATOR
-                                                + '4b5c6687000000000000000000000000000000000000000000000000000000000000050b');
-const allTo = getParameterFromEnv(__ENV.TO, '00000000000000000000000000000000000004fa'
-                                            + COMMA_SEPARATOR
-                                            + '000000000000000000000000000000000000050f');
-const allFrom = getParameterFromEnv(__ENV.FROM, '00000000000000000000000000000000000004f6'
-                                                + COMMA_SEPARATOR
-                                                + '000000000000000000000000000000000000050b');
+const allData = getParameterFromEnv(
+  __ENV.DATA,
+  '4b5c66870000000000000000000000000000000000000000000000000000000000000547' +
+    COMMA_SEPARATOR +
+    '4b5c66870000000000000000000000000000000000000000000000000000000000000555'
+);
+const allTo = getParameterFromEnv(
+  __ENV.TO,
+  '0000000000000000000000000000000000000549' + COMMA_SEPARATOR + '0000000000000000000000000000000000000557'
+);
+const allFrom = getParameterFromEnv(
+  __ENV.FROM,
+  '0000000000000000000000000000000000000547' + COMMA_SEPARATOR + '0000000000000000000000000000000000000555'
+);
 
 const BLOCK = __ENV.BLOCK || 'latest';
 const DATA = allData[__VU % allData.length];
 const TO = allTo[__VU % allTo.length];
 const GAS = __ENV.GAS || 15000000;
 const FROM = allFrom[__VU % allFrom.length];
-const VALUE = __ENV.VALUE || 812000000;
+const VALUE = __ENV.VALUE || 820000000;
 const SLEEP = __ENV.SLEEP || 1;
 
 const params = {
@@ -44,9 +49,9 @@ const params = {
   FROM: FROM,
   VALUE: VALUE,
   NAME: 'contractCallTokenEstimate',
-  SLEEP: SLEEP
+  SLEEP: SLEEP,
 };
 
-const { options, run } = buildScenario(params);
+const {options, run} = buildScenario(params);
 
-export { options, run };
+export {options, run};
