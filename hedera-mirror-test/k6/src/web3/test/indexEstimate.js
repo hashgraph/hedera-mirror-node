@@ -21,13 +21,13 @@ import * as contractCallEstimateFungibleTokenCustomFees from './contractCallEsti
 import * as contractCallEstimateCreateNft from './contractCallEstimateCreateNft.js';
 import * as contractCallEstimateNftCustomFees from './contractCallEstimateNftCustomFees.js';
 import * as contractCallTokenDissociateEstimate from './contractCallTokenDissociateEstimate.js';
-import * as contractCallTokenEstimate from './contractCallTokenEstimate.js';
+import * as contractCallEstimateCreateFungibleToken from './contractCallEstimateCreateFungibleToken.js';
 
 const testsEstimate = {
   contractCallEstimateFungibleTokenCustomFees,
   contractCallEstimateNftCustomFees,
   contractCallEstimateCreateNft,
-  contractCallTokenEstimate,
+  contractCallEstimateCreateFungibleToken,
   contractCallTokenDissociateEstimate,
 };
 
