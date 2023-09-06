@@ -36,7 +36,7 @@ public interface AccountBalanceRepository
         insert into account_balance (account_id, balance, consensus_timestamp)
         select id, balance, :consensusTimestamp
         from entity
-        where deleted is not true and balance is not null and type in ('ACCOUNT', 'CONTRACT')
+        where deleted is not true and balance is not null
         order by id
         """)
     @Transactional

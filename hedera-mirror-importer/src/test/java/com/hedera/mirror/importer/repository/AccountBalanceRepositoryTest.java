@@ -38,6 +38,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     void balanceSnapshot() {
         long timestamp = 100;
         assertThat(accountBalanceRepository.balanceSnapshot(timestamp)).isZero();
+        assertThat(accountBalanceRepository.findAll()).isEmpty();
 
         var account = domainBuilder.entity().persist();
         var contract = domainBuilder
@@ -46,10 +47,18 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         domainBuilder.entity().customize(e -> e.balance(null)).persist();
         domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        domainBuilder.entity().customize(e -> e.type(EntityType.TOPIC)).persist();
-        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+        var fileWithBalance =
+                domainBuilder.entity().customize(e -> e.type(EntityType.FILE)).persist();
+        var unknownWithBalance = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.UNKNOWN))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.balance(null).type(EntityType.TOPIC))
+                .persist();
 
-        var expected = Stream.of(account, contract)
+        var expected = Stream.of(account, contract, fileWithBalance, unknownWithBalance)
                 .map(e -> AccountBalance.builder()
                         .balance(e.getBalance())
                         .id(new AccountBalance.Id(timestamp, e.toEntityId()))
