@@ -17,6 +17,8 @@
 package com.hedera.mirror.importer.downloader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -140,16 +142,11 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
         verifyStreamFiles(List.of(file1));
 
         // when
+        reset(streamFileNotifier);
         downloader.download();
 
         // then no new files are downloaded
-        verifyStreamFiles(List.of(file1));
-
-        // when
-        downloader.download();
-
-        // increase test coverage
-        verifyStreamFiles(List.of(file1));
+        verifyStreamFiles(Collections.emptyList());
     }
 
     @Test
@@ -165,5 +162,13 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
 
         // then
         verifyStreamFiles(Collections.emptyList());
+        verify(accountBalanceFileRepository).findLatest();
+
+        // when download again
+        downloader.download();
+
+        // then
+        verifyStreamFiles(Collections.emptyList());
+        verify(accountBalanceFileRepository).findLatest(); // no more findLatest calls
     }
 }

@@ -40,7 +40,6 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AtomicBoolean accountBalanceFileExists = new AtomicBoolean(false);
-    private final AtomicBoolean verified = new AtomicBoolean(false);
 
     @SuppressWarnings("java:S107")
     public AccountBalancesDownloader(
@@ -77,7 +76,7 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
     @Override
     protected void onVerified(StreamFileData streamFileData, AccountBalanceFile streamFile, ConsensusNode node) {
         super.onVerified(streamFileData, streamFile, node);
-        verified.set(true);
+        accountBalanceFileExists.set(true);
     }
 
     @Override
@@ -90,8 +89,7 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
             return false;
         }
 
-        if (accountBalanceFileRepository.findLatest().isPresent() || verified.get()) {
-            log.info("Disable downloader since there is at least one account balance file parsed or verified");
+        if (accountBalanceFileRepository.findLatest().isPresent()) {
             accountBalanceFileExists.set(true);
             return false;
         }
