@@ -287,7 +287,7 @@ const checkMandatoryParams = (elements, option) => {
 const checkRespDataFreshness = (resp, option) => {
   const {timestamp, threshold, message} = option;
   const ts = timestamp(Array.isArray(resp) ? resp[0] : resp);
-  const secs = ts.split('.')[0];
+  const secs = !_.isEmpty(ts) ? ts.split('.')[0] : 0;
   const currSecs = Math.floor(new Date().getTime() / 1000);
   const delta = currSecs - secs;
   if (delta > threshold) {

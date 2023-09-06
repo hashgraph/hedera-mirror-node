@@ -69,7 +69,7 @@ const runTests = async (server) => {
   const serverTestResult = new utils.ServerTestResult();
   if (skippedResource.length !== 0) {
     const currentResults = common.getServerCurrentResults(server.name);
-    for (const testResult of currentResults.testResults) {
+    for (const testResult of currentResults) {
       if (skippedResource.includes(testResult.resource)) {
         serverTestResult.addTestResult(testResult);
       }

@@ -101,16 +101,9 @@ func checkNetworkStatus(port uint16) func(ctx context.Context) error {
 	rosettaClient := client.NewAPIClient(cfg)
 
 	return func(ctx context.Context) (checkErr error) {
-		networkList, _, err := rosettaClient.NetworkAPI.NetworkList(ctx, &types.MetadataRequest{})
+		_, _, err := rosettaClient.NetworkAPI.NetworkList(ctx, &types.MetadataRequest{})
 		if err != nil {
 			log.Errorf("Readiness check, /network/list failed: %v", err)
-			return err
-		}
-
-		network := networkList.NetworkIdentifiers[0]
-		_, _, err = rosettaClient.NetworkAPI.NetworkStatus(ctx, &types.NetworkRequest{NetworkIdentifier: network})
-		if err != nil {
-			log.Errorf("Readiness check, /network/status failed: %v", err)
 			return err
 		}
 
