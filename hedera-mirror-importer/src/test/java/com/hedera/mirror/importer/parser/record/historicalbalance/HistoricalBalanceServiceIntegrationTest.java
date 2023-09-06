@@ -18,7 +18,9 @@ package com.hedera.mirror.importer.parser.record.historicalbalance;
 
 import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID_NODE_ID;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -80,9 +82,13 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                 .entity()
                 .customize(e -> e.deleted(null).type(CONTRACT))
                 .persist();
+        var fileWithBalance =
+                domainBuilder.entity().customize(e -> e.type(FILE)).persist();
+        var unknownWithBalance =
+                domainBuilder.entity().customize(e -> e.type(UNKNOWN)).persist();
         domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         domainBuilder.entity().customize(e -> e.balance(null)).persist();
-        domainBuilder.entity().customize(e -> e.type(TOPIC)).persist();
+        domainBuilder.entity().customize(e -> e.balance(null).type(TOPIC)).persist();
         tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.accountId(account.getId()))
@@ -90,7 +96,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
 
         // Only entities with valid balance
-        entities = Lists.newArrayList(account, contract);
+        entities = Lists.newArrayList(account, contract, fileWithBalance, unknownWithBalance);
         tokenAccounts = Lists.newArrayList(tokenAccount);
     }
 
