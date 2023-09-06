@@ -920,6 +920,7 @@ public class DomainBuilder {
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> topic() {
         return entity().customize(e -> e.alias(null)
+                .balance(null)
                 .receiverSigRequired(null)
                 .ethereumNonce(null)
                 .evmAddress(null)
