@@ -25,7 +25,7 @@ Boot [documentation](https://docs.spring.io/spring-boot/docs/current/reference/h
 for the location and order it loads configuration.
 
 The following table lists the available properties along with their default values. Unless you need to set a non-default
-value, it is recommended to only populate overridden properties in the custom `application.yml`. 1
+value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                                             | Default                                          | Description                                                                                                                                                                                                                                                        |
 |----------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
