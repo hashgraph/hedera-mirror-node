@@ -21,15 +21,16 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
-    bytes               bytea         null,
-    consensus_timestamp bigint        not null,
-    count               bigint        not null,
-    file_hash           varchar(96)   null,
-    load_end            bigint        not null,
-    load_start          bigint        not null,
-    name                varchar(250)  not null,
-    node_id             bigint        not null,
-    time_offset         int default 0 not null
+    bytes               bytea                 null,
+    consensus_timestamp bigint                not null,
+    count               bigint                not null,
+    file_hash           varchar(96)           null,
+    load_end            bigint                not null,
+    load_start          bigint                not null,
+    name                varchar(250)          not null,
+    node_id             bigint                not null,
+    synthetic           boolean default false not null,
+    time_offset         int     default 0     not null
 );
 comment on table account_balance_file is 'Account balances stream files';
 

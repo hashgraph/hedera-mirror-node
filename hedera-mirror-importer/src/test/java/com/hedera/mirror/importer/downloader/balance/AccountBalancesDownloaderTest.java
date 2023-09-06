@@ -17,7 +17,11 @@
 package com.hedera.mirror.importer.downloader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.FileCopier;
@@ -31,18 +35,29 @@ import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
 import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
+import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanceFile> {
 
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+
+    @Mock
+    private AccountBalanceFileRepository accountBalanceFileRepository;
+
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var properties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        properties.setEnabled(true);
+        return properties;
     }
 
     @Override
@@ -51,6 +66,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
                 new BalanceParserProperties(), new AccountBalanceLineParserV1(mirrorProperties));
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         return new AccountBalancesDownloader(
+                accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
                 meterRegistry,
@@ -88,6 +104,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         downloader = new AccountBalancesDownloader(
+                accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
                 meterRegistry,
@@ -109,5 +126,49 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
 
         verifyForSuccess();
         assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+    }
+
+    @Test
+    void downloadWhenDisabled() {
+        // given
+        downloaderProperties.setEnabled(false);
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+
+        // when
+        downloader.download();
+
+        // then
+        verifyStreamFiles(List.of(file1));
+
+        // when
+        reset(streamFileNotifier);
+        downloader.download();
+
+        // then no new files are downloaded
+        verifyStreamFiles(Collections.emptyList());
+    }
+
+    @Test
+    void downloadWhenDisabledAndAccountBalanceFileAlreadyExists() {
+        // given
+        downloaderProperties.setEnabled(false);
+        when(accountBalanceFileRepository.findLatest())
+                .thenReturn(Optional.of(domainBuilder.accountBalanceFile().get()));
+        fileCopier.copy();
+
+        // when
+        downloader.download();
+
+        // then
+        verifyStreamFiles(Collections.emptyList());
+        verify(accountBalanceFileRepository).findLatest();
+
+        // when download again
+        downloader.download();
+
+        // then
+        verifyStreamFiles(Collections.emptyList());
+        verify(accountBalanceFileRepository).findLatest(); // no more findLatest calls
     }
 }
