@@ -150,7 +150,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                           coalesce(auto_renew_period, e_auto_renew_period, null),
                           case
                             when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
-                            else null
+                            when e_balance is not null then e_balance + coalesce(balance, 0)
                           end,
                           coalesce(created_timestamp, e_created_timestamp, null),
                           coalesce(decline_reward, e_decline_reward, false),
@@ -361,7 +361,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                             coalesce(auto_renew_period, e_auto_renew_period, null),
                             case
                               when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
-                              else null
+                              when e_balance is not null then e_balance + coalesce(balance, 0)
                             end,
                             coalesce(e_created_timestamp, created_timestamp, null),
                             coalesce(decline_reward, e_decline_reward, false),
@@ -444,7 +444,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                           coalesce(auto_renew_period, e_auto_renew_period, null),
                           case
                             when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
-                            else null
+                            when e_balance is not null then e_balance + coalesce(balance, 0)
                           end,
                           coalesce(created_timestamp, e_created_timestamp, null),
                           coalesce(decline_reward, e_decline_reward, false),
