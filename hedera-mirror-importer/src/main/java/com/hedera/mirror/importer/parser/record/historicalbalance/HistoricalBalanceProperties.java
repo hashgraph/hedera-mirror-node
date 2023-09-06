@@ -30,7 +30,7 @@ import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Data
-@ConfigurationProperties("hedera.mirror.importer.parser.record.historical-balances")
+@ConfigurationProperties("hedera.mirror.importer.parser.record.historical-balance")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Validated
 public class HistoricalBalanceProperties {
@@ -60,7 +60,7 @@ public class HistoricalBalanceProperties {
     void init() {
         if (balanceDownloaderProperties.isEnabled() && isEnabled()) {
             throw new IllegalArgumentException(
-                    "The two configuration properties can't be both true: hedera.mirror.importer.downloader.balance.enabled and hedera.mirror.importer.parser.record.historicalBalances.enabled");
+                    "The two configuration properties can't be both true: hedera.mirror.importer.downloader.balance.enabled and hedera.mirror.importer.parser.record.historicalBalance.enabled");
         }
     }
 }
