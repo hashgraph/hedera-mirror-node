@@ -397,7 +397,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "increase(spring_data_repository_invocations_seconds_count[10m])",
+          "expr": "increase(spring_data_repository_invocations_seconds_count[10s])",
           "refId": "A"
         }
       ],
