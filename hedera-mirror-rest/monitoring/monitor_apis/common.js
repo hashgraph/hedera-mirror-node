@@ -55,7 +55,7 @@ const saveResults = (server, results) => {
  * @return {Object} results object
  */
 const getServerCurrentResults = (name) => {
-  return currentResults[name].results;
+  return currentResults[name]?.results?.testResults || [];
 };
 
 /**

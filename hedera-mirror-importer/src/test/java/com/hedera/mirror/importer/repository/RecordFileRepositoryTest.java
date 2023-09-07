@@ -30,6 +30,19 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
     private final RecordFileRepository recordFileRepository;
 
     @Test
+    void findFirst() {
+        // empty
+        assertThat(recordFileRepository.findFirst()).isEmpty();
+
+        var first = domainBuilder.recordFile().persist();
+        assertThat(recordFileRepository.findFirst()).get().isEqualTo(first);
+
+        // first stays the same
+        domainBuilder.recordFile().persist();
+        assertThat(recordFileRepository.findFirst()).get().isEqualTo(first);
+    }
+
+    @Test
     void findLatest() {
         assertThat(recordFileRepository.findLatest()).isEmpty();
 

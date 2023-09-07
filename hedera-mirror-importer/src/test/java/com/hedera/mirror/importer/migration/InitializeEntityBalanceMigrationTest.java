@@ -43,6 +43,8 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -79,7 +81,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(migration.getChecksum()).isEqualTo(3);
+        assertThat(migration.getChecksum()).isEqualTo(4);
     }
 
     @Test
@@ -88,10 +90,23 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
-    @Test
-    void migrate() {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void migrate(boolean hasSyntheticAccountBalanceFile) {
         // given
         setup();
+        if (hasSyntheticAccountBalanceFile) {
+            // Remove the non-synthetic account balance file and add a synthetic file before latest record file's
+            // consensus end
+            accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
+            // A synthetic account balance file
+            long syntheticBalanceTimestamp = recordFile2.getConsensusEnd() - 1;
+            domainBuilder
+                    .accountBalanceFile()
+                    .customize(
+                            a -> a.consensusTimestamp(syntheticBalanceTimestamp).synthetic(true))
+                    .persist();
+        }
 
         // when
         migration.doMigrate();

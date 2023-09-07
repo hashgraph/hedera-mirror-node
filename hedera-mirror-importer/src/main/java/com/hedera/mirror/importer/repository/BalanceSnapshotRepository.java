@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
-import java.math.BigInteger;
-import lombok.Data;
+interface BalanceSnapshotRepository {
 
-@Data
-public class MirrorTokenResponse {
-
-    private String createdTimestamp;
-
-    private MirrorCustomFees customFees;
-
-    private String modifiedTimestamp;
-
-    private String pauseStatus;
-
-    private String tokenId;
-
-    private BigInteger totalSupply;
+    /**
+     * Generates a balance snapshot from state in database.
+     *
+     * @param consensusTimestamp The consensus timestamp of the balance snapshot.
+     * @return The number of balance rows inserted
+     */
+    int balanceSnapshot(long consensusTimestamp);
 }

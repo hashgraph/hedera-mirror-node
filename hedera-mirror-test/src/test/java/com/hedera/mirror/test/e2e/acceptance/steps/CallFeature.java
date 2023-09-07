@@ -22,12 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -154,9 +156,10 @@ public class CallFeature extends AbstractFeature {
                 .to(ercContractAddress)
                 .estimate(false)
                 .build();
+        var totalSupplyOfNft = mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsNumber()).isZero();
+        assertThat(response.getResultAsNumber()).isEqualTo(totalSupplyOfNft);
     }
 
     // ETHCALL-020
@@ -174,9 +177,18 @@ public class CallFeature extends AbstractFeature {
                 .to(ercContractAddress)
                 .estimate(false)
                 .build();
+        var allTokens = mirrorClient
+                .getAccountDetailsByAccountId(AccountId.fromSolidityAddress(contractClient.getClientAddress()))
+                .getBalanceInfo()
+                .getTokens();
+        var balanceOfNft = allTokens.stream()
+                .filter(token -> tokenId.toString().equals(token.getTokenId()))
+                .mapToLong(MirrorAccountBalance.Token::getBalance)
+                .findFirst();
+
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertThat(response.getResultAsNumber()).isZero();
+        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
     }
 
     // ETHCALL-025

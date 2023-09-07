@@ -60,7 +60,7 @@ public abstract class AbstractEntity implements History {
             coalesce =
                     """
             case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
-                 else null
+                 when e_{0} is not null then e_{0} + coalesce({0}, 0)
             end""")
     private Long balance;
 

@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -153,29 +154,41 @@ public class ContractResultServiceImpl implements ContractResultService {
     private void processContractAction(ContractAction action, int index, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
-        switch (action.getCallerCase()) {
-            case CALLING_CONTRACT -> {
-                contractAction.setCaller(EntityId.of(action.getCallingContract()));
-                contractAction.setCallerType(EntityType.CONTRACT);
+
+        try {
+            switch (action.getCallerCase()) {
+                case CALLING_CONTRACT -> {
+                    contractAction.setCallerType(EntityType.CONTRACT);
+                    contractAction.setCaller(EntityId.of(action.getCallingContract()));
+                }
+                case CALLING_ACCOUNT -> {
+                    contractAction.setCallerType(EntityType.ACCOUNT);
+                    contractAction.setCaller(EntityId.of(action.getCallingAccount()));
+                }
+                default -> log.error(
+                        RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}",
+                        consensusTimestamp,
+                        action.getCallerCase());
             }
-            case CALLING_ACCOUNT -> {
-                contractAction.setCaller(EntityId.of(action.getCallingAccount()));
-                contractAction.setCallerType(EntityType.ACCOUNT);
-            }
-            default -> log.error(
-                    RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}",
-                    consensusTimestamp,
-                    action.getCallerCase());
+        } catch (InvalidEntityException e) {
+            log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp, action);
         }
 
-        switch (action.getRecipientCase()) {
-            case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
-            case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
-            case TARGETED_ADDRESS -> contractAction.setRecipientAddress(
-                    action.getTargetedAddress().toByteArray());
-            default -> {
-                // ContractCreate transaction has no recipient
+        try {
+            switch (action.getRecipientCase()) {
+                case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
+                case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(
+                        EntityId.of(action.getRecipientContract()));
+                case TARGETED_ADDRESS -> contractAction.setRecipientAddress(
+                        action.getTargetedAddress().toByteArray());
+                default -> {
+                    // ContractCreate transaction has no recipient
+                }
             }
+        } catch (InvalidEntityException e) {
+            // In some cases, consensus nodes can send entity IDs with negative numbers.
+            log.error(
+                    RECOVERABLE_ERROR + "Invalid recipient for contract action at {}: {}", consensusTimestamp, action);
         }
 
         switch (action.getResultDataCase()) {

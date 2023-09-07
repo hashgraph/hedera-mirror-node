@@ -22,9 +22,25 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface AccountBalanceRepository
-        extends CrudRepository<AccountBalance, AccountBalance.Id>, RetentionRepository {
+        extends BalanceSnapshotRepository, CrudRepository<AccountBalance, AccountBalance.Id>, RetentionRepository {
+
+    @Modifying
+    @Override
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+        insert into account_balance (account_id, balance, consensus_timestamp)
+        select id, balance, :consensusTimestamp
+        from entity
+        where deleted is not true and balance is not null
+        order by id
+        """)
+    @Transactional
+    int balanceSnapshot(long consensusTimestamp);
 
     @Override
     @EntityGraph("AccountBalance.tokenBalances")

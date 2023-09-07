@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.Level;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ import reactor.core.publisher.Flux;
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
@@ -59,6 +61,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final DistributionSummary unknownSizeMetric;
 
     public RecordFileParser(
+            ApplicationEventPublisher applicationEventPublisher,
             MeterRegistry meterRegistry,
             RecordParserProperties parserProperties,
             StreamFileRepository<RecordFile, Long> streamFileRepository,
@@ -66,6 +69,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             RecordStreamFileListener recordStreamFileListener,
             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, streamFileRepository);
+        this.applicationEventPublisher = applicationEventPublisher;
         this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
@@ -143,6 +147,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             recordFile.finishLoad(count);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
+
+            applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
         } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;

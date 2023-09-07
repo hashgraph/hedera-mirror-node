@@ -86,11 +86,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {1, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            1,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     1L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -116,21 +121,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            1,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     1L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {2, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            2,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     2L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -156,21 +171,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            2,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     2L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {4, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            4,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     4L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -196,21 +221,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            4,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     4L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {8, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            8,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     8L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -236,22 +271,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            8,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     8L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {16, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            16,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     16L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -278,23 +322,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            16,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     16L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {32, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            32,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     32L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -321,23 +373,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            32,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     32L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {64, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            64,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     64L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -364,22 +424,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
                     new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            64,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     64L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {1, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            1,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     1L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -405,21 +474,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {1, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            1,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     1L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {2, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            2,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     2L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_KYC_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -445,21 +524,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {2, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            2,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     2L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {4, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            4,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     4L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FREEZE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -485,21 +574,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {4, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            4,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     4L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {8, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}}
+                        new Object[] {
+                            8,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
+                        }
                     },
                     8L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_WIPE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -525,22 +624,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {8, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}}
+                        new Object[] {
+                            8,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
+                        }
                     },
                     8L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {16, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            16,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     16L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_SUPPLY_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -567,23 +675,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {16, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            16,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     16L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {32, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            32,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     32L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_FEE_SCHEDULE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -610,23 +726,31 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {32, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            32,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     32L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {64, new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}
+                        new Object[] {
+                            64,
+                            new Object[] {
+                                false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO
+                            }
                         }
                     },
                     64L
                 },
-                new Object[] {false, CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
+                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
         UPDATE_NFT_TOKEN_KEYS_AND_GET_TOKEN_KEY_PAUSE_KEY_ED25519_KEY(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -653,12 +777,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 new Object[] {
                     NFT_TRANSFER_ADDRESS,
                     new Object[] {
-                        new Object[] {64, new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}
+                        new Object[] {
+                            64,
+                            new Object[] {
+                                false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS
+                            }
                         }
                     },
                     64L
                 },
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], CONTRACT_ADDRESS}),
+                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         UPDATE_TOKEN_EXPIRY_AND_GET_TOKEN_EXPIRY(
                 "updateTokenExpiryAndGetUpdatedTokenExpiry",
                 new Object[] {

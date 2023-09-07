@@ -84,11 +84,7 @@ class MirrorDateRangePropertiesProcessorTest {
         downloaderPropertiesList =
                 List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
         mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(
-                mirrorProperties,
-                downloaderPropertiesList,
-                accountBalanceFileRepository,
-                eventFileRepository,
-                recordFileRepository);
+                mirrorProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);

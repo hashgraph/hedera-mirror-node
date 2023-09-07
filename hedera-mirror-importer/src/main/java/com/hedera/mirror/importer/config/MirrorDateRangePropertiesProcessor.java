@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.EventFileRepository;
@@ -33,7 +32,6 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +47,6 @@ public class MirrorDateRangePropertiesProcessor {
     static final Instant STARTUP_TIME = Instant.now();
 
     private final MirrorProperties mirrorProperties;
-    private final List<DownloaderProperties> downloaderPropertiesList;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final EventFileRepository eventFileRepository;
     private final RecordFileRepository recordFileRepository;
@@ -72,12 +69,6 @@ public class MirrorDateRangePropertiesProcessor {
     }
 
     private DateRangeFilter newDateRangeFilter(StreamType streamType) {
-        DownloaderProperties downloaderProperties = getDownloaderProperties(streamType);
-
-        if (!downloaderProperties.isEnabled()) {
-            return DateRangeFilter.empty();
-        }
-
         Instant startDate = mirrorProperties.getStartDate();
         Instant endDate = mirrorProperties.getEndDate();
         Instant lastFileInstant = findLatest(streamType)
@@ -102,11 +93,7 @@ public class MirrorDateRangePropertiesProcessor {
 
         DateRangeFilter filter = new DateRangeFilter(filterStartDate, endDate);
 
-        log.info(
-                "{}: parser will parse items in the range [{}, {}]",
-                downloaderProperties.getStreamType(),
-                filter.getStartAsInstant(),
-                filter.getEndAsInstant());
+        log.info("{}: parser will parse items in {}", streamType, filter);
         return filter;
     }
 
@@ -186,13 +173,6 @@ public class MirrorDateRangePropertiesProcessor {
         };
     }
 
-    private DownloaderProperties getDownloaderProperties(StreamType streamType) {
-        return downloaderPropertiesList.stream()
-                .filter(p -> p.getStreamType() == streamType)
-                .findFirst()
-                .orElseThrow(() -> new UnsupportedOperationException("Unsupported stream type " + streamType));
-    }
-
     @Value
     public static class DateRangeFilter {
         long start;
@@ -211,29 +191,23 @@ public class MirrorDateRangePropertiesProcessor {
             }
         }
 
-        public static DateRangeFilter empty() {
-            return new DateRangeFilter(Instant.EPOCH.plusNanos(1), Instant.EPOCH);
-        }
-
         public static DateRangeFilter all() {
             return new DateRangeFilter(Instant.EPOCH, Utility.MAX_INSTANT_LONG);
+        }
+
+        public static DateRangeFilter empty() {
+            return new DateRangeFilter(Instant.EPOCH.plusNanos(1), Instant.EPOCH);
         }
 
         public boolean filter(long timestamp) {
             return timestamp >= start && timestamp <= end;
         }
 
-        public Instant getStartAsInstant() {
-            return Instant.ofEpochSecond(0, start);
-        }
-
-        public Instant getEndAsInstant() {
-            return Instant.ofEpochSecond(0, end);
-        }
-
         @Override
         public String toString() {
-            return String.format("DateRangeFilter([%s, %s])", getStartAsInstant(), getEndAsInstant());
+            var startInstant = Instant.ofEpochSecond(0, start);
+            var endInstant = Instant.ofEpochSecond(0, end);
+            return String.format("DateRangeFilter([%s, %s])", startInstant, endInstant);
         }
     }
 }
