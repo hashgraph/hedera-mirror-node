@@ -48,7 +48,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @ConditionalOnProperty(
         name = "enabled",
         matchIfMissing = true,
-        prefix = "hedera.mirror.importer.parser.record.historical-balances")
+        prefix = "hedera.mirror.importer.parser.record.historical-balance")
 @CustomLog
 @Named
 public class HistoricalBalanceService {
@@ -87,7 +87,7 @@ public class HistoricalBalanceService {
                 (int) properties.getTransactionTimeout().toSeconds());
 
         // metrics
-        var timer = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME);
+        var timer = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME).tag("type", StreamType.BALANCE.toString());
         generateDurationMetricFailure = timer.tag("success", "false").register(meterRegistry);
         generateDurationMetricSuccess = timer.tag("success", "true").register(meterRegistry);
     }
