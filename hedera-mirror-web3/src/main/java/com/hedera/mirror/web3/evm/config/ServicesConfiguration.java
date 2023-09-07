@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.config;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -104,10 +105,10 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Base64;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -634,8 +635,8 @@ public class ServicesConfiguration {
     PrngLogic prngLogic(final RecordFileRepository recordFileRepository) {
         return new PrngLogic(() -> recordFileRepository
                 .findLatest()
-                .flatMap(recordFile -> Optional.ofNullable(recordFile.getHash()))
-                .map(String::getBytes)
+                .map(RecordFile::getHash)
+                .map(Base64.getDecoder()::decode)
                 .orElse(null));
     }
 
