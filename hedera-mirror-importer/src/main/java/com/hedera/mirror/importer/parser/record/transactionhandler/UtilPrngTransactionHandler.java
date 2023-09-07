@@ -40,15 +40,15 @@ class UtilPrngTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     protected void doUpdateTransaction(final Transaction transaction, final RecordItem recordItem) {
-        final long consensusTimestamp = recordItem.getConsensusTimestamp();
-        final var range = recordItem.getTransactionBody().getUtilPrng().getRange();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var range = recordItem.getTransactionBody().getUtilPrng().getRange();
 
         if (!recordItem.isSuccessful()) {
             return;
         }
 
-        final var transactionRecord = recordItem.getTransactionRecord();
-        final var prng = new Prng();
+        var transactionRecord = recordItem.getTransactionRecord();
+        var prng = new Prng();
         prng.setConsensusTimestamp(consensusTimestamp);
         prng.setPayerAccountId(recordItem.getPayerAccountId().getId());
         prng.setRange(range);
