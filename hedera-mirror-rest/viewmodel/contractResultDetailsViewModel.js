@@ -112,6 +112,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       if (!_.isNil(ethTransaction.gasLimit)) {
         this.gas_limit = ethTransaction.gasLimit;
       }
+      this.to = utils.toHexStringNonQuantity(ethTransaction.toAddress);
       this.gas_price = utils.toHexStringQuantity(ethTransaction.gasPrice);
       this.max_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxFeePerGas);
       this.max_priority_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxPriorityFeePerGas);
