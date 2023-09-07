@@ -72,22 +72,24 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     @Override
     public void parse(T streamFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean success = false;
+        boolean success = true;
 
         try {
-            if (shouldParse(streamFile)) {
-                doParse(streamFile);
-
-                log.info(
-                        "Successfully processed {} items from {} in {}",
-                        streamFile.getCount(),
-                        streamFile.getName(),
-                        stopwatch);
-                success = true;
-                Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
-                parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+            if (!shouldParse(streamFile)) {
+                return;
             }
+
+            doParse(streamFile);
+            log.info(
+                    "Successfully processed {} items from {} in {}",
+                    streamFile.getCount(),
+                    streamFile.getName(),
+                    stopwatch);
+
+            Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
+            parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
         } catch (Throwable e) {
+            success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
             throw e;
         } finally {
