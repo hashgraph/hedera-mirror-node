@@ -36,33 +36,27 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final Store store;
 
+    // We should check only accounts usability
     @Override
     public boolean isUsable(final Address address) {
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
+
         final var balance = account.getBalance();
+        final var isDeleted = account.isDeleted();
 
-        if (!account.isEmptyAccount()) {
-            return balance >= 0L;
-        } else {
-            final var token = store.getToken(address, OnMissing.DONT_THROW);
-            if (token.isEmptyToken()) {
-                return false;
-            }
-
-            final var expirationTimestamp = token.getExpiry();
-            final var createdTimestamp = token.getCreatedTimestamp();
-            final var autoRenewPeriod = token.getAutoRenewPeriod();
-
-            final var currentTime = Instant.now().getEpochSecond();
-
-            if (expirationTimestamp != 0L && expirationTimestamp <= currentTime) {
-                return false;
-            }
-
-            return createdTimestamp == 0L
-                    || autoRenewPeriod == 0L
-                    || (createdTimestamp + autoRenewPeriod) > currentTime;
+        if (isDeleted) {
+            return false;
         }
+
+        if (balance > 0) {
+            return true;
+        }
+
+        if (Address.ZERO.equals(address)) {
+            return false;
+        }
+
+        return account.getExpiry() >= Instant.now().getEpochSecond();
     }
 
     @Override

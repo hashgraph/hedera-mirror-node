@@ -128,6 +128,10 @@ public final class KeyValueWrapper {
         }
     }
 
+    public void setInheritedKey(final Key key) {
+        this.inheritedKey = key;
+    }
+
     public KeyValueType getKeyValueType() {
         return this.keyValueType;
     }

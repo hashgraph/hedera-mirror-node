@@ -196,7 +196,7 @@ class AccessorBasedUsagesTest {
 
         subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
 
-        verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator);
+        verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator, txnAccessor.getSubType());
     }
 
     @Test

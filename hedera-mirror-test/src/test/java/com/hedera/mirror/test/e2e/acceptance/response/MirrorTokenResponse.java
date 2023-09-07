@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.response;
 
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
+import java.math.BigInteger;
 import lombok.Data;
 
 @Data
@@ -31,4 +32,6 @@ public class MirrorTokenResponse {
     private String pauseStatus;
 
     private String tokenId;
+
+    private BigInteger totalSupply;
 }

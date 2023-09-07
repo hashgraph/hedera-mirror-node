@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.config;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -49,6 +50,7 @@ import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -103,6 +105,7 @@ import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.util.Base64;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -630,7 +633,21 @@ public class ServicesConfiguration {
 
     @Bean
     PrngLogic prngLogic(final RecordFileRepository recordFileRepository) {
-        return new PrngLogic(recordFileRepository);
+        return new PrngLogic(() -> recordFileRepository
+                .findLatest()
+                .map(RecordFile::getHash)
+                .map(Base64.getDecoder()::decode)
+                .orElse(null));
+    }
+
+    @Bean
+    PrngSystemPrecompiledContract prngSystemPrecompiledContract(
+            final GasCalculatorHederaV22 gasCalculatorHederaV22,
+            final PrngLogic prngLogic,
+            final LivePricesSource livePricesSource,
+            final PrecompilePricingUtils precompilePricingUtils) {
+        return new PrngSystemPrecompiledContract(
+                gasCalculatorHederaV22, prngLogic, livePricesSource, precompilePricingUtils);
     }
 
     @Bean

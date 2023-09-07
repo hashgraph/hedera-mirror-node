@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -62,6 +63,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
+
     private TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
@@ -444,6 +446,13 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .customize(a -> a.consensusTimestamp(accountBalanceTimestamp))
                 .persist();
 
+        // A synthetic account balance file
+        domainBuilder
+                .accountBalanceFile()
+                .customize(
+                        a -> a.consensusTimestamp(accountBalanceTimestamp + 20).synthetic(true))
+                .persist();
+
         var tokenBalanceId = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId1);
         var tokenBalanceId2 = new TokenBalance.Id(accountBalanceTimestamp, accountId1, tokenId2);
         var tokenBalanceId3 = new TokenBalance.Id(accountBalanceTimestamp, accountId2, tokenId1);
@@ -455,26 +464,21 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
                 .tokenBalance()
                 .customize(c -> c.id(tokenBalanceId).balance(tokenBalance1Amount))
                 .persist();
-        tokenAccount = domainBuilder
-                .tokenAccount()
+        tokenAccount = tokenAccountBuilder()
                 .customize(c -> c.accountId(accountId1.getId()).tokenId(tokenId1.getId()))
                 .persist();
-        tokenAccount2 = domainBuilder
-                .tokenAccount()
+        tokenAccount2 = tokenAccountBuilder()
                 .customize(c -> c.accountId(accountId1.getId()).tokenId(tokenId2.getId()))
                 .persist();
-        tokenAccount3 = domainBuilder
-                .tokenAccount()
+        tokenAccount3 = tokenAccountBuilder()
                 .customize(c -> c.accountId(accountId2.getId()).tokenId(tokenId1.getId()))
                 .persist();
         // A deleted account, balances for this token account should be 0
-        deletedEntityTokenAccount4 = domainBuilder
-                .tokenAccount()
+        deletedEntityTokenAccount4 = tokenAccountBuilder()
                 .customize(c -> c.accountId(accountId4.getId()).tokenId(tokenId1.getId()))
                 .persist();
         // A disassociated token account, balances for this token account should be 0
-        disassociatedTokenAccount5 = domainBuilder
-                .tokenAccount()
+        disassociatedTokenAccount5 = tokenAccountBuilder()
                 .customize(c -> c.accountId(accountId5.getId())
                         .tokenId(tokenId1.getId())
                         .associated(false))
@@ -536,5 +540,9 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     private long timestamp(Duration delta) {
         return timestamp.addAndGet(delta.toNanos());
+    }
+
+    private DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> tokenAccountBuilder() {
+        return domainBuilder.tokenAccount().customize(ta -> ta.balance(0));
     }
 }

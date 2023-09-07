@@ -38,15 +38,12 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -87,6 +84,7 @@ public class EvmOperationConstructionUtil {
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1));
     }
 
+    @SuppressWarnings("java:S107")
     public static Map<String, Provider<MessageCallProcessor>> mcps(
             final GasCalculator gasCalculator,
             final AbstractAutoCreationLogic autoCreationLogic,
@@ -95,9 +93,7 @@ public class EvmOperationConstructionUtil {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngLogic prngLogic,
-            final LivePricesSource livePriceSources,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
         return Map.of(
@@ -115,9 +111,7 @@ public class EvmOperationConstructionUtil {
                                 precompileMapper,
                                 gasCalculator,
                                 basicHbarCentExchange,
-                                prngLogic,
-                                livePriceSources,
-                                pricingUtils)));
+                                prngSystemPrecompiledContract)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(
@@ -125,21 +119,16 @@ public class EvmOperationConstructionUtil {
             final PrecompileMapper precompileMapper,
             final GasCalculator gasCalculator,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngLogic prngLogic,
-            final LivePricesSource livePricesSource,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
                 evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
-        // final var prngPrecompiledContract
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
-        hederaPrecompiles.put(
-                PRNG_PRECOMPILE_ADDRESS,
-                new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, pricingUtils));
+        hederaPrecompiles.put(PRNG_PRECOMPILE_ADDRESS, prngSystemPrecompiledContract);
         hederaPrecompiles.put(
                 EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS,
                 new ExchangeRatePrecompiledContract(

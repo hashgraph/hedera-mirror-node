@@ -39,7 +39,6 @@ import reactor.test.StepVerifier;
  */
 class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
-    private FileCopier nodeIdFileCopier;
     private Map<ConsensusNode, NodeInfo> nodeInfoMap;
 
     @Override
@@ -51,7 +50,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
 
         var nodeIdFromPath = Path.of("data", "hip679", "provider-auto", "demo");
         var network = properties.getMirrorProperties().getNetwork();
-        nodeIdFileCopier = FileCopier.create(
+        var nodeIdFileCopier = FileCopier.create(
                         TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
                 .to(properties.getBucketName(), network);
 

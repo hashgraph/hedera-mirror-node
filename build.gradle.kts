@@ -34,8 +34,8 @@ extra.apply {
     set("protobufVersion", "3.24.2")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.0-RC9")
-    set("vertxVersion", "4.4.4")
+    set("testcontainersSpringBootVersion", "3.0.0")
+    set("vertxVersion", "4.4.5")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -59,7 +59,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.40.0")
-        api("com.hedera.hashgraph:sdk:2.27.0")
+        api("com.hedera.hashgraph:sdk:2.28.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.19.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.135")
+        api("software.amazon.awssdk:bom:2.20.140")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

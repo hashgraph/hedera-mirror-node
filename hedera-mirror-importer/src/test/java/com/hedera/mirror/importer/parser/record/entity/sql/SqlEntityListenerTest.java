@@ -104,6 +104,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -739,6 +740,50 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.findAll()).containsExactly(expectedEntity);
         assertThat(findHistory(Entity.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = EntityType.class,
+            mode = Mode.EXCLUDE,
+            names = {"ACCOUNT", "CONTRACT"})
+    void onEntityBalanceChangeWhenNotPayableAndNoInitialBalance(EntityType type) {
+        // given
+        // The entity is not payable and there is no balance info
+        var entity = domainBuilder
+                .entity()
+                .customize(e -> e.balance(null).type(type))
+                .persist();
+
+        // when
+        var balanceChange =
+                Entity.builder().balance(domainBuilder.id()).id(entity.getId()).build();
+        sqlEntityListener.onEntity(balanceChange);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = EntityType.class,
+            mode = Mode.EXCLUDE,
+            names = {"ACCOUNT", "CONTRACT"})
+    void onEntityBalanceChangeWhenNotPayableAndWithInitialBalance(EntityType type) {
+        // given
+        // The entity is not payable and there is balance info, initialized from consensus nodes' account balance file
+        var entity = domainBuilder.entity().customize(e -> e.type(type)).persist();
+
+        // when
+        var balanceChange =
+                Entity.builder().balance(domainBuilder.id()).id(entity.getId()).build();
+        sqlEntityListener.onEntity(balanceChange);
+        completeFileAndCommit();
+
+        // then
+        entity.setBalance(entity.getBalance() + balanceChange.getBalance());
+        assertThat(entityRepository.findAll()).containsExactly(entity);
     }
 
     @Test

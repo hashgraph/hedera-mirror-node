@@ -21,8 +21,10 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATUR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -733,21 +735,21 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
 
-        verify(streamFileNotifier, times(files.size())).verified(streamFileCaptor.capture());
-        assertThat(streamFileCaptor.getAllValues())
-                .allMatch(s -> files.contains(s.getName()))
-                .allMatch(s -> {
-                    var expected = expectedFileIndexMap.get(s.getName());
-                    if (expected != null) {
-                        return Objects.equals(s.getIndex(), expected);
-                    } else {
-                        return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
-                    }
-                })
-                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
-                .allSatisfy(extraAssert::accept);
-
         if (!files.isEmpty()) {
+            verify(streamFileNotifier, times(files.size())).verified(streamFileCaptor.capture());
+            assertThat(streamFileCaptor.getAllValues())
+                    .allMatch(s -> files.contains(s.getName()))
+                    .allMatch(s -> {
+                        var expected = expectedFileIndexMap.get(s.getName());
+                        if (expected != null) {
+                            return Objects.equals(s.getIndex(), expected);
+                        } else {
+                            return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
+                        }
+                    })
+                    .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
+                    .allSatisfy(extraAssert::accept);
+
             var lastFilename = files.get(files.size() - 1);
             var lastStreamFile = downloader.lastStreamFile.get();
             assertThat(lastStreamFile)
@@ -756,6 +758,11 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     .returns(null, StreamFile::getBytes)
                     .returns(null, StreamFile::getItems)
                     .returns(lastFilename, StreamFile::getName);
+        } else {
+            // Can't reset mockito ArgumentCaptor. So when files is empty, just verify streamFileNotifier.verified is
+            // not called, the additional check against the arguments in captor will fail with multiple downloads in
+            // a test case since streamFileCaptor may have values captured previously.
+            verify(streamFileNotifier, never()).verified(any());
         }
     }
 

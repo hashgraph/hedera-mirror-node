@@ -57,7 +57,13 @@ import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -293,6 +299,40 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .sidecarRecords(s -> s.get(1)
                         .getActionsBuilder()
                         .getContractActionsBuilder(0)
+                        .setCallingContract(ContractID.newBuilder()
+                                .setShardNum(1819278731L)
+                                .setRealmNum(-1L)
+                                .setContractNum(-1L)))
+                .sidecarRecords(s -> s.get(1)
+                        .getActionsBuilder()
+                        .removeContractActions(2)
+                        .getContractActionsBuilder(1)
+                        .setCallingAccount(AccountID.newBuilder()
+                                .setShardNum(1819278731L)
+                                .setRealmNum(-1L)
+                                .setAccountNum(-1L)))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractActionRepository.findAll())
+                .allSatisfy(a -> assertThat(a.getCallerType()).isNotNull())
+                .allSatisfy(a -> assertThat(a.getCaller()).isNull());
+    }
+
+    @Test
+    void processContractActionMissingCaller() {
+        var recordItem = recordItemBuilder
+                .contractCall()
+                .sidecarRecords(s -> s.get(1)
+                        .getActionsBuilder()
+                        .getContractActionsBuilder(0)
                         .clearCaller())
                 .build();
 
@@ -304,6 +344,40 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractStateChanges(recordItem);
         assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void processContractActionInvalidRecipient() {
+        var recordItem = recordItemBuilder
+                .contractCall()
+                .sidecarRecords(s -> s.get(1)
+                        .getActionsBuilder()
+                        .getContractActionsBuilder(0)
+                        .setRecipientContract(ContractID.newBuilder()
+                                .setShardNum(1819278731L)
+                                .setRealmNum(-1L)
+                                .setContractNum(-1L)))
+                .sidecarRecords(s -> s.get(1)
+                        .getActionsBuilder()
+                        .removeContractActions(2)
+                        .getContractActionsBuilder(1)
+                        .setRecipientAccount(AccountID.newBuilder()
+                                .setShardNum(1819278731L)
+                                .setRealmNum(-1L)
+                                .setAccountNum(-1L)))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+        assertThat(contractActionRepository.findAll()).allSatisfy(a -> assertThat(a)
+                .returns(null, ContractAction::getRecipientAccount)
+                .returns(null, ContractAction::getRecipientContract)
+                .returns(null, ContractAction::getRecipientAddress));
     }
 
     @Test

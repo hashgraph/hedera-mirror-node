@@ -708,13 +708,6 @@ const setAccountBalance = async (balance) => {
     [balance.timestamp, accountId, balance.balance]
   );
 
-  await pool.query(
-    `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_id)
-    values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
-  );
-
   if (balance.tokens) {
     const tokenBalances = balance.tokens.map((tokenBalance) => [
       balance.timestamp,

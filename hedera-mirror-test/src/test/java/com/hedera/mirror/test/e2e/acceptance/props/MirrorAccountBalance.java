@@ -16,10 +16,21 @@
 
 package com.hedera.mirror.test.e2e.acceptance.props;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.Data;
 
 @Data
 public class MirrorAccountBalance {
     private String timestamp;
     private Long balance;
+    private List<Token> tokens;
+
+    @Data
+    public static class Token {
+        @JsonProperty("token_id")
+        private String tokenId;
+
+        private Long balance;
+    }
 }

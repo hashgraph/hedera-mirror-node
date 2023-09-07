@@ -24,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -37,7 +35,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
 import java.time.Instant;
 import java.util.Optional;
-import org.apache.commons.codec.binary.Hex;
+import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -61,9 +59,6 @@ class PrngSystemPrecompiledContractTest {
     private GasCalculator gasCalculator;
 
     @Mock
-    private RecordFileRepository recordFileRepository;
-
-    @Mock
     private PrecompilePricingUtils pricingUtils;
 
     private final Instant consensusNow = Instant.ofEpochSecond(123456789L);
@@ -75,17 +70,14 @@ class PrngSystemPrecompiledContractTest {
 
     @BeforeEach
     void setUp() {
-        final var logic = new PrngLogic(recordFileRepository);
+        Supplier<byte[]> mockSupplier = WELL_KNOWN_HASH::getValue;
+        final var logic = new PrngLogic(mockSupplier);
+
         subject = new PrngSystemPrecompiledContract(gasCalculator, logic, livePricesSource, pricingUtils);
     }
 
     @Test
     void generatesRandom256BitNumber() {
-        final var recordFile = new RecordFile();
-        recordFile.setHash(Hex.encodeHexString(WELL_KNOWN_HASH.getValue()));
-
-        given(recordFileRepository.findLatest()).willReturn(Optional.of(recordFile));
-
         final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertEquals(32, result.toArray().length);
     }
@@ -118,10 +110,7 @@ class PrngSystemPrecompiledContractTest {
     void happyPathWithRandomSeedGeneratedWorks() {
         final var input = random256BitGeneratorInput();
         initialSetUp();
-        final var recordFile = new RecordFile();
-        recordFile.setHash(Hex.encodeHexString(WELL_KNOWN_HASH.getValue()));
 
-        given(recordFileRepository.findLatest()).willReturn(Optional.of(recordFile));
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
 
         final var response = subject.computePrngResult(10L, input, frame);
@@ -141,11 +130,22 @@ class PrngSystemPrecompiledContractTest {
     }
 
     @Test
-    void invalidHashReturnsSentinelOutputs() {
-        // hash is null
-        final var recordFile = new RecordFile();
-        recordFile.setHash(null);
-        given(recordFileRepository.findLatest()).willReturn(Optional.of(recordFile));
+    void nullHashReturnsSentinelOutputs() {
+        // Override the Supplier to return null for this test
+        Supplier<byte[]> nullReturningSupplier = () -> null;
+        final var prngLogic = new PrngLogic(nullReturningSupplier);
+        subject = new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, pricingUtils);
+
+        final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
+        assertNull(result);
+    }
+
+    @Test
+    void zeroedHashReturnsSentinelOutputs() {
+        // Override the Supplier to return zeroed hash for this test
+        Supplier<byte[]> nullReturningSupplier = () -> new byte[48];
+        final var prngLogic = new PrngLogic(nullReturningSupplier);
+        subject = new PrngSystemPrecompiledContract(gasCalculator, prngLogic, livePricesSource, pricingUtils);
 
         final var result = subject.generatePseudoRandomData(random256BitGeneratorInput());
         assertNull(result);

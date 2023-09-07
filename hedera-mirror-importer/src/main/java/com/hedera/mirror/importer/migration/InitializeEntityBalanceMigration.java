@@ -38,6 +38,7 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
               from account_balance_file
               join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
                 on consensus_timestamp + time_offset <= consensus_end
+              where synthetic is false
               order by consensus_timestamp desc
               limit 1
             ), snapshot as (
@@ -84,7 +85,7 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.65.0");
+        return MigrationVersion.fromVersion("1.86.0");
     }
 
     @Override

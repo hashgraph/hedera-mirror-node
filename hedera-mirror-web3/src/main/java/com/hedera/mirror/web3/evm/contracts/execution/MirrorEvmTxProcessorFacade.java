@@ -30,5 +30,6 @@ public interface MirrorEvmTxProcessorFacade {
             final long value,
             final Bytes callData,
             final Instant consensusTimestamp,
-            final boolean isStatic);
+            final boolean isStatic,
+            final boolean isEstimate);
 }

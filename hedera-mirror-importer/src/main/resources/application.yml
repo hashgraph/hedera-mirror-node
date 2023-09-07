@@ -24,7 +24,7 @@ hedera:
         historicalAccountInfoMigration:
           checksum: 3
         initializeEntityBalanceMigration:
-          checksum: 3
+          checksum: 4
         syntheticTokenAllowanceOwnerMigration:
           checksum: 2
         tokenAccountBalanceMigration:

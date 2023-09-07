@@ -41,12 +41,10 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
-import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -137,13 +135,7 @@ class MirrorEvmTxProcessorTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
-    private PrngLogic prngLogic;
-
-    @Mock
-    private LivePricesSource livePricesSource;
-
-    @Mock
-    private PrecompilePricingUtils pricingUtils;
+    private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
@@ -173,9 +165,7 @@ class MirrorEvmTxProcessorTest {
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngLogic,
-                        livePricesSource,
-                        pricingUtils),
+                        prngSystemPrecompiledContract),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,

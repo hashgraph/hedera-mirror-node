@@ -183,9 +183,9 @@ public class TokenOpsUsageUtilsTest {
         final TokenMintMeta tokenMintMeta =
                 TOKEN_OPS_USAGE_UTILS.tokenMintUsageFrom(txn, TOKEN_NON_FUNGIBLE_UNIQUE, 72000L);
 
-        assertEquals(1296000, tokenMintMeta.getRbs());
-        assertEquals(42, tokenMintMeta.getBpt());
-        assertEquals(136, tokenMintMeta.getTransferRecordDb());
+        assertEquals(0, tokenMintMeta.getRbs());
+        assertEquals(2, tokenMintMeta.getBpt());
+        assertEquals(0, tokenMintMeta.getTransferRecordDb());
     }
 
     @Test
