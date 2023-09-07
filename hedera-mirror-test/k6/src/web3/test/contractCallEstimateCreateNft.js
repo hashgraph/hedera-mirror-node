@@ -13,27 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import {SharedArray} from 'k6/data';
-import {ContractCallTestScenarioBuilder} from './common.js';
-
-const k6name = 'contractCallEstimateCreateNft';
-const allData = new SharedArray(k6name, () => {
-  return JSON.parse(open('./resources/estimate.json')).estimateCreateNFT;
-});
-
-const data = allData[__VU % allData.length];
-
-const {options, run} = new ContractCallTestScenarioBuilder()
-  .name(k6name)
-  .estimate(true)
-  .block(data.block)
-  .data(data.data)
-  .gas(data.gas)
-  .from(data.from)
-  .value(data.value)
-  .to(data.to)
-  .sleep(data.sleep)
-  .build();
-
+import {ContractCallEstimateTestTemplate} from './commonContractCallEstimateTemplate.js';
+const {options, run} = new ContractCallEstimateTestTemplate('estimateCreateNFT');
 export {options, run};
