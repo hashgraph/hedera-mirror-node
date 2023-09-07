@@ -62,7 +62,7 @@ public class CacheConfiguration {
     @Bean(CACHE_MANAGER_STREAM_DOWNLOADER)
     CacheManager cacheManagerStreamDownloder() {
         var caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=5000,expireAfterWrite=1m");
+        caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=1m");
         return caffeineCacheManager;
     }
 }

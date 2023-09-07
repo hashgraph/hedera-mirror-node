@@ -94,7 +94,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         downloadPath, FileTransformerConfiguration.defaultCreateOrReplaceExisting()));
 
         return Mono.fromFuture(responseFuture)
-                .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(r ->
                         log.debug("Finished downloading {} to {}, size {}", s3Key, downloadBase, r.contentLength()));
@@ -154,12 +153,11 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         var nodeInfo = "%s (%s)".formatted(node, node.getNodeAccountId());
         var pageCounter = new AtomicLong(0L);
         return Flux.from(s3Client.listObjectsV2Paginator(listRequest))
-                .timeout(commonDownloaderProperties.getTimeout())
                 .doOnNext(r -> {
                     var pageCount = pageCounter.incrementAndGet();
                     if (!r.contents().isEmpty()) {
                         log.info(
-                                "Node {} loaded page {} of {} S3 objects, starting with: {}",
+                                "Node {} loaded page {} containing {} S3 objects, starting with: {}",
                                 nodeInfo,
                                 pageCount,
                                 r.contents().size(),

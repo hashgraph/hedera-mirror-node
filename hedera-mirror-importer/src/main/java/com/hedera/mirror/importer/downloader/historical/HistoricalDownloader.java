@@ -58,7 +58,7 @@ public class HistoricalDownloader {
     private final ConsensusNodeService consensusNodeService;
     private final Path downloadPath;
     private final HistoricalDownloaderProperties downloaderProperties;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(500);
     private final StreamFileProvider streamFileProvider;
     private final StreamType streamType;
     private final Cache dataDownloadsCache;
@@ -95,7 +95,8 @@ public class HistoricalDownloader {
     // Run once
     @Scheduled(initialDelay = 1000 * 5, fixedDelay = Long.MAX_VALUE)
     public void downloadAll() {
-        downloadAll(StreamFilename.EPOCH);
+        var startFilename = StreamFilename.from("2023-07-28T00_00_00Z.rcd");
+        downloadAll(startFilename);
     }
 
     public void downloadAll(StreamFilename startFilename) {
@@ -106,10 +107,11 @@ public class HistoricalDownloader {
         var stopAtPrefix = downloaderProperties.getStopAtPrefix();
         var downloadConcurrency = downloaderProperties.getDownloadConcurrency();
         log.info(
-                "Starting download from {} {}for stream type {}",
+                "Starting download from {} {}for stream type {}, per node download concurrency of {}",
                 startFilename,
                 stopAtPrefix != null ? "until prefix %s ".formatted(stopAtPrefix) : "",
-                streamType);
+                streamType,
+                downloadConcurrency);
 
         var methodStopwatch = Stopwatch.createStarted();
 
@@ -187,6 +189,7 @@ public class HistoricalDownloader {
 
         var toComplete = nodeDownloaders.toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(toComplete).join();
+        dataDownloadsCache.clear();
 
         Map<Boolean, List<CompletableFuture<Long>>> completionsMap =
                 nodeDownloaders.stream().collect(groupingBy(CompletableFuture::isCompletedExceptionally));

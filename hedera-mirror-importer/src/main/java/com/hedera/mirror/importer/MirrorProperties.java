@@ -45,7 +45,7 @@ public class MirrorProperties {
     private Path dataPath = Paths.get(".", "data");
 
     @NotNull
-    private Path downloadPath = Paths.get(".", "historical-downloads");
+    private Path downloadPath = Paths.get("..", "..", "historical-downloads");
 
     @NotNull
     private Instant endDate = Utility.MAX_INSTANT_LONG;

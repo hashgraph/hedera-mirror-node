@@ -43,8 +43,8 @@ public class HistoricalDownloaderProperties implements DownloaderProperties {
 
     private String stopAtPrefix = null;
 
-    // Limit of concurrent file downloads in progress per downloader task
-    private int downloadConcurrency = 5;
+    // Limit of per node concurrent file downloads in progress per downloader task
+    private int downloadConcurrency = 20;
 
     private Duration frequency = null;
 

@@ -9,7 +9,8 @@ hedera:
           enabled: false
         historical:
           enabled: true
-          #stopAtPrefix: 2019-10-11T16_38
+          downloadConcurrency: 100
+          stopAtPrefix: 2023-08-04T
         record:
           enabled: false
       db:
