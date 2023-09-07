@@ -246,6 +246,29 @@ COMMENT ON FUNCTION create_range_partitions(
     start_from bigint)
 IS 'create range partitions for the given range';
 
+create or replace function apply_vacuum_settings_from_child(parent regclass, child regclass) returns void as
+$$
+declare
+    current_partition_vacuum_settings text;
+    new_partition                     regclass;
+    begin
+        select tp.partition
+        from time_partitions tp
+        where tp.parent_table = parent order by tp.from_value::bigint desc limit 1
+        into new_partition;
+        select string_agg(options.option, ',') as vacuum_settings
+        from (select unnest(reloptions) as option
+              from pg_class where relname=child::text) options
+        where options.option ILIKE '%vacuum%'
+        into current_partition_vacuum_settings;
+
+        if new_partition != child and length(coalesce(current_partition_vacuum_settings, '')) > 0 then
+            execute format(concat('alter table if exists %I set (', current_partition_vacuum_settings, ')'), new_partition);
+        end if;
+    end;
+$$
+    language plpgsql;
+
 create or replace procedure create_mirror_node_range_partitions() as
 $$
 declare
@@ -254,13 +277,14 @@ declare
     time_partition_pattern varchar = '^(.*_timestamp|consensus_end)$';
 begin
     for partition_info in
-        SELECT tp.parent_table,
-               max(tp.to_value::bigint)                                as next_from,
-               max(tp.to_value::bigint) + ${idPartitionSize}::bigint   as next_to,
-               (select coalesce(max(id), 1) from entity)               as max_entity_id
+        SELECT distinct on (tp.parent_table) tp.parent_table,
+               tp.to_value::bigint                              as next_from,
+               tp.to_value::bigint + ${idPartitionSize}::bigint as next_to,
+               (select coalesce(max(id), 1) from entity)        as max_entity_id,
+               tp.partition                                     as current_partition
         from time_partitions tp
         where tp.partition_column::varchar !~ time_partition_pattern
-        group by tp.parent_table
+        order by tp.parent_table, tp.from_value::bigint desc
         loop
             if partition_info.max_entity_id * ${maxEntityIdRatio} < partition_info.next_from then
                 raise log 'Skipping partition creation for range partition % from % to %', partition_info.parent_table, partition_info.next_from, partition_info.next_to;
@@ -269,6 +293,9 @@ begin
             select create_range_partitions(partition_info.parent_table, ${idPartitionSize}::bigint,
                                            partition_info.next_to::bigint, partition_info.next_from::bigint)
             into created_partition;
+            if created_partition then
+                perform apply_vacuum_settings_from_child(partition_info.parent_table, partition_info.current_partition);
+            end if;
             commit;
             raise log 'Processed % for values from % to % created %',
                        partition_info.parent_table, partition_info.next_from,
@@ -281,17 +308,18 @@ $$
 create or replace procedure create_mirror_node_time_partitions() as
 $$
 declare
-    partition_info      record;
-    created_partition   boolean;
-    time_partition_pattern varchar = '^(.*_timestamp|consensus_end)$';
+    partition_info                    record;
+    created_partition                 boolean;
+    time_partition_pattern            varchar = '^(.*_timestamp|consensus_end)$';
 begin
     for partition_info in
-        SELECT tp.parent_table,
-               to_timestamp(max(tp.to_value::bigint) / 1000000000.0)                                      as next_from,
-               to_timestamp(max(tp.to_value::bigint) / 1000000000.0) + interval ${partitionTimeInterval}  as next_to
+        SELECT distinct on (tp.parent_table) tp.parent_table,
+               to_timestamp(tp.to_value::bigint / 1000000000.0)                                      as next_from,
+               to_timestamp(tp.to_value::bigint / 1000000000.0) + interval ${partitionTimeInterval}  as next_to,
+               tp.partition                                                                          as current_partition
         from time_partitions tp
         where tp.partition_column::varchar ~ time_partition_pattern
-        group by tp.parent_table
+        order by tp.parent_table, tp.from_value::bigint desc
         loop
             if CURRENT_TIMESTAMP + interval ${partitionTimeInterval} < partition_info.next_from then
                 raise log 'Skipping partition creation for time partition % from % to %',
@@ -301,6 +329,9 @@ begin
             select create_time_partitions(partition_info.parent_table, interval ${partitionTimeInterval},
                                           partition_info.next_to, partition_info.next_from)
             into created_partition;
+            if created_partition then
+                perform apply_vacuum_settings_from_child(partition_info.parent_table, partition_info.current_partition);
+            end if;
             commit;
             raise log 'Processed % for values from % to % created %',
                        partition_info.parent_table, partition_info.next_from,

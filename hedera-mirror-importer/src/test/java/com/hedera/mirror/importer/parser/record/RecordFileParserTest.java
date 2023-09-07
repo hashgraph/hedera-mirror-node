@@ -17,9 +17,12 @@
 package com.hedera.mirror.importer.parser.record;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -57,12 +60,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Flux;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, RecordFileParser> {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
+
+    @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Mock
     private RecordFileRepository recordFileRepository;
@@ -81,14 +88,17 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     private RecordItem recordItem;
 
     @Override
-    protected void assertParsed(RecordFile streamFile, boolean parsed, boolean dbError) {
-        super.assertParsed(streamFile, parsed, dbError);
+    protected void assertParsed(RecordFile recordFile, boolean parsed, boolean dbError) {
+        super.assertParsed(recordFile, parsed, dbError);
 
-        RecordFile recordFile = streamFile;
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
             verify(recordStreamFileListener, never()).onError();
+            // Can't verify the event object since ApplicationEvent has a timestamp field for when the event happened
+            verify(applicationEventPublisher)
+                    .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
+                            && recordFileParsedEvent.getConsensusEnd() == recordFile.getConsensusEnd()));
         } else {
             if (dbError) {
                 verify(recordStreamFileListener, never()).onEnd(recordFile);
@@ -96,6 +106,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
             } else {
                 verify(recordStreamFileListener, never()).onStart();
             }
+
+            verify(applicationEventPublisher, never()).publishEvent(any());
         }
     }
 
@@ -105,6 +117,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.all());
         return new RecordFileParser(
+                applicationEventPublisher,
                 new SimpleMeterRegistry(),
                 parserProperties,
                 recordFileRepository,

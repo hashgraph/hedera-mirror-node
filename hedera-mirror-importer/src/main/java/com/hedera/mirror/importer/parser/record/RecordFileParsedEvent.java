@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.importer.parser.record;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
-import java.math.BigInteger;
-import lombok.Data;
+import java.io.Serial;
+import lombok.Value;
+import org.springframework.context.ApplicationEvent;
 
-@Data
-public class MirrorTokenResponse {
+@Value
+public class RecordFileParsedEvent extends ApplicationEvent {
 
-    private String createdTimestamp;
+    @Serial
+    private static final long serialVersionUID = 4130926676946978039L;
 
-    private MirrorCustomFees customFees;
+    private final long consensusEnd;
 
-    private String modifiedTimestamp;
-
-    private String pauseStatus;
-
-    private String tokenId;
-
-    private BigInteger totalSupply;
+    public RecordFileParsedEvent(Object source, long consensusEnd) {
+        super(source);
+        this.consensusEnd = consensusEnd;
+    }
 }

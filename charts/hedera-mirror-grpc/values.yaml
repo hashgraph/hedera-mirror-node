@@ -111,10 +111,6 @@ livenessProbe:
 middleware:
   - circuitBreaker:
       expression: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-  - rateLimit:
-      average: 5
-      sourceCriterion:
-        requestHost: true
   - retry:
       attempts: 3
       initialInterval: 250ms

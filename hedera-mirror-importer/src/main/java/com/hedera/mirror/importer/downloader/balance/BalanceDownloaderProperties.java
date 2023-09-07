@@ -39,7 +39,7 @@ public class BalanceDownloaderProperties implements DownloaderProperties {
     private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties common;
 
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     @NotNull
     private Duration frequency = Duration.ofSeconds(30);

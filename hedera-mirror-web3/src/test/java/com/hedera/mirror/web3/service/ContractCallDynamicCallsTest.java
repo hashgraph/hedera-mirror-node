@@ -144,11 +144,17 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         APPROVE_CRYPTO_TRANSFER_FUNGIBLE_GET_ALLOWANCE(
                 "approveTokenCryptoTransferGetAllowanceGetBalance",
-                new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false}
+                },
                 null),
         APPROVE_CRYPTO_TRANSFER_NFT_GET_ALLOWANCE(
                 "approveTokenCryptoTransferGetAllowanceGetBalance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         APPROVE_FOR_ALL_TRANSFER_FROM_NFT_GET_ALLOWANCE(
                 "approveForAllTokenTransferFromGetAllowance",
@@ -158,7 +164,10 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "approveForAllTokenTransferGetAllowance", new Object[] {NFT_TRANSFER_ADDRESS, SPENDER_ALIAS, 1L}, null),
         APPROVE_FOR_ALL_CRYPTO_TRANSFER_NFT_GET_ALLOWANCE(
                 "approveForAllCryptoTransferGetAllowance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         TRANSFER_NFT_GET_ALLOWANCE_OWNER_OF(
                 "transferFromNFTGetAllowance", new Object[] {NFT_TRANSFER_ADDRESS, 1L}, null),
@@ -172,11 +181,17 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         CRYPTO_TRANSFER_FUNFIBLE_TOKEN_GET_OWNER(
                 "cryptoTransferFromGetAllowanceGetBalance",
-                new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false}
+                },
                 null),
         CRYPTO_TRANSFER_NFT_GET_OWNER(
                 "cryptoTransferFromGetAllowanceGetBalance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         GRANT_KYC_REVOKE_KYC_FUNGIBLE("grantKycRevokeKyc", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, null),
         GRANT_KYC_REVOKE_KYC_NFT("grantKycRevokeKyc", new Object[] {NFT_ADDRESS, SENDER_ALIAS}, null);

@@ -46,7 +46,7 @@ public class PartitionMaintenance {
     @EventListener(ApplicationReadyEvent.class)
     @Retryable
     @Leader
-    public void runMaintenance() {
+    public synchronized void runMaintenance() {
         log.info("Running partition maintenance");
         Stopwatch stopwatch = Stopwatch.createStarted();
         jdbcTemplate.execute(RUN_MAINTENANCE_QUERY);
