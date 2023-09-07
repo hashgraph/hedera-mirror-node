@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.historicalbalance;
 
 import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID_NODE_ID;
+import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.StreamType;
@@ -45,9 +46,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ConditionalOnProperty(
-        prefix = "hedera.mirror.importer.parser.record.historical-balances",
         name = "enabled",
-        matchIfMissing = true)
+        matchIfMissing = true,
+        prefix = "hedera.mirror.importer.parser.record.historical-balance")
 @CustomLog
 @Named
 public class HistoricalBalanceService {
@@ -86,12 +87,9 @@ public class HistoricalBalanceService {
                 (int) properties.getTransactionTimeout().toSeconds());
 
         // metrics
-        var generateDurationTimerBuilder = Timer.builder("hedera.mirror.importer.historicalbalance")
-                .description("The duration in seconds it took to generate historical balances information");
-        generateDurationMetricFailure =
-                generateDurationTimerBuilder.tag("success", "false").register(meterRegistry);
-        generateDurationMetricSuccess =
-                generateDurationTimerBuilder.tag("success", "true").register(meterRegistry);
+        var timer = Timer.builder(STREAM_PARSE_DURATION_METRIC_NAME).tag("type", StreamType.BALANCE.toString());
+        generateDurationMetricFailure = timer.tag("success", "false").register(meterRegistry);
+        generateDurationMetricSuccess = timer.tag("success", "true").register(meterRegistry);
     }
 
     /**
