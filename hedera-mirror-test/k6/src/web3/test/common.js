@@ -50,65 +50,6 @@ function ContractCallTestScenarioBuilder() {
   this._to = null;
   this._scenario = null;
   this._tags = {};
-  this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
-
-  this.build = function () {
-    const that = this;
-    return {
-      options: utils.getOptionsWithScenario(that._name, that._scenario, that._tags),
-      run: function (testParameters) {
-        const response = jsonPost(
-          that._url,
-          JSON.stringify({
-            to: that._to,
-            data: that._selector + that._args,
-          })
-        );
-        check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
-      },
-    };
-  };
-
-  this.name = function (name) {
-    this._name = name;
-    return this;
-  };
-
-  this.selector = function (selector) {
-    this._selector = selector;
-    return this;
-  };
-
-  this.args = function (args) {
-    this._args = args.join('');
-    return this;
-  };
-
-  this.to = function (to) {
-    this._to = to;
-    return this;
-  };
-
-  this.scenario = function (scenario) {
-    this._scenario = scenario;
-    return this;
-  };
-
-  this.tags = function (tags) {
-    this._tags = tags;
-    return this;
-  };
-
-  return this;
-}
-
-function ContractCallEstimateScenarioBuilder() {
-  this._name = null;
-  this._selector = null;
-  this._args = null;
-  this._to = null;
-  this._scenario = null;
-  this._tags = {};
   this._sleep = 0;
 
   this._block = null;
@@ -127,7 +68,7 @@ function ContractCallEstimateScenarioBuilder() {
       run: function (testParameters) {
         const payload = {
           to: that._to,
-          estimate: that._estimate || true, // Set default to true
+          estimate: that._estimate || false, // Set default to false
         };
 
         if (that._selector && that._args) {
@@ -171,7 +112,7 @@ function ContractCallEstimateScenarioBuilder() {
     return this;
   };
 
-  // Methods specific to ContractCallTestScenarioBuilder
+  // Methods specific to eth_call
   this.selector = function (selector) {
     this._selector = selector;
     return this;
@@ -182,7 +123,7 @@ function ContractCallEstimateScenarioBuilder() {
     return this;
   };
 
-  // Methods specific to ContractCallEstimateTestScenarioBuilder
+  // Methods specific to eth_estimateGas
   this.block = function (block) {
     this._block = block;
     return this;
@@ -221,53 +162,8 @@ function ContractCallEstimateScenarioBuilder() {
   return this;
 }
 
-function getParameterFromEnv(envVar, defaultValue) {
-  return envVar ? envVar.split(',') : defaultValue.split(',');
-}
-
-function buildScenario(params = {}) {
-  const scenarioBuilder = new ContractCallEstimateScenarioBuilder();
-
-  if (params.BLOCK) {
-    scenarioBuilder.block(params.BLOCK);
-  }
-
-  if (params.DATA) {
-    scenarioBuilder.data(params.DATA);
-  }
-
-  if (params.TO) {
-    scenarioBuilder.to(params.TO);
-  }
-
-  if (params.GAS) {
-    scenarioBuilder.gas(params.GAS);
-  }
-
-  if (params.FROM) {
-    scenarioBuilder.from(params.FROM);
-  }
-
-  if (params.VALUE) {
-    scenarioBuilder.value(params.VALUE);
-  }
-
-  if (params.NAME) {
-    scenarioBuilder.name(params.NAME);
-  }
-
-  if (params.SLEEP) {
-    scenarioBuilder.sleep(params.SLEEP);
-  }
-
-  return scenarioBuilder.build();
-}
-
 export {
   isNonErrorResponse,
   jsonPost,
-  ContractCallTestScenarioBuilder,
-  ContractCallEstimateScenarioBuilder,
-  getParameterFromEnv,
-  buildScenario,
+  ContractCallTestScenarioBuilder
 };
