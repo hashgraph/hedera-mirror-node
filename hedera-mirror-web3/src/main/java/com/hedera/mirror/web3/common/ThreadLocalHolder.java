@@ -47,7 +47,6 @@ public class ThreadLocalHolder {
 
     public static void cleanThread() {
         stack.remove();
-        stackBase.remove();
         isCreate.remove();
         aliases.remove();
         pendingAliases.remove();

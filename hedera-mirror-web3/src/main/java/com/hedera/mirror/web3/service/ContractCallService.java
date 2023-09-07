@@ -64,6 +64,8 @@ public class ContractCallService {
             }
 
             final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
+            ThreadLocalHolder.cleanStackBase();
+
             validateResult(ethCallTxnResult, params.getCallType());
 
             final var callResult = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
