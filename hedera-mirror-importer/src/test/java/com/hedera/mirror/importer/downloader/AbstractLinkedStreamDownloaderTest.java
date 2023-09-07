@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,38 +40,22 @@ public abstract class AbstractLinkedStreamDownloaderTest<T extends StreamFile<?>
         verifyUnsuccessful();
     }
 
-    @Test
-    @DisplayName("Bypass previous hash mismatch")
-    void hashMismatchWithBypass() {
-        expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L));
-
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
-        fileCopier.filterFiles(getStreamFilenameInstantString(file2) + "*").copy(); // Skip first file with zero hash
-        downloader.download();
-        verifyStreamFiles(List.of(file2));
-    }
-
-    @ParameterizedTest(name = "verifyHashChain {5}")
-    @CsvSource({
-        // @formatter:off
-        "'', '', 1970-01-01T00:00:00Z,        2000-01-01T10:00:00Z, true,  passes if both hashes are empty",
-        "xx, '', 1970-01-01T00:00:00Z,        2000-01-01T10:00:00Z, true,  passes if hash mismatch and expected hash is empty", // starting stream in middle
-        "'', xx, 1970-01-01T00:00:00Z,        2000-01-01T10:00:00Z, false, fails if hash mismatch and actual hash is empty", // bad db state
-        "xx, yy, 1970-01-01T00:00:00Z,        2000-01-01T10:00:00Z, false, fails if hash mismatch and hashes are non-empty",
-        "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10:00:00Z, true,  passes if hash mismatch but verifyHashAfter is after filename",
-        "xx, yy, 2000-01-01T10:00:00.000001Z, 2000-01-01T10:00:00Z, true,  passes if hash mismatch but verifyHashAfter is same as filename",
-        "xx, yy, 2000-01-01T09:59:59.999999Z, 2000-01-01T10:00:00Z, false, fails if hash mismatch and verifyHashAfter is before filename",
-        "xx, xx, 1970-01-01T00:00:00Z,        2000-01-01T10:00:00Z, true,  passes if hashes are equal"
-        // @formatter:on
-    })
+    @ParameterizedTest(name = "verifyHashChain {4}")
+    @CsvSource(
+            textBlock =
+                    """
+                '', '', 1970-01-01T00:00:00Z, true,  passes if both hashes are empty",
+                xx, '', 1970-01-01T00:00:00Z, true,  passes if hash mismatch and expected hash is empty
+                '', xx, 1970-01-01T00:00:00Z, false, fails if hash mismatch and actual hash is empty
+                xx, yy, 1970-01-01T00:00:00Z, false, fails if hash mismatch and hashes are non-empty
+                xx, xx, 1970-01-01T00:00:00Z, true,  passes if hashes are equal
+            """)
     void verifyHashChain(
             String actualPrevFileHash,
             String expectedPrevFileHash,
-            Instant verifyHashAfter,
             Instant fileInstant,
             Boolean expectedResult,
             String testName) {
-        downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
         T streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));

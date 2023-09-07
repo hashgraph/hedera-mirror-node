@@ -137,13 +137,6 @@ public class MirrorDateRangePropertiesProcessor {
         }
 
         if (!effectiveStartDate.equals(lastFileInstant)) {
-            Instant verifyHashAfter = mirrorProperties.getVerifyHashAfter();
-
-            if (verifyHashAfter.isBefore(effectiveStartDate)) {
-                mirrorProperties.setVerifyHashAfter(effectiveStartDate);
-                log.debug("Set verifyHashAfter to {}", effectiveStartDate);
-            }
-
             String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
             T effectiveStreamFile = streamType.newStreamFile();
             effectiveStreamFile.setConsensusStart(DomainUtils.convertToNanosMax(effectiveStartDate));

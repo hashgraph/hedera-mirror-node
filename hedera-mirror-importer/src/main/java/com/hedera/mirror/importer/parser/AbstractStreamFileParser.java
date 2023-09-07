@@ -72,27 +72,29 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     @Override
     public void parse(T streamFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean success = false;
+        boolean success = true;
 
-        if (shouldParse(streamFile)) {
-            try {
-                doParse(streamFile);
-
-                log.info(
-                        "Successfully processed {} items from {} in {}",
-                        streamFile.getCount(),
-                        streamFile.getName(),
-                        stopwatch);
-                success = true;
-                Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
-                parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Throwable e) {
-                log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
-                throw e;
-            } finally {
-                Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
-                timer.record(stopwatch.elapsed());
+        try {
+            if (!shouldParse(streamFile)) {
+                return;
             }
+
+            doParse(streamFile);
+            log.info(
+                    "Successfully processed {} items from {} in {}",
+                    streamFile.getCount(),
+                    streamFile.getName(),
+                    stopwatch);
+
+            Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
+            parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+        } catch (Throwable e) {
+            success = false;
+            log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
+            throw e;
+        } finally {
+            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
         }
     }
 
