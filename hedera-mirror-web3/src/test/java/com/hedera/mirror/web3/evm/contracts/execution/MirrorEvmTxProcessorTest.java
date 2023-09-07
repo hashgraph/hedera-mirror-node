@@ -43,6 +43,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -133,17 +134,20 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
+    @Mock
+    private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
     @BeforeEach
     void setup() {
         setupGasCalculator();
-        var operationRegistry = new OperationRegistry();
+        final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
-        String EVM_VERSION_0_34 = "v0.34";
-        Bytes32 chainId = Bytes32.fromHexString("0x0128");
+        final String EVM_VERSION_0_34 = "v0.34";
+        final Bytes32 chainId = Bytes32.fromHexString("0x0128");
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
         when(evmProperties.chainIdBytes32()).thenReturn(chainId);
         when(evmProperties.getEvmSpecVersion()).thenReturn(EvmSpecVersion.SHANGHAI);
@@ -160,14 +164,15 @@ class MirrorEvmTxProcessorTest {
                         mirrorEvmContractAliases,
                         evmProperties,
                         precompileMapper,
-                        basicHbarCentExchange),
+                        basicHbarCentExchange,
+                        prngSystemPrecompiledContract),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
                 false);
 
-        DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
+        final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
@@ -181,7 +186,7 @@ class MirrorEvmTxProcessorTest {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
-        var result =
+        final var result =
                 mirrorEvmTxProcessor.execute(sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true);
 
         assertThat(result)
@@ -194,7 +199,7 @@ class MirrorEvmTxProcessorTest {
     void missingCodeThrowsException() {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
-        MessageFrame.Builder protoFrame = MessageFrame.builder()
+        final MessageFrame.Builder protoFrame = MessageFrame.builder()
                 .messageFrameStack(new ArrayDeque<>())
                 .worldUpdater(updater)
                 .initialGas(1L)
@@ -227,7 +232,7 @@ class MirrorEvmTxProcessorTest {
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(transaction.getSender()).willReturn(sender.canonicalAddress());
         given(transaction.getValue()).willReturn(Wei.of(1L));
-        long GAS_LIMIT = 300_000L;
+        final long GAS_LIMIT = 300_000L;
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
                 .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
@@ -244,7 +249,7 @@ class MirrorEvmTxProcessorTest {
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(h -> null);
         // when:
-        MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
+        final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
                 commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
         // expect:
@@ -259,14 +264,14 @@ class MirrorEvmTxProcessorTest {
         given(updater.updater()).willReturn(stackedUpdater);
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
 
-        var evmAccount = mock(EvmAccount.class);
+        final var evmAccount = mock(EvmAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn((long) 0);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        var senderMutableAccount = mock(MutableAccount.class);
+        final var senderMutableAccount = mock(MutableAccount.class);
         given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);

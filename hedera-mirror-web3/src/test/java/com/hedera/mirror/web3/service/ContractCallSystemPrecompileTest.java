@@ -19,9 +19,10 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -29,7 +30,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(SystemContractFunctions.class)
-    void systemPrecompileFunctionsTestEthCall(SystemContractFunctions contractFunc) {
+    void systemPrecompileFunctionsTestEthCall(final SystemContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters =
@@ -50,10 +51,35 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
-                .as("result must be within 5-20% bigger than the gas used from the first call")
-                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
-                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGas() {
+        final var functionName = "getPseudorandomSeed";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthCall() {
+        final var functionName = "getPseudorandomSeed";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L);
+
+        final var result = contractCallService.processCall(serviceParameters);
+
+        // Length of "0x" + 64 hex characters (2 per byte * 32 bytes)
+        assertEquals(66, result.length(), "The string should represent a 32-byte long array");
     }
 
     @RequiredArgsConstructor
