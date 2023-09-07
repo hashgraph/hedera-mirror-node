@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -60,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
+import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.context.ApplicationEventPublisher;
 import reactor.core.publisher.Flux;
 
@@ -139,8 +141,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     }
 
     @Override
-    protected void mockDbFailure() {
-        doThrow(ParserException.class).when(recordItemListener).onItem(any());
+    protected void mockDbFailure(ParserException e) {
+        doThrow(e).when(recordItemListener).onItem(any());
     }
 
     @Test
@@ -262,7 +264,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     }
 
     @Test
-    void hashMismatch() {
+    void hashMismatch(CapturedOutput output) {
         // given
         var streamFile1 = getStreamFile();
         var streamFile2 = getStreamFile();
@@ -272,6 +274,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
         // when
         assertThatThrownBy(() -> parser.parse(streamFile2)).isInstanceOf(HashMismatchException.class);
+        assertThat(output.getOut()).contains("Error parsing file").contains("hash mismatch for file");
     }
 
     @Test

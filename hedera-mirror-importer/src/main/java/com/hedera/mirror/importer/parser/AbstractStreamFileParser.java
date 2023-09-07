@@ -74,8 +74,8 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
 
-        if (shouldParse(streamFile)) {
-            try {
+        try {
+            if (shouldParse(streamFile)) {
                 doParse(streamFile);
 
                 log.info(
@@ -86,13 +86,13 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 success = true;
                 Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
                 parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Throwable e) {
-                log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
-                throw e;
-            } finally {
-                Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
-                timer.record(stopwatch.elapsed());
             }
+        } catch (Throwable e) {
+            log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
+            throw e;
+        } finally {
+            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
         }
     }
 

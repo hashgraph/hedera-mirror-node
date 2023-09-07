@@ -66,9 +66,6 @@ public class MirrorProperties {
 
     private Long topicRunningHashV2AddedTimestamp;
 
-    @NotNull
-    private Instant verifyHashAfter = Instant.EPOCH;
-
     public String getNetwork() {
         return StringUtils.substringBefore(this.network, NETWORK_PREFIX_DELIMITER)
                 .toLowerCase();

@@ -118,7 +118,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             noRetryFor = OutOfMemoryError.class,
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
-    public void parse(RecordFile recordFile) {
+    public synchronized void parse(RecordFile recordFile) {
         super.parse(recordFile);
     }
 
@@ -147,8 +147,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             recordFile.finishLoad(count);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
-
             applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
+            last.set(recordFile);
         } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
@@ -179,8 +179,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     // Correct v5 block numbers once we receive a v6 block with a canonical number
     private void updateIndex(RecordFile recordFile) {
-        var lastInMemory = last.get();
-        var lastRecordFile = lastInMemory;
+        var lastRecordFile = last.get();
         var recordFileRepository = (RecordFileRepository) streamFileRepository;
 
         if (lastRecordFile == null) {
@@ -196,7 +195,5 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
             }
         }
-
-        last.compareAndSet(lastInMemory, recordFile);
     }
 }
