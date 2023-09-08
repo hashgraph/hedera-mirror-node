@@ -104,7 +104,8 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "payer_account_id": "8001",
         "value": "0x0077359400",
-        "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
+        "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",
+        "to_address": "0x0000000000000000000000000000000000001389"
       },
       {
         "call_data": "0x0707",
@@ -112,7 +113,8 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393",
         "payer_account_id": "8001",
         "value": "0x00B2D05E00",
-        "_value_description": "3000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
+        "_value_description": "3000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",
+        "to_address": "0x0000000000000000000000000000000000001389"
       },
       {
         "call_data": "0x0808",
@@ -120,7 +122,8 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394",
         "payer_account_id": "8001",
         "value": "0x00EE6B2800",
-        "_value_description": "4000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
+        "_value_description": "4000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",
+        "to_address": "0x0000000000000000000000000000000000001389"
       },
       {
         "call_data": "0x0909",
@@ -128,7 +131,8 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6395",
         "payer_account_id": "8001",
         "value": "0x0012A05F200",
-        "_value_description": "5000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
+        "_value_description": "5000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00",
+        "to_address": "0x0000000000000000000000000000000000001389"
       }
     ]
   },
