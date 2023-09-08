@@ -44,6 +44,11 @@ import * as contractCallTokenKey from './contractCallTokenKey.js';
 import * as contractCallTokenType from './contractCallTokenType.js';
 import * as contractCallTokenURI from './contractCallTokenURI.js';
 import * as contractCallTotalSupply from './contractCallTotalSupply.js';
+import * as contractCallEstimateFungibleTokenCustomFees from "./contractCallEstimateFungibleTokenCustomFees.js";
+import * as contractCallEstimateNftCustomFees from "./contractCallEstimateNftCustomFees.js";
+import * as contractCallEstimateCreateNft from "./contractCallEstimateCreateNft.js";
+import * as contractCallEstimateCreateFungibleToken from "./contractCallEstimateCreateFungibleToken.js";
+import * as contractCallEstimateTokenDissociate from "./contractCallEstimateTokenDissociate.js";
 
 // add test modules here
 const tests = {
@@ -74,6 +79,11 @@ const tests = {
   contractCallTokenType,
   contractCallTokenURI,
   contractCallTotalSupply,
+  contractCallEstimateFungibleTokenCustomFees,
+  contractCallEstimateNftCustomFees,
+  contractCallEstimateCreateNft,
+  contractCallEstimateCreateFungibleToken,
+  contractCallEstimateTokenDissociate
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
