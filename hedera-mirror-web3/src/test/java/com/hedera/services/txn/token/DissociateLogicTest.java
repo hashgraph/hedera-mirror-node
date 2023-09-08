@@ -32,7 +32,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -90,9 +90,9 @@ class DissociateLogicTest {
         when(store.getAccount(accountAddress, OnMissing.THROW))
                 .thenThrow(getException(Account.class.getName(), accountAddress));
         assertThatThrownBy(() -> dissociateLogic.dissociate(accountAddress, tokenAddresses, store))
-                .isInstanceOf(MirrorEvmTransactionException.class)
+                .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
-                        "detail",
+                        "message",
                         String.format(
                                 "Entity of type %s with id %s is missing", Account.class.getName(), accountAddress));
     }
@@ -103,9 +103,9 @@ class DissociateLogicTest {
         when(store.getToken(tokenAddress, OnMissing.THROW))
                 .thenThrow(getException(Token.class.getName(), tokenAddress));
         assertThatThrownBy(() -> dissociateLogic.dissociate(accountAddress, tokenAddresses, store))
-                .isInstanceOf(MirrorEvmTransactionException.class)
+                .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
-                        "detail",
+                        "message",
                         String.format("Entity of type %s with id %s is missing", Token.class.getName(), tokenAddress));
     }
 
@@ -274,9 +274,9 @@ class DissociateLogicTest {
         verify(spyAccount).setNumPositiveBalances(any(Integer.class));
     }
 
-    private MirrorEvmTransactionException getException(final String type, Object id) {
-        return new MirrorEvmTransactionException(
-                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
+    private InvalidTransactionException getException(final String type, Object id) {
+        return new InvalidTransactionException(
+                String.format("Entity of type %s with id %s is missing", type, id), FAIL_INVALID, true);
     }
 
     private void setupAccount() {
