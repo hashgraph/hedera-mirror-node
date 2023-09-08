@@ -81,7 +81,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(
                                 body.getStakingRewardFeeFraction().getNumerator(),
                                 NetworkStake::getStakingRewardFeeNumerator)
-                        .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                        .returns(body.getMaxTotalReward(), NetworkStake::getStakingRewardRate)
                         .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold));
     }
 }

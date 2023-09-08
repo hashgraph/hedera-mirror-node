@@ -77,7 +77,7 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
                 transactionBody.getStakingRewardFeeFraction().getDenominator());
         networkStake.setStakingRewardFeeNumerator(
                 transactionBody.getStakingRewardFeeFraction().getNumerator());
-        networkStake.setStakingRewardRate(transactionBody.getStakingRewardRate());
+        networkStake.setStakingRewardRate(transactionBody.getMaxTotalReward());
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 

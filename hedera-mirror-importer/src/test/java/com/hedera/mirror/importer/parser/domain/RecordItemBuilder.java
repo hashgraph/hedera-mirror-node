@@ -588,7 +588,7 @@ public class RecordItemBuilder {
                 .setStakingPeriodsStored(365)
                 .setStakingRewardFeeFraction(
                         Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
-                .setStakingRewardRate(100_000_000_000L)
+                .setMaxTotalReward(100_000_000_000L)
                 .setStakingStartThreshold(25_000_000_000_000_000L)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);

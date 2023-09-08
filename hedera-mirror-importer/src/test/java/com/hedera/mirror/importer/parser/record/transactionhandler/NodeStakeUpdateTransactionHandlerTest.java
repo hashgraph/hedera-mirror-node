@@ -136,7 +136,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                         body.getStakingRewardFeeFraction().getDenominator(),
                         NetworkStake::getStakingRewardFeeDenominator)
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
-                .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                .returns(body.getMaxTotalReward(), NetworkStake::getStakingRewardRate)
                 .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
