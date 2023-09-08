@@ -122,7 +122,7 @@ class HederaEvmWorldStateTest {
                 uniqueTokenDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        store.initializeStack(true);
+        ThreadLocalHolder.startThread(true, stackedStateFrames);
         store.wrap();
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,

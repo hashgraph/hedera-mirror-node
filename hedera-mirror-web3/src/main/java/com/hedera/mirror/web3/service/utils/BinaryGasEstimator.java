@@ -53,6 +53,8 @@ public class BinaryGasEstimator {
                 Math.max(minimumThreshold, properties.getEstimateGasIterationThreshold());
 
         while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {
+            ThreadLocalHolder.resetState();
+
             long mid = (hi + lo) / 2;
             HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
             iterationsMade++;
@@ -69,8 +71,6 @@ public class BinaryGasEstimator {
                 }
             }
             prevGasLimit = mid;
-
-            ThreadLocalHolder.resetState();
         }
 
         metricUpdater.accept(totalGasUsed, iterationsMade);

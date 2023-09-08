@@ -25,7 +25,7 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -50,26 +50,27 @@ public class ContractCallService {
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
-    private final StoreImpl store;
+    private final Store store;
 
     public String processCall(final CallServiceParameters params) {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
         try {
-            store.initializeStack(params.isEstimate());
+            ThreadLocalHolder.startThread(params.isEstimate(), store.getStackedStateFrames());
+
+            Bytes result;
             if (params.isEstimate()) {
-                stringResult = estimateGas(params);
-                return stringResult;
+                result = estimateGas(params);
+            } else {
+                final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
+
+                validateResult(ethCallTxnResult, params.getCallType());
+
+                result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
             }
 
-            final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
-
-            validateResult(ethCallTxnResult, params.getCallType());
-
-            final var callResult = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
-            stringResult = callResult.toHexString();
-            return stringResult;
+            return result.toHexString();
         } finally {
             ThreadLocalHolder.cleanThread();
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
@@ -87,7 +88,7 @@ public class ContractCallService {
      * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
-    private String estimateGas(final CallServiceParameters params) {
+    private Bytes estimateGas(final CallServiceParameters params) {
         HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas(), true);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
@@ -95,17 +96,16 @@ public class ContractCallService {
 
         // sanity check ensuring gasUsed is always lower than the inputted one
         if (gasUsedByInitialCall >= params.getGas()) {
-            return Bytes.ofUnsignedLong(gasUsedByInitialCall).toHexString();
+            return Bytes.ofUnsignedLong(gasUsedByInitialCall);
         }
 
-        ThreadLocalHolder.resetState();
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
                 gas -> doProcessCall(params, gas, true),
                 gasUsedByInitialCall,
                 params.getGas());
 
-        return Bytes.ofUnsignedLong(estimatedGas).toHexString();
+        return Bytes.ofUnsignedLong(estimatedGas);
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(

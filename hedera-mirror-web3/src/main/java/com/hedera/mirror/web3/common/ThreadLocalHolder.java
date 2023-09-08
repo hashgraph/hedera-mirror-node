@@ -17,10 +17,12 @@
 package com.hedera.mirror.web3.common;
 
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -31,19 +33,20 @@ public class ThreadLocalHolder {
     /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
     @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
-
+    /** Map of account aliases that were committed */
     @NonNull
     public static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
 
     @NonNull
+    /** Map of account aliases that are added by the current frame and are not yet committed */
     public static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
 
     @NonNull
+    /** Set of account aliases that are deleted by the current frame and are not yet committed */
     public static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
     /** Current top of stack (which is all linked together) */
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stack = ThreadLocal.withInitial(() -> null);
-
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
@@ -74,5 +77,21 @@ public class ThreadLocalHolder {
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();
+    }
+
+    public static void startThread(final boolean isEstimateGas, final StackedStateFrames stackedStateFrames) {
+        Optional<CachingStateFrame<Object>> stackBaseReference = Optional.empty();
+        if (stackBase.get() == null) {
+            stackBaseReference = Optional.of(stackedStateFrames.getEmptyStackBase());
+            stackBase.set(stackBaseReference.get());
+        }
+
+        if (stack.get() == null) {
+            if (isEstimateGas) {
+                stack.set(stackBase.get());
+            } else {
+                stack.set(stackBaseReference.orElseGet(stackedStateFrames::getEmptyStackBase));
+            }
+        }
     }
 }

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.stackBase;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -41,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -55,20 +52,8 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public void initializeStack(boolean isEstimateGas) {
-        Optional<CachingStateFrame<Object>> stackBaseReference = Optional.empty();
-        if (stackBase.get() == null) {
-            stackBaseReference = Optional.of(stackedStateFrames.getEmptyStackBase());
-            stackBase.set(stackBaseReference.get());
-        }
-
-        if (stack.get() == null) {
-            if (isEstimateGas) {
-                stack.set(stackBase.get());
-            } else {
-                stack.set(stackBaseReference.orElseGet(stackedStateFrames::getEmptyStackBase));
-            }
-        }
+    public StackedStateFrames getStackedStateFrames() {
+        return stackedStateFrames;
     }
 
     @Override

@@ -114,8 +114,9 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var stackedStateFrames = new StackedStateFrames(accessors);
+        ThreadLocalHolder.startThread(true, stackedStateFrames);
+
         store = new StoreImpl(stackedStateFrames);
-        store.initializeStack(true);
         store.wrap(); // Create top-level RWCachingStateFrame
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
