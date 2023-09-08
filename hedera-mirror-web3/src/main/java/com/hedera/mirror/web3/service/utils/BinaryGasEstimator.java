@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service.utils;
 
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import jakarta.inject.Named;
@@ -68,6 +69,8 @@ public class BinaryGasEstimator {
                 }
             }
             prevGasLimit = mid;
+
+            ThreadLocalHolder.resetState();
         }
 
         metricUpdater.accept(totalGasUsed, iterationsMade);

@@ -90,14 +90,13 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         super.setOperationTracer(operationTracer);
         setIsCreate(Address.ZERO.equals(receiver));
 
-        store.initializeStack(isEstimate);
         store.wrap();
         if (isEstimate) {
             final var defaultAccount = Account.getDefaultAccount();
             store.updateAccount(defaultAccount);
         }
 
-        final var result = super.execute(
+        return super.execute(
                 sender,
                 receiver,
                 gasPrice,
@@ -106,9 +105,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 callData,
                 isStatic,
                 aliasManager.resolveForEvm(receiver));
-
-        ThreadLocalHolder.cleanThread();
-        return result;
     }
 
     @SuppressWarnings("java:S5411")

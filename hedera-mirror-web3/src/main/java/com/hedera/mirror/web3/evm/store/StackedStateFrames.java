@@ -106,18 +106,6 @@ public class StackedStateFrames {
         stack.set(stack.get().getUpstream().orElseThrow(EmptyStackException::new));
     }
 
-    /** Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
-     * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
-     * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
-     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that actually
-     * hits the database (via the database accessors), all subsequent executions will fetch the same values
-     * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
-     * using this method.)
-     */
-    public void resetToBase() {
-        stack.set(stackBase.get());
-    }
-
     /** Get the classes of all the value types this stacked cache can hold. */
     @NonNull
     public Class<?>[] getValueClasses() {

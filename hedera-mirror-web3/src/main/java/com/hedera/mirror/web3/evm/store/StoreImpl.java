@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -42,6 +41,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -56,15 +56,17 @@ public class StoreImpl implements Store {
 
     @Override
     public void initializeStack(boolean isEstimateGas) {
+        Optional<CachingStateFrame<Object>> stackBaseReference = Optional.empty();
         if (stackBase.get() == null) {
-            stackBase.set(stackedStateFrames.getEmptyStackBase());
+            stackBaseReference = Optional.of(stackedStateFrames.getEmptyStackBase());
+            stackBase.set(stackBaseReference.get());
         }
 
         if (stack.get() == null) {
             if (isEstimateGas) {
-                stack.set(ThreadLocalHolder.stackBase.get());
+                stack.set(stackBase.get());
             } else {
-                stack.set(stackedStateFrames.getEmptyStackBase());
+                stack.set(stackBaseReference.orElseGet(stackedStateFrames::getEmptyStackBase));
             }
         }
     }

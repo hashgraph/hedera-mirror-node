@@ -18,6 +18,7 @@ package com.hedera.mirror.web3;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
+import com.hedera.mirror.web3.evm.store.Store;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Resource;
 import java.util.Collection;
@@ -43,6 +44,9 @@ public abstract class Web3IntegrationTest {
 
     @Resource
     protected MeterRegistry meterRegistry;
+
+    @Resource
+    protected Store store;
 
     @Resource
     private Collection<CacheManager> cacheManagers;

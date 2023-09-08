@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.resetToBase;
 import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
 import static com.hedera.mirror.web3.common.ThreadLocalHolder.stackBase;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -122,7 +123,7 @@ class StackedStateFramesTest {
         assertThat(sut.height()).isEqualTo(3);
         assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
 
-        sut.resetToBase();
+        resetToBase();
         assertThat(sut.height()).isZero();
         assertThat(sut.cachedFramesDepth()).isEqualTo(2);
         assertThat(sut.top()).isEqualTo(roOnTopOfBase);

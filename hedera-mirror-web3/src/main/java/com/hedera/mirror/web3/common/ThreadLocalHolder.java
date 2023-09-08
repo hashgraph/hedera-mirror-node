@@ -45,15 +45,32 @@ public class ThreadLocalHolder {
 
     private ThreadLocalHolder() {}
 
+    /** Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
+     * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
+     * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
+     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that actually
+     * hits the database (via the database accessors), all subsequent executions will fetch the same values
+     * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
+     * using this method.)
+     */
+    public static void resetToBase() {
+        stack.set(stackBase.get());
+    }
+
     public static void cleanThread() {
         stack.remove();
+        stackBase.remove();
         isCreate.remove();
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();
     }
 
-    public static void cleanStackBase() {
-        stackBase.remove();
+    public static void resetState() {
+        resetToBase();
+        isCreate.remove();
+        aliases.remove();
+        pendingAliases.remove();
+        pendingRemovals.remove();
     }
 }

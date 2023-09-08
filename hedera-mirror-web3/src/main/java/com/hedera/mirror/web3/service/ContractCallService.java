@@ -57,14 +57,13 @@ public class ContractCallService {
         var stringResult = "";
 
         try {
+            store.initializeStack(params.isEstimate());
             if (params.isEstimate()) {
                 stringResult = estimateGas(params);
-                ThreadLocalHolder.cleanStackBase();
                 return stringResult;
             }
 
             final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
-            ThreadLocalHolder.cleanStackBase();
 
             validateResult(ethCallTxnResult, params.getCallType());
 
@@ -72,6 +71,7 @@ public class ContractCallService {
             stringResult = callResult.toHexString();
             return stringResult;
         } finally {
+            ThreadLocalHolder.cleanThread();
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }
@@ -98,6 +98,7 @@ public class ContractCallService {
             return Bytes.ofUnsignedLong(gasUsedByInitialCall).toHexString();
         }
 
+        ThreadLocalHolder.resetState();
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
                 gas -> doProcessCall(params, gas, true),
