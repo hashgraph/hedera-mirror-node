@@ -28,7 +28,7 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
@@ -307,7 +307,7 @@ class ContractControllerTest {
         request.setData("0xa26388bb");
 
         given(service.processCall(any()))
-                .willThrow(new InvalidTransactionException(
+                .willThrow(new MirrorEvmTransactionException(
                         CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
         webClient

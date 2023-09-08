@@ -28,7 +28,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -74,7 +74,7 @@ class AssociateLogicTest {
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
-                        "detail",
+                        "message",
                         String.format(
                                 "Entity of type %s with id %s is missing", Account.class.getName(), accountAddress));
     }
@@ -87,7 +87,7 @@ class AssociateLogicTest {
         assertThatThrownBy(() -> associateLogic.associate(accountAddress, tokenAddresses, store))
                 .isInstanceOf(InvalidTransactionException.class)
                 .hasFieldOrPropertyWithValue(
-                        "detail",
+                        "message",
                         String.format("Entity of type %s with id %s is missing", Token.class.getName(), tokenAddress));
     }
 
@@ -161,6 +161,6 @@ class AssociateLogicTest {
 
     private InvalidTransactionException getException(final String type, Object id) {
         return new InvalidTransactionException(
-                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type, id), "");
+                String.format("Entity of type %s with id %s is missing", type, id), FAIL_INVALID, true);
     }
 }
