@@ -49,6 +49,8 @@ public class AbstractTokenAccount implements History {
 
     private long balance;
 
+    private Long balanceTimestamp;
+
     @Enumerated(EnumType.ORDINAL)
     private TokenFreezeStatusEnum freezeStatus;
 

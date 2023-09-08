@@ -64,6 +64,9 @@ public abstract class AbstractEntity implements History {
             end""")
     private Long balance;
 
+    @UpsertColumn(coalesce = "coalesce({0}, e_{0})")
+    private Long balanceTimestamp;
+
     @Column(updatable = false)
     private Long createdTimestamp;
 

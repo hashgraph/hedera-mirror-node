@@ -304,6 +304,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             var entity = new Entity();
             entity.setId(cryptoTransfer.getEntityId());
             entity.setBalance(cryptoTransfer.getAmount());
+            entity.setBalanceTimestamp(cryptoTransfer.getConsensusTimestamp());
             onEntity(entity);
         }
 
@@ -449,9 +450,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         if (entityProperties.getPersist().isTrackBalance()) {
             var tokenAccount = new TokenAccount();
-            tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
-            tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
+            var tokenTransferId = tokenTransfer.getId();
+            tokenAccount.setAccountId(tokenTransferId.getAccountId().getId());
+            tokenAccount.setTokenId(tokenTransferId.getTokenId().getId());
             tokenAccount.setBalance(tokenTransfer.getAmount());
+            tokenAccount.setBalanceTimestamp(tokenTransferId.getConsensusTimestamp());
             onTokenAccount(tokenAccount);
         }
 
@@ -629,6 +632,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
         if (!current.isHistory()) {
             previous.addBalance(current.getBalance());
+            previous.setBalanceTimestamp(current.getBalanceTimestamp());
 
             if (current.getEthereumNonce() != null) {
                 previous.setEthereumNonce(current.getEthereumNonce());
@@ -667,6 +671,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         dest.addBalance(src.getBalance());
+        if (dest.getBalanceTimestamp() == null) {
+            dest.setBalanceTimestamp(src.getBalanceTimestamp());
+        }
 
         if (dest.getDeclineReward() == null) {
             dest.setDeclineReward(src.getDeclineReward());
@@ -910,6 +917,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (!lastTokenAccount.isHistory()) {
             if (!newTokenAccount.isHistory()) {
                 lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+                lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
             } else {
                 lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
                 lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
@@ -924,6 +932,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
             lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
             return lastTokenAccount;
         }
 
@@ -945,6 +954,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
         newTokenAccount.setBalance(lastTokenAccount.getBalance());
+        newTokenAccount.setBalanceTimestamp(lastTokenAccount.getBalanceTimestamp());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {
@@ -990,6 +1000,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
                 tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(-1);
+                tokenAccount.setBalanceTimestamp(transaction.getConsensusTimestamp());
                 onTokenAccount(tokenAccount);
             }
 
@@ -998,6 +1009,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
                 tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(1);
+                tokenAccount.setBalanceTimestamp(transaction.getConsensusTimestamp());
                 onTokenAccount(tokenAccount);
             }
         }

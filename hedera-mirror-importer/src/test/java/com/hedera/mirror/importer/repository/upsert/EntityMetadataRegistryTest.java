@@ -42,19 +42,20 @@ class EntityMetadataRegistryTest extends IntegrationTest {
 
     @Test
     void lookup() {
-        var all = "alias,auto_renew_account_id,auto_renew_period,balance,created_timestamp,decline_reward,deleted,"
-                + "ethereum_nonce,evm_address,expiration_timestamp,id,key,max_automatic_token_associations,memo,num,"
-                + "obtainer_id,permanent_removal,proxy_account_id,public_key,realm,receiver_sig_required,shard,"
-                + "stake_period_start,staked_account_id,staked_node_id,submit_key,timestamp_range,type";
+        var all = "alias,auto_renew_account_id,auto_renew_period,balance,balance_timestamp,created_timestamp,"
+                + "decline_reward,deleted,ethereum_nonce,evm_address,expiration_timestamp,id,key,"
+                + "max_automatic_token_associations,memo,num,obtainer_id,permanent_removal,proxy_account_id,public_key,"
+                + "realm,receiver_sig_required,shard,stake_period_start,staked_account_id,staked_node_id,submit_key,"
+                + "timestamp_range,type";
 
-        var nullable = "alias,auto_renew_account_id,auto_renew_period,balance,created_timestamp,deleted,"
-                + "ethereum_nonce,evm_address,expiration_timestamp,key,max_automatic_token_associations,obtainer_id,"
-                + "permanent_removal,proxy_account_id,public_key,receiver_sig_required,stake_period_start,"
+        var nullable = "alias,auto_renew_account_id,auto_renew_period,balance,balance_timestamp,created_timestamp,"
+                + "deleted,ethereum_nonce,evm_address,expiration_timestamp,key,max_automatic_token_associations,"
+                + "obtainer_id,permanent_removal,proxy_account_id,public_key,receiver_sig_required,stake_period_start,"
                 + "staked_account_id,staked_node_id,submit_key";
-        var updatable = "auto_renew_account_id,auto_renew_period,balance,decline_reward,deleted,ethereum_nonce,"
-                + "expiration_timestamp,key,max_automatic_token_associations,memo,obtainer_id,permanent_removal,"
-                + "proxy_account_id,public_key,receiver_sig_required,stake_period_start,staked_account_id,"
-                + "staked_node_id,submit_key,timestamp_range,type";
+        var updatable = "auto_renew_account_id,auto_renew_period,balance,balance_timestamp,decline_reward,deleted,"
+                + "ethereum_nonce,expiration_timestamp,key,max_automatic_token_associations,memo,obtainer_id,"
+                + "permanent_removal,proxy_account_id,public_key,receiver_sig_required,stake_period_start,"
+                + "staked_account_id,staked_node_id,submit_key,timestamp_range,type";
 
         var entity = domainBuilder.entity().get();
         var newValue = new byte[] {0, 1, 2};
@@ -69,7 +70,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(nullable, e -> e.columns(ColumnMetadata::isNullable, "{0}"))
                 .returns(updatable, e -> e.columns(ColumnMetadata::isUpdatable, "{0}"))
                 .extracting(EntityMetadata::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(28)
+                .hasSize(29)
                 .first(InstanceOfAssertFactories.type(ColumnMetadata.class))
                 .returns("alias", ColumnMetadata::getName)
                 .returns(byte[].class, ColumnMetadata::getType)

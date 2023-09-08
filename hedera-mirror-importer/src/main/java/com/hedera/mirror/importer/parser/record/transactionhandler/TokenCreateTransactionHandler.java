@@ -170,6 +170,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             tokenAccount.setAccountId(account.getId());
             tokenAccount.setAssociated(true);
             tokenAccount.setAutomaticAssociation(false);
+            tokenAccount.setBalanceTimestamp(consensusTimestamp);
             tokenAccount.setCreatedTimestamp(consensusTimestamp);
             tokenAccount.setFreezeStatus(freezeStatus);
             tokenAccount.setKycStatus(kycStatus);

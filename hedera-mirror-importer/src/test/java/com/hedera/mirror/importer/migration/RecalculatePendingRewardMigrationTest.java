@@ -20,12 +20,14 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hedera.mirror.importer.migration.RecalculatePendingRewardMigration.FIRST_NONZERO_REWARD_RATE_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -66,7 +68,8 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay))
-                .persist();
+                .get();
+        persistEntities(entity);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(100L)
@@ -87,10 +90,10 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
@@ -98,7 +101,8 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay - 1))
-                .persist();
+                .get();
+        persistEntities(entity, entity1);
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
@@ -122,10 +126,10 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
@@ -133,7 +137,9 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
-                .persist();
+                .get();
+        persistEntities(entity, entity1);
+
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
@@ -157,10 +163,10 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
@@ -170,7 +176,8 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(stakePeriodStart))
-                .persist();
+                .get();
+        persistEntities(entity, entity1);
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(101 * TINYBARS_IN_ONE_HBAR)
@@ -222,10 +229,10 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
@@ -233,7 +240,8 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.deleted(true).stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
-                .persist();
+                .get();
+        persistEntities(entity, entity1);
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
@@ -255,10 +263,10 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800L)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
@@ -266,7 +274,8 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         var entity1 = domainBuilder
                 .entity()
                 .customize(e -> e.declineReward(true).stakedNodeId(0L).stakePeriodStart(firstNonZeroRewardEpochDay))
-                .persist();
+                .get();
+        persistEntities(entity, entity1);
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
@@ -288,15 +297,16 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
         // given
         setupNodeStakeForNetwork(network);
         // need 0.0.800's entity stake, also set the last calculated epoch day to the 4th non-zero reward period
-        domainBuilder
+        var entity = domainBuilder
                 .entity()
                 .customize(e -> e.id(800L).num(800L).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
         var entityStake800 = MigrationEntityStake.builder()
                 .id(800L)
                 .endStakePeriod(firstNonZeroRewardEpochDay + 3)
                 .build();
-        var entity1 = domainBuilder.entity().customize(e -> e.stakedNodeId(-1L)).persist();
+        var entity1 = domainBuilder.entity().customize(e -> e.stakedNodeId(-1L)).get();
+        persistEntities(entity, entity1);
         var entityStake1 = MigrationEntityStake.builder()
                 .id(entity1.getId())
                 .stakeTotalStart(100 * TINYBARS_IN_ONE_HBAR)
@@ -332,6 +342,24 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
     private long getNodeStakeTimestamp(long epochDay) {
         return DomainUtils.convertToNanosMax(
                 TestUtils.asStartOfEpochDay(epochDay).plusNanos(100L));
+    }
+
+    private void persistEntities(Entity... entities) {
+        for (var entity : entities) {
+            jdbcOperations.update(
+                    "insert into entity (decline_reward, deleted, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
+                            + "values (?,?,?,?,?,?,?,?,?::int8range,?::entity_type)",
+                    entity.getDeclineReward(),
+                    entity.getDeleted(),
+                    entity.getId(),
+                    entity.getNum(),
+                    entity.getRealm(),
+                    entity.getShard(),
+                    entity.getStakedNodeId(),
+                    entity.getStakePeriodStart(),
+                    PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
+                    entity.getType().toString());
+        }
     }
 
     private void setupNodeStakeForNetwork(String network) {

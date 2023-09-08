@@ -77,7 +77,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     @BeforeEach
     void beforeEach() {
-        timestamp = new AtomicLong(0L);
+        timestamp = new AtomicLong(domainBuilder.timestamp());
         tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
                 jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
     }
@@ -171,6 +171,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount2.setBalance(0L);
         tokenAccount3.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
                         tokenAccount2,
@@ -194,6 +195,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(0L);
         deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
                         tokenAccount2,
@@ -217,6 +219,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(0L);
         deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
                         tokenAccount2,
@@ -377,11 +380,16 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         initialSetup();
 
         // Second record file
-        domainBuilder
+        var secondRecordFile = domainBuilder
                 .recordFile()
                 .customize(r -> r.consensusStart(timestamp(Duration.ofSeconds(5)))
                         .consensusEnd(timestamp(Duration.ofSeconds(2))))
                 .persist();
+        tokenAccount.setBalanceTimestamp(secondRecordFile.getConsensusEnd());
+        tokenAccount2.setBalanceTimestamp(secondRecordFile.getConsensusEnd());
+        tokenAccount3.setBalanceTimestamp(secondRecordFile.getConsensusEnd());
+        deletedEntityTokenAccount4.setBalanceTimestamp(secondRecordFile.getConsensusEnd());
+        disassociatedTokenAccount5.setBalanceTimestamp(secondRecordFile.getConsensusEnd());
     }
 
     private void initialSetup() {

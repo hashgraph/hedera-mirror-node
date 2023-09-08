@@ -57,16 +57,18 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
                 case
                     when ta.associated is false then 0
                     else coalesce(tt.amount + tb.balance, tb.balance, 0)
-                end as balance
+                end as balance,
+                to_timestamp as balance_timestamp
               from token_balance_latest tb
               left join token_account ta on ta.account_id = tb.account_id and ta.token_id = tb.token_id
               left join token_transfer tt on tt.token_id = tb.token_id and tt.account_id = tb.account_id
             )
-            insert into token_account (account_id, associated, balance, created_timestamp, timestamp_range, token_id)
-            select account_id, associated, balance, 0, '[0,)', token_id
+            insert into token_account (account_id, associated, balance, balance_timestamp, created_timestamp, timestamp_range, token_id)
+            select account_id, associated, balance, balance_timestamp, 0, '[0,)', token_id
             from initial_balance
             on conflict (account_id, token_id) do update
-            set balance = excluded.balance;
+            set balance = excluded.balance,
+              balance_timestamp = excluded.balance_timestamp;
             """;
 
     private final JdbcOperations jdbcOperations;
