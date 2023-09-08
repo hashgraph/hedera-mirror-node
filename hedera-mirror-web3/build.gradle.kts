@@ -24,7 +24,6 @@ dependencies {
     implementation("com.hedera.evm:hedera-evm")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
-    implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("com.github.vladimir-bukhtoyarov:bucket4j-core")
     implementation("io.micrometer:micrometer-registry-prometheus")
