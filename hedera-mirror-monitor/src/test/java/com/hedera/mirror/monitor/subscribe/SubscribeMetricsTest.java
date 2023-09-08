@@ -27,24 +27,21 @@ import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.grpc.GrpcSubscriberProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.StringWriter;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.appender.WriterAppender;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class SubscribeMetricsTest {
 
     private MeterRegistry meterRegistry;
     private SubscribeProperties subscribeProperties;
     private SubscribeMetrics subscribeMetrics;
     private AbstractSubscriberProperties properties;
-    private StringWriter logOutput;
-    private WriterAppender writerAppender;
 
     @BeforeEach
     void setup() {
@@ -53,22 +50,6 @@ class SubscribeMetricsTest {
         meterRegistry = new SimpleMeterRegistry();
         subscribeProperties = new SubscribeProperties();
         subscribeMetrics = new SubscribeMetrics(meterRegistry, subscribeProperties);
-
-        logOutput = new StringWriter();
-        writerAppender = WriterAppender.newBuilder()
-                .setName("stringAppender")
-                .setTarget(logOutput)
-                .build();
-        Logger logger = (Logger) LogManager.getLogger(subscribeMetrics);
-        logger.addAppender(writerAppender);
-        writerAppender.start();
-    }
-
-    @AfterEach
-    void after() {
-        writerAppender.stop();
-        Logger logger = (Logger) LogManager.getLogger(subscribeMetrics);
-        logger.removeAppender(writerAppender);
     }
 
     @Test
@@ -120,7 +101,7 @@ class SubscribeMetricsTest {
     }
 
     @Test
-    void status() {
+    void status(CapturedOutput logOutput) {
         TestScenario testSubscription1 = new TestScenario();
         TestScenario testSubscription2 = new TestScenario();
         testSubscription2.setName("Test2");
@@ -137,7 +118,7 @@ class SubscribeMetricsTest {
     }
 
     @Test
-    void statusDisabled() {
+    void statusDisabled(CapturedOutput logOutput) {
         subscribeProperties.setEnabled(false);
 
         subscribeMetrics.onNext(response(new TestScenario()));
@@ -147,7 +128,7 @@ class SubscribeMetricsTest {
     }
 
     @Test
-    void statusNotRunning() {
+    void statusNotRunning(CapturedOutput logOutput) {
         TestScenario testSubscription = new TestScenario();
         testSubscription.setStatus(ScenarioStatus.COMPLETED);
 
