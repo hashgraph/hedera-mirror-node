@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
@@ -280,6 +280,6 @@ public class StoreImpl implements Store {
 
     private InvalidTransactionException missingEntityException(final Class<?> type, Object id) {
         return new InvalidTransactionException(
-                FAIL_INVALID, String.format("Entity of type %s with id %s is missing", type.getName(), id), "");
+                String.format("Entity of type %s with id %s is missing", type.getName(), id), FAIL_INVALID, true);
     }
 }

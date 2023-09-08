@@ -26,7 +26,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -122,7 +122,7 @@ public class ContractCallService {
                     params.isStatic(),
                     isEstimate);
         } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
+            throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
         return transactionResult;
     }
@@ -132,7 +132,7 @@ public class ContractCallService {
             updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new InvalidTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
             updateGasMetric(type, txnResult.getGasUsed(), 1);
         }

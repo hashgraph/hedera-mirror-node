@@ -24,7 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -168,7 +168,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(revertFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class)
+                .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
                 .hasFieldOrPropertyWithValue("detail", "Custom revert message")
                 .hasFieldOrPropertyWithValue(
@@ -183,7 +183,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(revertFunctions.functionSignature), REVERTER_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class)
+                .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
                 .hasFieldOrPropertyWithValue("detail", revertFunctions.errorDetail)
                 .hasFieldOrPropertyWithValue("data", revertFunctions.errorData);
@@ -198,7 +198,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(wrongFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class)
+                .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage("CONTRACT_REVERT_EXECUTED")
                 .hasFieldOrPropertyWithValue("data", "0x");
 
@@ -211,7 +211,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -220,7 +220,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
