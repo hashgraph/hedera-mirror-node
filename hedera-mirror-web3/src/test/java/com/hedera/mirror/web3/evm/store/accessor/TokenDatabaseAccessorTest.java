@@ -152,6 +152,7 @@ class TokenDatabaseAccessorTest {
         when(defaultEntity.getShard()).thenReturn(0L);
         when(defaultEntity.getRealm()).thenReturn(0L);
         when(defaultEntity.getNum()).thenReturn(0L);
+        when(defaultEntity.getType()).thenReturn(EntityType.TOKEN);
         assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO)).hasValueSatisfying(token -> assertThat(token)
                 .returns(emptyList(), Token::mintedUniqueTokens)
                 .returns(emptyList(), Token::removedUniqueTokens)

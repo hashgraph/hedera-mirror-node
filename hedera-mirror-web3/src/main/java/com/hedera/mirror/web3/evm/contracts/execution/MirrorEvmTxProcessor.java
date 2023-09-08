@@ -21,7 +21,7 @@ import static com.hedera.mirror.web3.common.ThreadLocalHolder.isCreate;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -51,7 +51,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final MirrorOperationTracer operationTracer;
-    private final StoreImpl store;
+    private final Store store;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -65,7 +65,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
-            final StoreImpl store) {
+            final Store store) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         this.aliasManager = aliasManager;
@@ -113,6 +113,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         return isCreate.get() ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
+    @SuppressWarnings("java:S5411")
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
@@ -123,24 +124,22 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        if (Boolean.TRUE.equals(isCreate.get())) {
-            return baseInitialFrame
-                    .type(MessageFrame.Type.CONTRACT_CREATION)
-                    .address(to)
-                    .contract(to)
-                    .inputData(payload)
-                    .inputData(Bytes.EMPTY)
-                    .code(CodeFactory.createCode(payload, 0, false))
-                    .build();
-        } else {
-            return baseInitialFrame
-                    .type(MessageFrame.Type.MESSAGE_CALL)
-                    .address(to)
-                    .contract(to)
-                    .inputData(payload)
-                    .code(code)
-                    .build();
-        }
+        return isCreate.get()
+                ? baseInitialFrame
+                        .type(MessageFrame.Type.CONTRACT_CREATION)
+                        .address(to)
+                        .contract(to)
+                        .inputData(payload)
+                        .inputData(Bytes.EMPTY)
+                        .code(CodeFactory.createCode(payload, 0, false))
+                        .build()
+                : baseInitialFrame
+                        .type(MessageFrame.Type.MESSAGE_CALL)
+                        .address(to)
+                        .contract(to)
+                        .inputData(payload)
+                        .code(code)
+                        .build();
     }
 
     public void setIsCreate(boolean isCreate) {

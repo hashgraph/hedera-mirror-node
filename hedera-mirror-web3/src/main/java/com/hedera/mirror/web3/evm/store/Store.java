@@ -76,10 +76,6 @@ public interface Store {
 
     /**
      * Updating the in-memory state with current pending changes that are part of the current transaction.
-     *
-     * Currently we use a single {@link RWCachingStateFrame} for all the changes that are part of a single transaction,
-     * so we don't utilize the commit functionality
-     *
      */
     void commit();
 

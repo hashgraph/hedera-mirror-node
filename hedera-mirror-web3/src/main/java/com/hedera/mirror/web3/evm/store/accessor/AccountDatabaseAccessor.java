@@ -66,8 +66,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private Account accountFromEntity(Entity entity) {
-        if (TOKEN.equals(entity.getType())) {
-            throw new WrongTypeException("Trying to map token to account");
+        if (!ACCOUNT.equals(entity.getType()) && !CONTRACT.equals(entity.getType())) {
+            throw new WrongTypeException("Trying to map an account/contract from a different type");
         }
 
         final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());

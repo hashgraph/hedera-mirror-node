@@ -32,8 +32,13 @@ public class ThreadLocalHolder {
     @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
 
+    @NonNull
     public static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
+
+    @NonNull
     public static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
+
+    @NonNull
     public static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
     /** Current top of stack (which is all linked together) */
     @NonNull
@@ -58,12 +63,9 @@ public class ThreadLocalHolder {
     }
 
     public static void cleanThread() {
+        resetState();
         stack.remove();
         stackBase.remove();
-        isCreate.remove();
-        aliases.remove();
-        pendingAliases.remove();
-        pendingRemovals.remove();
     }
 
     public static void resetState() {

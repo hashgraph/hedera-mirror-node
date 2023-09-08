@@ -116,14 +116,18 @@ public class StoreImpl implements Store {
     @Override
     public TokenRelationship getTokenRelationship(
             final TokenRelationshipKey tokenRelationshipKey, final OnMissing throwIfMissing) {
-        final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
+        try {
+            final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
+            final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return tokenRelationship.orElseThrow(
-                    () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
-        } else {
-            return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return tokenRelationship.orElseThrow(
+                        () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
+            } else {
+                return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return TokenRelationship.getEmptyTokenRelationship();
         }
     }
 

@@ -206,6 +206,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
+        when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         final var token = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
         assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
@@ -230,6 +231,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
+        when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);

@@ -65,9 +65,8 @@ following states:
 
 (There's also an `INVALID` state that would indicate a logic error within the cache if you ever ran across it.)
 
-### Important Usage Note: This _wants_ to be a cache of _values_ but in fact is a cache of
-
-_references_ - the user must be _cautious_!
+### Important Usage Note: This
+_wants_ to be a cache of_values_ but in fact is a cache of_references_ - the user must be_cautious_!
 
 These caches cache _references_ to things. They should really, really only be used to cache _immutable value-like_
 entities. Otherwise, if you actually _modify_ an entities' state you'll modify it not only in the top-level cache but in
