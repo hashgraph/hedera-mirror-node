@@ -1845,6 +1845,52 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 precompileTestContractSolidityAddress);
     }
 
+    @Then("I call estimateGas with pseudo random seed")
+    public void pseudoRandomSeedEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PSEUDO_RANDOM_SEED)
+                .encodeCallWithArgs();
+
+        validateGasEstimation(
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.PSEUDO_RANDOM_SEED.getActualGas(),
+                estimatePrecompileContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with pseudo random number")
+    public void pseudoRandomNumberEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PSEUDO_RANDOM_NUMBER)
+                .encodeCallWithArgs(500L, 1000L);
+
+        validateGasEstimation(
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.PSEUDO_RANDOM_NUMBER.getActualGas(),
+                estimatePrecompileContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with exchange rate tinycents to tinybars")
+    public void exchangeRateTinyCentsToTinyBarsEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
+                        ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS)
+                .encodeCallWithArgs(new BigInteger("100"));
+
+        validateGasEstimation(
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS.getActualGas(),
+                estimatePrecompileContractSolidityAddress);
+    }
+
+    @Then("I call estimateGas with exchange rate tinybars to tinycents")
+    public void exchangeRateTinyBarsToTinyCentsEstimateGas() {
+        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
+                        ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS)
+                .encodeCallWithArgs(new BigInteger("100"));
+
+        validateGasEstimation(
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS.getActualGas(),
+                estimatePrecompileContractSolidityAddress);
+    }
+
     private void validateGasEstimationForCreateToken(String selector, int actualGasUsed, long value) {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(selector)
@@ -1913,6 +1959,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         DISSOCIATE_AND_ASSOCIATE("dissociateAndAssociateTokenExternal", 1434814),
         DISSOCIATE_TOKEN("dissociateTokenExternal", 729428),
         DISSOCIATE_TOKENS("dissociateTokensExternal", 730641),
+        EXCHANGE_RATE_TINYCENTS_TO_TINYBARS("tinycentsToTinybars", 24833),
+        EXCHANGE_RATE_TINYBARS_TO_TINYCENTS("tinybarsToTinycents", 24811),
         FREEZE_TOKEN("freezeTokenExternal", 39339),
         GET_APPROVED("getApprovedExternal", 25192),
         GET_APPROVED_ERC("getApproved", 27393),
@@ -1939,6 +1987,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         NESTED_FREEZE_UNFREEZE("nestedFreezeUnfreezeTokenExternal", 54548),
         NESTED_GRANT_REVOKE_KYC("nestedGrantAndRevokeTokenKYCExternal", 54516),
         OWNER_OF("getOwnerOf", 27271),
+        PSEUDO_RANDOM_SEED("getPseudorandomSeed", 36270),
+        PSEUDO_RANDOM_NUMBER("getPseudorandomNumber", 36729),
         REVOKE_KYC("revokeTokenKycExternal", 39324),
         REDIRECT_FOR_TOKEN_ALLOWANCE("allowanceRedirect", 33182),
         REDIRECT_FOR_TOKEN_APPROVE("approveRedirect", 737257),

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -41,9 +42,13 @@ import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
@@ -70,7 +75,7 @@ public class EvmOperationConstructionUtil {
     public static final String EVM_VERSION = EVM_VERSION_0_34;
 
     public static Map<String, Provider<ContractCreationProcessor>> ccps(
-            GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
         return Map.of(
                 EVM_VERSION_0_30,
@@ -79,6 +84,7 @@ public class EvmOperationConstructionUtil {
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1));
     }
 
+    @SuppressWarnings("java:S107")
     public static Map<String, Provider<MessageCallProcessor>> mcps(
             final GasCalculator gasCalculator,
             final AbstractAutoCreationLogic autoCreationLogic,
@@ -86,7 +92,8 @@ public class EvmOperationConstructionUtil {
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
-            final BasicHbarCentExchange basicHbarCentExchange) {
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
         return Map.of(
@@ -99,14 +106,20 @@ public class EvmOperationConstructionUtil {
                         mirrorEvmContractAliases,
                         evm,
                         new PrecompileContractRegistry(),
-                        precompiles(mirrorNodeEvmProperties, precompileMapper, gasCalculator, basicHbarCentExchange)));
+                        precompiles(
+                                mirrorNodeEvmProperties,
+                                precompileMapper,
+                                gasCalculator,
+                                basicHbarCentExchange,
+                                prngSystemPrecompiledContract)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
-            GasCalculator gasCalculator,
-            BasicHbarCentExchange basicHbarCentExchange) {
+            final GasCalculator gasCalculator,
+            final BasicHbarCentExchange basicHbarCentExchange,
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
 
@@ -115,6 +128,7 @@ public class EvmOperationConstructionUtil {
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));
+        hederaPrecompiles.put(PRNG_PRECOMPILE_ADDRESS, prngSystemPrecompiledContract);
         hederaPrecompiles.put(
                 EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS,
                 new ExchangeRatePrecompiledContract(
@@ -123,9 +137,10 @@ public class EvmOperationConstructionUtil {
         return hederaPrecompiles;
     }
 
-    private static EVM constructEvm(GasCalculator gasCalculator, MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        var operationRegistry = new OperationRegistry();
-        BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
+    private static EVM constructEvm(
+            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        final var operationRegistry = new OperationRegistry();
+        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
         registerShanghaiOperations(
                 operationRegistry,
@@ -154,12 +169,12 @@ public class EvmOperationConstructionUtil {
     private static CreateOperationExternalizer getDefaultCreateOperationExternalizer() {
         return new CreateOperationExternalizer() {
             @Override
-            public void externalize(MessageFrame frame, MessageFrame childFrame) {
+            public void externalize(final MessageFrame frame, final MessageFrame childFrame) {
                 // do nothing
             }
 
             @Override
-            public boolean shouldFailBasedOnLazyCreation(MessageFrame frame, Address contractAddress) {
+            public boolean shouldFailBasedOnLazyCreation(final MessageFrame frame, final Address contractAddress) {
                 return false;
             }
         };

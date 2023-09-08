@@ -494,13 +494,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             return true;
         }
 
-        Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-        Instant fileInstant = Instant.ofEpochSecond(0, streamFile.getConsensusStart());
-
-        if (!verifyHashAfter.isBefore(fileInstant)) {
-            return true;
-        }
-
         if (SHA_384.isHashEmpty(expectedPreviousHash)) {
             log.warn("Previous hash not available");
             return true;

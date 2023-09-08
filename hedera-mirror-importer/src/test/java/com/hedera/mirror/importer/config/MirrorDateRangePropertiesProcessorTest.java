@@ -106,7 +106,6 @@ class MirrorDateRangePropertiesProcessorTest {
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedDate);
     }
 
     @Test
@@ -139,7 +138,6 @@ class MirrorDateRangePropertiesProcessorTest {
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(startDate);
     }
 
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
@@ -253,6 +251,5 @@ class MirrorDateRangePropertiesProcessorTest {
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
                     .isEqualTo(expectedDateRangeFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(Instant.EPOCH);
     }
 }

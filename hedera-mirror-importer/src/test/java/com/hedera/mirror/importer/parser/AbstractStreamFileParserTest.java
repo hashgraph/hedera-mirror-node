@@ -17,21 +17,23 @@
 package com.hedera.mirror.importer.parser;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import java.util.Optional;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({OutputCaptureExtension.class, MockitoExtension.class})
 public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T extends StreamFileParser<F>> {
 
     protected T parser;
@@ -44,7 +46,7 @@ public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T ex
 
     protected abstract StreamFileRepository<F, ?> getStreamFileRepository();
 
-    protected abstract void mockDbFailure();
+    protected abstract void mockDbFailure(ParserException e);
 
     @BeforeEach()
     public void before() {
@@ -100,18 +102,18 @@ public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T ex
     }
 
     @Test
-    void failureShouldRollback() {
+    void failureShouldRollback(CapturedOutput output) {
         // given
         F streamFile = getStreamFile();
-        mockDbFailure();
+        var e = new ParserException("boom");
+        mockDbFailure(e);
 
         // when
-        Assertions.assertThrows(ParserException.class, () -> {
-            parser.parse(streamFile);
-        });
+        assertThatThrownBy(() -> parser.parse(streamFile)).isEqualTo(e);
 
         // then
         assertParsed(streamFile, false, true);
+        assertThat(output.getOut()).contains("Error parsing file").contains(e.getMessage());
     }
 
     protected void assertParsed(F streamFile, boolean parsed, boolean dbError) {

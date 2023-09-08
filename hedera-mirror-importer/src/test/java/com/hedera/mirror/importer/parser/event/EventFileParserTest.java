@@ -91,7 +91,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFile, EventF
     }
 
     @Override
-    protected void mockDbFailure() {
-        doThrow(ParserException.class).when(eventFileRepository).save(any());
+    protected void mockDbFailure(ParserException e) {
+        doThrow(e).when(eventFileRepository).save(any());
     }
 }

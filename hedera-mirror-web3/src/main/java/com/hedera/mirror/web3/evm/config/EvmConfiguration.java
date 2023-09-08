@@ -38,6 +38,7 @@ import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -173,6 +174,7 @@ public class EvmConfiguration {
             final AbstractCodeCache abstractCodeCache,
             final MirrorOperationTracer mirrorOperationTracer,
             final BasicHbarCentExchange basicHbarCentExchange,
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
             final StoreImpl store) {
         return new MirrorEvmTxProcessor(
                 worldState,
@@ -186,7 +188,8 @@ public class EvmConfiguration {
                         mirrorEvmContractAliases,
                         evmProperties,
                         precompileMapper,
-                        basicHbarCentExchange),
+                        basicHbarCentExchange,
+                        prngSystemPrecompiledContract),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

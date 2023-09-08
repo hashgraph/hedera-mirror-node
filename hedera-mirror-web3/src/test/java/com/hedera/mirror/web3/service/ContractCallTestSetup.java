@@ -125,6 +125,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263));
     protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
     protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1265));
+    protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -474,6 +475,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/ExchangeRatePrecompile/ExchangeRatePrecompile.json")
     protected Path EXCHANGE_RATE_PRECOMPILE_ABI_PATH;
 
+    // The contract source `PrngSystemContract.sol` is in test resources
+    @Value("classpath:contracts/PrngSystemContract/PrngSystemContract.bin")
+    protected Path PRNG_PRECOMPILE_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/PrngSystemContract/PrngSystemContract.json")
+    protected Path PRNG_PRECOMPILE_ABI_PATH;
+
     // The contract sources `EthCall.sol` and `Reverter.sol` are in test/resources
     @Value("classpath:contracts/EthCall/EthCall.bin")
     protected Path ETH_CALL_CONTRACT_BYTES_PATH;
@@ -798,6 +806,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         stateContractPersist();
         precompileContractPersist();
         systemExchangeRateContractPersist();
+        pseudoRandomNumberGeneratorContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
@@ -1768,6 +1777,42 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(redirectContractBytes))
                 .persist();
         return redirectContractEntityId;
+    }
+
+    private EntityId pseudoRandomNumberGeneratorContractPersist() {
+        final var randomNumberContractBytes =
+                functionEncodeDecoder.getContractBytes(PRNG_PRECOMPILE_CONTRACT_BYTES_PATH);
+        final var randomNumberContractEntityId = fromEvmAddress(PRNG_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var randomNumberContractEvmAddress = toEvmAddress(randomNumberContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(randomNumberContractEntityId.getId())
+                        .num(randomNumberContractEntityId.getNum())
+                        .evmAddress(randomNumberContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(randomNumberContractEntityId.getId()).runtimeBytecode(randomNumberContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(randomNumberContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(randomNumberContractBytes))
+                .persist();
+        return randomNumberContractEntityId;
     }
 
     private void nestedEthCallsContractPersist() {

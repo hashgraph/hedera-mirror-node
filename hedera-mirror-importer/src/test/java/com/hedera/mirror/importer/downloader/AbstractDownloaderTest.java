@@ -797,9 +797,6 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 
-        if (hash != null) {
-            downloaderProperties.getMirrorProperties().setVerifyHashAfter(instant);
-        }
         firstIndex = index == null ? 0L : index + 1;
         doReturn(Optional.of(streamFile)).when(dateRangeProcessor).getLastStreamFile(streamType);
     }
