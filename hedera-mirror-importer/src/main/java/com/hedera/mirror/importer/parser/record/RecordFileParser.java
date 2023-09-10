@@ -38,7 +38,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.Level;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -130,7 +129,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         try {
             Flux<RecordItem> recordItems = recordFile.getItems();
 
-            if (log.getLevel().isInRange(Level.DEBUG, Level.TRACE)) {
+            if (log.isDebugEnabled() || log.isTraceEnabled()) {
                 recordItems = recordItems.doOnNext(this::logItem);
             }
 

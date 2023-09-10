@@ -71,8 +71,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.Builder;
 import lombok.Value;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DynamicTest;
@@ -85,6 +83,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractTransactionHandlerTest {
@@ -112,7 +112,7 @@ abstract class AbstractTransactionHandlerTest {
 
     protected final DomainBuilder domainBuilder = new DomainBuilder();
     protected final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     protected final ContractID contractId =
             ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();

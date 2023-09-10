@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
@@ -33,7 +32,7 @@ import reactor.core.publisher.Mono;
 
 @CustomLog
 @Named
-public class LoggingFilter implements WebFilter {
+class LoggingFilter implements WebFilter {
 
     static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
@@ -67,17 +66,17 @@ public class LoggingFilter implements WebFilter {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
-        Object message = exchange.getResponse().getStatusCode();
-        Level level = Level.INFO;
+        var message =
+                cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
+        var params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
         if (cause != null) {
-            level = Level.WARN;
-            message = cause.getMessage();
+            log.warn(LOG_FORMAT, params);
         } else if (StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH)) {
-            level = Level.DEBUG;
+            log.debug(LOG_FORMAT, params);
+        } else {
+            log.info(LOG_FORMAT, params);
         }
-
-        log.log(level, LOG_FORMAT, getClient(request), request.getMethod(), uri, elapsed, message);
     }
 
     private String getClient(ServerHttpRequest request) {
