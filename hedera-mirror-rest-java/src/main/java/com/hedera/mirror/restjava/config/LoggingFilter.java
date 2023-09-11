@@ -66,9 +66,9 @@ class LoggingFilter implements WebFilter {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
-        Object message =
+        var message =
                 cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
-        Object[] params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
+        var params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
         if (cause != null) {
             log.warn(LOG_FORMAT, params);

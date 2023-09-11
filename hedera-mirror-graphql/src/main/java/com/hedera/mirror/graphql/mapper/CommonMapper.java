@@ -32,16 +32,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
 
-    Logger logger = LogManager.getLogger(CommonMapper.class);
+    Logger logger = LoggerFactory.getLogger(CommonMapper.class);
     String CONTRACT_ID = "CONTRACT_ID";
     String KEYS = "keys";
     String THRESHOLD = "threshold";

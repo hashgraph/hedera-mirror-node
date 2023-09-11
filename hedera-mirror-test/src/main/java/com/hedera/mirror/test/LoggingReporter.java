@@ -26,8 +26,8 @@ import io.cucumber.plugin.event.TestStepFinished;
 import io.cucumber.plugin.event.TestStepStarted;
 import java.io.OutputStream;
 import lombok.CustomLog;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A custom Cucumber plugin that uses a standard logger to log scenarios and steps.
@@ -109,7 +109,7 @@ public class LoggingReporter implements ConcurrentEventListener, ColorAware {
             var methodIndex = location.lastIndexOf('.', index);
             if (methodIndex > 0) {
                 location = location.substring(0, methodIndex);
-                return LogManager.getLogger(location);
+                return LoggerFactory.getLogger(location);
             }
         }
 

@@ -45,7 +45,7 @@ loki:
             summary: High rate of errors in logs
           expr: >
             sum(rate({component="grpc"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | regexp `(?P<timestamp>\S+)\s+(?P<level>\S+)\s+(?P<thread>\S+)\s+(?P<class>\S+)\s+(?P<message>.+)`
               | level = "ERROR"
               != "reactor.core.publisher"
               != "drainError"
@@ -76,7 +76,7 @@ loki:
             summary: High rate of errors in logs
           expr: >
             sum(rate({component="importer"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | regexp `(?P<timestamp>\S+)\s+(?P<level>\S+)\s+(?P<thread>\S+)\s+(?P<class>\S+)\s+(?P<message>.+)`
               | level = "ERROR"
               != "UnusedChannelExceptionHandler"
               | message =~ ".*(Exception|hash mismatch for file|Unknown record file delimiter|Unknown file delimiter|Error parsing record file|Expecting previous file hash|Unable to extract hash and signature from file|Failed to verify record files|Account balance dataset timestamp mismatch!|ERRORS processing account balances file|does not exist in the database|Unable to connect to database|Address book file).*"
@@ -90,7 +90,7 @@ loki:
             summary: Recoverable Error found in logs
           expr: >
             sum(count_over_time({component="importer"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | regexp `(?P<timestamp>\S+)\s+(?P<level>\S+)\s+(?P<thread>\S+)\s+(?P<class>\S+)\s+(?P<message>.+)`
               | level = "ERROR"
               | message =~ ".*Recoverable error.*"
             [1m])) by (namespace, pod) > 0
@@ -104,7 +104,7 @@ loki:
             summary: "High rate of log errors"
           expr: >
             sum(rate({component="rest"}
-              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<requestId>\S+) (?P<message>.+)`
+              | regexp `(?P<timestamp>\S+)\s+(?P<level>\S+)\s+(?P<requestId>\S+)\s+(?P<message>.+)`
               | level = "ERROR" or level = "FATAL"
             [1m])) by (namespace, pod) > 0.04
           for: 1m
