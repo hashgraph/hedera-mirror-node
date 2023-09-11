@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.util.Utility;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -258,36 +257,6 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
 
     private Iterable<Entity> findAllEntities() {
         return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
-    }
-
-    private void persistEntity(Entity entity) {
-        jdbcOperations.update(
-                "insert into entity (decline_reward, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entity.getDeclineReward(),
-                entity.getId(),
-                entity.getNum(),
-                entity.getRealm(),
-                entity.getShard(),
-                entity.getStakedNodeId(),
-                entity.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
-                entity.getType().toString());
-    }
-
-    private void persistEntityHistory(EntityHistory entityHistory) {
-        jdbcOperations.update(
-                "insert into entity_history (created_timestamp, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entityHistory.getCreatedTimestamp(),
-                entityHistory.getId(),
-                entityHistory.getNum(),
-                entityHistory.getRealm(),
-                entityHistory.getShard(),
-                entityHistory.getStakedNodeId(),
-                entityHistory.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entityHistory.getTimestampRange()),
-                entityHistory.getType().toString());
     }
 
     @SneakyThrows

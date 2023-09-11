@@ -27,7 +27,6 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -346,19 +345,7 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
 
     private void persistEntities(Entity... entities) {
         for (var entity : entities) {
-            jdbcOperations.update(
-                    "insert into entity (decline_reward, deleted, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                            + "values (?,?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                    entity.getDeclineReward(),
-                    entity.getDeleted(),
-                    entity.getId(),
-                    entity.getNum(),
-                    entity.getRealm(),
-                    entity.getShard(),
-                    entity.getStakedNodeId(),
-                    entity.getStakePeriodStart(),
-                    PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
-                    entity.getType().toString());
+            persistEntity(entity);
         }
     }
 

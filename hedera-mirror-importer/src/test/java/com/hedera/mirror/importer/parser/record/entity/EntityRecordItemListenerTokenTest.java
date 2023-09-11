@@ -246,14 +246,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 ? List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3)
                 : List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2);
 
-        List<Long> balanceTimestamps = List.of(CREATE_TIMESTAMP, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         List<Long> autoEnabledAccountBalances =
                 tokenType == FUNGIBLE_COMMON ? List.of(1000000L, 0L, 0L) : List.of(0L, 0L, 0L);
         return Stream.of(
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(List.of(treasury))
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
                         .customFeesDescription("empty custom fees")
@@ -263,7 +261,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
@@ -275,7 +272,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
@@ -288,7 +284,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
@@ -300,7 +295,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
@@ -310,7 +304,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
                         .balances(autoEnabledAccountBalances)
-                        .balanceTimestamps(balanceTimestamps)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
@@ -3902,7 +3895,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     static class TokenCreateArguments {
         List<EntityId> autoEnabledAccounts;
         List<Long> balances;
-        List<Long> balanceTimestamps;
         long createdTimestamp;
         List<CustomFee> customFees;
         String customFeesDescription;
@@ -3943,7 +3935,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
             for (int i = 0; i < autoEnabledAccounts.size(); i++) {
                 tokenAccounts.get(i).setBalance(balances.get(i));
-                tokenAccounts.get(i).setBalanceTimestamp(balanceTimestamps.get(i));
             }
 
             return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, pauseKey, tokenAccounts);

@@ -171,6 +171,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount2.setBalance(0L);
         tokenAccount3.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                // Without a record file the balance timestamps are not altered by the migration
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
@@ -195,6 +196,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(0L);
         deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                // Without an account balance file the balance timestamps are not altered by the migration
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
@@ -219,6 +221,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccount3.setBalance(0L);
         deletedEntityTokenAccount4.setBalance(0L);
         assertThat(tokenAccountRepository.findAll())
+                // Without a token balance the balance timestamps are not altered by the migration
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("balanceTimestamp")
                 .containsExactlyInAnyOrder(
                         tokenAccount,

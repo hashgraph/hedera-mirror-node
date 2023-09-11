@@ -45,11 +45,11 @@ public class AbstractTokenAccount implements History {
 
     private Boolean automaticAssociation;
 
-    private Long createdTimestamp;
-
     private long balance;
 
     private Long balanceTimestamp;
+
+    private Long createdTimestamp;
 
     @Enumerated(EnumType.ORDINAL)
     private TokenFreezeStatusEnum freezeStatus;

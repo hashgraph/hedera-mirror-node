@@ -21,12 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 import com.hedera.mirror.importer.util.Utility;
-import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ListAssert;
@@ -272,36 +270,6 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private Iterable<Entity> findAllEntities() {
         return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
-    }
-
-    private void persistEntity(Entity entity) {
-        jdbcOperations.update(
-                "insert into entity (decline_reward, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entity.getDeclineReward(),
-                entity.getId(),
-                entity.getNum(),
-                entity.getRealm(),
-                entity.getShard(),
-                entity.getStakedNodeId(),
-                entity.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
-                entity.getType().toString());
-    }
-
-    private void persistEntityHistory(EntityHistory entityHistory) {
-        jdbcOperations.update(
-                "insert into entity_history (created_timestamp, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entityHistory.getCreatedTimestamp(),
-                entityHistory.getId(),
-                entityHistory.getNum(),
-                entityHistory.getRealm(),
-                entityHistory.getShard(),
-                entityHistory.getStakedNodeId(),
-                entityHistory.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entityHistory.getTimestampRange()),
-                entityHistory.getType().toString());
     }
 
     private void persistLastHapi26RecordFile(long consensusEnd) {
