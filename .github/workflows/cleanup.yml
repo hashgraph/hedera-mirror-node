@@ -11,7 +11,7 @@ jobs:
       matrix:
         module: [ graphql, grpc, importer, monitor, rest, rest-java, rest-monitor, rosetta, test, web3 ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
