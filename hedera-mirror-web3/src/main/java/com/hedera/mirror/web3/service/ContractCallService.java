@@ -56,8 +56,10 @@ public class ContractCallService {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
+        // Safety cleaning of the thread in case the same thread gets reused
+        ThreadLocalHolder.cleanThread();
         try {
-            ThreadLocalHolder.startThread(params.isEstimate(), store.getStackedStateFrames());
+            ThreadLocalHolder.startThread(store.getStackedStateFrames());
 
             Bytes result;
             if (params.isEstimate()) {

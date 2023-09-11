@@ -782,7 +782,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        ThreadLocalHolder.startThread(true, store.getStackedStateFrames());
+        ThreadLocalHolder.startThread(store.getStackedStateFrames());
         final var result = processor
                 .execute(
                         serviceParameters.getSender(),

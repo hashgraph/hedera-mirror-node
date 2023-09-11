@@ -152,7 +152,7 @@ class TokenAccessorImplTest {
         store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
 
-        ThreadLocalHolder.startThread(true, stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames);
     }
 
     @AfterEach

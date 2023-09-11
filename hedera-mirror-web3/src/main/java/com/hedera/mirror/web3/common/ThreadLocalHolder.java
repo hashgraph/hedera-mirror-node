@@ -22,7 +22,6 @@ import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import lombok.NonNull;
 import org.hyperledger.besu.datatypes.Address;
@@ -79,19 +78,11 @@ public class ThreadLocalHolder {
         pendingRemovals.remove();
     }
 
-    public static void startThread(final boolean isEstimateGas, final StackedStateFrames stackedStateFrames) {
-        Optional<CachingStateFrame<Object>> stackBaseReference = Optional.empty();
+    public static void startThread(final StackedStateFrames stackedStateFrames) {
         if (stackBase.get() == null) {
-            stackBaseReference = Optional.of(stackedStateFrames.getEmptyStackBase());
-            stackBase.set(stackBaseReference.get());
+            stackBase.set(stackedStateFrames.getEmptyStackBase());
         }
 
-        if (stack.get() == null) {
-            if (isEstimateGas) {
-                stack.set(stackBase.get());
-            } else {
-                stack.set(stackBaseReference.orElseGet(stackedStateFrames::getEmptyStackBase));
-            }
-        }
+        stack.set(stackBase.get());
     }
 }

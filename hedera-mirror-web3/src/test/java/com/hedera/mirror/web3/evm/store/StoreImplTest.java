@@ -167,7 +167,7 @@ class StoreImplTest {
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(true, stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames);
     }
 
     @AfterEach
