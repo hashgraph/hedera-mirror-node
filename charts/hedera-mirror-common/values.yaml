@@ -152,9 +152,6 @@ loki:
 networkPolicy:
   enabled: false
 
-priorityClass:
-  enabled: true
-
 prometheus-adapter:
   enabled: true
   priorityClassName: low
@@ -286,6 +283,7 @@ prometheus:
     enabled: false
   prometheus-node-exporter:
     hostNetwork: false
+    priorityClassName: critical
     resources:
       limits:
         cpu: 100m
@@ -343,6 +341,7 @@ promtail:
         - multiline:
             firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2}\.\d+(Z|[+-]\d{4}) '
   enabled: true
+  priorityClassName: critical
   resources:
     limits:
       cpu: 125m
@@ -435,16 +434,13 @@ zfs:
     fstype: zfs
     poolname: zfspv-pool
     recordsize: 32k
+  priorityClassName: critical
   worker:
     diskSize: 3200GB
+  zfsController:
+    priorityClass:
+      create: true
   zfsNode:
-    nodeSelector:
-      csi-type: zfs
-    tolerations:
-      - effect: NoSchedule
-        key: zfs
-        operator: Equal
-        value: "true"
     additionalVolumes:
       node:
         hostPath:
@@ -468,6 +464,15 @@ zfs:
             mountPath: /node
           - name: scripts
             mountPath: /scripts
+    nodeSelector:
+      csi-type: zfs
+    priorityClass:
+      create: true
+    tolerations:
+      - effect: NoSchedule
+        key: zfs
+        operator: Equal
+        value: "true"
   zfsPlugin:
     image:
       registry: gcr.io/
