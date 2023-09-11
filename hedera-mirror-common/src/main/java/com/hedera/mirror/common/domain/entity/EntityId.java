@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.common.domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.exception.InvalidEntityException;
@@ -26,62 +27,45 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import jakarta.persistence.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.Value;
 
 /**
- * Common encapsulation for accountID, fileID, contractID, topicID and tokenID.
- * <p>
- * There is no valid entity in Hedera network with an id '0.0.0'. When AccountID/FileID/ContractID/TopicID/TokenID are
- * not set, their values default to '0.0.0'. If such an unset (default) instance is used to create EntityId using one of
- * the of(..) functions, null is returned.
+ * Common encapsulation for a Hedera entity identifier.
  */
 @Value
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public final class EntityId implements Serializable, Comparable<EntityId> {
 
-    public static final EntityId EMPTY = new EntityId(0L, 0L, 0L);
+    public static final EntityId EMPTY = new EntityId(0L);
 
-    static final int SHARD_BITS = 15;
-    static final int REALM_BITS = 16;
     static final int NUM_BITS = 32;
+    static final int REALM_BITS = 16;
+    static final int SHARD_BITS = 15;
 
-    private static final long SHARD_MASK = (1L << SHARD_BITS) - 1;
-    private static final long REALM_MASK = (1L << REALM_BITS) - 1;
     private static final long NUM_MASK = (1L << NUM_BITS) - 1;
+    private static final long REALM_MASK = (1L << REALM_BITS) - 1;
+    private static final long SHARD_MASK = (1L << SHARD_BITS) - 1;
+
+    private static final String CACHE_DEFAULT = "expireAfterAccess=60m,maximumSize=500000,recordStats";
+    private static final String CACHE_PROPERTY = "HEDERA_MIRROR_COMMON_CACHE_ENTITYID";
+    private static final String CACHE_SPEC = System.getProperty(CACHE_PROPERTY, CACHE_DEFAULT);
+    private static final Cache<Long, EntityId> CACHE = Caffeine.from(CACHE_SPEC).build();
+
     private static final Comparator<EntityId> COMPARATOR =
             Comparator.nullsFirst(Comparator.comparingLong(EntityId::getId));
     private static final Range<Long> DEFAULT_RANGE = Range.atLeast(0L);
+    private static final String DOT = ".";
     private static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 
     @Serial
     private static final long serialVersionUID = 1427649605832330197L;
 
-    // Ignored so not included in json serialization of PubSubMessage
-    @JsonIgnore
-    @EqualsAndHashCode.Include
     private final long id;
-
-    private final long shard;
-    private final long realm;
-    private final long num;
-
-    @Getter(lazy = true, value = AccessLevel.PRIVATE)
-    private final String cachedString = String.format("%d.%d.%d", shard, realm, num);
-
-    private EntityId(long shard, long realm, long num) {
-        id = encode(shard, realm, num);
-        this.num = num;
-        this.realm = realm;
-        this.shard = shard;
-    }
 
     private EntityId(long id) {
         if (id < 0) {
@@ -89,9 +73,6 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
         }
 
         this.id = id;
-        this.num = id & NUM_MASK;
-        this.realm = (id >> NUM_BITS) & REALM_MASK;
-        this.shard = id >> (REALM_BITS + NUM_BITS);
     }
 
     /**
@@ -109,6 +90,10 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     private static long encode(long shard, long realm, long num) {
         if (shard > SHARD_MASK || shard < 0 || realm > REALM_MASK || realm < 0 || num > NUM_MASK || num < 0) {
             throw new InvalidEntityException("Invalid entity ID: " + shard + "." + realm + "." + num);
+        }
+
+        if (shard == 0 && realm == 0) {
+            return num;
         }
 
         return (num & NUM_MASK) | (realm & REALM_MASK) << NUM_BITS | (shard & SHARD_MASK) << (REALM_BITS + NUM_BITS);
@@ -152,26 +137,43 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     }
 
     public static EntityId of(long shard, long realm, long num) {
-        if (num == 0 && realm == 0 && shard == 0) {
-            return EMPTY;
-        }
-        return new EntityId(shard, realm, num);
+        long id = encode(shard, realm, num);
+        return of(id);
     }
 
     public static EntityId of(long id) {
-        return new EntityId(id);
+        if (id == 0) {
+            return EMPTY;
+        }
+
+        return CACHE.get(id, k -> new EntityId(id));
     }
 
     public static boolean isEmpty(EntityId entityId) {
         return entityId == null || EMPTY.equals(entityId);
     }
 
+    @Transient
+    public long getNum() {
+        return id & NUM_MASK;
+    }
+
+    @Transient
+    public long getRealm() {
+        return (id >> NUM_BITS) & REALM_MASK;
+    }
+
+    @Transient
+    public long getShard() {
+        return id >> (NUM_BITS + REALM_BITS);
+    }
+
     public Entity toEntity() {
         Entity entity = new Entity();
         entity.setId(id);
-        entity.setNum(num);
-        entity.setRealm(realm);
-        entity.setShard(shard);
+        entity.setNum(getNum());
+        entity.setRealm(getRealm());
+        entity.setShard(getShard());
         entity.setTimestampRange(DEFAULT_RANGE);
         return entity;
     }
@@ -183,6 +185,6 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
 
     @Override
     public String toString() {
-        return getCachedString();
+        return getShard() + DOT + getRealm() + DOT + getNum();
     }
 }
