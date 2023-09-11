@@ -22,9 +22,11 @@ import jakarta.inject.Named;
 import java.io.IOException;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
+@Profile("!v2")
 public class FixTokenAllowanceAmountMigration extends RepeatableMigration {
 
     private static final String FIX_TOKEN_ALLOWANCE_AMOUNT_SQL =
