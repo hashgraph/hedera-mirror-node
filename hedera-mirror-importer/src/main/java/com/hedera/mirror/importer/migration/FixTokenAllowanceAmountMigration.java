@@ -29,6 +29,15 @@ public class FixTokenAllowanceAmountMigration extends RepeatableMigration {
 
     private static final String FIX_TOKEN_ALLOWANCE_AMOUNT_SQL =
             """
+       begin;
+
+       create temp table token_allowance_remaining_amount (
+         amount   bigint not null,
+         owner    bigint not null,
+         spender  bigint not null,
+         token_id bigint not null
+       ) on commit drop;
+
        with token_transfer_erc20_approved as (
          select tt.consensus_timestamp, tt.account_id, tt.token_id, cr.sender_id as spender, tt.payer_account_id as incorrect_spender
          from token_transfer tt
@@ -56,15 +65,20 @@ public class FixTokenAllowanceAmountMigration extends RepeatableMigration {
          select owner, spender, token_id, sum(amount) as total
          from token_transfer_all_approved
          group by owner, spender, token_id
-       ), remaining_amount as (
-         select greatest(0, (amount_granted + coalesce(total, 0))) as amount, ta.owner, ta.spender, ta.token_id
-         from token_allowance_affected ta
-         left join aggregated_amount a using (owner, spender, token_id)
        )
+       insert into token_allowance_remaining_amount (amount, owner, spender, token_id)
+       select greatest(0, (amount_granted + coalesce(total, 0))), ta.owner, ta.spender, ta.token_id
+       from token_allowance_affected ta
+       left join aggregated_amount a using (owner, spender, token_id);
+
+       alter table token_allowance_remaining_amount add primary key (owner, spender, token_id);
+
        update token_allowance ta
        set amount = r.amount
-       from remaining_amount r
-       where r.owner = ta.owner and r.spender = ta.spender and r.token_id = ta.token_id
+       from token_allowance_remaining_amount r
+       where r.owner = ta.owner and r.spender = ta.spender and r.token_id = ta.token_id;
+
+       commit;
        """;
 
     private final JdbcTemplate jdbcTemplate;
