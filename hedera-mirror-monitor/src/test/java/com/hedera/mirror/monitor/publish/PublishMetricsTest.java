@@ -33,23 +33,21 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.SneakyThrows;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.appender.WriterAppender;
-import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class PublishMetricsTest {
 
     private static final String NODE_ACCOUNT_ID = "0.0.3";
@@ -59,8 +57,6 @@ class PublishMetricsTest {
     private PublishMetrics publishMetrics;
     private PublishProperties publishProperties;
     private PublishScenario publishScenario;
-    private StringWriter logOutput;
-    private WriterAppender writerAppender;
 
     @BeforeEach
     void setup() {
@@ -72,23 +68,6 @@ class PublishMetricsTest {
         publishScenarioProperties.setName(SCENARIO_NAME);
         publishScenarioProperties.setType(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
         publishScenario = new PublishScenario(publishScenarioProperties);
-
-        logOutput = new StringWriter();
-        writerAppender = WriterAppender.newBuilder()
-                .setLayout(PatternLayout.newBuilder().withPattern("%p|%m%n").build())
-                .setName("stringAppender")
-                .setTarget(logOutput)
-                .build();
-        Logger logger = (Logger) LogManager.getLogger(publishMetrics);
-        logger.addAppender(writerAppender);
-        writerAppender.start();
-    }
-
-    @AfterEach
-    void after() {
-        writerAppender.stop();
-        Logger logger = (Logger) LogManager.getLogger(publishMetrics);
-        logger.removeAppender(writerAppender);
     }
 
     @Test
@@ -115,7 +94,7 @@ class PublishMetricsTest {
     }
 
     @Test
-    void onSuccessWithNullResponseTimestamp() {
+    void onSuccessWithNullResponseTimestamp(CapturedOutput output) {
         // verifies that when unexpected exception happens, onSuccess catches it and no metric is recorded
         PublishResponse response = response().toBuilder().timestamp(null).build();
 
@@ -127,44 +106,43 @@ class PublishMetricsTest {
         assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges())
                 .isEmpty();
 
-        clearLog();
         publishMetrics.status();
-        assertThat(logOutput).asString().hasLineCount(1).contains("No publishers");
+        assertThat(output).asString().contains("No publishers");
     }
 
     @Test
-    void onErrorStatusRuntimeException() {
+    void onErrorStatusRuntimeException(CapturedOutput logOutput) {
         Status status = Status.RESOURCE_EXHAUSTED;
-        onError(status.asRuntimeException(), status.getCode().toString());
+        onError(logOutput, status.asRuntimeException(), status.getCode().toString());
     }
 
     @Test
-    void onErrorTimeoutException() {
-        onError(new TimeoutException(), TimeoutException.class.getSimpleName());
+    void onErrorTimeoutException(CapturedOutput logOutput) {
+        onError(logOutput, new TimeoutException(), TimeoutException.class.getSimpleName());
     }
 
     @Test
-    void onErrorPrecheckStatusException() throws Exception {
+    void onErrorPrecheckStatusException(CapturedOutput logOutput) throws Exception {
         TransactionId transactionId = TransactionId.withValidStart(AccountId.fromString("0.0.3"), Instant.now());
         com.hedera.hashgraph.sdk.Status status = com.hedera.hashgraph.sdk.Status.SUCCESS;
         Constructor<PrecheckStatusException> constructor = getDeclaredConstructor(PrecheckStatusException.class);
         constructor.setAccessible(true);
         PrecheckStatusException precheckStatusException = constructor.newInstance(status, transactionId);
-        onError(precheckStatusException, status.toString());
+        onError(logOutput, precheckStatusException, status.toString());
     }
 
     @Test
-    void onErrorReceiptStatusException() throws Exception {
+    void onErrorReceiptStatusException(CapturedOutput logOutput) throws Exception {
         TransactionId transactionId = TransactionId.withValidStart(AccountId.fromString("0.0.3"), Instant.now());
         TransactionReceipt transactionReceipt = receipt(ResponseCodeEnum.SUCCESS);
         Constructor<ReceiptStatusException> constructor = getDeclaredConstructor(ReceiptStatusException.class);
         constructor.setAccessible(true);
         ReceiptStatusException receiptStatusException = constructor.newInstance(transactionId, transactionReceipt);
-        onError(receiptStatusException, ResponseCodeEnum.SUCCESS.toString());
+        onError(logOutput, receiptStatusException, ResponseCodeEnum.SUCCESS.toString());
     }
 
     @Test
-    void onErrorWithNullRequestTimestamp() {
+    void onErrorWithNullRequestTimestamp(CapturedOutput output) {
         // verifies that when unexpected exception happens, onError catches it and no metric is recorded
         PublishRequest request = request().toBuilder().timestamp(null).build();
 
@@ -176,12 +154,11 @@ class PublishMetricsTest {
         assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges())
                 .isEmpty();
 
-        clearLog();
         publishMetrics.status();
-        assertThat(logOutput).asString().hasLineCount(1).contains("No publishers");
+        assertThat(output).asString().contains("No publishers");
     }
 
-    void onError(Throwable throwable, String status) {
+    void onError(CapturedOutput logOutput, Throwable throwable, String status) {
         PublishException publishException = new PublishException(request(), throwable);
         publishScenario.onError(publishException);
         publishMetrics.onError(publishException);
@@ -207,7 +184,7 @@ class PublishMetricsTest {
     }
 
     @Test
-    void statusSuccess() {
+    void statusSuccess(CapturedOutput logOutput) {
         PublishResponse response = response();
         publishScenario.onNext(response);
         publishMetrics.onSuccess(response);
@@ -221,7 +198,7 @@ class PublishMetricsTest {
     }
 
     @Test
-    void statusDisabled() {
+    void statusDisabled(CapturedOutput logOutput) {
         publishProperties.setEnabled(false);
 
         publishMetrics.onSuccess(response());
@@ -238,10 +215,6 @@ class PublishMetricsTest {
                 .returns(SCENARIO_NAME, t -> t.getId().getTag(PublishMetrics.Tags.TAG_SCENARIO))
                 .returns(TransactionType.CONSENSUS_SUBMIT_MESSAGE.toString(), t -> t.getId()
                         .getTag(PublishMetrics.Tags.TAG_TYPE));
-    }
-
-    private void clearLog() {
-        logOutput.getBuffer().setLength(0);
     }
 
     private PublishRequest request() {

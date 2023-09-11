@@ -31,6 +31,7 @@ plugins {
 
 configurations.all {
     exclude(group = "ch.qos.logback", module = "logback-classic")
+    exclude(group = "org.slf4j", module = "slf4j-nop")
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
 }
 
