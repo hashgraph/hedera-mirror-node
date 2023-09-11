@@ -64,11 +64,15 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
         NetworkStake networkStake = new NetworkStake();
         networkStake.setConsensusTimestamp(consensusTimestamp);
         networkStake.setEpochDay(epochDay);
+        networkStake.setMaxStakeRewarded(transactionBody.getMaxStakeRewarded());
         networkStake.setMaxStakingRewardRatePerHbar(transactionBody.getMaxStakingRewardRatePerHbar());
+        networkStake.setMaxTotalReward(transactionBody.getMaxTotalReward());
         networkStake.setNodeRewardFeeDenominator(
                 transactionBody.getNodeRewardFeeFraction().getDenominator());
         networkStake.setNodeRewardFeeNumerator(
                 transactionBody.getNodeRewardFeeFraction().getNumerator());
+        networkStake.setReservedStakingRewards(transactionBody.getReservedStakingRewards());
+        networkStake.setRewardBalanceThreshold(transactionBody.getRewardBalanceThreshold());
         networkStake.setStakeTotal(stakeTotal);
         networkStake.setStakingPeriod(stakingPeriod);
         networkStake.setStakingPeriodDuration(transactionBody.getStakingPeriod());
@@ -79,6 +83,8 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
                 transactionBody.getStakingRewardFeeFraction().getNumerator());
         networkStake.setStakingRewardRate(transactionBody.getMaxTotalReward());
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
+        networkStake.setUnreservedStakingRewardBalance(transactionBody.getUnreservedStakingRewardBalance());
+
         entityListener.onNetworkStake(networkStake);
 
         var nodeStakesProtos = transactionBody.getNodeStakeList();
