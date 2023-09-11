@@ -162,8 +162,4 @@ function ContractCallTestScenarioBuilder() {
   return this;
 }
 
-export {
-  isNonErrorResponse,
-  jsonPost,
-  ContractCallTestScenarioBuilder
-};
+export {isNonErrorResponse, jsonPost, ContractCallTestScenarioBuilder};

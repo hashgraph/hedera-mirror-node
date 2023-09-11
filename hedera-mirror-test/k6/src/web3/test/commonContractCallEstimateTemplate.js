@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import {SharedArray} from 'k6/data';
 import {ContractCallTestScenarioBuilder} from './common.js';
 
@@ -24,18 +25,18 @@ function ContractCallEstimateTestTemplate(key) {
   const data = allData[__VU % allData.length];
 
   const {options, run} = new ContractCallTestScenarioBuilder()
-  .name(key)
-  .estimate(true)
-  .block(data.block)
-  .data(data.data)
-  .gas(data.gas)
-  .from(data.from)
-  .value(data.value)
-  .to(data.to)
-  .sleep(data.sleep)
-  .build();
+    .name(key)
+    .estimate(true)
+    .block(data.block)
+    .data(data.data)
+    .gas(data.gas)
+    .from(data.from)
+    .value(data.value)
+    .to(data.to)
+    .sleep(data.sleep)
+    .build();
 
   return {options, run};
 }
 
-export {ContractCallEstimateTestTemplate}
+export {ContractCallEstimateTestTemplate};
