@@ -583,19 +583,19 @@ public class RecordItemBuilder {
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(timestamp())
+                .setMaxStakeRewarded(10L)
                 .setMaxStakingRewardRatePerHbar(17_808L)
+                .setMaxTotalReward(20L)
                 .setNodeRewardFeeFraction(Fraction.newBuilder().setNumerator(0L).setDenominator(100L))
+                .setReservedStakingRewards(30L)
+                .setRewardBalanceThreshold(40L)
                 .setStakingPeriod(1440)
                 .setStakingPeriodsStored(365)
                 .setStakingRewardFeeFraction(
                         Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
                 .setStakingRewardRate(100_000_000_000L)
-                .setMaxTotalReward(110_000_000_000L)
                 .setStakingStartThreshold(25_000_000_000_000_000L)
-                .setMaxStakeRewarded(120_000_000_000L)
-                .setReservedStakingRewards(130_000_000_000L)
-                .setRewardBalanceThreshold(140_000_000_000L)
-                .setUnreservedStakingRewardBalance(150_000_000_000L)
+                .setUnreservedStakingRewardBalance(50L)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
