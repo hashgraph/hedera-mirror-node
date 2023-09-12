@@ -146,13 +146,16 @@ public abstract class IntegrationTest {
     }
 
     protected void reset() {
-        cacheManagers.forEach(
-                c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
+        cacheManagers.forEach(this::resetCacheManager);
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         mirrorProperties.setStartDate(Instant.EPOCH);
         jdbcOperations.execute(cleanupSql);
         retryRecorder.reset();
+    }
+
+    protected void resetCacheManager(CacheManager cacheManager) {
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
     private String getDefaultIdColumns(Class<?> entityClass) {
