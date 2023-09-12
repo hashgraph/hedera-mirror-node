@@ -66,12 +66,16 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .first()
                         .returns(recordItem.getConsensusTimestamp(), NetworkStake::getConsensusTimestamp)
                         .returns(epochDay, NetworkStake::getEpochDay)
+                        .returns(body.getMaxStakeRewarded(), NetworkStake::getMaxStakeRewarded)
                         .returns(body.getMaxStakingRewardRatePerHbar(), NetworkStake::getMaxStakingRewardRatePerHbar)
+                        .returns(body.getMaxTotalReward(), NetworkStake::getMaxTotalReward)
                         .returns(
                                 body.getNodeRewardFeeFraction().getDenominator(),
                                 NetworkStake::getNodeRewardFeeDenominator)
                         .returns(
                                 body.getNodeRewardFeeFraction().getNumerator(), NetworkStake::getNodeRewardFeeNumerator)
+                        .returns(body.getReservedStakingRewards(), NetworkStake::getReservedStakingRewards)
+                        .returns(body.getRewardBalanceThreshold(), NetworkStake::getRewardBalanceThreshold)
                         .returns(nodeStake.getStake(), NetworkStake::getStakeTotal)
                         .returns(stakingPeriod, NetworkStake::getStakingPeriod)
                         .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriodDuration)
@@ -82,10 +86,6 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(
                                 body.getStakingRewardFeeFraction().getNumerator(),
                                 NetworkStake::getStakingRewardFeeNumerator)
-                        .returns(body.getMaxTotalReward(), NetworkStake::getMaxTotalReward)
-                        .returns(body.getMaxStakeRewarded(), NetworkStake::getMaxStakeRewarded)
-                        .returns(body.getReservedStakingRewards(), NetworkStake::getReservedStakingRewards)
-                        .returns(body.getRewardBalanceThreshold(), NetworkStake::getRewardBalanceThreshold)
                         .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
                         .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold)
                         .returns(

@@ -372,13 +372,13 @@ create table if not exists network_stake
 (
     consensus_timestamp               bigint not null,
     epoch_day                         bigint not null,
-    max_stake_rewarded                bigint,
+    max_stake_rewarded                bigint not null,
     max_staking_reward_rate_per_hbar  bigint not null,
-    max_total_reward                  bigint,
+    max_total_reward                  bigint not null,
     node_reward_fee_denominator       bigint not null,
     node_reward_fee_numerator         bigint not null,
-    reserved_staking_rewards          bigint,
-    reward_balance_threshold          bigint,
+    reserved_staking_rewards          bigint not null,
+    reward_balance_threshold          bigint not null,
     stake_total                       bigint not null,
     staking_period                    bigint not null,
     staking_period_duration           bigint not null,
@@ -387,7 +387,7 @@ create table if not exists network_stake
     staking_reward_fee_numerator      bigint not null,
     staking_reward_rate               bigint not null,
     staking_start_threshold           bigint not null,
-    unreserved_staking_reward_balance bigint
+    unreserved_staking_reward_balance bigint not null
 );
 comment on table network_stake is 'Staking information common to all nodes';
 
