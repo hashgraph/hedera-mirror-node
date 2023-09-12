@@ -167,6 +167,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void lookupAccountAliasToEvmAddressNotFound() {
+        var accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
+                .build();
+        assertThat(entityIdService.lookup(accountId)).isEmpty();
+    }
+
+    @Test
     void lookupAccountsReturnsFirst() {
         AccountID accountId1 = AccountID.newBuilder().setAccountNum(100).build();
         AccountID accountId2 = AccountID.newBuilder().setAccountNum(101).build();
