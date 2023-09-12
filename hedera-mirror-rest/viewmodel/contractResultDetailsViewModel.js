@@ -112,13 +112,13 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       if (!_.isNil(ethTransaction.gasLimit)) {
         this.gas_limit = ethTransaction.gasLimit;
       }
-      this.to = ethTransaction.toAddress ? utils.toHexStringNonQuantity(ethTransaction.toAddress) : null;
       this.gas_price = utils.toHexStringQuantity(ethTransaction.gasPrice);
       this.max_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxFeePerGas);
       this.max_priority_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxPriorityFeePerGas);
       this.nonce = ethTransaction.nonce;
       this.r = utils.toHexStringNonQuantity(ethTransaction.signatureR);
       this.s = utils.toHexStringNonQuantity(ethTransaction.signatureS);
+      this.to = ethTransaction.toAddress ? utils.toHexStringNonQuantity(ethTransaction.toAddress) : null;
       this.type = ethTransaction.type;
       this.v = ethTransaction.recoveryId;
 

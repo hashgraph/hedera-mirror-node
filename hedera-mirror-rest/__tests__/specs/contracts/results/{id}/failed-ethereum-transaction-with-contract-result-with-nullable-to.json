@@ -49,8 +49,8 @@
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "payer_account_id": "8001",
-        "value": "0x0077359400",
-        "to_address": "0x1a8bad6f264dd65e699c396a5739912faa40d18d"
+        "to_address": "0x1a8bad6f264dd65e699c396a5739912faa40d18d",
+        "value": "0x0077359400"
       }
     ]
   },
