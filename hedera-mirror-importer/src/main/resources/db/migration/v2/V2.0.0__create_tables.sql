@@ -370,19 +370,24 @@ comment on table network_freeze is 'System transaction to freeze the network';
 
 create table if not exists network_stake
 (
-    consensus_timestamp              bigint not null,
-    epoch_day                        bigint not null,
-    max_staking_reward_rate_per_hbar bigint not null,
-    node_reward_fee_denominator      bigint not null,
-    node_reward_fee_numerator        bigint not null,
-    stake_total                      bigint not null,
-    staking_period                   bigint not null,
-    staking_period_duration          bigint not null,
-    staking_periods_stored           bigint not null,
-    staking_reward_fee_denominator   bigint not null,
-    staking_reward_fee_numerator     bigint not null,
-    staking_reward_rate              bigint not null,
-    staking_start_threshold          bigint not null
+    consensus_timestamp               bigint not null,
+    epoch_day                         bigint not null,
+    max_stake_rewarded                bigint,
+    max_staking_reward_rate_per_hbar  bigint not null,
+    max_total_reward                  bigint,
+    node_reward_fee_denominator       bigint not null,
+    node_reward_fee_numerator         bigint not null,
+    reserved_staking_rewards          bigint,
+    reward_balance_threshold          bigint,
+    stake_total                       bigint not null,
+    staking_period                    bigint not null,
+    staking_period_duration           bigint not null,
+    staking_periods_stored            bigint not null,
+    staking_reward_fee_denominator    bigint not null,
+    staking_reward_fee_numerator      bigint not null,
+    staking_reward_rate               bigint not null,
+    staking_start_threshold           bigint not null,
+    unreserved_staking_reward_balance bigint
 );
 comment on table network_stake is 'Staking information common to all nodes';
 
