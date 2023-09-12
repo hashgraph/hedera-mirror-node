@@ -35,6 +35,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
     private final NetworkStakeRepository networkStakeRepository;
     private final NodeStakeRepository nodeStakeRepository;
 
+    @SuppressWarnings("deprecation")
     @Test
     void nodeStakeUpdate() {
         var recordItem = recordItemBuilder.nodeStakeUpdate().build();
@@ -81,7 +82,14 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(
                                 body.getStakingRewardFeeFraction().getNumerator(),
                                 NetworkStake::getStakingRewardFeeNumerator)
-                        .returns(body.getMaxTotalReward(), NetworkStake::getStakingRewardRate)
-                        .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold));
+                        .returns(body.getMaxTotalReward(), NetworkStake::getMaxTotalReward)
+                        .returns(body.getMaxStakeRewarded(), NetworkStake::getMaxStakeRewarded)
+                        .returns(body.getReservedStakingRewards(), NetworkStake::getReservedStakingRewards)
+                        .returns(body.getRewardBalanceThreshold(), NetworkStake::getRewardBalanceThreshold)
+                        .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                        .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold)
+                        .returns(
+                                body.getUnreservedStakingRewardBalance(),
+                                NetworkStake::getUnreservedStakingRewardBalance));
     }
 }

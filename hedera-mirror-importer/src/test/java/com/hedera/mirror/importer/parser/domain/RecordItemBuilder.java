@@ -579,6 +579,7 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.FREEZE, builder);
     }
 
+    @SuppressWarnings("deprecation")
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(timestamp())
@@ -588,8 +589,13 @@ public class RecordItemBuilder {
                 .setStakingPeriodsStored(365)
                 .setStakingRewardFeeFraction(
                         Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
-                .setMaxTotalReward(100_000_000_000L)
+                .setStakingRewardRate(100_000_000_000L)
+                .setMaxTotalReward(110_000_000_000L)
                 .setStakingStartThreshold(25_000_000_000_000_000L)
+                .setMaxStakeRewarded(120_000_000_000L)
+                .setReservedStakingRewards(130_000_000_000L)
+                .setRewardBalanceThreshold(140_000_000_000L)
+                .setUnreservedStakingRewardBalance(150_000_000_000L)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }

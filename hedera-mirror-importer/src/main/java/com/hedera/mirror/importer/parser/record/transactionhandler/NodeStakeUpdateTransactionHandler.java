@@ -44,6 +44,7 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
         return TransactionType.NODESTAKEUPDATE;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
@@ -81,7 +82,7 @@ class NodeStakeUpdateTransactionHandler extends AbstractTransactionHandler {
                 transactionBody.getStakingRewardFeeFraction().getDenominator());
         networkStake.setStakingRewardFeeNumerator(
                 transactionBody.getStakingRewardFeeFraction().getNumerator());
-        networkStake.setStakingRewardRate(transactionBody.getMaxTotalReward());
+        networkStake.setStakingRewardRate(transactionBody.getStakingRewardRate());
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         networkStake.setUnreservedStakingRewardBalance(transactionBody.getUnreservedStakingRewardBalance());
 

@@ -81,6 +81,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         assertThat(transactionHandler.getType()).isEqualTo(TransactionType.NODESTAKEUPDATE);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void updateTransactionSuccessful() {
         // given
@@ -136,8 +137,14 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                         body.getStakingRewardFeeFraction().getDenominator(),
                         NetworkStake::getStakingRewardFeeDenominator)
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
-                .returns(body.getMaxTotalReward(), NetworkStake::getStakingRewardRate)
-                .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
+                .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold)
+                .returns(body.getMaxTotalReward(), NetworkStake::getMaxTotalReward)
+                .returns(body.getMaxStakeRewarded(), NetworkStake::getMaxStakeRewarded)
+                .returns(body.getReservedStakingRewards(), NetworkStake::getReservedStakingRewards)
+                .returns(body.getRewardBalanceThreshold(), NetworkStake::getRewardBalanceThreshold)
+                .returns(body.getUnreservedStakingRewardBalance(), NetworkStake::getUnreservedStakingRewardBalance);
+
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
