@@ -64,5 +64,6 @@ spec:
             test:
               acceptance:
                 operatorBalance: 700000000000
+      cucumberTags: "@acceptance and not @estimateprecompile"
       enabled: true
 
