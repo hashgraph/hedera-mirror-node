@@ -48,6 +48,10 @@ public class LivePricesSource implements PricesAndFeesProvider {
         return currentPrice(now, function, FeeComponents::getGas);
     }
 
+    public long currentGasPriceInTinycents(final Instant now, final HederaFunctionality function) {
+        return currentFeeInTinycents(now, function, FeeComponents::getGas);
+    }
+
     private long currentPrice(
             final Instant now,
             final HederaFunctionality function,

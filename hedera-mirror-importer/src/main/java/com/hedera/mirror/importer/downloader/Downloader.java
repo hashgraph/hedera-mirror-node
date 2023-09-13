@@ -67,8 +67,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
@@ -89,7 +89,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return Ordering.arbitrary().compare(left, right);
     };
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
@@ -98,10 +98,12 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
+
     private final ConsensusNodeService consensusNodeService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     private final MirrorProperties mirrorProperties;
     private final StreamType streamType;
+
     // Metrics
     private final MeterRegistry meterRegistry;
     private final Map<Long, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
@@ -163,7 +165,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     public abstract void download();
 
     protected void downloadNextBatch() {
-        if (!downloaderProperties.isEnabled()) {
+        if (!shouldDownload()) {
             return;
         }
 
@@ -210,6 +212,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return TreeMultimap.create(Ordering.natural(), STREAM_FILE_SIGNATURE_COMPARATOR);
     }
 
+    protected boolean shouldDownload() {
+        return downloaderProperties.isEnabled();
+    }
+
     /**
      * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
      * a multi-map sorted and grouped by the timestamp.
@@ -220,6 +226,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var startAfterFilename = getStartAfterFilename();
         var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
+        // Limit to 1 signature file if downloader is disabled
+        long listLimit = downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1;
         var nodes = partialCollection(consensusNodeService.getNodes());
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
@@ -235,6 +243,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 try {
                     var count = streamFileProvider
                             .list(node, startAfterFilename)
+                            .take(listLimit)
                             .doOnNext(s -> {
                                 try {
                                     var streamFileSignature = signatureFileReader.read(s);
@@ -377,7 +386,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             try {
                 var dataFilename = signature.getDataFilename();
                 var node = signature.getNode();
-                var streamFileData = streamFileProvider.get(node, dataFilename).block();
+                var streamFileData = Objects.requireNonNull(
+                        streamFileProvider.get(node, dataFilename).block());
                 T streamFile = streamFileReader.read(streamFileData);
                 streamFile.setNodeId(nodeId);
 
@@ -481,13 +491,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
     boolean verifyHashChain(T streamFile, String expectedPreviousHash) {
         if (!streamFile.getType().isChained()) {
-            return true;
-        }
-
-        Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-        Instant fileInstant = Instant.ofEpochSecond(0, streamFile.getConsensusStart());
-
-        if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
 

@@ -50,7 +50,7 @@ const runEverything = async (servers) => {
       })
       .catch((error) => {
         const elapsed = Date.now() - startTime;
-        logger.error(`Error running tests #${currentRun} for ${server.name} in ${elapsed} ms: ${error}`);
+        logger.error(`Error running tests #${currentRun} for ${server.name} in ${elapsed} ms: ${error.stack}`);
       })
       .finally(() => {
         server.running = false;

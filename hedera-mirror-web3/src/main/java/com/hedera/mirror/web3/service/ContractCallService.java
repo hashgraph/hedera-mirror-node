@@ -24,7 +24,7 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -59,7 +59,7 @@ public class ContractCallService {
                 return stringResult;
             }
 
-            final var ethCallTxnResult = doProcessCall(params, params.getGas());
+            final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
             validateResult(ethCallTxnResult, params.getCallType());
 
             final var callResult = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
@@ -82,7 +82,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private String estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas(), true);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -94,7 +94,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas),
+                gas -> doProcessCall(params, gas, true),
                 gasUsedByInitialCall,
                 params.getGas());
 
@@ -102,7 +102,7 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(
-            final CallServiceParameters params, final long estimatedGas) {
+            final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
             transactionResult = mirrorEvmTxProcessorFacade.execute(
@@ -112,9 +112,10 @@ public class ContractCallService {
                     params.getValue(),
                     params.getCallData(),
                     Instant.now(),
-                    params.isStatic());
+                    params.isStatic(),
+                    isEstimate);
         } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new InvalidTransactionException(e.getMessage(), EMPTY, EMPTY);
+            throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
         return transactionResult;
     }
@@ -124,7 +125,7 @@ public class ContractCallService {
             updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new InvalidTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
             updateGasMetric(type, txnResult.getGasUsed(), 1);
         }

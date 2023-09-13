@@ -54,8 +54,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
 import java.util.List;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -139,7 +139,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void hollowAccountWithHbarChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+    void hollowAccountWithHbarChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
         final var jKey = mapKey(Key.parseFrom(ECDSA_PUBLIC_KEY));
         final var evmAddressAlias =
                 ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
@@ -165,7 +165,7 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void happyPathWithFungibleTokenChangeWorks() throws DecoderException {
+    void happyPathWithFungibleTokenChangeWorks() throws InvalidKeyException {
         Key aPrimitiveKey = Key.newBuilder()
                 .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
                 .build();

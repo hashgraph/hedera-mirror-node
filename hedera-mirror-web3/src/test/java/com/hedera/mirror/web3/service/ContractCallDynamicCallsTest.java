@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,9 +40,9 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                    .isInstanceOf(InvalidTransactionException.class)
+                    .isInstanceOf(MirrorEvmTransactionException.class)
                     .satisfies(ex -> {
-                        InvalidTransactionException exception = (InvalidTransactionException) ex;
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                         assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
                     });
         } else {
@@ -88,6 +90,26 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         PAUSE_UNPAUSE_NFT("pauseTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS}, null),
         FREEZE_UNFREEZE_NFT(
                 "freezeTokenGetPauseStatusUnpauseGetPauseStatus", new Object[] {NFT_ADDRESS, SPENDER_ALIAS}, null),
+        ASSOCIATE_TRANSFER_NFT(
+                "associateTokenTransfer",
+                new Object[] {
+                    NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ZERO,
+                    BigInteger.ONE
+                },
+                null),
+        ASSOCIATE_TRANSFER_FUNGIBLE_TOKEN(
+                "associateTokenTransfer",
+                new Object[] {
+                    TREASURY_TOKEN_ADDRESS,
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ONE,
+                    BigInteger.ZERO
+                },
+                null),
         ASSOCIATE_DISSOCIATE_TRANSFER_FUNGIBLE_TOKEN_FAIL(
                 "associateTokenDissociateFailTransfer",
                 new Object[] {
@@ -104,6 +126,16 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     NFT_TRANSFER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ZERO, BigInteger.ONE
                 },
                 "IERC721: failed to transfer"),
+        ASSOCIATE_TRANSFER_NFT_EXCEPTION(
+                "associateTokenTransfer",
+                new Object[] {
+                    toAddress(EntityId.of(0, 0, 1)), // Not persisted address
+                    DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                    NOT_ASSOCIATED_SPENDER_ALIAS,
+                    BigInteger.ZERO,
+                    BigInteger.ONE
+                },
+                "Failed to associate tokens"),
         APPROVE_FUNGIBLE_TOKEN_GET_ALLOWANCE(
                 "approveTokenGetAllowance",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ONE, BigInteger.ZERO},
@@ -126,11 +158,17 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         APPROVE_CRYPTO_TRANSFER_FUNGIBLE_GET_ALLOWANCE(
                 "approveTokenCryptoTransferGetAllowanceGetBalance",
-                new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false}
+                },
                 null),
         APPROVE_CRYPTO_TRANSFER_NFT_GET_ALLOWANCE(
                 "approveTokenCryptoTransferGetAllowanceGetBalance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         APPROVE_FOR_ALL_TRANSFER_FROM_NFT_GET_ALLOWANCE(
                 "approveForAllTokenTransferFromGetAllowance",
@@ -140,7 +178,10 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "approveForAllTokenTransferGetAllowance", new Object[] {NFT_TRANSFER_ADDRESS, SPENDER_ALIAS, 1L}, null),
         APPROVE_FOR_ALL_CRYPTO_TRANSFER_NFT_GET_ALLOWANCE(
                 "approveForAllCryptoTransferGetAllowance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         TRANSFER_NFT_GET_ALLOWANCE_OWNER_OF(
                 "transferFromNFTGetAllowance", new Object[] {NFT_TRANSFER_ADDRESS, 1L}, null),
@@ -154,11 +195,17 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 null),
         CRYPTO_TRANSFER_FUNFIBLE_TOKEN_GET_OWNER(
                 "cryptoTransferFromGetAllowanceGetBalance",
-                new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {TREASURY_TOKEN_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, false}
+                },
                 null),
         CRYPTO_TRANSFER_NFT_GET_OWNER(
                 "cryptoTransferFromGetAllowanceGetBalance",
-                new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true},
+                new Object[] {
+                    new Object[] {},
+                    new Object[] {NFT_TRANSFER_ADDRESS, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, SPENDER_ALIAS, 1L, true}
+                },
                 null),
         GRANT_KYC_REVOKE_KYC_FUNGIBLE("grantKycRevokeKyc", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, null),
         GRANT_KYC_REVOKE_KYC_NFT("grantKycRevokeKyc", new Object[] {NFT_ADDRESS, SENDER_ALIAS}, null);

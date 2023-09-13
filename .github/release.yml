@@ -1,7 +1,7 @@
 changelog:
   contributors:
     exclude:
-      names: [ "dependabot", "hedera-github-bot" ]
+      names: [ "dependabot[bot]", "hedera-github-bot" ]
   exclude:
     labels: [ "wontfix", "question", "duplicate", "invalid" ]
   categories:

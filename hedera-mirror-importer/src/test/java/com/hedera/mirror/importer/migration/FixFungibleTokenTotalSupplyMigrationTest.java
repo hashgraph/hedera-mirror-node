@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.migration;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -53,6 +54,8 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
     void migrate() {
         // given
         long lastTimestamp = domainBuilder.timestamp();
+        var treasuryAccount =
+                domainBuilder.entity().customize(a -> a.num(2L)).persist().toEntityId();
         var account = domainBuilder.entity().persist().toEntityId();
         long token1DissociateAmount = 500;
         var treasury = domainBuilder.entity().persist().toEntityId();
@@ -95,9 +98,14 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                         .consensusEnd(lastTimestamp))
                 .persist();
         var accountBalanceTimestamp = plus(lastTimestamp, Duration.ofMinutes(-5));
+        // treasury account balance
         domainBuilder
-                .accountBalanceFile()
-                .customize(abf -> abf.consensusTimestamp(accountBalanceTimestamp))
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(accountBalanceTimestamp, treasuryAccount)))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(accountBalanceTimestamp, account)))
                 .persist();
         // token1 balance distribution
         domainBuilder

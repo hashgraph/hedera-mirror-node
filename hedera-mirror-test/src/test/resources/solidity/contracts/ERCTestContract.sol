@@ -32,6 +32,18 @@ contract ERCTestContract {
         return IERC20(token).allowance(owner, spender);
     }
 
+    function approve(address token, address spender, uint256 amount) external returns (bool){
+        return IERC20(token).approve(spender, amount);
+    }
+
+    function transfer(address token, address to, uint256 amount) external returns (bool){
+        return IERC20(token).transfer(to, amount);
+    }
+
+    function transferFrom(address token, address from, address to, uint256 amount) external returns (bool){
+        return IERC20(token).transferFrom(from, to, amount);
+    }
+
     function getApproved(address token, uint256 tokenId) external view returns (address) {
         return IERC721(token).getApproved(tokenId);
     }
@@ -40,7 +52,7 @@ contract ERCTestContract {
         return IERC721(token).isApprovedForAll(owner, operator);
     }
 
-    function getOwnerOf(address token, uint256 serialNo) external view returns(address){
+    function getOwnerOf(address token, uint256 serialNo) external view returns (address){
         return IERC721(token).ownerOf(serialNo);
     }
 

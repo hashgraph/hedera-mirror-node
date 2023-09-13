@@ -39,10 +39,10 @@ import reactor.test.StepVerifier;
 
 abstract class AbstractStreamFileProviderTest {
 
+    protected Path bucketRootPath;
+
     @TempDir
     protected Path dataPath;
-
-    protected Path bucketRootPath;
 
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties properties;
@@ -105,6 +105,23 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         var fileCopier = getFileCopier(node);
         list(fileCopier, node);
+    }
+
+    @Test
+    void listWhenBatchSizeLessThanFilesAvailable() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        fileCopier.copy();
+        streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd.gz");
+        var sig1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
+        streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
+        properties.setBatchSize(1);
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNext(sig1)
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test

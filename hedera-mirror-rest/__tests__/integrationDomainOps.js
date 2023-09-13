@@ -558,7 +558,7 @@ const ethereumTransactionDefaults = {
   signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
   signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
   signature_v: '0x1b',
-  to_address: null,
+  to_address: '0x0000000000000000000000000000000000001389',
   type: 2,
   value: '0x0',
 };
@@ -706,13 +706,6 @@ const setAccountBalance = async (balance) => {
     `insert into account_balance (consensus_timestamp, account_id, balance)
     values ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
-  );
-
-  await pool.query(
-    `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_id)
-    values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {

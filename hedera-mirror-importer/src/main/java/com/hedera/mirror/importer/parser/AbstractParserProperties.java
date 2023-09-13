@@ -59,11 +59,11 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
         @NotNull
         @DurationMin(millis = 500L)
-        private Duration maxBackoff = Duration.ofSeconds(10L);
+        private Duration maxBackoff = Duration.ofSeconds(30L);
 
         @NotNull
         @DurationMin(millis = 100L)
-        private Duration minBackoff = Duration.ofMillis(250L);
+        private Duration minBackoff = Duration.ofMillis(500L);
 
         @Min(1)
         private int multiplier = 2;

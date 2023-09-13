@@ -182,7 +182,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.
         // All contract accounts don't have to have a key, but luckily in our file they do.
         if (exists && ArrayUtils.isNotEmpty(entity.getKey())) {
-            log.trace("Skipping entity {} that was created after the reset", entityId::toString);
+            log.trace("Skipping entity {} that was created after the reset", entityId);
             return false;
         }
 

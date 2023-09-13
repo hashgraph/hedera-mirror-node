@@ -23,6 +23,7 @@ dependencies {
     annotationProcessor(group = "com.querydsl", name = "querydsl-apt", classifier = "jakarta")
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
     api("com.fasterxml.jackson.core:jackson-databind")
+    api("com.github.ben-manes.caffeine:caffeine")
     api("com.google.guava:guava")
     api("com.google.protobuf:protobuf-java")
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
@@ -35,7 +36,6 @@ dependencies {
     api("org.apache.tuweni:tuweni-bytes")
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
-    api("org.springframework.boot:spring-boot-starter-log4j2")
     testImplementation("org.hyperledger.besu:evm")
     testClasses(sourceSets["test"].output)
 }

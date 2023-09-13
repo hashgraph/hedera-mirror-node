@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -132,7 +132,7 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> invalidTxnError(final InvalidTransactionException e) {
+    private Mono<GenericErrorResponse> invalidTxnError(final MirrorEvmTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
         return errorResponse(e.getMessage(), e.getDetail(), e.getData());
     }

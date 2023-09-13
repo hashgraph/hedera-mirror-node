@@ -27,7 +27,7 @@ import io.cucumber.java.DataTableType;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 
 @RequiredArgsConstructor
 public class CustomFeesConverter {
@@ -52,7 +52,7 @@ public class CustomFeesConverter {
         String amount = entry.get("amount");
         AccountId collector = tokenFeature.getRecipientAccountId(Integer.parseInt(entry.get("collector")));
 
-        if (Strings.isNotEmpty(amount)) {
+        if (StringUtils.isNotEmpty(amount)) {
             // fixed fee
             CustomFixedFee fixedFee = new CustomFixedFee();
 
@@ -81,10 +81,10 @@ public class CustomFeesConverter {
     }
 
     private TokenId getTokenId(String tokenIndex) {
-        return Strings.isNotEmpty(tokenIndex) ? tokenFeature.getTokenId(Integer.parseInt(tokenIndex)) : null;
+        return StringUtils.isNotEmpty(tokenIndex) ? tokenFeature.getTokenId(Integer.parseInt(tokenIndex)) : null;
     }
 
     private long getValueOrDefault(String value) {
-        return Strings.isNotEmpty(value) ? Long.parseLong(value) : 0;
+        return StringUtils.isNotEmpty(value) ? Long.parseLong(value) : 0;
     }
 }

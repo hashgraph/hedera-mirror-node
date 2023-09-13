@@ -111,7 +111,6 @@ config:
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
-  SPRING_CLOUD_KUBERNETES_ENABLED: "true"
   SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/usr/etc/hedera/"
   # FOO:
   #   valueFrom:
@@ -307,7 +306,7 @@ prometheusRules:
       description: Have not processed a balance stream file in {{ $labels.namespace }} for the last 15 min
       summary: Missing balance stream files
     enabled: true
-    expr: sum(increase(hedera_mirror_parse_latency_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[16m])) by (namespace) < 1
+    expr: sum(increase(hedera_mirror_parse_duration_seconds_count{application="hedera-mirror-importer",type="BALANCE"}[16m])) by (namespace) < 1
     for: 5m
     labels:
       application: hedera-mirror-importer

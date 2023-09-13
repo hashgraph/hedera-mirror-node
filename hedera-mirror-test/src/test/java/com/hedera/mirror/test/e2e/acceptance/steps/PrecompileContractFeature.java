@@ -27,15 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.FastHex;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
-import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
@@ -44,11 +39,8 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -58,12 +50,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -86,14 +76,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     private static final long firstNftSerialNumber = 1;
     private final List<TokenId> tokenIds = new ArrayList<>();
-    private final ContractClient contractClient;
     private final TokenClient tokenClient;
-    private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
     private ExpandedAccountId ecdsaEaId;
@@ -101,20 +86,14 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Resource precompileTestContract;
 
-    private ContractId contractId;
-    private FileId fileId;
-    private CompiledSolidityArtifact compiledSolidityArtifact;
-
-    @Before
-    public void initialization() throws Exception {
-        try (var in = precompileTestContract.getInputStream()) {
-            compiledSolidityArtifact = MAPPER.readValue(in, CompiledSolidityArtifact.class);
-        }
-    }
+    private DeployedContract deployedPrecompileContract;
+    private String precompileTestContractSolidityAddress;
 
     @Given("I successfully create and verify a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
-        createContract(compiledSolidityArtifact.getBytecode());
+        deployedPrecompileContract = createContract(precompileTestContract, 0);
+        precompileTestContractSolidityAddress =
+                deployedPrecompileContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create and verify a fungible token for precompile contract tests")
@@ -186,7 +165,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -201,7 +180,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.IS_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -214,7 +193,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void checkIfInvalidAccountIsToken() {
         String selectorWithData =
                 ContractMethods.IS_TOKEN_SELECTOR.getSelector() + TestUtil.to32BytesString(ZERO_ADDRESS);
-        String contractIdAsSolidityAddress = contractId.toSolidityAddress();
+        String contractIdAsSolidityAddress = precompileTestContractSolidityAddress;
         String contractClientAddress = contractClient.getClientAddress();
 
         var contractCallRequestBody = ContractCallRequest.builder()
@@ -234,7 +213,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         String selectorWithData = ContractMethods.IS_TOKEN_SELECTOR.getSelector()
                 + TestUtil.to32BytesString(
                         accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
-        String contractIdAsSolidityAddress = contractId.toSolidityAddress();
+        String contractIdAsSolidityAddress = precompileTestContractSolidityAddress;
         String contractClientAddress = contractClient.getClientAddress();
 
         var contractCallRequestBody = ContractCallRequest.builder()
@@ -256,7 +235,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -272,7 +251,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -299,7 +278,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -326,7 +305,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -352,7 +331,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -378,7 +357,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -402,13 +381,13 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertFalse(response.getResultAsBoolean());
+        assertTrue(response.getResultAsBoolean());
     }
 
     @And("check if non fungible token is kyc granted")
@@ -418,12 +397,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
 
-        assertFalse(response.getResultAsBoolean());
+        assertTrue(response.getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the default freeze for a fungible token")
@@ -432,7 +411,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TOKEN_DEFAULT_FREEZE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -446,7 +425,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TOKEN_DEFAULT_FREEZE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -460,7 +439,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TOKEN_DEFAULT_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -474,7 +453,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TOKEN_DEFAULT_KYC_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -488,7 +467,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_INFORMATION_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -508,7 +487,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_INFORMATION_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -524,7 +503,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -547,7 +526,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -577,7 +556,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -591,7 +570,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_TYPE_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -605,7 +584,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -619,7 +598,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -634,7 +613,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -652,7 +631,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(String.valueOf(firstNftSerialNumber)))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -844,7 +823,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
 
@@ -870,7 +849,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -891,7 +870,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -918,7 +897,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -945,7 +924,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 .data(ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR.getSelector()
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()))
                 .from(contractClient.getClientAddress())
-                .to(contractId.toSolidityAddress())
+                .to(precompileTestContractSolidityAddress)
                 .estimate(false)
                 .build();
         ContractCallResponse response = mirrorClient.contractsCall(contractCallRequestBody);
@@ -1053,46 +1032,15 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyToken(tokenId);
     }
 
-    private void createContract(String byteCode) {
-        persistContractBytes(byteCode.replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                null,
-                null);
-
-        verifyCreateContractNetworkResponse();
-    }
-
-    private void persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-    }
-
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
-        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
-                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
-                .findFirst();
-
+        Optional<Object> function;
+        try (var in = precompileTestContract.getInputStream()) {
+            function = Arrays.stream(readCompiledArtifact(in).getAbi())
+                    .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
+                    .findFirst();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         try {
             String abiFunctionAsJsonString = (new JSONObject((Map) function.get())).toString();
             return Function.fromJson(abiFunctionAsJsonString)

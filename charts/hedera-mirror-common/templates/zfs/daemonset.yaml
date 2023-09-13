@@ -17,7 +17,6 @@ spec:
       labels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 8 }}
         app: zfs-init
     spec:
-      serviceAccount: {{ .Values.zfs.init.serviceAccount.name }}
       containers:
         - image: registry.k8s.io/pause:latest
           imagePullPolicy: {{ .Values.zfs.init.image.pullPolicy }}
@@ -48,6 +47,8 @@ spec:
             - name: scripts
               mountPath: /scripts
       nodeSelector: {{ toYaml .Values.zfs.zfsNode.nodeSelector | nindent 8 }}
+      priorityClassName: {{ .Values.zfs.priorityClassName }}
+      serviceAccountName: {{ .Values.zfs.init.serviceAccount.name }}
       terminationGracePeriodSeconds: 1
       tolerations: {{ toYaml .Values.zfs.zfsNode.tolerations | nindent 8 }}
       volumes:

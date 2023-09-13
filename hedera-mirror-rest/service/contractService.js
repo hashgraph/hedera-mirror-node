@@ -220,6 +220,7 @@ class ContractService extends BaseService {
                 'signature_s', encode(${EthereumTransaction.SIGNATURE_S}, 'hex'),
                 'type', ${EthereumTransaction.TYPE},
                 'recovery_id', ${EthereumTransaction.RECOVERY_ID},
+                'to_address', encode(${EthereumTransaction.TO_ADDRESS}, 'hex'),
                 'value', encode(${EthereumTransaction.VALUE}, 'hex'))
         end as ${EthereumTransaction.tableName}
       from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
 
 description = "Hedera Mirror Node Test"
@@ -31,7 +30,7 @@ dependencies {
     implementation("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
-    implementation("org.springframework.boot:spring-boot-starter-log4j2")
+    implementation("org.springframework.boot:spring-boot-starter-logging")
     testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
     testImplementation("com.hedera.hashgraph:sdk")
@@ -93,7 +92,6 @@ tasks.shadowJar {
     transformer.mergeStrategy = "append"
     transformer.paths = listOf("META-INF/spring.factories")
     transform(transformer)
-    transform(Log4j2PluginsCacheFileTransformer::class.java)
 }
 
 tasks.dockerBuild { dependsOn(tasks.shadowJar) }

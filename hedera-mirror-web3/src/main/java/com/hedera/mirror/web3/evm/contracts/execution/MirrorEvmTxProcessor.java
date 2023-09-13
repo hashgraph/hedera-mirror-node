@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -99,7 +99,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
         if (code == null) {
-            throw new InvalidTransactionException(
+            throw new MirrorEvmTransactionException(
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
