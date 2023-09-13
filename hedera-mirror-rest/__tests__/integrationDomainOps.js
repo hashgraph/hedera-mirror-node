@@ -558,7 +558,7 @@ const ethereumTransactionDefaults = {
   signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
   signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
   signature_v: '0x1b',
-  to_address: null,
+  to_address: '0x0000000000000000000000000000000000001389',
   type: 2,
   value: '0x0',
 };
