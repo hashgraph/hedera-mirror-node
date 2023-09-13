@@ -220,7 +220,7 @@ class MintPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @Test
