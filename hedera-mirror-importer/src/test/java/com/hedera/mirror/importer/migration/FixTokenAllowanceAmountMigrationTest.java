@@ -40,12 +40,12 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.86.0")
+@TestPropertySource(properties = "spring.flyway.target=1.87.0")
 class FixTokenAllowanceAmountMigrationTest extends IntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.87.0__fix_token_allowance_amount.sql")
+    @Value("classpath:db/migration/v1/V1.87.1__fix_token_allowance_amount.sql")
     private final Resource sql;
 
     private final TransactionTemplate transactionTemplate;
