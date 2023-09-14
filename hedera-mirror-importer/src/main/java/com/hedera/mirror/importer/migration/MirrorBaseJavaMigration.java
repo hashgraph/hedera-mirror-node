@@ -18,16 +18,16 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 abstract class MirrorBaseJavaMigration implements JavaMigration {
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     protected MigrationVersion getMinimumVersion() {
         return null;

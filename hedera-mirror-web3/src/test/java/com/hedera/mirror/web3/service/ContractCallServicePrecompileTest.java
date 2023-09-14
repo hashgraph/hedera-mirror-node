@@ -25,7 +25,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -140,7 +140,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test
@@ -151,7 +151,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class);
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @Test

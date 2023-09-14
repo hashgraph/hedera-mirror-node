@@ -30,7 +30,6 @@ dependencies {
     compileOnly("com.graphql-java-generator:graphql-java-client-runtime")
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
-    implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.graphql-java:graphql-java-extended-scalars")
     implementation("com.graphql-java:graphql-java-extended-validation")
     implementation("io.github.mweirauch:micrometer-jvm-extras")

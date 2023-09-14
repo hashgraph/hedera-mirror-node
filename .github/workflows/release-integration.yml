@@ -14,7 +14,7 @@ jobs:
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get version
         run: echo "VERSION=$(grep -oP 'version=\K.+' gradle.properties)" >> $GITHUB_ENV
@@ -68,7 +68,7 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: deploy
 

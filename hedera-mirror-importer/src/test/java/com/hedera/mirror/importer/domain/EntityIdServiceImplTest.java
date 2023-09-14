@@ -18,8 +18,10 @@ package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
+import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
+import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -133,6 +135,43 @@ class EntityIdServiceImplTest extends IntegrationTest {
                 accountId);
 
         assertThat(entityId).hasValue(EntityId.of(accountId));
+    }
+
+    @Test
+    void lookupAccountAliasToEvmAddressFromCache() {
+        // given
+        var entity = domainBuilder
+                .entity()
+                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
+                .get();
+        entityIdService.notify(entity);
+        var accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
+                .build();
+        // when, then
+        assertThat(entityIdService.lookup(accountId)).hasValue(entity.toEntityId());
+    }
+
+    @Test
+    void lookupAccountAliasToEvmAddressFromDb() {
+        // given
+        var entity = domainBuilder
+                .entity()
+                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
+                .persist();
+        var accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
+                .build();
+        // when, then
+        assertThat(entityIdService.lookup(accountId)).hasValue(entity.toEntityId());
+    }
+
+    @Test
+    void lookupAccountAliasToEvmAddressNotFound() {
+        var accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
+                .build();
+        assertThat(entityIdService.lookup(accountId)).isEmpty();
     }
 
     @Test
