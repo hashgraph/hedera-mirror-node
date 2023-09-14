@@ -112,6 +112,9 @@ function getSequentialTestScenarios(tests) {
   const rampingVusTests = [];
 
   for (const [name, test] of Object.entries(tests)) {
+    if (shouldSkipEstimateTest(name)) {
+      continue;
+    }
     const executor = Object.values(test.options.scenarios)[0].executor;
     if (executor === 'constant-vus') {
       constantVusTests.push(name);
@@ -176,6 +179,10 @@ const httpReqDurationRegex = /^http_req_duration{.*scenario:.*}$/;
 const httpReqsRegex = /^http_reqs{.*scenario:.*}$/;
 const scenarioDurationRegex = /^scenario_duration{.*scenario:.*}$/;
 const scenarioRegex = /scenario:([^,}]+)/;
+
+function shouldSkipEstimateTest(name) {
+  return name.toLowerCase().includes('estimate') && !__ENV.RUN_ESTIMATE_TESTS;
+}
 
 function getScenario(metricKey) {
   const match = scenarioRegex.exec(metricKey);
