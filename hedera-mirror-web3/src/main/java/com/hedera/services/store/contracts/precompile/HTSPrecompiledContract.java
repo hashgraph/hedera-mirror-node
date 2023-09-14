@@ -49,6 +49,8 @@ import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -217,7 +219,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             precompile.handleSentHbars(frame, transactionBody);
 
-            if (Address.ZERO.equals(senderAddress) && isEstimate && precompile instanceof ERCTransferPrecompile) {
+            if (Address.ZERO.equals(senderAddress)
+                    && isEstimate
+                    && (precompile instanceof ERCTransferPrecompile
+                            || precompile instanceof ApprovePrecompile
+                            || precompile instanceof AssociatePrecompile
+                            || precompile instanceof DissociatePrecompile)) {
                 frame.getMaxStackSize();
                 return Bytes.EMPTY;
             }
