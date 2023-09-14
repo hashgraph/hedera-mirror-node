@@ -2761,8 +2761,12 @@ components:
     NetworkStakeResponse:
       type: object
       required:
+        - max_stake_rewarded
         - max_staking_reward_rate_per_hbar
+        - max_total_reward
         - node_reward_fee_fraction
+        - reserved_staking_rewards
+        - reward_balance_threshold
         - stake_total
         - staking_period
         - staking_period_duration
@@ -2770,15 +2774,40 @@ components:
         - staking_reward_fee_fraction
         - staking_reward_rate
         - staking_start_threshold
+        - unreserved_staking_reward_balance
       properties:
+        max_stake_rewarded:
+          description:
+            The maximum amount of tinybar that can be staked for reward while still achieving
+            the maximum per-hbar reward rate
+          format: int64
+          type: integer
         max_staking_reward_rate_per_hbar:
           description: The maximum reward rate, in tinybars per whole hbar, that any account can receive in a day
           type: integer
           format: int64
+        max_total_reward:
+          description:
+            The total tinybars to be paid as staking rewards in the ending period,
+            after applying the settings for the 0.0.800 balance threshold and the maximum stake rewarded
+          format: int64
+          type: integer
         node_reward_fee_fraction:
           description: The fraction between zero and one of the network and service fees paid to the node reward account 0.0.801
           type: number
           format: float
+        reserved_staking_rewards:
+          description:
+            The amount of the staking reward funds of account 0.0.800 reserved to pay pending
+            rewards that have been earned but not collected
+          format: int64
+          type: integer
+        reward_balance_threshold:
+          description:
+            The unreserved tinybar balance of account 0.0.800 required to achieve the
+            maximum per-hbar reward rate
+          format: int64
+          type: integer
         stake_total:
           description: The total amount staked to the network in tinybars the start of the current staking period
           type: integer
@@ -2807,9 +2836,19 @@ components:
           description: The minimum balance of staking reward account 0.0.800 required to active rewards
           type: integer
           format: int64
+        unreserved_staking_reward_balance:
+          description:
+            The unreserved balance of account 0.0.800 at the close of the just-ending period;
+            this value is used to compute the HIP-782 balance ratio
+          format: int64
+          type: integer
       example:
+        max_stake_rewarded: 10
         max_staking_reward_rate_per_hbar: 17808
+        max_total_reward: 20
         node_reward_fee_fraction: 1.0
+        reserved_staking_rewards: 30
+        reward_balance_threshold: 40
         stake_total: 35000000000000000
         staking_period:
           from: "1655164800.000000000"
@@ -2819,6 +2858,7 @@ components:
         staking_reward_fee_fraction: 1.0
         staking_reward_rate: 100000000000
         staking_start_threshold: 25000000000000000
+        unreserved_staking_reward_balance: 50
     Nft:
       type: object
       properties:
