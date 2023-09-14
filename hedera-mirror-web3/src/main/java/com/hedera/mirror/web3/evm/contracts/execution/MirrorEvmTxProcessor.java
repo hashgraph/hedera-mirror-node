@@ -108,7 +108,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)
                     .contract(to)
-                    .inputData(payload)
                     .inputData(Bytes.EMPTY)
                     .code(CodeFactory.createCode(payload, 0, false))
                     .build();

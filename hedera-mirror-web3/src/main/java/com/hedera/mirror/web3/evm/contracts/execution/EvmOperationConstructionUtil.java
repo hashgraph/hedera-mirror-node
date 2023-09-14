@@ -22,6 +22,9 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.HederaEvmMstore;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.HederaGasOperation;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.HederaSubOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
@@ -58,6 +61,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -96,16 +100,18 @@ public class EvmOperationConstructionUtil {
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
+        final var precompileContractRegistry = new PrecompileContractRegistry();
+        MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
         return Map.of(
                 EVM_VERSION_0_30,
-                () -> new MessageCallProcessor(evm, new PrecompileContractRegistry()),
+                () -> new MessageCallProcessor(evm, precompileContractRegistry),
                 EVM_VERSION_0_34,
                 () -> new MirrorEvmMessageCallProcessor(
                         autoCreationLogic,
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evm,
-                        new PrecompileContractRegistry(),
+                        precompileContractRegistry,
                         precompiles(
                                 mirrorNodeEvmProperties,
                                 precompileMapper,
