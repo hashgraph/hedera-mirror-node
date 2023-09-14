@@ -219,13 +219,14 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
             precompile.handleSentHbars(frame, transactionBody);
 
+            // if we have top level token call with estimate gas and missing sender - return empty result
+            // N.B. this should be done for precompiles that depend on the sender address
             if (Address.ZERO.equals(senderAddress)
                     && isEstimate
                     && (precompile instanceof ERCTransferPrecompile
                             || precompile instanceof ApprovePrecompile
                             || precompile instanceof AssociatePrecompile
                             || precompile instanceof DissociatePrecompile)) {
-                frame.getMaxStackSize();
                 return Bytes.EMPTY;
             }
             final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
