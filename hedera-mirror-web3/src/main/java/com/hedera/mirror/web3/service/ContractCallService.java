@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.mirrorEvmTxProcessor;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -39,6 +40,7 @@ import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.context.ApplicationContext;
 
 @CustomLog
 @Named
@@ -47,7 +49,7 @@ public class ContractCallService {
 
     private final Counter.Builder gasCounter =
             Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
-    private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
+    private final ApplicationContext ctx;
     private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
     private final Store store;
@@ -60,6 +62,7 @@ public class ContractCallService {
         ThreadLocalHolder.cleanThread();
         try {
             ThreadLocalHolder.startThread(store.getStackedStateFrames());
+            mirrorEvmTxProcessor.set((MirrorEvmTxProcessor) ctx.getBean("mirrorEvmTxProcessor"));
 
             Bytes result;
             if (params.isEstimate()) {
@@ -75,6 +78,7 @@ public class ContractCallService {
             return result.toHexString();
         } finally {
             ThreadLocalHolder.cleanThread();
+            mirrorEvmTxProcessor.remove();
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }
@@ -114,7 +118,7 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessor.execute(
+            transactionResult = mirrorEvmTxProcessor.get().execute(
                     params.getSender(),
                     params.getReceiver(),
                     params.isEstimate() ? estimatedGas : params.getGas(),

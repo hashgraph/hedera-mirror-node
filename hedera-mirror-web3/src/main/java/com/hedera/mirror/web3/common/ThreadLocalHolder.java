@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import jakarta.inject.Named;
@@ -49,6 +50,8 @@ public class ThreadLocalHolder {
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
+    @NonNull
+    public static final ThreadLocal<MirrorEvmTxProcessor> mirrorEvmTxProcessor = ThreadLocal.withInitial(() -> null);
 
     private ThreadLocalHolder() {}
 
