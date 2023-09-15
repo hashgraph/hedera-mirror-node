@@ -223,7 +223,7 @@ class RecordItemTest {
     }
 
     @Test
-    void testWithBodyProto() {
+    void testWithBodyProto() throws Exception {
         // An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
         byte[] transactionFromProto = Base64.decodeBase64("CgoYCjIEbWVtb3IAGhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5");
 
@@ -234,8 +234,8 @@ class RecordItemTest {
 
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .transactionRecordBytes(TRANSACTION_RECORD.toByteArray())
-                .transactionBytes(transactionFromProto)
+                .transactionRecord(TRANSACTION_RECORD)
+                .transaction(Transaction.parseFrom(transactionFromProto))
                 .build();
         assertRecordItem(expectedTransaction, recordItem);
     }
@@ -572,8 +572,8 @@ class RecordItemTest {
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
         assertThatThrownBy(() -> RecordItem.builder()
                         .hapiVersion(DEFAULT_HAPI_VERSION)
-                        .transactionRecordBytes(recordBytes)
-                        .transactionBytes(transactionBytes)
+                        .transactionRecord(TransactionRecord.parseFrom(recordBytes))
+                        .transaction(Transaction.parseFrom(transactionBytes))
                         .build()
                         .getTransactionBody())
                 .isInstanceOf(ProtobufException.class)
@@ -585,8 +585,6 @@ class RecordItemTest {
         assertThat(recordItem.getTransaction()).isEqualTo(transaction);
         assertThat(recordItem.getTransactionRecord()).isEqualTo(TRANSACTION_RECORD);
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
-        assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
-        assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
         assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
 }

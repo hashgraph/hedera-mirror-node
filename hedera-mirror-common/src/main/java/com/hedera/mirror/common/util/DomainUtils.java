@@ -18,6 +18,7 @@ package com.hedera.mirror.common.util;
 
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -237,6 +238,10 @@ public class DomainUtils {
     public static byte[] toBytes(ByteString byteString) {
         if (byteString == null) {
             return null;
+        }
+
+        if (ByteString.EMPTY.equals(byteString)) {
+            return Internal.EMPTY_BYTE_ARRAY;
         }
 
         try {

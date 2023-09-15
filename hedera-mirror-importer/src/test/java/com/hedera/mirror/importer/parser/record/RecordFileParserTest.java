@@ -25,9 +25,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -182,23 +184,23 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 .thenReturn(DateRangeFilter.all());
 
         long timestamp = ++count;
-        ContractFunctionResult contractFunctionResult1 =
-                contractFunctionResult(10000000000L, new byte[] {0, 6, 4, 0, 5, 7, 2});
+        var contractFunctionResult1 = contractFunctionResult(10000000000L, new byte[] {0, 6, 4, 0, 5, 7, 2});
         RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp, 0);
 
-        ContractFunctionResult contractFunctionResult2 =
-                contractFunctionResult(100000000000L, new byte[] {3, 5, 1, 7, 4, 4, 0});
+        var contractFunctionResult2 = contractFunctionResult(100000000000L, new byte[] {3, 5, 1, 7, 4, 4, 0});
         RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp, 0);
 
-        ContractFunctionResult contractFunctionResult3 =
-                contractFunctionResult(1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
+        var contractFunctionResult3 = contractFunctionResult(1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
         RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp, 0);
 
-        ContractFunctionResult contractFunctionResult4 =
-                contractFunctionResult(1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
+        var contractFunctionResult4 = contractFunctionResult(1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
         RecordItem recordItem4 = ethereumTransaction(contractFunctionResult4, timestamp, 1);
 
-        RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3, recordItem4), timestamp);
+        RecordItem recordItem5 = cryptoTransferRecordItem(1L);
+
+        var items = Flux.just(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
+        var recordFile = spy(getStreamFile(items, timestamp));
+        doNothing().when(recordFile).clear();
 
         parser.parse(recordFile);
 
@@ -212,6 +214,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
+
         assertAll(
                 () -> assertEquals(10000000000L + 100000000000L + 1000000000000L, recordFile.getGasUsed()),
                 () -> assertArrayEquals(expectedLogBloom, recordFile.getLogsBloom()),
@@ -398,7 +401,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 .build();
         return RecordItem.builder()
                 .transactionRecord(transactionRecord)
-                .transactionBytes(transaction.toByteArray())
+                .transaction(transaction)
                 .build();
     }
 

@@ -21,6 +21,11 @@ import reactor.core.publisher.Flux;
 
 public interface StreamFile<T extends StreamItem> {
 
+    default void clear() {
+        setBytes(null);
+        setItems(null);
+    }
+
     StreamFile<T> copy();
 
     byte[] getBytes();

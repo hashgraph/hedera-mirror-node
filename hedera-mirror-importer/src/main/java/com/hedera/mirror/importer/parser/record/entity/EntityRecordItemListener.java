@@ -190,10 +190,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setResult(txRecord.getReceipt().getStatusValue());
         transaction.setScheduled(txRecord.hasScheduleRef());
         transaction.setTransactionBytes(
-                entityProperties.getPersist().isTransactionBytes() ? recordItem.getTransactionBytes() : null);
+                entityProperties.getPersist().isTransactionBytes()
+                        ? recordItem.getTransaction().toByteArray()
+                        : null);
         transaction.setTransactionHash(DomainUtils.toBytes(txRecord.getTransactionHash()));
         transaction.setTransactionRecordBytes(
-                entityProperties.getPersist().isTransactionRecordBytes() ? recordItem.getRecordBytes() : null);
+                entityProperties.getPersist().isTransactionRecordBytes()
+                        ? recordItem.getTransactionRecord().toByteArray()
+                        : null);
         transaction.setType(recordItem.getTransactionType());
         transaction.setValidDurationSeconds(validDurationSeconds);
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
