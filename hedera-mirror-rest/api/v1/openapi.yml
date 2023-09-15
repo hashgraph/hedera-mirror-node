@@ -335,9 +335,9 @@ paths:
         |                  | non-static contract state reads and modifications for HTS system contract PausePrecompile                    | 0.86+                                   |
         |                  | non-static contract state reads and modifications for HTS system contract FreezePrecompile                   | 0.86+                                   |
         |                  | non-static contract state reads and modifications for HTS system contract UnfreezePrecompile                 | 0.86+                                   |
-        |                  | static contract state reads for IsApprovedForAllPrecompile                                                   | 0.87+                                   |
-        |                  | static contract state reads for AllowancePrecompile                                                          | 0.87+                                   |
-        |                  | static contract state reads for GetApprovedPrecompile                                                        | 0.87+                                   |
+        |                  | non-static contract state reads for IsApprovedForAllPrecompile                                               | 0.87+                                   |
+        |                  | non-static contract state reads for AllowancePrecompile                                                      | 0.87+                                   |
+        |                  | non-static contract state reads for GetApprovedPrecompile                                                    | 0.87+                                   |
         |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenKeysPrecompile          | 0.87+                                   |
         |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenExpiryInfoPrecompile    | 0.87+                                   |
         |                  | non-static contract state reads and modifications for system contract ExchangeRatePrecompiledContract        | 0.88+                                   |
