@@ -2777,7 +2777,7 @@ components:
         - unreserved_staking_reward_balance
       properties:
         max_stake_rewarded:
-          description:
+          description: |
             The maximum amount of tinybar that can be staked for reward while still achieving
             the maximum per-hbar reward rate
           format: int64
@@ -2787,7 +2787,7 @@ components:
           type: integer
           format: int64
         max_total_reward:
-          description:
+          description: |
             The total tinybars to be paid as staking rewards in the ending period,
             after applying the settings for the 0.0.800 balance threshold and the maximum stake rewarded
           format: int64
@@ -2797,13 +2797,13 @@ components:
           type: number
           format: float
         reserved_staking_rewards:
-          description:
+          description: |
             The amount of the staking reward funds of account 0.0.800 reserved to pay pending
             rewards that have been earned but not collected
           format: int64
           type: integer
         reward_balance_threshold:
-          description:
+          description: |
             The unreserved tinybar balance of account 0.0.800 required to achieve the
             maximum per-hbar reward rate
           format: int64
@@ -2837,7 +2837,7 @@ components:
           type: integer
           format: int64
         unreserved_staking_reward_balance:
-          description:
+          description: |
             The unreserved balance of account 0.0.800 at the close of the just-ending period;
             this value is used to compute the HIP-782 balance ratio
           format: int64
