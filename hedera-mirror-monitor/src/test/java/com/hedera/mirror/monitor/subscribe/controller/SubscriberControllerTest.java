@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.ScenarioStatus;
-import com.hedera.mirror.monitor.config.LoggingFilter;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.TestScenario;
 import java.util.Arrays;
@@ -60,9 +59,7 @@ class SubscriberControllerTest {
         subscription2.setStatus(ScenarioStatus.RUNNING);
 
         SubscriberController subscriberController = new SubscriberController(mirrorSubscriber);
-        webTestClient = WebTestClient.bindToController(subscriberController)
-                .webFilter(new LoggingFilter())
-                .build();
+        webTestClient = WebTestClient.bindToController(subscriberController).build();
         when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscription1, subscription2));
     }
 

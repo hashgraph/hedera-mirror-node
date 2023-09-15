@@ -1,0 +1,55 @@
+{
+  "estimateCreateFungibleToken": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "from": "",
+      "value": 0,
+      "sleep": 0
+    }
+  ],
+  "estimateCreateFungibleTokenWithCustomFees": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "from": "",
+      "value": 0,
+      "sleep": 0
+    }
+  ],
+  "estimateCreateNFT": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "from": "",
+      "value": 0,
+      "sleep": 0
+    }
+  ],
+  "estimateCreateNFTWithCustomFees": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "from": "",
+      "value": 0,
+      "sleep": 0
+    }
+  ],
+  "estimateTokenDissociate": [
+    {
+      "block": "",
+      "data": "",
+      "to": "",
+      "gas": 0,
+      "sleep": 0
+    }
+  ]
+}

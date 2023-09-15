@@ -24,14 +24,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
     protected final StreamFileRepository<T, Long> streamFileRepository;
@@ -72,27 +72,29 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     @Override
     public void parse(T streamFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        boolean success = false;
+        boolean success = true;
 
-        if (shouldParse(streamFile)) {
-            try {
-                doParse(streamFile);
-
-                log.info(
-                        "Successfully processed {} items from {} in {}",
-                        streamFile.getCount(),
-                        streamFile.getName(),
-                        stopwatch);
-                success = true;
-                Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
-                parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Throwable e) {
-                log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
-                throw e;
-            } finally {
-                Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
-                timer.record(stopwatch.elapsed());
+        try {
+            if (!shouldParse(streamFile)) {
+                return;
             }
+
+            doParse(streamFile);
+            log.info(
+                    "Successfully processed {} items from {} in {}",
+                    streamFile.getCount(),
+                    streamFile.getName(),
+                    stopwatch);
+
+            Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
+            parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+        } catch (Throwable e) {
+            success = false;
+            log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
+            throw e;
+        } finally {
+            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
         }
     }
 

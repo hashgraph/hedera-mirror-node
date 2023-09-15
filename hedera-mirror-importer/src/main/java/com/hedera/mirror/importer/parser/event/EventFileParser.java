@@ -46,7 +46,7 @@ public class EventFileParser extends AbstractStreamFileParser<EventFile> {
                             multiplierExpression = "#{@eventParserProperties.getRetry().getMultiplier()}"),
             maxAttemptsExpression = "#{@eventParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@eventParserProperties.getTransactionTimeout().toSeconds()}")
-    public void parse(EventFile eventFile) {
+    public synchronized void parse(EventFile eventFile) {
         super.parse(eventFile);
     }
 

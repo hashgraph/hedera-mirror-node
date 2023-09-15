@@ -67,8 +67,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
@@ -89,7 +89,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return Ordering.arbitrary().compare(left, right);
     };
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
@@ -491,13 +491,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
     boolean verifyHashChain(T streamFile, String expectedPreviousHash) {
         if (!streamFile.getType().isChained()) {
-            return true;
-        }
-
-        Instant verifyHashAfter = downloaderProperties.getMirrorProperties().getVerifyHashAfter();
-        Instant fileInstant = Instant.ofEpochSecond(0, streamFile.getConsensusStart());
-
-        if (!verifyHashAfter.isBefore(fileInstant)) {
             return true;
         }
 
