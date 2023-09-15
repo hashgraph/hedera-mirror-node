@@ -88,6 +88,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
+        testSpecs.stream().forEach(testSpec -> {
+            var consensusTimestamp = testSpec.getRecordItem().getConsensusTimestamp();
+            testSpec.getExpected().setBalanceTimestamp(consensusTimestamp);
+        });
 
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);

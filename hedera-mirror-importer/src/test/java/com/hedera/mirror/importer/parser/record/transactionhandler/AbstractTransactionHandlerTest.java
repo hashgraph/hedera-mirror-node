@@ -343,41 +343,35 @@ abstract class AbstractTransactionHandlerTest {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
         List<UpdateEntityTestSpec> testSpecs = new ArrayList<>();
-        var recordItem = getRecordItem(body, innerBody);
         AbstractEntity expected = getExpectedUpdatedEntity();
-        expected.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         expected.setMemo(""); // Proto defaults to empty string
 
         // no memo set, expect empty memo
         testSpecs.add(UpdateEntityTestSpec.builder()
                 .description("create entity without memo, expect empty memo")
                 .expected(expected)
-                .recordItem(recordItem)
+                .recordItem(getRecordItem(body, innerBody))
                 .build());
 
+        expected = getExpectedUpdatedEntity();
+        expected.setMemo("");
         // memo set to empty string, expect empty memo
         Message updatedInnerBody = innerBody.toBuilder().setField(memoField, "").build();
-        recordItem = getRecordItem(body, updatedInnerBody);
-        expected = getExpectedUpdatedEntity();
-        expected.setBalanceTimestamp(recordItem.getConsensusTimestamp());
-        expected.setMemo("");
         testSpecs.add(UpdateEntityTestSpec.builder()
                 .description("create entity with empty memo, expect empty memo")
                 .expected(expected)
-                .recordItem(recordItem)
+                .recordItem(getRecordItem(body, updatedInnerBody))
                 .build());
 
         // memo set to non-empty string, expect memo set
+        expected = getExpectedUpdatedEntity();
+        expected.setMemo(DEFAULT_MEMO);
         updatedInnerBody =
                 innerBody.toBuilder().setField(memoField, DEFAULT_MEMO).build();
-        recordItem = getRecordItem(body, updatedInnerBody);
-        expected = getExpectedUpdatedEntity();
-        expected.setBalanceTimestamp(recordItem.getConsensusTimestamp());
-        expected.setMemo(DEFAULT_MEMO);
         testSpecs.add(UpdateEntityTestSpec.builder()
                 .description("create entity with non-empty memo, expect memo set")
                 .expected(expected)
-                .recordItem(recordItem)
+                .recordItem(getRecordItem(body, updatedInnerBody))
                 .build());
 
         return testSpecs;

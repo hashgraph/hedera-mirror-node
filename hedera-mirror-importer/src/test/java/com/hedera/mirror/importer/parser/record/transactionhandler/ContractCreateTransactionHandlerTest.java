@@ -98,6 +98,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(
             Descriptors.FieldDescriptor memoField) {
         List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
+        testSpecs.stream().forEach(testSpec -> {
+            var consensusTimestamp = testSpec.getRecordItem().getConsensusTimestamp();
+            testSpec.getExpected().setBalanceTimestamp(consensusTimestamp);
+        });
 
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
