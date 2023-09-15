@@ -321,27 +321,27 @@ paths:
         |                  | non-static contract state reads and modifications for associate precompile functions                         | 0.83+                                   |
         |                  | non-static contract state reads and modifications for non precompile functions with lazy account creation    | 0.84+                                   |
         |                  | static contract state reads for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc. )  | 0.84+                                   |
-        |                  | HTS system contract MintPrecompile                                                                           | 0.84+                                   |
-        |                  | HTS system contract GrantKycPrecompile                                                                       | 0.85+                                   |
-        |                  | HTS system contract WipePrecompile                                                                           | 0.85+                                   |
-        |                  | HTS system contract BurnPrecompile                                                                           | 0.85+                                   |
-        |                  | HTS system contract DissociatePrecompile                                                                     | 0.85+                                   |
-        |                  | HTS system contract SetApprovalForAllPrecompile                                                              | 0.86+                                   |
-        |                  | HTS system contract ApprovePrecompile                                                                        | 0.86+                                   |
-        |                  | HTS system contract RevokeKycPrecompile                                                                      | 0.86+                                   |
-        |                  | HTS system contract UnpausePrecompile                                                                        | 0.86+                                   |
-        |                  | HTS system contract PausePrecompile                                                                          | 0.86+                                   |
-        |                  | HTS system contract DeleteTokenPrecompile                                                                    | 0.86+                                   |
-        |                  | HTS system contract PausePrecompile                                                                          | 0.86+                                   |
-        |                  | HTS system contract FreezePrecompile                                                                         | 0.86+                                   |
-        |                  | HTS system contract UnfreezePrecompile                                                                       | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract MintPrecompile                     | 0.84+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract GrantKycPrecompile                 | 0.85+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract WipePrecompile                     | 0.85+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract BurnPrecompile                     | 0.85+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract DissociatePrecompile               | 0.85+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract SetApprovalForAllPrecompile        | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract ApprovePrecompile                  | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract RevokeKycPrecompile                | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract UnpausePrecompile                  | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract PausePrecompile                    | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract DeleteTokenPrecompile              | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract PausePrecompile                    | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract FreezePrecompile                   | 0.86+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract UnfreezePrecompile                 | 0.86+                                   |
         |                  | static contract state reads for IsApprovedForAllPrecompile                                                   | 0.87+                                   |
         |                  | static contract state reads for AllowancePrecompile                                                          | 0.87+                                   |
         |                  | static contract state reads for GetApprovedPrecompile                                                        | 0.87+                                   |
         |                  | HTS system contract UpdateTokenKeysPrecompile                                                                | 0.87+                                   |
         |                  | HTS system contract UpdateTokenExpiryInfoPrecompile                                                          | 0.87+                                   |
-        |                  | HTS system contract ExchangeRatePrecompiledContract                                                          | 0.88+                                   |
-        |                  | HTS system contract PrngSystemPrecompiledContract                                                            | 0.89+                                   |
+        |                  | non-static contract state reads and modifications for system contract ExchangeRatePrecompiledContract        | 0.88+                                   |
+        |                  | non-static contract state reads and modifications for system contract PrngSystemPrecompiledContract          | 0.89+                                   |
 
         The operations types which are not currently supported should return 501 error status.
 
