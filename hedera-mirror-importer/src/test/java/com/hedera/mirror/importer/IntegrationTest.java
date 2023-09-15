@@ -20,8 +20,6 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -145,37 +143,6 @@ public abstract class IntegrationTest {
             table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
         }
         return findEntity(historyClass, ids, String.format("%s_history", table));
-    }
-
-    protected void persistEntity(Entity entity) {
-        jdbcOperations.update(
-                "insert into entity (decline_reward, deleted, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entity.getDeclineReward(),
-                entity.getDeleted(),
-                entity.getId(),
-                entity.getNum(),
-                entity.getRealm(),
-                entity.getShard(),
-                entity.getStakedNodeId(),
-                entity.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
-                entity.getType().toString());
-    }
-
-    protected void persistEntityHistory(EntityHistory entityHistory) {
-        jdbcOperations.update(
-                "insert into entity_history (created_timestamp, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
-                        + "values (?,?,?,?,?,?,?,?::int8range,?::entity_type)",
-                entityHistory.getCreatedTimestamp(),
-                entityHistory.getId(),
-                entityHistory.getNum(),
-                entityHistory.getRealm(),
-                entityHistory.getShard(),
-                entityHistory.getStakedNodeId(),
-                entityHistory.getStakePeriodStart(),
-                PostgreSQLGuavaRangeType.INSTANCE.asString(entityHistory.getTimestampRange()),
-                entityHistory.getType().toString());
     }
 
     protected void reset() {

@@ -94,6 +94,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         entity.setBalance(0L);
+        entity.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());

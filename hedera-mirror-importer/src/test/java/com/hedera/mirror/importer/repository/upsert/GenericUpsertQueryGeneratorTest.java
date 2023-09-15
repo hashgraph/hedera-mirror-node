@@ -154,7 +154,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                             when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
                             when e_balance is not null then e_balance + coalesce(balance, 0)
                           end,
-                          coalesce(balance_timestamp, e_balance_timestamp),
+                          coalesce(balance_timestamp, e_balance_timestamp, null),
                           coalesce(created_timestamp, e_created_timestamp, null),
                           coalesce(decline_reward, e_decline_reward, false),
                           coalesce(deleted, e_deleted, null),
@@ -371,7 +371,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                               when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
                               when e_balance is not null then e_balance + coalesce(balance, 0)
                             end,
-                            coalesce(balance_timestamp, e_balance_timestamp),
+                            coalesce(balance_timestamp, e_balance_timestamp, null),
                             coalesce(e_created_timestamp, created_timestamp, null),
                             coalesce(decline_reward, e_decline_reward, false),
                             coalesce(deleted, e_deleted, null),
@@ -456,7 +456,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                             when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
                             when e_balance is not null then e_balance + coalesce(balance, 0)
                           end,
-                          coalesce(balance_timestamp, e_balance_timestamp),
+                          coalesce(balance_timestamp, e_balance_timestamp, null),
                           coalesce(created_timestamp, e_created_timestamp, null),
                           coalesce(decline_reward, e_decline_reward, false),
                           coalesce(deleted, e_deleted, null),

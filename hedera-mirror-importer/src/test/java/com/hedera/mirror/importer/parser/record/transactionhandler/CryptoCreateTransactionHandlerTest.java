@@ -94,14 +94,16 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         FieldDescriptor field = getInnerBodyFieldDescriptorByName("max_automatic_token_associations");
         innerBody = innerBody.toBuilder().setField(field, 500).build();
         body = getTransactionBody(body, innerBody);
+        var recordItem = getRecordItem(body, getDefaultTransactionRecord().build());
 
         AbstractEntity expected = getExpectedUpdatedEntity();
+        expected.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         expected.setMaxAutomaticTokenAssociations(500);
         expected.setMemo("");
         testSpecs.add(UpdateEntityTestSpec.builder()
                 .description("create entity with non-zero max_automatic_token_associations")
                 .expected(expected)
-                .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
+                .recordItem(recordItem)
                 .build());
 
         return testSpecs;
@@ -257,6 +259,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(0L, Entity::getBalance)
+                .returns(timestamp, Entity::getBalanceTimestamp)
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(accountId.getId(), Entity::getId)
