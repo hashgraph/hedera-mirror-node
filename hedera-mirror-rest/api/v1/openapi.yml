@@ -338,8 +338,8 @@ paths:
         |                  | static contract state reads for IsApprovedForAllPrecompile                                                   | 0.87+                                   |
         |                  | static contract state reads for AllowancePrecompile                                                          | 0.87+                                   |
         |                  | static contract state reads for GetApprovedPrecompile                                                        | 0.87+                                   |
-        |                  | HTS system contract UpdateTokenKeysPrecompile                                                                | 0.87+                                   |
-        |                  | HTS system contract UpdateTokenExpiryInfoPrecompile                                                          | 0.87+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenKeysPrecompile          | 0.87+                                   |
+        |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenExpiryInfoPrecompile    | 0.87+                                   |
         |                  | non-static contract state reads and modifications for system contract ExchangeRatePrecompiledContract        | 0.88+                                   |
         |                  | non-static contract state reads and modifications for system contract PrngSystemPrecompiledContract          | 0.89+                                   |
 
