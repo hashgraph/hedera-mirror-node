@@ -79,12 +79,17 @@ const tests = {
   contractCallTokenType,
   contractCallTokenURI,
   contractCallTotalSupply,
-  contractCallEstimateFungibleTokenCustomFees,
-  contractCallEstimateNftCustomFees,
-  contractCallEstimateCreateNft,
-  contractCallEstimateCreateFungibleToken,
-  contractCallEstimateTokenDissociate,
 };
+
+if (__ENV.RUN_ESTIMATE_TESTS) {
+  Object.assign(tests, {
+    contractCallEstimateFungibleTokenCustomFees,
+    contractCallEstimateNftCustomFees,
+    contractCallEstimateCreateNft,
+    contractCallEstimateCreateFungibleToken,
+    contractCallEstimateTokenDissociate,
+  });
+}
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 
