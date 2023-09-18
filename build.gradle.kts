@@ -58,7 +58,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0-HIP-786-SNAPSHOT")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.28.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
@@ -134,14 +134,14 @@ idea {
 fun replaceVersion(files: String, match: String) {
     ant.withGroovyBuilder {
         "replaceregexp"(
-                "match" to match,
-                "replace" to project.version,
-                "flags" to "gm"
+            "match" to match,
+            "replace" to project.version,
+            "flags" to "gm"
         ) {
             "fileset"(
-                    "dir" to rootProject.projectDir,
-                    "includes" to files,
-                    "excludes" to "**/node_modules/"
+                "dir" to rootProject.projectDir,
+                "includes" to files,
+                "excludes" to "**/node_modules/"
             )
         }
     }
@@ -154,8 +154,8 @@ project.tasks.register("release") {
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
-                "hedera-mirror-rest/**/package*.json",
-                "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+            "hedera-mirror-rest/**/package*.json",
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }

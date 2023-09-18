@@ -23,7 +23,7 @@ import java.util.Comparator;
 
 /**
  * Copied NftId type from hedera-services.
- *
+ * <p>
  * Represents the id of a UniqueToken model
  */
 public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId> {
@@ -36,6 +36,14 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
         return new NftId(0, 0, num, serialNo);
     }
 
+    public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
+        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
+    }
+
+    public static NftId fromGrpc(final NftID nftId) {
+        return fromGrpc(nftId.getTokenID(), nftId.getSerialNumber());
+    }
+
     public TokenID tokenId() {
         return TokenID.newBuilder()
                 .setShardNum(shard)
@@ -44,16 +52,8 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
                 .build();
     }
 
-    public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
-        return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
-    }
-
     @Override
     public int compareTo(final @NonNull NftId that) {
         return NATURAL_ORDER.compare(this, that);
-    }
-
-    public static NftId fromGrpc(final NftID nftId) {
-        return fromGrpc(nftId.getTokenId(), nftId.getSerialNumber());
     }
 }
