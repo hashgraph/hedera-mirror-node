@@ -450,11 +450,11 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 4
-    memory: 4Gi
+    cpu: 3
+    memory: 5Gi
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 3
+    memory: 5Gi
 
 revisionHistoryLimit: 3
 

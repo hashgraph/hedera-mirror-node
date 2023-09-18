@@ -1009,8 +1009,8 @@ public class RecordItemBuilder {
 
             return recordItemBuilder
                     .entityTransactionPredicate(entityTransactionPredicate)
-                    .transactionRecordBytes(record.toByteArray())
-                    .transactionBytes(transaction.toByteArray())
+                    .transactionRecord(record)
+                    .transaction(transaction)
                     .sidecarRecords(sidecarRecords)
                     .build();
         }

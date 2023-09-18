@@ -23,6 +23,8 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.DigestInputStream;
@@ -119,9 +121,9 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             RecordItem recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(lastRecordItem)
-                    .transactionRecordBytes(recordBytes)
+                    .transactionRecord(TransactionRecord.parseFrom(recordBytes))
                     .transactionIndex(count)
-                    .transactionBytes(transactionBytes)
+                    .transaction(Transaction.parseFrom(transactionBytes))
                     .build();
             items.add(recordItem);
 

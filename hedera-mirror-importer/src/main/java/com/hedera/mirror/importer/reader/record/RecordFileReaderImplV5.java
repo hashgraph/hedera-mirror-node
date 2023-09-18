@@ -26,6 +26,8 @@ import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -112,9 +114,9 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             var recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(lastRecordItem)
-                    .transactionRecordBytes(recordStreamObject.recordBytes)
+                    .transactionRecord(TransactionRecord.parseFrom(recordStreamObject.recordBytes))
                     .transactionIndex(count)
-                    .transactionBytes(recordStreamObject.transactionBytes)
+                    .transaction(Transaction.parseFrom(recordStreamObject.transactionBytes))
                     .build();
 
             items.add(recordItem);
