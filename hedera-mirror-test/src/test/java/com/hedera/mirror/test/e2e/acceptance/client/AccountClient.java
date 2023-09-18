@@ -204,7 +204,7 @@ public class AccountClient extends AbstractNetworkClient {
 
         AccountId newAccountId;
         NetworkTransactionResponse response;
-        final boolean isED25519 = keyType == KeyCase.ECDSA_SECP256K1;
+        final boolean isED25519 = keyType == KeyCase.ED25519;
         Transaction<?> transaction = getAccountCreateTransaction(
                 initialBalance,
                 publicKeyList,

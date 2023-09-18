@@ -172,7 +172,7 @@ public class TokenFeature extends AbstractFeature {
         var ownerAccountId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenId, ownerAccountId.getAccountId(), ownerAccountId, recipientAccountId, amount, false);
+                tokenId, ownerAccountId.getAccountId(), ownerAccountId, recipientAccountId, amount, false, null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -191,7 +191,7 @@ public class TokenFeature extends AbstractFeature {
         var ownerAccountId = accountClient.getClient().getOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true);
+                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true, null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -626,7 +626,7 @@ public class TokenFeature extends AbstractFeature {
         var ownerAccountId = accountClient.getClient().getOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true);
+                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true, null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -785,7 +785,7 @@ public class TokenFeature extends AbstractFeature {
         long startingBalance = getTokenBalance(receiver, tokenId);
         long expectedBalance = startingBalance + amount - fractionalFee;
 
-        networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, amount);
+        networkTransactionResponse = tokenClient.transferFungibleToken(tokenId, sender, receiver, null, amount);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -803,7 +803,7 @@ public class TokenFeature extends AbstractFeature {
     private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
         long startingBalance = getTokenBalance(receiver, tokenId);
         networkTransactionResponse =
-                tokenClient.transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber));
+                tokenClient.transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber), null);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

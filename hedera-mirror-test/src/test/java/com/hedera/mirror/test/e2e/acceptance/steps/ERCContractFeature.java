@@ -432,6 +432,7 @@ public class ERCContractFeature extends AbstractFeature {
                 tokenIds.get(0),
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 ecdsaAccount.getAccountId(),
+                null,
                 500);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
