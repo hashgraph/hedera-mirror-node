@@ -64,7 +64,6 @@ public abstract class AbstractEntity implements History {
             end""")
     private Long balance;
 
-    @UpsertColumn
     private Long balanceTimestamp;
 
     @Column(updatable = false)

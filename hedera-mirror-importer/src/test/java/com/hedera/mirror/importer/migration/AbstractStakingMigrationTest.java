@@ -29,8 +29,14 @@ import org.springframework.jdbc.core.RowMapper;
 
 abstract class AbstractStakingMigrationTest extends IntegrationTest {
 
+    private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
+
     private static final RowMapper<MigrationEntityStake> ENTITY_STAKE_ROW_MAPPER =
             rowMapper(MigrationEntityStake.class);
+
+    protected Iterable<Entity> findAllEntities() {
+        return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
+    }
 
     protected List<MigrationEntityStake> findAllEntityStakes() {
         return jdbcOperations.query("select * from entity_stake", ENTITY_STAKE_ROW_MAPPER);

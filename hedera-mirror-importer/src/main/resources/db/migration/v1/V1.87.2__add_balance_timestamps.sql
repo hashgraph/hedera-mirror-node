@@ -1,5 +1,3 @@
-begin;
-
 alter table if exists entity
   add column if not exists balance_timestamp bigint null;
 
@@ -30,5 +28,3 @@ alter table if exists token_account
   alter column balance_timestamp set not null;
 alter table if exists token_account_history
   alter column balance_timestamp set not null;
-
-commit;

@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 @EnabledIfV1
@@ -45,8 +44,6 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private static final String[] ENTITY_FIELDS =
             new String[] {"id", "declineReward", "stakedNodeId", "stakePeriodStart"};
-    private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
-
     private final MirrorProperties mirrorProperties;
     private final FixStakedBeforeEnabledMigration migration;
 
@@ -266,10 +263,6 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     private ListAssert<MigrationEntityStake> assertEntityStakes() {
         return assertThat(findAllEntityStakes())
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pending_reward", "staked_node_id_start");
-    }
-
-    private Iterable<Entity> findAllEntities() {
-        return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
     }
 
     private void persistLastHapi26RecordFile(long consensusEnd) {

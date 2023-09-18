@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 @EnabledIfV1
@@ -47,8 +46,6 @@ class FixStakePeriodStartMigrationTest extends AbstractStakingMigrationTest {
 
     @Value("classpath:db/migration/v1/V1.68.2.1__fix_stake_period_start.sql")
     private final File migrationSql;
-
-    private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
 
     @Test
     void empty() {
@@ -252,10 +249,6 @@ class FixStakePeriodStartMigrationTest extends AbstractStakingMigrationTest {
         return assertThat((Iterable<EntityHistory>) findHistory(EntityHistory.class, "id", "entity"))
                 .usingRecursiveFieldByFieldElementComparatorOnFields(
                         "id", "declineReward", "stakedNodeId", "stakePeriodStart", "timestampRange");
-    }
-
-    private Iterable<Entity> findAllEntities() {
-        return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
     }
 
     @SneakyThrows
