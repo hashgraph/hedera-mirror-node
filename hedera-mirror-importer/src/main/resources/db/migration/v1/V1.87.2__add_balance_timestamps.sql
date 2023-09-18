@@ -12,11 +12,11 @@ alter table if exists token_account_history
 
 update entity
   set balance_timestamp = (select consensus_end from record_file order by consensus_end desc limit 1)
-  where deleted = false;
+  where balance is not null;
 
 update entity_history
   set balance_timestamp = upper(timestamp_range) - 1
-  where deleted = false;
+  where balance is not null;
 
 update token_account
   set balance_timestamp = coalesce((select consensus_end from record_file order by consensus_end desc limit 1), 0);

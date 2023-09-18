@@ -133,17 +133,19 @@ class AddBalanceTimestampMigrationTest extends AbstractStakingMigrationTest {
 
         var entity = domainBuilder.entity().get();
         var entity2 = domainBuilder.entity().get();
+        // entity with null balance will not have balance timestamp set
         var entity3 = domainBuilder
                 .entity()
-                .customize(e -> e.deleted(true).balanceTimestamp(null))
+                .customize(e -> e.balance(null).balanceTimestamp(null))
                 .get();
         persistEntities(entity, entity2, entity3);
 
         var entityHistory = domainBuilder.entityHistory().get();
         var entityHistory2 = domainBuilder.entityHistory().get();
+        // entity history with null balance will not have balance timestamp set
         var entityHistory3 = domainBuilder
                 .entityHistory()
-                .customize(e -> e.deleted(true).balanceTimestamp(null))
+                .customize(e -> e.balance(null).balanceTimestamp(null))
                 .get();
         persistEntityHistories(entityHistory, entityHistory2, entityHistory3);
 
