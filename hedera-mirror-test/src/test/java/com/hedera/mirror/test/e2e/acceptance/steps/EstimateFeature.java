@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -48,19 +47,18 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
-    private final MirrorNodeClient mirrorClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
 
     private TokenId fungibleTokenId;
-    private String newAccountEvnAddress;
+    private String newAccountEvmAddress;
     private ExpandedAccountId receiverAccountId;
 
     @Given("I successfully create contract from contract bytes with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
         deployedContract = createContract(estimateGasTestContract, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
-        newAccountEvnAddress =
+        newAccountEvmAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
         receiverAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
     }
@@ -246,7 +244,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.MESSAGE_SIGNER.getSelector())
                 .to(contractSolidityAddress)
-                .from(newAccountEvnAddress)
+                .from(newAccountEvmAddress)
                 .estimate(true)
                 .build();
         ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
