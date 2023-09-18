@@ -176,9 +176,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             verifySigsAndDownloadDataFiles(sigFilesMap);
         } catch (SignatureVerificationException e) {
             log.warn(e.getMessage());
-        } catch (InterruptedException e) {
-            log.error("Error downloading files", e);
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error downloading files", e);
         }
@@ -215,7 +212,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      *
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles() throws InterruptedException {
+    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles() {
         // Limit to 1 signature file if downloader is disabled
         long listLimit = downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1;
         var stopwatch = Stopwatch.createStarted();
@@ -223,7 +220,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         var startAfterFilename = getStartAfterFilename();
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
 
-        final var signatures = Flux.fromIterable(nodes)
+        final var signatures = Objects.requireNonNull(Flux.fromIterable(nodes)
                 .flatMap(node -> streamFileProvider
                         .list(node, startAfterFilename)
                         .take(listLimit)
@@ -237,7 +234,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 .timeout(downloaderProperties.getCommon().getTimeout())
                 .collect(this::getStreamFileSignatureMultiMap, (map, s) -> map.put(s.getFilename(), s))
                 .subscribeOn(Schedulers.parallel())
-                .block();
+                .block());
 
         long total = signatures.size();
         if (total > 0) {
