@@ -100,7 +100,7 @@
     "nodemon": "^3.0.1",
     "pg-format": "^1.0.4",
     "rewire": "^7.0.0",
-    "sinon": "^15.2.0",
+    "sinon": "^16.0.0",
     "supertest": "^6.3.3"
   },
   "jest-junit": {
