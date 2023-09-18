@@ -9,12 +9,6 @@ function config_data_retention() {
   export HEDERA_MIRROR_IMPORTER_RETENTION_PERIOD="${DATA_RETENTION_PERIOD:-90d}"
 }
 
-function config_entity_balance_tracking() {
-  echo "Configuring entity balance tracking"
-  export HEDERA_MIRROR_IMPORTER_MIGRATION_INITIALIZEENTITYBALANCEMIGRATION_ENABLED="${INITIALIZEENTITYBALANCEMIGRATION_ENABLED:-false}"
-  export HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRACKBALANCE="${ENTITY_PERSIST_TRACKBALANCE:-false}"
-}
-
 function run_offline_mode() {
   echo "Running in offline mode"
   exec supervisord --configuration /app/supervisord-offline.conf
@@ -23,7 +17,6 @@ function run_offline_mode() {
 function run_online_mode() {
   echo "Running in online mode"
   config_data_retention
-  config_entity_balance_tracking
   exec supervisord --configuration /app/supervisord.conf
 }
 
