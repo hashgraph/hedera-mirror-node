@@ -106,6 +106,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         entity.setBalance(0L);
+        entity.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setType(EntityType.CONTRACT);

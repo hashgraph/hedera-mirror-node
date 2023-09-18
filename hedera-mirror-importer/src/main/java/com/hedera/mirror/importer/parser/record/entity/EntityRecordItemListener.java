@@ -602,6 +602,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                         tokenAccount.setAccountId(accountId.getId());
                         tokenAccount.setAssociated(true);
                         tokenAccount.setAutomaticAssociation(true);
+                        tokenAccount.setBalance(0L);
+                        tokenAccount.setBalanceTimestamp(consensusTimestamp);
                         tokenAccount.setCreatedTimestamp(consensusTimestamp);
                         tokenAccount.setTimestampRange(Range.atLeast(consensusTimestamp));
                         tokenAccount.setTokenId(tokenId.getId());

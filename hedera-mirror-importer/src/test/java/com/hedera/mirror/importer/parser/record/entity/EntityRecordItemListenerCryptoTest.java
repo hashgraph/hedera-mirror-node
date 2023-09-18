@@ -646,12 +646,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         sender.setBalance(285L);
+        sender.setBalanceTimestamp(consensusTimestamp);
         sender.setStakePeriodStart(expectedStakePeriodStart);
         sender.setTimestampLower(consensusTimestamp);
         receiver1.setBalance(109L);
+        receiver1.setBalanceTimestamp(consensusTimestamp);
         receiver1.setStakePeriodStart(expectedStakePeriodStart);
         receiver1.setTimestampLower(consensusTimestamp);
         receiver2.setBalance(215L);
+        receiver2.setBalanceTimestamp(consensusTimestamp);
 
         var payerAccountId = recordItem.getPayerAccountId();
         var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
@@ -710,6 +713,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         payer.setBalance(2200L);
+        payer.setBalanceTimestamp(consensusTimestamp);
         payer.setStakePeriodStart(expectedStakePeriodStart);
         payer.setTimestampLower(consensusTimestamp);
 

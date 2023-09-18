@@ -16,7 +16,10 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.importer.IntegrationTest;
+import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -26,11 +29,51 @@ import org.springframework.jdbc.core.RowMapper;
 
 abstract class AbstractStakingMigrationTest extends IntegrationTest {
 
+    private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
+
     private static final RowMapper<MigrationEntityStake> ENTITY_STAKE_ROW_MAPPER =
             rowMapper(MigrationEntityStake.class);
 
+    protected Iterable<Entity> findAllEntities() {
+        return jdbcOperations.query("select * from entity", ENTITY_ROW_MAPPER);
+    }
+
     protected List<MigrationEntityStake> findAllEntityStakes() {
         return jdbcOperations.query("select * from entity_stake", ENTITY_STAKE_ROW_MAPPER);
+    }
+
+    protected void persistEntity(Entity entity) {
+        jdbcOperations.update(
+                "insert into entity (balance, decline_reward, deleted, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
+                        + "values (?,?,?,?,?,?,?,?,?,?::int8range,?::entity_type)",
+                entity.getBalance(),
+                entity.getDeclineReward(),
+                entity.getDeleted(),
+                entity.getId(),
+                entity.getNum(),
+                entity.getRealm(),
+                entity.getShard(),
+                entity.getStakedNodeId(),
+                entity.getStakePeriodStart(),
+                PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange()),
+                entity.getType().toString());
+    }
+
+    protected void persistEntityHistory(EntityHistory entityHistory) {
+        jdbcOperations.update(
+                "insert into entity_history (balance, created_timestamp, deleted, id, num, realm, shard, staked_node_id, stake_period_start, timestamp_range, type) "
+                        + "values (?,?,?,?,?,?,?,?,?,?::int8range,?::entity_type)",
+                entityHistory.getBalance(),
+                entityHistory.getCreatedTimestamp(),
+                entityHistory.getDeleted(),
+                entityHistory.getId(),
+                entityHistory.getNum(),
+                entityHistory.getRealm(),
+                entityHistory.getShard(),
+                entityHistory.getStakedNodeId(),
+                entityHistory.getStakePeriodStart(),
+                PostgreSQLGuavaRangeType.INSTANCE.asString(entityHistory.getTimestampRange()),
+                entityHistory.getType().toString());
     }
 
     protected void persistEntityStakes(MigrationEntityStake... entityStakes) {

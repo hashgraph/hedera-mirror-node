@@ -84,7 +84,9 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
         // then
         tokenAccountOldTreasury.setBalance(0);
+        tokenAccountOldTreasury.setBalanceTimestamp(updateTimestamp);
         tokenAccountNewTreasury.setBalance(4);
+        tokenAccountNewTreasury.setBalanceTimestamp(updateTimestamp);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccountOldTreasury, tokenAccountNewTreasury);
 

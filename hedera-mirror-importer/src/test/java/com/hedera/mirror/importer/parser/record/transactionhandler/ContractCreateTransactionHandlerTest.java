@@ -98,6 +98,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(
             Descriptors.FieldDescriptor memoField) {
         List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
+        testSpecs.stream().forEach(testSpec -> {
+            var consensusTimestamp = testSpec.getRecordItem().getConsensusTimestamp();
+            testSpec.getExpected().setBalanceTimestamp(consensusTimestamp);
+        });
 
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
@@ -106,14 +110,15 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var contractCreateResult =
                 ContractFunctionResult.newBuilder().setEvmAddress(BytesValue.of(ByteString.copyFrom(evmAddress)));
         var recordBuilder = getDefaultTransactionRecord().setContractCreateResult(contractCreateResult);
-
+        var recordItem = getRecordItem(body, recordBuilder.build());
         AbstractEntity expected = getExpectedUpdatedEntity();
+        expected.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         expected.setEvmAddress(evmAddress);
         expected.setMemo("");
         testSpecs.add(UpdateEntityTestSpec.builder()
                 .description("create contract entity with evm address in record")
                 .expected(expected)
-                .recordItem(getRecordItem(body, recordBuilder.build()))
+                .recordItem(recordItem)
                 .build());
 
         return testSpecs;
@@ -637,6 +642,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(0L, Entity::getBalance)
+                .returns(timestamp, Entity::getBalanceTimestamp)
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(contractId.getId(), Entity::getId)
