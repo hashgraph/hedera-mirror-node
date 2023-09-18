@@ -917,29 +917,21 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
         if (!lastTokenAccount.isHistory()) {
-            if (!newTokenAccount.isHistory()) {
-                lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
-                if (newTokenAccount.getBalanceTimestamp() != null) {
-                    lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
-                }
-            } else {
+            if (newTokenAccount.isHistory()) {
                 lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
                 lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
                 lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
                 lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
                 lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
                 lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
+                return lastTokenAccount;
             }
 
-            return lastTokenAccount;
+            return mergeTokenAccountBalance(lastTokenAccount, newTokenAccount);
         }
 
         if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
-            lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
-            if (newTokenAccount.getBalanceTimestamp() != null) {
-                lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
-            }
-            return lastTokenAccount;
+            return mergeTokenAccountBalance(lastTokenAccount, newTokenAccount);
         }
 
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
@@ -979,6 +971,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return newTokenAccount;
+    }
+
+    private TokenAccount mergeTokenAccountBalance(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+        if (newTokenAccount.getBalanceTimestamp() != null) {
+            lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
+        }
+        return lastTokenAccount;
     }
 
     private void onNftTransferList(Transaction transaction) {
