@@ -76,6 +76,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         try {
             if (!shouldParse(streamFile)) {
+                streamFile.clear();
                 return;
             }
 

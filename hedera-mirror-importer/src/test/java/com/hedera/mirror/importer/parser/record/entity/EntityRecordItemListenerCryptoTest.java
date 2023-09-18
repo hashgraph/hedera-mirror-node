@@ -106,6 +106,7 @@ import org.springframework.cache.CacheManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 =
             AccountID.newBuilder().setAccountNum(1001).build();
@@ -794,10 +795,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @DisplayName("update account such that expiration timestamp overflows nanos_timestamp")
     @ParameterizedTest(name = "with seconds {0} and expectedNanosTimestamp {1}")
     @CsvSource({
-            "9223372036854775807, 9223372036854775807",
-            "31556889864403199, 9223372036854775807",
-            "-9223372036854775808, -9223372036854775808",
-            "-1000000000000000000, -9223372036854775808"
+        "9223372036854775807, 9223372036854775807",
+        "31556889864403199, 9223372036854775807",
+        "-9223372036854775808, -9223372036854775808",
+        "-1000000000000000000, -9223372036854775808"
     })
     void cryptoUpdateExpirationOverflow(long seconds, long expectedNanosTimestamp) {
         createAccount();
@@ -862,7 +863,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertAccount(record.getReceipt().getAccountID(), dbAccountEntity),
                 () -> assertEquals(dbAccountEntityBefore, dbAccountEntity) // no changes to entity
-        );
+                );
     }
 
     @Test
@@ -1143,7 +1144,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityIds.add(EntityId.of(transactionBody.getNodeAccountID()));
         entityIds.add(recordItem.getPayerAccountId());
         var expectedEntityTransactions = toEntityTransactions(
-                recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
+                        recordItem, entityIds, entityProperties.getPersist().getEntityTransactionExclusion())
                 .values();
 
         parseRecordItemAndCommit(recordItem);
@@ -1628,7 +1629,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .build();
         var expectedFileId = EntityId.of(
                 contractCreate.getTransactionBody().getContractCreateInstance().getFileID());
-        String[] fields = new String[]{"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
+        String[] fields = new String[] {"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
                 .containsExactly(expectedContract);
@@ -1663,7 +1664,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .timestampRange(Range.atLeast(cryptoCreate.getConsensusTimestamp()))
                 .type(EntityType.ACCOUNT)
                 .build();
-        String[] fields = new String[]{"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
+        String[] fields = new String[] {"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
                 .containsExactly(expectedAccount);
@@ -1719,7 +1720,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getTransactionRecordBytes)
                 .containsOnly(transactionRecordBytes);
     }
-
 
     @Test
     void unknownTransactionResult() {
@@ -1946,8 +1946,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private Transaction cryptoUpdateTransaction(AccountID accountNum) {
-        return cryptoUpdateTransaction(accountNum, b -> {
-        });
+        return cryptoUpdateTransaction(accountNum, b -> {});
     }
 
     @SuppressWarnings("deprecation")
@@ -2023,13 +2022,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
-        return transactionRecord(transactionBody, responseCode.getNumber(), recordBuilder -> {
-        });
+        return transactionRecord(transactionBody, responseCode.getNumber(), recordBuilder -> {});
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, int responseCode) {
-        return transactionRecord(transactionBody, responseCode, recordBuilder -> {
-        });
+        return transactionRecord(transactionBody, responseCode, recordBuilder -> {});
     }
 
     private TransactionRecord transactionRecord(
