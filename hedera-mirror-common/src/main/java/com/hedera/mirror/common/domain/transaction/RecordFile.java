@@ -119,7 +119,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     public void clear() {
         StreamFile.super.clear();
         setLogsBloom(null);
-        setSidecars(null);
+        setSidecars(Collections.emptyList());
     }
 
     @Override
