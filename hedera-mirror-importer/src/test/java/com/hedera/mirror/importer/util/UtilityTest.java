@@ -16,26 +16,41 @@
 
 package com.hedera.mirror.importer.util;
 
+import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ArgumentConversionException;
+import org.junit.jupiter.params.converter.ConvertWith;
+import org.junit.jupiter.params.converter.SimpleArgumentConverter;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @SuppressWarnings("java:S5786")
+@ExtendWith(OutputCaptureExtension.class)
 public class UtilityTest {
 
     public static final byte[] ALIAS_ECDSA_SECP256K1 =
@@ -130,5 +145,83 @@ public class UtilityTest {
     @CsvSource({",", "\"\",\"\"", "Foo,foo", "FooBar,foo_bar", "foo_bar,foo_bar"})
     void toSnakeCase(String input, String output) {
         assertThat(Utility.toSnakeCase(input)).isEqualTo(output);
+    }
+
+    @ParameterizedTest(name = "Log {0} with cause {2}")
+    @CsvSource(
+            textBlock =
+                    """
+                plain message, plain message, false,
+                {} arg message, one arg message, true, one
+                {} {} message, a b message, false, 'a, b'
+                {} {} {} {}, a b c d, true, 'a, b, c, d'
+            """)
+    void handleRecoverableErrorLogOrThrow(
+            String format,
+            String formatted,
+            boolean addCause,
+            @ConvertWith(StringArrayConverter.class) String[] args,
+            CapturedOutput capturedOutput) {
+
+        var causeMessage = "provided cause";
+        var cause = new RuntimeException(causeMessage);
+
+        Object[] logArgs;
+        if (addCause) {
+            List<Object> arrList = new ArrayList<>(Arrays.asList(args));
+            arrList.add(cause);
+            logArgs = arrList.toArray();
+        } else {
+            logArgs = args;
+        }
+
+        /*
+         * With halt on error not set, verify expected log output is generated.
+         */
+        System.setProperty(HALT_ON_ERROR_PROPERTY, "false");
+        if (logArgs == null) {
+            Utility.handleRecoverableError(format);
+        } else {
+            Utility.handleRecoverableError(format, logArgs);
+        }
+
+        var allOutput = capturedOutput.getAll();
+        assertThat(allOutput).contains(RECOVERABLE_ERROR + formatted);
+        if (addCause) {
+            assertThat(allOutput).contains(cause.getClass().getName() + ": " + causeMessage);
+        }
+
+        /*
+         * With halt on error set, ensure ParserException is thrown with expected information.
+         */
+        System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
+        ParserException parserException2 = assertThrows(ParserException.class, () -> {
+            if (logArgs == null) {
+                Utility.handleRecoverableError(format);
+            } else {
+                Utility.handleRecoverableError(format, logArgs);
+            }
+        });
+        assertThat(parserException2.getMessage()).isEqualTo(formatted);
+        if (addCause) {
+            assertThat(parserException2.getCause()).isSameAs(cause);
+        }
+    }
+
+    public static class StringArrayConverter extends SimpleArgumentConverter {
+
+        @Override
+        protected Object convert(Object source, Class<?> targetType) throws ArgumentConversionException {
+            if (source == null) {
+                return null;
+            }
+
+            if (source instanceof String && String[].class.isAssignableFrom(targetType)) {
+                return ((String) source).split("\\s*,\\s*");
+            } else {
+                throw new ArgumentConversionException(
+                        "Conversion from " + source.getClass() + " to " + targetType + " not supported.");
+            }
+        }
     }
 }

@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.TextFormat;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
@@ -44,6 +45,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
+import org.slf4j.helpers.MessageFormatter;
 
 @CustomLog
 @UtilityClass
@@ -52,7 +54,8 @@ public class Utility {
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
     public static final String RECOVERABLE_ERROR = "Recoverable error. ";
-
+    static final String HALT_ON_ERROR_PROPERTY = "HEDERA_MIRROR_IMPORTER_PARSER_HALTONERROR";
+    static final String HALT_ON_ERROR_DEFAULT = "false";
     private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
 
     /**
@@ -188,6 +191,22 @@ public class Utility {
             return text;
         }
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
+    }
+
+    public static void handleRecoverableError(String message, Object... args) {
+        var haltOnError = Boolean.parseBoolean(System.getProperty(HALT_ON_ERROR_PROPERTY, HALT_ON_ERROR_DEFAULT));
+
+        if (haltOnError) {
+            var formattingTuple = MessageFormatter.arrayFormat(message, args);
+            var throwable = formattingTuple.getThrowable();
+            var formattedMessage = formattingTuple.getMessage();
+
+            throw throwable == null
+                    ? new ParserException(formattedMessage)
+                    : new ParserException(formattedMessage, throwable);
+        } else {
+            log.error(RECOVERABLE_ERROR + message, args);
+        }
     }
 
     // This method is copied from hedera-services EthTxSigs::recoverAddressFromPubKey and should be kept in sync
