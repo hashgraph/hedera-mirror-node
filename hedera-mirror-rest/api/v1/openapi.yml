@@ -306,42 +306,7 @@ paths:
       description: |
 
         Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed. Currently we support only `latest` block.
-
-        **The table below defines the restrictions and support for the endpoint**
-
-        | Estimate         | Operation Type                                                                                               | Mirror Node Version                     |
-        | -------------    | -----------------------------------------------------------------------------------------------------------  | ----------------------------------------|
-        | false            | static contract state reads for non precompile functions                                                     | 0.78+                                   |
-        |                  | static contract state reads for precompile functions except allowance/isApprovedForAll                       | 0.78+                                   |
-        |                  | static contract state reads for precompile functions with allowance                                          | 0.79+                                   |
-        |                  | static contract state reads for precompile functions with isApprovedForAll                                   | 0.81+                                   |
-        |                  | non-static contract state reads for non precompile functions                                                 | 0.83+                                   |
-        |                  | non-static contract state reads for precompile read only functions                                           | 0.83+                                   |
-        | true             | non-static contract state reads and modifications for non precompile functions except lazy account creation  | 0.83+                                   |
-        |                  | non-static contract state reads and modifications for associate precompile functions                         | 0.83+                                   |
-        |                  | non-static contract state reads and modifications for non precompile functions with lazy account creation    | 0.84+                                   |
-        |                  | static contract state reads for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc. )  | 0.84+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract MintPrecompile                     | 0.84+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract GrantKycPrecompile                 | 0.85+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract WipePrecompile                     | 0.85+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract BurnPrecompile                     | 0.85+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract DissociatePrecompile               | 0.85+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract SetApprovalForAllPrecompile        | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract ApprovePrecompile                  | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract RevokeKycPrecompile                | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract UnpausePrecompile                  | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract PausePrecompile                    | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract DeleteTokenPrecompile              | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract PausePrecompile                    | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract FreezePrecompile                   | 0.86+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract UnfreezePrecompile                 | 0.86+                                   |
-        |                  | non-static contract state reads for IsApprovedForAllPrecompile                                               | 0.87+                                   |
-        |                  | non-static contract state reads for AllowancePrecompile                                                      | 0.87+                                   |
-        |                  | non-static contract state reads for GetApprovedPrecompile                                                    | 0.87+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenKeysPrecompile          | 0.87+                                   |
-        |                  | non-static contract state reads and modifications for HTS system contract UpdateTokenExpiryInfoPrecompile    | 0.87+                                   |
-        |                  | non-static contract state reads and modifications for system contract ExchangeRatePrecompiledContract        | 0.88+                                   |
-        |                  | non-static contract state reads and modifications for system contract PrngSystemPrecompiledContract          | 0.89+                                   |
+        [Link to Supported/Unsupported Operations Table](https://github.com/hashgraph/hedera-mirror-node/blob/main/docs/web3/README.md)
 
         The operations types which are not currently supported should return 501 error status.
 
