@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -39,6 +37,7 @@ import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService
 import com.hedera.mirror.importer.parser.contractresult.ApproveAllowanceContractResult;
 import com.hedera.mirror.importer.parser.contractresult.SyntheticContractResultService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import jakarta.inject.Named;
 import java.util.HashMap;
@@ -91,7 +90,7 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractTransactionHandle
             var cryptoApproval = iterator.previous();
             var ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
             if (EntityId.isEmpty(ownerAccountId)) {
-                log.error(RECOVERABLE_ERROR + "Empty ownerAccountId at consensusTimestamp {}", consensusTimestamp);
+                Utility.handleRecoverableError("Empty ownerAccountId at consensusTimestamp {}", consensusTimestamp);
                 continue;
             }
 

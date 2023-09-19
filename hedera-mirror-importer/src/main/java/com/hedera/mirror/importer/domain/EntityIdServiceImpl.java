@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hedera.mirror.importer.util.Utility.aliasToEvmAddress;
 
 import com.google.protobuf.ByteString;
@@ -27,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import jakarta.inject.Named;
@@ -79,7 +79,7 @@ public class EntityIdServiceImpl implements EntityIdService {
         try {
             return cache.get(entityIdProto, loader);
         } catch (Cache.ValueRetrievalException e) {
-            log.error(RECOVERABLE_ERROR + "Error looking up entity ID {} from cache", entityIdProto, e);
+            Utility.handleRecoverableError("Error looking up entity ID {} from cache", entityIdProto, e);
             return null;
         }
     }
@@ -120,7 +120,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                     .setRealmNum(entityId.getRealm())
                     .setEvmAddress(alias);
             default -> {
-                log.error(RECOVERABLE_ERROR + "Invalid Entity: {} entity can't have alias", type);
+                Utility.handleRecoverableError("Invalid Entity: {} entity can't have alias", type);
                 return;
             }
         }
@@ -138,10 +138,8 @@ public class EntityIdServiceImpl implements EntityIdService {
                         : findByPublicKeyAlias(alias, accountId.getShardNum(), accountId.getRealmNum());
             }
             default -> {
-                log.error(
-                        RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}",
-                        accountId,
-                        accountId.getAccountCase());
+                Utility.handleRecoverableError(
+                        "Invalid Account Case for AccountID {}: {}", accountId, accountId.getAccountCase());
                 yield null;
             }
         };
@@ -155,7 +153,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 yield findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum());
             }
             default -> {
-                log.error(RECOVERABLE_ERROR + "Invalid ContractID: {}", contractId);
+                Utility.handleRecoverableError("Invalid ContractID: {}", contractId);
                 yield null;
             }
         };
@@ -167,8 +165,8 @@ public class EntityIdServiceImpl implements EntityIdService {
                 .filter(e -> e.getShard() == shardNum && e.getRealm() == realmNum)
                 .or(() -> entityRepository.findByEvmAddress(evmAddress).map(EntityId::of))
                 .orElseGet(() -> {
-                    log.error(
-                            RECOVERABLE_ERROR + "Entity not found for evmAddress {}", Hex.encodeHexString(evmAddress));
+                    Utility.handleRecoverableError(
+                            "Entity not found for evmAddress {}", Hex.encodeHexString(evmAddress));
                     return null;
                 });
     }
@@ -182,7 +180,7 @@ public class EntityIdServiceImpl implements EntityIdService {
         // Try to fall back to the 20-byte evm address recovered from the ECDSA secp256k1 alias
         var evmAddress = aliasToEvmAddress(alias);
         if (evmAddress == null) {
-            log.error(RECOVERABLE_ERROR + "Unable to find entity for alias {}", Hex.encodeHexString(alias));
+            Utility.handleRecoverableError("Unable to find entity for alias {}", Hex.encodeHexString(alias));
             return null;
         }
 

@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -28,6 +27,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -70,8 +70,8 @@ class TokenMintTransactionHandler extends AbstractTransactionHandler {
         var serialNumbers = recordItem.getTransactionRecord().getReceipt().getSerialNumbersList();
         for (int i = 0; i < serialNumbers.size(); i++) {
             if (i >= transactionBody.getMetadataCount()) {
-                log.warn(
-                        RECOVERABLE_ERROR + "Mismatch between {} metadata and {} serial numbers at {}",
+                Utility.handleRecoverableError(
+                        "Mismatch between {} metadata and {} serial numbers at {}",
                         transactionBody.getMetadataCount(),
                         serialNumbers,
                         consensusTimestamp);

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -78,9 +77,8 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                                 entity.setAutoRenewAccountId(accountId.getId());
                                 recordItem.addEntityId(accountId);
                             },
-                            () -> log.error(
-                                    RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
-                                    recordItem.getConsensusTimestamp()));
+                            () -> Utility.handleRecoverableError(
+                                    "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

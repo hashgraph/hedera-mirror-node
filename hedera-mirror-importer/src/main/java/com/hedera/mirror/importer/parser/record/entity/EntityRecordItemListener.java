@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.common.domain.token.NftTransfer.WILDCARD_SERIAL_NUMBER;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -54,6 +53,7 @@ import com.hedera.mirror.importer.parser.contractresult.TransferContractResult;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -101,10 +101,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error(
-                    RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
-                    consensusTimestamp,
-                    e.getMessage());
+            Utility.handleRecoverableError(
+                    "Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
             entityId = EntityId.EMPTY;
         }
 
@@ -231,9 +229,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         for (var aa : transfers) {
             var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(entityId)) {
-                log.error(
-                        RECOVERABLE_ERROR + "Invalid itemizedTransfer entity id at {}",
-                        recordItem.getConsensusTimestamp());
+                Utility.handleRecoverableError(
+                        "Invalid itemizedTransfer entity id at {}", recordItem.getConsensusTimestamp());
                 continue;
             }
 
@@ -678,16 +675,14 @@ public class EntityRecordItemListener implements RecordItemListener {
                     }
 
                     if (signature == null) {
-                        log.error(
-                                RECOVERABLE_ERROR + "Unsupported signature at {}: {}",
-                                consensusTimestamp,
-                                unknownFields);
+                        Utility.handleRecoverableError(
+                                "Unsupported signature at {}: {}", consensusTimestamp, unknownFields);
                         continue;
                     }
                     break;
                 default:
-                    log.error(
-                            RECOVERABLE_ERROR + "Unsupported signature case at {}: {}",
+                    Utility.handleRecoverableError(
+                            "Unsupported signature case at {}: {}",
                             consensusTimestamp,
                             signaturePair.getSignatureCase());
                     continue;

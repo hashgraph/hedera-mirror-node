@@ -90,7 +90,7 @@ public class Utility {
             }
         } catch (Exception e) {
             var aliasHex = Hex.encodeHexString(alias);
-            log.error(RECOVERABLE_ERROR + "Unable to decode alias to EVM address: {}", aliasHex, e);
+            handleRecoverableError("Unable to decode alias to EVM address: {}", aliasHex, e);
         }
 
         return evmAddress;
