@@ -58,6 +58,8 @@ class TokenAssociateTransactionHandler extends AbstractTransactionHandler {
             tokenAccount.setAccountId(transaction.getEntityId().getId());
             tokenAccount.setAssociated(true);
             tokenAccount.setAutomaticAssociation(false);
+            tokenAccount.setBalance(0L);
+            tokenAccount.setBalanceTimestamp(consensusTimestamp);
             tokenAccount.setCreatedTimestamp(consensusTimestamp);
             tokenAccount.setTimestampLower(consensusTimestamp);
             tokenAccount.setTokenId(tokenId.getId());

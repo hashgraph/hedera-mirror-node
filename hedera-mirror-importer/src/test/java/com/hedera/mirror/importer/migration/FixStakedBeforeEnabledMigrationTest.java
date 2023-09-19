@@ -24,8 +24,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
-import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
@@ -46,9 +44,6 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private static final String[] ENTITY_FIELDS =
             new String[] {"id", "declineReward", "stakedNodeId", "stakePeriodStart"};
-
-    private final EntityRepository entityRepository;
-    private final EntityStakeRepository entityStakeRepository;
     private final MirrorProperties mirrorProperties;
     private final FixStakedBeforeEnabledMigration migration;
 
@@ -75,7 +70,8 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.declineReward(false).stakedNodeId(-1L).stakePeriodStart(-1L))
-                .persist();
+                .get();
+        persistEntity(entity);
         var entityStake = MigrationEntityStake.builder().id(entity.getId()).build();
         persistEntityStakes(entityStake);
 
@@ -97,7 +93,8 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.atLeast(lastHapi26RecordFileConsensusEnd)))
-                .persist();
+                .get();
+        persistEntity(entity);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(1000L)
@@ -121,7 +118,8 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(lastHapi26EpochDay + 1L))
-                .persist();
+                .get();
+        persistEntity(entity);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(1000L)
@@ -150,15 +148,17 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.atLeast(lastUpdateTimestamp)))
-                .persist();
-        domainBuilder
+                .get();
+        persistEntity(entity);
+        var entityHistory = domainBuilder
                 .entityHistory()
                 .customize(e -> e.id(entity.getId())
                         .num(entity.getNum())
                         .stakedNodeId(1L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.closedOpen(stakingSetTimestamp, lastUpdateTimestamp)))
-                .persist();
+                .get();
+        persistEntityHistory(entityHistory);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(1000L)
@@ -184,7 +184,8 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.atLeast(lastHapi26RecordFileConsensusEnd)))
-                .persist();
+                .get();
+        persistEntity(entity);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(1000L)
@@ -216,15 +217,17 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.atLeast(lastUpdateTimestamp)))
-                .persist();
-        domainBuilder
+                .get();
+        persistEntity(entity);
+        var entityHistory = domainBuilder
                 .entityHistory()
                 .customize(e -> e.id(entity.getId())
                         .num(entity.getNum())
                         .stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
                         .timestampRange(Range.closedOpen(stakingSetTimestamp, lastUpdateTimestamp)))
-                .persist();
+                .get();
+        persistEntityHistory(entityHistory);
         var entityStake = MigrationEntityStake.builder()
                 .id(entity.getId())
                 .pendingReward(1000L)
@@ -254,8 +257,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     private IterableAssert<Entity> assertEntities() {
-        return assertThat(entityRepository.findAll())
-                .usingRecursiveFieldByFieldElementComparatorOnFields(ENTITY_FIELDS);
+        return assertThat(findAllEntities()).usingRecursiveFieldByFieldElementComparatorOnFields(ENTITY_FIELDS);
     }
 
     private ListAssert<MigrationEntityStake> assertEntityStakes() {

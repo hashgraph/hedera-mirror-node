@@ -534,6 +534,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED,
@@ -555,6 +556,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
@@ -598,6 +600,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(accountId.getId())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(ASSOCIATE_TIMESTAMP)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -634,6 +637,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -696,6 +700,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(PAYER2.getAccountNum())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -811,6 +816,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(false)
                 .automaticAssociation(false)
                 .balance(0)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -882,6 +888,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(PAYER2.getAccountNum())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -1351,6 +1358,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(false)
                 .balance(0L)
+                .balanceTimestamp(updateTimestamp)
                 .createdTimestamp(tokenCreateRecordItem.getConsensusTimestamp())
                 .timestampRange(Range.atLeast(tokenCreateRecordItem.getConsensusTimestamp()))
                 .tokenId(tokenId.getId())
@@ -1360,6 +1368,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(!explicitAssociation)
                 .balance(2L)
+                .balanceTimestamp(updateTimestamp)
                 .createdTimestamp(newTreasuryAssociationTimestamp)
                 .timestampRange(Range.atLeast(newTreasuryAssociationTimestamp))
                 .tokenId(tokenId.getId())
@@ -1392,6 +1401,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.NOT_APPLICABLE,
@@ -1421,6 +1431,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.NOT_APPLICABLE,
@@ -1449,6 +1460,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -1490,6 +1502,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -3062,6 +3075,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 999000L,
+                wipeTimestamp,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -3189,6 +3203,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(true)
                 .balance(1000L)
+                .balanceTimestamp(TRANSFER_TIMESTAMP)
                 .createdTimestamp(TRANSFER_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -3549,6 +3564,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             TokenID tokenID,
             AccountID accountId,
             long balance,
+            long balanceTimestamp,
             long createdTimestamp,
             boolean associated,
             TokenFreezeStatusEnum freezeStatus,
@@ -3559,6 +3575,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(associated)
                 .automaticAssociation(false)
                 .balance(balance)
+                .balanceTimestamp(balanceTimestamp)
                 .createdTimestamp(createdTimestamp)
                 .freezeStatus(freezeStatus)
                 .kycStatus(kycStatus)
@@ -3749,6 +3766,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 accountID,
                 0,
                 associateTimestamp,
+                associateTimestamp,
                 true,
                 setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
                 setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE,
@@ -3906,6 +3924,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .accountId(account.getId())
                             .associated(true)
                             .automaticAssociation(false)
+                            .balanceTimestamp(createdTimestamp)
                             .createdTimestamp(createdTimestamp)
                             .freezeStatus(freezeStatus)
                             .kycStatus(kycStatus)

@@ -40,7 +40,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
     protected Duration processingTimeout = Duration.ofSeconds(10L);
 
     @Min(0)
-    protected int queueCapacity = 10;
+    protected int queueCapacity = 1;
 
     @NotNull
     protected RetryProperties retry = new RetryProperties();

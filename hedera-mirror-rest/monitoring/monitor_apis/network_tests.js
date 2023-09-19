@@ -16,20 +16,24 @@
 
 import {
   checkAPIResponseError,
-  checkRespObjDefined,
   checkMandatoryParams,
+  checkRespObjDefined,
+  CheckRunner,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const networkStakePath = '/network/stake';
 const resource = 'network';
 const jsonRespKey = '';
 const mandatoryParams = [
+  'max_stake_rewarded',
   'max_staking_reward_rate_per_hbar',
+  'max_total_reward',
   'node_reward_fee_fraction',
+  'reserved_staking_rewards',
+  'reward_balance_threshold',
   'stake_total',
   'staking_period',
   'staking_period_duration',
@@ -37,6 +41,7 @@ const mandatoryParams = [
   'staking_reward_fee_fraction',
   'staking_reward_rate',
   'staking_start_threshold',
+  'unreserved_staking_reward_balance',
 ];
 
 /**

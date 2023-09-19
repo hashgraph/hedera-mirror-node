@@ -106,6 +106,7 @@ import org.springframework.cache.CacheManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 =
             AccountID.newBuilder().setAccountNum(1001).build();
@@ -344,11 +345,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @CsvSource(
             textBlock =
                     """
-            false, true
-            false, false
-            # clear cache after the first record file to test the scenario the evm address is looked up from db
-            true, false
-            """)
+                            false, true
+                            false, false
+                            # clear cache after the first record file to test the scenario the evm address is looked up from db
+                            true, false
+                            """)
     void cryptoCreateHollowAccountThenTransferToPublicKeyAlias(boolean clearCache, boolean singleRecordFile) {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setItemizedTransfers(true);
@@ -646,12 +647,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         sender.setBalance(285L);
+        sender.setBalanceTimestamp(consensusTimestamp);
         sender.setStakePeriodStart(expectedStakePeriodStart);
         sender.setTimestampLower(consensusTimestamp);
         receiver1.setBalance(109L);
+        receiver1.setBalanceTimestamp(consensusTimestamp);
         receiver1.setStakePeriodStart(expectedStakePeriodStart);
         receiver1.setTimestampLower(consensusTimestamp);
         receiver2.setBalance(215L);
+        receiver2.setBalanceTimestamp(consensusTimestamp);
 
         var payerAccountId = recordItem.getPayerAccountId();
         var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
@@ -710,6 +714,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         payer.setBalance(2200L);
+        payer.setBalanceTimestamp(consensusTimestamp);
         payer.setStakePeriodStart(expectedStakePeriodStart);
         payer.setTimestampLower(consensusTimestamp);
 
@@ -1708,7 +1713,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // given
         entityProperties.getPersist().setTransactionRecordBytes(persist);
         var recordItem = recordItemBuilder.cryptoTransfer().build();
-        var transactionRecordBytes = persist ? recordItem.getRecordBytes() : null;
+        var transactionRecordBytes = persist ? recordItem.getTransactionRecord().toByteArray() : null;
 
         // when
         parseRecordItemAndCommit(recordItem);

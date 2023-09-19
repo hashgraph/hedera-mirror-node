@@ -54,11 +54,11 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.3.1")
         api("com.google.guava:guava:32.1.2-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.2")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.3")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.40.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.28.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
@@ -71,7 +71,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.58.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.2")
-        api("io.projectreactor:reactor-core-micrometer:1.0.9")
+        api("io.projectreactor:reactor-core-micrometer:1.0.10")
         api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.19.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.144")
+        api("software.amazon.awssdk:bom:2.20.149")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.1")
     }
 }
@@ -134,14 +134,14 @@ idea {
 fun replaceVersion(files: String, match: String) {
     ant.withGroovyBuilder {
         "replaceregexp"(
-                "match" to match,
-                "replace" to project.version,
-                "flags" to "gm"
+            "match" to match,
+            "replace" to project.version,
+            "flags" to "gm"
         ) {
             "fileset"(
-                    "dir" to rootProject.projectDir,
-                    "includes" to files,
-                    "excludes" to "**/node_modules/"
+                "dir" to rootProject.projectDir,
+                "includes" to files,
+                "excludes" to "**/node_modules/"
             )
         }
     }
@@ -154,8 +154,8 @@ project.tasks.register("release") {
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
-                "hedera-mirror-rest/**/package*.json",
-                "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+            "hedera-mirror-rest/**/package*.json",
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
         )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }

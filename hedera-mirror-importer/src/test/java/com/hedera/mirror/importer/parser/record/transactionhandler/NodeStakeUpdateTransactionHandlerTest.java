@@ -81,6 +81,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         assertThat(transactionHandler.getType()).isEqualTo(TransactionType.NODESTAKEUPDATE);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void updateTransactionSuccessful() {
         // given
@@ -125,9 +126,13 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .first()
                 .returns(consensusTimestamp, NetworkStake::getConsensusTimestamp)
                 .returns(epochDay, NetworkStake::getEpochDay)
+                .returns(body.getMaxStakeRewarded(), NetworkStake::getMaxStakeRewarded)
                 .returns(body.getMaxStakingRewardRatePerHbar(), NetworkStake::getMaxStakingRewardRatePerHbar)
+                .returns(body.getMaxTotalReward(), NetworkStake::getMaxTotalReward)
                 .returns(body.getNodeRewardFeeFraction().getDenominator(), NetworkStake::getNodeRewardFeeDenominator)
                 .returns(body.getNodeRewardFeeFraction().getNumerator(), NetworkStake::getNodeRewardFeeNumerator)
+                .returns(body.getReservedStakingRewards(), NetworkStake::getReservedStakingRewards)
+                .returns(body.getRewardBalanceThreshold(), NetworkStake::getRewardBalanceThreshold)
                 .returns(stakeTotal, NetworkStake::getStakeTotal)
                 .returns(stakingPeriod, NetworkStake::getStakingPeriod)
                 .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriodDuration)
@@ -137,7 +142,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                         NetworkStake::getStakingRewardFeeDenominator)
                 .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
                 .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
-                .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
+                .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold)
+                .returns(body.getUnreservedStakingRewardBalance(), NetworkStake::getUnreservedStakingRewardBalance);
+
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }

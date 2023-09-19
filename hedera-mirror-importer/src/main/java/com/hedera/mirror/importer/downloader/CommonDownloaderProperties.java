@@ -52,7 +52,7 @@ public class CommonDownloaderProperties {
 
     private Boolean allowAnonymousAccess;
 
-    private int batchSize = 100;
+    private int batchSize = 25;
 
     private String bucketName;
 
@@ -84,9 +84,6 @@ public class CommonDownloaderProperties {
 
     @NotNull
     private List<StreamSourceProperties> sources = new ArrayList<>();
-
-    @Min(1)
-    private int threads = 30;
 
     @DurationMin(seconds = 1)
     @NotNull

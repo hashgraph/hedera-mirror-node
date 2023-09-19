@@ -76,6 +76,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         try {
             if (!shouldParse(streamFile)) {
+                streamFile.clear();
                 return;
             }
 
@@ -88,6 +89,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
             Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+            streamFile.clear();
         } catch (Throwable e) {
             success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);

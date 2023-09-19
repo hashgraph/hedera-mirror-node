@@ -193,8 +193,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var recordItem = RecordItem.builder()
                     .hapiVersion(hapiVersion)
                     .previous(previousItem)
-                    .transactionRecordBytes(recordStreamItem.getRecord().toByteArray())
-                    .transactionBytes(recordStreamItem.getTransaction().toByteArray())
+                    .transactionRecord(recordStreamItem.getRecord())
+                    .transaction(recordStreamItem.getTransaction())
                     .transactionIndex(items.size())
                     .build();
             items.add(recordItem);

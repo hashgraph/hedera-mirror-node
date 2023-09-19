@@ -233,6 +233,7 @@ create table if not exists entity
     auto_renew_account_id            bigint                null,
     auto_renew_period                bigint                null,
     balance                          bigint                null,
+    balance_timestamp                bigint                null,
     created_timestamp                bigint                null,
     decline_reward                   boolean default false not null,
     deleted                          boolean               null,
@@ -370,19 +371,24 @@ comment on table network_freeze is 'System transaction to freeze the network';
 
 create table if not exists network_stake
 (
-    consensus_timestamp              bigint not null,
-    epoch_day                        bigint not null,
-    max_staking_reward_rate_per_hbar bigint not null,
-    node_reward_fee_denominator      bigint not null,
-    node_reward_fee_numerator        bigint not null,
-    stake_total                      bigint not null,
-    staking_period                   bigint not null,
-    staking_period_duration          bigint not null,
-    staking_periods_stored           bigint not null,
-    staking_reward_fee_denominator   bigint not null,
-    staking_reward_fee_numerator     bigint not null,
-    staking_reward_rate              bigint not null,
-    staking_start_threshold          bigint not null
+    consensus_timestamp               bigint not null,
+    epoch_day                         bigint not null,
+    max_stake_rewarded                bigint not null default 0,
+    max_staking_reward_rate_per_hbar  bigint not null,
+    max_total_reward                  bigint not null default 0,
+    node_reward_fee_denominator       bigint not null,
+    node_reward_fee_numerator         bigint not null,
+    reserved_staking_rewards          bigint not null default 0,
+    reward_balance_threshold          bigint not null default 0,
+    stake_total                       bigint not null,
+    staking_period                    bigint not null,
+    staking_period_duration           bigint not null,
+    staking_periods_stored            bigint not null,
+    staking_reward_fee_denominator    bigint not null,
+    staking_reward_fee_numerator      bigint not null,
+    staking_reward_rate               bigint not null,
+    staking_start_threshold           bigint not null,
+    unreserved_staking_reward_balance bigint not null default 0
 );
 comment on table network_stake is 'Staking information common to all nodes';
 
@@ -566,6 +572,7 @@ create table if not exists token_account
     associated            boolean   not null default false,
     automatic_association boolean   not null default false,
     balance               bigint    not null default 0,
+    balance_timestamp     bigint    not null,
     created_timestamp     bigint    not null,
     freeze_status         smallint  not null default 0,
     kyc_status            smallint  not null default 0,

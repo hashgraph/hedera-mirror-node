@@ -64,6 +64,8 @@ public abstract class AbstractEntity implements History {
             end""")
     private Long balance;
 
+    private Long balanceTimestamp;
+
     @Column(updatable = false)
     private Long createdTimestamp;
 
