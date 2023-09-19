@@ -151,11 +151,11 @@ public class UtilityTest {
     @CsvSource(
             textBlock =
                     """
-                plain message, plain message, false,
-                {} arg message, one arg message, true, one
-                {} {} message, a b message, false, 'a, b'
-                {} {} {} {}, a b c d, true, 'a, b, c, d'
-            """)
+                                plain message, plain message, false,
+                                {} arg message, one arg message, true, one
+                                {} {} message, a b message, false, 'a, b'
+                                {} {} {} {}, a b c d, true, 'a, b, c, d'
+                            """)
     void handleRecoverableErrorLogOrThrow(
             String format,
             String formatted,
@@ -195,16 +195,16 @@ public class UtilityTest {
          * With halt on error set, ensure ParserException is thrown with expected information.
          */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
-        ParserException parserException2 = assertThrows(ParserException.class, () -> {
+        ParserException parserException = assertThrows(ParserException.class, () -> {
             if (logArgs == null) {
                 Utility.handleRecoverableError(format);
             } else {
                 Utility.handleRecoverableError(format, logArgs);
             }
         });
-        assertThat(parserException2.getMessage()).isEqualTo(formatted);
+        assertThat(parserException.getMessage()).isEqualTo(formatted);
         if (addCause) {
-            assertThat(parserException2.getCause()).isSameAs(cause);
+            assertThat(parserException.getCause()).isSameAs(cause);
         }
     }
 
