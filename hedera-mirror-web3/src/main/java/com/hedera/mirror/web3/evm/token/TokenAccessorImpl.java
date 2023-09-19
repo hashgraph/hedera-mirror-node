@@ -209,7 +209,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (owner == null) {
             return Address.ZERO;
         }
-        return canonicalAddress(owner.asEvmAddress());
+        // redirect executor calls the canonical address of this value
+        return owner.asEvmAddress();
     }
 
     @Override
