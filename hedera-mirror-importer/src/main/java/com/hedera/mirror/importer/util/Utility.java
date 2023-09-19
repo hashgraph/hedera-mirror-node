@@ -204,7 +204,7 @@ public class Utility {
      *
      * @param message The message string to be logged. This may contain ordered placeholders in the format of {} just
      *                like the rest of the logging in Mirror Node.
-     * @param args    the variable arguments list to match each placeholder. Simply omit this if there are no mess
+     * @param args    the variable arguments list to match each placeholder. Simply omit this if there are no message
      *                placeholders. The final, or only, argument may be a reference to a Throwable, in which case it is
      *                identified as the cause of the error; either logged in the stacktrace following the message, or as
      *                the cause of the thrown ParserException.
