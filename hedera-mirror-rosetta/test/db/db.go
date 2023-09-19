@@ -23,7 +23,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"gorm.io/gorm/logger"
 	"io/ioutil"
 	"os"
 	"path"
@@ -87,9 +86,7 @@ func (d DbResource) GetDb() *sql.DB {
 
 // GetGormDb creates a gorm db session
 func (d DbResource) GetGormDb() *gorm.DB {
-	gdb, err := gorm.Open(postgres.New(postgres.Config{Conn: d.db}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	gdb, err := gorm.Open(postgres.New(postgres.Config{Conn: d.db}), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to create gorm db session: %s", err)
 	}

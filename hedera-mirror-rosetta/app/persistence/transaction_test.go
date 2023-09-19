@@ -371,7 +371,9 @@ func (suite *transactionRepositorySuite) TestFindBetween() {
 func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGenesisTimestamp() {
 	// given
 	genesisTimestamp := int64(100)
-	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, genesisTimestamp).
+		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000).
+		Persist()
 
 	transaction := tdomain.NewTransactionBuilder(dbClient, treasury, genesisTimestamp+10).Persist()
 	transferTimestamp := transaction.ConsensusTimestamp
@@ -506,7 +508,9 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 
 	// create account balance file
 	genesisTimestamp := consensusStart - 200
-	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, genesisTimestamp).
+		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000).
+		Persist()
 
 	// successful crypto transfer transaction
 	consensusTimestamp = consensusStart + 1

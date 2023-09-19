@@ -37,8 +37,7 @@ import (
 )
 
 const (
-	feeCollector = int64(98)
-	account1     = int64(9000) + iota
+	account1 = int64(9000) + iota
 	treasury
 	account2
 	account3
@@ -53,7 +52,6 @@ const (
 	account2DeletedTimestamp       = account1CreatedTimestamp - 1
 	account2CreatedTimestamp       = account2DeletedTimestamp - 9
 	consensusTimestamp             = firstSnapshotTimestamp + 200
-	dissociateTimestamp            = consensusTimestamp + 1
 	firstSnapshotTimestamp   int64 = 1656693000269913000
 	initialAccountBalance    int64 = 12345
 	secondSnapshotTimestamp        = consensusTimestamp - 20
@@ -109,11 +107,11 @@ func (suite *accountRepositorySuite) SetupTest() {
 
 	// account balance files, always add an account_balance row for feeCollector
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, firstSnapshotTimestamp).
-		AddAccountBalance(feeCollector, 2_000_000_000).
+		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
 		AddAccountBalance(account1, initialAccountBalance).
 		Persist()
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, thirdSnapshotTimestamp).
-		AddAccountBalance(feeCollector, 2_000_000_000).
+		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
 		Persist()
 
 	// crypto transfers happened at <= first snapshot timestamp
@@ -147,12 +145,7 @@ func (suite *accountRepositorySuite) SetupTest() {
 		Timestamp(firstSnapshotTimestamp + 5).
 		Persist()
 	tdomain.NewCryptoTransferBuilder(dbClient).
-		Amount(155).
-		EntityId(account1).
-		Timestamp(dissociateTimestamp + 1).
-		Persist()
-	tdomain.NewCryptoTransferBuilder(dbClient).
-		Amount(-(initialAccountBalance + sum(cryptoTransferAmounts) + 155)).
+		Amount(-(initialAccountBalance + sum(cryptoTransferAmounts))).
 		EntityId(account1).
 		Timestamp(accountDeleteTimestamp).
 		Persist()
@@ -264,16 +257,6 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
 	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
-
-	// when
-	// query at dissociateTimestamp, balances for token2 and token3 should be 0
-	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(defaultContext, accountId, dissociateTimestamp)
-	expectedAmounts = types.AmountSlice{hbarAmount}
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
-	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapshot() {
@@ -379,33 +362,10 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountEntity()
 	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
 }
 
-func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
-	// given
-	accountId := suite.accountId
-	truncateTables(domain.Token{})
-	repo := NewAccountRepository(dbClient)
-
-	// no token entities, so only hbar balance
-	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
-	expectedAmounts := types.AmountSlice{hbarAmount}
-
-	// when
-	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
-		defaultContext,
-		accountId,
-		consensusTimestamp,
-	)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
-	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
-}
-
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
 	accountId := suite.accountId
-	dbClient.GetDb().Where("account_id <> ?", feeCollector).Delete(&domain.AccountBalance{})
+	dbClient.GetDb().Where("account_id <> ?", feeCollectorAccountId.GetId()).Delete(&domain.AccountBalance{})
 
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
 	expectedAmounts := types.AmountSlice{hbarAmount}
