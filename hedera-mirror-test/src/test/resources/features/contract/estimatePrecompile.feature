@@ -168,3 +168,4 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with exchange rate tinybars to tinycents
     #Then I call estimateGas with pseudo random seed
     #Then I call estimateGas with pseudo random number
+  
