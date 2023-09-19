@@ -195,13 +195,13 @@ public class UtilityTest {
          * With halt on error set, ensure ParserException is thrown with expected information.
          */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
-        ParserException parserException = assertThrows(ParserException.class, () -> {
-            if (logArgs == null) {
-                Utility.handleRecoverableError(format);
-            } else {
-                Utility.handleRecoverableError(format, logArgs);
-            }
-        });
+        ParserException parserException;
+        if (logArgs == null) {
+            parserException = assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format));
+        } else {
+            parserException =
+                    assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format, logArgs));
+        }
         assertThat(parserException.getMessage()).isEqualTo(formatted);
         if (addCause) {
             assertThat(parserException.getCause()).isSameAs(cause);
