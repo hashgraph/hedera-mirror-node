@@ -193,6 +193,22 @@ public class Utility {
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
     }
 
+    /**
+     * Handle a parser recoverable error. Depending on the value of the system property
+     * HEDERA_MIRROR_IMPORTER_PARSER_HALTONERROR, when false (default), the provided message and arguments are logged at
+     * ERROR level, with the message prepended with the String defined by Utility.RECOVERABLE_ERROR, identifying it as a
+     * recoverable error.
+     * <p/>
+     * When the system property is set to true, then ParserException is thrown, and the provided message and arguments
+     * are used for generating the exception message string. Nothing is logged in this mode.
+     *
+     * @param message The message string to be logged. This may contain ordered placeholders in the format of {} just
+     *                like the rest of the logging in Mirror Node.
+     * @param args    the variable arguments list to match each placeholder. Simply omit this if there are no mess
+     *                placeholders. The final, or only, argument may be a reference to a Throwable, in which case it is
+     *                identified as the cause of the error; either logged in the stacktrace following the message, or as
+     *                the cause of the thrown ParserException.
+     */
     public static void handleRecoverableError(String message, Object... args) {
         var haltOnError = Boolean.parseBoolean(System.getProperty(HALT_ON_ERROR_PROPERTY, HALT_ON_ERROR_DEFAULT));
 
