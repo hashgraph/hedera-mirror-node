@@ -372,10 +372,7 @@ public class ERCContractFeature extends AbstractFeature {
         var nftId = new NftId(tokenIds.get(1), serial.get(0));
 
         spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        spenderAccountAlias = mirrorClient
-                .getAccountDetailsByAccountId(spenderAccountId.getAccountId())
-                .getEvmAddress()
-                .replace("0x", "");
+        spenderAccountAlias = spenderAccountId.getPublicKey().toEvmAddress().toString();
         networkTransactionResponse = accountClient.approveNft(nftId, spenderAccountId.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

@@ -95,10 +95,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
         secondReceiverAccount = accountClient.getAccount(AccountNameEnum.DAVE);
-        receiverAccountAlias = mirrorClient
-                .getAccountDetailsByAccountId(receiverAccount.getAccountId())
-                .getEvmAddress()
-                .replace("0x", "");
+        receiverAccountAlias = receiverAccount.getPublicKey().toEvmAddress().toString();
     }
 
     @Given("I create erc test contract with {int} balance")
