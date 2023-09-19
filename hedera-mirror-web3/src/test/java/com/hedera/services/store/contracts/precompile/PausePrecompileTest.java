@@ -153,7 +153,7 @@ class PausePrecompileTest {
         staticPausePrecompile = Mockito.mockStatic(PausePrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @AfterEach

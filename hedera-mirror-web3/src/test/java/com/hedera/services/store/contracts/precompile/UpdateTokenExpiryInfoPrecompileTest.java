@@ -123,7 +123,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(updateTokenExpiryInfoPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @AfterEach

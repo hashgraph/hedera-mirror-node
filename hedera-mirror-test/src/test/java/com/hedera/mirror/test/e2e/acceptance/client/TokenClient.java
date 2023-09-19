@@ -22,6 +22,7 @@ import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
 import com.hedera.hashgraph.sdk.TokenBurnTransaction;
@@ -415,8 +416,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse transferFungibleToken(
-            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, long amount) {
-        return transferFungibleToken(tokenId, sender.getAccountId(), sender, recipient, amount, false);
+            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, PrivateKey privateKey, long amount) {
+        return transferFungibleToken(tokenId, sender.getAccountId(), sender, recipient, amount, false, privateKey);
     }
 
     public NetworkTransactionResponse transferFungibleToken(
@@ -425,10 +426,12 @@ public class TokenClient extends AbstractNetworkClient {
             ExpandedAccountId sender,
             AccountId recipient,
             long amount,
-            boolean isApproval) {
+            boolean isApproval,
+            PrivateKey privateKey) {
         var transaction = getFungibleTokenTransferTransaction(
                 tokenId, owner, sender.getAccountId(), recipient, amount, isApproval);
-        var response = executeTransactionAndRetrieveReceipt(transaction, sender);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, privateKey == null ? null : KeyList.of(privateKey), sender);
         log.info(
                 "Transferred {} tokens of {} from {} to {} via {}, isApproval {}",
                 amount,
@@ -441,10 +444,15 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse transferNonFungibleToken(
-            TokenId tokenId, ExpandedAccountId sender, AccountId recipient, List<Long> serialNumbers) {
+            TokenId tokenId,
+            ExpandedAccountId sender,
+            AccountId recipient,
+            List<Long> serialNumbers,
+            PrivateKey privateKey) {
         var transaction =
                 getNonFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, serialNumbers);
-        var response = executeTransactionAndRetrieveReceipt(transaction, sender);
+        var response = executeTransactionAndRetrieveReceipt(
+                transaction, privateKey == null ? null : KeyList.of(privateKey), sender);
         log.info(
                 "Transferred serial numbers {} of token {} from {} to {} via {}",
                 serialNumbers,

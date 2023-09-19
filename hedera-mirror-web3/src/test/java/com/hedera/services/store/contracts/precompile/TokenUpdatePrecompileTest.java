@@ -148,7 +148,7 @@ class TokenUpdatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @AfterEach

@@ -22,15 +22,18 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.EvmAddress;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.proto.Key;
+import com.hedera.hashgraph.sdk.proto.Key.KeyCase;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
@@ -151,12 +154,13 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public AccountCreateTransaction getAccountCreateTransaction(
-            Hbar initialBalance, KeyList publicKeys, boolean receiverSigRequired, String customMemo) {
+            Hbar initialBalance, KeyList publicKeys, boolean receiverSigRequired, String customMemo, EvmAddress alias) {
         String memo = getMemo(String.format("%s %s ", "Create Crypto Account", customMemo));
         return new AccountCreateTransaction()
                 .setInitialBalance(initialBalance)
                 // The only _required_ property here is `key`
                 .setKey(publicKeys)
+                .setAlias(alias)
                 .setAccountMemo(memo)
                 .setReceiverSignatureRequired(receiverSigRequired)
                 .setTransactionMemo(memo);
@@ -198,15 +202,19 @@ public class AccountClient extends AbstractNetworkClient {
             publicKeyList.addAll(keyList);
         }
 
-        AccountCreateTransaction accountCreateTransaction = getAccountCreateTransaction(
-                initialBalance, publicKeyList, receiverSigRequired, memo == null ? "" : memo);
-
-        var response = executeTransactionAndRetrieveReceipt(
-                accountCreateTransaction, receiverSigRequired ? KeyList.of(privateKey) : null);
+        AccountId newAccountId;
+        NetworkTransactionResponse response;
+        final boolean isED25519 = keyType == KeyCase.ED25519;
+        Transaction<?> transaction = getAccountCreateTransaction(
+                initialBalance,
+                publicKeyList,
+                receiverSigRequired,
+                memo == null ? "" : memo,
+                isED25519 ? null : privateKey.getPublicKey().toEvmAddress());
+        response =
+                executeTransactionAndRetrieveReceipt(transaction, receiverSigRequired ? KeyList.of(privateKey) : null);
         TransactionReceipt receipt = response.getReceipt();
-        AccountId newAccountId = receipt.accountId;
-
-        // verify accountId
+        newAccountId = receipt.accountId;
         if (receipt.accountId == null) {
             throw new NetworkException(String.format(
                     "Receipt for %s returned no accountId, receipt: %s", response.getTransactionId(), receipt));
@@ -286,7 +294,7 @@ public class AccountClient extends AbstractNetworkClient {
     @RequiredArgsConstructor
     public enum AccountNameEnum {
         ALICE(false, Key.KeyCase.ED25519),
-        BOB(false, Key.KeyCase.ECDSA_SECP256K1),
+        BOB(true, Key.KeyCase.ECDSA_SECP256K1),
         CAROL(true, Key.KeyCase.ED25519),
         DAVE(true, Key.KeyCase.ED25519);
 
