@@ -24,6 +24,7 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
+import com.hedera.hashgraph.sdk.EvmAddress;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -155,9 +156,14 @@ public class SDKClient implements Cleanable {
                 // Use the same operator key in case we need to later manually update/delete any created entities.
                 PrivateKey privateKey = defaultOperator.getPrivateKey();
                 PublicKey publicKey = privateKey.getPublicKey();
+                EvmAddress alias = null;
+                if (privateKey.isECDSA()) {
+                    alias = publicKey.toEvmAddress();
+                }
                 var accountId = new AccountCreateTransaction()
                         .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
                         .setKey(publicKey)
+                        .setAlias(alias)
                         .execute(client)
                         .getReceipt(client)
                         .accountId;

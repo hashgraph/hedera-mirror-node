@@ -182,7 +182,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (spender == null) {
             return Address.ZERO;
         }
-        return spender.asEvmAddress();
+        return canonicalAddress(spender.asEvmAddress());
     }
 
     @Override
@@ -209,6 +209,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (owner == null) {
             return Address.ZERO;
         }
+        // redirect executor calls the canonical address of this value
         return owner.asEvmAddress();
     }
 

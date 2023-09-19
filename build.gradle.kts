@@ -54,7 +54,7 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.3.1")
         api("com.google.guava:guava:32.1.2-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.2")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.3")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
@@ -71,7 +71,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.58.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.5.2")
-        api("io.projectreactor:reactor-core-micrometer:1.0.9")
+        api("io.projectreactor:reactor-core-micrometer:1.0.10")
         api("io.swagger:swagger-annotations:1.6.11")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -93,7 +93,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.19.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.144")
+        api("software.amazon.awssdk:bom:2.20.149")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.1")
     }
 }

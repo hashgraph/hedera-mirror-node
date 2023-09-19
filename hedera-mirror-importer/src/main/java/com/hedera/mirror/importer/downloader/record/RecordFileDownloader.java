@@ -53,6 +53,8 @@ import reactor.core.publisher.Mono;
 @Named
 public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
+    private static final String HASH_TYPE_SIDECAR = "Sidecar";
+
     private final SidecarFileReader sidecarFileReader;
     private final SidecarProperties sidecarProperties;
 
@@ -143,10 +145,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
             if (!Arrays.equals(sidecar.getHash(), sidecar.getActualHash())) {
                 throw new HashMismatchException(
-                        sidecar.getName(),
-                        sidecar.getHash(),
-                        sidecar.getActualHash(),
-                        sidecar.getHashAlgorithm().getName());
+                        sidecar.getName(), sidecar.getHash(), sidecar.getActualHash(), HASH_TYPE_SIDECAR);
             }
 
             if (!sidecarProperties.isPersistBytes()) {

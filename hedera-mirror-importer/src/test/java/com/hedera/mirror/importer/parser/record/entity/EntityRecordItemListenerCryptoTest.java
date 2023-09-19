@@ -106,6 +106,7 @@ import org.springframework.cache.CacheManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 =
             AccountID.newBuilder().setAccountNum(1001).build();
@@ -344,11 +345,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @CsvSource(
             textBlock =
                     """
-            false, true
-            false, false
-            # clear cache after the first record file to test the scenario the evm address is looked up from db
-            true, false
-            """)
+                            false, true
+                            false, false
+                            # clear cache after the first record file to test the scenario the evm address is looked up from db
+                            true, false
+                            """)
     void cryptoCreateHollowAccountThenTransferToPublicKeyAlias(boolean clearCache, boolean singleRecordFile) {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setItemizedTransfers(true);
@@ -1712,7 +1713,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // given
         entityProperties.getPersist().setTransactionRecordBytes(persist);
         var recordItem = recordItemBuilder.cryptoTransfer().build();
-        var transactionRecordBytes = persist ? recordItem.getRecordBytes() : null;
+        var transactionRecordBytes = persist ? recordItem.getTransactionRecord().toByteArray() : null;
 
         // when
         parseRecordItemAndCommit(recordItem);

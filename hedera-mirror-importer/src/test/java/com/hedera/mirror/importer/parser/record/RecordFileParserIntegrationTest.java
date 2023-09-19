@@ -84,6 +84,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     void rollback() {
         // when
         RecordFile recordFile = recordFileDescriptor1.recordFile();
+        var items = recordFile.getItems();
         recordFileParser.parse(recordFile);
 
         // then
@@ -91,7 +92,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
 
         // when
         RecordFile recordFile2 = recordFileDescriptor2.recordFile();
-        recordFile2.setItems(recordFile.getItems()); // Re-processing same transactions should result in duplicate keys
+        recordFile2.setItems(items); // Re-processing same transactions should result in duplicate keys
         Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile2));
 
         // then
@@ -116,6 +117,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertEquals(entityCount, entityRepository.count());
 
         assertThat(recordFileRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("bytes", "items", "logsBloom", "sidecars")
                 .containsExactlyInAnyOrderElementsOf(expectedRecordFiles)
                 .allSatisfy(rf -> {
                     assertThat(rf.getLoadStart()).isPositive();

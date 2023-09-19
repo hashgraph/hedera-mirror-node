@@ -59,13 +59,12 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         // given
         parserProperties.setEnabled(false);
         var accountBalanceFile = accountBalanceFile(1);
-        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertAccountBalanceFileWhenSkipped(accountBalanceFile, items);
+        assertAccountBalanceFileWhenSkipped(accountBalanceFile);
     }
 
     @Test
@@ -118,13 +117,12 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     void beforeStartDate() {
         // given
         var accountBalanceFile = accountBalanceFile(-1L);
-        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertAccountBalanceFileWhenSkipped(accountBalanceFile, items);
+        assertAccountBalanceFileWhenSkipped(accountBalanceFile);
     }
 
     @Test
@@ -150,8 +148,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(TokenBalance::getId, t -> t, (previous, current) -> previous));
 
-        assertThat(accountBalanceFile.getBytes()).isNotNull();
-        assertThat(accountBalanceFile.getItems().collectList().block()).containsExactlyElementsOf(accountBalances);
+        assertThat(accountBalanceFile.getBytes()).isNull();
+        assertThat(accountBalanceFile.getItems()).isNull();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances.values());
 
@@ -161,16 +159,14 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
-                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
     }
 
-    void assertAccountBalanceFileWhenSkipped(
-            AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
-        assertThat(accountBalanceFile.getBytes()).isNotNull();
-        assertThat(accountBalanceFile.getItems().collectList().block()).containsExactlyElementsOf(accountBalances);
+    void assertAccountBalanceFileWhenSkipped(AccountBalanceFile accountBalanceFile) {
+        assertThat(accountBalanceFile.getBytes()).isNull();
+        assertThat(accountBalanceFile.getItems()).isNull();
         assertThat(accountBalanceRepository.count()).isZero();
         assertThat(tokenBalanceRepository.count()).isZero();
 
@@ -180,7 +176,6 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
-                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
