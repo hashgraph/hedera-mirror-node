@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.88.0-rc1'
+      version: '0.89.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -39,14 +39,6 @@ spec:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_THREADS: "35"
-      resources:
-        limits:
-          cpu: 3000m
-          memory: 6Gi
-        requests:
-          cpu: 3000m
-          memory: 6Gi
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
