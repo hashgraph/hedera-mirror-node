@@ -49,7 +49,7 @@ const (
 	latestBalanceBeforeConsensus = `with balance_timestamp as (
                                       select consensus_timestamp
                                       from account_balance
-                                      where consensus_timestamp < @timestamp
+                                      where consensus_timestamp <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
