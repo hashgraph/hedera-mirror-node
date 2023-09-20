@@ -37,3 +37,31 @@ docker run --rm -v "${PWD}/charts/hedera-mirror-web3/postman.json:/tmp/postman.j
 ```
 
 _Note:_ To test against an instance running on the same machine as Docker use your local IP instead of 127.0.0.1.
+
+### Supported/unsupported operations
+
+
+| Estimate | Static | Operation Type                                                                            | Supported | Historical data support | Reads | Modifications |
+|----------|--------|-------------------------------------------------------------------------------------------|-----------|-------------------------|-------|---------------|
+|    Y     |   Y    | non precompile functions                                                                  |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for Hts system contract AssociatePrecompile                                    |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | non precompile functions with lazy account creation                                       |     Y     |           N             |   Y   | Y             |
+|    Y     |   Y    | operations for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc.) |     Y     |           N             |   Y   | N             |
+|    Y     |   N    | operations for HTS system contract MintPrecompile                                         |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract GrantKycPrecompile                                     |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract WipePrecompile                                         |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract BurnPrecompile                                         |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract DissociatePrecompile                                   |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract SetApprovalForAllPrecompile                            |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract ApprovePrecompile                                      |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract RevokeKycPrecompile                                    |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract UnpausePrecompile                                      |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract PausePrecompile                                        |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract DeleteTokenPrecompile                                  |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract PausePrecompile                                        |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract FreezePrecompile                                       |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for HTS system contract UnfreezePrecompile                                     |     Y     |           N             |   Y   | Y             |
+|    Y     |   N    | operations for IsApprovedForAllPrecompile                                                 |     Y     |           N             |   Y   | N             |
+|    Y     |   N    | operations for AllowancePrecompile                                                        |     Y     |           N             |   Y   | N             |
+|    Y     |   N    | operations for GetApprovedPrecompile                                                      |     Y     |           N             |   Y   | N             |
+|    Y     |   N    | operations for HTS system contract UpdateTokenKeysPrecompile                              |     Y     |           N             |   Y   | Y             |
