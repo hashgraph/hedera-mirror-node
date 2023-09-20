@@ -53,7 +53,7 @@ public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
-    public static final String RECOVERABLE_ERROR = "Recoverable error. ";
+    static final String RECOVERABLE_ERROR = "Recoverable error. ";
     static final String HALT_ON_ERROR_PROPERTY = "HEDERA_MIRROR_IMPORTER_PARSER_HALTONERROR";
     static final String HALT_ON_ERROR_DEFAULT = "false";
     private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
