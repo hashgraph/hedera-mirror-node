@@ -983,10 +983,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
 
         secondCustomFee.setTimestampUpper(updateTimestamp);
-        var lastCustomFee = CustomFee.builder()
-                .timestampRange(Range.atLeast(updateTimestamp))
-                .tokenId(secondCustomFee.getTokenId())
-                .build();
+        var lastCustomFee = emptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
         assertCustomFeesInDb(List.of(lastCustomFee), List.of(initialCustomFee, secondCustomFee));
     }
 
