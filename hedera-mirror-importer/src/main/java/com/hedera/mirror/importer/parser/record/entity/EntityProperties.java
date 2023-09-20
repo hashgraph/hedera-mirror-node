@@ -83,6 +83,7 @@ public class EntityProperties {
         private boolean trackNonce = true;
 
         private boolean transactionHash = false;
+        private long transactionHashPivotTimestamp = -1;
 
         /**
          * A set of transaction types to persist transaction hash for. If empty and transactionHash is true, transaction
@@ -108,8 +109,9 @@ public class EntityProperties {
             return entityTransactions && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
         }
 
-        public boolean shouldPersistTransactionHash(TransactionType transactionType) {
+        public boolean shouldPersistTransactionHash(TransactionType transactionType, long consensusTimestamp) {
             return transactionHash
+                    && consensusTimestamp > transactionHashPivotTimestamp
                     && (transactionHashTypes.isEmpty() || transactionHashTypes.contains(transactionType));
         }
     }
