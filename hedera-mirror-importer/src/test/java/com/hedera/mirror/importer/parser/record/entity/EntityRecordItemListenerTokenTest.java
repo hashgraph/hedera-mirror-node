@@ -3629,46 +3629,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private void assertCustomFeesInDb(List<CustomFee> expected, List<CustomFee> expectedHistory) {
         assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
-        //        var listAssert = assertThat(customFeeRepository.findAll()).hasSize(expected.size());
-        //        for (var result : expected) {
-        //            listAssert.anySatisfy(fee -> {
-        //                if (result.getFixedFees() != null) {
-        //                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-        //                }
-        //                if (result.getFractionalFees() != null) {
-        //
-        // assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-        //                }
-        //                if (result.getRoyaltyFees() != null) {
-        //
-        // assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-        //                }
-        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-        //                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-        //            });
-        //        }
-
-        //        findHistory()
-        //        var historyAssert = assertThat(customFeeHistoryRepository.findAll()).hasSize(expectedHistory.size());
-        //        for (var result : expectedHistory) {
-        //            historyAssert.anySatisfy(fee -> {
-        //                if (result.getFixedFees() != null) {
-        //                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-        //                }
-        //                if (result.getFractionalFees() != null) {
-        //
-        // assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-        //                }
-        //                if (result.getRoyaltyFees() != null) {
-        //
-        // assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-        //                }
-        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-        //                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-        //            });
-        //        }
     }
 
     private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {
