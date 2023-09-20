@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.util;
 
+import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_DEFAULT;
 import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +58,11 @@ public class UtilityTest {
     public static final byte[] ALIAS_ECDSA_SECP256K1 =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     public static final byte[] EVM_ADDRESS = Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+
+    @AfterEach
+    void cleanup() {
+        System.setProperty(HALT_ON_ERROR_PROPERTY, HALT_ON_ERROR_DEFAULT);
+    }
 
     @Test
     void aliasToEvmAddress() {
@@ -147,48 +154,37 @@ public class UtilityTest {
         assertThat(Utility.toSnakeCase(input)).isEqualTo(output);
     }
 
-    @ParameterizedTest(name = "Log {0} with cause {2}")
+    @ParameterizedTest(name = "Log format {0} with params {1} expecting {2}")
     @CsvSource(
             textBlock =
                     """
-                                plain message, plain message, false,
-                                {} arg message, one arg message, true, one
-                                {} {} message, a b message, false, 'a, b'
-                                {} {} {} {}, a b c d, true, 'a, b, c, d'
-                            """)
+                plain message, , plain message
+                {} arg message, 'one, exception', one arg message
+                {} {} message, 'a, b', a b message
+                {} {} {} {}, 'a, b, c, d, exception', a b c d
+            """)
     void handleRecoverableErrorLogOrThrow(
             String format,
+            @ConvertWith(ObjectArrayConverter.class) Object[] args,
             String formatted,
-            boolean addCause,
-            @ConvertWith(StringArrayConverter.class) String[] args,
             CapturedOutput capturedOutput) {
 
-        var causeMessage = "provided cause";
-        var cause = new RuntimeException(causeMessage);
-
-        Object[] logArgs;
-        if (addCause) {
-            List<Object> arrList = new ArrayList<>(Arrays.asList(args));
-            arrList.add(cause);
-            logArgs = arrList.toArray();
-        } else {
-            logArgs = args;
-        }
+        var causeProvided = args.length > 0 && args[args.length - 1] instanceof Throwable throwable ? throwable : null;
 
         /*
          * With halt on error not set, verify expected log output is generated.
          */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "false");
-        if (logArgs == null) {
+        if (args.length == 0) {
             Utility.handleRecoverableError(format);
         } else {
-            Utility.handleRecoverableError(format, logArgs);
+            Utility.handleRecoverableError(format, args);
         }
 
         var allOutput = capturedOutput.getAll();
         assertThat(allOutput).contains(RECOVERABLE_ERROR + formatted);
-        if (addCause) {
-            assertThat(allOutput).contains(cause.getClass().getName() + ": " + causeMessage);
+        if (causeProvided != null) {
+            assertThat(allOutput).contains(causeProvided.getClass().getName() + ": " + causeProvided.getMessage());
         }
 
         /*
@@ -196,28 +192,38 @@ public class UtilityTest {
          */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
         ParserException parserException;
-        if (logArgs == null) {
+        if (args.length == 0) {
             parserException = assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format));
         } else {
-            parserException =
-                    assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format, logArgs));
+            parserException = assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format, args));
         }
         assertThat(parserException.getMessage()).isEqualTo(formatted);
-        if (addCause) {
-            assertThat(parserException.getCause()).isSameAs(cause);
+        if (causeProvided != null) {
+            assertThat(parserException.getCause()).isSameAs(causeProvided);
         }
     }
 
-    public static class StringArrayConverter extends SimpleArgumentConverter {
+    private static class ObjectArrayConverter extends SimpleArgumentConverter {
+
+        private static final String CAUSE_ARGUMENT = "exception";
+        private static final Throwable CAUSE_INSTANCE = new RuntimeException("provided cause");
+        private static final Object[] EMPTY_ARGS_INSTANCE = new Object[0];
 
         @Override
         protected Object convert(Object source, Class<?> targetType) throws ArgumentConversionException {
             if (source == null) {
-                return null;
+                return EMPTY_ARGS_INSTANCE;
             }
 
-            if (source instanceof String && String[].class.isAssignableFrom(targetType)) {
-                return ((String) source).split("\\s*,\\s*");
+            if (source instanceof String sourceStr && Object[].class.isAssignableFrom(targetType)) {
+                var stringArgs = sourceStr.split("\\s*,\\s*");
+                var argsLength = stringArgs.length;
+                if (argsLength > 0 && stringArgs[argsLength - 1].equals(CAUSE_ARGUMENT)) {
+                    List<Object> arrList = new ArrayList<>(Arrays.asList(stringArgs));
+                    arrList.set(argsLength - 1, CAUSE_INSTANCE);
+                    return arrList.toArray();
+                }
+                return stringArgs;
             } else {
                 throw new ArgumentConversionException(
                         "Conversion from " + source.getClass() + " to " + targetType + " not supported.");
