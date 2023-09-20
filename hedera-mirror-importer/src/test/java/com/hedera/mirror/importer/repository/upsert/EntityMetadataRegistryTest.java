@@ -23,9 +23,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 import jakarta.persistence.Id;
+import java.util.Objects;
 import java.util.stream.Stream;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -134,6 +136,17 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .isNotNull()
                 .extracting(UpsertColumn::coalesce)
                 .isNotNull();
+    }
+
+    @Test
+    void upsertColumnNoCoalesce() {
+        var metadata = registry.lookup(CustomFee.class);
+        assertThat(metadata)
+                .isNotNull()
+                .returns(
+                        "fixed_fees",
+                        m -> m.column(c -> Objects.equals(c.getName(), "fixed_fees"), "coalesce(e_{0}, {0})"))
+                .returns("e_fixed_fees", m -> m.column(c -> Objects.equals(c.getName(), "fixed_fees"), "e_{0}"));
     }
 
     @Upsertable

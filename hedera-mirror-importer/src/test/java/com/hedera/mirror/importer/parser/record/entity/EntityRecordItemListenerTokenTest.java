@@ -149,7 +149,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionRepository transactionRepository;
 
-    private static CustomFee deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+    private static CustomFee emptyCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
         customFee.setTokenId(tokenId.getId());
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
@@ -253,7 +253,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(List.of(treasury))
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(List.of(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
+                        .customFees(List.of(emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
                         .customFeesDescription("empty custom fees")
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
@@ -948,7 +948,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         createTokenEntity(TOKEN_ID, tokenType, SYMBOL, CREATE_TIMESTAMP, false, false, false);
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
-        Entity expectedEntity = createEntity(
+        var expectedEntity = createEntity(
                 DOMAIN_TOKEN_ID,
                 TOKEN,
                 TOKEN_REF_KEY,
@@ -960,19 +960,34 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
-        var deletedDbCustomFee = deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
-        var newCustomFee = nonEmptyCustomFee(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
+        var initialCustomFee = emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        var secondCustomFee = nonEmptyCustomFee(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
 
         long expectedSupply = tokenType == FUNGIBLE_COMMON ? INITIAL_SUPPLY : 0;
 
         // when
-        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, List.of(newCustomFee));
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, List.of(secondCustomFee));
 
         // then
         assertEntity(expectedEntity);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
-        deletedDbCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
-        assertCustomFeesInDb(List.of(newCustomFee), List.of(deletedDbCustomFee));
+        initialCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
+        assertCustomFeesInDb(List.of(secondCustomFee), List.of(initialCustomFee));
+
+        // when update with empty custom fees
+        updateTimestamp += 10L;
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, Collections.emptyList());
+
+        // then
+        assertEntity(expectedEntity);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
+
+        secondCustomFee.setTimestampUpper(updateTimestamp);
+        var lastCustomFee = CustomFee.builder()
+                .timestampRange(Range.atLeast(updateTimestamp))
+                .tokenId(secondCustomFee.getTokenId())
+                .build();
+        assertCustomFeesInDb(List.of(lastCustomFee), List.of(initialCustomFee, secondCustomFee));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -3612,41 +3627,48 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertCustomFeesInDb(List<CustomFee> expected, List<CustomFee> expectedHistory) {
-        var listAssert = assertThat(customFeeRepository.findAll()).hasSize(expected.size());
-        for (var result : expected) {
-            listAssert.anySatisfy(fee -> {
-                if (result.getFixedFees() != null) {
-                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-                }
-                if (result.getFractionalFees() != null) {
-                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-                }
-                if (result.getRoyaltyFees() != null) {
-                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                }
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-            });
-        }
+        assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        //        var listAssert = assertThat(customFeeRepository.findAll()).hasSize(expected.size());
+        //        for (var result : expected) {
+        //            listAssert.anySatisfy(fee -> {
+        //                if (result.getFixedFees() != null) {
+        //                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
+        //                }
+        //                if (result.getFractionalFees() != null) {
+        //
+        // assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
+        //                }
+        //                if (result.getRoyaltyFees() != null) {
+        //
+        // assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
+        //                }
+        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+        //                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
+        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+        //            });
+        //        }
 
-        var historyAssert = assertThat(customFeeHistoryRepository.findAll()).hasSize(expectedHistory.size());
-        for (var result : expectedHistory) {
-            historyAssert.anySatisfy(fee -> {
-                if (result.getFixedFees() != null) {
-                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-                }
-                if (result.getFractionalFees() != null) {
-                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-                }
-                if (result.getRoyaltyFees() != null) {
-                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                }
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-            });
-        }
+        //        findHistory()
+        //        var historyAssert = assertThat(customFeeHistoryRepository.findAll()).hasSize(expectedHistory.size());
+        //        for (var result : expectedHistory) {
+        //            historyAssert.anySatisfy(fee -> {
+        //                if (result.getFixedFees() != null) {
+        //                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
+        //                }
+        //                if (result.getFractionalFees() != null) {
+        //
+        // assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
+        //                }
+        //                if (result.getRoyaltyFees() != null) {
+        //
+        // assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
+        //                }
+        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+        //                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
+        //                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
+        //            });
+        //        }
     }
 
     private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {

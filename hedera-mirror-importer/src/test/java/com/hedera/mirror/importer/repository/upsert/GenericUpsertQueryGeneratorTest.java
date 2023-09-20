@@ -22,6 +22,7 @@ import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import com.github.vertical_blank.sqlformatter.languages.Dialect;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +67,136 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         UpsertQueryGenerator generator = factory.get(Token.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
         assertThat(format(generator.getUpsertQuery())).containsIgnoringWhitespaces(sql);
+    }
+
+    @Test
+    void getCustomFeeUpsertQueryHistory() {
+        var sql =
+                """
+                with non_history as (
+                  select
+                    e.fixed_fees as e_fixed_fees,
+                    e.fractional_fees as e_fractional_fees,
+                    e.royalty_fees as e_royalty_fees,
+                    e.timestamp_range as e_timestamp_range,
+                    e.token_id as e_token_id,
+                    t.*
+                  from
+                    custom_fee e
+                    join custom_fee_temp t on e.token_id = t.token_id
+                  where
+                    t.timestamp_range is null
+                )
+                insert into
+                  custom_fee (
+                    fixed_fees,
+                    fractional_fees,
+                    royalty_fees,
+                    timestamp_range,
+                    token_id
+                  )
+                select
+                  fixed_fees,
+                  fractional_fees,
+                  royalty_fees,
+                  coalesce(timestamp_range, e_timestamp_range, null),
+                  coalesce(token_id, e_token_id, null)
+                from
+                  non_history on conflict (token_id) do
+                update
+                set
+                  fixed_fees = excluded.fixed_fees,
+                  fractional_fees = excluded.fractional_fees,
+                  royalty_fees = excluded.royalty_fees,
+                  timestamp_range = excluded.timestamp_range;
+
+                with existing as (
+                  select
+                    e.fixed_fees as e_fixed_fees,
+                    e.fractional_fees as e_fractional_fees,
+                    e.royalty_fees as e_royalty_fees,
+                    e.timestamp_range as e_timestamp_range,
+                    e.token_id as e_token_id,
+                    t.*
+                  from
+                    custom_fee_temp t
+                    left join custom_fee e on e.token_id = t.token_id
+                  where
+                    t.timestamp_range is not null
+                ),
+                existing_history as (
+                  insert into
+                    custom_fee_history (
+                      fixed_fees,
+                      fractional_fees,
+                      royalty_fees,
+                      timestamp_range,
+                      token_id
+                    )
+                  select
+                    distinct on (token_id) e_fixed_fees,
+                    e_fractional_fees,
+                    e_royalty_fees,
+                    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range,
+                    e_token_id
+                  from
+                    existing
+                  where
+                    e_timestamp_range is not null
+                    and timestamp_range is not null
+                  order by
+                    token_id,
+                    timestamp_range asc
+                ),
+                temp_history as (
+                  insert into
+                    custom_fee_history (
+                      fixed_fees,
+                      fractional_fees,
+                      royalty_fees,
+                      timestamp_range,
+                      token_id
+                    )
+                  select
+                    distinct fixed_fees,
+                    fractional_fees,
+                    royalty_fees,
+                    coalesce(timestamp_range, e_timestamp_range, null),
+                    coalesce(e_token_id, token_id, null)
+                  from
+                    existing
+                  where
+                    upper(timestamp_range) is not null
+                )
+                insert into
+                  custom_fee (
+                    fixed_fees,
+                    fractional_fees,
+                    royalty_fees,
+                    timestamp_range,
+                    token_id
+                  )
+                select
+                  fixed_fees,
+                  fractional_fees,
+                  royalty_fees,
+                  coalesce(timestamp_range, e_timestamp_range, null),
+                  coalesce(token_id, e_token_id, null)
+                from
+                  existing
+                where
+                  timestamp_range is not null
+                  and upper(timestamp_range) is null on conflict (token_id) do
+                update
+                set
+                  fixed_fees = excluded.fixed_fees,
+                  fractional_fees = excluded.fractional_fees,
+                  royalty_fees = excluded.royalty_fees,
+                  timestamp_range = excluded.timestamp_range;
+                """;
+        var generator = factory.get(CustomFee.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getUpsertQuery())).isEqualTo(format(sql));
     }
 
     @Test
