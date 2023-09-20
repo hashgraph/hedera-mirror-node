@@ -120,6 +120,8 @@ abstract class AbstractFeature {
     protected record DeployedContract(
             FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 
+    protected record ExchangeRate(int centEquivalent, int hbarEquivalent) {}
+
     protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
     }

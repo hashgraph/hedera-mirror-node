@@ -78,6 +78,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private TokenId nonFungibleTokenId;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedErcTestContract;
+    private ExchangeRate currentExchangeRate;
+    private long createTokenValue;
+    private long createTokenValueWithCustomFees;
     private DeployedContract deployedPrecompileContract;
     private ExpandedAccountId receiverAccount;
     private String receiverAccountAlias;
@@ -102,6 +105,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void createNewERCContract(int supply) throws IOException {
         deployedErcTestContract = createContract(ercTestContract, supply);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
+    }
+
+    @Given("I get exchange rates")
+    public void getExchangeRate() throws IOException {
+        final var exchangeRates = mirrorClient.getExchangeRates();
+        currentExchangeRate = new ExchangeRate(
+                exchangeRates.getCurrentRate().getCentEquivalent(),
+                exchangeRates.getCurrentRate().getHbarEquivalent());
+        final long hbarPriceInCents = currentExchangeRate.centEquivalent() / currentExchangeRate.hbarEquivalent();
+        createTokenValue = ((100 / hbarPriceInCents + 1) * 100000000);
+        createTokenValueWithCustomFees = ((200 / hbarPriceInCents + 1) * 100000000);
     }
 
     @Given("I successfully create Precompile contract with {int} balance")
@@ -755,7 +769,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
 
         validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall), ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(), 820000000);
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
+                createTokenValue);
     }
 
     @Then("I call estimateGas with CreateNFT function")
@@ -764,7 +780,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
 
         validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall), ContractMethods.CREATE_NFT.getActualGas(), 820000000);
+                Strings.encode(encodedFunctionCall), ContractMethods.CREATE_NFT.getActualGas(), createTokenValue);
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
@@ -778,7 +794,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(),
-                1635000000);
+                createTokenValueWithCustomFees);
     }
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
@@ -791,7 +807,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
-                1650000000);
+                createTokenValueWithCustomFees);
     }
 
     @And("I approve and transfer fungible tokens to receiver account")

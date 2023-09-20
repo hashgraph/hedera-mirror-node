@@ -30,6 +30,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
@@ -208,6 +209,11 @@ public class MirrorNodeClient {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint(
                 "/contracts/results/{transactionId}", MirrorContractResultResponse.class, transactionId);
+    }
+
+    public ExchangeRateResponse getExchangeRates() {
+        log.debug("Verify contract result '{}' is returned by Mirror Node");
+        return callRestEndpoint("/network/exchangerate", ExchangeRateResponse.class);
     }
 
     public ContractCallResponse contractsCall(ContractCallRequest request) {

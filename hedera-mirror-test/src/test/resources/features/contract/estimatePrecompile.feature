@@ -4,6 +4,7 @@ Feature: EstimateGas Contract Base Coverage Feature
   Scenario Outline: Validate EstimateGas with precompile
     Given I create estimate precompile contract with 0 balance
     Given I create erc test contract with 0 balance
+    Given I get exchange rates
     Given I successfully create Precompile contract with 0 balance
     Given I successfully create fungible tokens
     Given I successfully create non fungible tokens
@@ -71,10 +72,10 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with mintToken function for NFT
     Then I call estimateGas with burnToken function for fungible token
     Then I call estimateGas with burnToken function for NFT
-    #Then I call estimateGas with CreateFungibleToken function
-    #Then I call estimateGas with CreateNFT function
-    #Then I call estimateGas with CreateFungibleToken function with custom fees
-    #Then I call estimateGas with CreateNFT function with custom fees
+    Then I call estimateGas with CreateFungibleToken function
+    Then I call estimateGas with CreateNFT function
+    Then I call estimateGas with CreateFungibleToken function with custom fees
+    Then I call estimateGas with CreateNFT function with custom fees
     And I approve and transfer fungible tokens to receiver account
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with WipeTokenAccount function
@@ -166,5 +167,5 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with redirect setApprovalForAll function
     Then I call estimateGas with exchange rate tinycents to tinybars
     Then I call estimateGas with exchange rate tinybars to tinycents
-    #Then I call estimateGas with pseudo random seed
-    #Then I call estimateGas with pseudo random number
+    Then I call estimateGas with pseudo random seed
+    Then I call estimateGas with pseudo random number
