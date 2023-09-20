@@ -30,6 +30,19 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class ThreadLocalHolder {
 
+    /**
+     * Constant for representing an unset or disabled timestamp for filtering.
+     */
+    public static final long UNSET_TIMESTAMP = -1L;
+
+    /**
+     * Long value which stores the block timestamp used for filtering of historical data.
+     * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
+     * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
+     */
+    @NonNull
+    public static final ThreadLocal<Long> blockTimestamp = ThreadLocal.withInitial(() -> UNSET_TIMESTAMP);
+
     /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
     @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
@@ -79,6 +92,7 @@ public class ThreadLocalHolder {
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();
+        blockTimestamp.remove();
     }
 
     public static void startThread(final StackedStateFrames stackedStateFrames) {
