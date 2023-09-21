@@ -210,16 +210,13 @@ public class Utility {
      *                the cause of the thrown ParserException.
      */
     public static void handleRecoverableError(String message, Object... args) {
-        var haltOnError = Boolean.parseBoolean(System.getProperty(HALT_ON_ERROR_PROPERTY, HALT_ON_ERROR_DEFAULT));
+        var haltOnError = Boolean.parseBoolean(System.getProperty(HALT_ON_ERROR_PROPERTY));
 
         if (haltOnError) {
             var formattingTuple = MessageFormatter.arrayFormat(message, args);
             var throwable = formattingTuple.getThrowable();
             var formattedMessage = formattingTuple.getMessage();
-
-            throw throwable == null
-                    ? new ParserException(formattedMessage)
-                    : new ParserException(formattedMessage, throwable);
+            throw new ParserException(formattedMessage, throwable);
         } else {
             log.error(RECOVERABLE_ERROR + message, args);
         }
