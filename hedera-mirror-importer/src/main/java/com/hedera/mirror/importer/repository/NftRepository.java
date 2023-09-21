@@ -59,7 +59,8 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
             update token_account
               set balance = case when account_id = :previousTreasury then 0
                                  else coalesce(balance, 0) + updated_count.count
-                            end
+                            end,
+                  balance_timestamp = :consensusTimestamp
             from updated_count
             where account_id in (:newTreasury, :previousTreasury) and token_id = :tokenId
             """,

@@ -3,6 +3,7 @@ Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas
     Given I successfully create contract from contract bytes with 10000000 balance
+    Given I successfully create fungible token
     And lower deviation is 5% and upper deviation is 20%
     Then I call estimateGas without arguments that multiplies two numbers
     Then I call estimateGas with function msgSender
@@ -34,3 +35,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that executes reentrancy attack with call
     Then I call estimateGas with function that executes positive nested calls
     Then I call estimateGas with function that executes limited nested calls
+    Then I call estimateGas with IERC20 token transfer using long zero address as receiver
+    Then I call estimateGas with IERC20 token transfer using evm address as receiver
+    Then I call estimateGas with IERC20 token approve using evm address as receiver
+    Then I call estimateGas with IERC20 token associate using evm address as receiver
+    Then I call estimateGas with IERC20 token dissociate using evm address as receiver

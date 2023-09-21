@@ -49,6 +49,9 @@ import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
 import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
@@ -101,16 +104,19 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
     private Address senderAddress;
+    private final boolean isEstimate;
 
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
+            final boolean isEstimate) {
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
+        this.isEstimate = isEstimate;
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
@@ -212,6 +218,17 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             validateTrue(frame.getRemainingGas() >= gasRequirement, INSUFFICIENT_GAS);
 
             precompile.handleSentHbars(frame, transactionBody);
+
+            // if we have top level token call with estimate gas and missing sender - return empty result
+            // N.B. this should be done for precompiles that depend on the sender address
+            if (Address.ZERO.equals(senderAddress)
+                    && isEstimate
+                    && (precompile instanceof ERCTransferPrecompile
+                            || precompile instanceof ApprovePrecompile
+                            || precompile instanceof AssociatePrecompile
+                            || precompile instanceof DissociatePrecompile)) {
+                return Bytes.EMPTY;
+            }
             final var precompileResultWrapper = precompile.run(frame, transactionBody.build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);

@@ -60,8 +60,11 @@ public class PubSubRecordItemListener implements RecordItemListener {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
         TransactionType transactionType = TransactionType.of(recordItem.getTransactionType());
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
-        log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
+
+        if (log.isTraceEnabled()) {
+            log.trace("Storing transaction body: {}", Utility.printProtoMessage(body));
+        }
 
         EntityId entityId;
         try {

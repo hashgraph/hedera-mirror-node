@@ -24,14 +24,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
     protected final StreamFileRepository<T, Long> streamFileRepository;
@@ -76,6 +76,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
         try {
             if (!shouldParse(streamFile)) {
+                streamFile.clear();
                 return;
             }
 
@@ -88,6 +89,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
             Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+            streamFile.clear();
         } catch (Throwable e) {
             success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);

@@ -1,4 +1,3 @@
-{{- if .Values.priorityClass.enabled -}}
 apiVersion: scheduling.k8s.io/v1
 kind: PriorityClass
 metadata:
@@ -30,4 +29,3 @@ metadata:
 value: 250
 globalDefault: false
 description: "Used for low priority workloads that no workloads depend upon"
-{{- end -}}

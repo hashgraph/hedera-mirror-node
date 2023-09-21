@@ -18,7 +18,10 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.importer.TestUtils.toEntityTransaction;
 import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
+import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
+import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -98,9 +101,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
+
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 =
             AccountID.newBuilder().setAccountNum(1001).build();
@@ -108,6 +114,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final long[] additionalTransferAmounts = {1001, 1002};
     private static final ByteString ALIAS_KEY = DomainUtils.fromBytes(UtilityTest.ALIAS_ECDSA_SECP256K1);
 
+    private final @Qualifier(CACHE_MANAGER_ALIAS) CacheManager cacheManager;
     private final ContractRepository contractRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
@@ -334,6 +341,136 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .isEqualTo(accountEntityId.getId()));
     }
 
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                            false, true
+                            false, false
+                            # clear cache after the first record file to test the scenario the evm address is looked up from db
+                            true, false
+                            """)
+    void cryptoCreateHollowAccountThenTransferToPublicKeyAlias(boolean clearCache, boolean singleRecordFile) {
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setItemizedTransfers(true);
+
+        var evmAddress = DomainUtils.fromBytes(EVM_ADDRESS);
+        var cryptoCreate = recordItemBuilder
+                .cryptoCreate()
+                .transactionBody(b -> b.setAlias(evmAddress).setInitialBalance(0))
+                .transactionBodyWrapper(w -> {
+                    var transactionId =
+                            w.getTransactionID().toBuilder().setNonce(1).build();
+                    w.setTransactionID(transactionId);
+                })
+                .record(r -> {
+                    var transactionId =
+                            r.getTransactionID().toBuilder().setNonce(1).build();
+                    r.setEvmAddress(evmAddress).setTransactionID(transactionId);
+                })
+                .build();
+        var transactionRecord = cryptoCreate.getTransactionRecord();
+        var hollowAccountId = transactionRecord.getReceipt().getAccountID();
+        // The triggering crypto transfer tx's transaction id has nonce 0
+        var transactionId =
+                transactionRecord.getTransactionID().toBuilder().setNonce(0).build();
+        var payerAccountId = transactionId.getAccountID();
+        var cryptoTransfer = recordItemBuilder
+                .cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(payerAccountId)
+                                .setAmount(-1000))
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(AccountID.newBuilder().setAlias(evmAddress))
+                                .setAmount(1000))))
+                .transactionBodyWrapper(w -> w.setTransactionID(transactionId))
+                .record(r -> r.setTransactionID(transactionId)
+                        // For simplicity, only add transfer from payer to hollow account in transaction record
+                        .setTransferList(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAccountID(payerAccountId)
+                                        .setAmount(-1000))
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAccountID(hollowAccountId)
+                                        .setAmount(1000L))))
+                .build();
+        var recordItems = new ArrayList<RecordItem>();
+        // crypto transfer to evm address and hollow account create always happen in the same record file
+        recordItems.add(cryptoCreate);
+        recordItems.add(cryptoTransfer);
+
+        if (!singleRecordFile) {
+            parseRecordItemsAndCommit(recordItems);
+            recordItems.clear();
+        }
+
+        if (clearCache) {
+            resetCacheManager(cacheManager);
+        }
+
+        // Crypto transfer to public key alias
+        var cryptoTransferToAlias = recordItemBuilder
+                .cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(payerAccountId)
+                                .setAmount(-200))
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(
+                                        AccountID.newBuilder().setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1)))
+                                .setAmount(200))))
+                .record(r -> r.setTransferList(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(payerAccountId)
+                                .setAmount(-200))
+                        .addAccountAmounts(AccountAmount.newBuilder()
+                                .setAccountID(hollowAccountId)
+                                .setAmount(200))))
+                .build();
+        recordItems.add(cryptoTransferToAlias);
+        parseRecordItemsAndCommit(recordItems);
+
+        // then
+        var hollowAccount = EntityId.of(hollowAccountId);
+        var payerAccount = EntityId.of(payerAccountId);
+        var expectedItemizedTransfers = new ArrayList<List<ItemizedTransfer>>();
+        // From hollow account create tx
+        expectedItemizedTransfers.add(null);
+        // From crypto transfer tx which triggers hollow account creation
+        expectedItemizedTransfers.add(List.of(
+                ItemizedTransfer.builder()
+                        .amount(-1000L)
+                        .entityId(payerAccount)
+                        .isApproval(false)
+                        .build(),
+                ItemizedTransfer.builder()
+                        .amount(1000L)
+                        .entityId(hollowAccount)
+                        .isApproval(false)
+                        .build()));
+        // From the last crypto transfer to public key alias
+        expectedItemizedTransfers.add(List.of(
+                ItemizedTransfer.builder()
+                        .amount(-200L)
+                        .entityId(payerAccount)
+                        .isApproval(false)
+                        .build(),
+                ItemizedTransfer.builder()
+                        .amount(200L)
+                        .entityId(hollowAccount)
+                        .isApproval(false)
+                        .build()));
+        assertAll(
+                () -> assertEquals(3, transactionRepository.count()),
+                () -> assertEntities(hollowAccount),
+                () -> assertCryptoTransfers(7),
+                () -> assertThat(entityRepository.findByAlias(EVM_ADDRESS)).hasValue(hollowAccount.getId()),
+                () -> assertThat(transactionRepository.findAll())
+                        .map(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
+                        .containsExactlyInAnyOrderElementsOf(expectedItemizedTransfers));
+    }
+
     @Test
     void cryptoDeleteAllowance() {
         // given
@@ -510,12 +647,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         sender.setBalance(285L);
+        sender.setBalanceTimestamp(consensusTimestamp);
         sender.setStakePeriodStart(expectedStakePeriodStart);
         sender.setTimestampLower(consensusTimestamp);
         receiver1.setBalance(109L);
+        receiver1.setBalanceTimestamp(consensusTimestamp);
         receiver1.setStakePeriodStart(expectedStakePeriodStart);
         receiver1.setTimestampLower(consensusTimestamp);
         receiver2.setBalance(215L);
+        receiver2.setBalanceTimestamp(consensusTimestamp);
 
         var payerAccountId = recordItem.getPayerAccountId();
         var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
@@ -574,6 +714,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long expectedStakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
         payer.setBalance(2200L);
+        payer.setBalanceTimestamp(consensusTimestamp);
         payer.setStakePeriodStart(expectedStakePeriodStart);
         payer.setTimestampLower(consensusTimestamp);
 
@@ -1384,12 +1525,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         }));
     }
 
-    private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
-        return new Condition<>(
-                cryptoTransfer -> isAccountAmountReceiverAccountAmount(cryptoTransfer, receiver),
-                format("Is %s the receiver account amount.", receiver));
-    }
-
     @Test
     void cryptoTransferWithUnknownAlias() {
         // given
@@ -1435,24 +1570,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void unknownTransactionResult() {
-        int unknownResult = -1000;
-        Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
-
-        parseRecordItemAndCommit(RecordItem.builder()
-                .transactionRecord(record)
-                .transaction(transaction)
-                .build());
-
-        assertThat(transactionRepository.findAll())
-                .hasSize(1)
-                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getResult)
-                .containsOnly(unknownResult);
-    }
-
-    @Test
     void cryptoTransferPersistRawBytesDefault() {
         // Use the default properties for record parsing - the raw bytes should NOT be stored in the db
         Transaction transaction = cryptoTransferTransaction();
@@ -1473,24 +1590,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void persistTransactionRecordBytes(boolean persist) {
-        // given
-        entityProperties.getPersist().setTransactionRecordBytes(persist);
-        var recordItem = recordItemBuilder.cryptoTransfer().build();
-        var transactionRecordBytes = persist ? recordItem.getRecordBytes() : null;
-
-        // when
-        parseRecordItemAndCommit(recordItem);
-
-        // then
-        assertThat(transactionRepository.findAll())
-                .hasSize(1)
-                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getTransactionRecordBytes)
-                .containsOnly(transactionRecordBytes);
     }
 
     @SuppressWarnings("deprecation")
@@ -1606,6 +1705,42 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertThat(contractRepository.findById(expectedContract.getId()))
                 .get()
                 .returns(expectedFileId, Contract::getFileId);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void persistTransactionRecordBytes(boolean persist) {
+        // given
+        entityProperties.getPersist().setTransactionRecordBytes(persist);
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        var transactionRecordBytes = persist ? recordItem.getTransactionRecord().toByteArray() : null;
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getTransactionRecordBytes)
+                .containsOnly(transactionRecordBytes);
+    }
+
+    @Test
+    void unknownTransactionResult() {
+        int unknownResult = -1000;
+        Transaction transaction = cryptoCreateTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
+
+        parseRecordItemAndCommit(RecordItem.builder()
+                .transactionRecord(record)
+                .transaction(transaction)
+                .build());
+
+        assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getResult)
+                .containsOnly(unknownResult);
     }
 
     private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
@@ -1866,6 +2001,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             transferListBuilder.addAccountAmounts(accountAmount);
         });
         recordBuilder.setTransferList(transferListBuilder);
+    }
+
+    private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
+        return new Condition<>(
+                cryptoTransfer -> isAccountAmountReceiverAccountAmount(cryptoTransfer, receiver),
+                format("Is %s the receiver account amount.", receiver));
     }
 
     private void testRawBytes(Transaction transaction, byte[] expectedBytes) {

@@ -43,7 +43,6 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
-import com.hedera.mirror.importer.repository.CustomFeeHistoryRepository;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -119,9 +118,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @Resource
     protected CustomFeeRepository customFeeRepository;
-
-    @Resource
-    protected CustomFeeHistoryRepository customFeeHistoryRepository;
 
     @Resource
     protected DomainBuilder domainBuilder;

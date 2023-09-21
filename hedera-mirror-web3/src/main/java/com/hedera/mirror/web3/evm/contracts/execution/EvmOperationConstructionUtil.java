@@ -58,6 +58,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -93,25 +94,29 @@ public class EvmOperationConstructionUtil {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final boolean isEstimate) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
+        final var precompileContractRegistry = new PrecompileContractRegistry();
+        MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
         return Map.of(
                 EVM_VERSION_0_30,
-                () -> new MessageCallProcessor(evm, new PrecompileContractRegistry()),
+                () -> new MessageCallProcessor(evm, precompileContractRegistry),
                 EVM_VERSION_0_34,
                 () -> new MirrorEvmMessageCallProcessor(
                         autoCreationLogic,
                         entityAddressSequencer,
                         mirrorEvmContractAliases,
                         evm,
-                        new PrecompileContractRegistry(),
+                        precompileContractRegistry,
                         precompiles(
                                 mirrorNodeEvmProperties,
                                 precompileMapper,
                                 gasCalculator,
                                 basicHbarCentExchange,
-                                prngSystemPrecompiledContract)));
+                                prngSystemPrecompiledContract,
+                                isEstimate)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(
@@ -119,12 +124,17 @@ public class EvmOperationConstructionUtil {
             final PrecompileMapper precompileMapper,
             final GasCalculator gasCalculator,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final boolean isEstimate) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
-                evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
+                evmFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                new EvmHTSPrecompiledContract(evmFactory),
+                isEstimate);
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));

@@ -23,7 +23,6 @@ dependencies {
     implementation(project(":protobuf"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.fasterxml.jackson.core:jackson-core")
-    implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.ongres.scram:client")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-core")

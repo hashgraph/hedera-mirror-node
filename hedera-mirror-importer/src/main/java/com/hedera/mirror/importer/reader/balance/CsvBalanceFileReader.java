@@ -103,7 +103,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
                             count.incrementAndGet();
                             return accountBalance;
                         } catch (InvalidDatasetException ex) {
-                            log.error(ex);
+                            log.error("Error reading line", ex);
                             return null;
                         }
                     })

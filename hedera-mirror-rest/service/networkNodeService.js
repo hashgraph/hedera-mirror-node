@@ -31,15 +31,6 @@ import entityId from '../entityId.js';
  * Network node business model
  */
 class NetworkNodeService extends BaseService {
-  static unreleasedSupplyAccounts = (column) =>
-    config.network.unreleasedSupplyAccounts
-      .map((range) => {
-        const from = entityId.parse(range.from).getEncodedId();
-        const to = entityId.parse(range.to).getEncodedId();
-        return `(${column} >= ${from} and ${column} <= ${to})`;
-      })
-      .join(' or ');
-
   // add node filter
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
       select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
@@ -86,10 +77,13 @@ class NetworkNodeService extends BaseService {
       ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}
     left join ${NodeStake.tableAlias} on ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} =
       ${NodeStake.getFullName(NodeStake.NODE_ID)}`;
-
   static networkStakeQuery = `select ${NetworkStake.MAX_STAKING_REWARD_RATE_PER_HBAR},
+         ${NetworkStake.MAX_STAKE_REWARDED},
+         ${NetworkStake.MAX_TOTAL_REWARD},
          ${NetworkStake.NODE_REWARD_FEE_DENOMINATOR},
          ${NetworkStake.NODE_REWARD_FEE_NUMERATOR},
+         ${NetworkStake.RESERVED_STAKING_REWARDS},
+         ${NetworkStake.REWARD_BALANCE_THRESHOLD},
          ${NetworkStake.STAKE_TOTAL},
          ${NetworkStake.STAKING_PERIOD},
          ${NetworkStake.STAKING_PERIOD_DURATION},
@@ -97,10 +91,20 @@ class NetworkNodeService extends BaseService {
          ${NetworkStake.STAKING_REWARD_FEE_DENOMINATOR},
          ${NetworkStake.STAKING_REWARD_FEE_NUMERATOR},
          ${NetworkStake.STAKING_REWARD_RATE},
-         ${NetworkStake.STAKING_START_THRESHOLD}
+         ${NetworkStake.STAKING_START_THRESHOLD},
+         ${NetworkStake.UNRESERVED_STAKING_REWARD_BALANCE}
       from ${NetworkStake.tableName}
       where ${NetworkStake.CONSENSUS_TIMESTAMP} =
             (select max(${NetworkStake.CONSENSUS_TIMESTAMP}) from ${NetworkStake.tableName})`;
+
+  static unreleasedSupplyAccounts = (column) =>
+    config.network.unreleasedSupplyAccounts
+      .map((range) => {
+        const from = entityId.parse(range.from).getEncodedId();
+        const to = entityId.parse(range.to).getEncodedId();
+        return `(${column} >= ${from} and ${column} <= ${to})`;
+      })
+      .join(' or ');
 
   static networkSupplyQuery = `
     with unreleased as (

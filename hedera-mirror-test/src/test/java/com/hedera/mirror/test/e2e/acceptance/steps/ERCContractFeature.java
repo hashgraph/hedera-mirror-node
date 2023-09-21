@@ -75,6 +75,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
+    private String spenderAccountAlias;
     private ExpandedAccountId spenderAccountIdForAllSerials;
     private ExpandedAccountId ecdsaAccount;
     private DeployedContract deployedErcContract;
@@ -315,8 +316,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .build();
 
         var getApprovedResponse = mirrorClient.contractsCall(contractCallGetApproved);
-        assertThat(getApprovedResponse.getResultAsAddress())
-                .isEqualTo(spenderAccountId.getAccountId().toSolidityAddress());
+        assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo(spenderAccountAlias);
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
@@ -372,6 +372,7 @@ public class ERCContractFeature extends AbstractFeature {
         var nftId = new NftId(tokenIds.get(1), serial.get(0));
 
         spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        spenderAccountAlias = spenderAccountId.getPublicKey().toEvmAddress().toString();
         networkTransactionResponse = accountClient.approveNft(nftId, spenderAccountId.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -432,6 +433,7 @@ public class ERCContractFeature extends AbstractFeature {
                 tokenIds.get(0),
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 ecdsaAccount.getAccountId(),
+                ecdsaAccount.getPrivateKey(),
                 500);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 

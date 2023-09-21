@@ -61,7 +61,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             final TokenAccessor tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final StoreImpl store) {
+            final Store store) {
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.abstractCodeCache = abstractCodeCache;

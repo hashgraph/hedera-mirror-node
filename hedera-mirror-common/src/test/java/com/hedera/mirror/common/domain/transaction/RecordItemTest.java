@@ -61,6 +61,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -70,20 +71,6 @@ import org.springframework.data.util.Version;
 @SuppressWarnings("deprecation")
 class RecordItemTest {
 
-    private static final Version DEFAULT_HAPI_VERSION = new Version(0, 22, 0);
-    private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
-            .setSignedTransactionBytes(SignedTransaction.getDefaultInstance().getBodyBytes())
-            .build();
-    private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
-    private static final TransactionRecord DEFAULT_RECORD = TransactionRecord.getDefaultInstance();
-    private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
-
-    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
-            .setTransactionFee(10L)
-            .setMemo("memo")
-            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
-            .build();
-
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder()
             .addSigPair(SignaturePair.newBuilder()
                     .setEd25519(ByteString.copyFromUtf8("ed25519"))
@@ -91,14 +78,28 @@ class RecordItemTest {
                     .build())
             .build();
 
+    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder()
+            .setTransactionFee(10L)
+            .setMemo("memo")
+            .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+            .build();
+
     private static final SignedTransaction SIGNED_TRANSACTION = SignedTransaction.newBuilder()
             .setBodyBytes(TRANSACTION_BODY.toByteString())
             .setSigMap(SIGNATURE_MAP)
             .build();
+    private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
+            .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
+            .build();
+    private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
+    private static final Version DEFAULT_HAPI_VERSION = new Version(0, 22, 0);
+    private static final byte[] DEFAULT_RECORD_BYTES =
+            TransactionRecord.getDefaultInstance().toByteArray();
 
     private static final TransactionRecord TRANSACTION_RECORD = TransactionRecord.newBuilder()
             .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
             .setMemo("memo")
+            .setTransactionHash(ByteString.copyFrom(RandomUtils.nextBytes(32)))
             .build();
 
     @CsvSource({
@@ -123,7 +124,7 @@ class RecordItemTest {
             parent = RecordItem.builder()
                     .hapiVersion(DEFAULT_HAPI_VERSION)
                     .transactionRecord(parentRecord.build())
-                    .transaction(Transaction.newBuilder().build())
+                    .transaction(DEFAULT_TRANSACTION)
                     .build();
         }
 
@@ -133,9 +134,29 @@ class RecordItemTest {
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .parent(parent)
                 .transactionRecord(childRecord.build())
-                .transaction(Transaction.newBuilder().build())
+                .transaction(DEFAULT_TRANSACTION)
                 .build();
         assertThat(recordItem.isSuccessful()).isEqualTo(expected);
+    }
+
+    @Test
+    void getTransactionHashEthereum() {
+        var recordItem = RecordItem.builder()
+                .transaction(DEFAULT_TRANSACTION)
+                .transactionRecord(TRANSACTION_RECORD)
+                .build();
+        assertThat(recordItem.getTransactionHash())
+                .isEqualTo(TRANSACTION_RECORD.getTransactionHash().toByteArray());
+    }
+
+    @Test
+    void getTransactionHashNotEthereum() {
+        var recordItem = RecordItem.builder()
+                .transaction(DEFAULT_TRANSACTION)
+                .transactionRecord(TRANSACTION_RECORD)
+                .build();
+        assertThat(recordItem.getTransactionHash())
+                .isEqualTo(TRANSACTION_RECORD.getTransactionHash().toByteArray());
     }
 
     @ParameterizedTest
@@ -191,16 +212,6 @@ class RecordItemTest {
     }
 
     @Test
-    void testBadTransactionBytesThrowException() {
-        testException(new byte[] {0x0, 0x1}, DEFAULT_RECORD_BYTES, RecordItem.BAD_TRANSACTION_BYTES_MESSAGE);
-    }
-
-    @Test
-    void testBadRecordBytesThrowException() {
-        testException(DEFAULT_TRANSACTION_BYTES, new byte[] {0x0, 0x1}, RecordItem.BAD_RECORD_BYTES_MESSAGE);
-    }
-
-    @Test
     void testTransactionBytesWithoutTransactionBodyThrowException() {
         testException(
                 Transaction.newBuilder().build().toByteArray(),
@@ -223,7 +234,7 @@ class RecordItemTest {
     }
 
     @Test
-    void testWithBodyProto() {
+    void testWithBodyProto() throws Exception {
         // An encoded protobuf Transaction with the body set in TransactionBody, as seen in an older proto version
         byte[] transactionFromProto = Base64.decodeBase64("CgoYCjIEbWVtb3IAGhkKFwoMcHViS2V5UHJlZml4GgdlZDI1NTE5");
 
@@ -234,8 +245,8 @@ class RecordItemTest {
 
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .transactionRecordBytes(TRANSACTION_RECORD.toByteArray())
-                .transactionBytes(transactionFromProto)
+                .transactionRecord(TRANSACTION_RECORD)
+                .transaction(Transaction.parseFrom(transactionFromProto))
                 .build();
         assertRecordItem(expectedTransaction, recordItem);
     }
@@ -572,8 +583,8 @@ class RecordItemTest {
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
         assertThatThrownBy(() -> RecordItem.builder()
                         .hapiVersion(DEFAULT_HAPI_VERSION)
-                        .transactionRecordBytes(recordBytes)
-                        .transactionBytes(transactionBytes)
+                        .transactionRecord(TransactionRecord.parseFrom(recordBytes))
+                        .transaction(Transaction.parseFrom(transactionBytes))
                         .build()
                         .getTransactionBody())
                 .isInstanceOf(ProtobufException.class)
@@ -585,8 +596,6 @@ class RecordItemTest {
         assertThat(recordItem.getTransaction()).isEqualTo(transaction);
         assertThat(recordItem.getTransactionRecord()).isEqualTo(TRANSACTION_RECORD);
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
-        assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
-        assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());
         assertThat(recordItem.getSignatureMap()).isEqualTo(SIGNATURE_MAP);
     }
 }

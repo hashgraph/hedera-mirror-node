@@ -109,6 +109,7 @@ The following parameters can be used to configure a web3 test:
 - SERIAL_NUMBER - 64 character hex encoded nft serial number without `0x` prefix
 - SPENDER_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - TOKEN_ADDRESS - 64 character hex encoded token address without `0x` prefix
+- RUN_ESTIMATE_TESTS - If set to true, estimate gas tests will be run.
 
 For k6 to be run we need to deploy contracts first. For that, we can use Hedera SDK.
 Example for ERC_CONTRACT deployment with js SDK
