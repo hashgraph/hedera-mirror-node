@@ -326,14 +326,16 @@ class TokenTest {
         final long serialNumber1 = 11L;
 
         var tokenModificationResult = subject.burn(treasuryRel, List.of(serialNumber0, serialNumber1));
-        subject = tokenModificationResult.token();
+        var newToken = tokenModificationResult.token();
         treasuryRel = tokenModificationResult.tokenRelationship();
         treasuryAccount = treasuryRel.getAccount();
 
-        assertEquals(initialSupply - 2, subject.getTotalSupply());
+        assertEquals(initialSupply - 2, newToken.getTotalSupply());
+        assertEquals(initialSupply, subject.getTotalSupply());
         assertEquals(-2, treasuryRel.getBalanceChange());
-        assertTrue(subject.hasRemovedUniqueTokens());
-        final var removedUniqueTokens = subject.removedUniqueTokens();
+        assertFalse(subject.hasRemovedUniqueTokens());
+        assertTrue(newToken.hasRemovedUniqueTokens());
+        final var removedUniqueTokens = newToken.removedUniqueTokens();
         assertEquals(2, removedUniqueTokens.size());
         assertEquals(serialNumber0, removedUniqueTokens.get(0).getSerialNumber());
         assertEquals(serialNumber1, removedUniqueTokens.get(1).getSerialNumber());
@@ -348,15 +350,17 @@ class TokenTest {
 
         var tokenModificationResult = subject.mint(
                 treasuryRel, List.of(ByteString.copyFromUtf8("memo")), RichInstant.fromJava(Instant.now()));
-        subject = tokenModificationResult.token();
+        var newToken = tokenModificationResult.token();
         treasuryRel = tokenModificationResult.tokenRelationship();
         treasuryAccount = treasuryRel.getAccount();
 
-        assertEquals(initialSupply + 1, subject.getTotalSupply());
+        assertEquals(initialSupply + 1, newToken.getTotalSupply());
+        assertEquals(initialSupply, subject.getTotalSupply());
         assertEquals(1, treasuryRel.getBalanceChange());
-        assertTrue(subject.hasMintedUniqueTokens());
-        assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
-        assertEquals(1, subject.getLastUsedSerialNumber());
+        assertTrue(newToken.hasMintedUniqueTokens());
+        assertFalse(subject.hasMintedUniqueTokens());
+        assertEquals(1, newToken.mintedUniqueTokens().get(0).getSerialNumber());
+        assertEquals(1, newToken.getLastUsedSerialNumber());
         assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, subject.getType());
         assertEquals(numPositiveBalances + 1, treasuryAccount.getNumPositiveBalances());
     }
@@ -481,16 +485,18 @@ class TokenTest {
         nonTreasuryRel = nonTreasuryRel.setBalance(100);
 
         var tokenModificationResult = subject.wipe(nonTreasuryRel, List.of(1L));
-        subject = tokenModificationResult.token();
+        var newToken = tokenModificationResult.token();
         nonTreasuryRel = tokenModificationResult.tokenRelationship();
 
-        assertEquals(initialSupply - 1, subject.getTotalSupply());
+        assertEquals(initialSupply - 1, newToken.getTotalSupply());
+        assertEquals(initialSupply, subject.getTotalSupply());
         assertEquals(99, nonTreasuryRel.getBalanceChange());
         assertEquals(99, nonTreasuryRel.getBalance());
-        assertTrue(subject.hasRemovedUniqueTokens());
-        assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
-        assertTrue(subject.hasChangedSupply());
-        assertEquals(21_000_000, subject.getMaxSupply());
+        assertTrue(newToken.hasRemovedUniqueTokens());
+        assertFalse(subject.hasRemovedUniqueTokens());
+        assertEquals(1, newToken.removedUniqueTokens().get(0).getSerialNumber());
+        assertTrue(newToken.hasChangedSupply());
+        assertEquals(21_000_000, newToken.getMaxSupply());
         assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
     }
 
