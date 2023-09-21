@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -794,6 +795,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         serviceParameters.isStatic(),
                         true)
                 .getGasUsed();
+
+        assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
 
         ThreadLocalHolder.cleanThread();
         return result;
