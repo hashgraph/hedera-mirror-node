@@ -475,10 +475,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
 
-        if (entityProperties
-                .getPersist()
-                .shouldPersistTransactionHash(
-                        TransactionType.of(transaction.getType()), transaction.getConsensusTimestamp())) {
+        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.of(transaction.getType()))) {
             transactionHashes.add(transaction.toTransactionHash());
         }
 
