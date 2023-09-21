@@ -939,7 +939,7 @@ public class Token {
      * @param removedUniqueTokens
      * @return new instance of {@link Token} with updated {@link #removedUniqueTokens} property
      */
-    private Token createNewTokenWithRemoveddUniqueTokens(Token oldToken, List<UniqueToken> removedUniqueTokens) {
+    private Token createNewTokenWithRemovedUniqueTokens(Token oldToken, List<UniqueToken> removedUniqueTokens) {
         return new Token(
                 oldToken.entityId,
                 oldToken.id,
@@ -1738,16 +1738,8 @@ public class Token {
         return createNewTokenWithMintedUniqueTokens(this, mintedUniqueTokens);
     }
 
-    public List<UniqueToken> getMintedUniqueTokens() {
-        return mintedUniqueTokens;
-    }
-
-    public List<UniqueToken> getRemovedUniqueTokens() {
-        return removedUniqueTokens;
-    }
-
     public Token setRemovedUniqueTokens(final List<UniqueToken> removedUniqueTokens) {
-        return createNewTokenWithRemoveddUniqueTokens(this, removedUniqueTokens);
+        return createNewTokenWithRemovedUniqueTokens(this, removedUniqueTokens);
     }
 
     public boolean hasFreezeKey() {
