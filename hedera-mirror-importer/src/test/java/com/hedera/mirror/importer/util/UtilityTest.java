@@ -20,9 +20,9 @@ import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_DEFAULT;
 import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
@@ -158,49 +158,33 @@ public class UtilityTest {
     @CsvSource(
             textBlock =
                     """
-                plain message, , plain message
-                {} arg message, 'one, exception', one arg message
-                {} {} message, 'a, b', a b message
-                {} {} {} {}, 'a, b, c, d, exception', a b c d
-            """)
+                                plain message, , plain message,
+                                {} arg message, 'one, exception', one arg message, java.lang.RuntimeException: provided cause
+                                {} {} message, 'a, b', a b message,
+                                {} {} {} {}, 'a, b, c, d, exception', a b c d, java.lang.RuntimeException: provided cause
+                            """)
     void handleRecoverableErrorLogOrThrow(
             String format,
             @ConvertWith(ObjectArrayConverter.class) Object[] args,
             String formatted,
+            String causeLogOutput,
             CapturedOutput capturedOutput) {
 
         var causeProvided = args.length > 0 && args[args.length - 1] instanceof Throwable throwable ? throwable : null;
 
-        /*
-         * With halt on error not set, verify expected log output is generated.
-         */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "false");
-        if (args.length == 0) {
-            Utility.handleRecoverableError(format);
-        } else {
-            Utility.handleRecoverableError(format, args);
-        }
-
+        Utility.handleRecoverableError(format, args);
         var allOutput = capturedOutput.getAll();
         assertThat(allOutput).contains(RECOVERABLE_ERROR + formatted);
         if (causeProvided != null) {
-            assertThat(allOutput).contains(causeProvided.getClass().getName() + ": " + causeProvided.getMessage());
+            assertThat(allOutput).contains(causeLogOutput);
         }
 
-        /*
-         * With halt on error set, ensure ParserException is thrown with expected information.
-         */
         System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
-        ParserException parserException;
-        if (args.length == 0) {
-            parserException = assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format));
-        } else {
-            parserException = assertThrows(ParserException.class, () -> Utility.handleRecoverableError(format, args));
-        }
-        assertThat(parserException.getMessage()).isEqualTo(formatted);
-        if (causeProvided != null) {
-            assertThat(parserException.getCause()).isSameAs(causeProvided);
-        }
+        assertThatThrownBy(() -> Utility.handleRecoverableError(format, args))
+                .isInstanceOf(ParserException.class)
+                .hasMessage(formatted)
+                .hasCause(causeProvided);
     }
 
     private static class ObjectArrayConverter extends SimpleArgumentConverter {
