@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.87.2")
-class AddNftHistoryTimestampRangesMigrationTest extends IntegrationTest {
+class AddNftHistoryRangesMigrationTest extends IntegrationTest {
 
     private static final RowMapper<NftHistory> NFT_HISTORY_ROW_MAPPER = rowMapper(NftHistory.class);
 
@@ -138,6 +138,47 @@ class AddNftHistoryTimestampRangesMigrationTest extends IntegrationTest {
                 .nftHistory()
                 .customize(n ->
                         n.tokenId(tokenId2 + 1).serialNumber(serialNumber).timestampRange(Range.closedOpen(4L, 5L)))
+                .persist());
+
+        // An nft that has a history that has a missing timestamp range
+        var nft = domainBuilder
+                .nft()
+                .customize(n -> n.timestampRange(Range.atLeast(10L)))
+                .persist();
+        var nftHistory = domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(nft.getAccountId())
+                        .createdTimestamp(nft.getCreatedTimestamp())
+                        .metadata(nft.getMetadata())
+                        .serialNumber(nft.getSerialNumber())
+                        .timestampRange(Range.closedOpen(1L, 8L))
+                        .tokenId(nft.getTokenId()))
+                .persist();
+        expectedNftHistories.add(nftHistory);
+        var splicedNftHistory3 = domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(nftHistory.getAccountId())
+                        .createdTimestamp(nftHistory.getCreatedTimestamp())
+                        .metadata(nftHistory.getMetadata())
+                        .serialNumber(nftHistory.getSerialNumber())
+                        .timestampRange(Range.closedOpen(8L, 10L))
+                        .tokenId(nftHistory.getTokenId()))
+                .get();
+        expectedNftHistories.add(splicedNftHistory3);
+
+        // An nft that does not have any missing history
+        var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.timestampRange(Range.atLeast(10L)))
+                .persist();
+        expectedNftHistories.add(domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(nft2.getAccountId())
+                        .createdTimestamp(nft2.getCreatedTimestamp())
+                        .metadata(nft2.getMetadata())
+                        .serialNumber(nft2.getSerialNumber())
+                        .timestampRange(Range.closedOpen(1L, 10L))
+                        .tokenId(nft.getTokenId()))
                 .persist());
 
         // when
