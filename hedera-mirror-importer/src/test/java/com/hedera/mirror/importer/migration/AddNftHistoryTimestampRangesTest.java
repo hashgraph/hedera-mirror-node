@@ -131,13 +131,13 @@ class AddNftHistoryTimestampRangesMigrationTest extends IntegrationTest {
         expectedNftHistories.add(domainBuilder
                 .nftHistory()
                 .customize(n ->
-                        n.tokenId(tokenId2).serialNumber(serialNumber + 1).timestampRange(Range.closedOpen(2L, 3L)))
+                        n.tokenId(tokenId2).serialNumber(serialNumber + 1).timestampRange(Range.closedOpen(4L, 5L)))
                 .persist());
         // A history without any other matching token id entries
         expectedNftHistories.add(domainBuilder
                 .nftHistory()
                 .customize(n ->
-                        n.tokenId(tokenId2 + 1).serialNumber(serialNumber).timestampRange(Range.closedOpen(2L, 3L)))
+                        n.tokenId(tokenId2 + 1).serialNumber(serialNumber).timestampRange(Range.closedOpen(4L, 5L)))
                 .persist());
 
         // when
