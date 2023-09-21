@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.downloader.record;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimaps;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -39,6 +37,7 @@ import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.sidecar.SidecarFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
+import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -162,8 +161,8 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
             case BYTECODE -> SidecarType.CONTRACT_BYTECODE_VALUE;
             case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE_VALUE;
             default -> {
-                log.error(
-                        RECOVERABLE_ERROR + "Unknown sidecar transaction record type at {}: {}",
+                Utility.handleRecoverableError(
+                        "Unknown sidecar transaction record type at {}: {}",
                         transactionSidecarRecord.getConsensusTimestamp(),
                         transactionSidecarRecord.getSidecarRecordsCase());
                 yield SidecarType.SIDECAR_TYPE_UNKNOWN_VALUE;
