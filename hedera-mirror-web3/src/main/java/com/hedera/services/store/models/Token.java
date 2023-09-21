@@ -932,7 +932,51 @@ public class Token {
     }
 
     /**
-     * Creates new instance of {@link Token} with updated decimals in order to keep the object's immutability and avoid
+     * Creates new instance of {@link Token} with updated removed unique tokens in order to keep the object's immutability and avoid
+     * entry points for changing the state.
+     *
+     * @param oldToken
+     * @param removedUniqueTokens
+     * @return new instance of {@link Token} with updated {@link #removedUniqueTokens} property
+     */
+    private Token createNewTokenWithRemoveddUniqueTokens(Token oldToken, List<UniqueToken> removedUniqueTokens) {
+        return new Token(
+                oldToken.entityId,
+                oldToken.id,
+                oldToken.mintedUniqueTokens,
+                removedUniqueTokens,
+                oldToken.loadedUniqueTokens,
+                oldToken.supplyHasChanged,
+                oldToken.type,
+                oldToken.supplyType,
+                oldToken.totalSupply,
+                oldToken.maxSupply,
+                oldToken.kycKey,
+                oldToken.freezeKey,
+                oldToken.supplyKey,
+                oldToken.wipeKey,
+                oldToken.adminKey,
+                oldToken.feeScheduleKey,
+                oldToken.pauseKey,
+                oldToken.frozenByDefault,
+                oldToken.treasury,
+                oldToken.autoRenewAccount,
+                oldToken.deleted,
+                oldToken.paused,
+                oldToken.autoRemoved,
+                oldToken.expiry,
+                oldToken.createdTimestamp,
+                oldToken.isNew,
+                oldToken.memo,
+                oldToken.name,
+                oldToken.symbol,
+                oldToken.decimals,
+                oldToken.autoRenewPeriod,
+                oldToken.lastUsedSerialNumber,
+                oldToken.customFees);
+    }
+    /**
+     * Creates new instance of {@link Token} with updated minted unique tokens in order to keep the object's immutability and avoid
      * entry points for changing the state.
      *
      * @param oldToken
@@ -1428,8 +1472,9 @@ public class Token {
             // Treasury
             final var uniqueToken =
                     new UniqueToken(id, newLastUsedSerialNumber, creationTime, Id.DEFAULT, Id.DEFAULT, m.toByteArray());
-            mintedUniqueTokens.add(uniqueToken);
-            tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(mintedUniqueTokens);
+            final var newMintedTokens = new ArrayList<>(mintedUniqueTokens);
+            newMintedTokens.add(uniqueToken);
+            tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(newMintedTokens);
         }
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
         var newToken = createNewTokenWithNewTreasury(
@@ -1462,6 +1507,7 @@ public class Token {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
         final var treasuryId = treasury.getId();
+        final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
         for (final long serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
             validateTrue(uniqueToken != null, FAIL_INVALID);
@@ -1471,13 +1517,14 @@ public class Token {
             // We have a different workflow in setting the owner value
             final var treasuryIsOwner = uniqueToken.getOwner().equals(treasuryId);
             validateTrue(treasuryIsOwner, TREASURY_MUST_OWN_BURNED_NFT);
-            removedUniqueTokens.add(
+            newRemovedUniqueTokens.add(
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
         final var numBurned = serialNumbers.size();
         var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
         var tokenMod = changeSupply(treasuryRel, -numBurned, FAIL_INVALID, false);
-        var newToken = createNewTokenWithNewTreasury(tokenMod.token(), newTreasury);
+        final var tokenWithRemovedUniqueTokens = tokenMod.token().setRemovedUniqueTokens(newRemovedUniqueTokens);
+        var newToken = createNewTokenWithNewTreasury(tokenWithRemovedUniqueTokens, newTreasury);
         return new TokenModificationResult(newToken, tokenMod.tokenRelationship());
     }
 
@@ -1533,8 +1580,9 @@ public class Token {
         final var newTotalSupply = totalSupply - serialNumbers.size();
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
+        final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
         for (final long serialNum : serialNumbers) {
-            removedUniqueTokens.add(new UniqueToken(
+            newRemovedUniqueTokens.add(new UniqueToken(
                     id, serialNum, RichInstant.MISSING_INSTANT, account.getId(), Id.DEFAULT, new byte[] {}));
         }
 
@@ -1542,10 +1590,11 @@ public class Token {
             final var currentNumPositiveBalances = account.getNumPositiveBalances();
             account = account.setNumPositiveBalances(currentNumPositiveBalances - 1);
         }
-
+        final var tokenWithRemovedUniqueTokens = setRemovedUniqueTokens(newRemovedUniqueTokens);
         var newAccountRel = accountRel.setAccount(account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size()));
         newAccountRel = newAccountRel.setBalance(newAccountBalance);
-        return new TokenModificationResult(createNewTokenWithNewTotalSupply(this, newTotalSupply), newAccountRel);
+        return new TokenModificationResult(
+                createNewTokenWithNewTotalSupply(tokenWithRemovedUniqueTokens, newTotalSupply), newAccountRel);
     }
 
     public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
@@ -1687,6 +1736,18 @@ public class Token {
 
     public Token setMintedUniqueTokens(final List<UniqueToken> mintedUniqueTokens) {
         return createNewTokenWithMintedUniqueTokens(this, mintedUniqueTokens);
+    }
+
+    public List<UniqueToken> getMintedUniqueTokens() {
+        return mintedUniqueTokens;
+    }
+
+    public List<UniqueToken> getRemovedUniqueTokens() {
+        return removedUniqueTokens;
+    }
+
+    public Token setRemovedUniqueTokens(final List<UniqueToken> removedUniqueTokens) {
+        return createNewTokenWithRemoveddUniqueTokens(this, removedUniqueTokens);
     }
 
     public boolean hasFreezeKey() {
