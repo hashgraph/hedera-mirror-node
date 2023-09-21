@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
 import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -26,6 +25,7 @@ import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
+import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
@@ -116,7 +116,7 @@ public class NotifyingEntityListener implements BatchEntityListener {
 
             return json;
         } catch (Exception e) {
-            log.error(RECOVERABLE_ERROR + "Error serializing topicMessage to json", topicMessage, e);
+            Utility.handleRecoverableError("Error serializing topicMessage to json", topicMessage, e);
             return null;
         }
     }

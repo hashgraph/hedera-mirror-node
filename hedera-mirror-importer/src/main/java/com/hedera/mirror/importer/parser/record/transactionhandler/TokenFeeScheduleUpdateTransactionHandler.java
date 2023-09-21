@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.transaction.TransactionType.TOKENCREATION;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -32,6 +31,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.HashSet;
@@ -123,7 +123,7 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
                     fee = royaltyFee;
                     break;
                 default:
-                    log.error(RECOVERABLE_ERROR + "Invalid CustomFee FeeCase at {}: {}", consensusTimestamp, feeCase);
+                    Utility.handleRecoverableError("Invalid CustomFee FeeCase at {}: {}", consensusTimestamp, feeCase);
                     continue;
             }
 
@@ -152,8 +152,8 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
     /**
      * Parse protobuf FixedFee object to domain FixedFee object.
      *
-     * @param protoFixedFee  the protobuf FixedFee object
-     * @param tokenId   the attached token id
+     * @param protoFixedFee the protobuf FixedFee object
+     * @param tokenId       the attached token id
      * @return whether the fee is paid in the attached token
      */
     private FixedFee parseFixedFee(com.hederahashgraph.api.proto.java.FixedFee protoFixedFee, EntityId tokenId) {
@@ -171,7 +171,7 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
     /**
      * Parse protobuf FractionalFee object to domain FractionalFee object.
      *
-     * @param protoFractionalFee  the protobuf FractionalFee object
+     * @param protoFractionalFee the protobuf FractionalFee object
      */
     private FractionalFee parseFractionalFee(com.hederahashgraph.api.proto.java.FractionalFee protoFractionalFee) {
         var fractionalFee = new FractionalFee();
@@ -189,7 +189,7 @@ class TokenFeeScheduleUpdateTransactionHandler extends AbstractTransactionHandle
     /**
      * Parse protobuf RoyaltyFee object to domain RoyaltyFee object.
      *
-     * @param protoRoyaltyFee  the protobuf RoyaltyFee object
+     * @param protoRoyaltyFee the protobuf RoyaltyFee object
      */
     private RoyaltyFee parseRoyaltyFee(
             com.hederahashgraph.api.proto.java.RoyaltyFee protoRoyaltyFee, EntityId tokenId) {

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -99,9 +97,8 @@ public class ContractResultServiceImpl implements ContractResultService {
                 && !contractCallOrCreate
                 && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
         if (isRecoverableError) {
-            log.error(
-                    RECOVERABLE_ERROR + "Invalid contract id for contract result at {}",
-                    recordItem.getConsensusTimestamp());
+            Utility.handleRecoverableError(
+                    "Invalid contract id for contract result at {}", recordItem.getConsensusTimestamp());
         }
 
         recordItem.addEntityId(contractId);
@@ -165,13 +162,11 @@ public class ContractResultServiceImpl implements ContractResultService {
                     contractAction.setCallerType(EntityType.ACCOUNT);
                     contractAction.setCaller(EntityId.of(action.getCallingAccount()));
                 }
-                default -> log.error(
-                        RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}",
-                        consensusTimestamp,
-                        action.getCallerCase());
+                default -> Utility.handleRecoverableError(
+                        "Invalid caller for contract action at {}: {}", consensusTimestamp, action.getCallerCase());
             }
         } catch (InvalidEntityException e) {
-            log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp, action);
+            Utility.handleRecoverableError("Invalid caller for contract action at {}: {}", consensusTimestamp, action);
         }
 
         try {
@@ -187,16 +182,16 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
         } catch (InvalidEntityException e) {
             // In some cases, consensus nodes can send entity IDs with negative numbers.
-            log.error(
-                    RECOVERABLE_ERROR + "Invalid recipient for contract action at {}: {}", consensusTimestamp, action);
+            Utility.handleRecoverableError(
+                    "Invalid recipient for contract action at {}: {}", consensusTimestamp, action);
         }
 
         switch (action.getResultDataCase()) {
             case ERROR -> contractAction.setResultData(DomainUtils.toBytes(action.getError()));
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
-            default -> log.error(
-                    RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
+            default -> Utility.handleRecoverableError(
+                    "Invalid result data for contract action at {}: {}",
                     consensusTimestamp,
                     action.getResultDataCase());
         }

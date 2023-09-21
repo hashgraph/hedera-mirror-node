@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -53,6 +52,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ContractResultServiceImplTest {
+    private static final String RECOVERABLE_ERROR_LOG_PREFIX = "Recoverable error. ";
+
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final EntityProperties entityProperties = new EntityProperties();
     private final DomainBuilder domainBuilder = new DomainBuilder();
@@ -73,6 +74,30 @@ class ContractResultServiceImplTest {
     private TransactionHandler transactionHandler;
 
     private ContractResultService contractResultService;
+
+    private static Stream<Arguments> provideEntities() {
+        Function<RecordItemBuilder, RecordItem> withDefaultContractId =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setContractCallResult(
+                                builder.contractFunctionResult(ContractID.getDefaultInstance())))
+                        .build();
+        Function<RecordItemBuilder, RecordItem> withoutDefaultContractId =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
+                        .build();
+
+        Function<RecordItemBuilder, RecordItem> contractCreate =
+                (RecordItemBuilder builder) -> builder.contractCreate().build();
+
+        return Stream.of(
+                Arguments.of(withoutDefaultContractId, null, true),
+                Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
+                Arguments.of(withDefaultContractId, null, false),
+                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
+                Arguments.of(contractCreate, EntityId.EMPTY, false),
+                Arguments.of(contractCreate, null, false),
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false));
+    }
 
     @BeforeEach
     void beforeEach() {
@@ -102,33 +127,9 @@ class ContractResultServiceImplTest {
         verify(entityListener, times(1)).onContractResult(any());
 
         if (recoverableError) {
-            assertThat(capturedOutput.getAll()).containsIgnoringCase(RECOVERABLE_ERROR);
+            assertThat(capturedOutput.getAll()).containsIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
         } else {
-            assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR);
+            assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
         }
-    }
-
-    private static Stream<Arguments> provideEntities() {
-        Function<RecordItemBuilder, RecordItem> withDefaultContractId =
-                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
-                        .record(x -> x.setContractCallResult(
-                                builder.contractFunctionResult(ContractID.getDefaultInstance())))
-                        .build();
-        Function<RecordItemBuilder, RecordItem> withoutDefaultContractId =
-                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
-                        .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
-                        .build();
-
-        Function<RecordItemBuilder, RecordItem> contractCreate =
-                (RecordItemBuilder builder) -> builder.contractCreate().build();
-
-        return Stream.of(
-                Arguments.of(withoutDefaultContractId, null, true),
-                Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
-                Arguments.of(withDefaultContractId, null, false),
-                Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
-                Arguments.of(contractCreate, EntityId.EMPTY, false),
-                Arguments.of(contractCreate, null, false),
-                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false));
     }
 }
