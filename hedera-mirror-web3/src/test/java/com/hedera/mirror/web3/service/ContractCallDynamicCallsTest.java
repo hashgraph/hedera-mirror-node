@@ -18,8 +18,10 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -28,6 +30,7 @@ import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.assertj.core.data.Percentage;
 
 class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
@@ -48,6 +51,27 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         } else {
             contractCallService.processCall(serviceParameters);
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(DynamicCallsContractFunctions.class)
+    void dynamicCallsTestWithEthEstimateGas(DynamicCallsContractFunctions contractFunctions) {
+        if (contractFunctions.expectedErrorMessage != null) {
+            return;
+        }
+
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                .as("result must be within 5-20% bigger than the gas used from the first call")
+                .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
     }
 
     @RequiredArgsConstructor
