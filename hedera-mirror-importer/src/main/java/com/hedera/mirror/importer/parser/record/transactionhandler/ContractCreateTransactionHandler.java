@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -82,7 +81,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 entity.setAutoRenewAccountId(autoRenewAccount.getId());
                 recordItem.addEntityId(autoRenewAccount);
             } else {
-                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
+                Utility.handleRecoverableError("Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             }
         }
 
@@ -224,8 +223,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             default:
-                log.error(
-                        RECOVERABLE_ERROR + "Invalid InitcodeSourceCase {} at {}",
+                Utility.handleRecoverableError(
+                        "Invalid InitcodeSourceCase {} at {}",
                         transactionBody.getInitcodeSourceCase(),
                         recordItem.getConsensusTimestamp());
                 break;

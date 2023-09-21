@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -26,6 +24,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import jakarta.inject.Named;
 import lombok.CustomLog;
@@ -57,9 +56,8 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
                                 entity.setAutoRenewAccountId(entityId.getId());
                                 recordItem.addEntityId(entityId);
                             },
-                            () -> log.error(
-                                    RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
-                                    recordItem.getConsensusTimestamp()));
+                            () -> Utility.handleRecoverableError(
+                                    "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
