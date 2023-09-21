@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.commons.math3.util.Precision;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -52,7 +52,7 @@ public abstract class AbstractScenario<P extends ScenarioProperties, T> implemen
     protected final Multiset<String> errors = ConcurrentHashMultiset.create();
     protected final StepLong intervalCounter = new StepLong(Clock.SYSTEM, UPDATE_INTERVAL);
     protected final AtomicReference<T> last = new AtomicReference<>();
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final Stopwatch stopwatch = Stopwatch.createStarted();
 
     @Override

@@ -20,10 +20,10 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
 import java.util.Collection;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.cache.CacheManager;
@@ -39,7 +39,7 @@ import org.springframework.transaction.support.TransactionOperations;
 @Import(GrpcIntegrationTest.Config.class)
 public abstract class GrpcIntegrationTest {
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @Resource
     private Collection<CacheManager> cacheManagers;

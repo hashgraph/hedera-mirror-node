@@ -118,6 +118,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.nonce = ethTransaction.nonce;
       this.r = utils.toHexStringNonQuantity(ethTransaction.signatureR);
       this.s = utils.toHexStringNonQuantity(ethTransaction.signatureS);
+      this.to = utils.toHexStringNonQuantity(ethTransaction.toAddress?.length ? ethTransaction.toAddress : contractResult.evmAddress);
       this.type = ethTransaction.type;
       this.v = ethTransaction.recoveryId;
 

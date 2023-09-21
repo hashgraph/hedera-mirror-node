@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.isEstimate;
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -27,6 +28,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -150,7 +152,7 @@ public class EvmConfiguration {
             final TokenAccessorImpl tokenAccessor,
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final StoreImpl store) {
+            final Store store) {
         return new HederaEvmWorldState(
                 mirrorEntityAccess,
                 evmProperties,
@@ -178,7 +180,7 @@ public class EvmConfiguration {
             final MirrorOperationTracer mirrorOperationTracer,
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
-            final StoreImpl store) {
+            final Store store) {
         return new MirrorEvmTxProcessor(
                 worldState,
                 pricesAndFees,
@@ -192,7 +194,8 @@ public class EvmConfiguration {
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngSystemPrecompiledContract),
+                        prngSystemPrecompiledContract,
+                        isEstimate.get()),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,

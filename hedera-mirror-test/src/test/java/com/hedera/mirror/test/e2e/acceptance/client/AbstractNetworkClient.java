@@ -19,6 +19,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountInfo;
+import com.hedera.hashgraph.sdk.AccountInfoQuery;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -38,10 +41,8 @@ import java.util.function.Supplier;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.config.Configurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.retry.support.RetryTemplate;
 
 @Data
@@ -50,7 +51,7 @@ public abstract class AbstractNetworkClient implements Cleanable {
     private static final int MEMO_BYTES_MAX_LENGTH = 100;
 
     protected final Client client;
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final SDKClient sdkClient;
     protected final RetryTemplate retryTemplate;
 
@@ -58,11 +59,6 @@ public abstract class AbstractNetworkClient implements Cleanable {
         this.sdkClient = sdkClient;
         this.client = sdkClient.getClient();
         this.retryTemplate = retryTemplate;
-
-        // Suppress verbose receipt query retry logs
-        if (!log.isDebugEnabled()) {
-            Configurator.setLevel(LogManager.getLogger(TransactionReceiptQuery.class), Level.ERROR);
-        }
     }
 
     @Override
@@ -170,6 +166,13 @@ public abstract class AbstractNetworkClient implements Cleanable {
         var balance = executeQuery(() -> query).hbars;
         log.debug("Account {} balance is {}", accountId, balance);
         return balance.toTinybars();
+    }
+
+    public AccountInfo getAccountInfo(AccountId accountId) {
+        AccountInfoQuery query = new AccountInfoQuery().setAccountId(accountId);
+        AccountInfo accountInfo = executeQuery(() -> query);
+        log.debug("Executed AccountInfoQuery for account {}", accountId);
+        return accountInfo;
     }
 
     protected String getMemo(String message) {

@@ -558,7 +558,7 @@ const ethereumTransactionDefaults = {
   signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
   signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
   signature_v: '0x1b',
-  to_address: null,
+  to_address: '0x0000000000000000000000000000000000001389',
   type: 2,
   value: '0x0',
 };
@@ -1261,6 +1261,7 @@ const addTokenAccount = async (tokenAccount) => {
     associated: true,
     automatic_association: false,
     balance: 0,
+    balance_timestamp: 0,
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
@@ -1274,14 +1275,15 @@ const addTokenAccount = async (tokenAccount) => {
   }
 
   await pool.query(
-    `insert into token_account (account_id, associated, automatic_association, balance, created_timestamp, freeze_status,
+    `insert into token_account (account_id, associated, automatic_association, balance, balance_timestamp, created_timestamp, freeze_status,
                                 kyc_status, timestamp_range, token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
       tokenAccount.automatic_association,
       tokenAccount.balance,
+      tokenAccount.balance_timestamp,
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
@@ -1340,9 +1342,13 @@ const addNetworkStake = async (networkStakeInput) => {
   const networkStake = {
     consensus_timestamp: 0,
     epoch_day: 0,
+    max_stake_rewarded: 10,
     max_staking_reward_rate_per_hbar: 17808,
+    max_total_reward: 20,
     node_reward_fee_denominator: 0,
     node_reward_fee_numerator: 100,
+    reserved_staking_rewards: 30,
+    reward_balance_threshold: 40,
     stake_total: 10000000,
     staking_period: stakingPeriodEnd,
     staking_period_duration: 1440,
@@ -1351,6 +1357,7 @@ const addNetworkStake = async (networkStakeInput) => {
     staking_reward_fee_numerator: 100,
     staking_reward_rate: 100000000000,
     staking_start_threshold: 25000000000000000,
+    unreserved_staking_reward_balance: 50,
     ...networkStakeInput,
   };
   const insertFields = Object.keys(networkStake)

@@ -149,7 +149,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionRepository transactionRepository;
 
-    private static CustomFee deletedDbCustomFees(long consensusTimestamp, EntityId tokenId) {
+    private static CustomFee emptyCustomFees(long consensusTimestamp, EntityId tokenId) {
         CustomFee customFee = new CustomFee();
         customFee.setTokenId(tokenId.getId());
         customFee.setTimestampRange(Range.atLeast(consensusTimestamp));
@@ -253,7 +253,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .autoEnabledAccounts(List.of(treasury))
                         .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
-                        .customFees(List.of(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
+                        .customFees(List.of(emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID)))
                         .customFeesDescription("empty custom fees")
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
@@ -534,6 +534,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED,
@@ -555,6 +556,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
@@ -598,6 +600,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(accountId.getId())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(ASSOCIATE_TIMESTAMP)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -634,6 +637,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -696,6 +700,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(PAYER2.getAccountNum())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -811,6 +816,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(false)
                 .automaticAssociation(false)
                 .balance(0)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -882,6 +888,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(PAYER2.getAccountNum())
                 .associated(false)
                 .automaticAssociation(false)
+                .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -941,7 +948,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         createTokenEntity(TOKEN_ID, tokenType, SYMBOL, CREATE_TIMESTAMP, false, false, false);
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
-        Entity expectedEntity = createEntity(
+        var expectedEntity = createEntity(
                 DOMAIN_TOKEN_ID,
                 TOKEN,
                 TOKEN_REF_KEY,
@@ -953,19 +960,31 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
-        var deletedDbCustomFee = deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
-        var newCustomFee = nonEmptyCustomFee(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
+        var initialCustomFee = emptyCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID);
+        var secondCustomFee = nonEmptyCustomFee(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
 
         long expectedSupply = tokenType == FUNGIBLE_COMMON ? INITIAL_SUPPLY : 0;
 
         // when
-        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, List.of(newCustomFee));
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, List.of(secondCustomFee));
 
         // then
         assertEntity(expectedEntity);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
-        deletedDbCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
-        assertCustomFeesInDb(List.of(newCustomFee), List.of(deletedDbCustomFee));
+        initialCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
+        assertCustomFeesInDb(List.of(secondCustomFee), List.of(initialCustomFee));
+
+        // when update with empty custom fees
+        updateTimestamp += 10L;
+        updateTokenFeeSchedule(TOKEN_ID, updateTimestamp, Collections.emptyList());
+
+        // then
+        assertEntity(expectedEntity);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
+
+        secondCustomFee.setTimestampUpper(updateTimestamp);
+        var lastCustomFee = emptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
+        assertCustomFeesInDb(List.of(lastCustomFee), List.of(initialCustomFee, secondCustomFee));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -1351,6 +1370,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(false)
                 .balance(0L)
+                .balanceTimestamp(updateTimestamp)
                 .createdTimestamp(tokenCreateRecordItem.getConsensusTimestamp())
                 .timestampRange(Range.atLeast(tokenCreateRecordItem.getConsensusTimestamp()))
                 .tokenId(tokenId.getId())
@@ -1360,6 +1380,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(!explicitAssociation)
                 .balance(2L)
+                .balanceTimestamp(updateTimestamp)
                 .createdTimestamp(newTreasuryAssociationTimestamp)
                 .timestampRange(Range.atLeast(newTreasuryAssociationTimestamp))
                 .tokenId(tokenId.getId())
@@ -1392,6 +1413,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.NOT_APPLICABLE,
@@ -1421,6 +1443,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 PAYER2,
                 0,
                 ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.NOT_APPLICABLE,
@@ -1449,6 +1472,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -1490,6 +1514,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 0,
+                ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -3062,6 +3087,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TOKEN_ID,
                 PAYER2,
                 999000L,
+                wipeTimestamp,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -3189,6 +3215,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(true)
                 .automaticAssociation(true)
                 .balance(1000L)
+                .balanceTimestamp(TRANSFER_TIMESTAMP)
                 .createdTimestamp(TRANSFER_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -3549,6 +3576,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             TokenID tokenID,
             AccountID accountId,
             long balance,
+            long balanceTimestamp,
             long createdTimestamp,
             boolean associated,
             TokenFreezeStatusEnum freezeStatus,
@@ -3559,6 +3587,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .associated(associated)
                 .automaticAssociation(false)
                 .balance(balance)
+                .balanceTimestamp(balanceTimestamp)
                 .createdTimestamp(createdTimestamp)
                 .freezeStatus(freezeStatus)
                 .kycStatus(kycStatus)
@@ -3595,41 +3624,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertCustomFeesInDb(List<CustomFee> expected, List<CustomFee> expectedHistory) {
-        var listAssert = assertThat(customFeeRepository.findAll()).hasSize(expected.size());
-        for (var result : expected) {
-            listAssert.anySatisfy(fee -> {
-                if (result.getFixedFees() != null) {
-                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-                }
-                if (result.getFractionalFees() != null) {
-                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-                }
-                if (result.getRoyaltyFees() != null) {
-                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                }
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-            });
-        }
-
-        var historyAssert = assertThat(customFeeHistoryRepository.findAll()).hasSize(expectedHistory.size());
-        for (var result : expectedHistory) {
-            historyAssert.anySatisfy(fee -> {
-                if (result.getFixedFees() != null) {
-                    assertThat(fee.getFixedFees()).containsExactlyInAnyOrderElementsOf(result.getFixedFees());
-                }
-                if (result.getFractionalFees() != null) {
-                    assertThat(fee.getFractionalFees()).containsExactlyInAnyOrderElementsOf(result.getFractionalFees());
-                }
-                if (result.getRoyaltyFees() != null) {
-                    assertThat(fee.getRoyaltyFees()).containsExactlyInAnyOrderElementsOf(result.getRoyaltyFees());
-                }
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-                assertThat(fee.getTokenId()).isEqualTo(result.getTokenId());
-                assertThat(fee.getTimestampRange()).isEqualTo(result.getTimestampRange());
-            });
-        }
+        assertThat(customFeeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory(CustomFee.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     private void assertAssessedCustomFeesInDb(List<AssessedCustomFee> expected) {
@@ -3748,6 +3744,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 tokenID,
                 accountID,
                 0,
+                associateTimestamp,
                 associateTimestamp,
                 true,
                 setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
@@ -3906,6 +3903,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .accountId(account.getId())
                             .associated(true)
                             .automaticAssociation(false)
+                            .balanceTimestamp(createdTimestamp)
                             .createdTimestamp(createdTimestamp)
                             .freezeStatus(freezeStatus)
                             .kycStatus(kycStatus)

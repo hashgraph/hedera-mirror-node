@@ -42,8 +42,6 @@ import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
@@ -52,6 +50,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
@@ -68,7 +68,7 @@ import org.springframework.jdbc.core.RowMapper;
 public abstract class IntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = new ConcurrentHashMap<>();
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @Resource
     protected DomainBuilder domainBuilder;
@@ -146,13 +146,16 @@ public abstract class IntegrationTest {
     }
 
     protected void reset() {
-        cacheManagers.forEach(
-                c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
+        cacheManagers.forEach(this::resetCacheManager);
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         mirrorProperties.setStartDate(Instant.EPOCH);
         jdbcOperations.execute(cleanupSql);
         retryRecorder.reset();
+    }
+
+    protected void resetCacheManager(CacheManager cacheManager) {
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
     private String getDefaultIdColumns(Class<?> entityClass) {

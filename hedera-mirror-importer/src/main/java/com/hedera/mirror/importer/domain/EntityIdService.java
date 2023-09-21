@@ -63,9 +63,9 @@ public interface EntityIdService {
     Optional<EntityId> lookup(ContractID... contractIds);
 
     /**
-     * Used to notify the system of new aliases for potential use in future lookups.
+     * Used to notify the system of new aliases / evm addresses for potential use in future lookups.
      *
-     * @param aliasable Represents a mapping of alias to entity ID.
+     * @param entity The entity which may have alias or evm address
      */
     void notify(Entity entity);
 }

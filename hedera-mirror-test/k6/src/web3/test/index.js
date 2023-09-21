@@ -44,6 +44,24 @@ import * as contractCallTokenKey from './contractCallTokenKey.js';
 import * as contractCallTokenType from './contractCallTokenType.js';
 import * as contractCallTokenURI from './contractCallTokenURI.js';
 import * as contractCallTotalSupply from './contractCallTotalSupply.js';
+import * as contractCallEstimateFungibleTokenCustomFees from './contractCallEstimateFungibleTokenCustomFees.js';
+import * as contractCallEstimateNftCustomFees from './contractCallEstimateNftCustomFees.js';
+import * as contractCallEstimateCreateNft from './contractCallEstimateCreateNft.js';
+import * as contractCallEstimateCreateFungibleToken from './contractCallEstimateCreateFungibleToken.js';
+import * as contractCallEstimateTokenDissociate from './contractCallEstimateTokenDissociate.js';
+import * as contractCallEstimateApprove from './contractCallEstimateApprove.js';
+import * as contractCallEstimateApproveNft from './contractCallEstimateApproveNft.js';
+import * as contractCallEstimateAssociateTokens from './contractCallEstimateAssociateTokens.js';
+import * as contractCallEstimateDissociateTokens from './contractCallEstimateDissociateTokens.js';
+import * as contractCallEstimateERCApprove from './contractCallEstimateERCApprove.js';
+import * as contractCallEstimateMintNft from './contractCallEstimateMintNft.js';
+import * as contractCallEstimateSetApprovalForAll from './contractCallEstimateSetApprovalForAll.js';
+import * as contractCallEstimateFreezeToken from './contractCallEstimateFreezeToken.js';
+import * as contractCallEstimateFreezeNft from './contractCallEstimateFreezeNft.js';
+import * as contractCallEstimateUnfreezeToken from './contractCallEstimateUnfreezeToken.js';
+import * as contractCallEstimateUnfreezeNft from './contractCallEstimateUnfreezeNft.js';
+import * as contractCallEstimateTransferToken from './contractCallEstimateTransferToken.js';
+import * as contractCallEstimateTransferNft from './contractCallEstimateTransferNft.js';
 
 // add test modules here
 const tests = {
@@ -73,8 +91,31 @@ const tests = {
   contractCallTokenKey,
   contractCallTokenType,
   contractCallTokenURI,
-  contractCallTotalSupply,
+  contractCallTotalSupply
 };
+
+if (__ENV.RUN_ESTIMATE_TESTS) {
+  Object.assign(tests, {
+    contractCallEstimateFungibleTokenCustomFees,
+    contractCallEstimateNftCustomFees,
+    contractCallEstimateCreateNft,
+    contractCallEstimateCreateFungibleToken,
+    contractCallEstimateTokenDissociate,
+    contractCallEstimateApprove,
+    contractCallEstimateApproveNft,
+    contractCallEstimateAssociateTokens,
+    contractCallEstimateDissociateTokens,
+    contractCallEstimateERCApprove,
+    contractCallEstimateMintNft,
+    contractCallEstimateSetApprovalForAll,
+    contractCallEstimateFreezeToken,
+    contractCallEstimateFreezeNft,
+    contractCallEstimateUnfreezeToken,
+    contractCallEstimateUnfreezeNft,
+    contractCallEstimateTransferToken,
+    contractCallEstimateTransferNft
+  });
+}
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 

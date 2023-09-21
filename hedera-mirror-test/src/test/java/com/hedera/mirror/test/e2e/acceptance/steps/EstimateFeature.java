@@ -16,13 +16,18 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStringRightPad;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -40,17 +45,27 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class EstimateFeature extends AbstractEstimateFeature {
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
+    private final TokenClient tokenClient;
+    private final AccountClient accountClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
 
-    private String newAccountEvnAddress;
+    private TokenId fungibleTokenId;
+    private String newAccountEvmAddress;
+    private ExpandedAccountId receiverAccountId;
 
     @Given("I successfully create contract from contract bytes with {int} balance")
     public void createNewEstimateContract(int supply) throws IOException {
         deployedContract = createContract(estimateGasTestContract, supply);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
-        newAccountEvnAddress =
+        newAccountEvmAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
+        receiverAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+    }
+
+    @Given("I successfully create fungible token")
+    public void createFungibleToken() {
+        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
     }
 
     @And("lower deviation is {int}% and upper deviation is {int}%")
@@ -229,7 +244,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(ContractMethods.MESSAGE_SIGNER.getSelector())
                 .to(contractSolidityAddress)
-                .from(newAccountEvnAddress)
+                .from(newAccountEvmAddress)
                 .estimate(true)
                 .build();
         ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
@@ -387,8 +402,111 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         + to32BytesString("1")
                         + to32BytesString("1025")
                         + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_LIMITED.getActualGas(),
-                contractSolidityAddress);
+                ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+    }
+
+    @Then("I call estimateGas with IERC20 token transfer using long zero address as receiver")
+    public void ierc20TransferWithLongZeroAddressForReceiver() {
+        var transferCall = ContractCallRequest.builder()
+                .data(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector()
+                        + to32BytesString(receiverAccountId.getAccountId().toSolidityAddress())
+                        + to32BytesString("1"))
+                .to(fungibleTokenId.toSolidityAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse transferCallResponse = mirrorClient.contractsCall(transferCall);
+
+        assertTrue(isWithinDeviation(
+                ContractMethods.IERC20_TOKEN_TRANSFER.getActualGas(),
+                transferCallResponse.getResultAsNumber().intValue(),
+                lowerDeviation,
+                upperDeviation));
+    }
+
+    @Then("I call estimateGas with IERC20 token transfer using evm address as receiver")
+    public void ierc20TransferWithEvmAddressForReceiver() {
+        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
+        var transferCall = ContractCallRequest.builder()
+                .data(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector()
+                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", ""))
+                        + to32BytesString("1"))
+                .to(fungibleTokenId.toSolidityAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse transferCallResponse = mirrorClient.contractsCall(transferCall);
+
+        assertTrue(isWithinDeviation(
+                ContractMethods.IERC20_TOKEN_TRANSFER.getActualGas(),
+                transferCallResponse.getResultAsNumber().intValue(),
+                lowerDeviation,
+                upperDeviation));
+    }
+
+    @Then("I call estimateGas with IERC20 token approve using evm address as receiver")
+    public void ierc20ApproveWithEvmAddressForReceiver() {
+        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
+        var approveCall = ContractCallRequest.builder()
+                .data(ContractMethods.IERC20_TOKEN_APPROVE.getSelector()
+                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", ""))
+                        + to32BytesString("1"))
+                .to(fungibleTokenId.toSolidityAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse approveCallResponse = mirrorClient.contractsCall(approveCall);
+
+        assertTrue(isWithinDeviation(
+                ContractMethods.IERC20_TOKEN_APPROVE.getActualGas(),
+                approveCallResponse.getResultAsNumber().intValue(),
+                lowerDeviation,
+                upperDeviation));
+    }
+
+    @Then("I call estimateGas with IERC20 token associate using evm address as receiver")
+    public void ierc20AssociateWithEvmAddressForReceiver() {
+        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
+        var associateCall = ContractCallRequest.builder()
+                .data(ContractMethods.IERC20_TOKEN_ASSOCIATE.getSelector()
+                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", "")))
+                .to(fungibleTokenId.toSolidityAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse associateCallResponse = mirrorClient.contractsCall(associateCall);
+
+        assertTrue(isWithinDeviation(
+                ContractMethods.IERC20_TOKEN_ASSOCIATE.getActualGas(),
+                associateCallResponse.getResultAsNumber().intValue(),
+                lowerDeviation,
+                upperDeviation));
+    }
+
+    @Then("I call estimateGas with IERC20 token dissociate using evm address as receiver")
+    public void ierc20DissociateWithEvmAddressForReceiver() {
+        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
+        var dissociateCall = ContractCallRequest.builder()
+                .data(ContractMethods.IERC20_TOKEN_DISSOCIATE.getSelector()
+                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", "")))
+                .to(fungibleTokenId.toSolidityAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse dissociateCallResponse = mirrorClient.contractsCall(dissociateCall);
+
+        assertTrue(isWithinDeviation(
+                ContractMethods.IERC20_TOKEN_DISSOCIATE.getActualGas(),
+                dissociateCallResponse.getResultAsNumber().intValue(),
+                lowerDeviation,
+                upperDeviation));
+    }
+
+    private void validateGasEstimation(String selector, int actualGasUsed) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(selector)
+                .to(contractSolidityAddress)
+                .estimate(true)
+                .build();
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
+        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+
+        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
     }
 
     /**
@@ -409,7 +527,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_INVALID_CONTRACT("7df6ee27", 24350),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("6e6662b9", 53477),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("dbb6f04a", 55693),
-        DESTROY("83197ef0", 51193),
+        DESTROY("83197ef0", 26171),
         GET_ADDRESS("38cc4831", 0),
         GET_GAS_LEFT("51be4eaa", 21326),
         GET_MOCK_ADDRESS("14a7862c", 0),
@@ -427,8 +545,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
         STATE_UPDATE_OF_CONTRACT("5256b99d", 30500),
         TX_ORIGIN("f96757d1", 21289),
         UPDATE_COUNTER("c648049d", 26279),
-        WRONG_METHOD_SIGNATURE("ffffffff", 0);
-
+        WRONG_METHOD_SIGNATURE("ffffffff", 0),
+        IERC20_TOKEN_TRANSFER("a9059cbb", 37837),
+        IERC20_TOKEN_APPROVE("095ea7b3", 727978),
+        IERC20_TOKEN_ASSOCIATE("0a754de6", 727972),
+        IERC20_TOKEN_DISSOCIATE("5c9217e0", 727972);
         private final String selector;
         private final int actualGas;
     }

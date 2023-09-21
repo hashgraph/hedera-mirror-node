@@ -43,6 +43,10 @@ public class ThreadLocalHolder {
     @NonNull
     public static final ThreadLocal<Long> blockTimestamp = ThreadLocal.withInitial(() -> UNSET_TIMESTAMP);
 
+    /** Boolean flag which determines whether the transaction is estimate gas or not*/
+    @NonNull
+    public static final ThreadLocal<Boolean> isEstimate = ThreadLocal.withInitial(() -> false);
+
     /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
     @NonNull
     public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
@@ -89,6 +93,7 @@ public class ThreadLocalHolder {
     public static void resetState() {
         resetToBase();
         isCreate.remove();
+        isEstimate.remove();
         aliases.remove();
         pendingAliases.remove();
         pendingRemovals.remove();

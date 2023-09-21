@@ -21,7 +21,6 @@ import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureSta
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
@@ -59,16 +58,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
@@ -89,7 +87,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return Ordering.arbitrary().compare(left, right);
     };
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
@@ -100,7 +98,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     private final ConsensusNodeService consensusNodeService;
-    private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     private final MirrorProperties mirrorProperties;
     private final StreamType streamType;
 
@@ -128,16 +125,12 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         this.meterRegistry = meterRegistry;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.nodeSignatureVerifier = nodeSignatureVerifier;
-        var threads = downloaderProperties.getCommon().getThreads();
-        this.signatureDownloadThreadPool = Executors.newFixedThreadPool(threads);
         this.signatureFileReader = signatureFileReader;
         this.streamFileProvider = streamFileProvider;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
-        Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
-        mirrorProperties = downloaderProperties.getMirrorProperties();
-
-        streamType = downloaderProperties.getStreamType();
+        this.mirrorProperties = downloaderProperties.getMirrorProperties();
+        this.streamType = downloaderProperties.getStreamType();
 
         // Metrics
         cloudStorageLatencyMetric = Timer.builder("hedera.mirror.importer.cloud.latency")
@@ -183,9 +176,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             verifySigsAndDownloadDataFiles(sigFilesMap);
         } catch (SignatureVerificationException e) {
             log.warn(e.getMessage());
-        } catch (InterruptedException e) {
-            log.error("Error downloading files", e);
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error downloading files", e);
         }
@@ -222,62 +212,37 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      *
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles() throws InterruptedException {
-        var startAfterFilename = getStartAfterFilename();
-        var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
-
+    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles() {
         // Limit to 1 signature file if downloader is disabled
         long listLimit = downloaderProperties.isEnabled() ? Long.MAX_VALUE : 1;
+        var stopwatch = Stopwatch.createStarted();
         var nodes = partialCollection(consensusNodeService.getNodes());
-        var tasks = new ArrayList<Callable<Object>>(nodes.size());
+        var startAfterFilename = getStartAfterFilename();
         log.debug("Asking for new signature files created after file: {}", startAfterFilename);
 
-        /*
-         * For each node, create a thread that will make requests as many times as necessary to
-         * start maxDownloads download operations.
-         */
-        for (var node : nodes) {
-            tasks.add(Executors.callable(() -> {
-                var stopwatch = Stopwatch.createStarted();
+        final var signatures = Objects.requireNonNull(Flux.fromIterable(nodes)
+                .flatMap(node -> streamFileProvider
+                        .list(node, startAfterFilename)
+                        .take(listLimit)
+                        .map(s -> {
+                            var streamFileSignature = signatureFileReader.read(s);
+                            streamFileSignature.setNode(node);
+                            streamFileSignature.setStreamType(streamType);
+                            return streamFileSignature;
+                        })
+                        .onErrorContinue((e, s) -> log.error("Error downloading signature files for node {}", node, e)))
+                .timeout(downloaderProperties.getCommon().getTimeout())
+                .collect(this::getStreamFileSignatureMultiMap, (map, s) -> map.put(s.getFilename(), s))
+                .subscribeOn(Schedulers.parallel())
+                .block());
 
-                try {
-                    var count = streamFileProvider
-                            .list(node, startAfterFilename)
-                            .take(listLimit)
-                            .doOnNext(s -> {
-                                try {
-                                    var streamFileSignature = signatureFileReader.read(s);
-                                    streamFileSignature.setNode(node);
-                                    streamFileSignature.setStreamType(streamType);
-                                    sigFilesMap.put(streamFileSignature.getFilename(), streamFileSignature);
-                                } catch (Exception ex) {
-                                    log.warn("Failed to parse signature file {}: {}", "", ex);
-                                }
-                            })
-                            .count()
-                            .block();
-
-                    if (count > 0) {
-                        log.debug("Downloaded {} signatures for node {} in {}", count, node, stopwatch);
-                    }
-                } catch (Exception e) {
-                    log.error("Error downloading signature files for node {} after {}", node, stopwatch, e);
-                }
-            }));
-        }
-
-        // Wait for all tasks to complete.
-        var stopwatch = Stopwatch.createStarted();
-        long timeoutMillis = downloaderProperties.getCommon().getTimeout().toMillis();
-        signatureDownloadThreadPool.invokeAll(tasks, timeoutMillis, TimeUnit.MILLISECONDS);
-        int total = sigFilesMap.size();
-
+        long total = signatures.size();
         if (total > 0) {
             var rate = (int) (1000000.0 * total / stopwatch.elapsed(TimeUnit.MICROSECONDS));
-            var counts = sigFilesMap.keySet().stream()
+            var counts = signatures.keySet().stream()
                     .limit(10)
                     .collect(Collectors.toMap(
-                            Function.identity(), s -> sigFilesMap.get(s).size()));
+                            Function.identity(), s -> signatures.get(s).size()));
             log.info("Downloaded {} signatures in {} ({}/s): {}", total, stopwatch, rate, counts);
         } else {
             log.info(
@@ -286,7 +251,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     downloaderProperties.getFrequency().toMillis() / 1_000f);
         }
 
-        return sigFilesMap;
+        return signatures;
     }
 
     /**
@@ -451,8 +416,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
         // Cache a copy of the streamFile with bytes and items set to null so as not to keep them in memory
         var copy = (T) streamFile.copy();
-        copy.setBytes(null);
-        copy.setItems(null);
+        copy.clear();
         lastStreamFile.set(Optional.of(copy));
     }
 

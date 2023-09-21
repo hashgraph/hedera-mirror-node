@@ -19,14 +19,8 @@ package com.hedera.mirror.web3.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
@@ -41,18 +35,10 @@ class LoggingFilterTest {
 
     private final LoggingFilter loggingFilter = new LoggingFilter();
 
-    @BeforeAll
-    static void setup() {
-        var logger = (Logger) LogManager.getLogger(LoggingFilter.class);
-        logger.setLevel(Level.DEBUG);
-    }
-
-    @CsvSource({"/, 200, INFO", "/actuator/, 200, DEBUG"})
-    @ParameterizedTest
-    void filterOnSuccess(String path, int code, String level, CapturedOutput output) {
-        MockServerWebExchange exchange =
-                MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
-        exchange.getResponse().setRawStatusCode(code);
+    @Test
+    void filterOnSuccess(CapturedOutput output) {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+        exchange.getResponse().setRawStatusCode(200);
 
         StepVerifier.withVirtualTime(() -> loggingFilter.filter(
                         exchange,
@@ -62,7 +48,24 @@ class LoggingFilterTest {
                 .expectComplete()
                 .verify(WAIT);
 
-        assertLog(output, level, "\\w+ GET " + path + " in \\d+ ms: " + code);
+        assertLog(output, "INFO", "\\w+ GET / in \\d+ ms: 200");
+    }
+
+    @Test
+    void filterPath(CapturedOutput output) {
+        var exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/actuator/").build());
+        exchange.getResponse().setRawStatusCode(200);
+
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(
+                        exchange,
+                        serverWebExchange ->
+                                Mono.defer(() -> exchange.getResponse().setComplete())))
+                .thenAwait(WAIT)
+                .expectComplete()
+                .verify(WAIT);
+
+        assertThat(output).asString().isEmpty();
     }
 
     @Test

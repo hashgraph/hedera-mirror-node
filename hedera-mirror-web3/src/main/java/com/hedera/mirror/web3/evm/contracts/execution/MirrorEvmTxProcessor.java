@@ -89,6 +89,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         super.setupFields(receiver.equals(Address.ZERO));
         super.setOperationTracer(operationTracer);
         setIsCreate(Address.ZERO.equals(receiver));
+        setIsEstimate(isEstimate);
 
         store.wrap();
         if (isEstimate) {
@@ -144,5 +145,8 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     public void setIsCreate(boolean isCreate) {
         ThreadLocalHolder.isCreate.set(isCreate);
+    }
+    public void setIsEstimate(boolean isEstimate) {
+        ThreadLocalHolder.isEstimate.set(isEstimate);
     }
 }

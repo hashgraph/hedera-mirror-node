@@ -21,15 +21,18 @@ import static com.hedera.mirror.importer.reader.record.ProtoRecordFileReader.VER
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -38,7 +41,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.Level;
+import java.util.function.Consumer;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -130,21 +133,23 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         try {
             Flux<RecordItem> recordItems = recordFile.getItems();
 
-            if (log.getLevel().isInRange(Level.DEBUG, Level.TRACE)) {
+            if (log.isDebugEnabled() || log.isTraceEnabled()) {
                 recordItems = recordItems.doOnNext(this::logItem);
             }
 
             recordStreamFileListener.onStart();
+            var aggregator = new RecordItemAggregator();
 
             long count = recordItems
-                    .doOnNext(recordFile::processItem)
+                    .doOnNext(aggregator::accept)
                     .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)
                     .count()
                     .block();
 
-            recordFile.finishLoad(count);
+            recordFile.setCount(count);
+            aggregator.update(recordFile);
             updateIndex(recordFile);
             recordStreamFileListener.onEnd(recordFile);
             applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
@@ -169,7 +174,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private void recordMetrics(RecordItem recordItem) {
         sizeMetrics
                 .getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
-                .record(recordItem.getTransactionBytes().length);
+                .record(recordItem.getTransaction().getSerializedSize());
 
         var consensusTimestamp = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
         latencyMetrics
@@ -194,6 +199,35 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                 int count = recordFileRepository.updateIndex(offset);
                 log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
             }
+        }
+    }
+
+    private class RecordItemAggregator implements Consumer<RecordItem> {
+
+        private final LogsBloomAggregator logsBloom = new LogsBloomAggregator();
+        private long gasUsed = 0L;
+
+        @Override
+        public void accept(RecordItem recordItem) {
+            if (!recordItem.isTopLevel()) {
+                return;
+            }
+
+            var rec = recordItem.getTransactionRecord();
+            var result = rec.hasContractCreateResult() ? rec.getContractCreateResult() : rec.getContractCallResult();
+
+            if (ContractFunctionResult.getDefaultInstance().equals(result)) {
+                return;
+            }
+
+            gasUsed += result.getGasUsed();
+            logsBloom.aggregate(DomainUtils.toBytes(result.getBloom()));
+        }
+
+        public void update(RecordFile recordFile) {
+            recordFile.setGasUsed(gasUsed);
+            recordFile.setLoadEnd(Instant.now().getEpochSecond());
+            recordFile.setLogsBloom(logsBloom.getBloom());
         }
     }
 }

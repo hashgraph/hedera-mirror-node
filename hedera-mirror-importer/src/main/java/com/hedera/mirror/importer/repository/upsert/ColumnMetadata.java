@@ -50,10 +50,15 @@ class ColumnMetadata implements Comparable<ColumnMetadata> {
     }
 
     String format(String pattern) {
-        var coalesce = upsertColumn != null ? upsertColumn.coalesce() : null;
+        if (pattern.contains("coalesce") && upsertColumn != null) {
+            if (!upsertColumn.shouldCoalesce()) {
+                return name;
+            }
 
-        if (pattern.contains("coalesce") && StringUtils.isNotBlank(coalesce)) {
-            pattern = coalesce;
+            var coalesce = upsertColumn.coalesce();
+            if (StringUtils.isNotBlank(coalesce)) {
+                pattern = coalesce;
+            }
         }
 
         return MessageFormat.format(pattern, name, defaultValue);

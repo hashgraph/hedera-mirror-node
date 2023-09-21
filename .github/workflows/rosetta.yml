@@ -26,10 +26,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Set GIT_REF
         run: |
@@ -43,7 +43,7 @@ jobs:
           echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
           cache-from: type=gha
@@ -72,10 +72,10 @@ jobs:
       ROSETTA_CLI_VERSION: v0.10.3
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Download Artifact
         uses: actions/download-artifact@v3
@@ -201,7 +201,7 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: tmp
 

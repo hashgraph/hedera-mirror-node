@@ -245,7 +245,7 @@ class BurnPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @Test

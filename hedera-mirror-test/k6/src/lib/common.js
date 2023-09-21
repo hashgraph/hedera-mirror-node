@@ -133,7 +133,9 @@ function getSequentialTestScenarios(tests) {
       const scenario = Object.assign({}, testScenario);
       const func = testModule[scenario.exec];
       funcs[scenarioName] = func;
-      func.requiredParameters.forEach((param) => requiredParameters.add(param));
+      if (func && func.requiredParameters) {
+        func.requiredParameters.forEach((param) => requiredParameters.add(param));
+      }
       scenarios[scenarioName] = scenario;
 
       // update the scenario's startTime, so scenarios run in sequence

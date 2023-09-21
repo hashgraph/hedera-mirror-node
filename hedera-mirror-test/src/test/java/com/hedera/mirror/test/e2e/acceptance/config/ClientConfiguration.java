@@ -29,8 +29,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -98,7 +97,7 @@ public class ClientConfiguration {
                 .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         Jackson2JsonDecoder jackson2JsonDecoder = new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON);
         Jackson2JsonEncoder jackson2JsonEncoder = new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON);
-        Logger logger = LogManager.getLogger(MirrorNodeClient.class);
+        var logger = LoggerFactory.getLogger(MirrorNodeClient.class);
 
         return WebClient.builder()
                 .baseUrl(acceptanceTestProperties.getRestPollingProperties().getBaseUrl())

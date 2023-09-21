@@ -322,7 +322,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
             1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 1800L
         }),
-        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ADDRESS}),
+        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ALIAS}),
         HTS_ALLOWANCE(
                 "htsAllowance",
                 new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS},

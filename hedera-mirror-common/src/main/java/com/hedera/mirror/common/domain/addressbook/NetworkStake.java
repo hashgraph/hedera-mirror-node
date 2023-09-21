@@ -36,9 +36,13 @@ public class NetworkStake implements Persistable<Long> {
     private long consensusTimestamp;
 
     private long epochDay;
+    private long maxStakeRewarded;
     private long maxStakingRewardRatePerHbar;
+    private long maxTotalReward;
     private long nodeRewardFeeDenominator;
     private long nodeRewardFeeNumerator;
+    private long reservedStakingRewards;
+    private long rewardBalanceThreshold;
     private long stakeTotal;
     private long stakingPeriod;
     private long stakingPeriodDuration;
@@ -47,6 +51,7 @@ public class NetworkStake implements Persistable<Long> {
     private long stakingRewardFeeNumerator;
     private long stakingRewardRate;
     private long stakingStartThreshold;
+    private long unreservedStakingRewardBalance;
 
     @JsonIgnore
     @Override

@@ -25,7 +25,6 @@ dependencies {
     implementation(project(":common"))
     implementation("com.esaulpaugh:headlong")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
-    implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("com.google.cloud:spring-cloud-gcp-starter-pubsub")
     implementation("commons-io:commons-io")
     implementation("io.github.mweirauch:micrometer-jvm-extras")

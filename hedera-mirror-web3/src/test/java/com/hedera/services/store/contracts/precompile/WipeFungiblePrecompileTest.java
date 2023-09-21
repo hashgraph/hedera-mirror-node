@@ -163,7 +163,7 @@ class WipeFungiblePrecompileTest {
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
     }
 
     @Test

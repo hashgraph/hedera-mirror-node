@@ -18,6 +18,7 @@ package com.hedera.mirror.common.util;
 
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -239,6 +240,10 @@ public class DomainUtils {
             return null;
         }
 
+        if (ByteString.EMPTY.equals(byteString)) {
+            return Internal.EMPTY_BYTE_ARRAY;
+        }
+
         try {
             if (UnsafeByteOutput.supports(byteString)) {
                 UnsafeByteOutput byteOutput = new UnsafeByteOutput();
@@ -290,7 +295,7 @@ public class DomainUtils {
             throw new InvalidEntityException("Empty contractId");
         }
 
-        return toEvmAddress(Long.valueOf(contractId.getShard()).intValue(), contractId.getRealm(), contractId.getNum());
+        return toEvmAddress((int) contractId.getShard(), contractId.getRealm(), contractId.getNum());
     }
 
     private static byte[] toEvmAddress(int shard, long realm, long num) {
