@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Id;
@@ -43,14 +44,17 @@ public abstract class AbstractCustomFee implements History {
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @Type(JsonBinaryType.class)
+    @UpsertColumn(shouldCoalesce = false)
     private List<FixedFee> fixedFees;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @Type(JsonBinaryType.class)
+    @UpsertColumn(shouldCoalesce = false)
     private List<FractionalFee> fractionalFees;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
     @Type(JsonBinaryType.class)
+    @UpsertColumn(shouldCoalesce = false)
     private List<RoyaltyFee> royaltyFees;
 
     private Range<Long> timestampRange;

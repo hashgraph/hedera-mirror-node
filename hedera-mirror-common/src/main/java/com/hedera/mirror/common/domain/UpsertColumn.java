@@ -39,4 +39,12 @@ public @interface UpsertColumn {
      * @return the SQL clause
      */
     String coalesce() default "";
+
+    /**
+     * Specify if the column should coalesce with existing and default value. If false, {@link #coalesce()} is ignored.
+     * The default is true.
+     *
+     * @return Whether to coalesce the column
+     */
+    boolean shouldCoalesce() default true;
 }

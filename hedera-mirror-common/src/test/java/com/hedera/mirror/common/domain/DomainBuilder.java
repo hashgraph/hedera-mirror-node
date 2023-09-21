@@ -368,7 +368,7 @@ public class DomainBuilder {
                 .fixedFees(List.of(fixedFee()))
                 .fractionalFees(List.of(fractionalFee()))
                 .royaltyFees(List.of(royaltyFee()))
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

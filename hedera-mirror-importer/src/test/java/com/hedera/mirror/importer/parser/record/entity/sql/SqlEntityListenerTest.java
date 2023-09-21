@@ -37,6 +37,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -64,6 +65,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.CustomFeeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityTransactionRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
@@ -121,6 +123,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final ContractStateRepository contractStateRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
+    private final CustomFeeRepository customFeeRepository;
     private final DomainBuilder domainBuilder;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
@@ -648,6 +651,32 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(cryptoTransferRepository.findAll()).containsOnly(cryptoTransfer);
         assertThat(entityRepository.findAll()).containsOnly(expectedContract);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void onCustomFee(int commitIndex) {
+        var nonEmptyCustomFee = domainBuilder.customFee().get();
+        sqlEntityListener.onCustomFee(nonEmptyCustomFee);
+
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(customFeeRepository.findAll()).containsExactly(nonEmptyCustomFee);
+        }
+
+        var emptyCustomFee = domainBuilder
+                .customFee()
+                .customize(cf -> cf.tokenId(nonEmptyCustomFee.getTokenId())
+                        .fixedFees(null)
+                        .fractionalFees(null)
+                        .royaltyFees(null))
+                .get();
+        sqlEntityListener.onCustomFee(emptyCustomFee);
+        completeFileAndCommit();
+
+        nonEmptyCustomFee.setTimestampUpper(emptyCustomFee.getTimestampLower());
+        assertThat(customFeeRepository.findAll()).containsExactly(emptyCustomFee);
+        assertThat(findHistory(CustomFee.class)).containsExactly(nonEmptyCustomFee);
     }
 
     @Test
