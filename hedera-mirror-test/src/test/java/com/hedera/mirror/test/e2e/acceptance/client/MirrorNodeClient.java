@@ -212,7 +212,7 @@ public class MirrorNodeClient {
     }
 
     public ExchangeRateResponse getExchangeRates() {
-        log.debug("Verify contract result '{}' is returned by Mirror Node");
+        log.debug("Get exchange rates by Mirror Node");
         return callRestEndpoint("/network/exchangerate", ExchangeRateResponse.class);
     }
 
