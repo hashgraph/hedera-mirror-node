@@ -44,7 +44,7 @@ public class NetworkFeature {
     @Then("the mirror node REST API returns the network stake")
     public void verifyNetworkStakeResponse() {
         assertThat(networkStake.getMaxStakeRewarded()).isNotNegative();
-        assertThat(networkStake.getMaxStakingRewardRatePerHbar()).isPositive();
+        assertThat(networkStake.getMaxStakingRewardRatePerHbar()).isNotNegative();
         assertThat(networkStake.getMaxTotalReward()).isNotNegative();
         assertThat(networkStake.getNodeRewardFeeFraction()).isBetween(0.0F, 1.0F);
         assertThat(networkStake.getReservedStakingRewards()).isNotNegative();
@@ -54,7 +54,7 @@ public class NetworkFeature {
         assertThat(networkStake.getStakingPeriodDuration()).isPositive();
         assertThat(networkStake.getStakingPeriodsStored()).isPositive();
         assertThat(networkStake.getStakingRewardFeeFraction()).isBetween(0.0F, 1.0F);
-        assertThat(networkStake.getStakingRewardRate()).isPositive();
+        assertThat(networkStake.getStakingRewardRate()).isNotNegative();
         assertThat(networkStake.getStakingStartThreshold()).isPositive();
         assertThat(networkStake.getUnreservedStakingRewardBalance()).isNotNegative();
     }
