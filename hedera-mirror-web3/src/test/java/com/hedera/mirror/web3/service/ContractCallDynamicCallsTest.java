@@ -18,6 +18,8 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -33,7 +36,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(DynamicCallsContractFunctions.class)
-    void dynamicCallsTestWithAliasSender(DynamicCallsContractFunctions contractFunctions) {
+    void dynamicCallsTestWithAliasSenderForEthCall(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
         final var serviceParameters =
@@ -47,6 +50,29 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     });
         } else {
             contractCallService.processCall(serviceParameters);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(DynamicCallsContractFunctions.class)
+    void dynamicCallsTestWithAliasSenderForEstimateGas(DynamicCallsContractFunctions contractFunctions) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0L);
+        if (contractFunctions.expectedErrorMessage != null) {
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .satisfies(ex -> {
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                        assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
+                    });
+        } else {
+            final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+            assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                    .as("result must be within 5-20% bigger than the gas used from the first call")
+                    .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                    .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
         }
     }
 

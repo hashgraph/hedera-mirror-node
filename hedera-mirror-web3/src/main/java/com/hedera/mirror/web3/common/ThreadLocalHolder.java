@@ -30,7 +30,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class ThreadLocalHolder {
 
-    /** Boolean flag which determines whether the transaction is estimate gas or not*/
+    /** Boolean flag which determines whether the transaction is for estimate gas or not */
     @NonNull
     public static final ThreadLocal<Boolean> isEstimate = ThreadLocal.withInitial(() -> false);
     /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
@@ -53,6 +53,7 @@ public class ThreadLocalHolder {
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
+
     @NonNull
     public static final ThreadLocal<MirrorEvmTxProcessor> mirrorEvmTxProcessor = ThreadLocal.withInitial(() -> null);
 

@@ -68,7 +68,6 @@ public class HederaEvmStackedWorldStateUpdater
         this.evmProperties = evmProperties;
         this.entityAddressSequencer = entityAddressSequencer;
         this.tokenAccessor = tokenAccessor;
-        store.wrap();
     }
 
     @Override
