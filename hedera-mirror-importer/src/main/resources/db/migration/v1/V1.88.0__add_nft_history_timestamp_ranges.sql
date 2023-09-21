@@ -4,13 +4,9 @@ declare
   prior   record;
 begin
 for current in
-    with nfts as (
-        select * from nft
-    ), history as (
-        select * from nft_history
-    ) select * from nfts
+      select * from nft
       union all
-      select * from history
+      select * from nft_history
       order by token_id, serial_number, timestamp_range
     loop
         if (prior is null) then
