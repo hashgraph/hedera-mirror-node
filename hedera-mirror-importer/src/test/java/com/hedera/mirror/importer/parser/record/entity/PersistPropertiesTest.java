@@ -81,25 +81,18 @@ class PersistPropertiesTest {
     @CsvSource(
             textBlock =
                     """
-            true, CRYPTOTRANSFER, 0, 1, true,
-            true, CRYPTOTRANSFER, 5, 1, false,
-            true, CONSENSUSSUBMITMESSAGE, 0, 1, false,
-            false, CRYPTOTRANSFER, 0, 1, false,
-            false, CONSENSUSSUBMITMESSAGE, 0, 1, false,
+            true, CRYPTOTRANSFER, true,
+            true, CONSENSUSSUBMITMESSAGE, false,
+            false, CRYPTOTRANSFER, false,
+            false, CONSENSUSSUBMITMESSAGE, false,
             """)
-    void shouldPersistTransactionHash(
-            boolean transactionHash,
-            TransactionType transactionType,
-            long transactionHashPivot,
-            long consensusTimestamp,
-            boolean expected) {
+    void shouldPersistTransactionHash(boolean transactionHash, TransactionType transactionType, boolean expected) {
         var persistProperties = new EntityProperties.PersistProperties();
         persistProperties.setTransactionHash(transactionHash);
         persistProperties.setTransactionHashTypes(Set.of(transactionType));
-        persistProperties.setTransactionHashPivotTimestamp(transactionHashPivot);
-        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER, consensusTimestamp))
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER))
                 .isEqualTo(expected);
-        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL, consensusTimestamp))
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL))
                 .isFalse();
     }
 
@@ -109,9 +102,9 @@ class PersistPropertiesTest {
         var persistProperties = new EntityProperties.PersistProperties();
         persistProperties.setTransactionHash(transactionHash);
         persistProperties.setTransactionHashTypes(Collections.emptySet());
-        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER, 0))
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER))
                 .isEqualTo(transactionHash);
-        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL, 0))
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL))
                 .isEqualTo(transactionHash);
     }
 }
