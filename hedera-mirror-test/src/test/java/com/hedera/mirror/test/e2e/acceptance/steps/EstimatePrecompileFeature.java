@@ -114,8 +114,13 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 exchangeRates.getCurrentRate().getCentEquivalent(),
                 exchangeRates.getCurrentRate().getHbarEquivalent());
         final long hbarPriceInCents = currentExchangeRate.centEquivalent() / currentExchangeRate.hbarEquivalent();
-        createTokenValue = ((100 / hbarPriceInCents + 1) * 100000000);
-        createTokenValueWithCustomFees = ((200 / hbarPriceInCents + 1) * 100000000);
+        final int usdInCents = 100;
+        // create token requires 1 usd in fees
+        // create token with custom fees requires 2 usd in fees
+        // usdInCents / hbarPriceInCents = amount of hbars equal to 1 usd. Increment that number with 1 for safety and
+        // multiply that number with 10 ^ 8 to convert hbar to tinybar
+        createTokenValue = (usdInCents / hbarPriceInCents + 1) * 100000000;
+        createTokenValueWithCustomFees = (usdInCents * 2 / hbarPriceInCents + 1) * 100000000;
     }
 
     @Given("I successfully create Precompile contract with {int} balance")
