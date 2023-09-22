@@ -27,11 +27,11 @@ for current in
                 values (
                     current.account_id,
                     current.created_timestamp,
-                    current.delegating_spender,
+                    null,
                     current.deleted,
                     current.metadata,
                     current.serial_number,
-                    current.spender,
+                    null,
                     int8range(upper(prior.timestamp_range), lower(current.timestamp_range), '[)'),
                     current.token_id);
         end if;

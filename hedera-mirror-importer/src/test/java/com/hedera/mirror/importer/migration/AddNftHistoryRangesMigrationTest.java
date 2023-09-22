@@ -23,7 +23,6 @@ import com.hedera.mirror.common.domain.token.NftHistory;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +45,7 @@ class AddNftHistoryRangesMigrationTest extends IntegrationTest {
 
     private static final RowMapper<NftHistory> NFT_HISTORY_ROW_MAPPER = rowMapper(NftHistory.class);
 
-    private final @Owner JdbcOperations jdbcOperations;
+    private final JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.88.0__add_nft_history_timestamp_ranges.sql")
     private File migrationSql;
