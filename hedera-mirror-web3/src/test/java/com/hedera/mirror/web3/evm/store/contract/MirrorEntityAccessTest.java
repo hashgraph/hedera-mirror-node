@@ -141,15 +141,6 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void isUsableWithEmptyExpiry() {
-        when(account.getBalance()).thenReturn(defaultBalance);
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getExpiry()).thenReturn(null);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isTrue();
-    }
-
-    @Test
     void isUsableContractWithValidExpiryAndAutoRenew() {
         when(account.isSmartContract()).thenReturn(true);
         when(account.getBalance()).thenReturn(defaultBalance);
@@ -176,7 +167,6 @@ class MirrorEntityAccessTest {
         when(account.getBalance()).thenReturn(defaultBalance);
         when(account.isSmartContract()).thenReturn(true);
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getExpiry()).thenReturn(1L);
         when(mirrorNodeEvmProperties.shouldAutoRenewContracts()).thenReturn(false);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();

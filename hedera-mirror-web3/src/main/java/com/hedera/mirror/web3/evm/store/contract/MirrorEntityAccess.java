@@ -57,22 +57,20 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return false;
         }
 
-        if (balance <= 0) {
+        if (balance < 0) {
             return false;
         }
 
         // expiry validation
-        if (account.getExpiry() != null && account.getExpiry() > 0L) {
-            if (account.isSmartContract()) {
-                // only consider contract accounts expiry if renewal is enabled
-                if (mirrorNodeEvmProperties.shouldAutoRenewContracts()
-                        && account.getExpiry() < Instant.now().getEpochSecond()) {
-                    return false;
-                }
-            } else {
-                // true for accounts if expiry is defined and within range
-                return account.getExpiry() >= Instant.now().getEpochSecond();
+        if (account.isSmartContract()) {
+            // only consider contract accounts expiry if renewal is enabled
+            if (mirrorNodeEvmProperties.shouldAutoRenewContracts()
+                    && account.getExpiry() < Instant.now().getEpochSecond()) {
+                return false;
             }
+        } else {
+            // true for accounts if expiry is defined and within range
+            return account.getExpiry() >= Instant.now().getEpochSecond();
         }
 
         return true;
