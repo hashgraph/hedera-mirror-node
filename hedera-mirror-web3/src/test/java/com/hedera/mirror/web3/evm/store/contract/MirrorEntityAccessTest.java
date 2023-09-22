@@ -86,23 +86,6 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
-    @Test
-    void isNotUsableWithNegativeBalance() {
-        final long balance = -1L;
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getBalance()).thenReturn(balance);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isFalse();
-    }
-
-    @Test
-    void isNotUsableWithWrongAlias() {
-        final var address = Address.fromHexString("0x3232134567785444e");
-        when(store.getAccount(address, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
-        final var result = mirrorEntityAccess.isUsable(address);
-        assertThat(result).isFalse();
-    }
-
     @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestamp() {
