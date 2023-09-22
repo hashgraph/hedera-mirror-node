@@ -55,7 +55,7 @@ public class Account extends HederaEvmAccount {
 
     private final Id id;
 
-    private final long expiry;
+    private final Long expiry;
 
     private final long balance;
 

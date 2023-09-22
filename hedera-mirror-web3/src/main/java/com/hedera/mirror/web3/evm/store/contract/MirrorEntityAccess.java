@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -36,27 +37,45 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final Store store;
 
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     // We should check only accounts usability
     @Override
     public boolean isUsable(final Address address) {
+        // check address validity first before querying store
+        if (Address.ZERO.equals(address)) {
+            return false;
+        }
+
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
 
         final var balance = account.getBalance();
+
         final var isDeleted = account.isDeleted();
 
         if (isDeleted) {
             return false;
         }
 
-        if (balance > 0) {
-            return true;
-        }
-
-        if (Address.ZERO.equals(address)) {
+        if (balance <= 0) {
             return false;
         }
 
-        return account.getExpiry() >= Instant.now().getEpochSecond();
+        // expiry validation
+        if (account.getExpiry() != null && account.getExpiry() > 0L) {
+            if (account.isSmartContract()) {
+                // only consider contract accounts expiry if renewal is enabled
+                if (mirrorNodeEvmProperties.shouldAutoRenewContracts()
+                        && account.getExpiry() < Instant.now().getEpochSecond()) {
+                    return false;
+                }
+            } else {
+                // true for accounts if expiry is defined and within range
+                return account.getExpiry() >= Instant.now().getEpochSecond();
+            }
+        }
+
+        return true;
     }
 
     @Override

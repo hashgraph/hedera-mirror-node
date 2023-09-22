@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
-import static com.hedera.mirror.common.domain.entity.AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -69,20 +69,17 @@ class MirrorEntityAccessTest {
     @Mock
     private Store store;
 
+    @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     private MirrorEntityAccess mirrorEntityAccess;
+
+    private long defaultBalance = 23L;
 
     @BeforeEach
     void setUp() {
-        mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
-    }
-
-    @Test
-    void isUsableWithPositiveBalance() {
-        final long balance = 23L;
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getBalance()).thenReturn(balance);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isTrue();
+        mirrorEntityAccess =
+                new MirrorEntityAccess(contractStateRepository, contractRepository, store, mirrorNodeEvmProperties);
     }
 
     @Test
@@ -118,6 +115,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void isUsableWithNotExpiredTimestamp() {
+        when(account.getBalance()).thenReturn(defaultBalance);
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         when(account.getExpiry()).thenReturn(expiredTimestamp);
@@ -135,6 +133,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
+        when(account.getBalance()).thenReturn(defaultBalance);
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         when(account.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
@@ -143,8 +142,42 @@ class MirrorEntityAccessTest {
 
     @Test
     void isUsableWithEmptyExpiry() {
+        when(account.getBalance()).thenReturn(defaultBalance);
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getExpiry()).thenReturn(DEFAULT_EXPIRY_TIMESTAMP);
+        when(account.getExpiry()).thenReturn(null);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isUsableContractWithValidExpiryAndAutoRenew() {
+        when(account.isSmartContract()).thenReturn(true);
+        when(account.getBalance()).thenReturn(defaultBalance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getExpiry()).thenReturn(Instant.MAX.getEpochSecond());
+        when(mirrorNodeEvmProperties.shouldAutoRenewContracts()).thenReturn(true);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isNotUsableContractWithPastExpiryAndAutoRenew() {
+        when(account.isSmartContract()).thenReturn(true);
+        when(account.getBalance()).thenReturn(defaultBalance);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getExpiry()).thenReturn(1L);
+        when(mirrorNodeEvmProperties.shouldAutoRenewContracts()).thenReturn(true);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isUsableContractWithPastExpiryAndNoAutoRenew() {
+        when(account.getBalance()).thenReturn(defaultBalance);
+        when(account.isSmartContract()).thenReturn(true);
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getExpiry()).thenReturn(1L);
+        when(mirrorNodeEvmProperties.shouldAutoRenewContracts()).thenReturn(false);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
     }
