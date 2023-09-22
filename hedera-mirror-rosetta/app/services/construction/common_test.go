@@ -181,31 +181,6 @@ func TestIsZeroAccountId(t *testing.T) {
 	}
 }
 
-func TestIsZeroTokenId(t *testing.T) {
-	var tests = []struct {
-		name     string
-		tokenId  hedera.TokenID
-		expected bool
-	}{
-		{
-			name:     "ZeroAccountId",
-			tokenId:  hedera.TokenID{},
-			expected: true,
-		},
-		{
-			name:     "NonZeroAccountId",
-			tokenId:  hedera.TokenID{Token: 105},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, isZeroTokenId(tt.tokenId))
-		})
-	}
-}
-
 func TestParseOperationMetadataWithValidate(t *testing.T) {
 	type data struct {
 		Name  string `json:"name" validate:"required"`

@@ -19,7 +19,7 @@ EOF
 
 genesis_timestamp_query=$(cat <<EOF
 select consensus_timestamp
-from account_balance_file
+from account_balance
 order by consensus_timestamp asc
 limit 1
 EOF

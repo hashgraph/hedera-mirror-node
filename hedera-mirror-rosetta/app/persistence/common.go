@@ -23,8 +23,8 @@ package persistence
 import "github.com/jackc/pgtype"
 
 const (
-	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
-                             from account_balance_file
+	genesisTimestampQuery = `select consensus_timestamp as timestamp
+                             from account_balance
                              order by consensus_timestamp
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "
