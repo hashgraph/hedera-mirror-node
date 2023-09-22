@@ -101,10 +101,6 @@ func isZeroAccountId(accountId hedera.AccountID) bool {
 	return accountId.Shard == 0 && accountId.Realm == 0 && accountId.Account == 0
 }
 
-func isZeroTokenId(tokenId hedera.TokenID) bool {
-	return tokenId.Shard == 0 && tokenId.Realm == 0 && tokenId.Token == 0
-}
-
 func parseOperationMetadata(
 	validate *validator.Validate,
 	out interface{},
