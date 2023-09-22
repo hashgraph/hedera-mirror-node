@@ -25,7 +25,9 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.services.store.models.Account;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -42,34 +44,32 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     // We should check only accounts usability
     @Override
     public boolean isUsable(final Address address) {
-        final var account = store.getAccount(address, OnMissing.DONT_THROW);
-
-        final var balance = account.getBalance();
-
-        final var isDeleted = account.isDeleted();
-
-        if (isDeleted) {
-            return false;
-        }
-
-        if (balance < 0) {
-            return false;
-        }
 
         if (Address.ZERO.equals(address)) {
             return false;
         }
 
+        final Account account;
+        try {
+            account = store.getAccount(address, OnMissing.THROW);
+        } catch (final InvalidTransactionException ex) {
+            return false;
+        }
+
+        if (account.isDeleted()) {
+            return false;
+        }
+
+        if (account.getBalance() < 0) {
+            return false;
+        }
+
         // expiry validation
-        if (account.isSmartContract()) {
-            // only consider contract accounts expiry if renewal is enabled
-            if (mirrorNodeEvmProperties.shouldAutoRenewContracts()
-                    && account.getExpiry() < Instant.now().getEpochSecond()) {
-                return false;
-            }
-        } else {
-            // true for accounts if expiry is defined and within range
-            return account.getExpiry() >= Instant.now().getEpochSecond();
+        final var accountsCanExpire = account.isSmartContract()
+                ? mirrorNodeEvmProperties.shouldAutoRenewContracts()
+                : mirrorNodeEvmProperties.shouldAutoRenewAccounts();
+        if (accountsCanExpire && account.getExpiry() >= Instant.now().getEpochSecond()) {
+            return false;
         }
 
         return true;
