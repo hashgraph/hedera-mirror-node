@@ -25,7 +25,6 @@ import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -36,9 +35,15 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final Store store;
 
-    // We should check only accounts usability
+    // An account is usable if it isn't deleted, if it has a balance >0, or if it has balance==0
+    // but is not the 0-address or the empty account.  (This allows the special case where
+    // a synthetic 0-address account is used in eth_estimateGas.)
     @Override
     public boolean isUsable(final Address address) {
+        // Do not consider expiry/renewal at this time.  It is not enabled in the network.
+        // When it is handled it must be gated on (already existing) mirror node feature flags
+        // (properties).
+
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
 
         final var balance = account.getBalance();
@@ -52,11 +57,19 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return true;
         }
 
+        if (balance < 0) {
+            return false;
+        }
+
         if (Address.ZERO.equals(address)) {
             return false;
         }
 
-        return account.getExpiry() >= Instant.now().getEpochSecond();
+        if (account.isEmptyAccount()) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
