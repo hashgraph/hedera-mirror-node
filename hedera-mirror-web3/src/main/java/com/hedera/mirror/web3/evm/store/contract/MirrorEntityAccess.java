@@ -42,11 +42,6 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     // We should check only accounts usability
     @Override
     public boolean isUsable(final Address address) {
-        // check address validity first before querying store
-        if (Address.ZERO.equals(address)) {
-            return false;
-        }
-
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
 
         final var balance = account.getBalance();
@@ -58,6 +53,10 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         }
 
         if (balance < 0) {
+            return false;
+        }
+
+        if (Address.ZERO.equals(address)) {
             return false;
         }
 

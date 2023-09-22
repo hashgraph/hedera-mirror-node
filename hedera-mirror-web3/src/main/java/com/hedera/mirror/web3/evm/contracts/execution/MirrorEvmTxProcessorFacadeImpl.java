@@ -67,6 +67,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final BasicHbarCentExchange basicHbarCentExchange;
     private final PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
             final AbstractAutoCreationLogic autoCreationLogic,
@@ -81,7 +83,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -95,6 +98,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.databaseAccessors = databaseAccessors;
         this.basicHbarCentExchange = basicHbarCentExchange;
         this.prngSystemPrecompiledContract = prngSystemPrecompiledContract;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     @Override
@@ -111,7 +115,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
         final var store = new StoreImpl(databaseAccessors);
         final var mirrorEvmContractAliases = new MirrorEvmContractAliases(store);
-        final var mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+        final var mirrorEntityAccess =
+                new MirrorEntityAccess(contractStateRepository, contractRepository, store, mirrorNodeEvmProperties);
         final var tokenAccessor = new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
         final var accountAccessor = new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
         final var codeCache = new AbstractCodeCache(expirationCacheTime, mirrorEntityAccess);
