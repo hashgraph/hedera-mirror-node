@@ -38,6 +38,10 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     // An account is usable if it isn't deleted, if it has a balance >0, or if it has balance==0
     // but is not the 0-address or the empty account.  (This allows the special case where
     // a synthetic 0-address account is used in eth_estimateGas.)
+    @SuppressWarnings("java:S1126") // "replace this if-then-else statement by a single return"
+    // ^ Complaining about the final if- before the `return true`. But it is clear that this
+    // method is a ladder of tests and merging the final `return true` into the last if- would
+    // impair readability, in this case.
     @Override
     public boolean isUsable(final Address address) {
         // Do not consider expiry/renewal at this time.  It is not enabled in the network.

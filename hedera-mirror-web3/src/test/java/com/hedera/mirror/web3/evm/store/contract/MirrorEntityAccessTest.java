@@ -103,7 +103,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestamp() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
@@ -111,7 +111,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestampAndNullBalance() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
@@ -119,7 +119,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithNotExpiredTimestamp() {
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
@@ -129,7 +129,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredAutoRenewTimestamp() {
         final long autoRenewPeriod = Instant.MAX.getEpochSecond();
@@ -138,7 +138,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
@@ -147,7 +147,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
-    @Disabled
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithEmptyExpiry() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
