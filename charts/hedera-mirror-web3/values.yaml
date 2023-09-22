@@ -306,6 +306,8 @@ updateStrategy:
 volumeMounts:
   config:
     mountPath: /usr/etc/hedera
+  temp:
+    mountPath: /tmp
 
 # Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
@@ -313,3 +315,7 @@ volumes:
     secret:
       defaultMode: 420
       secretName: '{{ include "hedera-mirror-web3.fullname" . }}'
+  temp:
+    emptyDir:
+      medium: Memory
+      sizeLimit: 500Mi
