@@ -1,5 +1,5 @@
 @network @fullsuite
-Feature: Account Coverage Feature
+Feature: Network Stake Coverage Feature
 
     @networkstake @acceptance
     Scenario Outline: Get network stake
