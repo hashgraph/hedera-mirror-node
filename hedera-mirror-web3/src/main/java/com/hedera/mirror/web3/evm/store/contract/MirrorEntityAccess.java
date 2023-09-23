@@ -62,6 +62,10 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return false;
         }
 
+        if (account.isEmptyAccount()) {
+            return false;
+        }
+
         return true;
     }
 
