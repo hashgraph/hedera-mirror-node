@@ -38,9 +38,16 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final Store store;
 
-    // We should check only accounts usability
+    // An account is usable if it isn't deleted or if it has balance==0 but is not the 0-address
+    // or the empty account.  (This allows the special case where a synthetic 0-address account
+    // is used in eth_estimateGas.)
+    @SuppressWarnings("java:S1126") // "replace this if-then-else statement by a single return"
     @Override
     public boolean isUsable(final Address address) {
+        // Do not consider expiry/renewal at this time.  It is not enabled in the network.
+        // When it is handled it must be gated on (already existing) mirror node feature flags
+        // (properties).
+
         final var account = store.getAccount(address, OnMissing.DONT_THROW);
 
         final var balance = account.getBalance();
@@ -58,7 +65,11 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return false;
         }
 
-        return account.getExpiry() >= Instant.now().getEpochSecond();
+        if (account.isEmptyAccount()) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
