@@ -39,6 +39,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.CustomLog;
@@ -66,12 +67,16 @@ public class AccountClient extends AbstractNetworkClient {
     @Override
     public void clean() {
         log.info("Deleting {} accounts", accountIds.size());
-        accountIds.forEach(this::delete);
-        accountIds.clear();
+        deleteAll(accountIds, this::delete);
         accountMap.clear();
 
         var cost = initialBalance - getBalance();
         log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
+    }
+
+    @Override
+    public int getOrder() {
+        return 1; // Run cleanup last so it prints cost
     }
 
     public synchronized ExpandedAccountId getTokenTreasuryAccount() {
@@ -95,7 +100,10 @@ public class AccountClient extends AbstractNetworkClient {
     }
 
     public ExpandedAccountId getAccount(AccountNameEnum accountNameEnum) {
-        // retrieve account, setting if it doesn't exist
+        if (accountNameEnum == AccountNameEnum.OPERATOR) {
+            return sdkClient.getExpandedOperatorAccountId();
+        }
+
         ExpandedAccountId accountId = accountMap.computeIfAbsent(accountNameEnum, x -> {
             try {
                 return createNewAccount(DEFAULT_INITIAL_BALANCE, accountNameEnum);
@@ -107,11 +115,6 @@ public class AccountClient extends AbstractNetworkClient {
 
         if (accountId == null) {
             throw new NetworkException("Null accountId retrieved from receipt");
-        }
-
-        if (log.isDebugEnabled()) {
-            long balance = getBalance(accountId);
-            log.debug("Retrieved Account: {}, {} w balance {}", accountId, accountNameEnum, balance);
         }
 
         return accountId;
@@ -176,7 +179,11 @@ public class AccountClient extends AbstractNetworkClient {
         // Get the keyType from the enum
         Key.KeyCase keyType = accountNameEnum.keyType;
         return createCryptoAccount(
-                Hbar.fromTinybars(initialBalance), accountNameEnum.receiverSigRequired, null, null, keyType);
+                Hbar.fromTinybars(initialBalance),
+                accountNameEnum.receiverSigRequired,
+                null,
+                accountNameEnum.name(),
+                keyType);
     }
 
     private ExpandedAccountId createCryptoAccount(
@@ -220,7 +227,13 @@ public class AccountClient extends AbstractNetworkClient {
                     "Receipt for %s returned no accountId, receipt: %s", response.getTransactionId(), receipt));
         }
 
-        log.info("Created new account {} with {} via {}", newAccountId, initialBalance, response.getTransactionId());
+        var accountName = AccountNameEnum.of(memo).map(a -> a + " ").orElse("");
+        log.info(
+                "Created new account {}{} with {} via {}",
+                accountName,
+                newAccountId,
+                initialBalance,
+                response.getTransactionId());
         var accountId = new ExpandedAccountId(newAccountId, privateKey);
         accountIds.add(accountId);
         return accountId;
@@ -295,15 +308,19 @@ public class AccountClient extends AbstractNetworkClient {
     public enum AccountNameEnum {
         ALICE(false, Key.KeyCase.ED25519),
         BOB(true, Key.KeyCase.ECDSA_SECP256K1),
-        CAROL(true, Key.KeyCase.ED25519),
-        DAVE(true, Key.KeyCase.ED25519);
+        CAROL(false, Key.KeyCase.ED25519),
+        DAVE(false, Key.KeyCase.ED25519),
+        OPERATOR(false, Key.KeyCase.ED25519); // These may not be accurate for operator
 
         private final boolean receiverSigRequired;
         private final Key.KeyCase keyType;
 
-        @Override
-        public String toString() {
-            return String.format("%s, receiverSigRequired: %s", name(), receiverSigRequired);
+        static Optional<AccountNameEnum> of(String name) {
+            try {
+                return Optional.ofNullable(name).map(AccountNameEnum::valueOf);
+            } catch (Exception e) {
+                return Optional.empty();
+            }
         }
     }
 }

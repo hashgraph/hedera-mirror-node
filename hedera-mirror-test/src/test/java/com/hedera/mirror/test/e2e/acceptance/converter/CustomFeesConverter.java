@@ -16,11 +16,12 @@
 
 package com.hedera.mirror.test.e2e.acceptance.converter;
 
-import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
 import com.hedera.mirror.test.e2e.acceptance.steps.TokenFeature;
 import io.cucumber.java.DataTableType;
@@ -32,44 +33,38 @@ import org.apache.commons.lang3.StringUtils;
 @RequiredArgsConstructor
 public class CustomFeesConverter {
 
+    private final AccountClient accountClient;
     private final TokenFeature tokenFeature;
 
     @DataTableType
     public MirrorAssessedCustomFee mirrorAssessedCustomFee(Map<String, String> entry) {
-        MirrorAssessedCustomFee assessedCustomFee = new MirrorAssessedCustomFee();
+        var collector = accountClient.getAccount(AccountNameEnum.valueOf(entry.get("collector")));
 
+        var assessedCustomFee = new MirrorAssessedCustomFee();
         assessedCustomFee.setAmount(Long.parseLong(entry.get("amount")));
-        assessedCustomFee.setCollectorAccountId(tokenFeature
-                .getRecipientAccountId(Integer.parseInt(entry.get("collector")))
-                .toString());
+        assessedCustomFee.setCollectorAccountId(collector.getAccountId().toString());
         assessedCustomFee.setTokenId(getToken(entry.get("token")));
-
         return assessedCustomFee;
     }
 
     @DataTableType
     public CustomFee customFee(Map<String, String> entry) {
         String amount = entry.get("amount");
-        AccountId collector = tokenFeature.getRecipientAccountId(Integer.parseInt(entry.get("collector")));
+        var collector = accountClient.getAccount(AccountNameEnum.valueOf(entry.get("collector")));
 
         if (StringUtils.isNotEmpty(amount)) {
-            // fixed fee
-            CustomFixedFee fixedFee = new CustomFixedFee();
-
+            var fixedFee = new CustomFixedFee();
             fixedFee.setAmount(Long.parseLong(amount));
-            fixedFee.setFeeCollectorAccountId(collector);
+            fixedFee.setFeeCollectorAccountId(collector.getAccountId());
             fixedFee.setDenominatingTokenId(getTokenId(entry.get("token")));
-
             return fixedFee;
         } else {
-            CustomFractionalFee fractionalFee = new CustomFractionalFee();
-
+            var fractionalFee = new CustomFractionalFee();
             fractionalFee.setNumerator(Long.parseLong(entry.get("numerator")));
             fractionalFee.setDenominator(Long.parseLong(entry.get("denominator")));
-            fractionalFee.setFeeCollectorAccountId(collector);
+            fractionalFee.setFeeCollectorAccountId(collector.getAccountId());
             fractionalFee.setMax(getValueOrDefault(entry.get("maximum")));
             fractionalFee.setMin(getValueOrDefault(entry.get("minimum")));
-
             return fractionalFee;
         }
     }
@@ -81,7 +76,7 @@ public class CustomFeesConverter {
     }
 
     private TokenId getTokenId(String tokenIndex) {
-        return StringUtils.isNotEmpty(tokenIndex) ? tokenFeature.getTokenId(Integer.parseInt(tokenIndex)) : null;
+        return StringUtils.isNotEmpty(tokenIndex) ? tokenFeature.getTokenId() : null;
     }
 
     private long getValueOrDefault(String value) {

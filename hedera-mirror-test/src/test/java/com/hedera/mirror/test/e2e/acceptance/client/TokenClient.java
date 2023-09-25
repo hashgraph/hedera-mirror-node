@@ -76,17 +76,8 @@ public class TokenClient extends AbstractNetworkClient {
     public void clean() {
         var admin = sdkClient.getExpandedOperatorAccountId();
         log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), tokenAccounts.size());
-
-        for (var tokenId : tokenIds) {
-            delete(admin, tokenId);
-        }
-
-        for (var tokenAccount : tokenAccounts) {
-            dissociate(tokenAccount.accountId, tokenAccount.tokenId);
-        }
-
-        tokenIds.clear();
-        tokenAccounts.clear();
+        deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
+        deleteAll(tokenAccounts, tokenAccount -> dissociate(tokenAccount.accountId, tokenAccount.tokenId));
     }
 
     @Override
@@ -301,6 +292,11 @@ public class TokenClient extends AbstractNetworkClient {
                 .setTransactionMemo(getMemo("Associate w token"));
         var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction);
         log.info("Associated contract {} with token {} via {}", contractId, token, response.getTransactionId());
+        tokenAccounts.add(new TokenAccount(
+                token,
+                new ExpandedAccountId(
+                        AccountId.fromString(contractId.toString()),
+                        sdkClient.getExpandedOperatorAccountId().getPrivateKey())));
         return response;
     }
 

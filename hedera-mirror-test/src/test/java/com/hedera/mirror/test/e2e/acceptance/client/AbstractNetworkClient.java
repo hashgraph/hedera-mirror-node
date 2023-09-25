@@ -37,6 +37,8 @@ import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -64,6 +66,18 @@ public abstract class AbstractNetworkClient implements Cleanable {
     @Override
     public void clean() {
         // Nothing to clean up
+    }
+
+    protected final <T> void deleteAll(Collection<T> ids, Consumer<T> deleteAction) {
+        ids.forEach(id -> {
+            try {
+                deleteAction.accept(id);
+            } catch (Exception e) {
+                log.warn("Unable to delete {}: {}", id, e.getMessage());
+            }
+        });
+
+        ids.clear();
     }
 
     @SneakyThrows

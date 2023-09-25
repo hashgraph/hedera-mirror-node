@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.test.e2e.acceptance;
 
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import io.cucumber.java.ParameterType;
 import io.cucumber.spring.CucumberContextConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.platform.suite.api.IncludeEngines;
@@ -30,4 +33,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CucumberContextConfiguration
 @SuppressWarnings("java:S2187") // Ignore no tests in file warning
 @Tag("acceptance")
-public class AcceptanceTest {}
+public class AcceptanceTest {
+
+    @ParameterType("\"?([A-Z]+)\"?")
+    public AccountNameEnum account(String name) {
+        return AccountNameEnum.valueOf(name);
+    }
+
+    @ParameterType("\"?([A-Z]+)\"?")
+    public TokenNameEnum token(String name) {
+        return TokenNameEnum.valueOf(name);
+    }
+}
