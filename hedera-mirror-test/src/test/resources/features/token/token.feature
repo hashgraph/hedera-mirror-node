@@ -1,7 +1,7 @@
-@fullsuite @acceptance @critical @release @token
+@fullsuite @acceptance @token
 Feature: HTS Base Coverage Feature
 
-  @fungible
+  @fungible @critical @release
   Scenario Outline: Validate Token Flow - Create, Associate, Freeze, GrantKyc, Fund, Update, Burn, Mint, Wipe, Pause, Unpause, Dissociate, Delete
     Given I successfully create a new token with freeze status 2 and kyc status 1
     Then the mirror node REST API should return the transaction
@@ -36,7 +36,7 @@ Feature: HTS Base Coverage Feature
       | amount | freezeStatus | kycStatus | modifySupplyAmount |
       | 2350   | 2            | 1         | 100                |
 
-  @nft
+  @nft @critical @release
   Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
     Given I successfully create a new nft with supplyType <supplyType>
     Then the mirror node REST API should return the transaction
@@ -62,7 +62,7 @@ Feature: HTS Base Coverage Feature
       | supplyType |
       | "INFINITE" |
 
-  @acceptance @customfees
+  @customfees
   Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer
     Given I successfully create a new token with custom fees schedule
       | amount | numerator | denominator | collector | maximum | minimum | token |
