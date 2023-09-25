@@ -22,7 +22,7 @@ import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
 const dbNamePrefix = 'test';
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.0.0';
+const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.0.1';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
@@ -58,7 +58,10 @@ const createDbContainer = async (maxWorkers) => {
         grant temporary on database ${dbName} to ${poolConfig.user};
         alter type timestamptz owner to ${poolConfig.user}`;
 
-      const workerPool = new pg.Pool({...poolConfig, database: dbName});
+      const workerPool = new pg.Pool({
+        ...poolConfig,
+        database: dbName,
+      });
       await workerPool.query(query);
       await workerPool.end();
     }
