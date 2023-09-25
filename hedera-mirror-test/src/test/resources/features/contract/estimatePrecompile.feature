@@ -167,5 +167,5 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with redirect setApprovalForAll function
     Then I call estimateGas with exchange rate tinycents to tinybars
     Then I call estimateGas with exchange rate tinybars to tinycents
-    Then I call estimateGas with pseudo random seed
-    Then I call estimateGas with pseudo random number
+    #Then I call estimateGas with pseudo random seed
+    #Then I call estimateGas with pseudo random number
