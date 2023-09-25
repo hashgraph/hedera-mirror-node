@@ -78,9 +78,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private TokenId nonFungibleTokenId;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedErcTestContract;
-    private ExchangeRate currentExchangeRate;
-    private long createTokenValue;
-    private long createTokenValueWithCustomFees;
     private DeployedContract deployedPrecompileContract;
     private ExpandedAccountId receiverAccount;
     private String receiverAccountAlias;
@@ -108,19 +105,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     @Given("I get exchange rates")
-    public void getExchangeRate() throws IOException {
-        final var exchangeRates = mirrorClient.getExchangeRates();
-        currentExchangeRate = new ExchangeRate(
-                exchangeRates.getCurrentRate().getCentEquivalent(),
-                exchangeRates.getCurrentRate().getHbarEquivalent());
-        final long hbarPriceInCents = currentExchangeRate.centEquivalent() / currentExchangeRate.hbarEquivalent();
-        final int usdInCents = 100;
-        // create token requires 1 usd in fees
-        // create token with custom fees requires 2 usd in fees
-        // usdInCents / hbarPriceInCents = amount of hbars equal to 1 usd. Increment that number with 1 for safety and
-        // multiply that number with 10 ^ 8 to convert hbar to tinybar
-        createTokenValue = (usdInCents / hbarPriceInCents + 1) * 100000000;
-        createTokenValueWithCustomFees = (usdInCents * 2 / hbarPriceInCents + 1) * 100000000;
+    public void getExchangeRate() {
+        exchangeRates = mirrorClient.getExchangeRates();
     }
 
     @Given("I successfully create Precompile contract with {int} balance")
@@ -773,19 +759,45 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_FUNGIBLE_TOKEN)
                 .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
 
+        try {
+            validateGasEstimationForCreateToken(
+                    Strings.encode(encodedFunctionCall),
+                    ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
+                    calculateCreateTokenFee(1, true));
+            return;
+
+        } catch (AssertionError e) {
+            log.warn("Assertion failed for estimateGas with current exchange rates. Trying with next exchange rates.");
+        } catch (Exception e) {
+            log.warn(
+                    "Exception occurred for estimateGas with current exchange rates. Trying with next exchange rates.");
+        }
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
-                createTokenValue);
+                calculateCreateTokenFee(1, false));
     }
 
     @Then("I call estimateGas with CreateNFT function")
     public void createNFTEstimateGas() {
         ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_NFT)
                 .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
-
+        try {
+            validateGasEstimationForCreateToken(
+                    Strings.encode(encodedFunctionCall),
+                    ContractMethods.CREATE_NFT.getActualGas(),
+                    calculateCreateTokenFee(1, true));
+            return;
+        } catch (AssertionError e) {
+            log.warn("Assertion failed for estimateGas with current exchange rates. Trying with next exchange rates.");
+        } catch (Exception e) {
+            log.warn(
+                    "Exception occurred for estimateGas with current exchange rates. Trying with next exchange rates.");
+        }
         validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall), ContractMethods.CREATE_NFT.getActualGas(), createTokenValue);
+                Strings.encode(encodedFunctionCall),
+                ContractMethods.CREATE_NFT.getActualGas(),
+                calculateCreateTokenFee(1, false));
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
@@ -795,11 +807,22 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .encodeCallWithArgs(
                         asAddress(admin.getAccountId().toSolidityAddress()),
                         asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
-
+        try {
+            validateGasEstimationForCreateToken(
+                    Strings.encode(encodedFunctionCall),
+                    ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(),
+                    calculateCreateTokenFee(2, true));
+            return;
+        } catch (AssertionError e) {
+            log.warn("Assertion failed for estimateGas with current exchange rates. Trying with next exchange rates.");
+        } catch (Exception e) {
+            log.warn(
+                    "Exception occurred for estimateGas with current exchange rates. Trying with next exchange rates.");
+        }
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(),
-                createTokenValueWithCustomFees);
+                calculateCreateTokenFee(2, false));
     }
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
@@ -809,10 +832,22 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                         asAddress(admin.getAccountId().toSolidityAddress()),
                         asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
 
+        try {
+            validateGasEstimationForCreateToken(
+                    Strings.encode(encodedFunctionCall),
+                    ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
+                    calculateCreateTokenFee(2, true));
+            return;
+        } catch (AssertionError e) {
+            log.warn("Assertion failed for estimateGas with current exchange rates. Trying with next exchange rates.");
+        } catch (Exception e) {
+            log.warn(
+                    "Exception occurred for estimateGas with current exchange rates. Trying with next exchange rates.");
+        }
         validateGasEstimationForCreateToken(
                 Strings.encode(encodedFunctionCall),
                 ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
-                createTokenValueWithCustomFees);
+                calculateCreateTokenFee(2, false));
     }
 
     @And("I approve and transfer fungible tokens to receiver account")

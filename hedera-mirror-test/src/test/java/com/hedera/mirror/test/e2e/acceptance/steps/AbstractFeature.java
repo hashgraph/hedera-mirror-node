@@ -28,6 +28,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.io.IOException;
@@ -52,6 +53,22 @@ abstract class AbstractFeature {
 
     @Autowired
     protected ObjectMapper mapper;
+
+    protected ExchangeRateResponse exchangeRates;
+
+    protected long calculateCreateTokenFee(double usdFee, boolean useCurrentFee) {
+        if (exchangeRates == null) {
+            throw new RuntimeException("Exchange rates are not initialized.");
+        }
+        final var fee = useCurrentFee ? exchangeRates.getCurrentRate() : exchangeRates.getNextRate();
+        final long hbarPriceInCents = fee.getCentEquivalent() / fee.getHbarEquivalent();
+        final int usdInCents = 100;
+        // create token requires 1 usd in fees
+        // create token with custom fees requires 2 usd in fees
+        // usdInCents / hbarPriceInCents = amount of hbars equal to 1 usd. Increment that number with 1 for safety and
+        // multiply that number with 10 ^ 8 to convert hbar to tinybar
+        return (long) ((usdInCents * usdFee / hbarPriceInCents + 1) * 100000000);
+    }
 
     protected MirrorTransaction verifyMirrorTransactionsResponse(MirrorNodeClient mirrorClient, int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
@@ -120,7 +137,7 @@ abstract class AbstractFeature {
     protected record DeployedContract(
             FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 
-    protected record ExchangeRate(int centEquivalent, int hbarEquivalent) {}
+    //    protected record ExchangeRate(int centEquivalent, int hbarEquivalent) {}
 
     protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
