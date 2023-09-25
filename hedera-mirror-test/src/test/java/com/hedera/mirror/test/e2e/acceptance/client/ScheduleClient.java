@@ -26,14 +26,24 @@ import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class ScheduleClient extends AbstractNetworkClient {
 
+    private final Collection<ScheduleId> scheduleIds = new CopyOnWriteArrayList<>();
+
     public ScheduleClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
+    }
+
+    @Override
+    public void clean() {
+        log.info("Deleting {} schedules", scheduleIds.size());
+        deleteAll(scheduleIds, id -> deleteSchedule(id));
     }
 
     public NetworkTransactionResponse createSchedule(
@@ -62,6 +72,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(scheduleCreateTransaction);
         var scheduleId = response.getReceipt().scheduleId;
         log.info("Created new schedule {} with memo '{}' via {}", scheduleId, memo, response.getTransactionId());
+        scheduleIds.add(scheduleId);
         return response;
     }
 
@@ -82,6 +93,7 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(scheduleDeleteTransaction);
         log.info("Deleted schedule {} via {}", scheduleId, response.getTransactionId());
+        scheduleIds.remove(scheduleId);
         return response;
     }
 }
