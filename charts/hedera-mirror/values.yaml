@@ -72,9 +72,9 @@ fullnameOverride: ""
 
 global:
   hostname: ""
-  image: { }
+  image: {}
   namespaceOverride: ""
-  podAnnotations: { }
+  podAnnotations: {}
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
 graphql:
@@ -108,7 +108,7 @@ importer:
     - secretRef:
         name: "{{ .Release.Name }}-redis"
 
-labels: { }
+labels: {}
 
 monitor:
   enabled: true
@@ -286,7 +286,7 @@ stackgres:
   enabled: false
   extensions:
     - name: citus
-      version: "12.0.1"
+      version: "12.0-1"
     - name: btree_gist
       version: stable
   nameOverride: citus
@@ -337,7 +337,7 @@ test:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
-  env: { }
+  env: {}
   args:
     - -Dcucumber.ansi-colors.disabled=true
     - -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}

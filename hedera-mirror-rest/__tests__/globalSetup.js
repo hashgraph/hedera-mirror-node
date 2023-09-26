@@ -58,10 +58,7 @@ const createDbContainer = async (maxWorkers) => {
         grant temporary on database ${dbName} to ${poolConfig.user};
         alter type timestamptz owner to ${poolConfig.user}`;
 
-      const workerPool = new pg.Pool({
-        ...poolConfig,
-        database: dbName,
-      });
+      const workerPool = new pg.Pool({...poolConfig, database: dbName});
       await workerPool.query(query);
       await workerPool.end();
     }
