@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    docker-image: gcr.io/mirrornode/citus:12.0.1
+    docker-image: gcr.io/mirrornode/citus:12.1.0
     initScriptPath: db/init-v2.sql
 spring:
   flyway:
