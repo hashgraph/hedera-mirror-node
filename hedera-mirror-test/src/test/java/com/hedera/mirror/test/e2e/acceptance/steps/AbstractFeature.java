@@ -61,7 +61,7 @@ abstract class AbstractFeature {
             throw new RuntimeException("Exchange rates are not initialized.");
         }
         final var fee = useCurrentFee ? exchangeRates.getCurrentRate() : exchangeRates.getNextRate();
-        final long hbarPriceInCents = fee.getCentEquivalent() / fee.getHbarEquivalent();
+        final double hbarPriceInCents = (double) fee.getCentEquivalent() / fee.getHbarEquivalent();
         final int usdInCents = 100;
         // create token requires 1 usd in fees
         // create token with custom fees requires 2 usd in fees
