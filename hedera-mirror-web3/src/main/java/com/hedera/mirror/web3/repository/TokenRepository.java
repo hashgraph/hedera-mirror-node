@@ -37,13 +37,13 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
             unless = "#result == null")
     @Query(
             value = "(SELECT * FROM token "
-                  + "WHERE token_id = ?1 "
-                  + "AND created_timestamp = ?2 "
-                  + "UNION ALL "
-                  + "SELECT * FROM token_history "
-                  + "WHERE token_id = ?1 "
-                  + "AND created_timestamp = ?2) "
-                  + "LIMIT 1",
+                    + "WHERE token_id = ?1 "
+                    + "AND created_timestamp = ?2 "
+                    + "UNION ALL "
+                    + "SELECT * FROM token_history "
+                    + "WHERE token_id = ?1 "
+                    + "AND created_timestamp = ?2) "
+                    + "LIMIT 1",
             nativeQuery = true)
     Optional<Token> findByTokenIdAndTimestamp(Long tokenId, Long createdTimestamp);
 }

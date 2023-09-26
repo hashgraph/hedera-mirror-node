@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -30,11 +29,10 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findById() {
-        var tokenBalance1 = domainBuilder.tokenBalance().get();
-        var tokenBalance2 = domainBuilder.tokenBalance().get();
-        var tokenBalance3 = domainBuilder.tokenBalance().get();
+        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+        var tokenBalance2 = domainBuilder.tokenBalance().persist();
+        var tokenBalance3 = domainBuilder.tokenBalance().persist();
 
-        tokenBalanceRepository.saveAll(List.of(tokenBalance1, tokenBalance2, tokenBalance3));
         Assertions.assertThat(tokenBalanceRepository.findById(tokenBalance1.getId()))
                 .get()
                 .isEqualTo(tokenBalance1);

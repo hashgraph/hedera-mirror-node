@@ -28,9 +28,8 @@ class TokenTransferRepositoryTest extends Web3IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
 
     @Test
-    void save() {
-        var tokenTransfer = domainBuilder.tokenTransfer().get();
-        tokenTransferRepository.save(tokenTransfer);
+    void findById() {
+        var tokenTransfer = domainBuilder.tokenTransfer().persist();
         Assertions.assertThat(tokenTransferRepository.findById(tokenTransfer.getId()))
                 .get()
                 .isEqualTo(tokenTransfer);
