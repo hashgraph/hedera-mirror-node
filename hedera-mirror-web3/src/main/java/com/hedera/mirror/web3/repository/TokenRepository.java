@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_T
 import com.hedera.mirror.common.domain.token.Token;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface TokenRepository extends CrudRepository<Token, Long> {
@@ -28,4 +29,21 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Override
     @Cacheable(cacheNames = "token", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<Token> findById(Long tokenId);
+
+    @Cacheable(
+            cacheNames = "tokenUnionCache",
+            key = "#tokenId + '-' + #createdTimestamp",
+            cacheManager = CACHE_MANAGER_TOKEN,
+            unless = "#result == null")
+    @Query(
+            value = "(SELECT * FROM token "
+                  + "WHERE token_id = ?1 "
+                  + "AND created_timestamp = ?2 "
+                  + "UNION ALL "
+                  + "SELECT * FROM token_history "
+                  + "WHERE token_id = ?1 "
+                  + "AND created_timestamp = ?2) "
+                  + "LIMIT 1",
+            nativeQuery = true)
+    Optional<Token> findByTokenIdAndTimestamp(Long tokenId, Long createdTimestamp);
 }

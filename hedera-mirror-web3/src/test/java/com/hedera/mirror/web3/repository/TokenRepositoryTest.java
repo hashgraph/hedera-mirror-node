@@ -45,4 +45,42 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .returns(token.getFreezeDefault(), Token::getFreezeDefault)
                 .returns(token.getKycKey(), Token::getKycKey);
     }
+
+    @Test
+    void findByIdAndTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository
+                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getCreatedTimestamp())
+                        .get())
+                .returns(token.getName(), Token::getName)
+                .returns(token.getSymbol(), Token::getSymbol)
+                .returns(token.getTotalSupply(), Token::getTotalSupply)
+                .returns(token.getDecimals(), Token::getDecimals)
+                .returns(token.getType(), Token::getType)
+                .returns(token.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(token.getKycKey(), Token::getKycKey);
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository
+                        .findByTokenIdAndTimestamp(tokenHistory.getTokenId(), tokenHistory.getCreatedTimestamp())
+                        .get())
+                .returns(tokenHistory.getName(), Token::getName)
+                .returns(tokenHistory.getSymbol(), Token::getSymbol)
+                .returns(tokenHistory.getTotalSupply(), Token::getTotalSupply)
+                .returns(tokenHistory.getDecimals(), Token::getDecimals)
+                .returns(tokenHistory.getType(), Token::getType)
+                .returns(tokenHistory.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(tokenHistory.getKycKey(), Token::getKycKey);
+    }
 }
