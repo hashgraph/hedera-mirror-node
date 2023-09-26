@@ -118,15 +118,17 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessor.get().execute(
-                    params.getSender(),
-                    params.getReceiver(),
-                    params.isEstimate() ? estimatedGas : params.getGas(),
-                    params.getValue(),
-                    params.getCallData(),
-                    Instant.now(),
-                    params.isStatic(),
-                    isEstimate);
+            transactionResult = mirrorEvmTxProcessor
+                    .get()
+                    .execute(
+                            params.getSender(),
+                            params.getReceiver(),
+                            params.isEstimate() ? estimatedGas : params.getGas(),
+                            params.getValue(),
+                            params.getCallData(),
+                            Instant.now(),
+                            params.isStatic(),
+                            isEstimate);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }

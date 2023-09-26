@@ -146,6 +146,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     public void setIsCreate(boolean isCreate) {
         ThreadLocalHolder.isCreate.set(isCreate);
     }
+
     public void setIsEstimate(boolean isEstimate) {
         ThreadLocalHolder.isEstimate.set(isEstimate);
     }
