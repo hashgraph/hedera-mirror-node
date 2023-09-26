@@ -14,4 +14,4 @@ Feature: Schedule Base Coverage Feature
     And the mirror node REST API should verify the executed schedule entity
     Examples:
       | accountName | httpStatusCode |
-      | "CAROL"     | 200            |
+      | "BOB"       | 200            |

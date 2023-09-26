@@ -34,8 +34,10 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
@@ -55,7 +57,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsRespo
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
-import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -75,6 +76,7 @@ import org.springframework.http.HttpStatus;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TokenFeature extends AbstractFeature {
+
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
 
@@ -82,93 +84,75 @@ public class TokenFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
 
-    // Legacy (index based) tracking
-    private final List<ExpandedAccountId> recipients = new ArrayList<>();
-    private final List<ExpandedAccountId> senders = new ArrayList<>();
-    private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
-    private final List<TokenId> tokenIds = new ArrayList<>();
 
-    @Given("I ensure token {string} has been created")
-    public void createNamedToken(String tokenName) {
-        var tokenAndResponse = tokenClient.getToken(TokenClient.TokenNameEnum.valueOf(tokenName));
+    private List<CustomFee> customFees = List.of();
+    private TokenId tokenId;
+
+    public TokenId getTokenId() {
+        return tokenId;
+    }
+
+    @Given("I ensure token {token} has been created")
+    public void createNamedToken(TokenNameEnum tokenName) {
+        var tokenAndResponse = tokenClient.getToken(tokenName);
         if (tokenAndResponse.response() != null) {
             this.networkTransactionResponse = tokenAndResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
 
-    @Given("I associate account {string} with token {string}")
-    public void associateToken(String accountName, String tokenName) {
-        var accountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
+    @Given("I associate account {account} with token {token}")
+    public void associateToken(AccountNameEnum accountName, TokenNameEnum tokenName) {
+        var accountId = accountClient.getAccount(accountName);
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         associateWithToken(accountId, tokenId);
     }
 
-    @Given("I approve {string} to transfer up to {long} of token {string}")
-    public void setFungibleTokenAllowance(String accountName, long amount, String tokenName) {
-        var spenderAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName))
-                .getAccountId();
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
+    @Given("I approve {account} to transfer up to {long} of token {token}")
+    public void setFungibleTokenAllowance(AccountNameEnum accountName, long amount, TokenNameEnum tokenName) {
+        var spenderAccountId = accountClient.getAccount(accountName).getAccountId();
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the mirror node REST API should confirm the approved allowance {long} of {string} for {string}")
+    @Then("the mirror node REST API should confirm the approved allowance {long} of {token} for {account}")
     @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
-            long approvedAmount, String tokenName, String accountName) {
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
-        var spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+            long approvedAmount, TokenNameEnum tokenName, AccountNameEnum accountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var spenderAccountId = accountClient.getAccount(accountName);
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, 0);
     }
 
-    @Then("the mirror node REST API should confirm the approved allowance for {string} and {string} no longer exists")
+    @Then("the mirror node REST API should confirm the approved allowance for {token} and {account} no longer exists")
     @RetryAsserts
-    public void verifyTokenAllowanceDelete(String tokenName, String accountName) {
+    public void verifyTokenAllowanceDelete(TokenNameEnum tokenName, AccountNameEnum accountName) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
         var owner = accountClient.getClient().getOperatorAccountId().toString();
-        var spender = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName))
-                .getAccountId()
-                .toString();
-        var token = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId()
-                .toString();
+        var spender = accountClient.getAccount(accountName).getAccountId().toString();
+        var token = tokenClient.getToken(tokenName).tokenId().toString();
 
         var mirrorTokenAllowanceResponse = mirrorClient.getAccountTokenAllowanceBySpender(owner, token, spender);
         assertThat(mirrorTokenAllowanceResponse.getAllowances()).isEmpty();
     }
 
-    @Then("the mirror node REST API should confirm the debit of {long} from {string} allowance of {long} for {string}")
+    @Then("the mirror node REST API should confirm the debit of {long} from {token} allowance of {long} for {account}")
     @RetryAsserts
     public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
-            long debitAmount, String tokenName, long approvedAmount, String accountName) {
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
-        var spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+            long debitAmount, TokenNameEnum tokenName, long approvedAmount, AccountNameEnum accountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var spenderAccountId = accountClient.getAccount(accountName);
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, debitAmount);
     }
 
-    @Then("I transfer {long} of token {string} to {string}")
-    public void transferTokensToRecipient(long amount, String tokenName, String accountName) {
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
-        var recipientAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName))
-                .getAccountId();
+    @Then("I transfer {long} of token {token} to {account}")
+    public void transferTokensToRecipient(long amount, TokenNameEnum tokenName, AccountNameEnum accountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var recipientAccountId = accountClient.getAccount(accountName).getAccountId();
         var ownerAccountId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
@@ -177,17 +161,12 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("{string} transfers {long} of token {string} to {string}")
+    @Given("{account} transfers {long} of token {token} to {account}")
     public void transferFromAllowance(
-            String spenderAccountName, long amount, String tokenName, String recipientAccountName) {
-
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
-        var spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(spenderAccountName));
-        var recipientAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(recipientAccountName))
-                .getAccountId();
+            AccountNameEnum spender, long amount, TokenNameEnum token, AccountNameEnum recipient) {
+        var tokenId = tokenClient.getToken(token).tokenId();
+        var spenderAccountId = accountClient.getAccount(spender);
+        var recipientAccountId = accountClient.getAccount(recipient).getAccountId();
         var ownerAccountId = accountClient.getClient().getOperatorAccountId();
 
         networkTransactionResponse = tokenClient.transferFungibleToken(
@@ -196,28 +175,25 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the mirror node REST API should confirm the transfer of {long} {string}")
+    @Then("the mirror node REST API should confirm the transfer of {long} {token}")
     @RetryAsserts
-    public void verifyMirrorAPITokenTransferResponse(long transferAmount, String tokenName) {
+    public void verifyMirrorAPITokenTransferResponse(long transferAmount, TokenNameEnum tokenName) {
         verifyMirrorAPIApprovedTokenTransferResponse(transferAmount, tokenName, false);
     }
 
-    @Then("the mirror node REST API should confirm the approved transfer of {long} {string}")
+    @Then("the mirror node REST API should confirm the approved transfer of {long} {token}")
     @RetryAsserts
-    public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount, String tokenName) {
+    public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount, TokenNameEnum tokenName) {
         verifyMirrorAPIApprovedTokenTransferResponse(transferAmount, tokenName, true);
     }
 
     private void verifyMirrorAPIApprovedTokenTransferResponse(
-            long transferAmount, String tokenName, boolean isApproval) {
+            long transferAmount, TokenNameEnum tokenName, boolean isApproval) {
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId()
-                .toString();
+        var tokenId = tokenClient.getToken(tokenName).tokenId().toString();
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
@@ -229,23 +205,13 @@ public class TokenFeature extends AbstractFeature {
                         .build()));
     }
 
-    @Given("I delete the allowance on token {string} for {string}")
-    public void setFungibleTokenAllowance(String tokenName, String spenderAccountName) {
-        var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
-                .tokenId();
-        var spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(spenderAccountName));
+    @Given("I delete the allowance on token {token} for {account}")
+    public void setFungibleTokenAllowance(TokenNameEnum tokenName, AccountNameEnum spenderAccountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var spenderAccountId = accountClient.getAccount(spenderAccountName);
         networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId.getAccountId(), 0L);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Given("I successfully create a new token")
-    public void createNewToken() {
-        createNewToken(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Given("I successfully create a new token with custom fees schedule")
@@ -273,112 +239,67 @@ public class TokenFeature extends AbstractFeature {
                 TokenSupplyType.valueOf(tokenSupplyType));
     }
 
-    @Given("^I associate a(?:n)? (?:existing|new) sender account(?: (.*))? with token(?: (.*))?$")
-    public void associateSenderWithToken(Integer senderIndex, Integer tokenIndex) {
-        ExpandedAccountId sender;
-        if (senderIndex == null) {
-            sender = accountClient.createNewAccount(10_000_000);
-            senders.add(sender);
-        } else {
-            sender = senders.get(senderIndex);
-        }
-
-        associateWithToken(sender, tokenIds.get(getIndexOrDefault(tokenIndex)));
+    @Given("I associate {account} with token")
+    public void associateWithToken(AccountNameEnum accountName) {
+        var accountId = accountClient.getAccount(accountName);
+        associateWithToken(accountId, tokenId);
     }
 
-    @Given("^I associate a(?:n)? (?:existing|new) recipient account(?: (.*))? with token(?: (.*))?$")
-    public void associateRecipientWithToken(Integer recipientIndex, Integer tokenIndex) {
-        ExpandedAccountId recipient;
-        if (recipientIndex == null) {
-            recipient = accountClient.createNewAccount(10_000_000);
-            recipients.add(recipient);
-        } else {
-            recipient = recipients.get(recipientIndex);
-        }
-
-        associateWithToken(recipient, tokenIds.get(getIndexOrDefault(tokenIndex)));
+    @When("I set account freeze status to {int}")
+    public void setFreezeStatus(int freezeStatus) {
+        setFreezeStatus(freezeStatus, getRecipientAccountId());
     }
 
-    @When("^I set new account (?:(.*) )?freeze status to (.*)$")
-    public void setFreezeStatus(Integer recipientIndex, int freezeStatus) {
-        setFreezeStatus(freezeStatus, recipients.get(getIndexOrDefault(recipientIndex)));
+    @When("I set account kyc status to {int}")
+    public void setKycStatus(int kycStatus) {
+        setKycStatus(kycStatus, getRecipientAccountId());
     }
 
-    @When("^I set new account (?:(.*) )?kyc status to (.*)$")
-    public void setKycStatus(Integer recipientIndex, int kycStatus) {
-        setKycStatus(kycStatus, recipients.get(getIndexOrDefault(recipientIndex)));
+    @Then("I transfer {int} tokens to {account}")
+    public void transferTokensToRecipient(int amount, AccountNameEnum accountName) {
+        transferTokens(tokenId, amount, null, accountName);
     }
 
-    @Then("^I transfer (.*) tokens (?:(.*) )?to recipient(?: (.*))?$")
-    public void transferTokensToRecipient(int amount, Integer tokenIndex, Integer recipientIndex) {
+    @Then("I transfer serial number {int} to {account}")
+    public void transferNftsToRecipient(int serialNumberIndex, AccountNameEnum accountName) {
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        transferTokens(
-                tokenIds.get(getIndexOrDefault(tokenIndex)),
-                amount,
-                payer,
-                recipients.get(getIndexOrDefault(recipientIndex)).getAccountId());
-    }
-
-    @Then("^I transfer (.*) tokens (?:(.*) )?to sender(?: (.*))?$")
-    public void transferTokensToSender(int amount, Integer tokenIndex, Integer senderIndex) {
-        ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        transferTokens(
-                tokenIds.get(getIndexOrDefault(tokenIndex)),
-                amount,
-                payer,
-                senders.get(getIndexOrDefault(senderIndex)).getAccountId());
-    }
-
-    @Then("^I transfer serial number (?:(.*) )?of token (?:(.*) )?to recipient(?: (.*))?$")
-    public void transferNftsToRecipient(Integer serialNumberIndex, Integer tokenIndex, Integer recipientIndex) {
-        ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         transferNfts(
-                tokenId,
-                tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex)),
-                payer,
-                recipients.get(getIndexOrDefault(recipientIndex)).getAccountId());
+                tokenId, tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex)), payer, accountName);
     }
 
-    @Then("Sender {int} transfers {int} tokens {int} to recipient {int} with fractional fee {int}")
+    @Then("{account} transfers {int} tokens to {account} with fractional fee {int}")
     public void transferTokensFromSenderToRecipientWithFee(
-            int senderIndex, int amount, int tokenIndex, int recipientIndex, int fractionalFee) {
-        transferTokens(
-                tokenIds.get(tokenIndex),
-                amount,
-                senders.get(senderIndex),
-                recipients.get(recipientIndex).getAccountId(),
-                fractionalFee);
+            AccountNameEnum sender, int amount, AccountNameEnum accountName, int fractionalFee) {
+        transferTokens(tokenId, amount, sender, accountName, fractionalFee);
     }
 
-    @Given("^I update the token(?: (.*))?$")
-    public void updateToken(Integer index) {
-        networkTransactionResponse = tokenClient.updateToken(
-                tokenIds.get(getIndexOrDefault(index)),
-                tokenClient.getSdkClient().getExpandedOperatorAccountId());
+    @Given("I update the token")
+    public void updateToken() {
+        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        networkTransactionResponse = tokenClient.updateToken(tokenId, operatorId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("^I pause the token(?: (.*))?$")
-    public void pauseToken(Integer index) {
-        networkTransactionResponse = tokenClient.pause(tokenIds.get(getIndexOrDefault(index)));
+    @Given("I pause the token")
+    public void pauseToken() {
+        networkTransactionResponse = tokenClient.pause(tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("^I unpause the token(?: (.*))?$")
-    public void unpauseToken(Integer index) {
-        networkTransactionResponse = tokenClient.unpause(tokenIds.get(getIndexOrDefault(index)));
+    @Given("I unpause the token")
+    public void unpauseToken() {
+        networkTransactionResponse = tokenClient.unpause(tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("^I update the treasury of token(?: (.*))? to recipient(?: (.*))?$")
-    public void updateTokenTreasury(Integer tokenIndex, Integer recipientIndex) {
+    @Given("I update the treasury of token to {account}")
+    public void updateTokenTreasury(AccountNameEnum accountNameEnum) {
         try {
-            networkTransactionResponse = tokenClient.updateTokenTreasury(
-                    tokenIds.get(getIndexOrDefault(tokenIndex)), recipients.get(getIndexOrDefault(recipientIndex)));
+            var accountId = accountClient.getAccount(accountNameEnum);
+            networkTransactionResponse = tokenClient.updateTokenTreasury(tokenId, accountId);
         } catch (Exception exception) {
             assertThat(exception).isInstanceOf(ReceiptStatusException.class);
             ReceiptStatusException actualException = (ReceiptStatusException) exception;
@@ -388,14 +309,13 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I burn {int} from the token")
     public void burnToken(int amount) {
-        networkTransactionResponse = tokenClient.burnFungible(tokenIds.get(0), amount);
+        networkTransactionResponse = tokenClient.burnFungible(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I burn serial number {int} from token {int}")
-    public void burnNft(int serialNumberIndex, int tokenIndex) {
-        TokenId tokenId = tokenIds.get(tokenIndex);
+    @Given("I burn serial number {int} from token")
+    public void burnNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.burnNonFungible(
                 tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex));
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -404,14 +324,13 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I mint {int} from the token")
     public void mintToken(int amount) {
-        networkTransactionResponse = tokenClient.mint(tokenIds.get(0), amount);
+        networkTransactionResponse = tokenClient.mint(tokenId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I mint a serial number from the token")
     public void mintNftToken() {
-        TokenId tokenId = tokenIds.get(0);
         networkTransactionResponse = tokenClient.mint(tokenId, RandomUtils.nextBytes(4));
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
@@ -424,49 +343,47 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I wipe {int} from the token")
     public void wipeToken(int amount) {
-        networkTransactionResponse = tokenClient.wipeFungible(tokenIds.get(0), amount, recipients.get(0));
+        networkTransactionResponse = tokenClient.wipeFungible(tokenId, amount, getRecipientAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I wipe serial number {int} from token {int}")
-    public void wipeNft(int serialNumberIndex, int tokenIndex) {
-        TokenId tokenId = tokenIds.get(tokenIndex);
+    @Given("I wipe serial number {int} from token")
+    public void wipeNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
-                tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), recipients.get(0));
+                tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), getRecipientAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I dissociate the account from the token")
     public void dissociateNewAccountFromToken() {
-        networkTransactionResponse = tokenClient.dissociate(recipients.get(0), tokenIds.get(0));
+        networkTransactionResponse = tokenClient.dissociate(getRecipientAccountId(), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I delete the token")
     public void deleteToken() {
-        networkTransactionResponse =
-                tokenClient.delete(tokenClient.getSdkClient().getExpandedOperatorAccountId(), tokenIds.get(0));
+        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        networkTransactionResponse = tokenClient.delete(operatorId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I update token {int} with new custom fees schedule")
-    public void updateTokenFeeSchedule(int tokenIndex, List<CustomFee> customFees) {
+    @Given("I update token with new custom fees schedule")
+    public void updateTokenFeeSchedule(List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        TokenId tokenId = tokenIds.get(tokenIndex);
         networkTransactionResponse = tokenClient.updateTokenFeeSchedule(tokenId, admin, customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        tokenCustomFees.put(tokenId, customFees);
+        this.customFees = customFees;
     }
 
     @Then("the mirror node Token Info REST API should return pause status {string}")
     @RetryAsserts
     public void verifyTokenPauseStatus(String status) {
-        verifyTokenPauseStatus(tokenIds.get(0), status);
+        verifyTokenPauseStatus(tokenId, status);
     }
 
     @Then("the mirror node REST API should return the transaction")
@@ -475,28 +392,24 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
     }
 
-    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?serial number "
-            + "(:?(.*) )?transaction flow$")
+    @Then("the mirror node REST API should return the transaction for token serial number {int} transaction flow")
     @RetryAsserts
-    public void verifyMirrorNftTransactionsAPIResponses(Integer tokenIndex, Integer serialNumberIndex) {
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+    public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
         verifyTransactions();
         verifyNftTransactions(tokenId, serialNumber);
     }
 
-    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?fund flow$")
+    @Then("the mirror node REST API should return the transaction for token fund flow")
     @RetryAsserts
-    public void verifyMirrorTokenFundFlow(Integer tokenIndex) {
-        verifyMirrorTokenFundFlow(tokenIndex, Collections.emptyList());
+    public void verifyMirrorTokenFundFlow() {
+        verifyMirrorTokenFundFlow(tokenId, Collections.emptyList());
     }
 
-    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?fund flow with assessed custom"
-            + " "
-            + "fees$")
+    @Then("the mirror node REST API should return the transaction for token fund flow with assessed custom fees")
     @RetryAsserts
-    public void verifyMirrorTokenFundFlow(Integer tokenIndex, List<MirrorAssessedCustomFee> assessedCustomFees) {
-        verifyMirrorTokenFundFlow(tokenIds.get(getIndexOrDefault(tokenIndex)), assessedCustomFees);
+    public void verifyMirrorTokenFundFlow(List<MirrorAssessedCustomFee> assessedCustomFees) {
+        verifyMirrorTokenFundFlow(tokenId, assessedCustomFees);
     }
 
     private void verifyMirrorTokenFundFlow(TokenId tokenId, List<MirrorAssessedCustomFee> assessedCustomFees) {
@@ -505,11 +418,9 @@ public class TokenFeature extends AbstractFeature {
         verifyTokenTransfers(tokenId);
     }
 
-    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?serial number (:?(.*) )?full "
-            + "flow$")
+    @Then("the mirror node REST API should return the transaction for token serial number {int} full flow")
     @RetryAsserts
-    public void verifyMirrorNftFundFlow(Integer tokenIndex, Integer serialNumberIndex) {
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+    public void verifyMirrorNftFundFlow(Integer serialNumberIndex) {
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
         verifyTransactions();
         verifyToken(tokenId);
@@ -521,7 +432,7 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should confirm token update")
     @RetryAsserts
     public void verifyMirrorTokenUpdateFlow() {
-        verifyTokenUpdate(tokenIds.get(0));
+        verifyTokenUpdate(tokenId);
     }
 
     @Then("the mirror node REST API should return the transaction for transaction {string}")
@@ -540,19 +451,16 @@ public class TokenFeature extends AbstractFeature {
         }
     }
 
-    @Then("the mirror node REST API should confirm token {int} with custom fees schedule")
+    @Then("the mirror node REST API should confirm token with custom fees schedule")
     @RetryAsserts
-    public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex) {
-        MirrorTransaction transaction = verifyTransactions();
-
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+    public void verifyMirrorTokenWithCustomFeesSchedule() {
+        var transaction = verifyTransactions();
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
     @Then("the mirror node REST API should return the token relationship for token")
     @RetryAsserts
     public void verifyMirrorTokenRelationshipTokenAPIResponses() {
-        TokenId tokenId = tokenIds.get(0);
         MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
@@ -565,7 +473,6 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should return the token relationship for nft")
     @RetryAsserts
     public void verifyMirrorTokenRelationshipNftAPIResponses() {
-        TokenId tokenId = tokenIds.get(0);
         MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
@@ -575,62 +482,6 @@ public class TokenFeature extends AbstractFeature {
         assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
     }
 
-    @Given("^I approve sender(?: (.*))? to transfer up to (.*) tokens (?:(.*))?$")
-    public void setFungibleTokenAllowance(Integer senderIndex, long amount, Integer tokenIndex) {
-        var tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        var spenderAccountId = senders.get(getIndexOrDefault(senderIndex));
-        networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId.getAccountId(), amount);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Given("I delete the allowance on token {int} for sender {int}")
-    public void setFungibleTokenAllowance(Integer tokenIndex, Integer senderIndex) {
-        var tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        var spenderAccountId = senders.get(getIndexOrDefault(senderIndex));
-        networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId.getAccountId(), 0L);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    @Then(
-            "the mirror node REST API should confirm the approved token (?:(.*) )?allowance of (.*) for sender(?: (.*))?$")
-    @RetryAsserts
-    public void verifyMirrorAPIApprovedTokenAllowanceResponse(
-            Integer tokenIndex, long approvedAmount, Integer senderIndex) {
-        verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, tokenIndex, approvedAmount, senderIndex);
-    }
-
-    @Then("the mirror node REST API should confirm the token allowance deletion")
-    @RetryAsserts
-    public void verifyMirrorAPIApprovedTokenAllowanceDeletionResponse() {
-        verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(0L, 0, 0L, 0);
-    }
-
-    @Then(
-            "the mirror node REST API should confirm the debit of (.*) from approved token (?:(.*) )?allowance of (.*) for sender(?: (.*))?$")
-    @RetryAsserts
-    public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
-            long debitAmount, Integer tokenIndex, long approvedAmount, Integer senderIndex) {
-        var tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        var spenderAccountId = senders.get(getIndexOrDefault(senderIndex));
-        verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, debitAmount);
-    }
-
-    @Given("Sender {int} transfers {int} tokens {int} from the approved allowance to recipient {int}")
-    public void transferFromAllowance(int senderIndex, int amount, int tokenIndex, int recipientIndex) {
-
-        var tokenId = tokenIds.get(tokenIndex);
-        var spenderAccountId = senders.get(senderIndex);
-        var recipientAccountId = recipients.get(recipientIndex).getAccountId();
-        var ownerAccountId = accountClient.getClient().getOperatorAccountId();
-
-        networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenId, ownerAccountId, spenderAccountId, recipientAccountId, amount, true, null);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
     @Then("the mirror node REST API should confirm the approved transfer of {long} tokens")
     @RetryAsserts
     public void verifyMirrorAPIApprovedTokenTransferResponse(long transferAmount) {
@@ -638,60 +489,19 @@ public class TokenFeature extends AbstractFeature {
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
-        var tokenId = tokenIds.get(0).toString();
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
                 .contains(MirrorTokenTransfer.builder()
-                        .tokenId(tokenId)
+                        .tokenId(tokenId.toString())
                         .account(owner)
                         .amount(-transferAmount)
                         .isApproval(true)
                         .build()));
     }
 
-    @After
-    public void cleanup() {
-        // dissociate all applicable accounts from token to reduce likelihood of max token association error
-        for (TokenId tokenId : tokenIds) {
-            // a nonzero balance will result in a TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES error
-            // not possible to wipe a treasury account as it results in CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT error
-            // as a result to dissociate first delete token
-            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-            try {
-                tokenClient.delete(admin, tokenId);
-
-                dissociateAccounts(tokenId, List.of(admin));
-                dissociateAccounts(tokenId, recipients);
-                dissociateAccounts(tokenId, senders);
-            } catch (Exception ex) {
-                log.warn("Error cleaning up token {} and associations error: {}", tokenId, ex);
-            }
-        }
-
-        recipients.clear();
-        senders.clear();
-        tokenCustomFees.clear();
-        tokenIds.clear();
-        tokenSerialNumbers.clear();
-    }
-
-    public AccountId getRecipientAccountId(int index) {
-        return recipients.get(index).getAccountId();
-    }
-
-    public TokenId getTokenId(int index) {
-        return tokenIds.get(index);
-    }
-
-    private void dissociateAccounts(TokenId tokenId, List<ExpandedAccountId> accountIds) {
-        for (ExpandedAccountId accountId : accountIds) {
-            try {
-                tokenClient.dissociate(accountId, tokenId);
-            } catch (Exception ex) {
-                log.warn("Error dissociating account {} from token {}, error: {}", accountId, tokenId, ex);
-            }
-        }
+    public ExpandedAccountId getRecipientAccountId() {
+        return accountClient.getAccount(AccountNameEnum.ALICE);
     }
 
     private TokenId createNewToken(
@@ -715,10 +525,9 @@ public class TokenFeature extends AbstractFeature {
                 customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
+        this.tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
-        tokenIds.add(tokenId);
-        tokenCustomFees.put(tokenId, customFees);
+        this.customFees = customFees;
 
         return tokenId;
     }
@@ -752,9 +561,9 @@ public class TokenFeature extends AbstractFeature {
 
     private void setFreezeStatus(int freezeStatus, ExpandedAccountId accountId) {
         if (freezeStatus == TokenFreezeStatus.Frozen_VALUE) {
-            networkTransactionResponse = tokenClient.freeze(tokenIds.get(0), accountId.getAccountId());
+            networkTransactionResponse = tokenClient.freeze(tokenId, accountId.getAccountId());
         } else if (freezeStatus == TokenFreezeStatus.Unfrozen_VALUE) {
-            networkTransactionResponse = tokenClient.unfreeze(tokenIds.get(0), accountId.getAccountId());
+            networkTransactionResponse = tokenClient.unfreeze(tokenId, accountId.getAccountId());
         } else {
             log.warn("Freeze Status must be set to 1 (Frozen) or 2 (Unfrozen)");
         }
@@ -765,9 +574,9 @@ public class TokenFeature extends AbstractFeature {
 
     private void setKycStatus(int kycStatus, ExpandedAccountId accountId) {
         if (kycStatus == TokenKycStatus.Granted_VALUE) {
-            networkTransactionResponse = tokenClient.grantKyc(tokenIds.get(0), accountId.getAccountId());
+            networkTransactionResponse = tokenClient.grantKyc(tokenId, accountId.getAccountId());
         } else if (kycStatus == TokenKycStatus.Revoked_VALUE) {
-            networkTransactionResponse = tokenClient.revokeKyc(tokenIds.get(0), accountId.getAccountId());
+            networkTransactionResponse = tokenClient.revokeKyc(tokenId, accountId.getAccountId());
         } else {
             log.warn("Kyc Status must be set to 1 (Granted) or 2 (Revoked)");
         }
@@ -776,12 +585,16 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void transferTokens(TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver) {
+    private void transferTokens(TokenId tokenId, int amount, AccountNameEnum sender, AccountNameEnum receiver) {
         transferTokens(tokenId, amount, sender, receiver, 0);
     }
 
     private void transferTokens(
-            TokenId tokenId, int amount, ExpandedAccountId sender, AccountId receiver, int fractionalFee) {
+            TokenId tokenId, int amount, AccountNameEnum senderName, AccountNameEnum recieverName, int fractionalFee) {
+        var sender = senderName != null
+                ? accountClient.getAccount(senderName)
+                : tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        var receiver = accountClient.getAccount(recieverName).getAccountId();
         long startingBalance = getTokenBalance(receiver, tokenId);
         long expectedBalance = startingBalance + amount - fractionalFee;
 
@@ -800,7 +613,9 @@ public class TokenFeature extends AbstractFeature {
         return tokenRelationships.get(0).getBalance();
     }
 
-    private void transferNfts(TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountId receiver) {
+    private void transferNfts(
+            TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountNameEnum accountName) {
+        var receiver = accountClient.getAccount(accountName).getAccountId();
         long startingBalance = getTokenBalance(receiver, tokenId);
         networkTransactionResponse =
                 tokenClient.transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber), null);
@@ -929,7 +744,7 @@ public class TokenFeature extends AbstractFeature {
 
         MirrorCustomFees expected = new MirrorCustomFees();
         expected.setCreatedTimestamp(createdTimestamp);
-        for (CustomFee customFee : tokenCustomFees.get(tokenId)) {
+        for (CustomFee customFee : customFees) {
             if (customFee instanceof CustomFixedFee sdkFixedFee) {
                 MirrorFixedFee fixedFee = new MirrorFixedFee();
 
@@ -1008,8 +823,8 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private MirrorTokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
-        AccountId accountId = getRecipientAccountId(0);
-        return mirrorClient.getTokenRelationships(accountId, tokenId);
+        var accountId = getRecipientAccountId();
+        return mirrorClient.getTokenRelationships(accountId.getAccountId(), tokenId);
     }
 
     private void assertTokenRelationship(MirrorTokenRelationshipResponse mirrorTokenRelationship) {

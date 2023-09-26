@@ -24,13 +24,23 @@ import com.hedera.hashgraph.sdk.FileUpdateTransaction;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class FileClient extends AbstractNetworkClient {
 
+    private final Collection<FileId> fileIds = new CopyOnWriteArrayList<>();
+
     public FileClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
+    }
+
+    @Override
+    public void clean() {
+        log.info("Deleting {} files", fileIds.size());
+        deleteAll(fileIds, id -> deleteFile(id));
     }
 
     public NetworkTransactionResponse createFile(byte[] content) {
@@ -46,6 +56,7 @@ public class FileClient extends AbstractNetworkClient {
 
         var fileId = response.getReceipt().fileId;
         log.info("Created new file {} with {} B via {}", fileId, content.length, memo, response.getTransactionId());
+        fileIds.add(fileId);
         return response;
     }
 
@@ -84,7 +95,8 @@ public class FileClient extends AbstractNetworkClient {
                 new FileDeleteTransaction().setFileId(fileId).setTransactionMemo(memo);
 
         var response = executeTransactionAndRetrieveReceipt(fileUpdateTransaction);
-        log.info("Deleted file {} with memo '{}' via {}", fileId, memo, response.getTransactionId());
+        log.info("Deleted file {} via {}", fileId, response.getTransactionId());
+        fileIds.remove(fileId);
         return response;
     }
 }
