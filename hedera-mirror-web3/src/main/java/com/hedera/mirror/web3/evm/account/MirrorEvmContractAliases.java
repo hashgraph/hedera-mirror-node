@@ -16,11 +16,9 @@
 
 package com.hedera.mirror.web3.evm.account;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.aliases;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingAliases;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.pendingRemovals;
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -29,6 +27,7 @@ import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.inject.Named;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -77,11 +76,14 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
-        if (pendingAliases.get().containsKey(alias)) {
-            return Optional.ofNullable(pendingAliases.get().get(alias));
+        Map<Address, Address> pendingAliases = ThreadLocalHolder.getPendingAliases();
+        if (pendingAliases.containsKey(alias)) {
+            return Optional.ofNullable(pendingAliases.get(alias));
         }
-        if (aliases.get().containsKey(alias) && !pendingRemovals.get().contains(alias)) {
-            return Optional.ofNullable(aliases.get().get(alias));
+        Map<Address, Address> aliases = ThreadLocalHolder.getAliases();
+        if (aliases.containsKey(alias)
+                && !ThreadLocalHolder.getPendingRemovals().contains(alias)) {
+            return Optional.ofNullable(aliases.get(alias));
         }
         return Optional.empty();
     }
@@ -100,29 +102,31 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isInUse(final Address address) {
-        return aliases.get().containsKey(address) && !pendingRemovals.get().contains(address)
-                || pendingAliases.get().containsKey(address);
+        return ThreadLocalHolder.getAliases().containsKey(address)
+                        && !ThreadLocalHolder.getPendingRemovals().contains(address)
+                || ThreadLocalHolder.getPendingAliases().containsKey(address);
     }
 
     public void link(final Address alias, final Address address) {
-        pendingAliases.get().put(alias, address);
-        pendingRemovals.get().remove(alias);
+        ThreadLocalHolder.getPendingAliases().put(alias, address);
+        ThreadLocalHolder.getPendingRemovals().remove(alias);
     }
 
     public void unlink(Address alias) {
-        pendingRemovals.get().add(alias);
-        pendingAliases.get().remove(alias);
+        ThreadLocalHolder.getPendingRemovals().add(alias);
+        ThreadLocalHolder.getPendingAliases().remove(alias);
     }
 
     public void commit() {
-        aliases.get().putAll(pendingAliases.get());
-        aliases.get().keySet().removeAll(pendingRemovals.get());
+        Map<Address, Address> aliases = ThreadLocalHolder.getAliases();
+        aliases.putAll(ThreadLocalHolder.getPendingAliases());
+        aliases.keySet().removeAll(ThreadLocalHolder.getPendingRemovals());
 
         resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        pendingAliases.get().clear();
-        pendingRemovals.get().clear();
+        ThreadLocalHolder.getPendingAliases().clear();
+        ThreadLocalHolder.getPendingRemovals().clear();
     }
 }

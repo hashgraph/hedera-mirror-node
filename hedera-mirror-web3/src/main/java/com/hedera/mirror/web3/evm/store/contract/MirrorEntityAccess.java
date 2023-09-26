@@ -26,7 +26,6 @@ import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import jakarta.inject.Named;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;

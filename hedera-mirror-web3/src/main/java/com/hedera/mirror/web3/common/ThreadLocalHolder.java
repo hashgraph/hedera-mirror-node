@@ -29,47 +29,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 @Named
 public class ThreadLocalHolder {
-
-    /**
-     * Constant for representing an unset or disabled timestamp for filtering.
-     */
-    public static final long UNSET_TIMESTAMP = -1L;
-
-    /**
-     * Long value which stores the block timestamp used for filtering of historical data.
-     * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
-     * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
-     */
-    @NonNull
-    public static final ThreadLocal<Long> blockTimestamp = ThreadLocal.withInitial(() -> UNSET_TIMESTAMP);
-
-    /** Boolean flag which determines whether the transaction is estimate gas or not*/
-    @NonNull
-    public static final ThreadLocal<Boolean> isEstimate = ThreadLocal.withInitial(() -> false);
-
-    /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
-    @NonNull
-    public static final ThreadLocal<Boolean> isCreate = ThreadLocal.withInitial(() -> false);
-    /** Map of account aliases that were committed */
-    @NonNull
-    public static final ThreadLocal<Map<Address, Address>> aliases = ThreadLocal.withInitial(HashMap::new);
-
-    @NonNull
-    /** Map of account aliases that are added by the current frame and are not yet committed */
-    public static final ThreadLocal<Map<Address, Address>> pendingAliases = ThreadLocal.withInitial(HashMap::new);
-
-    @NonNull
-    /** Set of account aliases that are deleted by the current frame and are not yet committed */
-    public static final ThreadLocal<Set<Address>> pendingRemovals = ThreadLocal.withInitial(HashSet::new);
-    /** Current top of stack (which is all linked together) */
-    @NonNull
-    public static final ThreadLocal<CachingStateFrame<Object>> stack = ThreadLocal.withInitial(() -> null);
-    /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
-    @NonNull
-    public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
-
-    @NonNull
-    public static final ThreadLocal<MirrorEvmTxProcessor> mirrorEvmTxProcessor = ThreadLocal.withInitial(() -> null);
+    public static final ThreadLocal<ContractCallContext> contractCallContextWrapper =
+            ThreadLocal.withInitial(() -> null);
 
     private ThreadLocalHolder() {}
 
@@ -82,30 +43,137 @@ public class ThreadLocalHolder {
      * using this method.)
      */
     public static void resetToBase() {
-        stack.set(stackBase.get());
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.stack = contractCallContext.stackBase;
     }
 
     public static void cleanThread() {
         resetState();
-        stack.remove();
-        stackBase.remove();
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.stack = null;
+        contractCallContext.stackBase = null;
     }
 
     public static void resetState() {
         resetToBase();
-        isCreate.remove();
-        isEstimate.remove();
-        aliases.remove();
-        pendingAliases.remove();
-        pendingRemovals.remove();
-        blockTimestamp.remove();
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.isCreate = false;
+        contractCallContext.isEstimate = false;
+        contractCallContext.aliases.clear();
+        contractCallContext.pendingAliases.clear();
+        contractCallContext.pendingRemovals.clear();
+        contractCallContext.blockTimestamp = ContractCallContext.UNSET_TIMESTAMP;
     }
 
     public static void startThread(final StackedStateFrames stackedStateFrames) {
-        if (stackBase.get() == null) {
-            stackBase.set(stackedStateFrames.getEmptyStackBase());
+        ContractCallContext contractCallContext = new ContractCallContext();
+        contractCallContextWrapper.set(contractCallContext);
+        if (contractCallContext.stackBase == null) {
+            contractCallContext.stackBase = stackedStateFrames.getEmptyStackBase();
         }
 
-        stack.set(stackBase.get());
+        contractCallContext.stack = contractCallContext.stackBase;
+    }
+
+    public static void initContractCallContext() {
+        contractCallContextWrapper.set(new ContractCallContext());
+    }
+
+    public static void setStack(CachingStateFrame<Object> stack) {
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.stack = stack;
+    }
+
+    public static CachingStateFrame<Object> getStack() {
+        return contractCallContextWrapper.get().stack;
+    }
+
+    public static void setStackBase(CachingStateFrame<Object> stackBase) {
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.stackBase = stackBase;
+    }
+
+    public static CachingStateFrame<Object> getStackBase() {
+        return contractCallContextWrapper.get().stackBase;
+    }
+
+    public static boolean isCreate() {
+        return contractCallContextWrapper.get().isCreate;
+    }
+
+    public static void setIsCreate(boolean isCreate) {
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.isCreate = isCreate;
+    }
+
+    public static boolean isEstimate() {
+        return contractCallContextWrapper.get().isEstimate;
+    }
+
+    public static void setIsEstimate(boolean isEstimate) {
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.isEstimate = isEstimate;
+    }
+
+    public static void setMirrorEvmTxProcessor(MirrorEvmTxProcessor mirrorEvmTxProcessor) {
+        ContractCallContext contractCallContext = contractCallContextWrapper.get();
+        contractCallContext.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
+    }
+
+    public static MirrorEvmTxProcessor getMirrorEvmTxProcessor() {
+        return contractCallContextWrapper.get().mirrorEvmTxProcessor;
+    }
+
+    public static Map<Address, Address> getAliases() {
+        return contractCallContextWrapper.get().aliases;
+    }
+
+    public static Map<Address, Address> getPendingAliases() {
+        return contractCallContextWrapper.get().pendingAliases;
+    }
+
+    public static Set<Address> getPendingRemovals() {
+        return contractCallContextWrapper.get().pendingRemovals;
+    }
+
+    private static class ContractCallContext {
+
+        /**
+         * Constant for representing an unset or disabled timestamp for filtering.
+         */
+        public static final long UNSET_TIMESTAMP = -1L;
+
+        /**
+         * Long value which stores the block timestamp used for filtering of historical data.
+         * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
+         * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
+         */
+        private long blockTimestamp = UNSET_TIMESTAMP;
+
+        /** Boolean flag which determines whether the transaction is estimate gas or not*/
+        private boolean isEstimate = false;
+
+        /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
+        private boolean isCreate = false;
+
+        /** Map of account aliases that were committed */
+        @NonNull
+        private final Map<Address, Address> aliases = new HashMap<>();
+
+        @NonNull
+        /** Map of account aliases that are added by the current frame and are not yet committed */
+        private final Map<Address, Address> pendingAliases = new HashMap<>();
+
+        @NonNull
+        /** Set of account aliases that are deleted by the current frame and are not yet committed */
+        private final Set<Address> pendingRemovals = new HashSet<>();
+
+        /** Current top of stack (which is all linked together) */
+        private CachingStateFrame<Object> stack;
+
+        /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
+        private CachingStateFrame<Object> stackBase;
+
+        private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     }
 }
