@@ -21,7 +21,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +31,7 @@ import lombok.CustomLog;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.EvaluationException;
@@ -40,7 +40,6 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
-import org.springframework.integration.expression.ValueExpression;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
@@ -91,8 +90,7 @@ public class CommonParserProperties {
         @NotNull
         private Collection<EntityId> entity = new LinkedHashSet<>();
 
-        @NotEmpty
-        private String expression = "true";
+        private String expression;
 
         @Getter(AccessLevel.NONE)
         @Setter(AccessLevel.NONE)
@@ -102,7 +100,7 @@ public class CommonParserProperties {
         private Collection<TransactionType> transaction = new LinkedHashSet<>();
 
         Predicate<TransactionFilterFields> getFilter() {
-            return t -> (matches(t) && matches(t.getEntities()) && matches(t.getRecordItem()));
+            return t -> matches(t) && matches(t.getEntities()) && matchesExpression(t.getRecordItem());
         }
 
         private boolean matches(TransactionFilterFields t) {
@@ -121,13 +119,18 @@ public class CommonParserProperties {
             return entities != null && CollectionUtils.containsAny(entity, entities);
         }
 
-        private boolean matches(RecordItem recordItem) {
+        private boolean matchesExpression(RecordItem recordItem) {
+            if (StringUtils.isEmpty(expression)) {
+                return true;
+            }
+
             if (parsedExpression == null) {
                 try {
                     parsedExpression = expressionParser.parseExpression(expression);
                 } catch (ParseException ex) {
-                    log.warn("Ignoring transaction filter expression that failed to parse: {}", ex.getMessage());
-                    parsedExpression = new ValueExpression<>(Boolean.TRUE);
+                    log.warn("Disabled transaction filter expression that failed to parse: {}", ex.getMessage());
+                    expression = null;
+                    return true;
                 }
             }
 
@@ -135,8 +138,13 @@ public class CommonParserProperties {
                 Boolean result = parsedExpression.getValue(evaluationContext, recordItem, Boolean.class);
                 return result != null && result;
             } catch (EvaluationException ex) {
-                log.warn("Transaction filter expression failed to evaluate - {}", ex.getMessage());
-                return false;
+                log.warn(
+                        "Disabled transaction filter expression that failed to evaluate: '{}' - {}",
+                        expression,
+                        ex.getMessage());
+                parsedExpression = null;
+                expression = null;
+                return true;
             }
         }
     }

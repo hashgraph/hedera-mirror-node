@@ -95,7 +95,7 @@ class CommonParserPropertiesTest {
     @ParameterizedTest(name = "with entity {0} and type {1} resulting in {2}")
     @CsvSource({
         "'transactionBody.transactionID.accountID.accountNum > 0', true",
-        "'transactionBody.memo.contains(\"TOT\"'), true",
+        "'transactionBody.memo.matches(\"TOT\")', true",
         "'transactionBody.fileUpdate == null', false",
         "'transactionRecord.consensusTimestamp.seconds > 0', true",
         "'transactionBody.transactionFee > 0', true",
