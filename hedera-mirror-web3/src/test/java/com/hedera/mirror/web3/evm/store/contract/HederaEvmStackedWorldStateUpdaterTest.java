@@ -110,6 +110,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
+        store.wrap();
     }
 
     @AfterEach

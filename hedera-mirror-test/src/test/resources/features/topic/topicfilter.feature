@@ -1,4 +1,4 @@
-@topicmessagesfilter @fullsuite
+@topic @topicmessagesfilter @fullsuite
 Feature: HCS Message Filter Coverage Feature
 
   @critical @release @acceptance @filter

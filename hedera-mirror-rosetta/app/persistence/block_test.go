@@ -36,24 +36,39 @@ import (
 const genesisBlockIndex int64 = 3
 
 var (
-	accountBalanceFiles = []*domain.AccountBalanceFile{
+	accountBalances = []*domain.AccountBalance{
+		// From the first account balance snapshot
 		{
+			AccountId:          domain.MustDecodeEntityId(2),
+			Balance:            5_000_000_000,
 			ConsensusTimestamp: 90,
-			Count:              10,
-			FileHash:           "genesis_account_balance_file_hash",
-			Name:               "genesis_account_balance_file",
 		},
 		{
+			AccountId:          domain.MustDecodeEntityId(3),
+			Balance:            1_000_000_000,
+			ConsensusTimestamp: 90,
+		},
+		// From the second account balance snapshot
+		{
+			AccountId:          domain.MustDecodeEntityId(2),
+			Balance:            5_000_000_000,
 			ConsensusTimestamp: 10000,
-			Count:              10,
-			FileHash:           "second_account_balance_file_hash",
-			Name:               "second_account_balance_file",
 		},
 		{
+			AccountId:          domain.MustDecodeEntityId(3),
+			Balance:            1_000_000_000,
+			ConsensusTimestamp: 10000,
+		},
+		// From the third account balance snapshot
+		{
+			AccountId:          domain.MustDecodeEntityId(2),
+			Balance:            5_000_000_000,
 			ConsensusTimestamp: 20000,
-			Count:              10,
-			FileHash:           "third_account_balance_file_hash",
-			Name:               "third_account_balance_file",
+		},
+		{
+			AccountId:          domain.MustDecodeEntityId(3),
+			Balance:            1_000_000_000,
+			ConsensusTimestamp: 20000,
 		},
 	}
 	expectedGenesisBlock = &types.Block{
@@ -130,7 +145,7 @@ type blockRepositorySuite struct {
 
 func (suite *blockRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	db.CreateDbRecords(dbClient, accountBalanceFiles, recordFiles, recordFileBeforeGenesis)
+	db.CreateDbRecords(dbClient, accountBalances, recordFiles, recordFileBeforeGenesis)
 }
 
 func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
@@ -169,9 +184,9 @@ func (suite *blockRepositorySuite) TestFindByHashBlockBeforeGenesis() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestFindByHashNoAccountBalance() {
 	// given
-	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
+	truncateTables(domain.AccountBalance{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -184,7 +199,7 @@ func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -299,9 +314,9 @@ func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalance() {
 	// given
-	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
+	truncateTables(domain.AccountBalance{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -314,7 +329,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -397,9 +412,9 @@ func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalance() {
 	// given
-	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
+	truncateTables(domain.AccountBalance{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -412,7 +427,7 @@ func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -459,7 +474,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 	assert.Equal(suite.T(), expectedGenesisBlock, actual)
 
 	// given blocks are deleted
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 
 	// when
 	actual, err = repo.RetrieveGenesis(defaultContext)
@@ -474,7 +489,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
 	for _, genesisIndex := range genesisIndexes {
 		suite.T().Run(fmt.Sprintf("%d", genesisIndex), func(t *testing.T) {
 			// given
-			db.ExecSql(dbClient, truncateRecordFileSql)
+			truncateTables(domain.RecordFile{})
 			recordFile1 := *recordFiles[0]
 			recordFile1.Index = genesisIndex
 			recordFile2 := *recordFiles[1]
@@ -495,9 +510,9 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
 	}
 }
 
-func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalance() {
 	// given
-	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
+	truncateTables(domain.AccountBalance{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -510,7 +525,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -548,7 +563,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	db.CreateDbRecords(dbClient, genesisRecordFile)
 	repo := NewBlockRepository(dbClient)
 	expected := *expectedGenesisBlock
@@ -564,7 +579,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	db.CreateDbRecords(dbClient, recordFileBeforeGenesis)
 	repo := NewBlockRepository(dbClient)
 
@@ -576,9 +591,9 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
+func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalance() {
 	// given
-	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
+	truncateTables(domain.AccountBalance{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -591,7 +606,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	// given
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -614,7 +629,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent
 	assert.Equal(suite.T(), expectedThirdBlock, actual)
 
 	// when
-	db.ExecSql(dbClient, truncateRecordFileSql)
+	truncateTables(domain.RecordFile{})
 	actual, err = repo.RetrieveLatest(defaultContext)
 
 	// then

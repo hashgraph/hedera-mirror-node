@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.initContractCallContext;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,6 +151,7 @@ class MirrorEvmTxProcessorTest {
 
     @BeforeEach
     void setup() {
+        initContractCallContext();
         setupGasCalculator();
         final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);

@@ -133,9 +133,9 @@ Test Suite Tags
 Feature based Tags
 
 - `@accounts` - Crypto account focused tests.
-- `@topicmessagesbase` - Simple HCS focused tests.
+- `@topic` - Simple HCS focused tests.
 - `@topicmessagesfilter` - HCS focused tests wth varied subscription filters.
-- `@tokenbase` - HTS focused tests.
+- `@token` - HTS focused tests.
 - `@schedulebase` - Scheduled transactions focused tests.
 
 To execute run
@@ -145,8 +145,8 @@ To execute run
 > **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a
 > subset of tags
 >
-> - `@acceptance and @topicmessagesbase` - all token acceptance scenarios
-> - `@acceptance and not @tokenbase` - all acceptance except token scenarios
+> - `@acceptance and @topic` - all topic acceptance scenarios
+> - `@acceptance and not @token` - all acceptance except token scenarios
 
 ### Test Layout
 

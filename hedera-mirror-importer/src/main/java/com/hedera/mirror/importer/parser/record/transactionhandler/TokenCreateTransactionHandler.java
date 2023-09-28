@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -36,6 +35,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import jakarta.inject.Named;
 import lombok.CustomLog;
@@ -75,7 +75,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
                     .lookup(transactionBody.getAutoRenewAccount())
                     .orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(autoRenewAccountId)) {
-                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
+                Utility.handleRecoverableError("Invalid autoRenewAccountId at {}", recordItem.getConsensusTimestamp());
             } else {
                 entity.setAutoRenewAccountId(autoRenewAccountId.getId());
                 recordItem.addEntityId(autoRenewAccountId);

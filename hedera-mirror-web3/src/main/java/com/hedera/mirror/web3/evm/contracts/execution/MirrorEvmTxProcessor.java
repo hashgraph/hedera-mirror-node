@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.isCreate;
-
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -52,6 +50,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final MirrorEvmContractAliases aliasManager;
     private final MirrorOperationTracer operationTracer;
     private final Store store;
+    private final boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -72,6 +71,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         this.codeCache = codeCache;
         this.operationTracer = operationTracer;
         this.store = store;
+        this.isCreate = ThreadLocalHolder.isCreate();
     }
 
     @SuppressWarnings("java:S107")
@@ -111,7 +111,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     @SuppressWarnings("java:S5411")
     @Override
     protected HederaFunctionality getFunctionType() {
-        return isCreate.get() ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
+        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @SuppressWarnings("java:S5411")
@@ -125,7 +125,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        return isCreate.get()
+        return isCreate
                 ? baseInitialFrame
                         .type(MessageFrame.Type.CONTRACT_CREATION)
                         .address(to)
@@ -144,10 +144,10 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     }
 
     public void setIsCreate(boolean isCreate) {
-        ThreadLocalHolder.isCreate.set(isCreate);
+        ThreadLocalHolder.setIsCreate(isCreate);
     }
 
     public void setIsEstimate(boolean isEstimate) {
-        ThreadLocalHolder.isEstimate.set(isEstimate);
+        ThreadLocalHolder.setIsEstimate(isEstimate);
     }
 }

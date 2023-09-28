@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.stack;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.stackBase;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.getStack;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.getStackBase;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStack;
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStackBase;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -73,14 +75,14 @@ public class StackedStateFrames {
      * of it (after initial construction).
      */
     public int height() {
-        return stack.get().height() - stackBase.get().height();
+        return getStack().height() - getStackBase().height();
     }
 
     /** Return the _total_ height (aka depth) of the stacked cache _including_ the always-present stack base of a
      * RO-cache frame on top of the DB-based frame.
      */
     public int cachedFramesDepth() {
-        return stack.get().height();
+        return getStack().height();
     }
 
     /** Get the top of the stacked cache.  (Make your queries of the cache here, at the top: they'll be propagated
@@ -88,22 +90,24 @@ public class StackedStateFrames {
      */
     @NonNull
     public CachingStateFrame<Object> top() {
-        return stack.get();
+        return getStack();
     }
 
     /** Push a new RW-frame cache on top of the stacked cache. */
     @NonNull
     public CachingStateFrame<Object> push() {
-        stack.set(new RWCachingStateFrame<>(Optional.of(stack.get()), valueClasses));
-        return stack.get();
+        CachingStateFrame<Object> newFrame = new RWCachingStateFrame<>(Optional.of(getStack()), valueClasses);
+        setStack(newFrame);
+        return newFrame;
     }
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        if (stack.get() == stackBase.get()) {
+        CachingStateFrame<Object> stack = getStack();
+        if (stack == getStackBase()) {
             throw new EmptyStackException();
         }
-        stack.set(stack.get().getUpstream().orElseThrow(EmptyStackException::new));
+        setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -119,11 +123,11 @@ public class StackedStateFrames {
     @VisibleForTesting
     @NonNull
     CachingStateFrame<Object> push(@NonNull final CachingStateFrame<Object> frame) {
-        if (!frame.getUpstream().equals(Optional.of(stack.get()))) {
+        if (!frame.getUpstream().equals(Optional.of(getStack()))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         }
-        stack.set(frame);
-        return stack.get();
+        setStack(frame);
+        return frame;
     }
 
     /** For test purposes only you may want to step on the entire stack, including the stack base. (You might want to
@@ -133,8 +137,8 @@ public class StackedStateFrames {
     @VisibleForTesting
     @NonNull
     CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
-        stack.set(frame);
-        stackBase.set(frame);
-        return stack.get();
+        setStack(frame);
+        setStackBase(frame);
+        return getStack();
     }
 }

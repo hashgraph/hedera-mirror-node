@@ -21,6 +21,8 @@
 package persistence
 
 import (
+	"fmt"
+	"gorm.io/gorm/schema"
 	"os"
 	"testing"
 
@@ -31,18 +33,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-)
-
-const (
-	truncateAccountBalanceSql     = "truncate account_balance"
-	truncateAccountBalanceFileSql = "truncate account_balance_file"
-	truncateCryptoTransferFileSql = "truncate crypto_transfer"
-	truncateEntitySql             = "truncate entity"
-	truncateNftTransferSql        = "truncate nft_transfer"
-	truncateRecordFileSql         = "truncate record_file"
-	truncateTokenSql              = "truncate token"
-	truncateTokenBalanceSql       = "truncate token_balance"
-	truncateTokenTransferSql      = "truncate token_transfer"
 )
 
 var (
@@ -105,6 +95,14 @@ func setup() {
 
 func teardown() {
 	tdb.TearDownDb(dbResource)
+}
+
+func truncateTables(tables ...schema.Tabler) {
+	sqls := make([]string, 0)
+	for _, table := range tables {
+		sqls = append(sqls, fmt.Sprintf("truncate %s", table.TableName()))
+	}
+	tdb.ExecSql(dbClient, sqls...)
 }
 
 func TestMain(m *testing.M) {
