@@ -28,6 +28,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.frame.MessageFrame.Type;
+import org.hyperledger.besu.evm.operation.BalanceOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,15 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class MirrorOperationTracerTest {
+
+    private static final Address contract = Address.fromHexString("0x2");
+    private static final Address recipient = Address.fromHexString("0x3");
+    private static final Address sender = Address.fromHexString("0x4");
+    private static final long initialGas = 1000L;
+    private static final Bytes input = Bytes.of("inputData".getBytes());
+    private static final Operation operation = new BalanceOperation(null);
+    private static final Bytes outputData = Bytes.of("outputData".getBytes());
+    private static final Bytes returnData = Bytes.of("returnData".getBytes());
 
     @Mock
     private OperationResult operationResult;
@@ -52,12 +63,6 @@ class MirrorOperationTracerTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     private MirrorOperationTracer mirrorOperationTracer;
-
-    private static final Address contract = Address.fromHexString("0x2");
-    private static final Address recipient = Address.fromHexString("0x3");
-    private static final Address sender = Address.fromHexString("0x4");
-    private static final long initialGas = 1000L;
-    private static final Bytes input = Bytes.of("inputData".getBytes());
 
     @BeforeEach
     void setup() {
@@ -92,9 +97,12 @@ class MirrorOperationTracerTest {
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(messageFrame.getMessageStackDepth()).willReturn(1);
@@ -104,14 +112,16 @@ class MirrorOperationTracerTest {
 
         assertThat(output)
                 .contains(
-                        "MESSAGE_CALL",
+                        "type=MESSAGE_CALL",
                         "callDepth=1",
-                        "recipient=0x0000000000000000000000000000000000000003",
-                        "messageFrame=messageFrame",
-                        "inputData=0x696e70757444617461",
+                        "recipient=0x3",
+                        "input=0x696e70757444617461",
+                        "operation=BALANCE",
+                        "output=0x6f757470757444617461",
                         "remainingGas=1000",
-                        "sender=0x0000000000000000000000000000000000000004",
-                        "revertReason=");
+                        "return=0x72657475726e44617461",
+                        "revertReason=",
+                        "sender=0x4");
     }
 
     @Test
@@ -134,9 +144,12 @@ class MirrorOperationTracerTest {
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(messageFrame.getMessageStackDepth()).willReturn(1);
@@ -146,14 +159,16 @@ class MirrorOperationTracerTest {
 
         assertThat(output)
                 .contains(
-                        "MESSAGE_CALL",
+                        "type=MESSAGE_CALL",
                         "callDepth=1",
-                        "recipient=0x0000000000000000000000000000000000000003",
-                        "messageFrame=messageFrame",
-                        "inputData=0x696e70757444617461",
+                        "recipient=0x3",
+                        "input=0x696e70757444617461",
+                        "operation=BALANCE",
+                        "output=0x6f757470757444617461",
                         "remainingGas=1000",
-                        "sender=0x0000000000000000000000000000000000000004",
-                        "revertReason=");
+                        "revertReason=",
+                        "return=0x72657475726e44617461",
+                        "sender=0x4");
     }
 
     @Test
@@ -162,18 +177,24 @@ class MirrorOperationTracerTest {
 
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
 
         given(messageFrame.getType()).willReturn(Type.MESSAGE_CALL);
         given(messageFrame.getContractAddress()).willReturn(contract);
+        given(messageFrame.getCurrentOperation()).willReturn(operation);
         given(messageFrame.getRemainingGas()).willReturn(initialGas);
         given(messageFrame.getInputData()).willReturn(input);
+        given(messageFrame.getOutputData()).willReturn(outputData);
         given(messageFrame.getRecipientAddress()).willReturn(recipient);
+        given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
         given(messageFrame.getMessageStackDepth()).willReturn(1);
@@ -182,22 +203,26 @@ class MirrorOperationTracerTest {
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
         assertThat(output)
                 .contains(
-                        "MESSAGE_CALL",
+                        "type=MESSAGE_CALL",
                         "callDepth=0",
-                        "recipient=0x0000000000000000000000000000000000000003",
-                        "messageFrame=messageFrame",
-                        "inputData=0x696e70757444617461",
+                        "recipient=0x3",
+                        "input=0x696e70757444617461",
+                        "operation=BALANCE",
+                        "output=0x6f757470757444617461",
                         "remainingGas=1000",
-                        "sender=0x0000000000000000000000000000000000000004",
-                        "revertReason=")
+                        "revertReason=",
+                        "return=0x72657475726e44617461",
+                        "sender=0x4")
                 .contains(
-                        "MESSAGE_CALL",
+                        "type=MESSAGE_CALL",
                         "callDepth=1",
-                        "recipient=0x0000000000000000000000000000000000000003",
-                        "messageFrame=messageFrame",
-                        "inputData=0x696e70757444617461",
+                        "recipient=0x3",
+                        "input=0x696e70757444617461",
+                        "operation=BALANCE",
+                        "output=0x6f757470757444617461",
                         "remainingGas=1000",
-                        "sender=0x0000000000000000000000000000000000000004",
-                        "revertReason=");
+                        "return=0x72657475726e44617461",
+                        "revertReason=",
+                        "sender=0x4");
     }
 }

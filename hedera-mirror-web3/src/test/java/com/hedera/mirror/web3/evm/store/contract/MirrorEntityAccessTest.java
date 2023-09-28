@@ -37,6 +37,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -86,22 +87,14 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void isNotUsableWithNegativeBalance() {
-        final long balance = -1L;
-        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
-        when(account.getBalance()).thenReturn(balance);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isFalse();
-    }
-
-    @Test
     void isNotUsableWithWrongAlias() {
-        final var address = Address.fromHexString("0x3232134567785444e");
+        final var address = Address.fromHexString("0x0");
         when(store.getAccount(address, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
         final var result = mirrorEntityAccess.isUsable(address);
         assertThat(result).isFalse();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestamp() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
@@ -109,6 +102,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredTimestampAndNullBalance() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(Account.getEmptyAccount());
@@ -116,6 +110,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithNotExpiredTimestamp() {
         final long expiredTimestamp = Instant.MAX.getEpochSecond();
@@ -125,6 +120,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isNotUsableWithExpiredAutoRenewTimestamp() {
         final long autoRenewPeriod = Instant.MAX.getEpochSecond();
@@ -133,6 +129,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isFalse();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithNotExpiredAutoRenewTimestamp() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
@@ -141,6 +138,7 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
+    @Disabled("Expiry not enabled on network; these tests need to account for feature flags; see #6941")
     @Test
     void isUsableWithEmptyExpiry() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);

@@ -29,13 +29,23 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class ContractClient extends AbstractNetworkClient {
 
+    private final Collection<ContractId> contractIds = new CopyOnWriteArrayList<>();
+
     public ContractClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
+    }
+
+    @Override
+    public void clean() {
+        log.info("Deleting {} contracts", contractIds.size());
+        deleteAll(contractIds, id -> deleteContract(id, client.getOperatorAccountId(), null));
     }
 
     public NetworkTransactionResponse createContract(
@@ -62,6 +72,7 @@ public class ContractClient extends AbstractNetworkClient {
 
         TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
+        contractIds.add(contractId);
 
         return response;
     }
@@ -94,7 +105,8 @@ public class ContractClient extends AbstractNetworkClient {
         }
 
         var response = executeTransactionAndRetrieveReceipt(contractDeleteTransaction);
-        log.info("Deleted contract {} with memo '{}' via {}", contractId, memo, response.getTransactionId());
+        log.info("Deleted contract {} via {}", contractId, response.getTransactionId());
+        contractIds.remove(contractId);
         return response;
     }
 

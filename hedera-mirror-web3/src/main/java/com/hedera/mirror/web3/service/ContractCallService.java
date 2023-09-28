@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.mirrorEvmTxProcessor;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -58,11 +57,9 @@ public class ContractCallService {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
-        // Safety cleaning of the thread in case the same thread gets reused
-        ThreadLocalHolder.cleanThread();
         try {
             ThreadLocalHolder.startThread(store.getStackedStateFrames());
-            mirrorEvmTxProcessor.set((MirrorEvmTxProcessor) ctx.getBean("mirrorEvmTxProcessor"));
+            ThreadLocalHolder.setMirrorEvmTxProcessor((MirrorEvmTxProcessor) ctx.getBean("mirrorEvmTxProcessor"));
 
             Bytes result;
             if (params.isEstimate()) {
@@ -78,7 +75,7 @@ public class ContractCallService {
             return result.toHexString();
         } finally {
             ThreadLocalHolder.cleanThread();
-            mirrorEvmTxProcessor.remove();
+            ThreadLocalHolder.setMirrorEvmTxProcessor(null);
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }
@@ -118,8 +115,7 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessor
-                    .get()
+            transactionResult = ThreadLocalHolder.getMirrorEvmTxProcessor()
                     .execute(
                             params.getSender(),
                             params.getReceiver(),

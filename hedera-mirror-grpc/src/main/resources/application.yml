@@ -20,6 +20,7 @@ logging:
   level:
     root: warn
     com.hedera.mirror.grpc: info
+    io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler: error
     org.springframework.cloud.kubernetes.fabric8.config: error
     # io.grpc: debug
     # org.hibernate.SQL: debug

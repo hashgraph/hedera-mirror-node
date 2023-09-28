@@ -16,11 +16,11 @@
 
 package com.hedera.mirror.web3.evm.config;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.isEstimate;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -29,6 +29,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
@@ -115,14 +116,14 @@ public class EvmConfiguration {
     @Bean
     TokenAccessorImpl tokenAccessor(
             final MirrorNodeEvmProperties evmProperties,
-            final Store store,
+            final StoreImpl store,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
         return new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
     }
 
     @Bean
     AccountAccessorImpl accountAccessor(
-            final Store store,
+            final StoreImpl store,
             final MirrorEntityAccess mirrorEntityAccess,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
         return new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
@@ -193,7 +194,7 @@ public class EvmConfiguration {
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
-                        isEstimate.get()),
+                        ThreadLocalHolder.isEstimate()),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
