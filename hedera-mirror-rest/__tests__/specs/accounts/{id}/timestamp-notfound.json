@@ -10,6 +10,7 @@
       },
       {
         "balance": 80,
+        "balance_timestamp": "1234567890000000004",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
@@ -19,6 +20,7 @@
       },
       {
         "balance": 30,
+        "balance_timestamp": "1234567890000000004",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
@@ -28,6 +30,7 @@
       },
       {
         "balance": 75,
+        "balance_timestamp": "5000000000",
         "num": 9,
         "alias": "HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d8",

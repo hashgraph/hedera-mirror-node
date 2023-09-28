@@ -4,36 +4,43 @@
     "accounts": [
       {
         "balance": 151,
+        "balance_timestamp": 11000000000,
         "num": 1,
         "realm": 15
       },
       {
         "balance": 152,
+        "balance_timestamp": 11000000001,
         "num": 2,
         "realm": 15
       },
       {
         "balance": 155,
+        "balance_timestamp": 11000000000,
         "num": 5,
         "realm": 15
       },
       {
         "balance": 156,
+        "balance_timestamp": 10000000000,
         "num": 6,
         "realm": 15
       },
       {
         "balance": 157,
+        "balance_timestamp": 9000000000,
         "num": 7,
         "realm": 15
       },
       {
         "balance": 158,
+        "balance_timestamp": 8000000000,
         "num": 8,
         "realm": 15
       },
       {
         "balance": 159,
+        "balance_timestamp": 12000000000,
         "num": 9,
         "realm": 15,
         "expiration_timestamp": "-9223372036854775808"
@@ -137,20 +144,6 @@
         "balance": 154,
         "num": 4,
         "realm": 15
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 8000000000,
-        "consensus_end": 10000000000,
-        "hash": "cb6e2dd117c887a54efdf5dc1db5ca9bee1bd3ef970825af07621a7f21bf0f07fa05f8a3be83cd544caf1be79110f9f4",
-        "name": "1970-01-01T00_00_08Z.rcd"
-      },
-      {
-        "consensus_start": 10000000001,
-        "consensus_end": 12000000000,
-        "hash": "c73067d7e07eaab5a6156237f928acab0a9a2783083651996237a885230a2e0f147b322fb5d0e19a0c44cf3840bd3ba9",
-        "name": "1970-01-01T00_00_10.000000001Z.rcd"
       }
     ],
     "tokenaccounts": [
