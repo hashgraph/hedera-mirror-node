@@ -77,9 +77,9 @@ public class ContractFeature extends AbstractFeature {
 
     private byte[] childContractBytecodeFromParent;
 
-    @Given("I successfully create a contract from the parent contract bytes with {int} balance")
-    public void createNewContract(int initialBalance) throws IOException {
-        deployedParentContract = createContract(parentContract, initialBalance);
+    @Given("I successfully create a contract from the parent contract bytes with 10000000 balance")
+    public void createNewContract() throws IOException {
+        deployedParentContract = getContract(ContractResource.PARENT_CONTRACT);
     }
 
     @Given("I successfully call the contract")

@@ -321,7 +321,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
-        deployedErcContract = createContract(ercContract, 0);
+        deployedErcContract = getContract(ContractResource.ERC_TEST_CONTRACT);
         ercTestContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }
 

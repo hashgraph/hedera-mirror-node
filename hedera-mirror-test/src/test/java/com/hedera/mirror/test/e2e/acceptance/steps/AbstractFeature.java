@@ -35,15 +35,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
 abstract class AbstractFeature {
     protected NetworkTransactionResponse networkTransactionResponse;
     protected ContractId contractId;
+    private static final Map<ContractResource, DeployedContract> contractIdMap = new ConcurrentHashMap<>();
 
     @Autowired
     protected ContractClient contractClient;
@@ -55,6 +61,9 @@ abstract class AbstractFeature {
     protected ObjectMapper mapper;
 
     protected ExchangeRateResponse exchangeRates;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     protected long calculateCreateTokenFee(double usdFee, boolean useCurrentFee) {
         if (exchangeRates == null) {
@@ -95,23 +104,30 @@ abstract class AbstractFeature {
         return mirrorTransaction;
     }
 
-    protected DeployedContract createContract(Resource resource, int initialBalance) throws IOException {
-        try (var in = resource.getInputStream()) {
-            CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
-            var fileId =
-                    persistContractBytes(compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-            networkTransactionResponse = contractClient.createContract(
-                    fileId,
-                    contractClient
-                            .getSdkClient()
-                            .getAcceptanceTestProperties()
-                            .getFeatureProperties()
-                            .getMaxContractFunctionGas(),
-                    initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                    null);
-            contractId = verifyCreateContractNetworkResponse();
-            return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-        }
+    protected synchronized DeployedContract getContract(ContractResource contractResource)
+            throws IOException {
+        return contractIdMap.computeIfAbsent(contractResource, x -> {
+            var resource = resourceLoader.getResource(contractResource.path);
+            try (var in = resource.getInputStream()) {
+                CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
+                var fileId = persistContractBytes(
+                        compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
+                networkTransactionResponse = contractClient.createContract(
+                        fileId,
+                        contractClient
+                                .getSdkClient()
+                                .getAcceptanceTestProperties()
+                                .getFeatureProperties()
+                                .getMaxContractFunctionGas(),
+                        contractResource.initialBalance == 0 ? null : Hbar.fromTinybars(contractResource.initialBalance),
+                        null);
+                ContractId contractId = verifyCreateContractNetworkResponse();
+
+                return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     protected FileId persistContractBytes(String contractContents) {
@@ -139,5 +155,26 @@ abstract class AbstractFeature {
 
     protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum ContractResource {
+        ESTIMATE_PRECOMPILE_TEST_CONTRACT(
+                "classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json", 0),
+        ERC_TEST_CONTRACT("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json", 0),
+        PRECOMPILE_TEST_CONTRACT(
+                "classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
+        ESTIMATE_GAS_TEST_CONTRACT(
+                "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json", 1000000),
+        PARENT_CONTRACT("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json", 10000000);
+
+        private final String path;
+        private final int initialBalance;
+
+        @Override
+        public String toString() {
+            return "ContractResource{" + "path='" + path + '\'' + '}';
+        }
     }
 }
