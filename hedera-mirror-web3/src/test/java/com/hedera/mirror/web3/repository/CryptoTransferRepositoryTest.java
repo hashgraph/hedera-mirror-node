@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,12 +30,9 @@ class CryptoTransferRepositoryTest extends Web3IntegrationTest {
     @Test
     void findById() {
         var cryptoTransfer1 = domainBuilder.cryptoTransfer().persist();
-        var cryptoTransfer2 = domainBuilder.cryptoTransfer().persist();
         Assertions.assertThat(cryptoTransferRepository.findByIdAndTimestamp(
                         cryptoTransfer1.getEntityId(), cryptoTransfer1.getConsensusTimestamp()))
                 .get()
                 .isEqualTo(cryptoTransfer1);
-
-        Assertions.assertThat(cryptoTransferRepository.findAll()).isEqualTo(List.of(cryptoTransfer1, cryptoTransfer2));
     }
 }

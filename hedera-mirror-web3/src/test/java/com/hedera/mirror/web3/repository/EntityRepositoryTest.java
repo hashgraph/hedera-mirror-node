@@ -140,10 +140,12 @@ class EntityRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findHistoricalEntityByIdAndCreatedTimestampAndDeletedTrueCall() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
+        EntityHistory entityHistory =
+                domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(entityHistory.getId(), entityHistory.getCreatedTimestamp()))
-                        .isEmpty();
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+                        entityHistory.getId(), entityHistory.getCreatedTimestamp()))
+                .isEmpty();
     }
 
     private void assertEntityFields(EntityHistory entityHistory, Optional<Entity> queryResult) {
