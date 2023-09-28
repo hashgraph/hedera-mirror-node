@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.config;
 
+import static com.hedera.mirror.web3.common.ThreadLocalHolder.isEstimate;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
