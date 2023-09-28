@@ -17,20 +17,34 @@
 package com.hedera.mirror.importer.parser;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.function.Predicate;
+import lombok.AccessLevel;
+import lombok.CustomLog;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.EvaluationException;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.ParseException;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
+import org.springframework.integration.expression.ValueExpression;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
+@CustomLog
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser")
@@ -68,16 +82,27 @@ public class CommonParserProperties {
 
     @Data
     @Validated
-    public static class TransactionFilter {
+    static class TransactionFilter {
+
+        private static final EvaluationContext evaluationContext =
+                SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
         @NotNull
         private Collection<EntityId> entity = new LinkedHashSet<>();
 
+        @NotEmpty
+        private String expression = "true";
+
+        @Getter(AccessLevel.NONE)
+        @Setter(AccessLevel.NONE)
+        private Expression parsedExpression;
+
         @NotNull
         private Collection<TransactionType> transaction = new LinkedHashSet<>();
 
-        public Predicate<TransactionFilterFields> getFilter() {
-            return t -> (matches(t) && matches(t.getEntities()));
+        Predicate<TransactionFilterFields> getFilter() {
+            return t -> (matches(t) && matches(t.getEntities()) && matches(t.getRecordItem()));
         }
 
         private boolean matches(TransactionFilterFields t) {
@@ -94,6 +119,25 @@ public class CommonParserProperties {
             }
 
             return entities != null && CollectionUtils.containsAny(entity, entities);
+        }
+
+        private boolean matches(RecordItem recordItem) {
+            if (parsedExpression == null) {
+                try {
+                    parsedExpression = expressionParser.parseExpression(expression);
+                } catch (ParseException ex) {
+                    log.warn("Ignoring transaction filter expression that failed to parse: {}", ex.getMessage());
+                    parsedExpression = new ValueExpression<>(Boolean.TRUE);
+                }
+            }
+
+            try {
+                Boolean result = parsedExpression.getValue(evaluationContext, recordItem, Boolean.class);
+                return result != null && result;
+            } catch (EvaluationException ex) {
+                log.warn("Transaction filter expression failed to evaluate - {}", ex.getMessage());
+                return false;
+            }
         }
     }
 }

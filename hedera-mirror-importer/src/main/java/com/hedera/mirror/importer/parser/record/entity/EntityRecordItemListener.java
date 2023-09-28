@@ -780,6 +780,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         });
 
         entities.remove(null);
-        return new TransactionFilterFields(entities, TransactionType.of(recordItem.getTransactionType()));
+        return new TransactionFilterFields(entities, recordItem, TransactionType.of(recordItem.getTransactionType()));
     }
 }

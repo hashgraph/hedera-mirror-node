@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.record;
+package com.hedera.mirror.importer.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,11 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CommonParserPropertiesTest {
 
+    private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final CommonParserProperties commonParserProperties = new CommonParserProperties();
 
     @DisplayName("Filter empty")
@@ -47,11 +49,12 @@ class CommonParserPropertiesTest {
         assertFalse(commonParserProperties.hasFilter());
         assertTrue(commonParserProperties
                 .getFilter()
-                .test(new TransactionFilterFields(entities("0.0.1"), TransactionType.CONSENSUSSUBMITMESSAGE)));
+                .test(new TransactionFilterFields(entities("0.0.1"), null, TransactionType.CONSENSUSSUBMITMESSAGE)));
         // also test empty filter against a collection of entity ids
         assertTrue(commonParserProperties
                 .getFilter()
-                .test(new TransactionFilterFields(entities("0.0.1/0.0.2/0.0.3"), TransactionType.CRYPTOCREATEACCOUNT)));
+                .test(new TransactionFilterFields(
+                        entities("0.0.1/0.0.2/0.0.3"), null, TransactionType.CRYPTOCREATEACCOUNT)));
         // explicitly test TransactionsFilterFields.EMPTY
         assertTrue(commonParserProperties.getFilter().test(TransactionFilterFields.EMPTY));
     }
@@ -84,7 +87,28 @@ class CommonParserPropertiesTest {
         assertTrue(commonParserProperties.hasFilter());
 
         assertEquals(
-                result, commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), type)));
+                result,
+                commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), null, type)));
+    }
+
+    @DisplayName("Filter using include")
+    @ParameterizedTest(name = "with entity {0} and type {1} resulting in {2}")
+    @CsvSource({
+        //            "'{42L, 29L, 55L}.indexOf(transactionBody.transactionID.accountID.accountNum) >= 0', true",
+        "'transactionBody.transactionID.accountID.accountNum > 0', true",
+        "'transactionBody.memo.contains(\"TOT\"'), true",
+        "'transactionBody.fileUpdate == null', false",
+        "'transactionRecord.consensusTimestamp.seconds > 0', true",
+        "'transactionBody.transactionFee > 0', true",
+    })
+    void filterExpressionInclude(String expression, boolean result) {
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+
+        commonParserProperties.getInclude().add(filter(expression));
+        assertTrue(commonParserProperties.hasFilter());
+
+        assertEquals(
+                result, commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem, null)));
     }
 
     @DisplayName("Filter using exclude")
@@ -116,7 +140,8 @@ class CommonParserPropertiesTest {
         commonParserProperties.getExclude().add(filter(null, TransactionType.FILECREATE));
 
         assertEquals(
-                result, commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), type)));
+                result,
+                commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), null, type)));
     }
 
     @DisplayName("Filter using include and exclude")
@@ -154,7 +179,8 @@ class CommonParserPropertiesTest {
         commonParserProperties.getExclude().add(filter("0.0.5", TransactionType.CONSENSUSCREATETOPIC));
 
         assertEquals(
-                result, commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), type)));
+                result,
+                commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), null, type)));
     }
 
     private Collection<EntityId> entities(String entityId) {
@@ -175,14 +201,26 @@ class CommonParserPropertiesTest {
     }
 
     private TransactionFilter filter(String entity, TransactionType type) {
+        return filter(entity, null, type);
+    }
+
+    private TransactionFilter filter(String expression) {
+        return filter(null, expression, null);
+    }
+
+    private TransactionFilter filter(String entity, String expression, TransactionType type) {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {
-            transactionFilter.setEntity(Arrays.asList(EntityId.of(entity)));
+            transactionFilter.setEntity(Collections.singletonList(EntityId.of(entity)));
         }
 
         if (type != null) {
-            transactionFilter.setTransaction(Arrays.asList(type));
+            transactionFilter.setTransaction(List.of(type));
+        }
+
+        if (expression != null) {
+            transactionFilter.setExpression(expression);
         }
 
         return transactionFilter;
