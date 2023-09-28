@@ -28,7 +28,7 @@ loki:
             directory: /rules
       table_manager:
         retention_deletes_enabled: true
-        retention_period: 2184h
+        retention_period: 1440h
   monitoring:
     lokiCanary:
       enabled: false

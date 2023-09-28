@@ -34,9 +34,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -46,10 +48,17 @@ public class TopicClient extends AbstractNetworkClient {
     private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     private final Map<Long, Instant> recordPublishInstants;
+    private final Collection<TopicId> topicIds = new CopyOnWriteArrayList<>();
 
     public TopicClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
         recordPublishInstants = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void clean() {
+        log.info("Deleting {} topics", topicIds.size());
+        deleteAll(topicIds, this::deleteTopic);
     }
 
     public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) {
@@ -69,6 +78,7 @@ public class TopicClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(consensusTopicCreateTransaction, keyList);
         var topicId = response.getReceipt().topicId;
         log.info("Created new topic {} with memo '{}' via {}", topicId, memo, response.getTransactionId());
+        topicIds.add(topicId);
         return response;
     }
 
@@ -78,8 +88,6 @@ public class TopicClient extends AbstractNetworkClient {
                 .setTopicId(topicId)
                 .setTopicMemo(memo)
                 .setAutoRenewPeriod(autoRenewPeriod)
-                .clearAdminKey()
-                .clearSubmitKey()
                 .clearAutoRenewAccountId()
                 .setTransactionMemo(memo);
 
@@ -94,6 +102,7 @@ public class TopicClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(consensusTopicDeleteTransaction);
         log.info("Deleted topic {} via {}", topicId, response.getTransactionId());
+        topicIds.remove(topicId);
         return response;
     }
 

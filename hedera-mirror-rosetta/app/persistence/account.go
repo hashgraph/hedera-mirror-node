@@ -46,20 +46,17 @@ const (
                                   entity_id = @account_id and
                                   (errata is null or errata <> 'DELETE')
                               ), 0) as value`
-	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
-                                      select
-                                        consensus_timestamp max, (consensus_timestamp + time_offset) adjusted_timestamp
-                                      from account_balance_file
-                                      where consensus_timestamp + time_offset <= @timestamp
+	latestBalanceBeforeConsensus = `with balance_timestamp as (
+                                      select consensus_timestamp
+                                      from account_balance
+                                      where consensus_timestamp <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
-                                    select
-                                      adjusted_timestamp as consensus_timestamp,
-                                      coalesce(ab.balance, 0) balance
-                                    from abm
+                                    select bt.consensus_timestamp, coalesce(ab.balance, 0) as balance
+                                    from balance_timestamp bt
                                     left join account_balance ab
-                                      on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
+                                      on ab.consensus_timestamp = bt.consensus_timestamp and ab.account_id = @account_id`
 	selectCryptoEntityWithAliasById = "select alias, id from entity where id = @id"
 	selectCryptoEntityByAlias       = `select id, deleted, timestamp_range
                                  from entity
