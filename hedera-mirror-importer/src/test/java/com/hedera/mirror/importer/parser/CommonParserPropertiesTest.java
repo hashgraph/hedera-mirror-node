@@ -94,7 +94,6 @@ class CommonParserPropertiesTest {
     @DisplayName("Filter using include")
     @ParameterizedTest(name = "with entity {0} and type {1} resulting in {2}")
     @CsvSource({
-        //            "'{42L, 29L, 55L}.indexOf(transactionBody.transactionID.accountID.accountNum) >= 0', true",
         "'transactionBody.transactionID.accountID.accountNum > 0', true",
         "'transactionBody.memo.contains(\"TOT\"'), true",
         "'transactionBody.fileUpdate == null', false",
@@ -212,7 +211,7 @@ class CommonParserPropertiesTest {
         TransactionFilter transactionFilter = new TransactionFilter();
 
         if (StringUtils.isNotBlank(entity)) {
-            transactionFilter.setEntity(Collections.singletonList(EntityId.of(entity)));
+            transactionFilter.setEntity(List.of(EntityId.of(entity)));
         }
 
         if (type != null) {
