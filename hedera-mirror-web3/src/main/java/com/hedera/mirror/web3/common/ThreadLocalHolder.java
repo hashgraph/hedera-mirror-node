@@ -67,6 +67,7 @@ public class ThreadLocalHolder {
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     @NonNull
     public static final ThreadLocal<CachingStateFrame<Object>> stackBase = ThreadLocal.withInitial(() -> null);
+
     @NonNull
     public static final ThreadLocal<MirrorEvmTxProcessor> mirrorEvmTxProcessor = ThreadLocal.withInitial(() -> null);
 

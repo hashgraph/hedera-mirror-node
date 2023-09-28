@@ -19,18 +19,18 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.assertj.core.data.Percentage;
 
 class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
