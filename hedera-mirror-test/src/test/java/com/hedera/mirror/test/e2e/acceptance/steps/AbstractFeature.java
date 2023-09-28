@@ -41,7 +41,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 
@@ -104,30 +103,33 @@ abstract class AbstractFeature {
         return mirrorTransaction;
     }
 
-    protected synchronized DeployedContract getContract(ContractResource contractResource)
-            throws IOException {
-        return contractIdMap.computeIfAbsent(contractResource, x -> {
-            var resource = resourceLoader.getResource(contractResource.path);
-            try (var in = resource.getInputStream()) {
-                CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
-                var fileId = persistContractBytes(
-                        compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-                networkTransactionResponse = contractClient.createContract(
-                        fileId,
-                        contractClient
-                                .getSdkClient()
-                                .getAcceptanceTestProperties()
-                                .getFeatureProperties()
-                                .getMaxContractFunctionGas(),
-                        contractResource.initialBalance == 0 ? null : Hbar.fromTinybars(contractResource.initialBalance),
-                        null);
-                ContractId contractId = verifyCreateContractNetworkResponse();
-
-                return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+    protected DeployedContract getContract(ContractResource contractResource) throws IOException {
+        synchronized (contractIdMap) {
+            return contractIdMap.computeIfAbsent(contractResource, x -> {
+                var resource = resourceLoader.getResource(contractResource.path);
+                try (var in = resource.getInputStream()) {
+                    CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
+                    var fileId = persistContractBytes(
+                            compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
+                    networkTransactionResponse = contractClient.createContract(
+                            fileId,
+                            contractClient
+                                    .getSdkClient()
+                                    .getAcceptanceTestProperties()
+                                    .getFeatureProperties()
+                                    .getMaxContractFunctionGas(),
+                            contractResource.initialBalance == 0
+                                    ? null
+                                    : Hbar.fromTinybars(contractResource.initialBalance),
+                            null);
+                    ContractId contractId = verifyCreateContractNetworkResponse();
+                    return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+                } catch (IOException e) {
+                    log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
+                    throw new RuntimeException(e);
+                }
+            });
+        }
     }
 
     protected FileId persistContractBytes(String contractContents) {
@@ -161,7 +163,8 @@ abstract class AbstractFeature {
     @Getter
     public enum ContractResource {
         ESTIMATE_PRECOMPILE_TEST_CONTRACT(
-                "classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json", 0),
+                "classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json",
+                0),
         ERC_TEST_CONTRACT("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json", 0),
         PRECOMPILE_TEST_CONTRACT(
                 "classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
