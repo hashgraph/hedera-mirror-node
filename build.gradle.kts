@@ -76,13 +76,13 @@ dependencies {
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
-        api("net.devh:grpc-spring-boot-starter:2.15.0-SNAPSHOT") // Temporary until 2.15.0 for Jakarta compatability
+        api("net.devh:grpc-spring-boot-starter:2.15.0.RELEASE")
         api("net.java.dev.jna:jna:5.13.0")
         api("org.apache.commons:commons-compress:1.24.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
-        api("org.gaul:s3proxy:2.1.0-SNAPSHOT") // Temporary until 2.1.0 for Jakarta compatability
+        api("org.gaul:s3proxy:2.1.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
         api("org.jetbrains:annotations:24.0.1")
