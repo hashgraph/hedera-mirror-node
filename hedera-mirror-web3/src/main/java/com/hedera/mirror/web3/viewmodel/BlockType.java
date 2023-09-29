@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.viewmodel;
 
-import com.hedera.mirror.web3.exception.InvalidBlockTypeException;
 import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,9 +39,7 @@ public record BlockType(String name, long number) {
     public static final BlockType LATEST = new BlockType(BlockTypeName.LATEST.name, Long.MAX_VALUE);
 
     private static final BlockTypeName[] UNSUPPORTED_TYPES = {
-            BlockTypeName.PENDING,
-            BlockTypeName.SAFE,
-            BlockTypeName.FINALIZED
+        BlockTypeName.PENDING, BlockTypeName.SAFE, BlockTypeName.FINALIZED
     };
 
     public static BlockType of(final String value) {
