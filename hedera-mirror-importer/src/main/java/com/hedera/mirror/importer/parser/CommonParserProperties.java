@@ -20,6 +20,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
@@ -131,9 +132,7 @@ public class CommonParserProperties {
                 try {
                     parsedExpression = expressionParser.parseExpression(expression);
                 } catch (ParseException ex) {
-                    log.warn("Disabled transaction filter expression that failed to parse: {}", ex.getMessage());
-                    expression = null;
-                    return true;
+                    throw new InvalidConfigurationException("Transaction filter expression failed to parse", ex);
                 }
             }
 
@@ -141,13 +140,8 @@ public class CommonParserProperties {
                 Boolean result = parsedExpression.getValue(evaluationContext, recordItem, Boolean.class);
                 return result != null && result;
             } catch (EvaluationException ex) {
-                log.warn(
-                        "Disabled transaction filter expression that failed to evaluate: '{}' - {}",
-                        expression,
-                        ex.getMessage());
-                parsedExpression = null;
-                expression = null;
-                return true;
+                throw new InvalidConfigurationException(
+                        "Transaction filter expression failed to evaluate: %s".formatted(expression), ex);
             }
         }
     }

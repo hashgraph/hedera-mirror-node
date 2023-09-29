@@ -24,4 +24,8 @@ public class InvalidConfigurationException extends ImporterException {
     public InvalidConfigurationException(String message) {
         super(message);
     }
+
+    public InvalidConfigurationException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

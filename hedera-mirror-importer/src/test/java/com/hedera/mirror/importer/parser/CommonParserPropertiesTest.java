@@ -16,13 +16,16 @@
 
 package com.hedera.mirror.importer.parser;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import java.util.Arrays;
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.expression.ExpressionException;
 
 @ExtendWith(MockitoExtension.class)
 class CommonParserPropertiesTest {
@@ -91,13 +95,11 @@ class CommonParserPropertiesTest {
                 commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), null, type)));
     }
 
-    @DisplayName("Filter using include")
-    @ParameterizedTest(name = "with entity {0} and type {1} resulting in {2}")
+    @DisplayName("Filter expression using include")
+    @ParameterizedTest(name = "with expression {0} resulting in {1}")
     @CsvSource({
-        "'transactionIndex > 12', true",
-        "successful, true",
+        "'', true",
         "'transactionBody.transactionID.accountID.accountNum > 0', true",
-        "'transactionBody.memo.matches(\"TOT\")', true",
         "'transactionBody.fileUpdate == null', false",
         "'transactionRecord.consensusTimestamp.seconds > 0', true",
         "'transactionBody.transactionFee > 0', true",
@@ -110,6 +112,32 @@ class CommonParserPropertiesTest {
 
         assertEquals(
                 result, commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem, null)));
+    }
+
+    @DisplayName("Invalid filter expression exception handling")
+    @ParameterizedTest(name = "with expression {0} resulting in cause {1}")
+    @CsvSource({
+        "'sld&#$$', org.springframework.expression.ParseException",
+        "'transactionBody|consensusTimeStamp ge 32', org.springframework.expression.ParseException",
+        // Disallowed RecordItem access
+        "'transactionIndex > 12', org.springframework.expression.EvaluationException",
+        // Disallowed RecordItem access
+        "'successful', org.springframework.expression.EvaluationException",
+        // Disallowed RecordItem access
+        "'transaction.bodyBytes.length > 24', org.springframework.expression.EvaluationException",
+        "'transactionRecord.noSuchProperty != null', org.springframework.expression.EvaluationException",
+        "'transactionBody.memo.badStringMethod()', org.springframework.expression.EvaluationException"
+    })
+    void filterExpressionErrors(String expression, Class<ExpressionException> causeClass) {
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+
+        commonParserProperties.getInclude().add(filter(expression));
+        assertTrue(commonParserProperties.hasFilter());
+
+        var transactionFilterFields = new TransactionFilterFields(null, recordItem, null);
+        var filter = commonParserProperties.getFilter();
+        var exception = assertThrows(InvalidConfigurationException.class, () -> filter.test(transactionFilterFields));
+        assertThat(exception).hasCauseInstanceOf(causeClass);
     }
 
     @DisplayName("Filter using exclude")
