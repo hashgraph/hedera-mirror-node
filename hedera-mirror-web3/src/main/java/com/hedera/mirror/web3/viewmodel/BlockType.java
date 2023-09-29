@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.viewmodel;
 
+import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 
 public record BlockType(String name, long number) {
@@ -23,7 +24,11 @@ public record BlockType(String name, long number) {
     public static final BlockType EARLIEST = new BlockType("earliest", 0L);
     public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
     public static final BlockType PENDING = new BlockType("pending", Long.MAX_VALUE);
+    public static final BlockType SAFE = new BlockType("safe", Long.MAX_VALUE);
+    public static final BlockType FINALIZED = new BlockType("finalized", Long.MAX_VALUE);
     private static final String HEX_PREFIX = "0x";
+
+    private static final BlockType[] UNSUPPORTED_TYPES = {PENDING, SAFE, FINALIZED};
 
     public static BlockType of(final String value) {
 
@@ -33,6 +38,10 @@ public record BlockType(String name, long number) {
             return BlockType.EARLIEST;
         } else if (BlockType.PENDING.name().equalsIgnoreCase(value)) {
             return BlockType.PENDING;
+        } else if (BlockType.SAFE.name().equalsIgnoreCase(value)) {
+            return BlockType.SAFE;
+        } else if (BlockType.FINALIZED.name().equalsIgnoreCase(value)) {
+            return BlockType.FINALIZED;
         }
 
         int radix = 10;
@@ -49,5 +58,10 @@ public record BlockType(String name, long number) {
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid block value: " + value, e);
         }
+    }
+
+    public static boolean isSupported(String blockType) {
+        return Arrays.stream(UNSUPPORTED_TYPES)
+                .noneMatch(unsupportedType -> unsupportedType.name().equalsIgnoreCase(blockType));
     }
 }

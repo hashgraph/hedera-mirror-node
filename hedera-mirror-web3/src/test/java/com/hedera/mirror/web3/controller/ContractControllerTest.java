@@ -380,7 +380,7 @@ class ContractControllerTest {
 
     @NullAndEmptySource
     @ParameterizedTest
-    @ValueSource(strings = {"earliest", "pending", "latest", "0", "0x1a"})
+    @ValueSource(strings = {"earliest", "latest", "0", "0x1a"})
     void callValidBlockType(String value) {
         final var request = request();
         request.setBlock(BlockType.of(value));
@@ -393,6 +393,27 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(OK);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending", "safe", "finalized"})
+    void callInvalidBlockType(String value) {
+        final var request = request();
+        request.setBlock(BlockType.of(value));
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(
+                        String.format("Unsupported block type passed: %s", value),
+                        "Invalid block type passed",
+                        StringUtils.EMPTY));
     }
 
     @Test

@@ -29,11 +29,13 @@ import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.exception.InvalidBlockTypeException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -82,6 +84,11 @@ class ContractController {
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
+        final var blockType = request.getBlock();
+        if (!BlockType.isSupported(blockType.name())) {
+            throw new InvalidBlockTypeException(String.format("Unsupported block type passed: %s", blockType.name()));
+        }
+
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
@@ -142,6 +149,13 @@ class ContractController {
     private Mono<GenericErrorResponse> invalidJson(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return errorResponse(e.getReason(), "Unable to parse JSON", StringUtils.EMPTY);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> invalidBlockType(final InvalidBlockTypeException e) {
+        log.warn("Invalid block type passed");
+        return errorResponse(e.getMessage(), "Invalid block type passed", StringUtils.EMPTY);
     }
 
     @ExceptionHandler
