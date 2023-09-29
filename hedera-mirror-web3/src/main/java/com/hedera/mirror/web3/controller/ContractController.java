@@ -152,7 +152,7 @@ class ContractController {
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
+    @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> invalidBlockType(final InvalidBlockTypeException e) {
         log.warn("Invalid block type passed");
         return errorResponse(e.getMessage(), "Invalid block type passed", StringUtils.EMPTY);

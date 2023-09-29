@@ -16,32 +16,52 @@
 
 package com.hedera.mirror.web3.viewmodel;
 
+import com.hedera.mirror.web3.exception.InvalidBlockTypeException;
 import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 
 public record BlockType(String name, long number) {
 
-    public static final BlockType EARLIEST = new BlockType("earliest", 0L);
-    public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
-    public static final BlockType PENDING = new BlockType("pending", Long.MAX_VALUE);
-    public static final BlockType SAFE = new BlockType("safe", Long.MAX_VALUE);
-    public static final BlockType FINALIZED = new BlockType("finalized", Long.MAX_VALUE);
-    private static final String HEX_PREFIX = "0x";
+    private enum BlockTypeName {
+        EARLIEST("earliest"),
+        LATEST("latest"),
+        PENDING("pending"),
+        SAFE("safe"),
+        FINALIZED("finalized");
 
-    private static final BlockType[] UNSUPPORTED_TYPES = {PENDING, SAFE, FINALIZED};
+        private final String name;
+
+        BlockTypeName(final String name) {
+            this.name = name;
+        }
+    }
+
+    private static final String HEX_PREFIX = "0x";
+    public static final BlockType LATEST = new BlockType(BlockTypeName.LATEST.name, Long.MAX_VALUE);
+
+    private static final BlockTypeName[] UNSUPPORTED_TYPES = {
+            BlockTypeName.PENDING,
+            BlockTypeName.SAFE,
+            BlockTypeName.FINALIZED
+    };
 
     public static BlockType of(final String value) {
+        if (StringUtils.isEmpty(value)) {
+            return LATEST;
+        }
 
-        if (StringUtils.isEmpty(value) || BlockType.LATEST.name().equalsIgnoreCase(value)) {
-            return BlockType.LATEST;
-        } else if (BlockType.EARLIEST.name().equalsIgnoreCase(value)) {
-            return BlockType.EARLIEST;
-        } else if (BlockType.PENDING.name().equalsIgnoreCase(value)) {
-            return BlockType.PENDING;
-        } else if (BlockType.SAFE.name().equalsIgnoreCase(value)) {
-            return BlockType.SAFE;
-        } else if (BlockType.FINALIZED.name().equalsIgnoreCase(value)) {
-            return BlockType.FINALIZED;
+        try {
+            final BlockTypeName blockTypeName = BlockTypeName.valueOf(value.toUpperCase());
+            switch (blockTypeName) {
+                case EARLIEST -> {
+                    return new BlockType(BlockTypeName.EARLIEST.name, 0L);
+                }
+                case LATEST, PENDING, SAFE, FINALIZED -> {
+                    return new BlockType(blockTypeName.name, Long.MAX_VALUE);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            // The value is not in the enum -> check for passed block number.
         }
 
         int radix = 10;

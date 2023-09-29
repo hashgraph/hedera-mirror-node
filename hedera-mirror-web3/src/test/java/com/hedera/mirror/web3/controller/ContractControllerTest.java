@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
@@ -408,7 +409,7 @@ class ContractControllerTest {
                 .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(BAD_REQUEST)
+                .isEqualTo(NOT_IMPLEMENTED)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(
                         String.format("Unsupported block type passed: %s", value),
