@@ -94,8 +94,7 @@ public class EvmOperationConstructionUtil {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
-            final boolean isEstimate) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
 
         final var precompileContractRegistry = new PrecompileContractRegistry();
@@ -115,8 +114,7 @@ public class EvmOperationConstructionUtil {
                                 precompileMapper,
                                 gasCalculator,
                                 basicHbarCentExchange,
-                                prngSystemPrecompiledContract,
-                                isEstimate)));
+                                prngSystemPrecompiledContract)));
     }
 
     private static Map<String, PrecompiledContract> precompiles(
@@ -124,17 +122,12 @@ public class EvmOperationConstructionUtil {
             final PrecompileMapper precompileMapper,
             final GasCalculator gasCalculator,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
-            final boolean isEstimate) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
 
         final var htsPrecompiledContractAdapter = new HTSPrecompiledContract(
-                evmFactory,
-                mirrorNodeEvmProperties,
-                precompileMapper,
-                new EvmHTSPrecompiledContract(evmFactory),
-                isEstimate);
+                evmFactory, mirrorNodeEvmProperties, precompileMapper, new EvmHTSPrecompiledContract(evmFactory));
         hederaPrecompiles.put(
                 EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new MirrorHTSPrecompiledContract(evmFactory, htsPrecompiledContractAdapter));

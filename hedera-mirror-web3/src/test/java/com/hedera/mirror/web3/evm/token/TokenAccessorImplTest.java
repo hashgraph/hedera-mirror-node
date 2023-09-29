@@ -73,6 +73,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
@@ -124,6 +125,9 @@ class TokenAccessorImplTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Token token;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private List<DatabaseAccessor<Object, ?>> accessors;
     private Store store;
 
@@ -152,7 +156,7 @@ class TokenAccessorImplTest {
         store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
 
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
     }
 
     @AfterEach

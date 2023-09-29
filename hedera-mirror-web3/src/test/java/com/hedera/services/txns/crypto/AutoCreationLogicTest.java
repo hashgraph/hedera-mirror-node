@@ -68,6 +68,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
@@ -102,6 +103,9 @@ class AutoCreationLogicTest {
     @Mock
     private EvmProperties evmProperties;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private AutoCreationLogic subject;
 
     @BeforeEach
@@ -110,7 +114,7 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
         store.wrap();
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }

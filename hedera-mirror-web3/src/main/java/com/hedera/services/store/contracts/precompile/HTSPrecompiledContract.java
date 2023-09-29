@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -110,13 +111,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
-            final boolean isEstimate) {
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
-        this.isEstimate = isEstimate;
+        this.isEstimate = ThreadLocalHolder.isEstimate();
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {

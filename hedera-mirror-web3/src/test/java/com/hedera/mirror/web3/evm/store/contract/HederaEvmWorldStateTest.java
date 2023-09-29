@@ -57,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
@@ -102,6 +103,9 @@ class HederaEvmWorldStateTest {
     @Mock
     private NftRepository nftRepository;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private StoreImpl store;
 
     private HederaEvmWorldState subject;
@@ -122,7 +126,7 @@ class HederaEvmWorldStateTest {
                 uniqueTokenDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
         store.wrap();
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,

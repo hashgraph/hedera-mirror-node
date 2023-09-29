@@ -66,6 +66,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class StoreImplTest {
@@ -142,6 +143,9 @@ class StoreImplTest {
     @Mock(strictness = Strictness.LENIENT)
     private Nft nft;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private StoreImpl subject;
 
     @BeforeEach
@@ -167,7 +171,7 @@ class StoreImplTest {
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
     }
 
     @AfterEach

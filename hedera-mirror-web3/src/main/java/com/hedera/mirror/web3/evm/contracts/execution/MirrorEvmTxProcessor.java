@@ -50,7 +50,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final MirrorEvmContractAliases aliasManager;
     private final MirrorOperationTracer operationTracer;
     private final Store store;
-    private final boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -71,7 +70,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         this.codeCache = codeCache;
         this.operationTracer = operationTracer;
         this.store = store;
-        this.isCreate = ThreadLocalHolder.isCreate();
     }
 
     @SuppressWarnings("java:S107")
@@ -111,7 +109,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     @SuppressWarnings("java:S5411")
     @Override
     protected HederaFunctionality getFunctionType() {
-        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
+        return ThreadLocalHolder.isCreate() ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @SuppressWarnings("java:S5411")
@@ -125,12 +123,11 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        return isCreate
+        return ThreadLocalHolder.isCreate()
                 ? baseInitialFrame
                         .type(MessageFrame.Type.CONTRACT_CREATION)
                         .address(to)
                         .contract(to)
-                        .inputData(payload)
                         .inputData(Bytes.EMPTY)
                         .code(CodeFactory.createCode(payload, 0, false))
                         .build()

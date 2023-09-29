@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
@@ -88,6 +89,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private EntityRepository entityRepository;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private Store store;
 
     private HederaEvmStackedWorldStateUpdater subject;
@@ -100,7 +104,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,

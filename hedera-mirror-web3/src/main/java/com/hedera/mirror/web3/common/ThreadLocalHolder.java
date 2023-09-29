@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.NonNull;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.context.ApplicationContext;
 
 @Named
 public class ThreadLocalHolder {
@@ -52,6 +53,7 @@ public class ThreadLocalHolder {
         ContractCallContext contractCallContext = contractCallContextWrapper.get();
         contractCallContext.stack = null;
         contractCallContext.stackBase = null;
+        contractCallContext.mirrorEvmTxProcessor = null;
     }
 
     public static void resetState() {
@@ -65,7 +67,7 @@ public class ThreadLocalHolder {
         contractCallContext.blockTimestamp = ContractCallContext.UNSET_TIMESTAMP;
     }
 
-    public static void startThread(final StackedStateFrames stackedStateFrames) {
+    public static void startThread(final StackedStateFrames stackedStateFrames, final ApplicationContext ctx) {
         ContractCallContext contractCallContext = new ContractCallContext();
         contractCallContextWrapper.set(contractCallContext);
         if (contractCallContext.stackBase == null) {
@@ -73,6 +75,7 @@ public class ThreadLocalHolder {
         }
 
         contractCallContext.stack = contractCallContext.stackBase;
+        contractCallContext.mirrorEvmTxProcessor = (MirrorEvmTxProcessor) ctx.getBean("mirrorEvmTxProcessor");
     }
 
     public static void initContractCallContext() {
@@ -113,11 +116,6 @@ public class ThreadLocalHolder {
     public static void setIsEstimate(boolean isEstimate) {
         ContractCallContext contractCallContext = contractCallContextWrapper.get();
         contractCallContext.isEstimate = isEstimate;
-    }
-
-    public static void setMirrorEvmTxProcessor(MirrorEvmTxProcessor mirrorEvmTxProcessor) {
-        ContractCallContext contractCallContext = contractCallContextWrapper.get();
-        contractCallContext.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
     }
 
     public static MirrorEvmTxProcessor getMirrorEvmTxProcessor() {

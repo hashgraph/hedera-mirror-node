@@ -87,6 +87,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
@@ -508,6 +509,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
     protected Path NESTED_CALLS_ABI_PATH;
 
+    @Autowired
+    private ApplicationContext ctx;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
@@ -783,7 +787,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        ThreadLocalHolder.startThread(store.getStackedStateFrames());
+        ThreadLocalHolder.startThread(store.getStackedStateFrames(), ctx);
         final var result = processor
                 .execute(
                         serviceParameters.getSender(),

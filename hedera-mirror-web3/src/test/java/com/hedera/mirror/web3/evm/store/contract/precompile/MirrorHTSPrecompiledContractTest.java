@@ -58,6 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
@@ -96,6 +97,9 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private HederaEvmWorldStateTokenAccount account;
 
+    @Mock
+    private ApplicationContext ctx;
+
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
@@ -114,7 +118,7 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        ThreadLocalHolder.startThread(stackedStateFrames);
+        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
 
         store = new StoreImpl(stackedStateFrames);
         store.wrap(); // Create top-level RWCachingStateFrame
@@ -128,8 +132,7 @@ class MirrorHTSPrecompiledContractTest {
                         evmInfrastructureFactory,
                         mirrorNodeEvmProperties,
                         precompileMapper,
-                        new EvmHTSPrecompiledContract(evmInfrastructureFactory),
-                        false));
+                        new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
     }
 
     @AfterEach

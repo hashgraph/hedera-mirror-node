@@ -24,7 +24,6 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ThreadLocalHolder;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -58,8 +57,7 @@ public class ContractCallService {
         var stringResult = "";
 
         try {
-            ThreadLocalHolder.startThread(store.getStackedStateFrames());
-            ThreadLocalHolder.setMirrorEvmTxProcessor((MirrorEvmTxProcessor) ctx.getBean("mirrorEvmTxProcessor"));
+            ThreadLocalHolder.startThread(store.getStackedStateFrames(), ctx);
 
             Bytes result;
             if (params.isEstimate()) {
@@ -75,7 +73,6 @@ public class ContractCallService {
             return result.toHexString();
         } finally {
             ThreadLocalHolder.cleanThread();
-            ThreadLocalHolder.setMirrorEvmTxProcessor(null);
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }

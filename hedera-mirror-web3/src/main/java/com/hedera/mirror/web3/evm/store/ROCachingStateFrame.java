@@ -18,11 +18,9 @@ package com.hedera.mirror.web3.evm.store;
 
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import java.util.Optional;
-import lombok.CustomLog;
 import lombok.NonNull;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and disallows updates/deletes. */
-@CustomLog
 public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
 
     public ROCachingStateFrame(

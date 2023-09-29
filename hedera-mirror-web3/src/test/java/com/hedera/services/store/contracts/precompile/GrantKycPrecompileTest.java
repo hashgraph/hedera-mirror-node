@@ -145,7 +145,7 @@ public class GrantKycPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(grantKycPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test

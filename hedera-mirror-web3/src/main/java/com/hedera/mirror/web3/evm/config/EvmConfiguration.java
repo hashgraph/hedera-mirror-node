@@ -16,12 +16,10 @@
 
 package com.hedera.mirror.web3.evm.config;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.isEstimate;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -194,8 +192,7 @@ public class EvmConfiguration {
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngSystemPrecompiledContract,
-                        ThreadLocalHolder.isEstimate()),
+                        prngSystemPrecompiledContract),
                 ccps(gasCalculator, evmProperties),
                 blockMetaSource,
                 mirrorEvmContractAliases,
