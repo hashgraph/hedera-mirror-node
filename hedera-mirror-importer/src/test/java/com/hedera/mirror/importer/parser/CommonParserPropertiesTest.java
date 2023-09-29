@@ -94,6 +94,8 @@ class CommonParserPropertiesTest {
     @DisplayName("Filter using include")
     @ParameterizedTest(name = "with entity {0} and type {1} resulting in {2}")
     @CsvSource({
+        "'transactionIndex > 12', true",
+        "successful, true",
         "'transactionBody.transactionID.accountID.accountNum > 0', true",
         "'transactionBody.memo.matches(\"TOT\")', true",
         "'transactionBody.fileUpdate == null', false",

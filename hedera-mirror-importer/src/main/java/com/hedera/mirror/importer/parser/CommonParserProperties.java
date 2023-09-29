@@ -25,6 +25,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
 import lombok.CustomLog;
@@ -33,12 +34,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.expression.AccessException;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.ReflectivePropertyAccessor;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
@@ -84,7 +87,7 @@ public class CommonParserProperties {
     static class TransactionFilter {
 
         private static final EvaluationContext evaluationContext =
-                SimpleEvaluationContext.forReadOnlyDataBinding().build();
+                new SimpleEvaluationContext.Builder(new RecordItemPropertyAccessor()).build();
         private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
         @NotNull
@@ -146,6 +149,26 @@ public class CommonParserProperties {
                 expression = null;
                 return true;
             }
+        }
+    }
+
+    /**
+     * Limit scope of property access via SpEL for RecordItem instances.
+     */
+    static class RecordItemPropertyAccessor extends ReflectivePropertyAccessor {
+
+        private static final Set<String> ACCESSIBLE_PROPERTIES = Set.of("transactionBody", "transactionRecord");
+
+        RecordItemPropertyAccessor() {
+            super(false);
+        }
+
+        @Override
+        public boolean canRead(EvaluationContext context, Object target, String name) throws AccessException {
+            if (target instanceof RecordItem && !ACCESSIBLE_PROPERTIES.contains(name)) {
+                return false;
+            }
+            return super.canRead(context, target, name);
         }
     }
 }
