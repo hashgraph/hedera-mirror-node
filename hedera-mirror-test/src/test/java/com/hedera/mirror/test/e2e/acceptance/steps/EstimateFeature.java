@@ -54,9 +54,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private String newAccountEvmAddress;
     private ExpandedAccountId receiverAccountId;
 
-    @Given("I successfully create contract from contract bytes with {int} balance")
-    public void createNewEstimateContract(int supply) throws IOException {
-        deployedContract = createContract(estimateGasTestContract, supply);
+    @Given("I successfully create EstimateGas contract from contract bytes")
+    public void createNewEstimateContract() throws IOException {
+        deployedContract = getContract(ContractResource.ESTIMATE_GAS_TEST_CONTRACT);
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvmAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();

@@ -88,9 +88,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private String ercTestContractSolidityAddress;
     private String precompileTestContractSolidityAddress;
 
-    @Given("I create estimate precompile contract with {int} balance")
-    public void createNewEstimateContract(int supply) throws IOException {
-        deployedEstimatePrecompileContract = createContract(estimatePrecompileTestContract, supply);
+    @Given("I create estimate precompile contract with 0 balance")
+    public void createNewEstimateContract() throws IOException {
+        deployedEstimatePrecompileContract = getContract(ContractResource.ESTIMATE_PRECOMPILE_TEST_CONTRACT);
         estimatePrecompileContractSolidityAddress =
                 deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
@@ -99,9 +99,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         receiverAccountAlias = receiverAccount.getPublicKey().toEvmAddress().toString();
     }
 
-    @Given("I create erc test contract with {int} balance")
-    public void createNewERCContract(int supply) throws IOException {
-        deployedErcTestContract = createContract(ercTestContract, supply);
+    @Given("I create erc test contract with 0 balance")
+    public void createNewERCContract() throws IOException {
+        deployedErcTestContract = getContract(ContractResource.ERC_TEST_CONTRACT);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
 
@@ -110,9 +110,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         exchangeRates = mirrorClient.getExchangeRates();
     }
 
-    @Given("I successfully create Precompile contract with {int} balance")
-    public void createNewPrecompileTestContract(int supply) throws IOException {
-        deployedPrecompileContract = createContract(precompileTestContract, supply);
+    @Given("I successfully create Precompile contract with 0 balance")
+    public void createNewPrecompileTestContract() throws IOException {
+        deployedPrecompileContract = getContract(ContractResource.PRECOMPILE_TEST_CONTRACT);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }
