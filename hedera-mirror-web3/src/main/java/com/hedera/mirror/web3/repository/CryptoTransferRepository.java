@@ -24,6 +24,14 @@ import org.springframework.data.repository.CrudRepository;
 
 public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, Id> {
 
-    @Query("SELECT ct FROM CryptoTransfer ct WHERE ct.entityId = ?1 AND ct.consensusTimestamp = ?2")
-    Optional<CryptoTransfer> findByIdAndTimestamp(Long entityId, Long consensusTimestamp);
+    @Query(
+            value = "SELECT * FROM crypto_transfer "
+                    + "WHERE "
+                    + "entity_id = ?1 AND "
+                    + "amount = ?2 AND "
+                    + "consensus_timestamp < ?3 "
+                    + "ORDER BY consensus_timestamp DESC "
+                    + "LIMIT 1 ",
+            nativeQuery = true)
+    Optional<CryptoTransfer> findByIdAndTimestampLessThan(Long entityId, long amount, Long consensusTimestamp);
 }

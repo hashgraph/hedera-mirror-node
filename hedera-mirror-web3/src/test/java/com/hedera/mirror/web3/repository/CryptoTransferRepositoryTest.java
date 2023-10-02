@@ -28,11 +28,27 @@ class CryptoTransferRepositoryTest extends Web3IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
 
     @Test
-    void findById() {
+    void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
         var cryptoTransfer1 = domainBuilder.cryptoTransfer().persist();
-        Assertions.assertThat(cryptoTransferRepository.findByIdAndTimestamp(
-                        cryptoTransfer1.getEntityId(), cryptoTransfer1.getConsensusTimestamp()))
+        Assertions.assertThat(cryptoTransferRepository.findByIdAndTimestampLessThan(
+                        cryptoTransfer1.getEntityId(), cryptoTransfer1.getAmount(), cryptoTransfer1.getConsensusTimestamp() + 1))
                 .get()
                 .isEqualTo(cryptoTransfer1);
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampEqualToBlockTimestamp() {
+        var cryptoTransfer1 = domainBuilder.cryptoTransfer().persist();
+        Assertions.assertThat(cryptoTransferRepository.findByIdAndTimestampLessThan(
+                        cryptoTransfer1.getEntityId(), cryptoTransfer1.getAmount(), cryptoTransfer1.getConsensusTimestamp()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampGreaterThanBlockTimestamp() {
+        var cryptoTransfer1 = domainBuilder.cryptoTransfer().persist();
+        Assertions.assertThat(cryptoTransferRepository.findByIdAndTimestampLessThan(
+                        cryptoTransfer1.getEntityId(), cryptoTransfer1.getAmount(), cryptoTransfer1.getConsensusTimestamp() - 1))
+                .isEmpty();
     }
 }

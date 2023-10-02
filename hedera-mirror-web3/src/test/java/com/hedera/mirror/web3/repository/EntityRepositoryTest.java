@@ -75,75 +75,145 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByEvmAddressAndCreatedTimestampAndDeletedIsFalseCall() {
+    void findByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
-                        entity.getEvmAddress(), entity.getCreatedTimestamp()))
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                        entity.getEvmAddress(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
     }
 
     @Test
-    void findByEvmAddressAndCreatedTimestampAndDeletedTrueCall() {
-        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+    void findByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
-                        entity.getEvmAddress(), entity.getCreatedTimestamp()))
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                entity.getEvmAddress(), entity.getTimestampLower()))
                 .isEmpty();
     }
 
     @Test
-    void findHistoricalEntityByEvmAddressAndCreatedTimestampAndDeletedIsFalseCall() {
+    void findByEvmAddressAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                entity.getEvmAddress(), entity.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCall() {
+        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                        entity.getEvmAddress(), entity.getTimestampLower() + 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        Optional<Entity> queryResult = entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
-                entityHistory.getEvmAddress(), entityHistory.getCreatedTimestamp());
+        Optional<Entity> queryResult = entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                entityHistory.getEvmAddress(), entityHistory.getTimestampLower() + 1);
         assertEntityFields(entityHistory, queryResult);
     }
 
     @Test
-    void findHistoricalEntityByEvmAddressAndCreatedTimestampAndDeletedTrueCall() {
-        EntityHistory entityHistory =
-                domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
+    void findHistoricalEntityByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
-                        entityHistory.getEvmAddress(), entityHistory.getCreatedTimestamp()))
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                entityHistory.getEvmAddress(), entityHistory.getTimestampLower()))
                 .isEmpty();
     }
 
     @Test
-    void findByIdAndCreatedTimestampAndDeletedIsFalseCall() {
+    void findHistoricalEntityByEvmAddressAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
+
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                entityHistory.getEvmAddress(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressAndTimestampRangeAndDeletedTrueCall() {
+        EntityHistory entityHistory =
+                domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+                        entityHistory.getEvmAddress(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(entity.getId(), entity.getCreatedTimestamp()))
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
     }
 
     @Test
-    void findByIdAndCreatedTimestampAndDeletedTrueCall() {
-        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+    void findByIdAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(entity.getId(), entity.getId()))
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
                 .isEmpty();
     }
 
     @Test
-    void findHistoricalEntityByIdAndCreatedTimestampAndDeletedIsFalseCall() {
+    void findByIdAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
+        Entity entity = domainBuilder.entity().persist();
+
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampRangeAndDeletedTrueCall() {
+        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalEntityByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        Optional<Entity> queryResult = entityRepository.findByIdAndTimestampAndDeletedIsFalse(
-                entityHistory.getId(), entityHistory.getCreatedTimestamp());
+        Optional<Entity> queryResult = entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
+                entityHistory.getId(), entityHistory.getTimestampLower() + 1);
         assertEntityFields(entityHistory, queryResult);
     }
 
     @Test
-    void findHistoricalEntityByIdAndCreatedTimestampAndDeletedTrueCall() {
+    void findHistoricalEntityByIdAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
+
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
+                entityHistory.getId(), entityHistory.getTimestampLower())
+                        .isEmpty());
+    }
+
+    @Test
+    void findHistoricalEntityByIdAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
+        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
+
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
+                        entityHistory.getId(), entityHistory.getTimestampLower() - 1)
+                .isEmpty());
+    }
+
+    @Test
+    void findHistoricalEntityByIdAndTimestampRangeAndDeletedTrueCall() {
         EntityHistory entityHistory =
                 domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
                         entityHistory.getId(), entityHistory.getCreatedTimestamp()))
                 .isEmpty();
     }

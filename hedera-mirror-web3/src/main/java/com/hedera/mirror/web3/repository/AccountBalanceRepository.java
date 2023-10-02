@@ -17,6 +17,19 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {}
+public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
+    @Query(
+            value = "SELECT * FROM account_balance "
+                    + "WHERE "
+                    + "account_id = ?1 AND "
+                    + "consensus_timestamp < ?2 "
+                    + "ORDER BY consensus_timestamp DESC "
+                    + "LIMIT 1 ",
+            nativeQuery = true)
+    Optional<AccountBalance> findByIdAndTimestampLessThan(long accountId, long consensusTimestamp);
+
+}

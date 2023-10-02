@@ -28,10 +28,27 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
 
     @Test
-    void findById() {
+    void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
-        Assertions.assertThat(accountBalanceRepository.findById(accountBalance.getId()))
+        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp() + 1))
                 .get()
                 .isEqualTo(accountBalance);
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampEqualToBlockTimestamp() {
+        var accountBalance = domainBuilder.accountBalance().persist();
+        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampGreaterThanBlockTimestamp() {
+        var accountBalance = domainBuilder.accountBalance().persist();
+        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp() - 1))
+                .isEmpty();
     }
 }

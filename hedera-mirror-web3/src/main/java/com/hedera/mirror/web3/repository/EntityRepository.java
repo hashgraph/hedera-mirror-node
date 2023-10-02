@@ -36,39 +36,43 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     @Cacheable(
             cacheNames = "entityEvmAddressHistoricalUnionCache",
-            key = "#evmAddress + '-' + #createdTimestamp",
+            key = "#evmAddress + '-' + #blockTimestamp",
             cacheManager = CACHE_MANAGER_ENTITY,
             unless = "#result == null")
-    @Query(
-            value = "(SELECT * FROM entity "
-                    + "WHERE evm_address = ?1 "
-                    + "AND created_timestamp = ?2 "
-                    + "AND deleted = false "
-                    + "UNION ALL "
-                    + "SELECT * FROM entity_history "
-                    + "WHERE evm_address = ?1 "
-                    + "AND created_timestamp = ?2 "
-                    + "AND deleted = false) "
-                    + "LIMIT 1",
+    @Query(value =
+            "SELECT * FROM ( "
+          + " (SELECT * FROM entity "
+          + "  WHERE evm_address = ?1 "
+          + "  AND deleted = false "
+          + "  UNION ALL "
+          + "  SELECT * FROM entity_history "
+          + "  WHERE evm_address = ?1 "
+          + "  AND deleted = false) "
+          + ") AS t "
+          + " WHERE timestamp_range < int8range(?2, null) "
+          + " ORDER BY timestamp_range DESC "
+          + " LIMIT 1 ",
             nativeQuery = true)
-    Optional<Entity> findByEvmAddressAndTimestampAndDeletedIsFalse(byte[] evmAddress, Long createdTimestamp);
+    Optional<Entity> findByEvmAddressAndTimestampRangeAndDeletedIsFalse(byte[] evmAddress, long blockTimestamp);
 
     @Cacheable(
             cacheNames = "entityIdHistoricalUnionCache",
-            key = "#id + '-' + #createdTimestamp",
+            key = "#id + '-' + #blockTimestamp",
             cacheManager = CACHE_MANAGER_ENTITY,
             unless = "#result == null")
-    @Query(
-            value = "(SELECT * FROM entity "
-                    + "WHERE id = ?1 "
-                    + "AND created_timestamp = ?2 "
-                    + "AND deleted = false "
-                    + "UNION ALL "
-                    + "SELECT * FROM entity_history "
-                    + "WHERE id = ?1 "
-                    + "AND created_timestamp = ?2 "
-                    + "AND deleted = false) "
-                    + "LIMIT 1",
+    @Query(value =
+           "SELECT * FROM ( "
+           + " (SELECT * FROM entity "
+           + "  WHERE id = ?1 "
+           + "  AND deleted = false "
+           + "  UNION ALL "
+           + "  SELECT * FROM entity_history "
+           + "  WHERE id = ?1 "
+           + "  AND deleted = false) "
+           + ") AS t "
+           + " WHERE timestamp_range < int8range(?2, null) "
+           + " ORDER BY timestamp_range DESC "
+           + " LIMIT 1 ",
             nativeQuery = true)
-    Optional<Entity> findByIdAndTimestampAndDeletedIsFalse(Long id, Long createdTimestamp);
+    Optional<Entity> findByIdAndTimestampRangeAndDeletedIsFalse(long id, long blockTimestamp);
 }
