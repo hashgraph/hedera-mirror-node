@@ -26,6 +26,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
@@ -138,7 +139,7 @@ public class CommonParserProperties {
 
             try {
                 Boolean result = parsedExpression.getValue(evaluationContext, recordItem, Boolean.class);
-                return result != null && result;
+                return Objects.requireNonNullElse(result, false);
             } catch (EvaluationException ex) {
                 throw new InvalidConfigurationException(
                         "Transaction filter expression failed to evaluate: %s".formatted(expression), ex);
