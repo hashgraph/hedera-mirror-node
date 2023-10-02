@@ -63,7 +63,8 @@ class FileDataService extends BaseService {
            ) data
         from ${FileData.tableName}
         where
-           ${FileData.ENTITY_ID} = $1
+           ${FileData.ENTITY_ID} = $1 
+        and ${FileData.ENTITY_ID} NOT BETWEEN 150 AND 159 -- ids corresponding to big file ids
         and ${FileData.CONSENSUS_TIMESTAMP} >= (
         select ${FileData.CONSENSUS_TIMESTAMP}
         from ${FileData.tableName}
