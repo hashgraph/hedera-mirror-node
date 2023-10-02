@@ -1,5 +1,5 @@
 {
-  "description": "Contracts api calls with contract with big system files",
+  "description": "Contracts api calls with contract with large system files",
   "setup": {
     "contracts": [
       {

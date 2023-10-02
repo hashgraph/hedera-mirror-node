@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -64,6 +65,7 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
             .build();
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+    private static final EntityId LARGE_FILE_ENTITY_ID = EntityId.of(0L, 0L, 151L);
 
     @Resource
     private final FileDataRepository fileDataRepository;
@@ -92,5 +94,18 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
 
         final var actualBytes = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), expiry);
         assertThat(CurrentAndNextFeeSchedule.parseFrom(actualBytes)).isEqualTo(feeSchedules);
+    }
+
+    @Test
+    void getNullBytesForLargeFile() {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(feeSchedules.toByteArray())
+                        .entityId(LARGE_FILE_ENTITY_ID)
+                        .consensusTimestamp(expiry))
+                .persist();
+
+        final var actualBytes = fileDataRepository.getFileAtTimestamp(LARGE_FILE_ENTITY_ID.getId(), expiry);
+        assertNull(actualBytes);
     }
 }
