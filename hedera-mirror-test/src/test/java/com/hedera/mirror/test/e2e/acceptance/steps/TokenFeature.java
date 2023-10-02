@@ -67,7 +67,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,7 +94,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
-        var tokenAndResponse = tokenClient.getToken(tokenName);
+        var tokenAndResponse = tokenClient.getToken(tokenName, Collections.emptyList());
         if (tokenAndResponse.response() != null) {
             this.networkTransactionResponse = tokenAndResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -107,14 +106,14 @@ public class TokenFeature extends AbstractFeature {
     @Given("I associate account {account} with token {token}")
     public void associateToken(AccountNameEnum accountName, TokenNameEnum tokenName) {
         var accountId = accountClient.getAccount(accountName);
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         associateWithToken(accountId, tokenId);
     }
 
     @Given("I approve {account} to transfer up to {long} of token {token}")
     public void setFungibleTokenAllowance(AccountNameEnum accountName, long amount, TokenNameEnum tokenName) {
         var spenderAccountId = accountClient.getAccount(accountName).getAccountId();
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -124,7 +123,7 @@ public class TokenFeature extends AbstractFeature {
     @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
             long approvedAmount, TokenNameEnum tokenName, AccountNameEnum accountName) {
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         var spenderAccountId = accountClient.getAccount(accountName);
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, 0);
     }
@@ -136,7 +135,10 @@ public class TokenFeature extends AbstractFeature {
 
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var spender = accountClient.getAccount(accountName).getAccountId().toString();
-        var token = tokenClient.getToken(tokenName).tokenId().toString();
+        var token = tokenClient
+                .getToken(tokenName, Collections.emptyList())
+                .tokenId()
+                .toString();
 
         var mirrorTokenAllowanceResponse = mirrorClient.getAccountTokenAllowanceBySpender(owner, token, spender);
         assertThat(mirrorTokenAllowanceResponse.getAllowances()).isEmpty();
@@ -146,14 +148,14 @@ public class TokenFeature extends AbstractFeature {
     @RetryAsserts
     public void verifyMirrorAPIApprovedDebitedTokenAllowanceResponse(
             long debitAmount, TokenNameEnum tokenName, long approvedAmount, AccountNameEnum accountName) {
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         var spenderAccountId = accountClient.getAccount(accountName);
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, debitAmount);
     }
 
     @Then("I transfer {long} of token {token} to {account}")
     public void transferTokensToRecipient(long amount, TokenNameEnum tokenName, AccountNameEnum accountName) {
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         var recipientAccountId = accountClient.getAccount(accountName).getAccountId();
         var ownerAccountId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
 
@@ -166,7 +168,7 @@ public class TokenFeature extends AbstractFeature {
     @Given("{account} transfers {long} of token {token} to {account}")
     public void transferFromAllowance(
             AccountNameEnum spender, long amount, TokenNameEnum token, AccountNameEnum recipient) {
-        var tokenId = tokenClient.getToken(token).tokenId();
+        var tokenId = tokenClient.getToken(token, Collections.emptyList()).tokenId();
         var spenderAccountId = accountClient.getAccount(spender);
         var recipientAccountId = accountClient.getAccount(recipient).getAccountId();
         var ownerAccountId = accountClient.getClient().getOperatorAccountId();
@@ -195,7 +197,10 @@ public class TokenFeature extends AbstractFeature {
         var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
-        var tokenId = tokenClient.getToken(tokenName).tokenId().toString();
+        var tokenId = tokenClient
+                .getToken(tokenName, Collections.emptyList())
+                .tokenId()
+                .toString();
         var owner = accountClient.getClient().getOperatorAccountId().toString();
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
@@ -209,7 +214,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I delete the allowance on token {token} for {account}")
     public void setFungibleTokenAllowance(TokenNameEnum tokenName, AccountNameEnum spenderAccountName) {
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         var spenderAccountId = accountClient.getAccount(spenderAccountName);
         networkTransactionResponse = accountClient.approveToken(tokenId, spenderAccountId.getAccountId(), 0L);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -218,27 +223,25 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I successfully create a new token with custom fees schedule")
     public void createNewToken(List<CustomFee> customFees) {
-        createNewToken(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                customFees);
+        final var result = tokenClient.getToken(TokenNameEnum.FUNGIBLE_WITH_CUSTOM_FEES, customFees);
+        this.tokenId = result.tokenId();
+        this.networkTransactionResponse = result.response();
+        this.customFees = customFees;
     }
 
     @Given("I successfully create a new token with freeze status {int} and kyc status {int}")
     public void createNewToken(int freezeStatus, int kycStatus) {
-        createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
+        final var response = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2, Collections.emptyList());
+        this.tokenId = response.tokenId();
+        this.networkTransactionResponse = response.response();
     }
 
     @Given("I successfully create a new nft with supplyType {string}")
     public void createNewNft(String tokenSupplyType) {
-        createNewNft(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenSupplyType.valueOf(tokenSupplyType));
+        final var result = tokenClient.getToken(TokenNameEnum.NFT_2, Collections.emptyList());
+        this.networkTransactionResponse = result.response();
+        this.tokenId = result.tokenId();
+        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
     @Given("I associate {account} with token")
@@ -532,27 +535,6 @@ public class TokenFeature extends AbstractFeature {
         this.customFees = customFees;
 
         return tokenId;
-    }
-
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(
-                symbol,
-                freezeStatus,
-                kycStatus,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                Collections.emptyList());
-    }
-
-    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
-        TokenId tokenId = createNewToken(
-                symbol,
-                freezeStatus,
-                kycStatus,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                tokenSupplyType,
-                Collections.emptyList());
-        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {

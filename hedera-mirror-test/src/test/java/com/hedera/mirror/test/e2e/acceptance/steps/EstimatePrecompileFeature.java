@@ -217,14 +217,18 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I successfully create fungible tokens")
     public void createFungibleToken() {
-        fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN).tokenId();
-        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+        fungibleKycUnfrozenTokenId = tokenClient
+                .getToken(FUNGIBLE_KYC_UNFROZEN, Collections.emptyList())
+                .tokenId();
+        fungibleTokenId =
+                tokenClient.getToken(FUNGIBLE, Collections.emptyList()).tokenId();
     }
 
     @Given("I successfully create non fungible tokens")
     public void createNonFungibleToken() {
-        nonFungibleKycUnfrozenTokenId = tokenClient.getToken(NFT_KYC_UNFROZEN).tokenId();
-        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+        nonFungibleKycUnfrozenTokenId =
+                tokenClient.getToken(NFT_KYC_UNFROZEN, Collections.emptyList()).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFT, Collections.emptyList()).tokenId();
     }
 
     @Given("I mint and verify a new nft")
