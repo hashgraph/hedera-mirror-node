@@ -28,8 +28,6 @@ import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
@@ -229,15 +227,15 @@ public class TokenFeature extends AbstractFeature {
         this.customFees = customFees;
     }
 
-    @Given("I successfully create a new token with freeze status {int} and kyc status {int}")
-    public void createNewToken(int freezeStatus, int kycStatus) {
+    @Given("I successfully create a new unfrozen and granted kyc token")
+    public void createNewToken() {
         final var response = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2, Collections.emptyList());
         this.tokenId = response.tokenId();
         this.networkTransactionResponse = response.response();
     }
 
-    @Given("I successfully create a new nft with supplyType {string}")
-    public void createNewNft(String tokenSupplyType) {
+    @Given("I successfully create a new nft with infinite supplyType")
+    public void createNewNft() {
         final var result = tokenClient.getToken(TokenNameEnum.NFT_2, Collections.emptyList());
         this.networkTransactionResponse = result.response();
         this.tokenId = result.tokenId();
@@ -507,34 +505,6 @@ public class TokenFeature extends AbstractFeature {
 
     public ExpandedAccountId getRecipientAccountId() {
         return accountClient.getAccount(AccountNameEnum.ALICE);
-    }
-
-    private TokenId createNewToken(
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
-            TokenType tokenType,
-            TokenSupplyType tokenSupplyType,
-            List<CustomFee> customFees) {
-        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.createToken(
-                admin,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                admin,
-                INITIAL_SUPPLY,
-                tokenSupplyType,
-                MAX_SUPPLY,
-                tokenType,
-                customFees);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        this.tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-        this.customFees = customFees;
-
-        return tokenId;
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {

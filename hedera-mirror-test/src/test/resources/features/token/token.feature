@@ -3,7 +3,7 @@ Feature: HTS Base Coverage Feature
 
   @fungible @critical @release
   Scenario Outline: Validate Token Flow - Create, Associate, Freeze, GrantKyc, Fund, Update, Burn, Mint, Wipe, Pause, Unpause, Dissociate, Delete
-    Given I successfully create a new token with freeze status 2 and kyc status 1
+    Given I successfully create a new unfrozen and granted kyc token
     Then the mirror node REST API should return the transaction
     When I associate ALICE with token
     Then the mirror node REST API should return the transaction
@@ -38,7 +38,7 @@ Feature: HTS Base Coverage Feature
 
   @nft @critical @release
   Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
-    Given I successfully create a new nft with supplyType <supplyType>
+    Given I successfully create a new nft with infinite supplyType
     Then the mirror node REST API should return the transaction
     When I associate ALICE with token
     And the mirror node REST API should return the transaction
@@ -58,9 +58,6 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     Then I delete the token
     And the mirror node REST API should return the transaction for token serial number 1 transaction flow
-    Examples:
-      | supplyType |
-      | "INFINITE" |
 
   @customfees
   Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer

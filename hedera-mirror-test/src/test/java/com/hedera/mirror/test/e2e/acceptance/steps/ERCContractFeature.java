@@ -328,8 +328,8 @@ public class ERCContractFeature extends AbstractFeature {
         tokenIds.add(tokenId);
     }
 
-    @Then("I create a new nft with supplyType {string}")
-    public void createNewNft(String tokenSupplyType) {
+    @Then("I create a new nft with infinite supplyType")
+    public void createNewNft() {
         final var tokenId = tokenClient
                 .getToken(TokenNameEnum.NFT_2, Collections.emptyList())
                 .tokenId();
