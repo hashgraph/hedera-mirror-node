@@ -94,7 +94,7 @@ dependencies {
         api("org.testcontainers:junit-jupiter:1.19.0")
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.20.157")
-        api("uk.org.webcompere:system-stubs-jupiter:2.1.2")
+        api("uk.org.webcompere:system-stubs-jupiter:2.1.3")
     }
 }
 
