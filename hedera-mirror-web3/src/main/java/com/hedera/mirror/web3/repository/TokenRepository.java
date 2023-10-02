@@ -32,18 +32,18 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
 
     @Cacheable(
             cacheNames = "tokenUnionCache",
-            key = "#tokenId + '-' + #createdTimestamp",
+            key = "#tokenId + '-' + #blockTimestamp",
             cacheManager = CACHE_MANAGER_TOKEN,
             unless = "#result == null")
     @Query(
-            value = "(SELECT * FROM token "
-                    + "WHERE token_id = ?1 "
-                    + "AND created_timestamp = ?2 "
+            value = "SELECT * FROM ( "
+                    + "SELECT * FROM token WHERE token_id = ?1 "
                     + "UNION ALL "
-                    + "SELECT * FROM token_history "
-                    + "WHERE token_id = ?1 "
-                    + "AND created_timestamp = ?2) "
-                    + "LIMIT 1",
+                    + "SELECT * FROM token_history WHERE token_id = ?1 "
+                    + " ) as t "
+                    + " WHERE timestamp_range < int8range(?2, null) "
+                    + " ORDER BY timestamp_range DESC "
+                    + " LIMIT 1 ",
             nativeQuery = true)
-    Optional<Token> findByTokenIdAndTimestamp(Long tokenId, Long createdTimestamp);
+    Optional<Token> findByTokenIdAndTimestampRange(Long tokenId, Long blockTimestamp);
 }

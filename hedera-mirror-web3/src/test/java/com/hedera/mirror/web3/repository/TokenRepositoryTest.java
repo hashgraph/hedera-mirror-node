@@ -47,14 +47,15 @@ class TokenRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByIdAndTimestamp() {
+    void findByIdAndTimestampRange() {
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
+        long blockTimestamp = token.getTimestampLower() + 1;
         assertThat(tokenRepository
-                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getCreatedTimestamp())
+                        .findByTokenIdAndTimestampRange(token.getTokenId(), blockTimestamp)
                         .get())
                 .returns(token.getName(), Token::getName)
                 .returns(token.getSymbol(), Token::getSymbol)
@@ -66,14 +67,14 @@ class TokenRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findHistoricalByIdAndTimestamp() {
+    void findHistoricalByIdAndTimestampRange() {
         final var tokenHistory = domainBuilder
                 .tokenHistory()
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
         assertThat(tokenRepository
-                        .findByTokenIdAndTimestamp(tokenHistory.getTokenId(), tokenHistory.getCreatedTimestamp())
+                        .findByTokenIdAndTimestampRange(tokenHistory.getTokenId(), tokenHistory.getTimestampUpper())
                         .get())
                 .returns(tokenHistory.getName(), Token::getName)
                 .returns(tokenHistory.getSymbol(), Token::getSymbol)

@@ -17,6 +17,20 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id> {}
+public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id> {
+
+    @Query(
+            value = "SELECT * FROM token_balance "
+                    + "WHERE "
+                    + "token_id = ?1 AND "
+                    + "account_id = ?2 AND "
+                    + "consensus_timestamp < ?3 "
+                    + "ORDER BY consensus_timestamp DESC "
+                    + "LIMIT 1 ",
+            nativeQuery = true)
+    Optional<TokenBalance> findByIdAndTimestampLessThan(long tokenId, long accountId, long blockTimestamp);
+}

@@ -17,6 +17,20 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenTransferRepository extends CrudRepository<TokenTransfer, TokenTransfer.Id> {}
+public interface TokenTransferRepository extends CrudRepository<TokenTransfer, TokenTransfer.Id> {
+
+    @Query(
+            value = "SELECT * FROM token_transfer "
+                    + "WHERE "
+                    + "token_id = ?1 AND "
+                    + "account_id = ?2 AND "
+                    + "consensus_timestamp < ?3 "
+                    + "ORDER BY consensus_timestamp DESC "
+                    + "LIMIT 1 ",
+            nativeQuery = true)
+    Optional<TokenTransfer> findByIdAndTimestampLessThan(long tokenId, long accountId, long blockTimestamp);
+}

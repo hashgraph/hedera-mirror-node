@@ -34,4 +34,38 @@ class TokenTransferRepositoryTest extends Web3IntegrationTest {
                 .get()
                 .isEqualTo(tokenTransfer);
     }
+
+    @Test
+    void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
+        var tokenTransfer1 = domainBuilder.tokenTransfer().persist();
+
+        Assertions.assertThat(tokenTransferRepository.findByIdAndTimestampLessThan(
+                        tokenTransfer1.getId().getTokenId().getId(),
+                        tokenTransfer1.getId().getAccountId().getId(),
+                        tokenTransfer1.getId().getConsensusTimestamp() + 1))
+                .get()
+                .isEqualTo(tokenTransfer1);
+    }
+
+    @Test
+    void findHistoricalByIdAndConsensusTimestampEqualToBlockTimestamp() {
+        var tokenTransfer1 = domainBuilder.tokenTransfer().persist();
+
+        Assertions.assertThat(tokenTransferRepository.findByIdAndTimestampLessThan(
+                        tokenTransfer1.getId().getTokenId().getId(),
+                        tokenTransfer1.getId().getAccountId().getId(),
+                        tokenTransfer1.getId().getConsensusTimestamp()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndConsensusTimestampLessThanBlockTimestamp() {
+        var tokenTransfer1 = domainBuilder.tokenTransfer().persist();
+
+        Assertions.assertThat(tokenTransferRepository.findByIdAndTimestampLessThan(
+                        tokenTransfer1.getId().getTokenId().getId(),
+                        tokenTransfer1.getId().getAccountId().getId(),
+                        tokenTransfer1.getId().getConsensusTimestamp() - 1))
+                .isEmpty();
+    }
 }

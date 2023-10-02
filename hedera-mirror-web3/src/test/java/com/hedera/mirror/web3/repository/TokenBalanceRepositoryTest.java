@@ -39,4 +39,38 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         Assertions.assertThat(tokenBalanceRepository.findAll())
                 .containsExactlyInAnyOrder(tokenBalance1, tokenBalance2, tokenBalance3);
     }
+
+    @Test
+    void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
+        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+
+        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp() + 1))
+                .get()
+                .isEqualTo(tokenBalance1);
+    }
+
+    @Test
+    void findHistoricalByIdAndConsensusTimestampEqualToBlockTimestamp() {
+        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+
+        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndConsensusTimestampLessThanBlockTimestamp() {
+        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+
+        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp() - 1))
+                .isEmpty();
+    }
 }
