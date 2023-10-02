@@ -180,7 +180,6 @@ public class ApproveAllowanceLogic {
         if (nftAllowances.isEmpty()) {
             return;
         }
-        Account modifiedAccount = null;
         for (final var allowance : nftAllowances) {
             final var owner = allowance.getOwner();
             var approvingAccount = fetchOwnerAccount(owner, payerAccount, store, accountsChanged);
@@ -201,7 +200,7 @@ public class ApproveAllowanceLogic {
                 final var accountWithUpdatedApproveForAllNfts =
                         approvingAccount.setApproveForAllNfts(approveForAllNfts);
                 if (!accountWithUpdatedApproveForAllNfts.equals(approvingAccount)) {
-                    modifiedAccount = accountWithUpdatedApproveForAllNfts;
+                    accountsChanged.put(approvingAccount.getId().num(), approvingAccount);
                 }
             }
 
@@ -214,9 +213,6 @@ public class ApproveAllowanceLogic {
                     store, approvingAccount.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
             for (final var nft : nfts) {
                 nftsTouched.put(nft.getNftId(), nft);
-            }
-            if (modifiedAccount != null) {
-                accountsChanged.put(approvingAccount.getId().num(), approvingAccount);
             }
         }
     }
