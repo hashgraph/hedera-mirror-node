@@ -77,12 +77,13 @@ restore point created by `citus_create_restore_point`
                     |                                                               |
         (1 row)
         ```
-     4. Save the `labelfile` value from the output of step 3 to `/opt/backup/base/backup_label`.
+     4. Save the `labelfile` value from the output of the previous step to `/opt/backup/base/backup_label`.
 
    - Use `pg_basebackup`
      
-     `pg_basebackup -c fast -Ft -l 2023-10-02-base -P -z -D /opt/backup/base`. The command will create three files, the
-     only file needed to restore the database is `base.tar.gz`.
+     Example command, `pg_basebackup -c fast -Ft -l 2023-10-02-base -P -z -D /opt/backup/base`.
+
+     The command will create three files, the only file needed to restore the database is `base.tar.gz`.
      ```
      -rw-------    1 postgres postgres    240308 Oct  2 17:29 backup_manifest
      -rw-------    1 postgres postgres 909736907 Oct  2 17:29 base.tar.gz
@@ -114,7 +115,7 @@ restore point created by `citus_create_restore_point`
 
    - Use base backup created by `pg_basebackup`
      1. Remove existing data, e.g., `rm -fr /var/lib/postgresql/data/*`
-     2. Restore the base backup, `tar cvzf /opt/backup/base/base.tar.gz -C /var/lib/postgresql/data`
+     2. Restore the base backup, `tar czvf /opt/backup/base/base.tar.gz -C /var/lib/postgresql/data`
 
 3. Configure recovery.
    - Set `archive_command = '/bin/true'`
@@ -125,7 +126,7 @@ restore point created by `citus_create_restore_point`
      ```
    - Touch a signal file `recovery.signal` in PostgreSQL data directory
 
-4. Make sure all files have correct owner and access rights, and correct it with `chown` and `chmod` if necessary.
+4. Make sure all files have correct owner and access rights, and fix it with `chown` and `chmod` if necessary.
 
 5. Start the database server and monitor the log for recovery progress. The following log indicates a successful recovery
    to the set named restore point.
