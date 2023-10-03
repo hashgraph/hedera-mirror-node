@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenRepositoryTest extends Web3IntegrationTest {
+
     private final TokenRepository tokenRepository;
 
     @Test
@@ -47,15 +48,14 @@ class TokenRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findByIdAndTimestampRange() {
+    void findByIdAndTimestampRangeLessThanBlockTimestamp() {
         final var token = domainBuilder
                 .token()
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        long blockTimestamp = token.getTimestampLower() + 1;
         assertThat(tokenRepository
-                        .findByTokenIdAndTimestampRange(token.getTokenId(), blockTimestamp)
+                        .findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower() + 1)
                         .get())
                 .returns(token.getName(), Token::getName)
                 .returns(token.getSymbol(), Token::getSymbol)
@@ -67,21 +67,60 @@ class TokenRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findHistoricalByIdAndTimestampRange() {
+    void findByIdAndTimestampRangeEqualToBlockTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower()))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampRangeGreaterThanBlockTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeLessThanBlockTimestamp() {
         final var tokenHistory = domainBuilder
                 .tokenHistory()
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository
-                        .findByTokenIdAndTimestampRange(tokenHistory.getTokenId(), tokenHistory.getTimestampUpper())
-                        .get())
-                .returns(tokenHistory.getName(), Token::getName)
-                .returns(tokenHistory.getSymbol(), Token::getSymbol)
-                .returns(tokenHistory.getTotalSupply(), Token::getTotalSupply)
-                .returns(tokenHistory.getDecimals(), Token::getDecimals)
-                .returns(tokenHistory.getType(), Token::getType)
-                .returns(tokenHistory.getFreezeDefault(), Token::getFreezeDefault)
-                .returns(tokenHistory.getKycKey(), Token::getKycKey);
+        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
+                .isPresent();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeEqualToBlockTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower()))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeGreaterThanBlockTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
+                .isEmpty();
     }
 }

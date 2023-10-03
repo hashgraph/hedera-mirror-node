@@ -36,14 +36,16 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
             cacheManager = CACHE_MANAGER_TOKEN,
             unless = "#result == null")
     @Query(
-            value = "SELECT * FROM ( "
-                    + "SELECT * FROM token WHERE token_id = ?1 "
-                    + "UNION ALL "
-                    + "SELECT * FROM token_history WHERE token_id = ?1 "
+            value = " SELECT * FROM ( "
+                    + " (SELECT * FROM token WHERE token_id = ?1 "
+                    + " AND lower(timestamp_range) < ?2 "
+                    + " UNION ALL "
+                    + " SELECT * FROM token_history WHERE token_id = ?1 "
+                    + " AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
+                    + " OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
                     + " ) as t "
-                    + " WHERE timestamp_range < int8range(?2, null) "
                     + " ORDER BY timestamp_range DESC "
                     + " LIMIT 1 ",
             nativeQuery = true)
-    Optional<Token> findByTokenIdAndTimestampRange(Long tokenId, Long blockTimestamp);
+    Optional<Token> findByTokenIdAndTimestampRange(long tokenId, long blockTimestamp);
 }
