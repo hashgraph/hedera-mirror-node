@@ -29,9 +29,12 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
+import org.springframework.data.util.Version;
 
 @Named
 class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    static final Version HAPI_VERSION_0_27_0 = new Version(0, 27, 0);
 
     CryptoUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityIdService, entityListener, TransactionType.CRYPTOUPDATEACCOUNT);
@@ -89,30 +92,33 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
-        var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
+        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_27_0)) {
 
-        if (transactionBody.hasDeclineReward()) {
-            entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
-        }
+            var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
 
-        switch (transactionBody.getStakedIdCase()) {
-            case STAKEDID_NOT_SET:
-                break;
-            case STAKED_NODE_ID:
-                entity.setStakedNodeId(transactionBody.getStakedNodeId());
-                entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
-                break;
-            case STAKED_ACCOUNT_ID:
-                var accountId = EntityId.of(transactionBody.getStakedAccountId());
-                entity.setStakedAccountId(accountId.getId());
-                entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
-                recordItem.addEntityId(accountId);
-                break;
-        }
+            if (transactionBody.hasDeclineReward()) {
+                entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
+            }
 
-        // If the stake node id or the decline reward value has changed, we start a new stake period.
-        if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
-            entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
+            switch (transactionBody.getStakedIdCase()) {
+                case STAKEDID_NOT_SET:
+                    break;
+                case STAKED_NODE_ID:
+                    entity.setStakedNodeId(transactionBody.getStakedNodeId());
+                    entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
+                    break;
+                case STAKED_ACCOUNT_ID:
+                    var accountId = EntityId.of(transactionBody.getStakedAccountId());
+                    entity.setStakedAccountId(accountId.getId());
+                    entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
+                    recordItem.addEntityId(accountId);
+                    break;
+            }
+
+            // If the stake node id or the decline reward value has changed, we start a new stake period.
+            if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
+                entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
+            }
         }
     }
 }

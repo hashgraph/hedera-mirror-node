@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.data.util.Version;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -76,7 +77,10 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void testGetEntityIdReceipt() {
-        var recordItem = recordItemBuilder.contractUpdate().build();
+        var recordItem = recordItemBuilder
+                .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
+                .build();
         ContractID contractIdBody =
                 recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
         ContractID contractIdReceipt =
@@ -91,7 +95,10 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Test
     void updateTransactionSuccessful() {
         // given
-        var recordItem = recordItemBuilder.contractUpdate().build();
+        var recordItem = recordItemBuilder
+                .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
+                .build();
         var contractId =
                 EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
@@ -125,6 +132,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionSuccessfulWhenEntityTransactionDisabled() {
         var recordItem = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .entityTransactionPredicate(e -> false)
                 .build();
         var contractId =
@@ -163,6 +171,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(body -> body.setStakedAccountId(accountId).clearDeclineReward())
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -178,6 +187,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionDeclineReward(Boolean declineReward) {
         RecordItem withDeclineValueSet = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(body -> body.setDeclineReward(BoolValue.of(declineReward))
                         .clearStakedAccountId()
                         .clearStakedNodeId())
@@ -197,6 +207,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionStakedNodeId(Long nodeId) {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(body -> body.setStakedNodeId(nodeId))
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -207,12 +218,38 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0, 100})
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking(Long nodeId) {
+        RecordItem withStakedNodeIdSet = recordItemBuilder
+                .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                .transactionBody(body -> body.setStakedNodeId(nodeId))
+                .build();
+        var contractId = EntityId.of(
+                withStakedNodeIdSet.getTransactionRecord().getReceipt().getContractID());
+        var timestamp = withStakedNodeIdSet.getConsensusTimestamp();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        var aliasAccountId = EntityId.of(10L);
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(aliasAccountId));
+        transactionHandler.updateTransaction(transaction, withStakedNodeIdSet);
+        assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(null, Entity::getDeclineReward)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedNodeId)
+                .returns(null, Entity::getStakePeriodStart));
+    }
+
     @Test
     void updateTransactionSuccessfulAutoRenewAccountAlias() {
         // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
                 .build();
         var contractId =
@@ -251,6 +288,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
                 .build();
         var contractId =
@@ -285,6 +323,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionSuccessfulClearAutoRenewAccountId() {
         var recordItem = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAccountNum(0))
                 .build();
         var contractId =
@@ -310,6 +349,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionSuccessfulWithNoUpdate() {
         var recordItem = recordItemBuilder
                 .contractUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(b -> {
                     var contractId = b.getContractID();
                     b.clear().setContractID(contractId);

@@ -33,10 +33,13 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import org.springframework.data.util.Version;
 
 @CustomLog
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    static final Version HAPI_VERSION_0_27_0 = new Version(0, 27, 0);
 
     private final EntityProperties entityProperties;
 
@@ -156,23 +159,26 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity contract) {
-        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-        contract.setDeclineReward(transactionBody.getDeclineReward());
+        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_27_0)) {
 
-        switch (transactionBody.getStakedIdCase()) {
-            case STAKEDID_NOT_SET:
-                return;
-            case STAKED_NODE_ID:
-                contract.setStakedNodeId(transactionBody.getStakedNodeId());
-                break;
-            case STAKED_ACCOUNT_ID:
-                var accountId = EntityId.of(transactionBody.getStakedAccountId());
-                contract.setStakedAccountId(accountId.getId());
-                recordItem.addEntityId(accountId);
-                break;
+            var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+            contract.setDeclineReward(transactionBody.getDeclineReward());
+
+            switch (transactionBody.getStakedIdCase()) {
+                case STAKEDID_NOT_SET:
+                    return;
+                case STAKED_NODE_ID:
+                    contract.setStakedNodeId(transactionBody.getStakedNodeId());
+                    break;
+                case STAKED_ACCOUNT_ID:
+                    var accountId = EntityId.of(transactionBody.getStakedAccountId());
+                    contract.setStakedAccountId(accountId.getId());
+                    recordItem.addEntityId(accountId);
+                    break;
+            }
+
+            contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
         }
-
-        contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 
     @Override

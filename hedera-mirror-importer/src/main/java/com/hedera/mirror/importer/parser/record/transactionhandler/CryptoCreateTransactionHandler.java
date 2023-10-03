@@ -31,9 +31,12 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import org.apache.commons.lang3.ArrayUtils;
+import org.springframework.data.util.Version;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
+
+    static final Version HAPI_VERSION_0_27_0 = new Version(0, 27, 0);
 
     CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityIdService, entityListener, TransactionType.CRYPTOCREATEACCOUNT);
@@ -104,21 +107,24 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
-        var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
-        entity.setDeclineReward(transactionBody.getDeclineReward());
+        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_27_0)) {
 
-        switch (transactionBody.getStakedIdCase()) {
-            case STAKEDID_NOT_SET -> {
-                return;
+            var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
+            entity.setDeclineReward(transactionBody.getDeclineReward());
+
+            switch (transactionBody.getStakedIdCase()) {
+                case STAKEDID_NOT_SET -> {
+                    return;
+                }
+                case STAKED_NODE_ID -> entity.setStakedNodeId(transactionBody.getStakedNodeId());
+                case STAKED_ACCOUNT_ID -> {
+                    var accountId = EntityId.of(transactionBody.getStakedAccountId());
+                    entity.setStakedAccountId(accountId.getId());
+                    recordItem.addEntityId(accountId);
+                }
             }
-            case STAKED_NODE_ID -> entity.setStakedNodeId(transactionBody.getStakedNodeId());
-            case STAKED_ACCOUNT_ID -> {
-                var accountId = EntityId.of(transactionBody.getStakedAccountId());
-                entity.setStakedAccountId(accountId.getId());
-                recordItem.addEntityId(accountId);
-            }
+
+            entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
         }
-
-        entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 }

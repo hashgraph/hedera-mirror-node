@@ -63,7 +63,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    @ValueSource(strings = {HederaNetwork.MAINNET})
     void notStaked(String network) {
         // given
         setupForNetwork(network);
@@ -111,7 +111,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    @ValueSource(strings = {HederaNetwork.MAINNET})
     void stakedAfterEnabled(String network) {
         // given
         setupForNetwork(network);
@@ -136,7 +136,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    @ValueSource(strings = {HederaNetwork.MAINNET})
     void stakedAfterEnabledWithHistory(String network) {
         // given
         setupForNetwork(network);
@@ -175,7 +175,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    @ValueSource(strings = {HederaNetwork.MAINNET})
     void stakedBeforeEnabled(String network) {
         // given
         setupForNetwork(network);
@@ -206,7 +206,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
+    @ValueSource(strings = {HederaNetwork.MAINNET})
     void stakedBeforeEnabledInHistory(String network) {
         // given
         setupForNetwork(network);
