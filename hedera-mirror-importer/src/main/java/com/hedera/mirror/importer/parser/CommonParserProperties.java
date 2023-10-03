@@ -30,10 +30,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.expression.AccessException;
@@ -84,36 +85,48 @@ public class CommonParserProperties {
         return include.stream().map(TransactionFilter::getFilter).reduce(a -> false, Predicate::or);
     }
 
-    @Data
-    @Validated
+    @Value
     static class TransactionFilter {
 
         private static final EvaluationContext evaluationContext =
                 new SimpleEvaluationContext.Builder(new RecordItemPropertyAccessor()).build();
         private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
-        @NotNull
-        private Collection<EntityId> entity = new LinkedHashSet<>();
-
+        private Collection<EntityId> entity;
         private String expression;
 
         @Getter(AccessLevel.NONE)
-        @Setter(AccessLevel.NONE)
         private Expression parsedExpression;
 
-        @NotNull
-        private Collection<TransactionType> transaction = new LinkedHashSet<>();
+        private Collection<TransactionType> transaction;
+
+        @Builder
+        TransactionFilter(Collection<EntityId> entity, String expression, Collection<TransactionType> transaction) {
+            this.entity = entity != null ? entity : new LinkedHashSet<>();
+            this.expression = expression;
+            this.transaction = transaction != null ? transaction : new LinkedHashSet<>();
+
+            if (!StringUtils.isEmpty(expression)) {
+                try {
+                    this.parsedExpression = expressionParser.parseExpression(expression);
+                } catch (ParseException ex) {
+                    throw new InvalidConfigurationException("Transaction filter expression failed to parse", ex);
+                }
+            } else {
+                this.parsedExpression = null;
+            }
+        }
 
         Predicate<TransactionFilterFields> getFilter() {
             return t -> matches(t) && matches(t.getEntities()) && matchesExpression(t.getRecordItem());
         }
 
         private boolean matches(TransactionFilterFields t) {
-            if (transaction.isEmpty() || t.getTransactionType() == null) {
+            if (transaction.isEmpty()) {
                 return true;
             }
 
-            return transaction.contains(t.getTransactionType());
+            return transaction.contains(TransactionType.of(t.getRecordItem().getTransactionType()));
         }
 
         private boolean matches(Collection<EntityId> entities) {
@@ -125,16 +138,8 @@ public class CommonParserProperties {
         }
 
         private boolean matchesExpression(RecordItem recordItem) {
-            if (StringUtils.isEmpty(expression)) {
-                return true;
-            }
-
             if (parsedExpression == null) {
-                try {
-                    parsedExpression = expressionParser.parseExpression(expression);
-                } catch (ParseException ex) {
-                    throw new InvalidConfigurationException("Transaction filter expression failed to parse", ex);
-                }
+                return true;
             }
 
             try {

@@ -194,6 +194,11 @@ public class RecordItemBuilder {
         return builders.get(type);
     }
 
+    public Builder<ConsensusDeleteTopicTransactionBody.Builder> unknown() {
+        var transactionBody = ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId());
+        return new Builder<>(TransactionType.UNKNOWN, transactionBody);
+    }
+
     public Builder<ConsensusCreateTopicTransactionBody.Builder> consensusCreateTopic() {
         var transactionBody = ConsensusCreateTopicTransactionBody.newBuilder()
                 .setAdminKey(key())
@@ -991,7 +996,9 @@ public class RecordItemBuilder {
 
         public RecordItem build() {
             var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            transactionBodyWrapper.setField(field, transactionBody.build());
+            if (field != null) { // Not UNKNOWN transaction type
+                transactionBodyWrapper.setField(field, transactionBody.build());
+            }
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
