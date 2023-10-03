@@ -2,7 +2,7 @@
 FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm AS build
 
 # Install yq
-RUN wget https://github.com/mikefarah/yq/releases/download/v4.25.3/yq_linux_amd64 \
+RUN wget https://github.com/mikefarah/yq/releases/download/v4.35.2/yq_linux_amd64 \
     && mv yq_linux_amd64 /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 

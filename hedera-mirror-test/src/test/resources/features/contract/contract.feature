@@ -18,7 +18,7 @@ Feature: Contract Base Coverage Feature
         to cause its self destruction, vacating the EVM address for future use. Also, Finally, delete the original parent
         contract and its underlying bytecode file.
 
-        Given I successfully create a contract from the parent contract bytes with <initialBalance> balance
+        Given I successfully create a contract from the parent contract bytes with 10000000 balance
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deployed contract entity
         When I successfully update the contract
@@ -47,5 +47,5 @@ Feature: Contract Base Coverage Feature
         And the mirror node REST API should verify the deleted contract entity
         Then I successfully delete the parent contract bytecode file
         Examples:
-            | httpStatusCode | initialBalance | transferAmount |
-            | 200            | 10000000       | 1000           |
+            | httpStatusCode | transferAmount |
+            | 200            | 1000           |

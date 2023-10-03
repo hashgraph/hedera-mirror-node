@@ -197,7 +197,11 @@ public class ApproveAllowanceLogic {
                     // Need not validate anything here to revoke the approval
                     approveForAllNfts.remove(key);
                 }
-                approvingAccount = approvingAccount.setApproveForAllNfts(approveForAllNfts);
+                final var accountWithUpdatedApproveForAllNfts =
+                        approvingAccount.setApproveForAllNfts(approveForAllNfts);
+                if (!accountWithUpdatedApproveForAllNfts.equals(approvingAccount)) {
+                    accountsChanged.put(approvingAccount.getId().num(), approvingAccount);
+                }
             }
 
             if (allowance.getSerialNumbersCount() > 0) {
@@ -207,11 +211,9 @@ public class ApproveAllowanceLogic {
 
             final var nfts = updateSpender(
                     store, approvingAccount.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
-            store.wrap();
             for (final var nft : nfts) {
                 nftsTouched.put(nft.getNftId(), nft);
             }
-            accountsChanged.put(approvingAccount.getId().num(), approvingAccount);
         }
     }
 
