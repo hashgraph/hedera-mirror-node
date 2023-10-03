@@ -44,12 +44,14 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
           + " (SELECT * FROM entity "
           + "  WHERE evm_address = ?1 "
           + "  AND deleted = false "
+          + "  AND lower(timestamp_range) < ?2"
           + "  UNION ALL "
           + "  SELECT * FROM entity_history "
           + "  WHERE evm_address = ?1 "
-          + "  AND deleted = false) "
+          + "  AND deleted = false "
+          +  " AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
+          +  " OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
           + ") AS t "
-          + " WHERE timestamp_range < int8range(?2, null) "
           + " ORDER BY timestamp_range DESC "
           + " LIMIT 1 ",
             nativeQuery = true)
@@ -65,12 +67,14 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
            + " (SELECT * FROM entity "
            + "  WHERE id = ?1 "
            + "  AND deleted = false "
+           + "  AND lower(timestamp_range) < ?2"
            + "  UNION ALL "
            + "  SELECT * FROM entity_history "
            + "  WHERE id = ?1 "
-           + "  AND deleted = false) "
+           + "  AND deleted = false "
+           + "  AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
+           + "  OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
            + ") AS t "
-           + " WHERE timestamp_range < int8range(?2, null) "
            + " ORDER BY timestamp_range DESC "
            + " LIMIT 1 ",
             nativeQuery = true)
