@@ -463,32 +463,4 @@ public class ERCContractFeature extends AbstractFeature {
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
     }
-
-    //    private TokenId createNewToken(
-    //            String symbol,
-    //            int freezeStatus,
-    //            int kycStatus,
-    //            TokenType tokenType,
-    //            TokenSupplyType tokenSupplyType,
-    //            List<CustomFee> customFees) {
-    //        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-    //        networkTransactionResponse = tokenClient.createToken(
-    //                admin,
-    //                symbol,
-    //                freezeStatus,
-    //                kycStatus,
-    //                admin,
-    //                INITIAL_SUPPLY,
-    //                tokenSupplyType,
-    //                MAX_SUPPLY,
-    //                tokenType,
-    //                customFees);
-    //        assertNotNull(networkTransactionResponse.getTransactionId());
-    //        assertNotNull(networkTransactionResponse.getReceipt());
-    //        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-    //        assertNotNull(tokenId);
-    //        tokenIds.add(tokenId);
-    //
-    //        return tokenId;
-    //    }
 }
