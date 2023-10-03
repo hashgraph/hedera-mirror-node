@@ -35,8 +35,8 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
                     string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
                     from file_data
                     join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = ?1 and file_data.entity_id NOT BETWEEN 150 AND 159
-                and file_data.transaction_type in (16, 17, 19) and ?2 >= l.consensus_timestamp""",
+                    where file_data.entity_id = ?1 and file_data.entity_id > 1000
+                      and file_data.transaction_type in (16, 17, 19) and ?2 >= l.consensus_timestamp""",
             nativeQuery = true)
     byte[] getFileAtTimestamp(long fileId, long timestamp);
 }

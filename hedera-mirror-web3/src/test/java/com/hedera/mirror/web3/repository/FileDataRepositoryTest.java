@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -99,8 +98,9 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
     @Test
     void getNullBytesForLargeFile() {
         var fileId = EntityId.of(0L, 0L, 151L);
-        var file = domainBuilder.fileData().customize(f -> f.entityId(fileId).persist();
+        var file = domainBuilder.fileData().customize(f -> f.entityId(fileId)).persist();
 
-        assertThat(fileDataRepository.getFileAtTimestamp(fileId.getId(), file.getConsensusTimestamp()).isNull();
+        assertThat(fileDataRepository.getFileAtTimestamp(fileId.getId(), file.getConsensusTimestamp()))
+                .isNull();
     }
 }

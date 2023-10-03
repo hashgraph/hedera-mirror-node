@@ -64,7 +64,7 @@ class FileDataService extends BaseService {
         from ${FileData.tableName}
         where
            ${FileData.ENTITY_ID} = $1 
-        and ${FileData.ENTITY_ID} NOT BETWEEN 150 AND 159 -- ids corresponding to large files
+        and ${FileData.ENTITY_ID} > 1000 -- < 1000 would be invalid user files
         and ${FileData.CONSENSUS_TIMESTAMP} >= (
         select ${FileData.CONSENSUS_TIMESTAMP}
         from ${FileData.tableName}
