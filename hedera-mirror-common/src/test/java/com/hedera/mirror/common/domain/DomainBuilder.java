@@ -837,7 +837,7 @@ public class DomainBuilder {
                 .supplyKey(key())
                 .supplyType(TokenSupplyTypeEnum.INFINITE)
                 .symbol(text(8))
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(entityId().getId())
                 .totalSupply(1_000_000_000L + id())
                 .treasuryAccountId(entityId())
@@ -896,13 +896,14 @@ public class DomainBuilder {
             tokenAllowanceHistory() {
         long amount = id() + 1000;
         var spender = entityId();
+        long timestamp = timestamp();
         var builder = TokenAllowanceHistory.builder()
                 .amount(amount)
                 .amountGranted(amount)
                 .owner(id())
                 .payerAccountId(spender)
                 .spender(spender.getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
