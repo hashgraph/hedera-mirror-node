@@ -57,12 +57,6 @@
         "balance": 444
       }
     ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 2345
-      }
-    ],
     "tokenaccounts": [
       {
         "token_id": "0.0.99998",
@@ -270,8 +264,8 @@
       }
     ],
     "balance": {
-      "timestamp": "1234567890.000000007",
       "balance": 30,
+      "timestamp": "1234567890.000000004",
       "tokens": []
     },
     "account": "0.0.8",

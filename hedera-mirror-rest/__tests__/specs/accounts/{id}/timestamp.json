@@ -71,12 +71,6 @@
         "balance": 999
       }
     ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 2345
-      }
-    ],
     "tokenaccounts": [
       {
         "token_id": "0.0.99998",

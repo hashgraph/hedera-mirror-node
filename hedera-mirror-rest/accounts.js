@@ -24,6 +24,7 @@ import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
 import {Entity} from './model';
+import balances from './balances';
 import {opsMap} from './utils';
 import {filterKeys} from './constants';
 
@@ -41,7 +42,7 @@ const processRow = (row) => {
       ? null
       : {
           balance: row.balance,
-          timestamp: utils.nsToSecNs(row.consensus_timestamp),
+          timestamp: utils.nsToSecNs(row.balance_timestamp),
           tokens: utils.parseTokenBalances(row.token_balances),
         };
   const entityId = EntityId.parse(row.id);
@@ -397,7 +398,7 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} e.balance_timestamp`;
+    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
     tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
 
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
@@ -408,7 +409,31 @@ const getOneAccount = async (req, res) => {
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
-    accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = e.balance_timestamp`;
+
+    const [balanceFileTsQuery, balanceFileTsParams] = utils.buildTimestampQuery(
+      tsRange,
+      'consensus_timestamp',
+      [],
+      eqValues,
+      false
+    );
+    const balanceFileTs = await balances.getAccountBalanceTimestamp(
+      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
+      balanceFileTsParams,
+      order
+    );
+    //Setting the timestamp to be the account balance timestamp
+    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(balanceFileTs);
+
+    //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
+    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
+
+    if (timestampExcluded) {
+      throw new NotFoundError('Not found');
+    }
+
+    accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
+    accountBalanceQuery.params = [balanceFileTs ?? null];
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(
@@ -472,12 +497,6 @@ const getOneAccount = async (req, res) => {
 
   if (entityResults.rows.length !== 1) {
     throw new NotFoundError('Error: Could not get entity information');
-  }
-
-  //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
-  const timestampExcluded = neValues.some((value) => value == entityResults.rows[0].balance_timestamp);
-  if (timestampExcluded) {
-    throw new NotFoundError('Not found');
   }
 
   const ret = processRow(entityResults.rows[0]);

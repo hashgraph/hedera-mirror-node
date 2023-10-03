@@ -249,4 +249,5 @@ const acceptedBalancesParameters = new Set([
 
 export default {
   getBalances,
+  getAccountBalanceTimestamp,
 };
