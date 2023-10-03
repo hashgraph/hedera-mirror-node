@@ -51,7 +51,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
           + "  AND deleted = false "
           +  " AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
           +  " OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
-          + ") AS t "
+          + ") AS e "
           + " ORDER BY timestamp_range DESC "
           + " LIMIT 1 ",
             nativeQuery = true)
@@ -74,7 +74,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
            + "  AND deleted = false "
            + "  AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
            + "  OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
-           + ") AS t "
+           + ") AS e "
            + " ORDER BY timestamp_range DESC "
            + " LIMIT 1 ",
             nativeQuery = true)
