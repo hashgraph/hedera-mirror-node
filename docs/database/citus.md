@@ -148,3 +148,8 @@ restore point created by `citus_create_restore_point`
 
 7. End the recovery mode with `select pg_wal_replay_resume()`. The cluster should have been successfully restored to the
    set consistent restore point and begin to accept all types of transactions.
+
+## References
+
+1. [PostgreSQL Continuous Archiving and Point-in-Time Recovery (PITR)](https://www.postgresql.org/docs/15/continuous-archiving.html)
+2. [citus_create_restore_point](https://docs.citusdata.com/en/v12.1/develop/api_udf.html#citus-create-restore-point)
