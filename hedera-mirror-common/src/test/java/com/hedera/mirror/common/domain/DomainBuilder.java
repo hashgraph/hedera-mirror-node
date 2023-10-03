@@ -343,13 +343,14 @@ public class DomainBuilder {
             cryptoAllowanceHistory() {
         long amount = id() + 1000;
         var spender = entityId();
+        long timestamp = timestamp();
         var builder = CryptoAllowanceHistory.builder()
                 .amount(amount)
                 .amountGranted(amount)
                 .owner(id())
                 .payerAccountId(spender)
                 .spender(spender.getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -374,11 +375,12 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
+        long timestamp = timestamp();
         var builder = CustomFeeHistory.builder()
                 .fixedFees(List.of(fixedFee()))
                 .fractionalFees(List.of(fractionalFee()))
                 .royaltyFees(List.of(royaltyFee()))
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -470,6 +472,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<EntityStakeHistory, EntityStakeHistory.EntityStakeHistoryBuilder<?, ?>> entityStakeHistory() {
+        long timestamp = timestamp();
         var builder = EntityStakeHistory.builder()
                 .declineRewardStart(false)
                 .endStakePeriod(0L)
@@ -478,7 +481,7 @@ public class DomainBuilder {
                 .stakedNodeIdStart(-1L)
                 .stakedToMe(0L)
                 .stakeTotalStart(0L)
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -630,13 +633,14 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NftHistory, NftHistory.NftHistoryBuilder<?, ?>> nftHistory() {
+        long timestamp = timestamp();
         var builder = NftHistory.builder()
                 .accountId(entityId())
                 .createdTimestamp(timestamp())
                 .deleted(false)
                 .metadata(bytes(16))
                 .serialNumber(id())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -654,12 +658,13 @@ public class DomainBuilder {
 
     public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?, ?>>
             nftAllowanceHistory() {
+        long timestamp = timestamp();
         var builder = NftAllowanceHistory.builder()
                 .approvedForAll(false)
                 .owner(entityId().getId())
                 .payerAccountId(entityId())
                 .spender(entityId().getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
