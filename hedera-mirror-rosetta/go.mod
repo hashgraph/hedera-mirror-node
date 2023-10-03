@@ -42,7 +42,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
-	github.com/consensys/gnark-crypto v0.11.2 // indirect
+	github.com/consensys/gnark-crypto v0.12.0 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect
 	github.com/cucumber/gherkin/go/v26 v26.2.0 // indirect
