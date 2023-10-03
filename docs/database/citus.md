@@ -3,7 +3,7 @@
 This document describes the steps to back up and restore a citus cluster using
 
 - PostgreSQL base backup
-- PostgreSQL continuous archiving
+- PostgreSQL WAL archiving
 - Citus UDF `citus_create_restore_point`
 - PostgreSQL point-in-time recovery to a named restore point
 
@@ -12,7 +12,7 @@ with `postgres` user. The common exception is any `zfs` command should run on th
 
 ## Prerequisites
 
-- All nodes are configured with archiving on and a no-op archive command. It's required since
+- All database servers are configured with archiving on and a no-op archive command. It's required since
   changing archive mode requires server restart while changing archive command only requires configuration reload.
   ```
   archive_mode = on
@@ -97,7 +97,7 @@ restore point created by `citus_create_restore_point`
    named restore point.
 
 5. Disable WAL archiving.
-   - set `archive_command = '/bin/true'` in postgresql.conf
+   - Set `archive_command = '/bin/true'` in postgresql.conf
    - `pg_ctl reload` to reload the configuration
 
 ## Restore from a backup
@@ -117,7 +117,7 @@ restore point created by `citus_create_restore_point`
      2. Restore the base backup, `tar cvzf /opt/backup/base/base.tar.gz -C /var/lib/postgresql/data`
 
 3. Configure recovery.
-   - Reset `archive_command = '/bin/true'`
+   - Set `archive_command = '/bin/true'`
    - Add or update the following in postgresql.conf
      ```
      recovery_target_name = '2023-10-02-restore-point'
@@ -137,7 +137,6 @@ restore point created by `citus_create_restore_point`
    2023-10-03 03:54:51.412 UTC [21] LOG:  redo starts at 1/90036F8
    2023-10-03 03:54:51.676 UTC [21] LOG:  restored log file "00000001000000010000000A" from archive
    ...
-   
    2023-10-03 03:55:30.765 UTC [21] LOG:  restored log file "00000001000000010000006A" from archive
    2023-10-03 03:55:30.840 UTC [21] LOG:  recovery stopping at restore point "2023-10-02-restore-point", time 2023-10-03 03:46:47.674119+00
    2023-10-03 03:55:30.840 UTC [21] LOG:  pausing at the end of recovery
