@@ -98,14 +98,9 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void getNullBytesForLargeFile() {
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(LARGE_FILE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
-                .persist();
+        var fileId = EntityId.of(0L, 0L, 151L);
+        var file = domainBuilder.fileData().customize(f -> f.entityId(fileId).persist();
 
-        final var actualBytes = fileDataRepository.getFileAtTimestamp(LARGE_FILE_ENTITY_ID.getId(), expiry);
-        assertNull(actualBytes);
+        assertThat(fileDataRepository.getFileAtTimestamp(fileId.getId(), file.getConsensusTimestamp()).isNull();
     }
 }
