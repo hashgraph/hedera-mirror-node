@@ -7,8 +7,9 @@ This document describes the steps to back up and restore a citus cluster using
 - Citus UDF `citus_create_restore_point`
 - PostgreSQL point-in-time recovery to a named restore point
 
-Unless otherwise noted, the steps should run on all database nodes and the shell commands and the queries are all run
-with `postgres` user. The common exception is any `zfs` command should run on the hosting node with `root` user.
+Unless otherwise noted, the steps should run on all database nodes (both coordinators and workers) and the shell
+commands and the queries are all executed with `postgres` user. The common exception is any `zfs` command should run on
+the hosting node with `root` user.
 
 ## Prerequisites
 
@@ -35,7 +36,7 @@ with `postgres` user. The common exception is any `zfs` command should run on th
 A PostgreSQL database backup is composed of a base backup and the WAL segments to replay the changes from the 
 checkpoint at the base backup up until the point in time the database should recover to. Since a citus cluster has
 multiple database servers, the only way to recover all nodes to a consistent state is set the recovery target to a named
-restore point created by `citus_create_restore_point`
+restore point created by `citus_create_restore_point`.
 
 1. Enable WAL archiving to copy WAL segments to `/opt/backup/wal`
    - set `archive_command = 'test ! -f /opt/backup/wal/%f && cp %p /opt/backup/wal/%f'` in postgresql.conf
