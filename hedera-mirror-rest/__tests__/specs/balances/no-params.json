@@ -34,13 +34,13 @@
       },
       {
         "balance": 158,
-        "balance_timestamp": 8000000000,
+        "balance_timestamp": 9223372036854775806,
         "num": 8,
         "realm": 15
       },
       {
         "balance": 159,
-        "balance_timestamp": 12000000000,
+        "balance_timestamp": 9223372036854775807,
         "num": 9,
         "realm": 15,
         "expiration_timestamp": "-9223372036854775808"
@@ -123,7 +123,7 @@
       "url": "/api/v1/balances",
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "12.000000000",
+        "timestamp": "9223372036.854775807",
         "balances": [
           {
             "account": "0.15.10",

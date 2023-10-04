@@ -37,7 +37,9 @@ const formatBalancesResult = (req, result, limit, order) => {
   };
 
   if (rows.length > 0) {
-    const maxTimestamp = math.max(rows.map((r) => Number(r.consensus_timestamp)));
+    const maxTimestamp = rows
+      .map((r) => r.consensus_timestamp)
+      .reduce((result, current) => (result > current ? result : current), 0);
     ret.timestamp = utils.nsToSecNs(maxTimestamp);
   }
 
