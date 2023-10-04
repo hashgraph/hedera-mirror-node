@@ -25,8 +25,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import java.nio.ByteBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 abstract class AbstractEstimateFeature extends AbstractFeature {
@@ -36,18 +34,6 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
 
     @Autowired
     protected MirrorNodeClient mirrorClient;
-
-    @Value("classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json")
-    protected Resource estimatePrecompileTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
-    protected Resource ercTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    protected Resource precompileTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json")
-    protected Resource estimateGasTestContract;
 
     /**
      * Checks if the estimatedGas is within the specified range of the actualGas.

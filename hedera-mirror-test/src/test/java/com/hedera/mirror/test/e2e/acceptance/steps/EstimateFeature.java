@@ -17,11 +17,13 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesStringRightPad;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
@@ -33,6 +35,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
+import java.math.BigInteger;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +52,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private final AccountClient accountClient;
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
-
+    private String mockAddress;
+    byte[] getAddressSelectorByteArray;
     private TokenId fungibleTokenId;
     private String newAccountEvmAddress;
     private ExpandedAccountId receiverAccountId;
@@ -77,7 +81,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas without arguments that multiplies two numbers")
     public void multiplyEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.MULTIPLY_SIMPLE_NUMBERS, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.MULTIPLY_SIMPLE_NUMBERS.getActualGas(),
                 contractSolidityAddress);
     }
@@ -85,7 +91,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function msgSender")
     public void msgSenderEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_SENDER.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.MESSAGE_SENDER, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.MESSAGE_SENDER.getActualGas(),
                 contractSolidityAddress);
     }
@@ -93,7 +101,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function tx origin")
     public void txOriginEstimateCall() {
         validateGasEstimation(
-                ContractMethods.TX_ORIGIN.getSelector(),
+                Strings.encode(
+                        getFunctionFromArtifact(ContractMethods.TX_ORIGIN, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                                .encodeCallWithArgs()),
                 ContractMethods.TX_ORIGIN.getActualGas(),
                 contractSolidityAddress);
     }
@@ -101,7 +111,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function messageValue")
     public void msgValueEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_VALUE.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.MESSAGE_VALUE, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.MESSAGE_VALUE.getActualGas(),
                 contractSolidityAddress);
     }
@@ -109,7 +121,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function messageSigner")
     public void msgSignerEstimateCall() {
         validateGasEstimation(
-                ContractMethods.MESSAGE_SIGNER.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.MESSAGE_SIGNER, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.MESSAGE_SIGNER.getActualGas(),
                 contractSolidityAddress);
     }
@@ -118,7 +132,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
         validateGasEstimation(
-                ContractMethods.ADDRESS_BALANCE.getSelector() + RANDOM_ADDRESS,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.ADDRESS_BALANCE, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS))),
                 ContractMethods.ADDRESS_BALANCE.getActualGas(),
                 contractSolidityAddress);
     }
@@ -126,10 +142,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that changes contract slot information"
             + " by updating global contract field with the passed argument")
     public void updateCounterEstimateCall() {
-        // update value with amount of 5
-        String updateValue = to32BytesString("5");
         validateGasEstimation(
-                ContractMethods.UPDATE_COUNTER.getSelector() + updateValue,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.UPDATE_COUNTER, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("5"))),
                 ContractMethods.UPDATE_COUNTER.getActualGas(),
                 contractSolidityAddress);
     }
@@ -137,7 +153,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE op code")
     public void deployContractViaCreateOpcodeEstimateCall() {
         validateGasEstimation(
-                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE.getActualGas(),
                 contractSolidityAddress);
     }
@@ -145,58 +164,53 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code")
     public void deployContractViaCreateTwoOpcodeEstimateCall() {
         validateGasEstimation(
-                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE.getActualGas(),
                 contractSolidityAddress);
     }
 
-    @Then("I call estimateGas with function that makes a static call to a method from a different contract")
-    public void staticCallToContractEstimateCall() {
+    @Then("I get mock contract address and getAddress selector")
+    public void getMockAddress() {
         var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
+                .data(Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.GET_MOCK_ADDRESS, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()))
                 .to(contractSolidityAddress)
                 .estimate(false)
                 .build();
-        var getMockAddressResponse =
-                mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
+        mockAddress = mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
+        getAddressSelectorByteArray = new BigInteger("0x38cc4831".substring(2), 16).toByteArray();
+    }
+
+    @Then("I call estimateGas with function that makes a static call to a method from a different contract")
+    public void staticCallToContractEstimateCall() {
         validateGasEstimation(
-                ContractMethods.STATIC_CALL_TO_CONTRACT.getSelector()
-                        + to32BytesString(getMockAddressResponse)
-                        + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.STATIC_CALL_TO_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(mockAddress), getAddressSelectorByteArray)),
                 ContractMethods.STATIC_CALL_TO_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a delegate call to a method from a different contract")
     public void delegateCallToContractEstimateCall() {
-        var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
-                .to(contractSolidityAddress)
-                .estimate(false)
-                .build();
-        var getMockAddressResponse =
-                mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
         validateGasEstimation(
-                ContractMethods.DELEGATE_CALL_TO_CONTRACT.getSelector()
-                        + to32BytesString(getMockAddressResponse)
-                        + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.DELEGATE_CALL_TO_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(mockAddress), getAddressSelectorByteArray)),
                 ContractMethods.DELEGATE_CALL_TO_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a call code to a method from a different contract")
     public void callCodeToContractEstimateCall() {
-        var contractCallGetMockAddress = ContractCallRequest.builder()
-                .data(ContractMethods.GET_MOCK_ADDRESS.getSelector())
-                .to(contractSolidityAddress)
-                .estimate(false)
-                .build();
-        var getMockAddressResponse =
-                mirrorClient.contractsCall(contractCallGetMockAddress).getResultAsAddress();
         validateGasEstimation(
-                ContractMethods.CALL_CODE_TO_CONTRACT.getSelector()
-                        + to32BytesString(getMockAddressResponse)
-                        + to32BytesStringRightPad(ContractMethods.GET_ADDRESS.getSelector()),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.CALL_CODE_TO_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(mockAddress), getAddressSelectorByteArray)),
                 ContractMethods.CALL_CODE_TO_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -204,25 +218,28 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations")
     public void logsEstimateCall() {
         validateGasEstimation(
-                ContractMethods.LOGS.getSelector(), ContractMethods.LOGS.getActualGas(), contractSolidityAddress);
+                Strings.encode(
+                        getFunctionFromArtifact(ContractMethods.LOGS, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                                .encodeCallWithArgs()),
+                ContractMethods.LOGS.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
         validateGasEstimation(
-                ContractMethods.DESTROY.getSelector(), ContractMethods.DESTROY.getActualGas(), contractSolidityAddress);
+                Strings.encode(
+                        getFunctionFromArtifact(ContractMethods.DESTROY, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                                .encodeCallWithArgs()),
+                ContractMethods.DESTROY.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.WRONG_METHOD_SIGNATURE.getSelector())
-                .to(contractSolidityAddress)
-                .estimate(true)
-                .build();
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+        assertContractCallReturnsBadRequest(
+                new Function(ContractMethods.WRONG_METHOD_SIGNATURE.getSelector()).encodeCallWithArgs(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with wrong encoded parameter")
@@ -242,7 +259,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(ContractMethods.MESSAGE_SIGNER.getSelector())
+                .data(Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.MESSAGE_SIGNER, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()))
                 .to(contractSolidityAddress)
                 .from(newAccountEvmAddress)
                 .estimate(true)
@@ -257,7 +276,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes a call to invalid smart contract")
     public void callToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
-                ContractMethods.CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.CALL_TO_INVALID_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS))),
                 ContractMethods.CALL_TO_INVALID_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -265,7 +286,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes a delegate call to invalid smart contract")
     public void delegateCallToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
-                ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS))),
                 ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -273,7 +297,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes a static call to invalid smart contract")
     public void staticCallToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
-                ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS))),
                 ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -281,7 +308,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes a call code to invalid smart contract")
     public void callCodeToInvalidSmartContractEstimateCall() {
         validateGasEstimation(
-                ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getSelector() + RANDOM_ADDRESS,
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.CALL_CODE_TO_INVALID_CONTRACT,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS))),
                 ContractMethods.CALL_CODE_TO_INVALID_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -289,9 +319,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes call to an external contract function")
     public void callCodeToExternalContractFunction() {
         validateGasEstimation(
-                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("1"), asAddress(contractSolidityAddress))),
                 ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas(),
                 contractSolidityAddress);
     }
@@ -299,9 +330,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes delegate call to an external contract function")
     public void delegateCallCodeToExternalContractFunction() {
         validateGasEstimation(
-                ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("1"), asAddress(contractSolidityAddress))),
                 ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION.getActualGas(),
                 contractSolidityAddress);
     }
@@ -309,9 +341,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes call to an external contract view function")
     public void callCodeToExternalContractViewFunction() {
         validateGasEstimation(
-                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW,
+                                ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("1"), asAddress(contractSolidityAddress))),
                 ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW.getActualGas(),
                 contractSolidityAddress);
     }
@@ -320,7 +353,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void stateUpdateContractFunction() {
         // making 5 times to state update
         validateGasEstimation(
-                ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("5"),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.STATE_UPDATE_OF_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("5"))),
                 ContractMethods.STATE_UPDATE_OF_CONTRACT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -330,7 +365,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void progressiveStateUpdateContractFunction() {
         // making 5 times to state update
         var contractCallRequestStateUpdateWithFive = ContractCallRequest.builder()
-                .data(ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("5"))
+                .data(Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.STATE_UPDATE_OF_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("5"))))
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -340,7 +377,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 fiveStateUpdatesResponse.getResultAsNumber().intValue();
         // making 10 times to state update
         var contractCallRequestStateUpdateWithTen = ContractCallRequest.builder()
-                .data(ContractMethods.STATE_UPDATE_OF_CONTRACT.getSelector() + to32BytesString("10"))
+                .data(Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.STATE_UPDATE_OF_CONTRACT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(new BigInteger("10"))))
                 .to(contractSolidityAddress)
                 .estimate(true)
                 .build();
@@ -355,7 +394,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
         validateGasEstimation(
-                ContractMethods.REENTRANCY_CALL_ATTACK.getSelector() + RANDOM_ADDRESS + to32BytesString("10000000000"),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.REENTRANCY_CALL_ATTACK, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(asAddress(RANDOM_ADDRESS), new BigInteger("10000000000"))),
                 ContractMethods.REENTRANCY_CALL_ATTACK.getActualGas(),
                 contractSolidityAddress);
     }
@@ -363,7 +404,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that executes gasLeft")
     public void getGasLeftContractFunction() {
         validateGasEstimation(
-                ContractMethods.GET_GAS_LEFT.getSelector(),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.GET_GAS_LEFT, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs()),
                 ContractMethods.GET_GAS_LEFT.getActualGas(),
                 contractSolidityAddress);
     }
@@ -371,10 +414,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that executes positive nested calls")
     public void positiveNestedCallsFunction() {
         validateGasEstimation(
-                ContractMethods.NESTED_CALLS_POSITIVE.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString("10")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.NESTED_CALLS_POSITIVE, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(
+                                new BigInteger("1"), new BigInteger("10"), asAddress(contractSolidityAddress))),
                 ContractMethods.NESTED_CALLS_POSITIVE.getActualGas(),
                 contractSolidityAddress);
     }
@@ -384,129 +427,75 @@ public class EstimateFeature extends AbstractEstimateFeature {
         // verify that after exceeding a number of nested calls that the estimated gas would return the same
         // we will execute with 500, 1024 and 1025, and it should return the same estimatedGas
         validateGasEstimation(
-                ContractMethods.NESTED_CALLS_LIMITED.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString("500")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.NESTED_CALLS_LIMITED, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(
+                                new BigInteger("1"), new BigInteger("500"), asAddress(contractSolidityAddress))),
                 ContractMethods.NESTED_CALLS_LIMITED.getActualGas(),
                 contractSolidityAddress);
         validateGasEstimation(
-                ContractMethods.NESTED_CALLS_LIMITED.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString("1024")
-                        + to32BytesString(contractSolidityAddress),
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.NESTED_CALLS_LIMITED, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(
+                                new BigInteger("1"), new BigInteger("1024"), asAddress(contractSolidityAddress))),
                 ContractMethods.NESTED_CALLS_LIMITED.getActualGas(),
                 contractSolidityAddress);
         validateGasEstimation(
-                ContractMethods.NESTED_CALLS_LIMITED.getSelector()
-                        + to32BytesString("1")
-                        + to32BytesString("1025")
-                        + to32BytesString(contractSolidityAddress),
-                ContractMethods.NESTED_CALLS_LIMITED.getActualGas());
+                Strings.encode(getFunctionFromArtifact(
+                                ContractMethods.NESTED_CALLS_LIMITED, ContractResource.ESTIMATE_GAS_TEST_CONTRACT)
+                        .encodeCallWithArgs(
+                                new BigInteger("1"), new BigInteger("1025"), asAddress(contractSolidityAddress))),
+                ContractMethods.NESTED_CALLS_LIMITED.getActualGas(),
+                contractSolidityAddress);
     }
 
     @Then("I call estimateGas with IERC20 token transfer using long zero address as receiver")
     public void ierc20TransferWithLongZeroAddressForReceiver() {
-        var transferCall = ContractCallRequest.builder()
-                .data(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector()
-                        + to32BytesString(receiverAccountId.getAccountId().toSolidityAddress())
-                        + to32BytesString("1"))
-                .to(fungibleTokenId.toSolidityAddress())
-                .estimate(true)
-                .build();
-        ContractCallResponse transferCallResponse = mirrorClient.contractsCall(transferCall);
-
-        assertTrue(isWithinDeviation(
+        validateGasEstimation(
+                Strings.encode(new Function(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector())
+                        .encodeCallWithArgs(
+                                asAddress(receiverAccountId.getAccountId().toSolidityAddress()), new BigInteger("1"))),
                 ContractMethods.IERC20_TOKEN_TRANSFER.getActualGas(),
-                transferCallResponse.getResultAsNumber().intValue(),
-                lowerDeviation,
-                upperDeviation));
+                fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token transfer using evm address as receiver")
     public void ierc20TransferWithEvmAddressForReceiver() {
         var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var transferCall = ContractCallRequest.builder()
-                .data(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector()
-                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", ""))
-                        + to32BytesString("1"))
-                .to(fungibleTokenId.toSolidityAddress())
-                .estimate(true)
-                .build();
-        ContractCallResponse transferCallResponse = mirrorClient.contractsCall(transferCall);
-
-        assertTrue(isWithinDeviation(
+        validateGasEstimation(
+                Strings.encode(new Function(ContractMethods.IERC20_TOKEN_TRANSFER.getSelector())
+                        .encodeCallWithArgs(
+                                asAddress(accountInfo.getEvmAddress().replace("0x", "")), new BigInteger("1"))),
                 ContractMethods.IERC20_TOKEN_TRANSFER.getActualGas(),
-                transferCallResponse.getResultAsNumber().intValue(),
-                lowerDeviation,
-                upperDeviation));
+                fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token approve using evm address as receiver")
     public void ierc20ApproveWithEvmAddressForReceiver() {
         var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var approveCall = ContractCallRequest.builder()
-                .data(ContractMethods.IERC20_TOKEN_APPROVE.getSelector()
-                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", ""))
-                        + to32BytesString("1"))
-                .to(fungibleTokenId.toSolidityAddress())
-                .estimate(true)
-                .build();
-        ContractCallResponse approveCallResponse = mirrorClient.contractsCall(approveCall);
-
-        assertTrue(isWithinDeviation(
+        validateGasEstimation(
+                (Strings.encode(new Function(ContractMethods.IERC20_TOKEN_APPROVE.getSelector())
+                        .encodeCallWithArgs(
+                                asAddress(accountInfo.getEvmAddress().replace("0x", "")), new BigInteger("1")))),
                 ContractMethods.IERC20_TOKEN_APPROVE.getActualGas(),
-                approveCallResponse.getResultAsNumber().intValue(),
-                lowerDeviation,
-                upperDeviation));
+                fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token associate using evm address as receiver")
     public void ierc20AssociateWithEvmAddressForReceiver() {
-        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var associateCall = ContractCallRequest.builder()
-                .data(ContractMethods.IERC20_TOKEN_ASSOCIATE.getSelector()
-                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", "")))
-                .to(fungibleTokenId.toSolidityAddress())
-                .estimate(true)
-                .build();
-        ContractCallResponse associateCallResponse = mirrorClient.contractsCall(associateCall);
-
-        assertTrue(isWithinDeviation(
+        validateGasEstimation(
+                Strings.encode(new Function(ContractMethods.IERC20_TOKEN_ASSOCIATE.getSelector()).encodeCallWithArgs()),
                 ContractMethods.IERC20_TOKEN_ASSOCIATE.getActualGas(),
-                associateCallResponse.getResultAsNumber().intValue(),
-                lowerDeviation,
-                upperDeviation));
+                fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token dissociate using evm address as receiver")
     public void ierc20DissociateWithEvmAddressForReceiver() {
-        var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var dissociateCall = ContractCallRequest.builder()
-                .data(ContractMethods.IERC20_TOKEN_DISSOCIATE.getSelector()
-                        + to32BytesString(accountInfo.getEvmAddress().replace("0x", "")))
-                .to(fungibleTokenId.toSolidityAddress())
-                .estimate(true)
-                .build();
-        ContractCallResponse dissociateCallResponse = mirrorClient.contractsCall(dissociateCall);
-
-        assertTrue(isWithinDeviation(
+        validateGasEstimation(
+                (Strings.encode(
+                        new Function(ContractMethods.IERC20_TOKEN_DISSOCIATE.getSelector()).encodeCallWithArgs())),
                 ContractMethods.IERC20_TOKEN_DISSOCIATE.getActualGas(),
-                dissociateCallResponse.getResultAsNumber().intValue(),
-                lowerDeviation,
-                upperDeviation));
-    }
-
-    private void validateGasEstimation(String selector, int actualGasUsed) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(selector)
-                .to(contractSolidityAddress)
-                .estimate(true)
-                .build();
-        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
-
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+                fungibleTokenId.toSolidityAddress());
     }
 
     /**
@@ -515,41 +504,40 @@ public class EstimateFeature extends AbstractEstimateFeature {
      */
     @Getter
     @RequiredArgsConstructor
-    private enum ContractMethods {
-        ADDRESS_BALANCE("3ec4de35", 24030),
-        CALL_CODE_TO_CONTRACT("ac7e2758", 26398),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("4929af37", 26100),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("fa5e414e", 22272),
-        CALL_CODE_TO_INVALID_CONTRACT("e080b4aa", 24031),
-        CALL_TO_INVALID_CONTRACT("70079963", 24374),
-        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("80f009b6", 24712),
-        DELEGATE_CALL_TO_CONTRACT("d3b6e741", 26417),
-        DELEGATE_CALL_TO_INVALID_CONTRACT("7df6ee27", 24350),
-        DEPLOY_CONTRACT_VIA_CREATE_OPCODE("6e6662b9", 53477),
-        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("dbb6f04a", 55693),
-        DESTROY("83197ef0", 26171),
-        GET_ADDRESS("38cc4831", 0),
-        GET_GAS_LEFT("51be4eaa", 21326),
-        GET_MOCK_ADDRESS("14a7862c", 0),
-        LOGS("74259795", 28757),
-        MESSAGE_SENDER("d737d0c7", 21290),
-        MESSAGE_SIGNER("ec3e88cf", 21252),
-        MESSAGE_VALUE("ddf363d7", 21234),
-        MULTIPLY_SIMPLE_NUMBERS("0ec1551d", 21227),
-        NESTED_CALLS_LIMITED("bb376a96", 525255),
-        NESTED_CALLS_POSITIVE("bb376a96", 45871),
-        REENTRANCY_CALL_ATTACK("e7df080e", 55818),
-        REENTRANCY_TRANSFER_ATTACK("ffaf0890", 55500),
-        STATIC_CALL_TO_CONTRACT("ef0a4eac", 26416),
-        STATIC_CALL_TO_INVALID_CONTRACT("41f32f0c", 24394),
-        STATE_UPDATE_OF_CONTRACT("5256b99d", 30500),
-        TX_ORIGIN("f96757d1", 21289),
-        UPDATE_COUNTER("c648049d", 26279),
-        WRONG_METHOD_SIGNATURE("ffffffff", 0),
-        IERC20_TOKEN_TRANSFER("a9059cbb", 37837),
-        IERC20_TOKEN_APPROVE("095ea7b3", 727978),
-        IERC20_TOKEN_ASSOCIATE("0a754de6", 727972),
-        IERC20_TOKEN_DISSOCIATE("5c9217e0", 727972);
+    private enum ContractMethods implements ContractMethodInterface {
+        ADDRESS_BALANCE("addressBalance", 24041),
+        CALL_CODE_TO_CONTRACT("callCodeToContract", 26398),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 26100),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("delegatecallExternalViewFunctionNTimes", 22272),
+        CALL_CODE_TO_INVALID_CONTRACT("callCodeToInvalidContract", 24031),
+        CALL_TO_INVALID_CONTRACT("callToInvalidContract", 24374),
+        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("delegatecallExternalFunctionNTimes", 24712),
+        DELEGATE_CALL_TO_CONTRACT("delegateCallToContract", 26417),
+        DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24350),
+        DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53477),
+        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55693),
+        DESTROY("destroy", 26171),
+        GET_GAS_LEFT("getGasLeft", 21326),
+        GET_MOCK_ADDRESS("getMockContractAddress", 0),
+        LOGS("logs", 28757),
+        MESSAGE_SENDER("msgSender", 21290),
+        MESSAGE_SIGNER("msgSig", 21252),
+        MESSAGE_VALUE("msgValue", 21234),
+        MULTIPLY_SIMPLE_NUMBERS("pureMultiply", 21227),
+        NESTED_CALLS_LIMITED("nestedCalls", 525255),
+        NESTED_CALLS_POSITIVE("nestedCalls", 35975),
+        REENTRANCY_CALL_ATTACK("reentrancyWithCall", 55818),
+        STATIC_CALL_TO_CONTRACT("staticCallToContract", 26416),
+        STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24394),
+        STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 30500),
+        TX_ORIGIN("txOrigin", 21289),
+        UPDATE_COUNTER("updateCounter", 26335),
+        WRONG_METHOD_SIGNATURE("ffffffff()", 0),
+        IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 37837),
+        IERC20_TOKEN_APPROVE("approve(address,uint256)", 727978),
+        IERC20_TOKEN_ASSOCIATE("associate()", 727972),
+        IERC20_TOKEN_DISSOCIATE("dissociate()", 727972);
+
         private final String selector;
         private final int actualGas;
     }

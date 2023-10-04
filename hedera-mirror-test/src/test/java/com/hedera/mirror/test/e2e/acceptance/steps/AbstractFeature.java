@@ -16,9 +16,11 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.esaulpaugh.headlong.abi.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
@@ -27,7 +29,9 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -55,6 +59,9 @@ abstract class AbstractFeature {
 
     @Autowired
     protected FileClient fileClient;
+
+    @Autowired
+    protected MirrorNodeClient mirrorClient;
 
     @Autowired
     protected ObjectMapper mapper;
@@ -157,6 +164,39 @@ abstract class AbstractFeature {
 
     protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
+    }
+
+    protected ContractCallResponse callContract(String data, String contractAddress) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(data)
+                .from(contractClient.getClientAddress())
+                .to(contractAddress)
+                .estimate(false)
+                .build();
+
+        return mirrorClient.contractsCall(contractCallRequestBody);
+    }
+
+    protected Function getFunctionFromArtifact(SelectorInterface contractMethod, ContractResource resource) {
+        String json;
+        try (var in = getResourceAsStream(resource.getPath())) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), contractMethod.getSelector());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return Function.fromJson(json);
+    }
+
+    protected InputStream getResourceAsStream(String resourcePath) throws IOException {
+        return resourceLoader.getResource(resourcePath).getInputStream();
+    }
+
+    protected interface SelectorInterface {
+        String getSelector();
+    }
+
+    protected interface ContractMethodInterface extends SelectorInterface {
+        int getActualGas();
     }
 
     @RequiredArgsConstructor
