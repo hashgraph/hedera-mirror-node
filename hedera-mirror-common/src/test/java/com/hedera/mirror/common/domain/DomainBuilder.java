@@ -350,7 +350,7 @@ public class DomainBuilder {
                 .owner(id())
                 .payerAccountId(spender)
                 .spender(spender.getId())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -380,7 +380,7 @@ public class DomainBuilder {
                 .fixedFees(List.of(fixedFee()))
                 .fractionalFees(List.of(fractionalFee()))
                 .royaltyFees(List.of(royaltyFee()))
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -452,7 +452,7 @@ public class DomainBuilder {
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .type(ACCOUNT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -481,7 +481,7 @@ public class DomainBuilder {
                 .stakedNodeIdStart(-1L)
                 .stakedToMe(0L)
                 .stakeTotalStart(0L)
-                .timestampRange(Range.closedOpen(timestamp, timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -640,7 +640,7 @@ public class DomainBuilder {
                 .deleted(false)
                 .metadata(bytes(16))
                 .serialNumber(id())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -664,7 +664,7 @@ public class DomainBuilder {
                 .owner(entityId().getId())
                 .payerAccountId(entityId())
                 .spender(entityId().getId())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -842,7 +842,7 @@ public class DomainBuilder {
                 .supplyKey(key())
                 .supplyType(TokenSupplyTypeEnum.INFINITE)
                 .symbol(text(8))
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId())
                 .totalSupply(1_000_000_000L + id())
                 .treasuryAccountId(entityId())
@@ -878,7 +878,7 @@ public class DomainBuilder {
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -908,7 +908,7 @@ public class DomainBuilder {
                 .owner(id())
                 .payerAccountId(spender)
                 .spender(spender.getId())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -923,6 +923,17 @@ public class DomainBuilder {
                 .amount(100L)
                 .deletedTokenDissociate(false)
                 .id(new TokenTransfer.Id(timestamp(), entityId(), entityId()))
+                .payerAccountId(entityId());
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransferCustom(
+            long amount, long timestamp, EntityId tokenID, EntityId accountId) {
+        var builder = TokenTransfer.builder()
+                .amount(amount)
+                .deletedTokenDissociate(false)
+                .id(new TokenTransfer.Id(timestamp, tokenID, accountId))
                 .payerAccountId(entityId());
 
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -967,7 +978,7 @@ public class DomainBuilder {
         var builder = TopicMessageLookup.builder()
                 .partition(String.format("topic_message_%d", id()))
                 .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
-                .timestampRange(Range.closedOpen(timestamp, timestamp + 1))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .topicId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

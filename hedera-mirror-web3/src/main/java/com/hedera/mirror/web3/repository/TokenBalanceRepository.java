@@ -23,14 +23,76 @@ import org.springframework.data.repository.CrudRepository;
 
 public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id> {
 
+    /**
+     * Retrieves the token balance of a specific token for a specific account at the last consensus timestamp
+     * before the provided block timestamp.
+     *
+     * @param tokenId         the ID of the token whose balance is to be retrieved.
+     * @param accountId       the ID of the account whose balance is to be retrieved.
+     * @param blockTimestamp  the block timestamp used as the upper limit to retrieve the token balance.
+     *                        The method will retrieve the last token balance before this timestamp.
+     * @return an Optional containing the balance if found, or an empty Optional if no matching balance
+     *         entry is found before the given block timestamp.
+     */
     @Query(
-            value = "SELECT * FROM token_balance "
-                    + "WHERE "
-                    + "token_id = ?1 AND "
-                    + "account_id = ?2 AND "
-                    + "consensus_timestamp < ?3 "
-                    + "ORDER BY consensus_timestamp DESC "
-                    + "LIMIT 1 ",
+            value =
+                    """
+                select * from token_balance
+                where
+                token_id = ?1 and
+                account_id = ?2 and
+                consensus_timestamp < ?3
+                order by consensus_timestamp desc
+                limit 1
+                """,
             nativeQuery = true)
     Optional<TokenBalance> findByIdAndTimestampLessThan(long tokenId, long accountId, long blockTimestamp);
+
+    /**
+     * Finds the historical token balance for a given token ID and account ID combination based on a specific block timestamp.
+     * This method calculates the historical balance by summing the token transfers and adding the sum to the initial balance
+     * found at a timestamp less than the given block timestamp.
+     *
+     * @param tokenId         the ID of the token.
+     * @param accountId       the ID of the account.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the historical balance at the specified timestamp.
+     *         If there are no token transfers, an empty Optional is returned.
+     *         In the case of an empty Optional, consider using {@link #findByIdAndTimestampLessThan(long, long, long)}
+     *         to get the balance at the given timestamp.
+     */
+    @Query(
+            value =
+                    """
+            select sum(amount) + (
+                select balance
+                from token_balance
+                where
+                    token_id = ?1
+                    and account_id = ?2
+                    and consensus_timestamp < ?3
+                order by consensus_timestamp desc
+                limit 1
+            ) as total_balance
+            from token_transfer
+            where
+                token_id = ?1
+                and account_id = ?2
+                and consensus_timestamp <= ?3
+                and consensus_timestamp > (
+                    select consensus_timestamp
+                    from (
+                        select consensus_timestamp
+                        from token_balance
+                        where
+                            token_id = ?1
+                            and account_id = ?2
+                            and consensus_timestamp < ?3
+                        order by consensus_timestamp desc
+                        limit 1
+                    ) as tb
+                )
+            """,
+            nativeQuery = true)
+    Optional<Long> findHistoricalTokenBalanceUpToTimestamp(long tokenId, long accountId, long blockTimestamp);
 }
