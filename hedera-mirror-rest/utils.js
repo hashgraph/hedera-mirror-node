@@ -410,6 +410,10 @@ const isValidContractIdQueryParam = (op, val) => {
   return EntityId.isValidEntityId(val, false);
 };
 
+const isValidUserFileId = (val) => {
+  return val > 1000;
+};
+
 /**
  * Validate input http request object
  * @param {Request} req HTTP request object
@@ -1697,6 +1701,7 @@ export {
   isTestEnv,
   isValidBlockHash,
   isValidEthHash,
+  isValidUserFileId,
   isValidOperatorQuery,
   isValidPublicKeyQuery,
   isValidSlot,

@@ -45,6 +45,7 @@ import {
   ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
+import {isValidUserFileId} from '../utils';
 
 const contractSelectFields = [
   Entity.AUTO_RENEW_ACCOUNT_ID,
@@ -699,7 +700,7 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
     const contract = rows[0];
-    if (contract.file_id !== null) {
+    if (contract.file_id !== null && isValidUserFileId(contract.file_id)) {
       contract.bytecode = await FileDataService.getFileData(contract.file_id, contract.created_timestamp);
     } else {
       contract.bytecode = contract.initcode?.toString('hex');
@@ -966,7 +967,7 @@ class ContractController extends BaseController {
     const ethTransaction = ethTransactions[0];
 
     let fileData = null;
-    if (ethTransaction && !_.isNil(ethTransaction.callDataId)) {
+    if (ethTransaction && !_.isNil(ethTransaction.callDataId) && isValidUserFileId(ethTransaction.callDataId)) {
       fileData = await FileDataService.getLatestFileDataContents(ethTransaction.callDataId, {whereQuery: []});
     }
 
@@ -1125,7 +1126,7 @@ class ContractController extends BaseController {
 
     let fileData = null;
 
-    if (ethTransaction && !_.isNil(ethTransaction.callDataId)) {
+    if (ethTransaction && !_.isNil(ethTransaction.callDataId) && isValidUserFileId(ethTransaction.callDataId)) {
       fileData = await FileDataService.getLatestFileDataContents(ethTransaction.callDataId, {whereQuery: []});
     }
 
