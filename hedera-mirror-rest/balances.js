@@ -21,6 +21,7 @@ import EntityId from './entityId';
 import {EntityService} from './service/index.js';
 import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
+import * as math from 'mathjs';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
@@ -36,7 +37,10 @@ const formatBalancesResult = (req, result, limit, order) => {
   };
 
   if (rows.length > 0) {
-    ret.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
+    const maxTimestamp = rows
+      .map((r) => r.consensus_timestamp)
+      .reduce((result, current) => (result > current ? result : current), 0);
+    ret.timestamp = utils.nsToSecNs(maxTimestamp);
   }
 
   ret.balances = rows.map((row) => {
@@ -128,10 +132,9 @@ const getBalances = async (req, res) => {
     const whereClause = conditions && `where ${conditions}`;
     const tokenBalanceSubQuery = getTokenAccountBalanceSubQuery(order);
     sqlQuery = `
-      with latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file),
-      account_balance as (
-        select id as account_id, balance, consensus_timestamp, public_key
-        from entity, latest_record_file
+      with account_balance as (
+        select id as account_id, balance, balance_timestamp as consensus_timestamp, public_key
+        from entity
         where type in ('ACCOUNT', 'CONTRACT')
       )
       select ab.*, (${tokenBalanceSubQuery}) as token_balances

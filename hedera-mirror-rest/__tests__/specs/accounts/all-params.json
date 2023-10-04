@@ -24,6 +24,7 @@
       },
       {
         "balance": 90,
+        "balance_timestamp": "2345",
         "num": 19,
         "realm": 1,
         "shard": 0,
@@ -51,12 +52,6 @@
         "expiration_timestamp": 123456785,
         "auto_renew_period": 55555,
         "key": [5, 5, 5]
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 2345
       }
     ],
     "tokenaccounts": [

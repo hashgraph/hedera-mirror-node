@@ -462,6 +462,7 @@ const entityDefaults = {
   auto_renew_account_id: null,
   auto_renew_period: null,
   balance: null,
+  balance_timestamp: null,
   created_timestamp: null,
   decline_reward: false,
   deleted: false,
