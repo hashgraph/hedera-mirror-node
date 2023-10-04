@@ -46,6 +46,7 @@ import org.springframework.expression.ParseException;
 @ExtendWith(MockitoExtension.class)
 class CommonParserPropertiesTest {
 
+    private static final String UNIQUE_MEMO_PREFIX = "MyApp";
     private static final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final CommonParserProperties commonParserProperties = new CommonParserProperties();
 
@@ -113,6 +114,14 @@ class CommonParserPropertiesTest {
                         false));
     }
 
+    private static Stream<Arguments> filterRecordItemStreamExpressionIncludeOrExclude() {
+        var recordItem = recordItemBuilder
+                .cryptoTransfer()
+                .transactionBodyWrapper(b -> b.setMemo(UNIQUE_MEMO_PREFIX + " blah blah"))
+                .build();
+        return Stream.of(Arguments.of("0.0.1", recordItem, true));
+    }
+
     @DisplayName("Filter empty")
     @Test
     void filterEmpty() {
@@ -149,26 +158,25 @@ class CommonParserPropertiesTest {
                 .isEqualTo(result);
     }
 
-    //    @DisplayName("Filter expression using include")
-    //    @ParameterizedTest(name = "with expression {0} resulting in {1}")
+    @DisplayName("Filter expression using include")
+    @ParameterizedTest(name = "with recordItem {1} resulting in {2}")
+    @MethodSource("filterRecordItemStreamExpressionIncludeOrExclude")
     //    @CsvSource({
+    //            "'', true",
     //            "'transactionBody.transactionID.accountID.accountNum == 800', false",
     //            "'transactionBody.cryptoTransfer.transfers.accountAmountsList.size >= 2', true",
-    //            "'', true",
     //            "'transactionBody.transactionID.accountID.accountNum > 0', true",
     //            "'transactionRecord.consensusTimestamp.seconds > 0', true",
     //            "'transactionBody.transactionFee > 50', true",
     //    })
-    //    void filterExpressionInclude(String expression, boolean result) {
-    //        var recordItem = recordItemBuilder.cryptoTransfer().build();
-    //
-    //        commonParserProperties.getInclude().add(filter(expression));
-    //        assertTrue(commonParserProperties.hasFilter());
-    //
-    //        assertEquals(
-    //                result, commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem,
-    // null)));
-    //    }
+    void filterExpressionInclude(String entityId, RecordItem recordItem, boolean result) {
+
+        commonParserProperties.getInclude().add(filter(null, "transactionBody.memo.contains(\"MyApp\")", null));
+        assertThat(commonParserProperties.hasFilter()).isTrue();
+
+        assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem)))
+                .isEqualTo(result);
+    }
 
     @DisplayName("Filter using exclude")
     @ParameterizedTest(name = "with entity {0} and recordItem {1} resulting in !{2}")
@@ -212,7 +220,7 @@ class CommonParserPropertiesTest {
     }
 
     @DisplayName("Invalid filter expression evaluation exception handling")
-    @ParameterizedTest(name = "with expression {0} resulting in cause {1}")
+    @ParameterizedTest(name = "with expression {0}")
     @CsvSource({
         // Disallowed root RecordItem access
         "transactionIndex > 12",
@@ -221,7 +229,12 @@ class CommonParserPropertiesTest {
         "'transactionRecord.noSuchProperty != null'",
         "'transactionBody.memo.badStringMethod()'",
         // Does not evaluate to a boolean
-        "'transactionBody.cryptoApproveAllowance.cryptoAllowances'"
+        "'transactionBody.cryptoApproveAllowance.cryptoAllowances'",
+        // No wandering outside of limited types
+        "T(com.hedera.mirror.importer.util.Utility).handleRecoverableError(\"Hello from the beyond!\")",
+        "T(java.lang.Runtime).getRuntime().exec('touch hello.txt') != null",
+        // Bean reference not allowed
+        "@streamFileProviders.size() > 0"
     })
     void filterExpressionErrors(String expression) {
         var recordItem = recordItemBuilder.cryptoTransfer().build();

@@ -26,6 +26,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -43,9 +44,12 @@ import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
+import org.springframework.expression.TypeLocator;
+import org.springframework.expression.spel.SpelEvaluationException;
+import org.springframework.expression.spel.SpelMessage;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.ReflectivePropertyAccessor;
-import org.springframework.expression.spel.support.SimpleEvaluationContext;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
@@ -88,17 +92,21 @@ public class CommonParserProperties {
     @Value
     static class TransactionFilter {
 
-        private static final EvaluationContext evaluationContext =
-                new SimpleEvaluationContext.Builder(new RecordItemPropertyAccessor()).build();
+        private static final StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
         private static final ExpressionParser expressionParser = new SpelExpressionParser();
 
-        private Collection<EntityId> entity;
-        private String expression;
+        static {
+            evaluationContext.setTypeLocator(new RestrictedTypeLocator());
+            evaluationContext.setPropertyAccessors(List.of(new RecordItemPropertyAccessor()));
+        }
+
+        private final Collection<EntityId> entity;
+        private final String expression;
 
         @Getter(AccessLevel.NONE)
-        private Expression parsedExpression;
+        private final Expression parsedExpression;
 
-        private Collection<TransactionType> transaction;
+        private final Collection<TransactionType> transaction;
 
         @Builder
         TransactionFilter(Collection<EntityId> entity, String expression, Collection<TransactionType> transaction) {
@@ -169,6 +177,17 @@ public class CommonParserProperties {
                 return false;
             }
             return super.canRead(context, target, name);
+        }
+    }
+
+    /**
+     * Limit the types that may be accessed via SpEL to none. Everything starts with property access.
+     */
+    static class RestrictedTypeLocator implements TypeLocator {
+
+        @Override
+        public Class<?> findType(String typeName) throws EvaluationException {
+            throw new SpelEvaluationException(SpelMessage.TYPE_NOT_FOUND, typeName);
         }
     }
 }
