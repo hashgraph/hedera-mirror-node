@@ -121,6 +121,7 @@ stackgres:
       storageClass: zfs
   worker:
     instances: 3
+    replicasPerInstance: 1
     resources:
       cpu: 3700m
       memory: 24Gi
