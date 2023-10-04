@@ -179,14 +179,7 @@ const getEntityBalanceQuery = (
   ];
 
   if (accountBalanceQuery.query) {
-    const consensusTimestampSelect = `(case 
-            when upper(e.timestamp_range) is null
-              then COALESCE(ab.consensus_timestamp, (select max(consensus_end) from record_file)) 
-            else COALESCE(ab.consensus_timestamp, upper(e.timestamp_range))
-          end) as consensus_timestamp`;
     const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
-
-    selectFields.push(consensusTimestampSelect);
     selectFields.push(balanceSelect);
 
     queries.push(
@@ -208,7 +201,6 @@ const getEntityBalanceQuery = (
     );
   } else {
     const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
-    selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
     selectFields.push('e.balance as balance');
 
     queries.push(` select ${selectFields.join(',\n')}
