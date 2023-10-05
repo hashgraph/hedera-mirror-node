@@ -277,13 +277,15 @@ class CommonParserPropertiesTest {
         "transactionIndex > 12",
         // Disallowed nested RecordItem access
         "'transaction.bodyBytes.size > 24'",
+        // Invalid property and method names
         "'transactionRecord.noSuchProperty != null'",
         "'transactionBody.memo.badStringMethod()'",
         // Does not evaluate to a boolean
         "'transactionBody.cryptoApproveAllowance.cryptoAllowances'",
-        // No wandering outside of limited types
+        // No types allowed
         "T(com.hedera.mirror.importer.util.Utility).handleRecoverableError(\"Hello from the beyond!\")",
         "T(java.lang.Runtime).getRuntime().exec('touch hello.txt') != null",
+        "systemProperties['user.country'] != null",
         // Bean reference not allowed
         "@streamFileProviders.size() > 0"
     })
