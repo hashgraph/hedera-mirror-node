@@ -56,13 +56,7 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
                         select *
                         from token_history
                         where token_id = ?1 and lower(timestamp_range) <= ?2
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM token_history as inner_th
-                            WHERE inner_th.token_id = token_history.token_id
-                            AND lower(inner_th.timestamp_range) > lower(token_history.timestamp_range)
-                            AND lower(inner_th.timestamp_range) <= ?2
-                        )
+                        order by lower(timestamp_range) desc
                         limit 1
                     )
                     order by timestamp_range desc
