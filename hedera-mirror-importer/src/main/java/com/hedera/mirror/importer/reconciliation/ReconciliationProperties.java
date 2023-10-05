@@ -37,7 +37,7 @@ class ReconciliationProperties {
     @DurationMin(millis = 0)
     private Duration delay = Duration.ofSeconds(1L);
 
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     @NotNull
     private Instant endDate = Utility.MAX_INSTANT_LONG;
