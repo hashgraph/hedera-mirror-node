@@ -230,3 +230,7 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 6. Stop the [Importer](/docs/importer/README.md) process.
 7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
 8. Update the mirror node configuration to point to the new Citus DB and start it.
+
+## Citus Backup and Restore
+
+Please refer to this [document](/docs/database/citus.md) for the steps.
