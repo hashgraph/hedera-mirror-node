@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.CustomLog;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Value;
@@ -53,7 +52,6 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
-@CustomLog
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer.parser")
@@ -155,7 +153,7 @@ public class CommonParserProperties {
                 return Objects.requireNonNullElse(result, false);
             } catch (EvaluationException ex) {
                 throw new InvalidConfigurationException(
-                        "Transaction filter expression failed to evaluate: %s".formatted(expression), ex);
+                        "Transaction filter expression failed to evaluate: " + expression, ex);
             }
         }
     }
