@@ -16,8 +16,11 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_500MS;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_RECORD_FILE_INDEX;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_RECORD_FILE_LATEST;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_RECORD_FILE_LATEST;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_RECORD_FILE_LATEST_INDEX;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import java.util.Optional;
@@ -27,15 +30,21 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 public interface RecordFileRepository extends PagingAndSortingRepository<RecordFile, Long> {
 
-    @Cacheable(cacheNames = "record_file.latest_index", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
+    @Cacheable(
+            cacheNames = CACHE_NAME_RECORD_FILE_LATEST_INDEX,
+            cacheManager = CACHE_MANAGER_RECORD_FILE_LATEST,
+            unless = "#result == null")
     @Query("select max(r.index) from RecordFile r")
     Optional<Long> findLatestIndex();
 
-    @Cacheable(cacheNames = "record_file.index", cacheManager = CACHE_MANAGER_10MIN, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_INDEX, unless = "#result == null")
     @Query("select r.hash from RecordFile r where r.index = ?1")
     Optional<String> findHashByIndex(long index);
 
-    @Cacheable(cacheNames = "record_file.latest", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
+    @Cacheable(
+            cacheNames = CACHE_NAME_RECORD_FILE_LATEST,
+            cacheManager = CACHE_MANAGER_RECORD_FILE_LATEST,
+            unless = "#result == null")
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();
 }

@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hedera.mirror.importer.TestUtils.toEntityTransaction;
 import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ALIAS;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
 import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
 import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
@@ -114,7 +114,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final long[] additionalTransferAmounts = {1001, 1002};
     private static final ByteString ALIAS_KEY = DomainUtils.fromBytes(UtilityTest.ALIAS_ECDSA_SECP256K1);
 
-    private final @Qualifier(CACHE_MANAGER_ALIAS) CacheManager cacheManager;
+    private final @Qualifier(CACHE_ALIAS) CacheManager cacheManager;
     private final ContractRepository contractRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
