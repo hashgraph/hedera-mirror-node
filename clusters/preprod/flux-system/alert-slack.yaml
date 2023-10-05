@@ -22,19 +22,10 @@ spec:
       namespace: previewnet
     - kind: HelmRelease
       name: '*'
-      namespace: performance
-    - kind: HelmRelease
-      name: '*'
       namespace: dev
     - kind: HelmRelease
       name: '*'
       namespace: previewnet
-    - kind: HelmRelease
-      name: '*'
-      namespace: staging-sm
-    - kind: HelmRelease
-      name: '*'
-      namespace: staging-lg
     - kind: Kustomization
       name: '*'
       namespace: flux-system
