@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from './common.js';
-import {jsonPost} from './common.js';
+import {ContractCallTestScenarioBuilder} from './common.js';
 
-const url = __ENV.BASE_URL;
 const contract = __ENV.DEFAULT_CONTRACT_ADDRESS;
+const data = '0x8070450f';
 
-const payload = JSON.stringify({
-  to: `${contract}`,
-  data: '0x8070450f',
-});
-
-const {options, run} = new TestScenarioBuilder()
+const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallMultiply') // use unique scenario name among all tests
-  .request(() => jsonPost(url, payload))
-  .check('contractCallMultiply', (r) => isNonErrorResponse(r))
+  .data(data)
+  .to(contract)
   .build();
 
 export {options, run};
