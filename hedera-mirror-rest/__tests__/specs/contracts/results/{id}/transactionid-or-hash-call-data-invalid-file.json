@@ -16,7 +16,7 @@
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "error_message": "",
-        "function_parameters": [1, 2, 3, 4, 5, 6, 7, 8],
+        "function_parameters": [],
         "function_result": [8, 8],
         "gas_limit": 1000000,
         "gas_used": 123,
@@ -67,6 +67,15 @@
         "slot": [3, 3]
       }
     ],
+    "filedata": [
+      {
+        "_description": "FileCreate with initial contract contents",
+        "file_data": [48, 120, 97, 97],
+        "consensus_timestamp": "987654000123012",
+        "entity_id": 120,
+        "transaction_type": 17
+      }
+    ],
     "recordFiles": [
       {
         "index": 17,
@@ -88,7 +97,7 @@
     "ethereumtransactions": [
       {
         "call_data": "",
-        "call_data_id": 9120,
+        "call_data_id": 120,
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "payer_account_id": "8001",
@@ -120,7 +129,7 @@
     "address": "0x25fe26adc577cc89172e6156c9e24f7b9751b762",
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": "0x0102030405060708",
+    "function_parameters": "0x",
     "gas_limit": 1000000,
     "gas_price": "0x4a817c80",
     "gas_used": 123,
