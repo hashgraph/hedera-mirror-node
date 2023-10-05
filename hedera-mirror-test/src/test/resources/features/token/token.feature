@@ -56,6 +56,7 @@ Feature: HTS Base Coverage Feature
         #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
     Then I update the treasury of token to ALICE
     And the mirror node REST API should return the transaction
+    Then I update the treasury of token to operator
     Then I delete the token
     And the mirror node REST API should return the transaction for token serial number 1 transaction flow
 

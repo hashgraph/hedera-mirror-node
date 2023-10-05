@@ -298,6 +298,18 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I update the treasury of token to operator")
+    public void updateTokenTreasuryToOperator() {
+        try {
+            var accountId = accountClient.getAccount(AccountNameEnum.OPERATOR);
+            networkTransactionResponse = tokenClient.updateTokenTreasury(tokenId, accountId);
+        } catch (Exception exception) {
+            assertThat(exception).isInstanceOf(ReceiptStatusException.class);
+            ReceiptStatusException actualException = (ReceiptStatusException) exception;
+            assertThat(actualException.receipt.status).isEqualTo(CURRENT_TREASURY_STILL_OWNS_NFTS);
+        }
+    }
+
     @Given("I update the treasury of token to {account}")
     public void updateTokenTreasury(AccountNameEnum accountNameEnum) {
         try {
