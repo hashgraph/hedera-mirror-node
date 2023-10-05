@@ -63,7 +63,7 @@ class FileDataService extends BaseService {
            ) data
         from ${FileData.tableName}
         where
-           ${FileData.ENTITY_ID} = $1
+           ${FileData.ENTITY_ID} = $1 
         and ${FileData.CONSENSUS_TIMESTAMP} >= (
         select ${FileData.CONSENSUS_TIMESTAMP}
         from ${FileData.tableName}
