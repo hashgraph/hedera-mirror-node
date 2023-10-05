@@ -411,7 +411,7 @@ const isValidContractIdQueryParam = (op, val) => {
 };
 
 const isValidUserFileId = (val) => {
-  return val > 1000;
+  return !_.isNil(val) && val > 1000;
 };
 
 /**
