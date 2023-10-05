@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.util.Strings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
@@ -37,6 +38,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -166,9 +168,9 @@ abstract class AbstractFeature {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
     }
 
-    protected ContractCallResponse callContract(String data, String contractAddress) {
+    protected ContractCallResponse callContract(ByteBuffer data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
+                .data(Strings.encode(data))
                 .from(contractClient.getClientAddress())
                 .to(contractAddress)
                 .estimate(false)
@@ -177,14 +179,16 @@ abstract class AbstractFeature {
         return mirrorClient.contractsCall(contractCallRequestBody);
     }
 
-    protected Function getFunctionFromArtifact(SelectorInterface contractMethod, ContractResource resource) {
+    protected ByteBuffer encodeData(ContractResource resource, SelectorInterface method, Object... args) {
         String json;
         try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), contractMethod.getSelector());
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return Function.fromJson(json);
+
+        Function function = Function.fromJson(json);
+        return function.encodeCallWithArgs(args);
     }
 
     protected InputStream getResourceAsStream(String resourcePath) throws IOException {

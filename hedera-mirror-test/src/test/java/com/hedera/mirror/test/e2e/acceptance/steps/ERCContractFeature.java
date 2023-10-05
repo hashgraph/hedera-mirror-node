@@ -17,11 +17,21 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.BOB;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC_TEST_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.ALLOWANCE_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.BALANCE_OF_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.DECIMALS_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.GET_APPROVED_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.GET_OWNER_OF_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.NAME_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.SYMBOL_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.TOKEN_URI_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ERCContractFeature.ContractMethods.TOTAL_SUPPLY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
@@ -40,7 +50,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -88,11 +97,8 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token name")
     public void nameContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.NAME_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(0).toSolidityAddress()));
-        ContractCallResponse getNameResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(ERC_TEST_CONTRACT, NAME_SELECTOR, asAddress(tokenIds.get(0)));
+        ContractCallResponse getNameResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getNameResponse.getResultAsText()).isEqualTo("TEST_name");
     }
@@ -100,11 +106,8 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token symbol")
     public void symbolContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.SYMBOL_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(0).toSolidityAddress()));
-        ContractCallResponse getSymbolResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(ERC_TEST_CONTRACT, SYMBOL_SELECTOR, asAddress(tokenIds.get(0)));
+        ContractCallResponse getSymbolResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getSymbolResponse.getResultAsText()).isEqualTo("TEST");
     }
@@ -112,11 +115,8 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token decimals")
     public void decimalsContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.DECIMALS_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(0).toSolidityAddress()));
-        ContractCallResponse getDecimalsResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(ERC_TEST_CONTRACT, DECIMALS_SELECTOR, asAddress(tokenIds.get(0)));
+        ContractCallResponse getDecimalsResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getDecimalsResponse.getResultAsNumber()).isEqualTo(10L);
     }
@@ -124,11 +124,8 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token totalSupply")
     public void totalSupplyContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.TOTAL_SUPPLY_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(0).toSolidityAddress()));
-        ContractCallResponse getTotalSupplyResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(ERC_TEST_CONTRACT, TOTAL_SUPPLY_SELECTOR, asAddress(tokenIds.get(0)));
+        ContractCallResponse getTotalSupplyResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getTotalSupplyResponse.getResultAsNumber()).isEqualTo(1_000_000L);
     }
@@ -136,22 +133,17 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token ownerOf")
     public void ownerOfContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.GET_OWNER_OF_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(1).toSolidityAddress()), new BigInteger("1"));
-        ContractCallResponse getOwnerOfResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data =
+                encodeData(ERC_TEST_CONTRACT, GET_OWNER_OF_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        ContractCallResponse getOwnerOfResponse = callContract(data, ercTestContractSolidityAddress);
         tokenClient.validateAddress(getOwnerOfResponse.getResultAsAddress());
     }
 
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token tokenUri")
     public void tokenURIContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.TOKEN_URI_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(1).toSolidityAddress()), new BigInteger("1"));
-        ContractCallResponse getTokenURIResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(ERC_TEST_CONTRACT, TOKEN_URI_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        ContractCallResponse getTokenURIResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getTokenURIResponse.getResultAsText()).isEqualTo("TEST_metadata");
     }
@@ -159,11 +151,9 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved")
     public void getApprovedContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.GET_APPROVED_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(1).toSolidityAddress()), new BigInteger("1"));
-        ContractCallResponse getApprovedResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data =
+                encodeData(ERC_TEST_CONTRACT, GET_APPROVED_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        ContractCallResponse getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo("0000000000000000000000000000000000000000");
     }
@@ -171,18 +161,13 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance")
     public void allowanceContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.ALLOWANCE_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(0).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(contractClient.getClientAddress()));
-        ContractCallResponse getAllowanceResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                ALLOWANCE_SELECTOR,
+                asAddress(tokenIds.get(0)),
+                asAddress(tokenClient),
+                asAddress(contractClient));
+        ContractCallResponse getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getAllowanceResponse.getResultAsNumber()).isZero();
     }
@@ -190,18 +175,13 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with allowances")
     public void allowanceSecondContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.ALLOWANCE_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(0).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(allowanceSpenderAccountId.getAccountId().toSolidityAddress()));
-        ContractCallResponse getAllowanceResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                ALLOWANCE_SELECTOR,
+                asAddress(tokenIds.get(0)),
+                asAddress(tokenClient),
+                asAddress(allowanceSpenderAccountId));
+        ContractCallResponse getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(2);
     }
@@ -209,18 +189,13 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll")
     public void isApprovedForAllContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(1).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(contractClient.getClientAddress()));
-        ContractCallResponse getIsApproveForAllResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                IS_APPROVED_FOR_ALL_SELECTOR,
+                asAddress(tokenIds.get(1)),
+                asAddress(tokenClient),
+                asAddress(contractClient));
+        ContractCallResponse getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isFalse();
     }
@@ -228,18 +203,13 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true")
     public void isApprovedForAllSecondContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(1).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()));
-        ContractCallResponse getIsApproveForAllResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                IS_APPROVED_FOR_ALL_SELECTOR,
+                asAddress(tokenIds.get(1)),
+                asAddress(tokenClient),
+                asAddress(spenderAccountIdForAllSerials));
+        ContractCallResponse getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
     }
@@ -247,12 +217,9 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token balance")
     public void balanceOfContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.BALANCE_OF_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(0).toSolidityAddress()), asAddress(contractClient.getClientAddress()));
-        ContractCallResponse getBalanceOfResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT, BALANCE_OF_SELECTOR, asAddress(tokenIds.get(0)), asAddress(contractClient));
+        ContractCallResponse getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(1000000);
     }
@@ -260,17 +227,15 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved with response BOB")
     public void verifyNftAllowance() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.GET_APPROVED_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(asAddress(tokenIds.get(1).toSolidityAddress()), new BigInteger("1"));
-        ContractCallResponse getApprovedResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data =
+                encodeData(ERC_TEST_CONTRACT, GET_APPROVED_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        ContractCallResponse getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
         assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo(spenderAccountAlias);
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
-        deployedErcContract = getContract(ContractResource.ERC_TEST_CONTRACT);
+        deployedErcContract = getContract(ERC_TEST_CONTRACT);
         ercTestContractSolidityAddress = deployedErcContract.contractId().toSolidityAddress();
     }
 
@@ -354,20 +319,15 @@ public class ERCContractFeature extends AbstractFeature {
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.IS_APPROVED_FOR_ALL_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(1).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(mirrorClient
-                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
-                                .getEvmAddress()));
-        ContractCallResponse getIsApproveForAllResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                IS_APPROVED_FOR_ALL_SELECTOR,
+                asAddress(tokenIds.get(1)),
+                asAddress(tokenClient),
+                asAddress(mirrorClient
+                        .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                        .getEvmAddress()));
+        ContractCallResponse getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
         assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
     }
 
@@ -384,20 +344,15 @@ public class ERCContractFeature extends AbstractFeature {
                 500);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.ALLOWANCE_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(0).toSolidityAddress()),
-                        asAddress(tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress()),
-                        asAddress(mirrorClient
-                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
-                                .getEvmAddress()));
-        ContractCallResponse getAllowanceResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                ALLOWANCE_SELECTOR,
+                asAddress(tokenIds.get(0)),
+                asAddress(tokenClient),
+                asAddress(mirrorClient
+                        .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                        .getEvmAddress()));
+        ContractCallResponse getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(1000);
     }
@@ -405,15 +360,14 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token balance with alias account")
     public void balanceOfAliasAccountContractCall() {
-        ByteBuffer encodedFunctionCall = getFunctionFromArtifact(
-                        ContractMethods.BALANCE_OF_SELECTOR, ContractResource.ERC_TEST_CONTRACT)
-                .encodeCallWithArgs(
-                        asAddress(tokenIds.get(0).toSolidityAddress()),
-                        asAddress(mirrorClient
-                                .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
-                                .getEvmAddress()));
-        ContractCallResponse getBalanceOfResponse =
-                callContract(Strings.encode(encodedFunctionCall), ercTestContractSolidityAddress);
+        var data = encodeData(
+                ERC_TEST_CONTRACT,
+                BALANCE_OF_SELECTOR,
+                asAddress(tokenIds.get(0)),
+                asAddress(mirrorClient
+                        .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
+                        .getEvmAddress()));
+        ContractCallResponse getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
     }
@@ -448,7 +402,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Getter
     @RequiredArgsConstructor
-    private enum ContractMethods implements SelectorInterface {
+    enum ContractMethods implements SelectorInterface {
         ALLOWANCE_SELECTOR("allowance"),
         BALANCE_OF_SELECTOR("balanceOf"),
         DECIMALS_SELECTOR("decimals"),

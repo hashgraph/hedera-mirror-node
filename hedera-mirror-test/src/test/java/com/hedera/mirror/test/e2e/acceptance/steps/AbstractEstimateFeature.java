@@ -70,16 +70,17 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param solidityAddress The address of the solidity contract.
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(String data, int actualGasUsed, String solidityAddress) {
+    protected void validateGasEstimation(
+            ByteBuffer data, ContractMethodInterface actualGasUsed, String solidityAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
+                .data(Strings.encode(data))
                 .to(solidityAddress)
                 .estimate(true)
                 .build();
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+        assertTrue(isWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     /**
