@@ -16,11 +16,12 @@
 
 package com.hedera.mirror.web3.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,7 +37,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
-        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+        assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
                         tokenBalance1.getId().getConsensusTimestamp() + 1))
@@ -48,18 +49,20 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndConsensusTimestampEqualToBlockTimestamp() {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
-        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
-                        tokenBalance1.getId().getTokenId().getId(),
-                        tokenBalance1.getId().getAccountId().getId(),
-                        tokenBalance1.getId().getConsensusTimestamp()))
-                .isEmpty();
+        assertThat(tokenBalanceRepository
+                        .findByIdAndTimestampLessThan(
+                                tokenBalance1.getId().getTokenId().getId(),
+                                tokenBalance1.getId().getAccountId().getId(),
+                                tokenBalance1.getId().getConsensusTimestamp())
+                        .get())
+                .isEqualTo(tokenBalance1);
     }
 
     @Test
     void findHistoricalByIdAndConsensusTimestampLessThanBlockTimestamp() {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
-        Assertions.assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+        assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
                         tokenBalance1.getId().getConsensusTimestamp() - 1))
@@ -73,12 +76,13 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
         persistTokenTransfersBefore(3, consensusTimestamp, tokenBalance1);
 
-        Optional<Long> historicalBalance = tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                consensusTimestamp);
-        long tokenBalance = historicalBalance.orElseGet(tokenBalance1::getBalance);
-        Assertions.assertThat(tokenBalance).isEqualTo(tokenBalance1.getBalance());
+        assertThat(tokenBalanceRepository
+                        .findHistoricalTokenBalanceUpToTimestamp(
+                                tokenBalance1.getId().getTokenId().getId(),
+                                tokenBalance1.getId().getAccountId().getId(),
+                                consensusTimestamp + 10)
+                        .get())
+                .isEqualTo(tokenBalance1.getBalance());
     }
 
     @Test
@@ -90,7 +94,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
         historicalAccountBalance += TRANSFER_AMOUNT * 3;
 
-        Assertions.assertThat(tokenBalanceRepository
+        assertThat(tokenBalanceRepository
                         .findHistoricalTokenBalanceUpToTimestamp(
                                 tokenBalance1.getId().getTokenId().getId(),
                                 tokenBalance1.getId().getAccountId().getId(),
@@ -110,7 +114,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
-        Assertions.assertThat(tokenBalanceRepository
+        assertThat(tokenBalanceRepository
                         .findHistoricalTokenBalanceUpToTimestamp(
                                 tokenBalance1.getId().getTokenId().getId(),
                                 tokenBalance1.getId().getAccountId().getId(),
@@ -122,24 +126,26 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
     private void persistTokenTransfersBefore(int count, long baseTimestamp, TokenBalance tokenBalance1) {
         for (int i = 0; i < count; i++) {
             long timestamp = baseTimestamp - TRANSFER_INCREMENT * (i + 1);
-            persistTokenTransfer(TRANSFER_AMOUNT, timestamp, tokenBalance1);
+            persistTokenTransfer(timestamp, tokenBalance1);
         }
     }
 
     private void persistTokenTransfers(int count, long baseTimestamp, TokenBalance tokenBalance1) {
         for (int i = 0; i < count; i++) {
             long timestamp = baseTimestamp + TRANSFER_INCREMENT * (i + 1);
-            persistTokenTransfer(TRANSFER_AMOUNT, timestamp, tokenBalance1);
+            persistTokenTransfer(timestamp, tokenBalance1);
         }
     }
 
-    private void persistTokenTransfer(long transferAmount, long timestamp, TokenBalance tokenBalance1) {
+    private void persistTokenTransfer(long timestamp, TokenBalance tokenBalance1) {
         domainBuilder
-                .tokenTransferCustom(
-                        transferAmount,
-                        timestamp,
-                        tokenBalance1.getId().getTokenId(),
-                        tokenBalance1.getId().getAccountId())
+                .tokenTransfer()
+                .customize(b -> b.amount(TRANSFER_AMOUNT)
+                        .id(new TokenTransfer.Id(
+                                timestamp,
+                                tokenBalance1.getId().getTokenId(),
+                                tokenBalance1.getId().getAccountId()))
+                        .payerAccountId(tokenBalance1.getId().getAccountId()))
                 .persist();
     }
 }

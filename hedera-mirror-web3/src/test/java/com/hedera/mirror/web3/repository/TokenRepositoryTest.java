@@ -55,7 +55,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository
-                        .findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower() + 1)
+                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() + 1)
                         .get())
                 .returns(token.getName(), Token::getName)
                 .returns(token.getSymbol(), Token::getSymbol)
@@ -73,8 +73,16 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository.findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower()))
-                .isEmpty();
+        assertThat(tokenRepository
+                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower())
+                        .get())
+                .returns(token.getName(), Token::getName)
+                .returns(token.getSymbol(), Token::getSymbol)
+                .returns(token.getTotalSupply(), Token::getTotalSupply)
+                .returns(token.getDecimals(), Token::getDecimals)
+                .returns(token.getType(), Token::getType)
+                .returns(token.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(token.getKycKey(), Token::getKycKey);
     }
 
     @Test
@@ -84,7 +92,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository.findByTokenIdAndTimestampRange(token.getTokenId(), token.getTimestampLower() - 1))
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -95,7 +103,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
                         tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
                 .isPresent();
     }
@@ -107,9 +115,9 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
                         tokenHistory.getTokenId(), tokenHistory.getTimestampLower()))
-                .isEmpty();
+                .isPresent();
     }
 
     @Test
@@ -119,7 +127,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
                 .persist();
 
-        assertThat(tokenRepository.findByTokenIdAndTimestampRange(
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
                         tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
                 .isEmpty();
     }

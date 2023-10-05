@@ -25,12 +25,12 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
 
     /**
      * Retrieves the token balance of a specific token for a specific account at the last consensus timestamp
-     * before the provided block timestamp.
+     * before оr equal to the provided block timestamp.
      *
      * @param tokenId         the ID of the token whose balance is to be retrieved.
      * @param accountId       the ID of the account whose balance is to be retrieved.
      * @param blockTimestamp  the block timestamp used as the upper limit to retrieve the token balance.
-     *                        The method will retrieve the last token balance before this timestamp.
+     *                        The method will retrieve the last token balance before or equal to this timestamp.
      * @return an Optional containing the balance if found, or an empty Optional if no matching balance
      *         entry is found before the given block timestamp.
      */
@@ -39,9 +39,9 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
                     """
                 select * from token_balance
                 where
-                token_id = ?1 and
-                account_id = ?2 and
-                consensus_timestamp < ?3
+                    token_id = ?1 and
+                    account_id = ?2 and
+                    consensus_timestamp <= ?3
                 order by consensus_timestamp desc
                 limit 1
                 """,
@@ -51,48 +51,49 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     /**
      * Finds the historical token balance for a given token ID and account ID combination based on a specific block timestamp.
      * This method calculates the historical balance by summing the token transfers and adding the sum to the initial balance
-     * found at a timestamp less than the given block timestamp.
+     * found at a timestamp less than the given block timestamp. If no token_balance is found for the given token_id,
+     * account_id, and consensus timestamp, a balance of 0 will be returned.
      *
      * @param tokenId         the ID of the token.
      * @param accountId       the ID of the account.
      * @param blockTimestamp  the block timestamp used to filter the results.
      * @return an Optional containing the historical balance at the specified timestamp.
-     *         If there are no token transfers, an empty Optional is returned.
-     *         In the case of an empty Optional, consider using {@link #findByIdAndTimestampLessThan(long, long, long)}
-     *         to get the balance at the given timestamp.
+     *         If there are no token transfers between the consensus_timestamp of token_balance and the block timestamp,
+     *         the method will return the balance present at consensus_timestamp.
      */
     @Query(
             value =
                     """
-            select sum(amount) + (
-                select balance
-                from token_balance
-                where
-                    token_id = ?1
-                    and account_id = ?2
-                    and consensus_timestamp < ?3
-                order by consensus_timestamp desc
-                limit 1
-            ) as total_balance
-            from token_transfer
-            where
-                token_id = ?1
-                and account_id = ?2
-                and consensus_timestamp <= ?3
-                and consensus_timestamp > (
-                    select consensus_timestamp
-                    from (
-                        select consensus_timestamp
-                        from token_balance
+                    select coalesce(
+                        (
+                            select balance
+                            from token_balance
+                            where
+                                token_id = ?1
+                                and account_id = ?2
+                                and consensus_timestamp <= ?3
+                            order by consensus_timestamp desc
+                            limit 1
+                        ), 0
+                    ) + (
+                        select coalesce(sum(amount), 0)
+                        from token_transfer
                         where
                             token_id = ?1
                             and account_id = ?2
-                            and consensus_timestamp < ?3
-                        order by consensus_timestamp desc
-                        limit 1
-                    ) as tb
-                )
-            """,
+                            and consensus_timestamp <= ?3
+                            and consensus_timestamp > (
+                                select consensus_timestamp
+                                from token_balance
+                                where
+                                    token_id = ?1
+                                    and account_id = ?2
+                                    and consensus_timestamp <= ?3
+                                order by consensus_timestamp desc
+                                limit 1
+                            )
+                    ) as total_balance
+                    """,
             nativeQuery = true)
     Optional<Long> findHistoricalTokenBalanceUpToTimestamp(long tokenId, long accountId, long blockTimestamp);
 }

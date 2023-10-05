@@ -928,17 +928,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransferCustom(
-            long amount, long timestamp, EntityId tokenID, EntityId accountId) {
-        var builder = TokenTransfer.builder()
-                .amount(amount)
-                .deletedTokenDissociate(false)
-                .id(new TokenTransfer.Id(timestamp, tokenID, accountId))
-                .payerAccountId(entityId());
-
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> topic() {
         return entity().customize(e -> e.alias(null)
                 .balance(null)
