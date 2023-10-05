@@ -26,6 +26,8 @@ import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.parser.CommonParserProperties.TransactionFilter;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,8 +48,11 @@ import org.springframework.expression.ParseException;
 @ExtendWith(MockitoExtension.class)
 class CommonParserPropertiesTest {
 
-    private static final String UNIQUE_MEMO_PREFIX = "MyApp";
     private static final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
+    private static final AccountID PAYER =
+            AccountID.newBuilder().setAccountNum(1000L).build();
+    private static final AccountID RENEWAL =
+            AccountID.newBuilder().setAccountNum(1010L).build();
     private final CommonParserProperties commonParserProperties = new CommonParserProperties();
 
     private static Stream<Arguments> filterRecordItemStreamIncludeOrExclude() {
@@ -115,11 +120,31 @@ class CommonParserPropertiesTest {
     }
 
     private static Stream<Arguments> filterRecordItemStreamExpressionIncludeOrExclude() {
-        var recordItem = recordItemBuilder
-                .cryptoTransfer()
-                .transactionBodyWrapper(b -> b.setMemo(UNIQUE_MEMO_PREFIX + " blah blah"))
-                .build();
-        return Stream.of(Arguments.of("0.0.1", recordItem, true));
+
+        return Stream.of(
+                Arguments.of(
+                        "0.0.1",
+                        recordItemBuilder
+                                .cryptoTransfer()
+                                .transactionBodyWrapper(b -> b.setMemo("MyApp: blah blah"))
+                                .build(),
+                        true),
+                Arguments.of(
+                        "0.0.2",
+                        recordItemBuilder
+                                .cryptoApproveAllowance()
+                                .transactionBodyWrapper(b -> b.setTransactionFee(472L)
+                                        .setTransactionID(
+                                                TransactionID.newBuilder().setAccountID(PAYER)))
+                                .build(),
+                        true),
+                Arguments.of(
+                        "0.0.3",
+                        recordItemBuilder
+                                .contractCreate()
+                                .transactionBody(b -> b.setAutoRenewAccountId(RENEWAL))
+                                .build(),
+                        true));
     }
 
     @DisplayName("Filter empty")
@@ -159,19 +184,22 @@ class CommonParserPropertiesTest {
     }
 
     @DisplayName("Filter expression using include")
-    @ParameterizedTest(name = "with recordItem {1} resulting in {2}")
+    @ParameterizedTest(name = "with entityId {0} recordItem {1} resulting in {2}")
     @MethodSource("filterRecordItemStreamExpressionIncludeOrExclude")
-    //    @CsvSource({
-    //            "'', true",
-    //            "'transactionBody.transactionID.accountID.accountNum == 800', false",
-    //            "'transactionBody.cryptoTransfer.transfers.accountAmountsList.size >= 2', true",
-    //            "'transactionBody.transactionID.accountID.accountNum > 0', true",
-    //            "'transactionRecord.consensusTimestamp.seconds > 0', true",
-    //            "'transactionBody.transactionFee > 50', true",
-    //    })
     void filterExpressionInclude(String entityId, RecordItem recordItem, boolean result) {
 
-        commonParserProperties.getInclude().add(filter(null, "transactionBody.memo.contains(\"MyApp\")", null));
+        commonParserProperties
+                .getInclude()
+                .add(filter(
+                        null, "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 1010", null));
+        commonParserProperties.getInclude().add(filter(null, "transactionBody.memo.startsWith(\"MyApp\")", null));
+        commonParserProperties
+                .getInclude()
+                .add(filter(
+                        null,
+                        "transactionBody.transactionID.accountID.accountNum == 1000 && transactionBody.transactionFee > 400 && transactionBody.transactionFee < 500",
+                        null));
+
         assertThat(commonParserProperties.hasFilter()).isTrue();
 
         assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem)))
@@ -188,6 +216,29 @@ class CommonParserPropertiesTest {
         commonParserProperties.getExclude().add(filter(null, null, TransactionType.FILECREATE));
 
         assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), recordItem)))
+                .isNotEqualTo(notResult);
+    }
+
+    @DisplayName("Filter expression using exclude")
+    @ParameterizedTest(name = "with entityId {0} recordItem {1} resulting in !{2}")
+    @MethodSource("filterRecordItemStreamExpressionIncludeOrExclude")
+    void filterExpressionExclude(String entityId, RecordItem recordItem, boolean notResult) {
+
+        commonParserProperties
+                .getExclude()
+                .add(filter(
+                        null, "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 1010", null));
+        commonParserProperties.getExclude().add(filter(null, "transactionBody.memo.startsWith(\"MyApp\")", null));
+        commonParserProperties
+                .getExclude()
+                .add(filter(
+                        null,
+                        "transactionBody.transactionID.accountID.accountNum == 1000 && transactionBody.transactionFee > 400 && transactionBody.transactionFee < 500",
+                        null));
+
+        assertThat(commonParserProperties.hasFilter()).isTrue();
+
+        assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(null, recordItem)))
                 .isNotEqualTo(notResult);
     }
 
