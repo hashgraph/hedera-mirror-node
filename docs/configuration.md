@@ -230,7 +230,7 @@ transactionBody.memo.contains("Some value")
 transactionBody.memo.length() > 10 && transactionBody.memo.startsWith("MyApp")
 ```
 
-There are three phases to handling your filter expressions. Given they are essential Java code with the
+There are three phases to handling your filter expressions. Given they are essentially Java code with the
 attendant special characters etc., the first phase is reading the expression from the configuration, be that
 a YAML or properties file.
 
@@ -245,7 +245,7 @@ hedera:
           - expression: !transactionBody.memo.startsWith("SomePrefix")
 ```
 
-The mirror node importer fails to start up:
+The mirror node Importer fails to start up:
 
 ```
 14:12:30.714 [main] ERROR org.springframework.boot.SpringApplication -- Application run failed
@@ -276,10 +276,10 @@ Failed to bind properties under 'hedera.mirror.importer.parser.include[0]' to co
 ```
 
 Putting the expression in double quotes causes the snakeyaml parser to fail again. This is Java after all,
-so, instead use single quotes, or escape the double quotes used with the `startsWith` method.
+so, instead use single quotes, or escape the double quotes used with the `startsWith()` method.
 
-Once the SpEL expression is read, it is first parsed, which only checks for very gross level problems. A failure
-prevent the importer from starting up:
+Once the SpEL expression is read, it is first parsed, which only checks for very gross level problems. A failure here
+will prevent the Importer from starting up:
 
 ```
 2023-10-05T20:26:23.899Z ERROR main o.s.b.d.LoggingFailureAnalysisReporter 
@@ -313,7 +313,7 @@ short-circuited OR manner. While all expressions are read from the configuration
 be evaluated if an earlier expression returned true.
 
 If based on the data that expression now evaluates to false, or is removed from the configuration, then the next
-expression is evaluated. It it contains an evaluation error of some kind, only then will it be revealed.
+expression is evaluated. If it contains an evaluation error of some kind, only now will it be revealed.
 
 #### Filtering Example
 
