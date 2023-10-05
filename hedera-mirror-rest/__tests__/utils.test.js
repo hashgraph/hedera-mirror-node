@@ -2046,3 +2046,13 @@ describe('Utils extractTimestampRangeConditionFilters', () => {
     });
   });
 });
+
+describe('Utils isValidUserFileId', () => {
+  test('Null', () => expect(utils.isValidUserFileId(null)).toBeFalse());
+  test('Empty', () => expect(utils.isValidUserFileId('')).toBeFalse());
+  test('Undefined', () => expect(utils.isValidUserFileId(undefined)).toBeFalse());
+  test('1001', () => expect(utils.isValidUserFileId('1001')).toBeTrue());
+  test('5001', () => expect(utils.isValidUserFileId('1001')).toBeTrue());
+  test('1000', () => expect(utils.isValidUserFileId('1000')).toBeFalse());
+  test('150', () => expect(utils.isValidUserFileId('150')).toBeFalse());
+});
