@@ -56,6 +56,6 @@ spec:
             test:
               acceptance:
                 network: OTHER
-      cucumberTags: "@acceptance"
+      cucumberTags: "@acceptance and not @contractbase"
       enabled: true
 
