@@ -44,6 +44,7 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
@@ -164,14 +165,14 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {0, 100})
-    void updateTransactionStakedAccountId(long accountNum) {
+    @CsvSource({"0,28", "100,27"})
+    void updateTransactionStakedAccountId(long accountNum, int majorVersion) {
         // Note, the sentinel value '0.0.0' clears the staked account id, in importer, we persist the encoded id '0' to
         // db to indicate there is no staked account id
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
-                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
                 .transactionBody(body -> body.setStakedAccountId(accountId).clearDeclineReward())
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -218,13 +219,12 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
     }
 
-    @ParameterizedTest
-    @ValueSource(longs = {0, 100})
-    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking(Long nodeId) {
+    @Test
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking() {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
                 .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
-                .transactionBody(body -> body.setStakedNodeId(nodeId))
+                .transactionBody(body -> body.setStakedNodeId(100))
                 .build();
         var contractId = EntityId.of(
                 withStakedNodeIdSet.getTransactionRecord().getReceipt().getContractID());

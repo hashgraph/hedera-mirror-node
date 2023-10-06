@@ -56,6 +56,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.data.util.Version;
@@ -283,13 +284,14 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
-    @Test
-    void updateTransactionStakedAccountId() {
+    @ParameterizedTest
+    @ValueSource(ints = {27, 28})
+    void updateTransactionStakedAccountId(int majorVersion) {
         // given
         final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
                 .contractCreate()
-                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
                 .transactionBody(
                         b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountId))
                 .build();

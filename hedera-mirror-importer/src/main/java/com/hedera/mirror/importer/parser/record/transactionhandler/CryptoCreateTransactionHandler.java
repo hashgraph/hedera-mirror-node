@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_27_0;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 
 import com.google.protobuf.ByteString;
@@ -31,12 +32,9 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.data.util.Version;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
-
-    static final Version HAPI_VERSION_0_27_0 = new Version(0, 27, 0);
 
     CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityIdService, entityListener, TransactionType.CRYPTOCREATEACCOUNT);
@@ -107,24 +105,24 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
-        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_27_0)) {
-
-            var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
-            entity.setDeclineReward(transactionBody.getDeclineReward());
-
-            switch (transactionBody.getStakedIdCase()) {
-                case STAKEDID_NOT_SET -> {
-                    return;
-                }
-                case STAKED_NODE_ID -> entity.setStakedNodeId(transactionBody.getStakedNodeId());
-                case STAKED_ACCOUNT_ID -> {
-                    var accountId = EntityId.of(transactionBody.getStakedAccountId());
-                    entity.setStakedAccountId(accountId.getId());
-                    recordItem.addEntityId(accountId);
-                }
-            }
-
-            entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
+            return;
         }
+        var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
+        entity.setDeclineReward(transactionBody.getDeclineReward());
+
+        switch (transactionBody.getStakedIdCase()) {
+            case STAKEDID_NOT_SET -> {
+                return;
+            }
+            case STAKED_NODE_ID -> entity.setStakedNodeId(transactionBody.getStakedNodeId());
+            case STAKED_ACCOUNT_ID -> {
+                var accountId = EntityId.of(transactionBody.getStakedAccountId());
+                entity.setStakedAccountId(accountId.getId());
+                recordItem.addEntityId(accountId);
+            }
+        }
+
+        entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 }

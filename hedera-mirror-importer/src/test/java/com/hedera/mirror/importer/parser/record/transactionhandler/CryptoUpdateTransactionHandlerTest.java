@@ -36,7 +36,9 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
@@ -97,11 +99,11 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {1, -1})
-    void updateTransactionStakedNodeId(Long nodeId) {
+    @CsvSource({"1,28", "-1,27"})
+    void updateTransactionStakedNodeId(Long nodeId, int majorVersion) {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
-                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
                 .transactionBody(body -> body.setStakedNodeId(nodeId))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -112,11 +114,10 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
     }
 
-    @ParameterizedTest
-    @ValueSource(longs = {0, 100})
-    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking(long accountNum) {
+    @Test
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking() {
         // Note, the HAPI version is less than 0.27.0 when staking was made live in services so staking will not happen
-        AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
+        AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
