@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -23,7 +24,8 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -38,7 +40,6 @@ import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
-import org.springframework.context.ApplicationContext;
 
 @CustomLog
 @Named
@@ -47,18 +48,17 @@ public class ContractCallService {
 
     private final Counter.Builder gasCounter =
             Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
-    private final ApplicationContext ctx;
     private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
     private final Store store;
+    private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
+    @SuppressWarnings("try")
     public String processCall(final CallServiceParameters params) {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
-        try {
-            ThreadLocalHolder.startThread(store.getStackedStateFrames(), ctx);
-
+        try (ContractCallContext ctx = startThread(store.getStackedStateFrames())) {
             Bytes result;
             if (params.isEstimate()) {
                 result = estimateGas(params);
@@ -72,7 +72,6 @@ public class ContractCallService {
 
             return result.toHexString();
         } finally {
-            ThreadLocalHolder.cleanThread();
             log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
         }
     }
@@ -112,16 +111,15 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = ThreadLocalHolder.getMirrorEvmTxProcessor()
-                    .execute(
-                            params.getSender(),
-                            params.getReceiver(),
-                            params.isEstimate() ? estimatedGas : params.getGas(),
-                            params.getValue(),
-                            params.getCallData(),
-                            Instant.now(),
-                            params.isStatic(),
-                            isEstimate);
+            transactionResult = mirrorEvmTxProcessor.execute(
+                    params.getSender(),
+                    params.getReceiver(),
+                    params.isEstimate() ? estimatedGas : params.getGas(),
+                    params.getValue(),
+                    params.getCallData(),
+                    Instant.now(),
+                    params.isStatic(),
+                    isEstimate);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }

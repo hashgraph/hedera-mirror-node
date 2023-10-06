@@ -16,6 +16,8 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.services.jproto.JKey.mapKey;
 import static com.hedera.services.store.models.Id.fromGrpcToken;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
@@ -33,7 +35,6 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -68,7 +69,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
@@ -103,9 +103,6 @@ class AutoCreationLogicTest {
     @Mock
     private EvmProperties evmProperties;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private AutoCreationLogic subject;
 
     @BeforeEach
@@ -114,14 +111,14 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
         store.wrap();
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
@@ -25,7 +27,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -58,7 +59,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
@@ -97,9 +97,6 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private HederaEvmWorldStateTokenAccount account;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
@@ -118,7 +115,7 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
 
         store = new StoreImpl(stackedStateFrames);
         store.wrap(); // Create top-level RWCachingStateFrame
@@ -137,7 +134,7 @@ class MirrorHTSPrecompiledContractTest {
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

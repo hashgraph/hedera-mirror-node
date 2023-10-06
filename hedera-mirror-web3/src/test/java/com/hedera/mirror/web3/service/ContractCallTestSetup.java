@@ -20,6 +20,8 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -47,7 +49,7 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -87,7 +89,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
@@ -509,9 +510,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
     protected Path NESTED_CALLS_ABI_PATH;
 
-    @Autowired
-    private ApplicationContext ctx;
-
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
@@ -786,23 +784,25 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
+    @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        ThreadLocalHolder.startThread(store.getStackedStateFrames(), ctx);
-        final var result = processor
-                .execute(
-                        serviceParameters.getSender(),
-                        serviceParameters.getReceiver(),
-                        serviceParameters.getGas(),
-                        serviceParameters.getValue(),
-                        serviceParameters.getCallData(),
-                        Instant.now(),
-                        serviceParameters.isStatic(),
-                        true)
-                .getGasUsed();
+        long result;
+        try (ContractCallContext ctx = startThread(store.getStackedStateFrames())) {
+             result = processor
+                    .execute(
+                            serviceParameters.getSender(),
+                            serviceParameters.getReceiver(),
+                            serviceParameters.getGas(),
+                            serviceParameters.getValue(),
+                            serviceParameters.getCallData(),
+                            Instant.now(),
+                            serviceParameters.isStatic(),
+                            true)
+                    .getGasUsed();
 
-        assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
+            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
+        }
 
-        ThreadLocalHolder.cleanThread();
         return result;
     }
 

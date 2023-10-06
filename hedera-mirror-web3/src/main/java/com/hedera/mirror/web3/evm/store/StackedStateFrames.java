@@ -16,15 +16,14 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.getStack;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.getStackBase;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStack;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStackBase;
+import static com.hedera.mirror.web3.common.ContractCallContext.getStack;
+import static com.hedera.mirror.web3.common.ContractCallContext.getStackHeight;
+import static com.hedera.mirror.web3.common.ContractCallContext.setStack;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import jakarta.inject.Named;
-import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -75,7 +74,7 @@ public class StackedStateFrames {
      * of it (after initial construction).
      */
     public int height() {
-        return getStack().height() - getStackBase().height();
+        return getStackHeight();
     }
 
     /** Return the _total_ height (aka depth) of the stacked cache _including_ the always-present stack base of a
@@ -103,11 +102,7 @@ public class StackedStateFrames {
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        CachingStateFrame<Object> stack = getStack();
-        if (stack == getStackBase()) {
-            throw new EmptyStackException();
-        }
-        setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
+        ContractCallContext.updateStackFromUpstream();
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -137,8 +132,6 @@ public class StackedStateFrames {
     @VisibleForTesting
     @NonNull
     CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
-        setStack(frame);
-        setStackBase(frame);
-        return getStack();
+        return ContractCallContext.replaceEntireStack(frame);
     }
 }

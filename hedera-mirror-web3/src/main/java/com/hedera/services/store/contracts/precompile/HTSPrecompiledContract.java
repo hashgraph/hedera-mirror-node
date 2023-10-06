@@ -27,7 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -105,7 +105,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
     private Address senderAddress;
-    private final boolean isEstimate;
 
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
@@ -116,7 +115,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
-        this.isEstimate = ThreadLocalHolder.isEstimate();
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
@@ -222,7 +220,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             // if we have top level token call with estimate gas and missing sender - return empty result
             // N.B. this should be done for precompiles that depend on the sender address
             if (Address.ZERO.equals(senderAddress)
-                    && isEstimate
+                    && ContractCallContext.get().isEstimate()
                     && (precompile instanceof ERCTransferPrecompile
                             || precompile instanceof ApprovePrecompile
                             || precompile instanceof AssociatePrecompile

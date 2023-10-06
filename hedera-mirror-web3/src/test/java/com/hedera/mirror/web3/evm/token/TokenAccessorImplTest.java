@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.token;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -39,7 +41,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -73,7 +74,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
@@ -125,9 +125,6 @@ class TokenAccessorImplTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Token token;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private List<DatabaseAccessor<Object, ?>> accessors;
     private Store store;
 
@@ -156,12 +153,12 @@ class TokenAccessorImplTest {
         store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
 
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
     }
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

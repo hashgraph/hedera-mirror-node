@@ -240,9 +240,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
-        Token token;
-
-        token = store.getToken(address, OnMissing.DONT_THROW);
+        Token token = store.getToken(address, OnMissing.DONT_THROW);
 
         if (token.isEmptyToken()) {
             return Optional.empty();

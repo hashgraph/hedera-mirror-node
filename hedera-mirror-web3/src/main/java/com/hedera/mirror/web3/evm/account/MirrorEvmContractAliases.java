@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -76,13 +76,14 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
-        Map<Address, Address> pendingAliases = ThreadLocalHolder.getPendingAliases();
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
         if (pendingAliases.containsKey(alias)) {
             return Optional.ofNullable(pendingAliases.get(alias));
         }
-        Map<Address, Address> aliases = ThreadLocalHolder.getAliases();
+        Map<Address, Address> aliases = contractCallContext.getAliases();
         if (aliases.containsKey(alias)
-                && !ThreadLocalHolder.getPendingRemovals().contains(alias)) {
+                && !contractCallContext.getPendingRemovals().contains(alias)) {
             return Optional.ofNullable(aliases.get(alias));
         }
         return Optional.empty();
@@ -102,31 +103,33 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isInUse(final Address address) {
-        return ThreadLocalHolder.getAliases().containsKey(address)
-                        && !ThreadLocalHolder.getPendingRemovals().contains(address)
-                || ThreadLocalHolder.getPendingAliases().containsKey(address);
+        return ContractCallContext.containsAlias(address);
     }
 
     public void link(final Address alias, final Address address) {
-        ThreadLocalHolder.getPendingAliases().put(alias, address);
-        ThreadLocalHolder.getPendingRemovals().remove(alias);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().put(alias, address);
+        contractCallContext.getPendingRemovals().remove(alias);
     }
 
     public void unlink(Address alias) {
-        ThreadLocalHolder.getPendingRemovals().add(alias);
-        ThreadLocalHolder.getPendingAliases().remove(alias);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingRemovals().add(alias);
+        contractCallContext.getPendingAliases().remove(alias);
     }
 
     public void commit() {
-        Map<Address, Address> aliases = ThreadLocalHolder.getAliases();
-        aliases.putAll(ThreadLocalHolder.getPendingAliases());
-        aliases.keySet().removeAll(ThreadLocalHolder.getPendingRemovals());
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> aliases = contractCallContext.getAliases();
+        aliases.putAll(contractCallContext.getPendingAliases());
+        aliases.keySet().removeAll(contractCallContext.getPendingRemovals());
 
         resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        ThreadLocalHolder.getPendingAliases().clear();
-        ThreadLocalHolder.getPendingRemovals().clear();
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().clear();
+        contractCallContext.getPendingRemovals().clear();
     }
 }

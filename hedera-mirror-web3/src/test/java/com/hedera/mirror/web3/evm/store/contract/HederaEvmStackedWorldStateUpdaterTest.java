@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -27,7 +29,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -53,7 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
@@ -89,9 +89,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private EntityRepository entityRepository;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private Store store;
 
     private HederaEvmStackedWorldStateUpdater subject;
@@ -104,7 +101,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
@@ -119,7 +116,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

@@ -20,18 +20,15 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
-import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -50,6 +47,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 
 @Configuration
 @EnableCaching
@@ -121,49 +119,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    AccountAccessorImpl accountAccessor(
-            final StoreImpl store,
-            final MirrorEntityAccess mirrorEntityAccess,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        return new AccountAccessorImpl(store, mirrorEntityAccess, mirrorEvmContractAliases);
-    }
-
-    @Bean
-    AbstractCodeCache abstractCodeCache(
-            final MirrorNodeEvmProperties evmProperties, final MirrorEntityAccess mirrorEntityAccess) {
-        return new AbstractCodeCache(
-                (int) evmProperties.getExpirationCacheTime().toSeconds(), mirrorEntityAccess);
-    }
-
-    @Bean
-    MirrorOperationTracer mirrorOperationTracer(
-            final TraceProperties traceProperties, final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        return new MirrorOperationTracer(traceProperties, mirrorEvmContractAliases);
-    }
-
-    @Bean
-    HederaEvmWorldState hederaEvmWorldState(
-            final MirrorEntityAccess mirrorEntityAccess,
-            final MirrorNodeEvmProperties evmProperties,
-            final AbstractCodeCache abstractCodeCache,
-            final AccountAccessorImpl accountAccessor,
-            final TokenAccessorImpl tokenAccessor,
-            final EntityAddressSequencer entityAddressSequencer,
-            final MirrorEvmContractAliases mirrorEvmContractAliases,
-            final Store store) {
-        return new HederaEvmWorldState(
-                mirrorEntityAccess,
-                evmProperties,
-                abstractCodeCache,
-                accountAccessor,
-                tokenAccessor,
-                entityAddressSequencer,
-                mirrorEvmContractAliases,
-                store);
-    }
-
-    @Bean(name = "mirrorEvmTxProcessor")
-    @Scope(value = "prototype")
+    @Scope(value = "prototype", proxyMode = ScopedProxyMode.TARGET_CLASS)
     MirrorEvmTxProcessor mirrorEvmTxProcessor(
             final HederaEvmWorldState worldState,
             final LivePricesSource pricesAndFees,

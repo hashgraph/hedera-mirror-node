@@ -16,16 +16,13 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.getStackBase;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.initContractCallContext;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.resetToBase;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStack;
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.setStackBase;
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.initContractCallContext;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
@@ -39,7 +36,7 @@ class StackedStateFramesTest {
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test
@@ -49,9 +46,7 @@ class StackedStateFramesTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var sut = new StackedStateFrames(accessors);
-        initContractCallContext();
-        setStackBase(sut.getEmptyStackBase());
-        setStack(getStackBase());
+        startThread(sut);
 
         final var softly = new SoftAssertions();
         softly.assertThat(sut.height()).as("visible height").isZero();
@@ -95,8 +90,7 @@ class StackedStateFramesTest {
     void pushAndPopDoSo() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        setStackBase(sut.getEmptyStackBase());
-        setStack(getStackBase());
+        startThread(sut);
 
         final var roOnTopOfBase = sut.top();
 
@@ -113,34 +107,10 @@ class StackedStateFramesTest {
     }
 
     @Test
-    void resetToBaseDoes() {
-        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
-        final var sut = new StackedStateFrames(accessors);
-        initContractCallContext();
-        setStackBase(sut.getEmptyStackBase());
-        setStack(getStackBase());
-
-        final var roOnTopOfBase = sut.top();
-
-        sut.push();
-        sut.push();
-        sut.push();
-        assertThat(sut.height()).isEqualTo(3);
-        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
-
-        resetToBase();
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
-        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
-    }
-
-    @Test
     void forcePushOfSpecificFrameWithProperUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        initContractCallContext();
-        setStackBase(sut.getEmptyStackBase());
-        setStack(getStackBase());
+        startThread(sut);
 
         final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
@@ -152,9 +122,7 @@ class StackedStateFramesTest {
     void forcePushOfSpecificFrameWithBadUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        initContractCallContext();
-        setStackBase(sut.getEmptyStackBase());
-        setStack(getStackBase());
+        startThread(sut);
         final var newTos = new RWCachingStateFrame<>(
                 Optional.of(new RWCachingStateFrame<>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));

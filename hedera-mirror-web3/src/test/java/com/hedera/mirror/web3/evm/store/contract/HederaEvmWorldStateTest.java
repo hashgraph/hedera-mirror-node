@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -57,7 +58,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
@@ -103,9 +103,6 @@ class HederaEvmWorldStateTest {
     @Mock
     private NftRepository nftRepository;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private StoreImpl store;
 
     private HederaEvmWorldState subject;
@@ -126,7 +123,7 @@ class HederaEvmWorldStateTest {
                 uniqueTokenDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
         store.wrap();
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
@@ -141,7 +138,7 @@ class HederaEvmWorldStateTest {
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

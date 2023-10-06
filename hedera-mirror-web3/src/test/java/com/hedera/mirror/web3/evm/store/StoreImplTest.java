@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,7 +31,6 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -66,7 +67,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationContext;
 
 @ExtendWith(MockitoExtension.class)
 class StoreImplTest {
@@ -143,9 +143,6 @@ class StoreImplTest {
     @Mock(strictness = Strictness.LENIENT)
     private Nft nft;
 
-    @Mock
-    private ApplicationContext ctx;
-
     private StoreImpl subject;
 
     @BeforeEach
@@ -171,12 +168,12 @@ class StoreImplTest {
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames);
-        ThreadLocalHolder.startThread(stackedStateFrames, ctx);
+        startThread(stackedStateFrames);
     }
 
     @AfterEach
     void clean() {
-        ThreadLocalHolder.cleanThread();
+        cleanThread();
     }
 
     @Test

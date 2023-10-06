@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ThreadLocalHolder;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -50,6 +50,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     private final MirrorEvmContractAliases aliasManager;
     private final MirrorOperationTracer operationTracer;
     private final Store store;
+    private boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -86,8 +87,8 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
         super.setOperationTracer(operationTracer);
-        setIsCreate(Address.ZERO.equals(receiver));
-        setIsEstimate(isEstimate);
+        isCreate = Address.ZERO.equals(receiver);
+        ContractCallContext.get().setIsEstimate(isEstimate);
 
         store.wrap();
         if (isEstimate) {
@@ -109,7 +110,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     @SuppressWarnings("java:S5411")
     @Override
     protected HederaFunctionality getFunctionType() {
-        return ThreadLocalHolder.isCreate() ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
+        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @SuppressWarnings("java:S5411")
@@ -123,7 +124,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        return ThreadLocalHolder.isCreate()
+        return isCreate
                 ? baseInitialFrame
                         .type(MessageFrame.Type.CONTRACT_CREATION)
                         .address(to)
@@ -138,13 +139,5 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                         .inputData(payload)
                         .code(code)
                         .build();
-    }
-
-    public void setIsCreate(boolean isCreate) {
-        ThreadLocalHolder.setIsCreate(isCreate);
-    }
-
-    public void setIsEstimate(boolean isEstimate) {
-        ThreadLocalHolder.setIsEstimate(isEstimate);
     }
 }

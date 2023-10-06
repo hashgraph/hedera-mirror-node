@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service.utils;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.util.Optional;
@@ -26,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,6 +40,16 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
     private final BinaryGasEstimator binaryGasEstimator;
     private final MirrorNodeEvmProperties properties;
     private final AtomicInteger iterations = new AtomicInteger(0);
+
+    @BeforeEach
+    void setup() {
+        ContractCallContext.initContractCallContext();
+    }
+
+    @AfterEach
+    void cleanup() {
+        ContractCallContext.cleanThread();
+    }
 
     /**
      * @link BinaryGasEstimator is using slightly modified binary algorithm which is coupled to some exttend with the

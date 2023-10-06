@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.ThreadLocalHolder.initContractCallContext;
+import static com.hedera.mirror.web3.common.ContractCallContext.initContractCallContext;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,7 +185,6 @@ class MirrorEvmTxProcessorTest {
 
         final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
-        mirrorEvmTxProcessor.setIsCreate(false);
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
