@@ -53,6 +53,11 @@ class CommonParserPropertiesTest {
             AccountID.newBuilder().setAccountNum(1000L).build();
     private static final AccountID RENEWAL =
             AccountID.newBuilder().setAccountNum(1010L).build();
+    private static final RecordItem RECORD_ITEM_EXPRESSION = recordItemBuilder
+            .cryptoTransfer()
+            .transactionBodyWrapper(b -> b.setMemo("MyApp: blah blah")
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(PAYER)))
+            .build();
     private final CommonParserProperties commonParserProperties = new CommonParserProperties();
 
     private static Stream<Arguments> filterRecordItemStreamIncludeOrExclude() {
@@ -80,7 +85,8 @@ class CommonParserPropertiesTest {
                         true),
                 Arguments.of(
                         "0.0.1/0.0.2/0.0.3", recordItemBuilder.cryptoCreate().build(), true),
-                Arguments.of("0.0.3/0.0.4", recordItemBuilder.fileDelete().build(), true));
+                Arguments.of("0.0.3/0.0.4", recordItemBuilder.fileDelete().build(), true),
+                Arguments.of("0.0.100", RECORD_ITEM_EXPRESSION, true));
     }
 
     private static Stream<Arguments> filterRecordItemStreamIncludeAndExclude() {
@@ -116,7 +122,8 @@ class CommonParserPropertiesTest {
                 Arguments.of(
                         "0.0.2/0.0.4/0.0.5",
                         recordItemBuilder.consensusSubmitMessage().build(),
-                        false));
+                        false),
+                Arguments.of("0.0.100", RECORD_ITEM_EXPRESSION, false));
     }
 
     private static Stream<Arguments> filterRecordItemStreamExpressionIncludeOrExclude() {
@@ -177,6 +184,12 @@ class CommonParserPropertiesTest {
         commonParserProperties.getInclude().add(filter("0.0.2", null, TransactionType.CRYPTOCREATEACCOUNT));
         commonParserProperties.getInclude().add(filter("0.0.3", null, null));
         commonParserProperties.getInclude().add(filter(null, null, TransactionType.FILECREATE));
+        commonParserProperties
+                .getInclude()
+                .add(filter(
+                        null,
+                        "transactionBody.transactionID.accountID.accountNum == 1000 && transactionBody.memo.startsWith(\"MyApp\")",
+                        null));
         assertThat(commonParserProperties.hasFilter()).isTrue();
 
         assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), recordItem)))
@@ -214,6 +227,12 @@ class CommonParserPropertiesTest {
         commonParserProperties.getExclude().add(filter("0.0.2", null, TransactionType.CRYPTOCREATEACCOUNT));
         commonParserProperties.getExclude().add(filter("0.0.3", null, null));
         commonParserProperties.getExclude().add(filter(null, null, TransactionType.FILECREATE));
+        commonParserProperties
+                .getExclude()
+                .add(filter(
+                        null,
+                        "transactionBody.transactionID.accountID.accountNum == 1000 && transactionBody.memo.startsWith(\"MyApp\")",
+                        null));
 
         assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), recordItem)))
                 .isNotEqualTo(notResult);
@@ -251,11 +270,15 @@ class CommonParserPropertiesTest {
         commonParserProperties.getInclude().add(filter("0.0.3", null, TransactionType.FREEZE));
         commonParserProperties.getInclude().add(filter("0.0.4", null, TransactionType.FILECREATE));
         commonParserProperties.getInclude().add(filter("0.0.5", null, TransactionType.CONSENSUSCREATETOPIC));
+        commonParserProperties.getInclude().add(filter(null, "transactionBody.memo.startsWith(\"MyApp\")", null));
 
         commonParserProperties.getExclude().add(filter("0.0.2", null, TransactionType.CRYPTOUPDATEACCOUNT));
         commonParserProperties.getExclude().add(filter("0.0.3", null, null));
         commonParserProperties.getExclude().add(filter(null, null, TransactionType.FILECREATE));
         commonParserProperties.getExclude().add(filter("0.0.5", null, TransactionType.CONSENSUSCREATETOPIC));
+        commonParserProperties
+                .getExclude()
+                .add(filter(null, "transactionBody.transactionID.accountID.accountNum == 1000", null));
 
         assertThat(commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), recordItem)))
                 .isEqualTo(result);
@@ -271,25 +294,19 @@ class CommonParserPropertiesTest {
     }
 
     @DisplayName("Invalid filter expression evaluation exception handling")
-    @ParameterizedTest(name = "with expression {0}")
+    @ParameterizedTest(name = "with expression {0}, {1}")
     @CsvSource({
-        // Disallowed root RecordItem access
-        "transactionIndex > 12",
-        // Disallowed nested RecordItem access
-        "'transaction.bodyBytes.size > 24'",
-        // Invalid property and method names
-        "'transactionRecord.noSuchProperty != null'",
-        "'transactionBody.memo.badStringMethod()'",
-        // Does not evaluate to a boolean
-        "'transactionBody.cryptoApproveAllowance.cryptoAllowances'",
-        // No types allowed
-        "T(com.hedera.mirror.importer.util.Utility).handleRecoverableError(\"Hello from the beyond!\")",
-        "T(java.lang.Runtime).getRuntime().exec('touch hello.txt') != null",
-        "systemProperties['user.country'] != null",
-        // Bean reference not allowed
-        "@streamFileProviders.size() > 0"
+        "'transactionIndex > 12', Disallowed root RecordItem access",
+        "'transaction.bodyBytes.size > 24', Disallowed nested RecordItem access",
+        "'transactionRecord.noSuchProperty != null', Unknown property name",
+        "'transactionBody.memo.badStringMethod()', Unknown method name",
+        "'transactionBody.cryptoApproveAllowance.cryptoAllowances', Does not evaluate to a boolean",
+        "'T(com.hedera.mirror.importer.util.Utility).handleRecoverableError(\"Hello from the beyond!\")', Disallowed type access",
+        "T(java.lang.Runtime).getRuntime().exec('touch hello.txt') != null, Disallowed type access",
+        "systemProperties['user.country'] != null, Disallowed system properties access",
+        "'@streamFileProviders.size() > 0', Disallowed bean reference"
     })
-    void filterExpressionErrors(String expression) {
+    void filterExpressionErrors(String expression, String description) {
         var recordItem = recordItemBuilder.cryptoTransfer().build();
 
         commonParserProperties.getInclude().add(filter(null, expression, null));
@@ -298,6 +315,7 @@ class CommonParserPropertiesTest {
         var transactionFilterFields = new TransactionFilterFields(null, recordItem);
         var filter = commonParserProperties.getFilter();
         assertThatThrownBy(() -> filter.test(transactionFilterFields))
+                .as(description)
                 .isInstanceOf(InvalidConfigurationException.class)
                 .hasCauseInstanceOf(EvaluationException.class);
     }
