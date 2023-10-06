@@ -279,7 +279,7 @@ Putting the expression in double quotes causes the snakeyaml parser to fail agai
 so, instead use single quotes, or escape the double quotes used with the `startsWith()` method.
 
 Once the SpEL expression is read, it is first parsed, which only checks for very gross level problems. A failure here
-will prevent the Importer from starting up:
+will also prevent the Importer from starting up:
 
 ```
 2023-10-05T20:26:23.899Z ERROR main o.s.b.d.LoggingFailureAnalysisReporter 
@@ -327,6 +327,8 @@ to configure your instance of the mirror node.
   transaction type.
 * We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, *
   *FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* For all **CONTRACTCREATEINSTANCE** transactions, we are only interested in those where the renewal account number is *
+  *2000**.
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
@@ -345,6 +347,8 @@ hedera:
           - entity: [ 0.0.1000, 0.0.1001 ]
           - entity: [ 0.0.101, 0.0.102 ]
             transaction: [ FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE ]
+          - transaction: [ CONTRACTCREATEINSTANCE ]
+            expression: "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
         record:
           entity:
             persist:
@@ -366,6 +370,8 @@ hedera.mirror.importer.parser.include[2].transaction[0]=FILEAPPEND
 hedera.mirror.importer.parser.include[2].transaction[1]=FILECREATE
 hedera.mirror.importer.parser.include[2].transaction[2]=FILEDELETE
 hedera.mirror.importer.parser.include[2].transaction[3]=FILEUPDATE
+hedera.mirror.importer.parser.include[3].transaction[0]=CONTRACTCREATEINSTANCE
+hedera.mirror.importer.parser.include[3].expression="transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
 hedera.mirror.importer.parser.record.entity.persist.topics=false
 ```
 
@@ -384,6 +390,8 @@ HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: FILEAPPEND
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_1_: FILECREATE
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_2_: FILEDELETE
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_3_: FILEUPDATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_3_TRANSACTION_0_: CONTRACTCREATEINSTANCE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_3_EXPRESSION_: "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
 HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TOPICS: "false"
 ```
 
