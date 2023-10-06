@@ -59,6 +59,9 @@ spec:
               mountPath: /config
             - name: pm2
               mountPath: /home/node/.pm2
+      imagePullSecrets: {{ toYaml .Values.monitor.imagePullSecrets | nindent 8 }}
+      nodeSelector: {{ toYaml .Values.monitor.nodeSelector | nindent 8 }}
+      priorityClassName: {{ .Values.monitor.priorityClassName }}
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -67,6 +70,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       serviceAccountName: {{ include "hedera-mirror-rest.serviceAccountName" . }}
+      tolerations: {{ toYaml .Values.monitor.tolerations | nindent 8 }}
       volumes:
         - name: config
           secret:

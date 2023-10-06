@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.addressbook;
 
-import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.CACHE_NAME;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -89,7 +89,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private final AddressBookService addressBookService;
     private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
-    @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
+    @Qualifier(CacheConfiguration.CACHE_ADDRESS_BOOK)
     private final CacheManager cacheManager;
 
     private final FileDataRepository fileDataRepository;

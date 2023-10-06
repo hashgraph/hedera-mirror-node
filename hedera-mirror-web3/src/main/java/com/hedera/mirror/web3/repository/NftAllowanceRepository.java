@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_NFT_ALLOWANCE;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
@@ -28,7 +29,7 @@ import org.springframework.data.repository.CrudRepository;
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
 
     @Override
-    @Cacheable(cacheNames = "nft_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_NFT_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<NftAllowance> findById(Id id);
 
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);

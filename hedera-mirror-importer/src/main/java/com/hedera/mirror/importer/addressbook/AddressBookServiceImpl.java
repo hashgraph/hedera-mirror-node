@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.addressbook;
 
-import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.CACHE_NAME;
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ADDRESS_BOOK;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
@@ -70,11 +70,10 @@ import org.springframework.util.CollectionUtils;
 
 @CustomLog
 @Named
-@CacheConfig(cacheNames = CACHE_NAME, cacheManager = EXPIRE_AFTER_5M)
+@CacheConfig(cacheNames = CACHE_NAME, cacheManager = CACHE_ADDRESS_BOOK)
 @RequiredArgsConstructor
 public class AddressBookServiceImpl implements AddressBookService {
 
-    public static final String CACHE_NAME = "nodes";
     public static final EntityId FILE_101 = EntityId.of(0, 0, 101);
     public static final EntityId FILE_102 = EntityId.of(0, 0, 102);
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
@@ -534,7 +533,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         try {
             Path initialAddressBook = mirrorProperties.getInitialAddressBook();
             if (initialAddressBook != null) {
-                log.info("Loading bootstrap address book from {}", initialAddressBook.toString());
+                log.info("Loading bootstrap address book from {}", initialAddressBook);
                 addressBookBytes = Files.readAllBytes(initialAddressBook);
             } else {
                 var resourcePath = String.format("/addressbook/%s", mirrorProperties.getNetwork());
