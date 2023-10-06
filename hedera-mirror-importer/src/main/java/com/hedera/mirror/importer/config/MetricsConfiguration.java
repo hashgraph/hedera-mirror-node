@@ -72,7 +72,7 @@ class MetricsConfiguration {
 
     private void registerTableMetrics(MeterRegistry registry, String tableName) {
         for (TableMetric tableMetric : TableMetric.values()) {
-            ToDoubleFunction<DataSource> func = dataSource ->
+            ToDoubleFunction<DataSource> func = ds ->
                     jdbcOperations.queryForObject(tableMetric.query, Long.class, dbProperties.getSchema(), tableName);
             Gauge.builder(tableMetric.metricName, dataSource, func)
                     .tag("database", dbProperties.getName())
