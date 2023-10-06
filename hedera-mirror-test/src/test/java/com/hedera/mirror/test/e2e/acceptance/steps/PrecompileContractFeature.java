@@ -91,7 +91,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Given("I successfully create and verify a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
-        deployedPrecompileContract = createContract(precompileTestContract, 0);
+        deployedPrecompileContract = getContract(ContractResource.PRECOMPILE_TEST_CONTRACT);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }

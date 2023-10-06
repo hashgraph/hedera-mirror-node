@@ -88,19 +88,19 @@ public class CallFeature extends AbstractFeature {
 
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
-        deployedContract = createContract(ercTestContract, 0);
+        deployedContract = getContract(ContractResource.ERC_TEST_CONTRACT);
         ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
-        deployedContract = createContract(precompileTestContract, 0);
+        deployedContract = getContract(ContractResource.PRECOMPILE_TEST_CONTRACT);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        deployedContract = createContract(estimateGasTestContract, 1000000);
+        deployedContract = getContract(ContractResource.ESTIMATE_GAS_TEST_CONTRACT);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
