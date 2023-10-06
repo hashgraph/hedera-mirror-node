@@ -15,6 +15,7 @@
  */
 
 import {SharedArray} from 'k6/data';
+import {vu} from 'k6/execution';
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 function ContractCallEstimateTestTemplate(key) {
@@ -22,7 +23,7 @@ function ContractCallEstimateTestTemplate(key) {
     return JSON.parse(open('./resources/estimate.json'))[key];
   });
 
-  const data = allData[__VU % allData.length];
+  const data = allData[vu.idInTest % allData.length];
 
   const {options, run} = new ContractCallTestScenarioBuilder()
     .name(key)
