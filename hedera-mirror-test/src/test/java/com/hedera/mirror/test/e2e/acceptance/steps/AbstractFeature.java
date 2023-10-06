@@ -38,7 +38,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -168,9 +167,9 @@ abstract class AbstractFeature {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
     }
 
-    protected ContractCallResponse callContract(ByteBuffer data, String contractAddress) {
+    protected ContractCallResponse callContract(String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(Strings.encode(data))
+                .data(data)
                 .from(contractClient.getClientAddress())
                 .to(contractAddress)
                 .estimate(false)
@@ -179,7 +178,18 @@ abstract class AbstractFeature {
         return mirrorClient.contractsCall(contractCallRequestBody);
     }
 
-    protected ByteBuffer encodeData(ContractResource resource, SelectorInterface method, Object... args) {
+    protected ContractCallResponse estimateContract(String data, String contractAddress) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(data)
+                .from(contractClient.getClientAddress())
+                .to(contractAddress)
+                .estimate(true)
+                .build();
+
+        return mirrorClient.contractsCall(contractCallRequestBody);
+    }
+
+    protected String encodeData(ContractResource resource, SelectorInterface method, Object... args) {
         String json;
         try (var in = getResourceAsStream(resource.getPath())) {
             json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
@@ -188,7 +198,11 @@ abstract class AbstractFeature {
         }
 
         Function function = Function.fromJson(json);
-        return function.encodeCallWithArgs(args);
+        return Strings.encode(function.encodeCallWithArgs(args));
+    }
+
+    protected String encodeData(SelectorInterface method, Object... args) {
+        return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
     }
 
     protected InputStream getResourceAsStream(String resourcePath) throws IOException {
@@ -206,13 +220,12 @@ abstract class AbstractFeature {
     @RequiredArgsConstructor
     @Getter
     public enum ContractResource {
-        ESTIMATE_PRECOMPILE_TEST_CONTRACT(
+        ESTIMATE_PRECOMPILE(
                 "classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json",
                 0),
-        ERC_TEST_CONTRACT("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json", 0),
-        PRECOMPILE_TEST_CONTRACT(
-                "classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
-        ESTIMATE_GAS_TEST_CONTRACT(
+        ERC("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json", 0),
+        PRECOMPILE("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
+        ESTIMATE_GAS(
                 "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json", 1000000),
         PARENT_CONTRACT("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json", 10000000);
 

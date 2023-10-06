@@ -19,11 +19,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import java.nio.ByteBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -70,10 +68,9 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param solidityAddress The address of the solidity contract.
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(
-            ByteBuffer data, ContractMethodInterface actualGasUsed, String solidityAddress) {
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(Strings.encode(data))
+                .data(data)
                 .to(solidityAddress)
                 .estimate(true)
                 .build();
@@ -90,13 +87,13 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * then sends the request. It expects the call to result in a "400 Bad Request" response, and will throw an
      * assertion error if the response is anything other than that.
      *
-     * @param encodedFunctionCall The encoded function data to be sent.
+     * @param data The encoded function data to be sent.
      * @param contractAddress     The address of the contract.
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
-    protected void assertContractCallReturnsBadRequest(ByteBuffer encodedFunctionCall, String contractAddress) {
+    protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(Strings.encode(encodedFunctionCall))
+                .data(data)
                 .to(contractAddress)
                 .estimate(true)
                 .build();
