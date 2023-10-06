@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.grpc.repository;
 
+import static com.hedera.mirror.grpc.config.CacheConfiguration.CACHE_NAME;
+import static com.hedera.mirror.grpc.config.CacheConfiguration.NODE_STAKE_CACHE;
+
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.grpc.config.CacheConfiguration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +35,7 @@ public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake
     List<NodeStake> findAllByConsensusTimestamp(long consensusTimestamp);
 
     // An empty map may be cached, indicating the node_stake table is empty
-    @Cacheable(cacheManager = CacheConfiguration.NODE_STAKE_CACHE, cacheNames = "node_stake")
+    @Cacheable(cacheManager = NODE_STAKE_CACHE, cacheNames = CACHE_NAME)
     default Map<Long, Long> findAllStakeByConsensusTimestamp(long consensusTimestamp) {
         return findAllByConsensusTimestamp(consensusTimestamp).stream()
                 .collect(Collectors.toUnmodifiableMap(NodeStake::getNodeId, NodeStake::getStake));

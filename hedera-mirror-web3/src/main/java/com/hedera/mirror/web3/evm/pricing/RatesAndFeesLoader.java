@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.web3.evm.pricing;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_FEE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_SYSTEM_FILE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_EXCHANGE_RATE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_FEE_SCHEDULE;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -26,29 +28,28 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 
 /**
  * Rates and fees loader, currently working only with current timestamp.
  */
+@CacheConfig(cacheManager = CACHE_MANAGER_SYSTEM_FILE)
 @Named
 @RequiredArgsConstructor
 @CustomLog
 public class RatesAndFeesLoader {
-    private final FileDataRepository fileDataRepository;
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    private final FileDataRepository fileDataRepository;
 
     /**
      * Loads the exchange rates for a given time. Currently, works only with current timestamp.
+     *
      * @param nanoSeconds timestamp
      * @return exchange rates set
      */
-    @Cacheable(
-            cacheNames = "rates_and_fee.exchange_rate",
-            cacheManager = CACHE_MANAGER_FEE,
-            key = "'now'",
-            unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_EXCHANGE_RATE, key = "'now'", unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         final var ratesFile = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds);
         try {
@@ -61,14 +62,11 @@ public class RatesAndFeesLoader {
 
     /**
      * Load the fee schedules for a given time. Currently, works only with current timestamp.
+     *
      * @param nanoSeconds timestamp
      * @return current and next fee schedules
      */
-    @Cacheable(
-            cacheNames = "rates_and_fee.fee_schedules",
-            cacheManager = CACHE_MANAGER_FEE,
-            key = "'now'",
-            unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_FEE_SCHEDULE, key = "'now'", unless = "#result == null")
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         final var feeScheduleFile = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds);
 

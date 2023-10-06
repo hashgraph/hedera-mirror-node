@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.config;
 
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
@@ -32,29 +33,38 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class CacheConfiguration {
 
-    public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
-    public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
-    public static final String CACHE_MANAGER_TABLE_TIME_PARTITION = "cacheManagerTableTimePartition";
+    public static final String CACHE_ADDRESS_BOOK = "addressBook";
+    public static final String CACHE_ALIAS = "alias";
+    public static final String CACHE_OVERLAPPING_TIME_PARTITION = "overlappingTimePartition";
+    public static final String CACHE_TIME_PARTITION = "timePartition";
+    public static final String CACHE_NAME = "default";
 
-    @Bean(EXPIRE_AFTER_5M)
+    @Bean(CACHE_ADDRESS_BOOK)
     @Primary
-    CacheManager cacheManager5m() {
-        var caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=5m");
-        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
+    CacheManager cacheManagerAddressBook() {
+        var cacheManager = cacheManager("maximumSize=100,expireAfterWrite=5m,recordStats");
+        return new TransactionAwareCacheManagerProxy(cacheManager);
     }
 
-    @Bean(CACHE_MANAGER_ALIAS)
+    @Bean(CACHE_ALIAS)
     CacheManager cacheManagerAlias() {
-        var caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
-        return caffeineCacheManager;
+        return cacheManager("maximumSize=100000,expireAfterWrite=30m,recordStats");
     }
 
-    @Bean(CACHE_MANAGER_TABLE_TIME_PARTITION)
-    CacheManager cacheManagerTableTimePartition() {
-        var caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=50,expireAfterWrite=1d");
-        return caffeineCacheManager;
+    @Bean(CACHE_OVERLAPPING_TIME_PARTITION)
+    CacheManager cacheManagerOverlappingTimePartition() {
+        return cacheManager("maximumSize=50,expireAfterWrite=1d,recordStats");
+    }
+
+    @Bean(CACHE_TIME_PARTITION)
+    CacheManager cacheManagerTimePartition() {
+        return cacheManager("maximumSize=50,expireAfterWrite=1d,recordStats");
+    }
+
+    private CacheManager cacheManager(String specification) {
+        var cacheManager = new CaffeineCacheManager();
+        cacheManager.setCacheNames(Set.of(CACHE_NAME));
+        cacheManager.setCacheSpecification(specification);
+        return cacheManager;
     }
 }

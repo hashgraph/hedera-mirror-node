@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ALIAS;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 import static com.hedera.mirror.importer.util.Utility.aliasToEvmAddress;
 
 import com.google.protobuf.ByteString;
@@ -35,6 +36,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -45,9 +47,8 @@ public class EntityIdServiceImpl implements EntityIdService {
     private final Cache cache;
     private final EntityRepository entityRepository;
 
-    public EntityIdServiceImpl(
-            @Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager, EntityRepository entityRepository) {
-        this.cache = cacheManager.getCache("entityId");
+    public EntityIdServiceImpl(@Qualifier(CACHE_ALIAS) CacheManager cacheManager, EntityRepository entityRepository) {
+        this.cache = cacheManager.getCache(CACHE_NAME);
         this.entityRepository = entityRepository;
     }
 
