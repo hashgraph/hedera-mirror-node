@@ -21,8 +21,12 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.proto.Key;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,6 +77,38 @@ public class TestUtil {
     }
 
     public static Address asAddress(String address) {
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Address asAddress(ExpandedAccountId accountId) {
+        final var address = accountId.getAccountId().toSolidityAddress();
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Address asAddress(TokenId tokenId) {
+        final var address = tokenId.toSolidityAddress();
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Address asAddress(ContractClient contractClient) {
+        final var address = contractClient.getClientAddress();
+        final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
+    public static Address asAddress(TokenClient tokenClient) {
+        final var address = tokenClient
+                .getSdkClient()
+                .getExpandedOperatorAccountId()
+                .getAccountId()
+                .toSolidityAddress();
         final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);
         final var addressAsInteger = addressBytes.toUnsignedBigInteger();
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));

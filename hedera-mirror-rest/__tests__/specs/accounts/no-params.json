@@ -5,6 +5,7 @@
       {
         "auto_renew_period": 8000001,
         "balance": 10,
+        "balance_timestamp": "2000",
         "created_timestamp": "9999123456789",
         "decline_reward": true,
         "num": 1,
@@ -13,6 +14,7 @@
       },
       {
         "balance": "9223372036847275807",
+        "balance_timestamp": "2001",
         "created_timestamp": "10000123456789",
         "num": 2,
         "key": "32240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
@@ -21,6 +23,7 @@
       {
         "auto_renew_period": 6999999,
         "balance": 30,
+        "balance_timestamp": "2002",
         "created_timestamp": "10000123456789",
         "expiration_timestamp": "10000123456790",
         "num": 3,
@@ -31,6 +34,7 @@
       {
         "auto_renew_period": 6999999,
         "balance": 40,
+        "balance_timestamp": "2003",
         "num": 4,
         "key": "3a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
         "staked_node_id": 3,
@@ -38,16 +42,19 @@
       },
       {
         "balance": 50,
+        "balance_timestamp": "2004",
         "num": 5,
         "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
         "balance": 60,
+        "balance_timestamp": "2005",
         "num": 6,
         "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
         "balance": 90,
+        "balance_timestamp": "2006",
         "num": 9,
         "expiration_timestamp": "9223372036854775806",
         "max_automatic_token_associations": 150,
@@ -56,6 +63,7 @@
       {
         "alias": "32W353Y",
         "balance": 100,
+        "balance_timestamp": "2007",
         "evm_address": "81f45dd06f708f9829e3a0284b464d9cbec37e61",
         "ethereum_nonce": 9007199254740992,
         "num": 10,
@@ -66,12 +74,14 @@
     "contracts": [
       {
         "balance": 70,
+        "balance_timestamp": "2006",
         "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "num": 7,
         "max_automatic_token_associations": 20
       },
       {
         "balance": 80,
+        "balance_timestamp": "2009",
         "num": 8,
         "staked_node_id": 5,
         "stake_period_start": 1100
@@ -105,12 +115,6 @@
         "id": 4,
         "pending_reward": 400,
         "stake_total_start": 4000
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 1700,
-        "consensus_end": 2000
       }
     ],
     "tokenaccounts": [
@@ -160,8 +164,8 @@
     "accounts": [
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 10,
+          "timestamp": "0.000002000",
           "tokens": [
             {
               "token_id": "0.0.90000",
@@ -196,8 +200,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 9223372036847275807,
+          "timestamp": "0.000002001",
           "tokens": [
             {
               "token_id": "0.0.90001",
@@ -232,8 +236,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 30,
+          "timestamp": "0.000002002",
           "tokens": []
         },
         "account": "0.0.3",
@@ -259,8 +263,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 40,
+          "timestamp": "0.000002003",
           "tokens": []
         },
         "account": "0.0.4",
@@ -286,8 +290,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 50,
+          "timestamp": "0.000002004",
           "tokens": [
             {
               "token_id": "0.0.100001",
@@ -322,8 +326,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 60,
+          "timestamp": "0.000002005",
           "tokens": []
         },
         "account": "0.0.6",
@@ -349,8 +353,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 70,
+          "timestamp": "0.000002006",
           "tokens": []
         },
         "account": "0.0.7",
@@ -373,8 +377,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 80,
+          "timestamp": "0.000002009",
           "tokens": []
         },
         "account": "0.0.8",
@@ -397,7 +401,7 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
+          "timestamp": "0.000002006",
           "balance": 90,
           "tokens": []
         },
@@ -421,8 +425,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 100,
+          "timestamp": "0.000002007",
           "tokens": []
         },
         "account": "0.0.10",
