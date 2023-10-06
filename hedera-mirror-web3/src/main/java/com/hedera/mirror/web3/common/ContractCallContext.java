@@ -116,7 +116,7 @@ public class ContractCallContext implements AutoCloseable {
     }
 
     public static void cleanThread() {
-        THREAD_LOCAL.set(null);
+        THREAD_LOCAL.remove();
     }
 
     @Override
