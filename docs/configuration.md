@@ -203,24 +203,20 @@ evaluation context and parses and evaluates the supplied expressions.
 Expression restrictions include:
 
 * Each transaction is represented by a record item. Only the top-level `transactionBody` and `transactionRecord`
-  properties may be referenced. These are respectively the `TransactionBody` and `TransactionRecord` protocol buffers
-  (protobufs) defined in the `com.hederahashgraph:hedera-protobuf-java-api` dependency. These are immutable and you can
+  properties may be referenced. These are respectively
+  the [TransactionBody](https://github.com/hashgraph/hedera-sdk-java/blob/develop/sdk/src/main/proto/transaction_body.proto)
+  and [TransactionRecord](https://github.com/hashgraph/hedera-sdk-java/blob/develop/sdk/src/main/proto/transaction_record.proto)
+  protocol buffers defined in the Java SDK. These are immutable and you can
   refer to them to see what may be accessed as sub properties etc.
 * Mirror node Spring beans (using `@`) cannot be accessed within an expression.
 * Arbitrary types (mirror node, dependencies, Java) such as `T(java.lang.Runtime)`
   or `T(com.hedera.mirror.importer.SomeClass)` cannot be accessed within an expression.
 * No property can be written to.
 * The expression must evaluate to a boolean value.
+* Since expressions may contain Java code, enclosing them within single or double quotes will help prevent errors
+  when read from YAML or properties configuration files.
 
-One objective is to provide sufficient access to support powerful expressions while limiting
-the [SpEL injection](https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spel-injection) attack surface.
-Keep in mind though, transaction filter configuration properties are set by mirror node operators, so intentionally
-injecting oneself should be be a rare occurrence.
-
-Another objective is to avoid exposing mirror node implementation details, which may change in future releases,
-possibly breaking filter expressions that functioned properly in the past.
-
-For any property resolved, the methods it supports are not restricted. For example, `transactionBody.memo` is
+For any property resolved, the methods it supports is not restricted. For example, `TransactionBody.memo` is
 a `String`, and any public methods on that type can be invoked. Thus the following are all acceptable expressions
 returning a boolean value:
 
@@ -230,90 +226,13 @@ transactionBody.memo.contains("Some value")
 transactionBody.memo.length() > 10 && transactionBody.memo.startsWith("MyApp")
 ```
 
-There are three phases to handling your filter expressions. Given they are essentially Java code with the
-attendant special characters etc., the first phase is reading the expression from the configuration, be that
-a YAML or properties file.
+One objective is to provide sufficient access to support powerful expressions while limiting
+the [SpEL injection](https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spel-injection) attack surface.
+Keep in mind though, transaction filter configuration properties are set by mirror node operators, so intentionally
+injecting oneself should be be a rare occurrence.
 
-Given the configuration file snippet:
-
-```yaml
-hedera:
-  mirror:
-    importer:
-      parser:
-        include:
-          - expression: !transactionBody.memo.startsWith("SomePrefix")
-```
-
-The mirror node Importer fails to start up:
-
-```
-14:12:30.714 [main] ERROR org.springframework.boot.SpringApplication -- Application run failed
-org.yaml.snakeyaml.scanner.ScannerException: while scanning a tag
- in 'reader', line 9, column 25:
-              - expression: !transactionBody.memo.startsWith ... 
-                            ^
-expected ' ', but found '"' (34)
- in 'reader', line 9, column 58:
-     ... transactionBody.memo.startsWith("MyApp")
-```
-
-Simply trying to escape the `!` with a backslash still results in failure:
-
-```
-2023-10-05T20:15:35.587Z ERROR main o.s.b.d.LoggingFailureAnalysisReporter 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Failed to bind properties under 'hedera.mirror.importer.parser.include[0]' to com.hedera.mirror.importer.parser.CommonParserProperties$TransactionFilter:
-
-    Reason: org.springframework.expression.spel.SpelParseException: Expression [\!transactionBody.memo.startsWith("MyApp")] @0: EL1065E: Unexpected escape character
-    
-```
-
-Putting the expression in double quotes causes the snakeyaml parser to fail again. This is Java after all,
-so, instead use single quotes, or escape the double quotes used with the `startsWith()` method.
-
-Once the SpEL expression is read, it is first parsed, which only checks for very gross level problems. A failure here
-will also prevent the Importer from starting up:
-
-```
-2023-10-05T20:26:23.899Z ERROR main o.s.b.d.LoggingFailureAnalysisReporter 
-
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Failed to bind properties under 'hedera.mirror.importer.parser.include[0]' to com.hedera.mirror.importer.parser.CommonParserProperties$TransactionFilter:
-
-    Reason: org.springframework.expression.spel.SpelParseException: Expression [sldlkf*#IA$(#*$IOHJF] @13: EL1043E: Unexpected token. Expected 'identifier' but was 'star(*)'
-```
-
-The final, and repeated phase, is evaluating the parsed expression against the current transaction. Given the expression
-`transactionBody.transactionID.accountID.noSuchProperty != null`,
-
-```
-2023-10-05T20:34:45.409Z ERROR scheduling-2 c.h.m.i.p.r.RecordFileParser Error parsing file 2023-10-04T12_00_06.002437361Z.rcd.gz after 40.65 ms com.hedera.mirror.importer.exception.InvalidConfigurationException: Transaction filter expression failed to evaluate: transactionBody.transactionID.accountID.noSuchProperty != null
-...
-Caused by: org.springframework.expression.spel.SpelEvaluationException: EL1008E: Property or field 'noSuchProperty' cannot be found on object of type 'com.hederahashgraph.api.proto.java.AccountID' - maybe not public or not valid?
-...
-```
-
-This does not cause mirror node to stop. When using expressions, be certain the mirror node Importer is up and
-running without errors before walking away.
-
-One final note on this subject; when multiple include expressions are defined, they are evaluated in a
-short-circuited OR manner. While all expressions are read from the configuration and parsed, they will not
-be evaluated if an earlier expression returned true.
-
-If based on the data that expression now evaluates to false, or is removed from the configuration, then the next
-expression is evaluated. If it contains an evaluation error of some kind, only now will it be revealed.
+Another important goal is to not expose too many mirror node implementation details, which may change in future
+releases, possibly breaking filter expressions that functioned properly in the past.
 
 #### Filtering Example
 
@@ -325,10 +244,10 @@ to configure your instance of the mirror node.
 * We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
 * We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of
   transaction type.
-* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, *
-  *FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
-* For all **CONTRACTCREATEINSTANCE** transactions, we are only interested in those where the renewal account number is *
-  *2000**.
+* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**,
+  **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* For all **CONTRACTCREATEINSTANCE** transactions, we are only interested in those where the renewal account number is
+  **2000**.
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
