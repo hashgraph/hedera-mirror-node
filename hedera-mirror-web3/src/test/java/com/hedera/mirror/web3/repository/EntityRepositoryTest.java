@@ -89,8 +89,9 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         Entity entity = domainBuilder.entity().persist();
 
         assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
-                entity.getEvmAddress(), entity.getTimestampLower()))
-                .isEmpty();
+                        entity.getEvmAddress(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
     }
 
     @Test
@@ -98,7 +99,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         Entity entity = domainBuilder.entity().persist();
 
         assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
-                entity.getEvmAddress(), entity.getTimestampLower() - 1))
+                        entity.getEvmAddress(), entity.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -108,33 +109,6 @@ class EntityRepositoryTest extends Web3IntegrationTest {
 
         assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
                         entity.getEvmAddress(), entity.getTimestampLower() + 1))
-                .isEmpty();
-    }
-
-    @Test
-    void findHistoricalEntityByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
-
-        Optional<Entity> queryResult = entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
-                entityHistory.getEvmAddress(), entityHistory.getTimestampLower() + 1);
-        assertEntityFields(entityHistory, queryResult);
-    }
-
-    @Test
-    void findHistoricalEntityByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
-
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
-                entityHistory.getEvmAddress(), entityHistory.getTimestampLower()))
-                .isEmpty();
-    }
-
-    @Test
-    void findHistoricalEntityByEvmAddressAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
-        EntityHistory entityHistory = domainBuilder.entityHistory().persist();
-
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
-                entityHistory.getEvmAddress(), entityHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -152,7 +126,8 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower() + 1))
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+                        entity.getId(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
     }
@@ -161,15 +136,17 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
-                .isEmpty();
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
     }
 
     @Test
     void findByIdAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower() - 1))
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+                        entity.getId(), entity.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -177,7 +154,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampRangeAndDeletedTrueCall() {
         Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(entity.getId(), entity.getTimestampLower()))
                 .isEmpty();
     }
 
@@ -185,7 +162,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findHistoricalEntityByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        Optional<Entity> queryResult = entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
+        Optional<Entity> queryResult = entityRepository.findByIdAndTimestampAndDeletedIsFalse(
                 entityHistory.getId(), entityHistory.getTimestampLower() + 1);
         assertEntityFields(entityHistory, queryResult);
     }
@@ -194,17 +171,17 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findHistoricalEntityByIdAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
-                entityHistory.getId(), entityHistory.getTimestampLower())
-                        .isEmpty());
+        assertThat(entityRepository
+                .findByIdAndTimestampAndDeletedIsFalse(entityHistory.getId(), entityHistory.getTimestampLower())
+                .isEmpty());
     }
 
     @Test
     void findHistoricalEntityByIdAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
-                        entityHistory.getId(), entityHistory.getTimestampLower() - 1)
+        assertThat(entityRepository
+                .findByIdAndTimestampAndDeletedIsFalse(entityHistory.getId(), entityHistory.getTimestampLower() - 1)
                 .isEmpty());
     }
 
@@ -213,7 +190,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         EntityHistory entityHistory =
                 domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByIdAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
                         entityHistory.getId(), entityHistory.getCreatedTimestamp()))
                 .isEmpty();
     }

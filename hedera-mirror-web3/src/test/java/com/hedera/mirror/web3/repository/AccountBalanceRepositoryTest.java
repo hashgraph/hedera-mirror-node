@@ -16,9 +16,11 @@
 
 package com.hedera.mirror.web3.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,10 +29,14 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
 
     private final AccountBalanceRepository accountBalanceRepository;
 
+    static final long TRANSFER_AMOUNT = 10L;
+    static final long TRANSFER_INCREMENT = 1L;
+
     @Test
     void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
-        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+        assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
+                        accountBalance.getId().getAccountId().getId(),
                         accountBalance.getId().getConsensusTimestamp() + 1))
                 .get()
                 .isEqualTo(accountBalance);
@@ -39,16 +45,103 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     @Test
     void findHistoricalByIdAndTimestampEqualToBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
-        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+        assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
+                        accountBalance.getId().getAccountId().getId(),
                         accountBalance.getId().getConsensusTimestamp()))
-                .isEmpty();
+                .get()
+                .isEqualTo(accountBalance);
     }
 
     @Test
     void findHistoricalByIdAndTimestampGreaterThanBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
-        Assertions.assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(accountBalance.getId().getAccountId().getId(),
+        assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
+                        accountBalance.getId().getAccountId().getId(),
                         accountBalance.getId().getConsensusTimestamp() - 1))
                 .isEmpty();
+    }
+
+    @Test
+    void shouldNotIncludeBalanceBeforeConsensusTimestamp() {
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance1 = domainBuilder
+                .accountBalance()
+                .customize(tb -> tb.id(
+                        new AccountBalance.Id(accountBalanceFile.getConsensusTimestamp(), domainBuilder.entityId())))
+                .persist();
+        long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
+
+        persistCryptoTransfersBefore(3, consensusTimestamp, accountBalance1);
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                .get()
+                .isEqualTo(accountBalance1.getBalance());
+    }
+
+    @Test
+    void shouldIncludeBalanceDuringValidTimestampRange() {
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance1 = domainBuilder
+                .accountBalance()
+                .customize(tb -> tb.id(
+                        new AccountBalance.Id(accountBalanceFile.getConsensusTimestamp(), domainBuilder.entityId())))
+                .persist();
+
+        long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
+        long historicalAccountBalance = accountBalance1.getBalance();
+
+        persistCryptoTransfers(3, consensusTimestamp, accountBalance1);
+        historicalAccountBalance += TRANSFER_AMOUNT * 3;
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                .get()
+                .isEqualTo(historicalAccountBalance);
+    }
+
+    @Test
+    void shouldNotIncludeBalanceAfterTimestampFilter() {
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance1 = domainBuilder
+                .accountBalance()
+                .customize(tb -> tb.id(
+                        new AccountBalance.Id(accountBalanceFile.getConsensusTimestamp(), domainBuilder.entityId())))
+                .persist();
+        long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
+        long historicalAccountBalance = accountBalance1.getBalance();
+
+        persistCryptoTransfers(3, consensusTimestamp, accountBalance1);
+        historicalAccountBalance += TRANSFER_AMOUNT * 3;
+
+        persistCryptoTransfers(3, consensusTimestamp + 10, accountBalance1);
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                .get()
+                .isEqualTo(historicalAccountBalance);
+    }
+
+    private void persistCryptoTransfersBefore(int count, long baseTimestamp, AccountBalance accountBalance1) {
+        for (int i = 0; i < count; i++) {
+            long timestamp = baseTimestamp - TRANSFER_INCREMENT * (i + 1);
+            persistCryptoTransfer(timestamp, accountBalance1);
+        }
+    }
+
+    private void persistCryptoTransfers(int count, long baseTimestamp, AccountBalance accountBalance1) {
+        for (int i = 0; i < count; i++) {
+            long timestamp = baseTimestamp + TRANSFER_INCREMENT * (i + 1);
+            persistCryptoTransfer(timestamp, accountBalance1);
+        }
+    }
+
+    private void persistCryptoTransfer(long timestamp, AccountBalance accountBalance1) {
+        domainBuilder
+                .cryptoTransfer()
+                .customize(b -> b.amount(TRANSFER_AMOUNT)
+                        .entityId(accountBalance1.getId().getAccountId().getId())
+                        .consensusTimestamp(timestamp))
+                .persist();
     }
 }

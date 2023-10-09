@@ -22,14 +22,67 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
-    @Query(
-            value = "SELECT * FROM account_balance "
-                    + "WHERE "
-                    + "account_id = ?1 AND "
-                    + "consensus_timestamp < ?2 "
-                    + "ORDER BY consensus_timestamp DESC "
-                    + "LIMIT 1 ",
-            nativeQuery = true)
-    Optional<AccountBalance> findByIdAndTimestampLessThan(long accountId, long consensusTimestamp);
 
+    /**
+     * Retrieves the account balance of a specific account at the last consensus timestamp
+     * before оr equal to the provided block timestamp.
+     *
+     * @param accountId       the ID of the account whose balance is to be retrieved.
+     * @param blockTimestamp  the block timestamp used as the upper limit to retrieve the account balance.
+     *                        The method will retrieve the last account balance before or equal to this timestamp.
+     * @return an Optional containing the balance if found, or an empty Optional if no matching balance
+     *         entry is found before the given block timestamp.
+     */
+    @Query(
+            value =
+                    """
+                 select * from account_balance
+                 where
+                     account_id = ?1 and
+                     consensus_timestamp <= ?2
+                 order by consensus_timestamp desc
+                 limit 1
+                 """,
+            nativeQuery = true)
+    Optional<AccountBalance> findByIdAndTimestampLessThan(long accountId, long blockTimestamp);
+
+    /**
+     * Finds the historical account balance for a given account ID based on a specific block timestamp.
+     * This method calculates the historical balance by summing the crypto transfers and adding the sum to the initial balance
+     * found at a timestamp less than the given block timestamp. If no account_balance is found for the given account_id
+     * and consensus timestamp, a balance of 0 will be returned.
+     *
+     * @param accountId       the ID of the account.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the historical balance at the specified timestamp.
+     *         If there are no crypto transfers between the consensus_timestamp of account_balance and the block timestamp,
+     *         the method will return the balance present at consensus_timestamp.
+     */
+    @Query(
+            value =
+                    """
+               select coalesce((
+                   select balance
+                   from account_balance
+                   where
+                     consensus_timestamp = s.consensus_timestamp and
+                     account_id = ?1
+                 ), 0) + coalesce((
+                   select sum(amount)
+                   from crypto_transfer
+                   where
+                     entity_id = ?1 and
+                     consensus_timestamp > s.consensus_timestamp and
+                     consensus_timestamp <= ?2
+                 ), 0)
+               from (
+                 select consensus_timestamp
+                 from account_balance_file
+                 where consensus_timestamp <= ?2
+                 order by consensus_timestamp desc
+                 limit 1
+               ) as s
+               """,
+            nativeQuery = true)
+    Optional<Long> findHistoricalAccountBalanceUpToTimestamp(long accountId, long blockTimestamp);
 }

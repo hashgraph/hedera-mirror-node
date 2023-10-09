@@ -34,49 +34,66 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
 
+    /**
+     * Retrieves the most recent state of an entity by its evm address up to a given block timestamp.
+     *
+     * @param evmAddress      the evm address of the entity to be retrieved.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the entity's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
     @Cacheable(
-            cacheNames = "entityEvmAddressHistoricalUnionCache",
+            cacheNames = "entityEvmAddressUnionCache",
             key = "#evmAddress + '-' + #blockTimestamp",
             cacheManager = CACHE_MANAGER_ENTITY,
             unless = "#result == null")
-    @Query(value =
-            "SELECT * FROM ( "
-          + " (SELECT * FROM entity "
-          + "  WHERE evm_address = ?1 "
-          + "  AND deleted = false "
-          + "  AND lower(timestamp_range) < ?2"
-          + "  UNION ALL "
-          + "  SELECT * FROM entity_history "
-          + "  WHERE evm_address = ?1 "
-          + "  AND deleted = false "
-          +  " AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
-          +  " OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
-          + ") AS e "
-          + " ORDER BY timestamp_range DESC "
-          + " LIMIT 1 ",
+    @Query(
+            value =
+                    """
+                    select *
+                    from entity
+                    where evm_address = ?1 and lower(timestamp_range) <= ?2
+                    and deleted = false
+                    order by timestamp_range desc
+                    limit 1
+                    """,
             nativeQuery = true)
     Optional<Entity> findByEvmAddressAndTimestampRangeAndDeletedIsFalse(byte[] evmAddress, long blockTimestamp);
 
-    @Cacheable(
-            cacheNames = "entityIdHistoricalUnionCache",
-            key = "#id + '-' + #blockTimestamp",
-            cacheManager = CACHE_MANAGER_ENTITY,
-            unless = "#result == null")
-    @Query(value =
-           "SELECT * FROM ( "
-           + " (SELECT * FROM entity "
-           + "  WHERE id = ?1 "
-           + "  AND deleted = false "
-           + "  AND lower(timestamp_range) < ?2"
-           + "  UNION ALL "
-           + "  SELECT * FROM entity_history "
-           + "  WHERE id = ?1 "
-           + "  AND deleted = false "
-           + "  AND lower(timestamp_range) < ?2 AND upper(timestamp_range) > ?2 "
-           + "  OR lower(timestamp_range) < ?2 AND upper(timestamp_range) < ?2) "
-           + ") AS e "
-           + " ORDER BY timestamp_range DESC "
-           + " LIMIT 1 ",
+    /**
+     * Retrieves the most recent state of an entity by its ID up to a given block timestamp.
+     * The method considers both the current state of the entity and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     * It performs a UNION operation between the 'entity' and 'entity_history' tables,
+     * filters the combined result set to get the records with a timestamp range
+     * less than or equal to the provided block timestamp and then returns the most recent record.
+     *
+     * @param id              the ID of the entity to be retrieved.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the entity's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
+    @Query(
+            value =
+                    """
+                    (
+                        select *
+                        from entity
+                        where id = ?1 and lower(timestamp_range) <= ?2
+                        and deleted = false
+                    )
+                    union all
+                    (
+                        select *
+                        from entity_history
+                        where id = ?1 and lower(timestamp_range) <= ?2
+                        and deleted = false
+                        order by lower(timestamp_range) desc
+                        limit 1
+                    )
+                    order by timestamp_range desc
+                    limit 1
+                    """,
             nativeQuery = true)
-    Optional<Entity> findByIdAndTimestampRangeAndDeletedIsFalse(long id, long blockTimestamp);
+    Optional<Entity> findByIdAndTimestampAndDeletedIsFalse(long id, long blockTimestamp);
 }
