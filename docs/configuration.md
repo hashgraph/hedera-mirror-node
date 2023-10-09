@@ -111,9 +111,11 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.event.transactionTimeout`                         | 30s                                              | The timeout in seconds for a database transaction                                                                                                                                                                                                                  |
 | `hedera.mirror.importer.parser.exclude`                                          | []                                               | A list of filters that determine which transactions are ignored. Takes precedence over include                                                                                                                                                                     |
 | `hedera.mirror.importer.parser.exclude.entity`                                   | []                                               | A list of entity IDs to ignore in shard.realm.num (e.g. 0.0.3) format                                                                                                                                                                                              |
+| `hedera.mirror.importer.parser.exclude.expression`                               |                                                  | A restricted Spring Expression Language (SpEL) expression which when evaluated to true ignores the transaction                                                                                                                                                     |
 | `hedera.mirror.importer.parser.exclude.transaction`                              | []                                               | A list of transaction types to ignore. See `TransactionType.java` for possible values                                                                                                                                                                              |
 | `hedera.mirror.importer.parser.include`                                          | []                                               | A list of filters that determine which transactions are stored                                                                                                                                                                                                     |
 | `hedera.mirror.importer.parser.include.entity`                                   | []                                               | A list of entity IDs to store in shard.realm.num (e.g. 0.0.3) format                                                                                                                                                                                               |
+| `hedera.mirror.importer.parser.include.expression`                               |                                                  | A restricted Spring Expression Language (SpEL) expression which when evaluated to true includes the transaction                                                                                                                                                    |
 | `hedera.mirror.importer.parser.include.transaction`                              | []                                               | A list of transaction types to store. See `TransactionType.java` for possible values                                                                                                                                                                               |
 | `hedera.mirror.importer.parser.record.enabled`                                   | true                                             | Whether to enable record file parsing                                                                                                                                                                                                                              |
 | `hedera.mirror.importer.parser.record.entity.notify.enabled`                     | false                                            | Whether to use PostgreSQL Notify to send topic messages to the gRPC process                                                                                                                                                                                        |
@@ -192,19 +194,60 @@ which additional fields get stored (which additional tables get recorded).
 See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the
 table above for full details.
 
+#### Spring Expression Language Support
+
+[Spring Expression Language (SpEL)](https://docs.spring.io/spring-framework/reference/core/expressions.html)
+expressions may also be utilized for including or excluding transactions. The mirror node sets up a restricted
+evaluation context and parses and evaluates the supplied expressions.
+
+Expression restrictions include:
+
+* Each transaction is represented by a record item. Only the top-level `transactionBody` and `transactionRecord`
+  properties may be referenced. These are respectively
+  the [TransactionBody](https://github.com/hashgraph/hedera-sdk-java/blob/develop/sdk/src/main/proto/transaction_body.proto)
+  and [TransactionRecord](https://github.com/hashgraph/hedera-sdk-java/blob/develop/sdk/src/main/proto/transaction_record.proto)
+  protocol buffers defined in the Java SDK. These are immutable and you can
+  refer to them to see what may be accessed as sub properties etc.
+* Mirror node Spring beans (using `@`) cannot be accessed within an expression.
+* Arbitrary types (mirror node, dependencies, Java) such as `T(java.lang.Runtime)`
+  or `T(com.hedera.mirror.importer.SomeClass)` cannot be accessed within an expression.
+* No property can be written to.
+* The expression must evaluate to a boolean value.
+* Since expressions may contain Java code, enclosing them within single or double quotes will help prevent errors
+  when read from YAML or properties configuration files.
+
+For any property resolved, the methods it supports is not restricted. For example, `TransactionBody.memo` is
+a `String`, and any public methods on that type can be invoked. Thus the following are all acceptable expressions
+returning a boolean value:
+
+```
+transactionBody.memo.startsWith("MyApp")
+transactionBody.memo.contains("Some value") 
+transactionBody.memo.length() > 10 && transactionBody.memo.startsWith("MyApp")
+```
+
+One objective is to provide sufficient access to support powerful expressions while limiting
+the [SpEL injection](https://0xn3va.gitbook.io/cheat-sheets/framework/spring/spel-injection) attack surface.
+Keep in mind though, transaction filter configuration properties are set by mirror node operators, so intentionally
+injecting oneself should be be a rare occurrence.
+
+Another important goal is to not expose too many mirror node implementation details, which may change in future
+releases, possibly breaking filter expressions that functioned properly in the past.
+
 #### Filtering Example
 
 The scenario we wish to model is the same for each of the three configuration formats. Only choose one of the three ways
-to
-configure your instance of the mirror node.
+to configure your instance of the mirror node.
 
 * We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the
   account representing the network (to which fees generally get paid to).
 * We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
 * We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of
   transaction type.
-* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, *
-  *FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**,
+  **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* For all **CONTRACTCREATEINSTANCE** transactions, we are only interested in those where the renewal account number is
+  **2000**.
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
@@ -223,6 +266,8 @@ hedera:
           - entity: [ 0.0.1000, 0.0.1001 ]
           - entity: [ 0.0.101, 0.0.102 ]
             transaction: [ FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE ]
+          - transaction: [ CONTRACTCREATEINSTANCE ]
+            expression: "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
         record:
           entity:
             persist:
@@ -244,6 +289,8 @@ hedera.mirror.importer.parser.include[2].transaction[0]=FILEAPPEND
 hedera.mirror.importer.parser.include[2].transaction[1]=FILECREATE
 hedera.mirror.importer.parser.include[2].transaction[2]=FILEDELETE
 hedera.mirror.importer.parser.include[2].transaction[3]=FILEUPDATE
+hedera.mirror.importer.parser.include[3].transaction[0]=CONTRACTCREATEINSTANCE
+hedera.mirror.importer.parser.include[3].expression="transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
 hedera.mirror.importer.parser.record.entity.persist.topics=false
 ```
 
@@ -262,6 +309,8 @@ HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: FILEAPPEND
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_1_: FILECREATE
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_2_: FILEDELETE
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_3_: FILEUPDATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_3_TRANSACTION_0_: CONTRACTCREATEINSTANCE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_3_EXPRESSION_: "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
 HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TOPICS: "false"
 ```
 
@@ -609,7 +658,7 @@ value, it is recommended to only populate overridden properties in the custom `a
  `hedera.mirror.web3.evm.dynamicEvmVersion`             | false                                              | Flag indicating whether a dynamic evm version to be used                                                                                                                                      
  `hedera.mirror.web3.evm.evmVersion`                    | v0.34                                              | The besu EVM version to be used as dynamic one                                                                                                                                                
  `hedera.mirror.web3.evm.evmSpecVersion`                | SHANGHAI                                           | The besu EVM spec version to be used as dynamic one                                                                                                                                           
- `hedera.mirror.web3.evm.exchangeRateGasReq`            | 100                                                | Gas requirement for ExchangeRatePrecompile.
+ `hedera.mirror.web3.evm.exchangeRateGasReq`            | 100                                                | Gas requirement for ExchangeRatePrecompile.                                                                                                                                                   
  `hedera.mirror.web3.evm.expirationCacheTime`           | 10m                                                | Maximum time for contract bytecode's caching                                                                                                                                                  
  `hedera.mirror.web3.evm.fundingAccount`                | 0x0000000000000000000000000000000000000062         | Default Hedera funding account                                                                                                                                                                
  `hedera.mirror.web3.evm.htsDefaultGasCost`             | 10000                                              | Default gas cost for Hedera Token Service Precompiles                                                                                                                                         
@@ -623,10 +672,10 @@ value, it is recommended to only populate overridden properties in the custom `a
  `hedera.mirror.web3.evm.maxGasRefundPercentage`        | 100%                                               | Maximal procent of gas refunding                                                                                                                                                              
  `hedera.mirror.web3.evm.maxMemoUtf8Bytes`              | 100                                                | Maximum size in bytes for token memo                                                                                                                                                          
  `hedera.mirror.web3.evm.maxNftMetadataBytes`           | 100                                                | Maximum size in bytes for NFT metadata                                                                                                                                                        
- `hedera.mirror.web3.evm.maxTokenNameUtf8Bytes`         | 10                                                 | Maximum size in bytes for token name                                                                                                                                                        
+ `hedera.mirror.web3.evm.maxTokenNameUtf8Bytes`         | 10                                                 | Maximum size in bytes for token name                                                                                                                                                          
  `hedera.mirror.web3.evm.maxTokensPerAccount`           | 1000                                               | Maximum number token associations per account                                                                                                                                                 
  `hedera.mirror.web3.evm.maxTokenSymbolUtf8Bytes`       | 10                                                 | Maximum size in bytes for token symbol                                                                                                                                                        
- `hedera.mirror.web3.evm.minAutoRenewDuration`          | 1000                                               | Minimum duration for auto-renew account                                                                                                                                                        
+ `hedera.mirror.web3.evm.minAutoRenewDuration`          | 1000                                               | Minimum duration for auto-renew account                                                                                                                                                       
  `hedera.mirror.web3.evm.network`                       | TESTNET                                            | Which Hedera network to use. Can be either `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`                                                                                                      
  `hedera.mirror.web3.evm.rateLimit`                     | 100s                                               | Maximum RPS limit                                                                                                                                                                             
  `hedera.mirror.web3.evm.trace.enabled`                 | false                                              | Flag enabling tracer                                                                                                                                                                          
