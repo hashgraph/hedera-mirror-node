@@ -291,7 +291,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
                 .contractCreate()
-                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(
                         b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountId))
                 .build();

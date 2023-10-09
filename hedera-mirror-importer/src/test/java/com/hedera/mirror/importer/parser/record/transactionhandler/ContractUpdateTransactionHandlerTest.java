@@ -172,7 +172,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .contractUpdate()
-                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(body -> body.setStakedAccountId(accountId).clearDeclineReward())
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
