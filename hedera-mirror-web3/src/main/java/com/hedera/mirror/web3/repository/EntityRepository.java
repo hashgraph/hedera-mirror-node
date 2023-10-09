@@ -58,7 +58,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<Entity> findByEvmAddressAndTimestampRangeAndDeletedIsFalse(byte[] evmAddress, long blockTimestamp);
+    Optional<Entity> findByEvmAddressAndTimestampAndDeletedIsFalse(byte[] evmAddress, long blockTimestamp);
 
     /**
      * Retrieves the most recent state of an entity by its ID up to a given block timestamp.

@@ -78,7 +78,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
                         entity.getEvmAddress(), entity.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(entity);
@@ -88,7 +88,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
                         entity.getEvmAddress(), entity.getTimestampLower()))
                 .get()
                 .isEqualTo(entity);
@@ -98,7 +98,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByEvmAddressAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
                         entity.getEvmAddress(), entity.getTimestampLower() - 1))
                 .isEmpty();
     }
@@ -107,7 +107,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findByEvmAddressAndTimestampRangeLessThanBlockTimestampAndDeletedTrueCall() {
         Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
                         entity.getEvmAddress(), entity.getTimestampLower() + 1))
                 .isEmpty();
     }
@@ -117,7 +117,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         EntityHistory entityHistory =
                 domainBuilder.entityHistory().customize(e -> e.deleted(true)).persist();
 
-        assertThat(entityRepository.findByEvmAddressAndTimestampRangeAndDeletedIsFalse(
+        assertThat(entityRepository.findByEvmAddressAndTimestampAndDeletedIsFalse(
                         entityHistory.getEvmAddress(), entityHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
