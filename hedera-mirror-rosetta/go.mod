@@ -10,7 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.13.2
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230720072335-ed5726877e99
-	github.com/hashgraph/hedera-sdk-go/v2 v2.29.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.30.0
 	github.com/hellofresh/health-go/v4 v4.7.0
 	github.com/jackc/pgtype v1.14.0
 	github.com/lib/pq v1.10.9
@@ -37,7 +37,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.8.0 // indirect
+	github.com/bits-and-blooms/bitset v1.9.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -98,8 +98,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-	github.com/prometheus/procfs v0.11.1 // indirect
-	github.com/rs/zerolog v1.30.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
+	github.com/rs/zerolog v1.31.0 // indirect
 	github.com/sagikazarmark/locafero v0.3.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
