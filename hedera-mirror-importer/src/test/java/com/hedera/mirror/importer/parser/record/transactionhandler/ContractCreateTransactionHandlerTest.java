@@ -286,7 +286,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @ParameterizedTest
     @ValueSource(ints = {27, 28})
-    void updateTransactionStakedAccountId(int majorVersion) {
+    void updateTransactionStakedAccountId(int minorVersion) {
         // given
         final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
