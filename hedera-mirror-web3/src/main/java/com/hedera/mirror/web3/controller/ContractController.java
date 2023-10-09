@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.controller;
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.viewmodel.BlockType.validateBlockTypeIsSupported;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -29,13 +30,12 @@ import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidBlockTypeException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
+import com.hedera.mirror.web3.exception.UnsupportedBlockTypeException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -84,11 +84,7 @@ class ContractController {
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
-        final var blockType = request.getBlock();
-        if (!BlockType.isSupported(blockType.name())) {
-            throw new InvalidBlockTypeException(String.format("Unsupported block type passed: %s", blockType.name()));
-        }
-
+        validateBlockTypeIsSupported(request.getBlock());
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
@@ -152,10 +148,10 @@ class ContractController {
     }
 
     @ExceptionHandler
-    @ResponseStatus(NOT_IMPLEMENTED)
-    private Mono<GenericErrorResponse> invalidBlockType(final InvalidBlockTypeException e) {
-        log.warn("Invalid block type passed");
-        return errorResponse(e.getMessage(), "Invalid block type passed", StringUtils.EMPTY);
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> unsupportedBlockType(final UnsupportedBlockTypeException e) {
+        log.warn("Unsupported block type passed");
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler

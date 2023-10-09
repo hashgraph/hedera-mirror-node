@@ -16,49 +16,33 @@
 
 package com.hedera.mirror.web3.viewmodel;
 
-import java.util.Arrays;
+import com.hedera.mirror.web3.exception.UnsupportedBlockTypeException;
 import org.apache.commons.lang3.StringUtils;
 
 public record BlockType(String name, long number) {
 
-    private enum BlockTypeName {
-        EARLIEST("earliest"),
-        LATEST("latest"),
-        PENDING("pending"),
-        SAFE("safe"),
-        FINALIZED("finalized");
-
-        private final String name;
-
-        BlockTypeName(final String name) {
-            this.name = name;
-        }
-    }
-
     private static final String HEX_PREFIX = "0x";
-    public static final BlockType LATEST = new BlockType(BlockTypeName.LATEST.name, Long.MAX_VALUE);
 
-    private static final BlockTypeName[] UNSUPPORTED_TYPES = {
-        BlockTypeName.PENDING, BlockTypeName.SAFE, BlockTypeName.FINALIZED
-    };
+    public static final BlockType EARLIEST = new BlockType("earliest", 0L);
+    public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
+    public static final BlockType UNSUPPORTED = new BlockType("", 0L);
 
-    public static BlockType of(final String value) {
+    public static BlockType of(final String value) throws UnsupportedBlockTypeException {
         if (StringUtils.isEmpty(value)) {
             return LATEST;
         }
 
-        try {
-            final BlockTypeName blockTypeName = BlockTypeName.valueOf(value.toUpperCase());
-            switch (blockTypeName) {
-                case EARLIEST -> {
-                    return new BlockType(BlockTypeName.EARLIEST.name, 0L);
-                }
-                case LATEST, PENDING, SAFE, FINALIZED -> {
-                    return new BlockType(blockTypeName.name, Long.MAX_VALUE);
-                }
+        final String blockTypeName = value.toLowerCase();
+        switch (blockTypeName) {
+            case "earliest" -> {
+                return EARLIEST;
             }
-        } catch (IllegalArgumentException e) {
-            // The value is not in the enum -> check for passed block number.
+            case "latest" -> {
+                return LATEST;
+            }
+            case "safe", "pending", "finalized" -> {
+                return UNSUPPORTED;
+            }
         }
 
         int radix = 10;
@@ -77,8 +61,9 @@ public record BlockType(String name, long number) {
         }
     }
 
-    public static boolean isSupported(String blockType) {
-        return Arrays.stream(UNSUPPORTED_TYPES)
-                .noneMatch(unsupportedType -> unsupportedType.name().equalsIgnoreCase(blockType));
+    public static void validateBlockTypeIsSupported(BlockType value) {
+        if (value == UNSUPPORTED) {
+            throw new UnsupportedBlockTypeException("Unsupported block type passed.");
+        }
     }
 }

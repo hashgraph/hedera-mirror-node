@@ -22,7 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
@@ -384,7 +383,7 @@ class ContractControllerTest {
     @ValueSource(strings = {"earliest", "latest", "0", "0x1a"})
     void callValidBlockType(String value) {
         final var request = request();
-        request.setBlock(BlockType.of(value));
+        request.setBlock(new BlockType(value, Long.MAX_VALUE));
 
         webClient
                 .post()
@@ -394,27 +393,6 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(OK);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"pending", "safe", "finalized"})
-    void callInvalidBlockType(String value) {
-        final var request = request();
-        request.setBlock(BlockType.of(value));
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(NOT_IMPLEMENTED)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(
-                        String.format("Unsupported block type passed: %s", value),
-                        "Invalid block type passed",
-                        StringUtils.EMPTY));
     }
 
     @Test
@@ -446,6 +424,24 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(OK);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending", "safe", "finalized"})
+    void callUnsupportedBlockType(String value) {
+        final var request = request();
+        request.setBlock(new BlockType(value, Long.MAX_VALUE));
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Unsupported block type passed."));
     }
 
     @Test

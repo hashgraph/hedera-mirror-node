@@ -18,12 +18,12 @@ package com.hedera.mirror.web3.exception;
 
 import java.io.Serial;
 
-public class InvalidBlockTypeException extends RuntimeException {
+public class UnsupportedBlockTypeException extends RuntimeException {
 
     @Serial
     private static final long serialVersionUID = -3067964948484169967L;
 
-    public InvalidBlockTypeException(String message) {
+    public UnsupportedBlockTypeException(String message) {
         super(message);
     }
 }
