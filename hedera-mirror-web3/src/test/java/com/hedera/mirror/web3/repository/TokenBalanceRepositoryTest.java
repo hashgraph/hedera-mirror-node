@@ -49,12 +49,11 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndConsensusTimestampEqualToBlockTimestamp() {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
-        assertThat(tokenBalanceRepository
-                        .findByIdAndTimestampLessThan(
-                                tokenBalance1.getId().getTokenId().getId(),
-                                tokenBalance1.getId().getAccountId().getId(),
-                                tokenBalance1.getId().getConsensusTimestamp())
-                        .get())
+        assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp()))
+                .get()
                 .isEqualTo(tokenBalance1);
     }
 
@@ -71,41 +70,61 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void shouldNotIncludeBalanceBeforeConsensusTimestamp() {
-        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(
+                        accountBalanceFile.getConsensusTimestamp(),
+                        domainBuilder.entityId(),
+                        domainBuilder.entityId())))
+                .persist();
         long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
 
         persistTokenTransfersBefore(3, consensusTimestamp, tokenBalance1);
 
-        assertThat(tokenBalanceRepository
-                        .findHistoricalTokenBalanceUpToTimestamp(
-                                tokenBalance1.getId().getTokenId().getId(),
-                                tokenBalance1.getId().getAccountId().getId(),
-                                consensusTimestamp + 10)
-                        .get())
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
+                .get()
                 .isEqualTo(tokenBalance1.getBalance());
     }
 
     @Test
     void shouldIncludeBalanceDuringValidTimestampRange() {
-        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(
+                        accountBalanceFile.getConsensusTimestamp(),
+                        domainBuilder.entityId(),
+                        domainBuilder.entityId())))
+                .persist();
+
         long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
         long historicalAccountBalance = tokenBalance1.getBalance();
 
         persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
         historicalAccountBalance += TRANSFER_AMOUNT * 3;
 
-        assertThat(tokenBalanceRepository
-                        .findHistoricalTokenBalanceUpToTimestamp(
-                                tokenBalance1.getId().getTokenId().getId(),
-                                tokenBalance1.getId().getAccountId().getId(),
-                                consensusTimestamp + 10)
-                        .get())
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
+                .get()
                 .isEqualTo(historicalAccountBalance);
     }
 
     @Test
     void shouldNotIncludeBalanceAfterTimestampFilter() {
-        var tokenBalance1 = domainBuilder.tokenBalance().persist();
+        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(
+                        accountBalanceFile.getConsensusTimestamp(),
+                        domainBuilder.entityId(),
+                        domainBuilder.entityId())))
+                .persist();
         long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
         long historicalAccountBalance = tokenBalance1.getBalance();
 
@@ -114,12 +133,11 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
-        assertThat(tokenBalanceRepository
-                        .findHistoricalTokenBalanceUpToTimestamp(
-                                tokenBalance1.getId().getTokenId().getId(),
-                                tokenBalance1.getId().getAccountId().getId(),
-                                consensusTimestamp + 10)
-                        .get())
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
+                .get()
                 .isEqualTo(historicalAccountBalance);
     }
 

@@ -64,35 +64,29 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     @Query(
             value =
                     """
-                    select coalesce(
-                        (
-                            select balance
-                            from token_balance
-                            where
-                                token_id = ?1
-                                and account_id = ?2
-                                and consensus_timestamp <= ?3
-                            order by consensus_timestamp desc
-                            limit 1
-                        ), 0
-                    ) + (
-                        select coalesce(sum(amount), 0)
+                    select coalesce((
+                        select balance
+                        from token_balance
+                        where
+                          consensus_timestamp = s.consensus_timestamp and
+                          token_id = ?1 and
+                          account_id = ?2
+                      ), 0) + coalesce((
+                        select sum(amount)
                         from token_transfer
                         where
-                            token_id = ?1
-                            and account_id = ?2
-                            and consensus_timestamp <= ?3
-                            and consensus_timestamp > (
-                                select consensus_timestamp
-                                from token_balance
-                                where
-                                    token_id = ?1
-                                    and account_id = ?2
-                                    and consensus_timestamp <= ?3
-                                order by consensus_timestamp desc
-                                limit 1
-                            )
-                    ) as total_balance
+                          token_id = ?1 and
+                          account_id = ?2 and
+                          consensus_timestamp > s.consensus_timestamp and
+                          consensus_timestamp <= ?3
+                      ), 0)
+                    from (
+                      select consensus_timestamp
+                      from account_balance_file
+                      where consensus_timestamp <= ?3
+                      order by consensus_timestamp desc
+                      limit 1
+                    ) as s;
                     """,
             nativeQuery = true)
     Optional<Long> findHistoricalTokenBalanceUpToTimestamp(long tokenId, long accountId, long blockTimestamp);
