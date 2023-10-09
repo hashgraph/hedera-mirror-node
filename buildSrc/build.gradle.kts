@@ -42,7 +42,7 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.5.5")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.0.1")
     implementation("org.owasp:dependency-check-gradle:8.4.0")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.0.3356")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.4")
 }
 
