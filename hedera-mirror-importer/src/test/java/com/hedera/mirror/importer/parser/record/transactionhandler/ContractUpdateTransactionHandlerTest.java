@@ -166,7 +166,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @ParameterizedTest
     @CsvSource({"0,28", "100,27"})
-    void updateTransactionStakedAccountId(long accountNum, int majorVersion) {
+    void updateTransactionStakedAccountId(long accountNum, int minorVersion) {
         // Note, the sentinel value '0.0.0' clears the staked account id, in importer, we persist the encoded id '0' to
         // db to indicate there is no staked account id
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
