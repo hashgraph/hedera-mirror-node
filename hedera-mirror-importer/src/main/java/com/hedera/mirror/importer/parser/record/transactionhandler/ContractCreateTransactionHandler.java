@@ -160,6 +160,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
             return;
         }
+
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         contract.setDeclineReward(transactionBody.getDeclineReward());
 
