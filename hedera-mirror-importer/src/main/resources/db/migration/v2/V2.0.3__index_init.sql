@@ -11,7 +11,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 -- account_balance
 alter table if exists account_balance
-    add constraint account_balance__pk primary key (consensus_timestamp, account_id);
+    add constraint account_balance__pk primary key (account_id, consensus_timestamp);
 
 -- account_balance_file
 alter table if exists account_balance_file
@@ -235,7 +235,7 @@ create index if not exists token_allowance_history__owner_spender_token_lower_ti
 
 -- token_balance
 alter table if exists token_balance
-    add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
+    add constraint token_balance__pk primary key (token_id, account_id, consensus_timestamp);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp

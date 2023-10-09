@@ -37,6 +37,9 @@ public class HistoricalBalanceProperties {
 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
 
+    // Todo add to configuration.md
+    private boolean dedupe = false;
+
     private boolean enabled = true;
 
     @DurationMin(minutes = 2)

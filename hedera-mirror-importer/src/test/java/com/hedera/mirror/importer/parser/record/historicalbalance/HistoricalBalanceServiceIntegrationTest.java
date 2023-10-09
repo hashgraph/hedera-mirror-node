@@ -41,14 +41,16 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -77,6 +79,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     @BeforeEach
     void setup() {
         // common database setup
+        var treasuryAccount =
+                domainBuilder.entity().customize(e -> e.id(2L).num(2L)).persist();
         account = domainBuilder.entity().persist();
         var contract = domainBuilder
                 .entity()
@@ -96,15 +100,16 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
 
         // Only entities with valid balance
-        entities = Lists.newArrayList(account, contract, fileWithBalance, unknownWithBalance);
+        entities = Lists.newArrayList(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance);
         tokenAccounts = Lists.newArrayList(tokenAccount);
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void generate(boolean tokenBalances) {
+    @CsvSource({"true,false", "false,true", "true,true", "false,false"})
+    void generate(boolean tokenBalances, boolean isDedupe) {
         // given
         properties.setTokenBalances(tokenBalances);
+        properties.setDedupe(isDedupe);
 
         // when
         parseRecordFile(null);
@@ -121,6 +126,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when
         // balance changes
         account.setBalance(account.getBalance() + 5);
+        account.setBalanceTimestamp(
+                balanceTimestamp + properties.getMinFrequency().toNanos());
         entityRepository.save(account);
         tokenAccount.setBalance(tokenAccount.getBalance() + 18);
         tokenAccountRepository.save(tokenAccount);
@@ -247,20 +254,48 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
     private void verifyGeneratedBalances(long balanceTimestamp) {
         var expectedAccountBalanceFiles = Lists.newArrayList(accountBalanceFileRepository.findAll());
-        var expectedAccountBalances = Lists.newArrayList(accountBalanceRepository.findAll());
         var expectedTokenBalances = Lists.newArrayList(tokenBalanceRepository.findAll());
+        var expectedAccountBalances = new HashMap<Long, List<AccountBalance>>();
+        for (AccountBalance accountBalance : accountBalanceRepository.findAll()) {
+            if (expectedAccountBalances.containsKey(accountBalance.getId().getAccountId())) {
+                expectedAccountBalances
+                        .get(accountBalance.getId().getAccountId().getNum())
+                        .add(accountBalance);
+            } else {
+                expectedAccountBalances.put(
+                        accountBalance.getId().getAccountId().getNum(), Lists.newArrayList(accountBalance));
+            }
+        }
 
         // when, a record file with consensus end signaling min frequency has passed
         parseRecordFile(balanceTimestamp);
 
-        // then, a synthetic account balance file, account balance, and token balance should generate
+        // then, account balance, a synthetic account balance file, and token balance should generate
+        var updatedEntitiesCount = 0L;
+        for (Entity entity : entities) {
+            var updatedAccountBalance = getAccountBalance(balanceTimestamp, entity);
+            if (!expectedAccountBalances.containsKey(entity.getId())) {
+                expectedAccountBalances.computeIfAbsent(entity.getId(), k -> Lists.newArrayList(updatedAccountBalance));
+                updatedEntitiesCount++;
+            } else if (!properties.isDedupe()) {
+                expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
+                updatedEntitiesCount++;
+            } else {
+                for (var accountBalance : expectedAccountBalances.get(entity.getId())) {
+                    if (accountBalance.getBalance() != updatedAccountBalance.getBalance()) {
+                        expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
+                        updatedEntitiesCount++;
+                        break;
+                    }
+                }
+            }
+        }
         expectedAccountBalanceFiles.add(AccountBalanceFile.builder()
                 .consensusTimestamp(balanceTimestamp)
-                .count((long) entities.size())
+                .count(updatedEntitiesCount)
                 .nodeId(INVALID_NODE_ID)
                 .synthetic(true)
                 .build());
-        entities.forEach(entity -> expectedAccountBalances.add(getAccountBalance(balanceTimestamp, entity)));
         if (properties.isTokenBalances()) {
             tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
         }
@@ -269,7 +304,9 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())
                         .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ACCOUNT_BALANCE_FILE_IGNORE_FIELDS)
                         .containsExactlyInAnyOrderElementsOf(expectedAccountBalanceFiles));
-        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalances);
+        var expectedAccountBalancesList = new ArrayList<AccountBalance>();
+        expectedAccountBalances.values().forEach(list -> expectedAccountBalancesList.addAll(list));
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalancesList);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenBalances);
     }
 

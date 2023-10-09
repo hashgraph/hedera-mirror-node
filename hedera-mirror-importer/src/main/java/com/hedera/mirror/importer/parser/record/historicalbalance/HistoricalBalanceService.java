@@ -23,6 +23,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamFilename.FileType;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -53,11 +54,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Named
 public class HistoricalBalanceService {
 
+    private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
+
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
     private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final TimePartitionService timePartitionService;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -72,11 +76,13 @@ public class HistoricalBalanceService {
             PlatformTransactionManager platformTransactionManager,
             HistoricalBalanceProperties properties,
             RecordFileRepository recordFileRepository,
+            TimePartitionService timePartitionService,
             TokenBalanceRepository tokenBalanceRepository) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.accountBalanceRepository = accountBalanceRepository;
         this.properties = properties;
         this.recordFileRepository = recordFileRepository;
+        this.timePartitionService = timePartitionService;
         this.tokenBalanceRepository = tokenBalanceRepository;
 
         // Set repeatable read isolation level and transaction timeout
@@ -121,7 +127,10 @@ public class HistoricalBalanceService {
                         .map(RecordFile::getConsensusEnd)
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
-                int accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
+
+                int accountBalancesCount = (properties.isDedupe() && !includeAllBalances(timestamp))
+                        ? accountBalanceRepository.updateBalanceSnapshot(timestamp)
+                        : accountBalanceRepository.balanceSnapshot(timestamp);
                 int tokenBalancesCount = 0;
                 if (properties.isTokenBalances()) {
                     tokenBalancesCount = tokenBalanceRepository.balanceSnapshot(timestamp);
@@ -174,5 +183,32 @@ public class HistoricalBalanceService {
                 .filter(lastTimestamp -> consensusEnd - lastTimestamp
                         >= properties.getMinFrequency().toNanos())
                 .isPresent();
+    }
+
+    private boolean includeAllBalances(long timestamp) {
+        long lastBalanceTimestamp = accountBalanceRepository
+                .findLatest()
+                .map(a -> a.getId().getConsensusTimestamp())
+                .orElse(0L);
+        if (lastBalanceTimestamp == 0L) {
+            // There is no previous account balance snapshot, include all balances
+            return true;
+        }
+
+        var partitions = timePartitionService.getOverlappingTimePartitions(
+                ACCOUNT_BALANCE_TABLE_NAME, lastBalanceTimestamp, timestamp);
+        if (partitions.isEmpty()) {
+            // Within the current partition, do not include all balances
+            return false;
+        }
+
+        var lowerEndpoint =
+                partitions.get(partitions.size() - 1).getTimestampRange().lowerEndpoint();
+        if (lastBalanceTimestamp < lowerEndpoint && timestamp > lowerEndpoint) {
+            // Include all balances when creating a snapshot for a new partition
+            return true;
+        }
+
+        return false;
     }
 }
