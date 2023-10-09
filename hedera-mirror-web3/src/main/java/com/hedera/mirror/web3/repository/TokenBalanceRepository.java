@@ -64,29 +64,29 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     @Query(
             value =
                     """
-                    select coalesce((
-                        select balance
-                        from token_balance
-                        where
-                          consensus_timestamp = s.consensus_timestamp and
-                          token_id = ?1 and
-                          account_id = ?2
-                      ), 0) + coalesce((
-                        select sum(amount)
-                        from token_transfer
-                        where
-                          token_id = ?1 and
-                          account_id = ?2 and
-                          consensus_timestamp > s.consensus_timestamp and
-                          consensus_timestamp <= ?3
-                      ), 0)
-                    from (
+                    with balance_snapshot as (
                       select consensus_timestamp
                       from account_balance_file
                       where consensus_timestamp <= ?3
                       order by consensus_timestamp desc
                       limit 1
-                    ) as s;
+                    ), base as (
+                        select balance
+                        from token_balance as tb, balance_snapshot as s
+                        where
+                          tb.consensus_timestamp = s.consensus_timestamp and
+                          token_id = ?1 and
+                          account_id = ?2
+                    ), change as (
+                        select sum(amount) as amount
+                        from token_transfer as tt, balance_snapshot as s
+                        where
+                          token_id = ?1 and
+                          account_id = ?2 and
+                          tt.consensus_timestamp > s.consensus_timestamp and
+                          tt.consensus_timestamp <= ?3
+                    )
+                    select coalesce((select balance from base), 0) + coalesce((select amount from change), 0)
                     """,
             nativeQuery = true)
     Optional<Long> findHistoricalTokenBalanceUpToTimestamp(long tokenId, long accountId, long blockTimestamp);
