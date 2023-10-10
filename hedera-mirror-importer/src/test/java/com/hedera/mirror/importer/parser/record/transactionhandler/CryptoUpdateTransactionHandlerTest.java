@@ -100,10 +100,10 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @ParameterizedTest
     @CsvSource({"1,28", "-1,27"})
-    void updateTransactionStakedNodeId(Long nodeId, int majorVersion) {
+    void updateTransactionStakedNodeId(Long nodeId, int minorVersion) {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
-                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(body -> body.setStakedNodeId(nodeId))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)

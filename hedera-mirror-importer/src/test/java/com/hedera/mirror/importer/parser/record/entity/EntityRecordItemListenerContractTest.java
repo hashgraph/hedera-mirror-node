@@ -100,7 +100,7 @@ import org.springframework.data.util.Version;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
-    private static final Version HAPI_VERSION_0_28_0 = new Version(0, 28, 0);
+    private static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
     private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
@@ -129,7 +129,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractCreate(boolean bytecodeSourceFileId, boolean hasAutoRenewAccount) {
         var recordItem = recordItemBuilder
                 .contractCreate()
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .transactionBody(b -> {
                     if (!bytecodeSourceFileId) {
                         b.clearFileID().setInitcode(recordItemBuilder.bytes(1));
@@ -172,7 +172,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 ContractID.newBuilder().setContractNum(1001L).build();
         var parentRecordItem = recordItemBuilder
                 .contractCreate(parentContractID)
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .record(r -> r.setContractCreateResult(r.getContractCreateResult().toBuilder()
                         .clearContractNonces()
                         .addContractNonces(ContractNonceInfo.newBuilder()
@@ -335,7 +335,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))))
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .sidecarRecords(s -> s.remove(0))
                 .build();
 
@@ -355,7 +355,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress)))))
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .sidecarRecords(s -> s.remove(0))
                 .build();
 
@@ -477,7 +477,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
         var recordItem = RecordItem.builder()
-                .hapiVersion(HAPI_VERSION_0_28_0)
+                .hapiVersion(RecordFile.HAPI_VERSION_0_27_0)
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build();
@@ -859,7 +859,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.clearContractCallResult()
                         .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .sidecarRecords(s -> s.remove(0))
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .build();
 
         var childEvmAddress = domainBuilder.evmAddress();
@@ -876,7 +876,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress))))
                         .setTransactionID(childTransactionId))
                 .sidecarRecords(s -> s.remove(0))
-                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_28_0))
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .build();
 
         // when
@@ -1626,7 +1626,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     recordItem.getTransactionBody().getContractCall().getContractID()));
         }
 
-        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_28_0)) {
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_23_0)) {
             contractResult.getCreatedContractIDsList().forEach(id -> entityIds.add(EntityId.of(id)));
         }
         contractResult.getLogInfoList().forEach(contractLog -> entityIds.add(EntityId.of(contractLog.getContractID())));

@@ -142,12 +142,12 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @ParameterizedTest
     @ValueSource(ints = {27, 28})
-    void updateTransactionStakedNodeId(int majorVersion) {
+    void updateTransactionStakedNodeId(int minorVersion) {
         // given
         long nodeId = 1L;
         var recordItem = recordItemBuilder
                 .cryptoCreate()
-                .recordItem(r -> r.hapiVersion(new Version(0, majorVersion, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
         var transaction = transaction(recordItem);
