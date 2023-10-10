@@ -42,11 +42,6 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
      * @return an Optional containing the entity's state at the specified timestamp.
      *         If there is no record found for the given criteria, an empty Optional is returned.
      */
-    @Cacheable(
-            cacheNames = "entityEvmAddressUnionCache",
-            key = "#evmAddress + '-' + #blockTimestamp",
-            cacheManager = CACHE_MANAGER_ENTITY,
-            unless = "#result == null")
     @Query(
             value =
                     """
