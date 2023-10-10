@@ -3,6 +3,7 @@ Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas
     Given I successfully create EstimateGas contract from contract bytes
+    Then the mirror node REST API should return status 200 for the estimate contract creation
     Given I successfully create fungible token
     And lower deviation is 5% and upper deviation is 20%
     Then I call estimateGas without arguments that multiplies two numbers

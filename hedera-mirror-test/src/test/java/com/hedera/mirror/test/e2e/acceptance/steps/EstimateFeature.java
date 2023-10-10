@@ -96,6 +96,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
         receiverAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
     }
 
+    @Then("the mirror node REST API should return status {int} for the estimate contract creation")
+    public void verifyMirrorAPIResponses(int status) {
+        verifyMirrorTransactionsResponse(mirrorClient, status);
+    }
+
     @Given("I successfully create fungible token")
     public void createFungibleToken() {
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
