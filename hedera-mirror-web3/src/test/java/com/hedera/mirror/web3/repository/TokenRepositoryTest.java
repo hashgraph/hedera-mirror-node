@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenRepositoryTest extends Web3IntegrationTest {
+
     private final TokenRepository tokenRepository;
 
     @Test
@@ -44,5 +45,90 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .returns(token.getType(), Token::getType)
                 .returns(token.getFreezeDefault(), Token::getFreezeDefault)
                 .returns(token.getKycKey(), Token::getKycKey);
+    }
+
+    @Test
+    void findByIdAndTimestampRangeLessThanBlockTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository
+                .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() + 1)
+                .get())
+                .returns(token.getName(), Token::getName)
+                .returns(token.getSymbol(), Token::getSymbol)
+                .returns(token.getTotalSupply(), Token::getTotalSupply)
+                .returns(token.getDecimals(), Token::getDecimals)
+                .returns(token.getType(), Token::getType)
+                .returns(token.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(token.getKycKey(), Token::getKycKey);
+    }
+
+    @Test
+    void findByIdAndTimestampRangeEqualToBlockTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository
+                .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower())
+                .get())
+                .returns(token.getName(), Token::getName)
+                .returns(token.getSymbol(), Token::getSymbol)
+                .returns(token.getTotalSupply(), Token::getTotalSupply)
+                .returns(token.getDecimals(), Token::getDecimals)
+                .returns(token.getType(), Token::getType)
+                .returns(token.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(token.getKycKey(), Token::getKycKey);
+    }
+
+    @Test
+    void findByIdAndTimestampRangeGreaterThanBlockTimestamp() {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeLessThanBlockTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
+                tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
+                .isPresent();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeEqualToBlockTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
+                tokenHistory.getTokenId(), tokenHistory.getTimestampLower()))
+                .isPresent();
+    }
+
+    @Test
+    void findHistoricalByIdAndTimestampRangeGreaterThanBlockTimestamp() {
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true))
+                .persist();
+
+        assertThat(tokenRepository.findByTokenIdAndTimestamp(
+                tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
+                .isEmpty();
     }
 }
