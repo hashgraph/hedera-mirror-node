@@ -348,7 +348,13 @@ class ContractService extends BaseService {
   }
 
   async getContractTransactionHashDetailsByHash(hash) {
-    const transactionHashDetailsQuery = `select hash, payer_account_id, consensus_timestamp, entity_id from contract_transaction_hash where hash = $1 order by consensus_timestamp asc limit 1`;
+    const transactionHashDetailsQuery = `select ${ContractTransactionHash.HASH}, 
+                                                ${ContractTransactionHash.PAYER_ACCOUNT_ID}, 
+                                                ${ContractTransactionHash.CONSENSUS_TIMESTAMP}, 
+                                                ${ContractTransactionHash.ENTITY_ID}
+                                                from ${ContractTransactionHash.tableName} 
+                                         where ${ContractTransactionHash.HASH} = $1 
+                                         order by ${ContractTransactionHash.CONSENSUS_TIMESTAMP} asc limit 1`;
     const transactionHashRows = await super.getRows(
       transactionHashDetailsQuery,
       [hash],

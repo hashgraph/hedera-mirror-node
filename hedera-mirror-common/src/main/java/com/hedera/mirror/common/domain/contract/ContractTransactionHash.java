@@ -51,12 +51,4 @@ public class ContractTransactionHash implements Persistable<byte[]> {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
-
-    public int calculateV1Shard() {
-        return Math.floorMod(hash[0], V1_SHARD_COUNT);
-    }
-
-    public boolean hashIsValid() {
-        return this.hash != null && hash.length > 0;
-    }
 }

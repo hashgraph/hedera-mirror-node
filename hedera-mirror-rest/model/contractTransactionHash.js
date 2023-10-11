@@ -20,7 +20,7 @@ class ContractTransactionHash {
   static HASH = 'hash';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static tableAlias = 'cth';
-  static tableName = 'transaction_hash';
+  static tableName = 'contract_transaction_hash';
 
   /**
    * Parses transaction_hash table columns into object
