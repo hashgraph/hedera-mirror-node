@@ -55,8 +55,8 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository
-                .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() + 1)
-                .get())
+                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower() + 1)
+                        .get())
                 .returns(token.getName(), Token::getName)
                 .returns(token.getSymbol(), Token::getSymbol)
                 .returns(token.getTotalSupply(), Token::getTotalSupply)
@@ -74,8 +74,8 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository
-                .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower())
-                .get())
+                        .findByTokenIdAndTimestamp(token.getTokenId(), token.getTimestampLower())
+                        .get())
                 .returns(token.getName(), Token::getName)
                 .returns(token.getSymbol(), Token::getSymbol)
                 .returns(token.getTotalSupply(), Token::getTotalSupply)
@@ -104,7 +104,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findByTokenIdAndTimestamp(
-                tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
                 .isPresent();
     }
 
@@ -116,7 +116,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findByTokenIdAndTimestamp(
-                tokenHistory.getTokenId(), tokenHistory.getTimestampLower()))
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower()))
                 .isPresent();
     }
 
@@ -128,7 +128,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findByTokenIdAndTimestamp(
-                tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
 }

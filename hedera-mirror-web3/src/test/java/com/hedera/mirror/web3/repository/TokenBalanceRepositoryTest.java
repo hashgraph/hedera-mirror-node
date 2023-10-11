@@ -38,9 +38,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
         assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                tokenBalance1.getId().getConsensusTimestamp() + 1))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp() + 1))
                 .get()
                 .isEqualTo(tokenBalance1);
     }
@@ -50,9 +50,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
         assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                tokenBalance1.getId().getConsensusTimestamp()))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp()))
                 .get()
                 .isEqualTo(tokenBalance1);
     }
@@ -62,9 +62,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         var tokenBalance1 = domainBuilder.tokenBalance().persist();
 
         assertThat(tokenBalanceRepository.findByIdAndTimestampLessThan(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                tokenBalance1.getId().getConsensusTimestamp() - 1))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        tokenBalance1.getId().getConsensusTimestamp() - 1))
                 .isEmpty();
     }
 
@@ -83,9 +83,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         persistTokenTransfersBefore(3, consensusTimestamp, tokenBalance1);
 
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                consensusTimestamp + 10))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(tokenBalance1.getBalance());
     }
@@ -108,9 +108,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         historicalAccountBalance += TRANSFER_AMOUNT * 3;
 
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                consensusTimestamp + 10))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -134,9 +134,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                tokenBalance1.getId().getTokenId().getId(),
-                tokenBalance1.getId().getAccountId().getId(),
-                consensusTimestamp + 10))
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }

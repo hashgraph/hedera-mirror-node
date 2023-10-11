@@ -656,7 +656,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?, ?>>
-    nftAllowanceHistory() {
+            nftAllowanceHistory() {
         long timestamp = timestamp();
         var builder = NftAllowanceHistory.builder()
                 .approvedForAll(false)
@@ -790,7 +790,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder>
-    stakingRewardTransfer() {
+            stakingRewardTransfer() {
         var accountId = entityId();
         var builder = StakingRewardTransfer.builder()
                 .accountId(accountId.getId())
@@ -867,7 +867,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder<?, ?>>
-    tokenAccountHistory() {
+            tokenAccountHistory() {
         long timestamp = timestamp();
         var builder = TokenAccountHistory.builder()
                 .accountId(id())
@@ -897,7 +897,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
-    tokenAllowanceHistory() {
+            tokenAllowanceHistory() {
         long amount = id() + 1000;
         var spender = entityId();
         long timestamp = timestamp();
@@ -1006,7 +1006,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder>
-    transactionSignature() {
+            transactionSignature() {
         var builder = TransactionSignature.builder()
                 .consensusTimestamp(timestamp())
                 .entityId(entityId())
