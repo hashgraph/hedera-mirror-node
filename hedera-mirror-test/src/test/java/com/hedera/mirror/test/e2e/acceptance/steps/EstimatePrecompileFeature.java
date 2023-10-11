@@ -20,20 +20,109 @@ import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenName
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ALLOWANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ALLOWANCE_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKENS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER_HBARS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DECIMALS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DELETE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_AND_ASSOCIATE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_TOKENS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_NON_FUNGIBLE_TOKEN_INFO;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_EXPIRY_INFO;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_INFO;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_INFO_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_KEY;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_TYPE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GRANT_KYC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_APPROVED_FOR_ALL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_APPROVED_FOR_ALL_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_FROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_KYC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_ASSOCIATE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_FREEZE_UNFREEZE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_GRANT_REVOKE_KYC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.OWNER_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PSEUDO_RANDOM_NUMBER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PSEUDO_RANDOM_SEED;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_APPROVE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_NAME;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REVOKE_KYC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SET_APPROVAL_FOR_ALL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SYMBOL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SYMBOL_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOKEN_URI;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOTAL_SUPPLY;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOTAL_SUPPLY_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_NFTS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_TOKENS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UNFREEZE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UNPAUSE_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_EXPIRY;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_INFO;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_KEYS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_ACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_TOKEN_ACCOUNT;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.util.Strings;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.NftId;
@@ -49,7 +138,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -90,7 +178,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I create estimate precompile contract with 0 balance")
     public void createNewEstimateContract() throws IOException {
-        deployedEstimatePrecompileContract = getContract(ContractResource.ESTIMATE_PRECOMPILE_TEST_CONTRACT);
+        deployedEstimatePrecompileContract = getContract(ESTIMATE_PRECOMPILE);
         estimatePrecompileContractSolidityAddress =
                 deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
@@ -101,7 +189,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I create erc test contract with 0 balance")
     public void createNewERCContract() throws IOException {
-        deployedErcTestContract = getContract(ContractResource.ERC_TEST_CONTRACT);
+        deployedErcTestContract = getContract(ERC);
         ercTestContractSolidityAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
 
@@ -112,7 +200,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I successfully create Precompile contract with 0 balance")
     public void createNewPrecompileTestContract() throws IOException {
-        deployedPrecompileContract = getContract(ContractResource.PRECOMPILE_TEST_CONTRACT);
+        deployedPrecompileContract = getContract(PRECOMPILE);
         precompileTestContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
     }
@@ -148,62 +236,56 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with associate function for fungible token")
     public void associateFunctionEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ASSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(fungibleTokenId.toSolidityAddress()));
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ASSOCIATE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, ASSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
+        validateGasEstimation(data, ASSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with associate function for NFT")
     public void associateFunctionNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ASSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId.toSolidityAddress()));
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ASSOCIATE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, ASSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
+        validateGasEstimation(data, ASSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate token function without association for fungible token")
     public void dissociateFunctionEstimateGasNegative() {
         // attempt to call dissociate function without having association
         // expecting status 400/revert
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(fungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate token function without association for NFT")
     public void dissociateFunctionNFTEstimateGasNegative() {
         // attempt to call dissociate function without having association
         // expecting status 400/revert
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for fungible token")
     public void nestedAssociateFunctionEstimateGas() {
         // attempt to call associate function twice
         // expecting a revert
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.NESTED_ASSOCIATE)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(fungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for NFT")
     public void nestedAssociateFunctionNFTEstimateGas() {
         // attempt to call associate function twice
         // expecting a revert
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.NESTED_ASSOCIATE)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the receiver account with the fungible token")
@@ -214,13 +296,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociate token function for fungible token")
     public void dissociateFunctionEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(fungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the receiver account with the NFT")
@@ -231,70 +310,72 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociate token function for NFT")
     public void dissociateFunctionNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKEN)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate and associate nested function for fungible token")
     public void dissociateAndAssociatedEstimateGas() {
         // token is already associated
         // attempting to execute nested dissociate and associate function
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_AND_ASSOCIATE)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(fungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                DISSOCIATE_AND_ASSOCIATE,
+                asAddress(receiverAccountAlias),
+                asAddress(fungibleTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_AND_ASSOCIATE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_AND_ASSOCIATE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate and associate nested function for NFT")
     public void dissociateAndAssociatedNFTEstimateGas() {
         // token is already associated
         // attempting to execute nested dissociate and associate function
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_AND_ASSOCIATE)
-                .encodeCallWithArgs(asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                DISSOCIATE_AND_ASSOCIATE,
+                asAddress(receiverAccountAlias),
+                asAddress(nonFungibleTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_AND_ASSOCIATE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_AND_ASSOCIATE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with approve function without association")
     public void approveWithoutAssociationEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.APPROVE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("10"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                APPROVE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("10"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with setApprovalForAll function without association")
     public void setApprovalForAllWithoutAssociationEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.SET_APPROVAL_FOR_ALL)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()), asAddress(receiverAccountAlias), true);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                SET_APPROVAL_FOR_ALL,
+                asAddress(nonFungibleTokenId),
+                asAddress(receiverAccountAlias),
+                true);
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with approveNFT function without association")
     public void approveNonFungibleWithoutAssociationEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.APPROVE_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("1"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                APPROVE_NFT,
+                asAddress(nonFungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I associate contracts with the tokens and approve all nft serials")
@@ -313,82 +394,72 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with approve function")
     public void approveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.APPROVE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("10"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                APPROVE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("10"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.APPROVE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, APPROVE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with approveNFT function")
     public void approveNftEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.APPROVE_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("1"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                APPROVE_NFT,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.APPROVE_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, APPROVE_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC approve function")
     public void ercApproveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.APPROVE_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("10"));
+        var data = encodeData(
+                ERC, APPROVE_ERC, asAddress(fungibleTokenId), asAddress(receiverAccountAlias), new BigInteger("10"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.APPROVE_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, APPROVE_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with setApprovalForAll function")
     public void setApprovalForAllEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.SET_APPROVAL_FOR_ALL)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        true);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                SET_APPROVAL_FOR_ALL,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                true);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.SET_APPROVAL_FOR_ALL.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, SET_APPROVAL_FOR_ALL, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferFrom function without approval")
     public void transferFromEstimateGasWithoutApproval() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_FROM)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_FROM,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("5"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC transferFrom function without approval")
     public void ercTransferFromEstimateGasWithoutApproval() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TRANSFER_FROM_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("10"));
+        var data = encodeData(
+                ERC,
+                TRANSFER_FROM_ERC,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("10"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, ercTestContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, ercTestContractSolidityAddress);
     }
 
     @And("I approve receiver account to use fungible token")
@@ -398,56 +469,54 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFrom function")
     public void transferFromEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_FROM)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_FROM,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("5"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_FROM.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_FROM, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC transferFrom function")
     public void ercTransferFromEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TRANSFER_FROM_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                ERC,
+                TRANSFER_FROM_ERC,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("5"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_FROM_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_FROM_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferFrom function with more than the approved allowance")
     public void transferFromExceedAllowanceEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_FROM)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("500"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_FROM,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("500"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC transferFrom function with more than the approved allowance")
     public void ercTransferFromExceedsAllowanceEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TRANSFER_FROM_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("500"));
+        var data = encodeData(
+                ERC,
+                TRANSFER_FROM_ERC,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("500"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, ercTestContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, ercTestContractSolidityAddress);
     }
 
     @And("I approve receiver account to use the NFT with id 1")
@@ -458,59 +527,54 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFromNFT function")
     public void transferFromNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_FROM_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("1"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_FROM_NFT,
+                asAddress(nonFungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_FROM_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_FROM_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferFromNFT with invalid serial number")
     public void transferFromNFTInvalidSerialEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_FROM_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("50"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_FROM_NFT,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("50"));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferToken function")
     public void transferTokenEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        5L);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_TOKEN,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                5L);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferNFT function")
     public void transferNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        1L);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_NFT,
+                asAddress(nonFungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                1L);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I approve receiver account to use fungible token and transfer fungible token to the erc contract")
@@ -526,45 +590,34 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC transfer function")
     public void ercTransferEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TRANSFER_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                ERC, TRANSFER_ERC, asAddress(fungibleTokenId), asAddress(receiverAccountAlias), new BigInteger("5"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with associateTokens function for fungible tokens")
     public void associateTokensEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ASSOCIATE_TOKENS)
-                .encodeCallWithArgs(
-                        asAddress(secondReceiverAccount.getAccountId().toSolidityAddress()),
-                        asAddressArray(Arrays.asList(
-                                fungibleTokenId.toSolidityAddress(), fungibleKycUnfrozenTokenId.toSolidityAddress())));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                ASSOCIATE_TOKENS,
+                asAddress(secondReceiverAccount),
+                asAddressArray(Arrays.asList(
+                        fungibleTokenId.toSolidityAddress(), fungibleKycUnfrozenTokenId.toSolidityAddress())));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ASSOCIATE_TOKENS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, ASSOCIATE_TOKENS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with associateTokens function for NFTs")
     public void associateNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ASSOCIATE_TOKENS)
-                .encodeCallWithArgs(
-                        asAddress(secondReceiverAccount.getAccountId().toSolidityAddress()),
-                        asAddressArray(Arrays.asList(
-                                nonFungibleKycUnfrozenTokenId.toSolidityAddress(),
-                                nonFungibleTokenId.toSolidityAddress())));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                ASSOCIATE_TOKENS,
+                asAddress(secondReceiverAccount),
+                asAddressArray(Arrays.asList(
+                        nonFungibleKycUnfrozenTokenId.toSolidityAddress(), nonFungibleTokenId.toSolidityAddress())));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ASSOCIATE_TOKENS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, ASSOCIATE_TOKENS, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the fungible_kyc_unfrozen token with the receiver account")
@@ -574,16 +627,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociateTokens function for fungible tokens")
     public void dissociateTokensEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKENS)
-                .encodeCallWithArgs(
-                        asAddress(receiverAccountAlias),
-                        asAddressArray(Arrays.asList(
-                                fungibleTokenId.toSolidityAddress(), fungibleKycUnfrozenTokenId.toSolidityAddress())));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                DISSOCIATE_TOKENS,
+                asAddress(receiverAccountAlias),
+                asAddressArray(Arrays.asList(
+                        fungibleTokenId.toSolidityAddress(), fungibleKycUnfrozenTokenId.toSolidityAddress())));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_TOKENS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_TOKENS, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the nft_kyc_unfrozen with the receiver account")
@@ -593,17 +644,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociateTokens function for NFTs")
     public void dissociateNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DISSOCIATE_TOKENS)
-                .encodeCallWithArgs(
-                        asAddress(receiverAccountAlias),
-                        asAddressArray(Arrays.asList(
-                                nonFungibleKycUnfrozenTokenId.toSolidityAddress(),
-                                nonFungibleTokenId.toSolidityAddress())));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                DISSOCIATE_TOKENS,
+                asAddress(receiverAccountAlias),
+                asAddressArray(Arrays.asList(
+                        nonFungibleKycUnfrozenTokenId.toSolidityAddress(), nonFungibleTokenId.toSolidityAddress())));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DISSOCIATE_TOKENS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DISSOCIATE_TOKENS, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate and approve the second receiver to use the fungible_kyc_unfrozen token")
@@ -615,19 +663,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferTokens function")
     public void transferTokensEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_TOKENS)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddressArray(Arrays.asList(
-                                admin.getAccountId().toSolidityAddress(),
-                                receiverAccountAlias,
-                                secondReceiverAccount.getAccountId().toSolidityAddress())),
-                        new long[] {-6L, 3L, 3L});
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_TOKENS,
+                asAddress(fungibleTokenId),
+                asAddressArray(Arrays.asList(
+                        admin.getAccountId().toSolidityAddress(),
+                        receiverAccountAlias,
+                        secondReceiverAccount.getAccountId().toSolidityAddress())),
+                new long[] {-6L, 3L, 3L});
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_TOKENS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_TOKENS, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I mint a new NFT and approve second receiver account to all serial numbers")
@@ -640,19 +686,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferNFTs function")
     public void transferNFTsEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.TRANSFER_NFTS)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddressArray(Arrays.asList(admin.getAccountId().toSolidityAddress())),
-                        asAddressArray(Arrays.asList(
-                                receiverAccountAlias,
-                                secondReceiverAccount.getAccountId().toSolidityAddress())),
-                        new long[] {1, 2});
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                TRANSFER_NFTS,
+                asAddress(nonFungibleTokenId),
+                asAddressArray(Arrays.asList(admin.getAccountId().toSolidityAddress())),
+                asAddressArray(Arrays.asList(
+                        receiverAccountAlias,
+                        secondReceiverAccount.getAccountId().toSolidityAddress())),
+                new long[] {1, 2});
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TRANSFER_NFTS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, TRANSFER_NFTS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with cryptoTransfer function for hbars")
@@ -660,12 +704,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var senderTransfer = accountAmount(admin.getAccountId().toSolidityAddress(), -10L, false);
         var receiverTransfer = accountAmount(receiverAccountAlias, 10L, false);
         var args = Tuple.of((Object) new Tuple[] {senderTransfer, receiverTransfer});
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CRYPTO_TRANSFER_HBARS)
-                .encodeCallWithArgs(args, EMPTY_TUPLE_ARRAY);
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CRYPTO_TRANSFER_HBARS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        var data = encodeData(ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_HBARS, args, EMPTY_TUPLE_ARRAY);
+        validateGasEstimation(data, CRYPTO_TRANSFER_HBARS, estimatePrecompileContractSolidityAddress);
     }
 
     private TokenTransferListBuilder tokenTransferList() {
@@ -681,12 +721,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                             nftAmount(admin.getAccountId().toSolidityAddress(), receiverAccountAlias, 1L, false))
                     .build()
         };
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CRYPTO_TRANSFER_NFT)
-                .encodeCallWithArgs(Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CRYPTO_TRANSFER_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_NFT, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
+        validateGasEstimation(data, CRYPTO_TRANSFER_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with cryptoTransfer function for fungible tokens")
@@ -699,112 +736,96 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                             accountAmount(secondReceiverAccount.getAccountId().toSolidityAddress(), 3L, false))
                     .build()
         };
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CRYPTO_TRANSFER)
-                .encodeCallWithArgs(Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CRYPTO_TRANSFER.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
+        validateGasEstimation(data, CRYPTO_TRANSFER, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with mintToken function for fungible token")
     public void mintFungibleTokenEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.MINT_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), 1L, asByteArray(new ArrayList<>()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                MINT_TOKEN,
+                asAddress(fungibleKycUnfrozenTokenId),
+                1L,
+                asByteArray(new ArrayList<>()));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.MINT_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, MINT_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with mintToken function for NFT")
     public void mintNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.MINT_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()), 0L, asByteArray(Arrays.asList("0x02")));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(Arrays.asList("0x02")));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.MINT_NFT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with burnToken function for fungible token")
     public void burnFungibleTokenEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.BURN_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), 1L, asLongArray(new ArrayList<>()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                BURN_TOKEN,
+                asAddress(fungibleKycUnfrozenTokenId),
+                1L,
+                asLongArray(new ArrayList<>()));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.BURN_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, BURN_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with burnToken function for NFT")
     public void burnNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.BURN_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), 0L, asLongArray(List.of(1L)));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                BURN_TOKEN,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                0L,
+                asLongArray(List.of(1L)));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.BURN_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, BURN_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with CreateFungibleToken function")
     public void createFungibleTokenEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_FUNGIBLE_TOKEN)
-                .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, CREATE_FUNGIBLE_TOKEN, asAddress(admin));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
-                calculateCreateTokenFee(1, current));
+                data, CREATE_FUNGIBLE_TOKEN.getActualGas(), calculateCreateTokenFee(1, current));
         executeAndRetryWithNextExchangeRates(estimateFunction);
     }
 
     @Then("I call estimateGas with CreateNFT function")
     public void createNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_NFT)
-                .encodeCallWithArgs(asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, CREATE_NFT, asAddress(admin));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CREATE_FUNGIBLE_TOKEN.getActualGas(),
-                calculateCreateTokenFee(1, current));
+                data, CREATE_FUNGIBLE_TOKEN.getActualGas(), calculateCreateTokenFee(1, current));
         executeAndRetryWithNextExchangeRates(estimateFunction);
     }
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
     public void createFungibleTokenWithCustomFeesEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
-                        ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES)
-                .encodeCallWithArgs(
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                asAddress(admin),
+                asAddress(fungibleKycUnfrozenTokenId));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(),
-                calculateCreateTokenFee(2, current));
+                data, CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES.getActualGas(), calculateCreateTokenFee(2, current));
         executeAndRetryWithNextExchangeRates(estimateFunction);
     }
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
     public void createNFTWithCustomFeesEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES)
-                .encodeCallWithArgs(
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                CREATE_NFT_WITH_CUSTOM_FEES,
+                asAddress(admin),
+                asAddress(nonFungibleKycUnfrozenTokenId));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(),
-                calculateCreateTokenFee(2, current));
+                data, CREATE_NFT_WITH_CUSTOM_FEES.getActualGas(), calculateCreateTokenFee(2, current));
         executeAndRetryWithNextExchangeRates(estimateFunction);
     }
 
@@ -817,25 +838,26 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeTokenAccount function")
     public void wipeTokenAccountEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.WIPE_TOKEN_ACCOUNT)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()), asAddress(receiverAccountAlias), 1L);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                WIPE_TOKEN_ACCOUNT,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                1L);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.WIPE_TOKEN_ACCOUNT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, WIPE_TOKEN_ACCOUNT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with WipeTokenAccount function with invalid amount")
     public void wipeTokenAccountInvalidAmountEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.WIPE_TOKEN_ACCOUNT)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        100000000000000000L);
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                WIPE_TOKEN_ACCOUNT,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                100000000000000000L);
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I transfer NFT to receiver account")
@@ -850,891 +872,646 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeNFTAccount function")
     public void wipeNFTAccountEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.WIPE_NFT_ACCOUNT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        asLongArray(List.of(1L)));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                WIPE_NFT_ACCOUNT,
+                asAddress(nonFungibleTokenId),
+                asAddress(receiverAccountAlias),
+                asLongArray(List.of(1L)));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.WIPE_NFT_ACCOUNT.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, WIPE_NFT_ACCOUNT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with WipeNFTAccount function with invalid serial number")
     public void wipeNFTAccountInvalidSerialNumberEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.WIPE_NFT_ACCOUNT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        asLongArray(List.of(66L)));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                WIPE_NFT_ACCOUNT,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                asLongArray(List.of(66L)));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with GrantKYC function for fungible token")
     public void grantKYCFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GRANT_KYC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GRANT_KYC, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GRANT_KYC.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GRANT_KYC, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with GrantKYC function for NFT")
     public void grantKYCNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GRANT_KYC)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                GRANT_KYC,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GRANT_KYC.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GRANT_KYC, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with RevokeTokenKYC function for fungible token")
     public void revokeTokenKYCEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.REVOKE_KYC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                REVOKE_KYC,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REVOKE_KYC.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, REVOKE_KYC, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with RevokeTokenKYC function for NFT")
     public void revokeTokenKYCNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.REVOKE_KYC)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                REVOKE_KYC,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REVOKE_KYC.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, REVOKE_KYC, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with Grant and Revoke KYC nested function")
     public void nestedGrantRevokeKYCEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.NESTED_GRANT_REVOKE_KYC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                NESTED_GRANT_REVOKE_KYC,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.NESTED_GRANT_REVOKE_KYC.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, NESTED_GRANT_REVOKE_KYC, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with Freeze function for fungible token")
     public void freezeFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.FREEZE_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                FREEZE_TOKEN,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.FREEZE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, FREEZE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with Freeze function for NFT")
     public void freezeNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.FREEZE_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                FREEZE_TOKEN,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.FREEZE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, FREEZE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with Unfreeze function for fungible token")
     public void unfreezeFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UNFREEZE_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                UNFREEZE_TOKEN,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UNFREEZE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UNFREEZE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with Unfreeze function for NFT")
     public void unfreezeNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UNFREEZE_TOKEN)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                UNFREEZE_TOKEN,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UNFREEZE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UNFREEZE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested Freeze and Unfreeze function for fungible token")
     public void nestedFreezeAndUnfreezeEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.NESTED_FREEZE_UNFREEZE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                NESTED_FREEZE_UNFREEZE,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.NESTED_FREEZE_UNFREEZE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, NESTED_FREEZE_UNFREEZE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested Freeze and Unfreeze function for NFT")
     public void nestedFreezeAndUnfreezeNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.NESTED_FREEZE_UNFREEZE)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                NESTED_FREEZE_UNFREEZE,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.NESTED_FREEZE_UNFREEZE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, NESTED_FREEZE_UNFREEZE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with delete function for Fungible token")
     public void deleteFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DELETE_TOKEN)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DELETE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DELETE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with delete function for NFT")
     public void deleteNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DELETE_TOKEN)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DELETE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, DELETE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with delete function for invalid token address")
     public void deleteTokenRandomAddressEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.DELETE_TOKEN)
-                .encodeCallWithArgs(asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(RANDOM_ADDRESS));
 
-        assertContractCallReturnsBadRequest(encodedFunctionCall, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pause function for fungible token")
     public void pauseFungibleTokenPositiveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PAUSE_TOKEN)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PAUSE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pause function for NFT")
     public void pauseNFTPositiveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PAUSE_TOKEN)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PAUSE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with unpause function for fungible token")
     public void unpauseFungibleTokenPositiveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UNPAUSE_TOKEN)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UNPAUSE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UNPAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with unpause function for NFT")
     public void unpauseNFTPositiveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UNPAUSE_TOKEN)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UNPAUSE_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UNPAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas for nested pause and unpause function")
     public void pauseUnpauseFungibleTokenNestedCallEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PAUSE_UNPAUSE_NESTED_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas for nested pause, unpause NFT function")
     public void pauseUnpauseNFTNestedCallEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data =
+                encodeData(ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PAUSE_UNPAUSE_NESTED_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with updateTokenExpiryInfo function")
     public void updateTokenExpiryInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UPDATE_TOKEN_EXPIRY)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, UPDATE_TOKEN_EXPIRY, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UPDATE_TOKEN_EXPIRY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UPDATE_TOKEN_EXPIRY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with updateTokenInfo function")
     public void updateTokenInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UPDATE_TOKEN_INFO)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, UPDATE_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UPDATE_TOKEN_INFO.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UPDATE_TOKEN_INFO, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with updateTokenKeys function")
     public void updateTokenKeysEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.UPDATE_TOKEN_KEYS)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UPDATE_TOKEN_KEYS, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.UPDATE_TOKEN_KEYS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, UPDATE_TOKEN_KEYS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenExpiryInfo function")
     public void getTokenExpiryInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_EXPIRY_INFO)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, GET_TOKEN_EXPIRY_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_EXPIRY_INFO.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_EXPIRY_INFO, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isToken function")
     public void isTokenEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.IS_TOKEN)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ESTIMATE_PRECOMPILE, IS_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_TOKEN.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, IS_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for supply")
     public void getTokenKeySupplyEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("16"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("16"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for KYC")
     public void getTokenKeyKYCEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("2"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("2"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for freeze")
     public void getTokenKeyFreezeEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("4"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("4"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for admin")
     public void getTokenKeyAdminEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for wipe")
     public void getTokenKeyWipeEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("8"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("8"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for fee")
     public void getTokenKeyFeeEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("32"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("32"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for pause")
     public void getTokenKeyPauseEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_TOKEN_KEY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("64"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("64"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_KEY.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with allowance function for fungible token")
     public void allowanceFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ALLOWANCE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                ALLOWANCE,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ALLOWANCE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with allowance function for NFT")
     public void allowanceNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.ALLOWANCE)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                ALLOWANCE,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ALLOWANCE.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC allowance function for fungible token")
     public void ercAllowanceFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.ALLOWANCE_ERC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ERC,
+                ALLOWANCE_ERC,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.ALLOWANCE_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, ALLOWANCE_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getApproved function for NFT")
     public void getApprovedNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.GET_APPROVED)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE, GET_APPROVED, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_APPROVED.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, GET_APPROVED, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC getApproved function for NFT")
     public void ercGetApprovedNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.GET_APPROVED_ERC)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(ERC, GET_APPROVED_ERC, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_APPROVED_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, GET_APPROVED_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isApprovedForAll function")
     public void isApprovedForAllEstimateGas() {
         // reminder: check with setApprovalForAll test-> there we have the contract associated so the test can work
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.IS_APPROVED_FOR_ALL)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                IS_APPROVED_FOR_ALL,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_APPROVED_FOR_ALL.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, IS_APPROVED_FOR_ALL, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC isApprovedForAll function")
     public void ercIsApprovedForAllEstimateGas() {
         // reminder: check with setApprovalForAll test-> there we have the contract associated so the test can work
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.IS_APPROVED_FOR_ALL_ERC)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                ERC,
+                IS_APPROVED_FOR_ALL_ERC,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_APPROVED_FOR_ALL_ERC.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, IS_APPROVED_FOR_ALL_ERC, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with name function for fungible token")
     public void nameEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.NAME)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, NAME, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.NAME.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, NAME, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with name function for NFT")
     public void nameNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.NAME_NFT)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, NAME_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.NAME_NFT.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, NAME_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with symbol function for fungible token")
     public void symbolEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.SYMBOL)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.SYMBOL.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, SYMBOL, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with symbol function for NFT")
     public void symbolNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.SYMBOL_NFT)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, SYMBOL_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.SYMBOL_NFT.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, SYMBOL_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with decimals function for fungible token")
     public void decimalsEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.DECIMALS)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.DECIMALS.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, DECIMALS, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with totalSupply function for fungible token")
     public void totalSupplyEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TOTAL_SUPPLY)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, TOTAL_SUPPLY, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TOTAL_SUPPLY.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, TOTAL_SUPPLY, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with totalSupply function for NFT")
     public void totalSupplyNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TOTAL_SUPPLY_NFT)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(ERC, TOTAL_SUPPLY_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TOTAL_SUPPLY_NFT.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, TOTAL_SUPPLY_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with balanceOf function for fungible token")
     public void balanceOfEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.BALANCE_OF)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(ERC, BALANCE_OF, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.BALANCE_OF.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, BALANCE_OF, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with balanceOf function for NFT")
     public void balanceOfNFTEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.BALANCE_OF_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(ERC, BALANCE_OF_NFT, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(admin));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.BALANCE_OF_NFT.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, BALANCE_OF_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ownerOf function for NFT")
     public void ownerOfEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.OWNER_OF)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(ERC, OWNER_OF, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.OWNER_OF.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, OWNER_OF, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with tokenURI function for NFT")
     public void tokenURIEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromErcArtifact(ContractMethods.TOKEN_URI)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(ERC, TOKEN_URI, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.TOKEN_URI.getActualGas(),
-                ercTestContractSolidityAddress);
+        validateGasEstimation(data, TOKEN_URI, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getFungibleTokenInfo function")
     public void getFungibleTokenInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_FUNGIBLE_TOKEN_INFO)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_FUNGIBLE_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_FUNGIBLE_TOKEN_INFO.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_FUNGIBLE_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getNonFungibleTokenInfo function")
     public void getNonFungibleTokenInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_NON_FUNGIBLE_TOKEN_INFO)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), 1L);
+        var data = encodeData(PRECOMPILE, GET_NON_FUNGIBLE_TOKEN_INFO, asAddress(nonFungibleKycUnfrozenTokenId), 1L);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_NON_FUNGIBLE_TOKEN_INFO.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_NON_FUNGIBLE_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenInfo function for fungible")
     public void getTokenInfoEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_INFO)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_INFO.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenInfo function for NFT")
     public void getTokenInfoNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_INFO_NFT)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_INFO_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_INFO_NFT.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_INFO_NFT, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultFreezeStatus function for fungible token")
     public void getTokenDefaultFreezeStatusFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_DEFAULT_FREEZE_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultFreezeStatus function for NFT")
     public void getTokenDefaultFreezeStatusNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_DEFAULT_FREEZE_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultKycStatus function for fungible token")
     public void getTokenDefaultKycStatusFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_DEFAULT_KYC_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultKycStatus function for NFT")
     public void getTokenDefaultKycStatusNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_DEFAULT_KYC_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isKyc function for fungible token")
     public void isKycFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.IS_KYC)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data =
+                encodeData(PRECOMPILE, IS_KYC, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_KYC.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, IS_KYC, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isKyc function for NFT")
     public void isKycNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.IS_KYC)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                PRECOMPILE, IS_KYC, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_KYC.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, IS_KYC, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isFrozen function for fungible token")
     public void isFrozenFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.IS_FROZEN)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                PRECOMPILE, IS_FROZEN, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_FROZEN.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, IS_FROZEN, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isFrozen function for NFT")
     public void isFrozenNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.IS_FROZEN)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), asAddress(receiverAccountAlias));
+        var data = encodeData(
+                PRECOMPILE, IS_FROZEN, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.IS_FROZEN.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, IS_FROZEN, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenType function for fungible token")
     public void getTokenTypeFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_TYPE)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_TYPE.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_TYPE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenType function for NFT")
     public void getTokenTypeNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.GET_TOKEN_TYPE)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.GET_TOKEN_TYPE.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, GET_TOKEN_TYPE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect balanceOf function")
     public void redirectBalanceOfEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()));
+        var data = encodeData(
+                PRECOMPILE, REDIRECT_FOR_TOKEN_BALANCE_OF, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_BALANCE_OF, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect name function")
     public void redirectNameEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_NAME)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_NAME, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect symbol function")
     public void redirectSymbolEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_SYMBOL, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect name function for NFT")
     public void redirectNameNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_NAME)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_NAME.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_NAME, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect symbol function for NFT")
     public void redirectSymbolNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(nonFungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_SYMBOL, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect decimals function")
     public void redirectDecimalsEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS)
-                .encodeCallWithArgs(asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_DECIMALS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect allowance function")
     public void redirectAllowanceEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_ALLOWANCE,
+                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_ALLOWANCE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect getOwnerOf function")
     public void redirectGetOwnerOfEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_GET_OWNER_OF,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_GET_OWNER_OF, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect tokenURI function")
     public void redirectTokenURIEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI)
-                .encodeCallWithArgs(asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()), new BigInteger("1"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_TOKEN_URI,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                new BigInteger("1"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_TOKEN_URI, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect isApprovedForAll function")
     public void redirectIsApprovedForAllEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL, precompileTestContractSolidityAddress);
     }
 
     @And("I transfer fungible token to the precompile contract")
@@ -1749,128 +1526,97 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect transfer function")
     public void redirectTransferEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_TRANSFER,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("5"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_TRANSFER, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect transferFrom function")
     public void redirectTransferFromEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("5"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_TRANSFER_FROM,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("5"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_TRANSFER_FROM, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect approve function")
     public void redirectApproveEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(ContractMethods.REDIRECT_FOR_TOKEN_APPROVE)
-                .encodeCallWithArgs(
-                        asAddress(fungibleTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("10"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_APPROVE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("10"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_APPROVE.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_APPROVE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect transferFrom NFT function")
     public void redirectTransferFromNonFungibleEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleTokenId.toSolidityAddress()),
-                        asAddress(admin.getAccountId().toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        new BigInteger("2"));
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT,
+                asAddress(nonFungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("2"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect setApprovalForAll function")
     public void redirectSetApprovalForAllEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromPrecompileArtifact(
-                        ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL)
-                .encodeCallWithArgs(
-                        asAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress()),
-                        asAddress(receiverAccountAlias),
-                        true);
+        var data = encodeData(
+                PRECOMPILE,
+                REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                true);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL.getActualGas(),
-                precompileTestContractSolidityAddress);
+        validateGasEstimation(data, REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pseudo random seed")
     public void pseudoRandomSeedEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PSEUDO_RANDOM_SEED)
-                .encodeCallWithArgs();
+        var data = encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_SEED);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PSEUDO_RANDOM_SEED.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PSEUDO_RANDOM_SEED, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pseudo random number")
     public void pseudoRandomNumberEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(ContractMethods.PSEUDO_RANDOM_NUMBER)
-                .encodeCallWithArgs(500L, 1000L);
+        var data = encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_NUMBER, 500L, 1000L);
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.PSEUDO_RANDOM_NUMBER.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, PSEUDO_RANDOM_NUMBER, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with exchange rate tinycents to tinybars")
     public void exchangeRateTinyCentsToTinyBarsEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
-                        ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS)
-                .encodeCallWithArgs(new BigInteger("100"));
+        var data = encodeData(ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYCENTS_TO_TINYBARS, new BigInteger("100"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, EXCHANGE_RATE_TINYCENTS_TO_TINYBARS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with exchange rate tinybars to tinycents")
     public void exchangeRateTinyBarsToTinyCentsEstimateGas() {
-        ByteBuffer encodedFunctionCall = getFunctionFromEstimateArtifact(
-                        ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS)
-                .encodeCallWithArgs(new BigInteger("100"));
+        var data = encodeData(ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, new BigInteger("100"));
 
-        validateGasEstimation(
-                Strings.encode(encodedFunctionCall),
-                ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS.getActualGas(),
-                estimatePrecompileContractSolidityAddress);
+        validateGasEstimation(data, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, estimatePrecompileContractSolidityAddress);
     }
 
-    private void validateGasEstimationForCreateToken(String selector, int actualGasUsed, long value) {
+    private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(selector)
+                .data(data)
                 .to(estimatePrecompileContractSolidityAddress)
                 .from(contractClient.getClientAddress())
                 .estimate(true)
@@ -1903,39 +1649,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validationFunction.accept(false);
     }
 
-    public Function getFunctionFromEstimateArtifact(ContractMethods contractMethod) {
-        String json;
-        try (var in = estimatePrecompileTestContract.getInputStream()) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), contractMethod.getFunctionName());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return Function.fromJson(json);
-    }
-
-    public Function getFunctionFromErcArtifact(ContractMethods contractMethod) {
-        String json;
-        try (var in = ercTestContract.getInputStream()) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), contractMethod.getFunctionName());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return Function.fromJson(json);
-    }
-
-    public Function getFunctionFromPrecompileArtifact(ContractMethods contractMethod) {
-        String json;
-        try (var in = precompileTestContract.getInputStream()) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), contractMethod.getFunctionName());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return Function.fromJson(json);
-    }
-
     @Getter
     @RequiredArgsConstructor
-    private enum ContractMethods {
+    enum ContractMethods implements ContractMethodInterface {
         ALLOWANCE("allowanceExternal", 25399),
         ALLOWANCE_ERC("allowance", 27481),
         APPROVE("approveExternal", 729571),
@@ -2030,7 +1746,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", 74920),
         UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 60427);
 
-        private final String functionName;
+        private final String selector;
         private final int actualGas;
     }
 }

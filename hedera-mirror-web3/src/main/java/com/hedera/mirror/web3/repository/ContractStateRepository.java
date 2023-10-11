@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_STATE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_CONTRACT_STATE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME;
 
 import com.hedera.mirror.common.domain.contract.ContractState;
 import java.util.Optional;
@@ -27,6 +28,6 @@ import org.springframework.data.repository.CrudRepository;
 public interface ContractStateRepository extends CrudRepository<ContractState, Long> {
 
     @Query(value = "select value from contract_state where contract_id = ?1 and slot =?2", nativeQuery = true)
-    @Cacheable(cacheNames = "contract_state.storage", cacheManager = CACHE_MANAGER_STATE, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_CONTRACT_STATE, unless = "#result == null")
     Optional<byte[]> findStorage(final Long contractId, final byte[] key);
 }

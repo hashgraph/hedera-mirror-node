@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_ALLOWANCE;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance.Id;
@@ -29,7 +30,7 @@ import org.springframework.data.repository.CrudRepository;
 public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance, AbstractTokenAllowance.Id> {
 
     @Override
-    @Cacheable(cacheNames = "token_allowance", cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_TOKEN_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<TokenAllowance> findById(Id id);
 
     List<TokenAllowance> findByOwner(long owner);

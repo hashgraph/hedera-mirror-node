@@ -40,7 +40,6 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -60,7 +59,6 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
     private final DomainBuilder domainBuilder;
     private final MeterRegistry meterRegistry;
-    private final RecordFileRepository recordFileRepository;
     private final ReconciliationJobRepository reconciliationJobRepository;
     private final ReconciliationProperties reconciliationProperties;
     private final BalanceReconciliationService reconciliationService;

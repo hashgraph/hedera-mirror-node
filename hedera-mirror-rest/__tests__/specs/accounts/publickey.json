@@ -18,6 +18,7 @@
       },
       {
         "balance": 90,
+        "balance_timestamp": "2345",
         "num": 9,
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
       }
@@ -25,14 +26,9 @@
     "contracts": [
       {
         "balance": 115,
+        "balance_timestamp": "2345",
         "num": 10,
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 2345
       }
     ],
     "tokenaccounts": [
@@ -77,8 +73,8 @@
     "accounts": [
       {
         "balance": {
-          "timestamp": "0.000002345",
           "balance": 90,
+          "timestamp": "0.000002345",
           "tokens": [
             {
               "token_id": "0.0.99998",
@@ -110,8 +106,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002345",
           "balance": 115,
+          "timestamp": "0.000002345",
           "tokens": []
         },
         "account": "0.0.10",

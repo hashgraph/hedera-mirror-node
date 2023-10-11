@@ -334,7 +334,7 @@ describe('processRow', () => {
     alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     balance: 123456789,
-    consensus_timestamp: 9876500123456789n,
+    balance_timestamp: 9876500123456789n,
     created_timestamp: 10123456789n,
     decline_reward: false,
     ethereum_nonce: 1,
@@ -412,7 +412,7 @@ describe('processRow', () => {
     const inputBalanceUndefined = {
       ...inputAccount,
       balance: undefined,
-      consensus_timestamp: undefined,
+      balance_timestamp: undefined,
       token_balances: undefined,
     };
     const expectedNoBalance = {
@@ -426,7 +426,7 @@ describe('processRow', () => {
     const inputNullBalance = {
       ...inputAccount,
       balance: null,
-      consensus_timestamp: null,
+      balance_timestamp: null,
       token_balances: null,
     };
     const expectedNullBalance = {

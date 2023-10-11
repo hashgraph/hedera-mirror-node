@@ -14,6 +14,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that changes contract slot information by updating global contract field with the passed argument
     Then I call estimateGas with function that successfully deploys a new smart contract via CREATE op code
     Then I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code
+    Then I get mock contract address and getAddress selector
     Then I call estimateGas with function that makes a static call to a method from a different contract
     Then I call estimateGas with function that makes a delegate call to a method from a different contract
     Then I call estimateGas with function that makes a call code to a method from a different contract

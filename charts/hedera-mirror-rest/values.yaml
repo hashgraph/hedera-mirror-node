@@ -121,6 +121,9 @@ monitor:
     registry: gcr.io
     repository: mirrornode/hedera-mirror-rest-monitor
     tag: ""  # Defaults to the chart's app version
+  imagePullSecrets: []
+  nodeSelector: {}
+  priorityClassName: ""
   resources:
     limits:
       cpu: 250m
@@ -136,6 +139,7 @@ monitor:
       pullPolicy: IfNotPresent
       repository: busybox
       tag: latest
+  tolerations: []
 
 nameOverride: ""
 

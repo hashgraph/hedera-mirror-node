@@ -9,6 +9,7 @@
       },
       {
         "balance": 80,
+        "balance_timestamp": "2345",
         "num": 8,
         "staked_account_id": 200,
         "stake_period_start": 1100
@@ -17,12 +18,6 @@
         "balance": 90,
         "num": 9,
         "staked_node_id": 5
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 1700,
-        "consensus_end": 2345
       }
     ],
     "tokenaccounts": [
@@ -56,8 +51,8 @@
     "accounts": [
       {
         "balance": {
-          "timestamp": "0.000002345",
           "balance": 80,
+          "timestamp": "0.000002345",
           "tokens": [
             {
               "token_id": "0.0.200001",

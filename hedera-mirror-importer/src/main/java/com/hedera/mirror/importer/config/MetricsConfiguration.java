@@ -43,6 +43,7 @@ class MetricsConfiguration {
 
     private final DataSource dataSource;
     private final DBProperties dbProperties;
+    private final @Lazy JdbcOperations jdbcOperations;
 
     @Bean
     MeterBinder processMemoryMetrics() {
@@ -65,22 +66,22 @@ class MetricsConfiguration {
             name = "enabled",
             havingValue = "true",
             matchIfMissing = true)
-    MeterBinder tableMetrics(@Lazy JdbcOperations jdbcOperations) {
-        return registry -> getTablesNames().forEach(t -> registerTableMetric(jdbcOperations, registry, t));
+    MeterBinder tableMetrics() {
+        return registry -> getTablesNames().forEach(t -> registerTableMetrics(registry, t));
     }
 
-    // select count(*) is very slow on large tables, so we use the stats table to provide an estimate
-    private void registerTableMetric(JdbcOperations jdbcOperations, MeterRegistry registry, String tableName) {
-        final String query = "select n_live_tup from pg_stat_all_tables where schemaname = ? and relname = ?";
-        ToDoubleFunction<DataSource> totalRows =
-                ds -> jdbcOperations.queryForObject(query, Long.class, dbProperties.getSchema(), tableName);
-
-        Gauge.builder("db.table.size", dataSource, totalRows)
-                .tag("db", dbProperties.getName())
-                .tag("table", tableName)
-                .description("Number of rows in a database table")
-                .baseUnit(BaseUnits.ROWS)
-                .register(registry);
+    private void registerTableMetrics(MeterRegistry registry, String tableName) {
+        for (TableMetric tableMetric : TableMetric.values()) {
+            ToDoubleFunction<DataSource> func = ds ->
+                    jdbcOperations.queryForObject(tableMetric.query, Long.class, dbProperties.getSchema(), tableName);
+            Gauge.builder(tableMetric.metricName, dataSource, func)
+                    .tag("database", dbProperties.getName())
+                    .tag("schema", dbProperties.getSchema())
+                    .tag("table", tableName)
+                    .description(tableMetric.description)
+                    .baseUnit(tableMetric.baseUnits)
+                    .register(registry);
+        }
     }
 
     private Collection<String> getTablesNames() {
@@ -102,5 +103,29 @@ class MetricsConfiguration {
 
         log.info("Collecting {} table metrics: {}", tableNames.size(), tableNames);
         return tableNames;
+    }
+
+    @RequiredArgsConstructor
+    private enum TableMetric {
+        INDEX_BYTES(
+                BaseUnits.BYTES,
+                "db.index.bytes",
+                "The size of the indexes on disk",
+                "select pg_indexes_size('\"' || ? || '\".\"' || ? || '\"')"),
+        TABLE_BYTES(
+                BaseUnits.BYTES,
+                "db.table.bytes",
+                "The size of the table on disk",
+                "select pg_table_size('\"' || ? || '\".\"' || ? || '\"')"),
+        TABLE_SIZE(
+                BaseUnits.ROWS,
+                "db.table.rows",
+                "The number of rows in the table",
+                "select n_live_tup from pg_stat_all_tables where schemaname = ? and relname = ?");
+
+        private final String baseUnits;
+        private final String metricName;
+        private final String description;
+        private final String query;
     }
 }

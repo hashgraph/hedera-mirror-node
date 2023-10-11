@@ -31,10 +31,10 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.24.3")
+    set("protobufVersion", "3.24.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.3")
+    set("testcontainersSpringBootVersion", "3.0.4")
     set("vertxVersion", "4.4.5")
 }
 
@@ -59,7 +59,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.39.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
-        api("com.hedera.hashgraph:sdk:2.28.0")
+        api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
@@ -91,9 +91,9 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.6")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
-        api("org.testcontainers:junit-jupiter:1.19.0")
+        api("org.testcontainers:junit-jupiter:1.19.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.157")
+        api("software.amazon.awssdk:bom:2.20.162")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.3")
     }
 }
