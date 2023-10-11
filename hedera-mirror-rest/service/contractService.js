@@ -29,6 +29,7 @@ import {
   ContractResult,
   ContractState,
   ContractStateChange,
+  ContractTransactionHash,
   Entity,
   RecordFile,
   EthereumTransaction,
@@ -288,47 +289,33 @@ class ContractService extends BaseService {
   }
 
   /**
-   * Retrieves contract results based on the timestamps
+   * Retrieves contract results based on the eth hash
    *
-   * @param {string|string[]} timestamps consensus timestamps
+   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
    * @return {Promise<{ContractResult}[]>}
    */
-  async getContractResultsByTimestamps(timestamps) {
+  async getContractResultsByHash(hash, excludeTransactionResults = []) {
+    const transactionHashDetails = this.getContractTransactionHashDetailsByHash(hash);
+    if (!transactionHashDetails) {
+      return [];
+    }
+    return this.getContractResultsByContractIdAndTimestamp(
+      transactionHashDetails.consensusTimestamp,
+      transactionHashDetails.entityId,
+      excludeTransactionResults
+    );
+  }
+
+  //TODO rename put contractid last
+  async getContractResultsByContractIdAndTimestamp(timestamps, contractId, excludeTransactionResults = []) {
     let params = [timestamps];
+    let transactionsFilter = '';
     let timestampsOpAndValue = '= $1';
     if (Array.isArray(timestamps)) {
       params = timestamps;
       const positions = _.range(1, timestamps.length + 1).map((i) => `$${i}`);
       timestampsOpAndValue = `in (${positions})`;
     }
-
-    const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
-    const query = [
-      `with ${ContractService.entityCTE} `,
-      ContractService.contractResultsWithEvmAddressQuery,
-      ContractService.joinContractResultWithEvmAddress,
-      whereClause,
-    ].join('\n');
-
-    const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
-
-    return rows.map((row) => {
-      return {
-        ...new ContractResult(row),
-        evmAddress: row.evm_address,
-      };
-    });
-  }
-
-  /**
-   * Retrieves contract results based on the eth hash
-   *
-   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
-   * @return {Promise<{ContractResult}[]>}
-   */
-  async getContractResultsByHash(hash, excludeTransactionResults = [], limit = undefined) {
-    const params = [hash];
-    let transactionsFilter = '';
 
     if (excludeTransactionResults != null) {
       if (Array.isArray(excludeTransactionResults)) {
@@ -340,18 +327,17 @@ class ContractService extends BaseService {
         transactionsFilter = ` and ${ContractResult.TRANSACTION_RESULT} <> ${excludeTransactionResults}`;
       }
     }
-
-    const whereClause = `where ${ContractResult.TRANSACTION_HASH} = $1`;
+    params.push(contractId);
+    const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue} and 
+                               ${ContractResult.CONTRACT_ID} = $${params.length} `;
     const query = [
       `with ${ContractService.entityCTE} `,
       ContractService.contractResultsWithEvmAddressQuery,
       ContractService.joinContractResultWithEvmAddress,
       whereClause,
       transactionsFilter,
-      this.getOrderByQuery(OrderSpec.from(ContractResult.CONSENSUS_TIMESTAMP, 'asc')),
-      limit ? `limit ${limit}` : '',
     ].join('\n');
-    const rows = await super.getRows(query, params, 'getContractResultsByHash');
+    const rows = await super.getRows(query, params, 'getContractResultsByContractIdAndTimestamp');
 
     return rows.map((row) => {
       return {
@@ -359,6 +345,18 @@ class ContractService extends BaseService {
         evmAddress: row.evm_address,
       };
     });
+  }
+
+  async getContractTransactionHashDetailsByHash(hash) {
+    const transactionHashDetailsQuery = `select hash, payer_account_id, consensus_timestamp, entity_id from contract_transaction_hash where hash = $1 order by consensus_timestamp asc limit 1`;
+    const transactionHashRows = await super.getRows(
+      transactionHashDetailsQuery,
+      [hash],
+      'getTransactionHashDetailsByHash'
+    );
+    return transactionHashRows.map((row) => {
+      return new ContractTransactionHash(row);
+    })[0];
   }
 
   /**
@@ -425,7 +423,7 @@ class ContractService extends BaseService {
     return rows.map((cr) => new ContractLog(cr));
   }
 
-  async getContractLogsByTimestamps(timestamps) {
+  async getContractLogsByTimestamps(timestamps, contractId) {
     let params = [timestamps];
     let timestampsOpAndValue = '= $1';
     if (Array.isArray(timestamps)) {
@@ -434,7 +432,9 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
 
-    const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    params.push(contractId);
+
+    const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue} and ${ContractLog.CONTRACT_ID} = $${params.length}`;
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
 
     const query = [ContractService.contractLogsWithEvmAddressQuery, whereClause, orderClause].join('\n');
@@ -451,12 +451,11 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
 
+    // TODO: maybe Clean this up no calls without contract id anymore
     const conditions = [`${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
     if (contractId) {
       params.push(contractId);
-      conditions.push(
-        `(${ContractStateChange.MIGRATION} is false or ${ContractStateChange.CONTRACT_ID} = $${params.length})`
-      );
+      conditions.push(`${ContractStateChange.CONTRACT_ID} = $${params.length}`);
     } else {
       conditions.push(`${ContractStateChange.MIGRATION} is false`);
     }

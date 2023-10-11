@@ -21,12 +21,7 @@ import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELE
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractState;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.*;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
@@ -110,6 +105,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
+    private final Collection<ContractTransactionHash> contractTransactionHashes;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
@@ -179,6 +175,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
+        contractTransactionHashes = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
@@ -268,6 +265,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResults.add(contractResult);
+        if (entityProperties.getPersist().isContractTransactionHash()) {
+            contractTransactionHashes.add(contractResult.toContractTransactionHash());
+        }
     }
 
     @Override
@@ -500,6 +500,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
+            contractTransactionHashes.clear();
             contractStates.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
@@ -552,6 +553,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
+            batchPersister.persist(contractTransactionHashes);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
             batchPersister.persist(entityTransactions);

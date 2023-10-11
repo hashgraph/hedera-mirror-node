@@ -313,13 +313,13 @@ describe('TransactionService.getEthTransactionByTimestamp tests', () => {
   });
 
   test('No match', async () => {
-    await expect(TransactionService.getEthTransactionByTimestamp('1')).resolves.toHaveLength(0);
+    await expect(TransactionService.getEthTransactionByTimestampAndPayerId('1')).resolves.toHaveLength(0);
   });
 
   test('Finds a matching eth transaction', async () => {
     await integrationDomainOps.loadEthereumTransactions(inputEthTransactions);
 
-    const ethTransactions = await TransactionService.getEthTransactionByTimestamp('2');
+    const ethTransactions = await TransactionService.getEthTransactionByTimestampAndPayerId('2');
 
     expect(pickTransactionFields(ethTransactions)).toIncludeSameMembers([expectedTransaction]);
   });

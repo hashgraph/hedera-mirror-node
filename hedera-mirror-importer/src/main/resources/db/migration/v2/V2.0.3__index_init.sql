@@ -71,6 +71,10 @@ alter table if exists contract_state_change
 create index if not exists contract_state_change__id_slot_timestamp
     on contract_state_change (contract_id, slot, consensus_timestamp);
 
+-- contract_transaction_hash__hash
+create index if not exists contract_transaction_hash__hash
+    on contract_transaction_hash using hash (hash);
+
 -- crypto_allowance
 alter table if exists crypto_allowance
     add constraint crypto_allowance__pk primary key (owner, spender);
@@ -129,7 +133,6 @@ alter table if exists entity_transaction
 -- ethereum_transaction
 alter table if exists ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists ethereum_transaction__hash on ethereum_transaction using hash (hash);
 
 -- event_file
 alter table if exists event_file

@@ -180,6 +180,15 @@ create table if not exists contract_state_change
 ) partition by range (consensus_timestamp);
 comment on table contract_state_change is 'Contract execution state changes';
 
+create table if not exists contract_transaction_hash
+(
+    consensus_timestamp bigint not null,
+    hash                bytea  not null,
+    payer_account_id    bigint not null,
+    entity_id           bigint not null
+);
+comment on table contract_transaction_hash is 'First 32 bytes of network transaction hash (or ethereum hash) to lookup keys mapping';
+
 create table if not exists crypto_allowance
 (
     amount           bigint    not null,

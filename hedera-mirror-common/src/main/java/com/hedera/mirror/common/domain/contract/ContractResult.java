@@ -91,4 +91,13 @@ public class ContractResult implements Persistable<Long> {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
+
+    public ContractTransactionHash toContractTransactionHash() {
+        return ContractTransactionHash.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .hash(transactionHash)
+                .payerAccountId(payerAccountId.getId())
+                .entityId(contractId)
+                .build();
+    }
 }

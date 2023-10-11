@@ -6,6 +6,8 @@
 
 
 -- Tables distributed on id
+select create_distributed_table('contract_transaction_hash', 'hash', shard_count := ${shardCount});
+
 select create_distributed_table('entity', 'id', shard_count := ${shardCount});
 
 select create_distributed_table('transaction_hash', 'hash', shard_count := ${shardCount});

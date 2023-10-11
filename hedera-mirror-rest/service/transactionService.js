@@ -20,7 +20,10 @@ import BaseService from './baseService';
 import {orderFilterValues} from '../constants';
 import {EthereumTransaction, Transaction} from '../model';
 import {OrderSpec} from '../sql';
+import TransactionId from '../transactionId.js';
+import config from '../config.js';
 
+const {maxTransactionConsensusTimestampRangeNs} = config.query;
 /**
  * Transaction retrieval business logic
  */
@@ -30,9 +33,13 @@ class TransactionService extends BaseService {
   }
 
   static transactionDetailsFromTransactionIdQuery = `
-    select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.NONCE}, ${Transaction.SCHEDULED}, ${Transaction.TYPE}
+    select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.NONCE},
+           ${Transaction.SCHEDULED}, ${Transaction.TYPE},
+           ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.ENTITY_ID}
     from ${Transaction.tableName}
-    where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
+    where ${Transaction.PAYER_ACCOUNT_ID} = $1 
+          and ${Transaction.CONSENSUS_TIMESTAMP} >= $2 and ${Transaction.CONSENSUS_TIMESTAMP} <= $3
+          and ${Transaction.VALID_START_NS} = $2`;
 
   static ethereumTransactionDetailsQuery = `
   select
@@ -70,9 +77,10 @@ class TransactionService extends BaseService {
    * @return {Promise<Transaction[]>} transactions subset
    */
   async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
+    const maxConsensusTimestamp = BigInt(transactionId.getValidStartNs()) + maxTransactionConsensusTimestampRangeNs;
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromTransactionIdQuery,
-      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
+      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), maxConsensusTimestamp],
       'getTransactionDetailsFromTransactionId',
       excludeTransactionResults,
       nonce
@@ -95,14 +103,18 @@ class TransactionService extends BaseService {
     const rows = await super.getRows(query, params, 'getEthereumTransactionByHash');
     return rows.map((row) => new EthereumTransaction(row));
   }
-
-  async getEthTransactionByTimestamp(timestamp) {
+  async getEthTransactionByTimestampAndPayerId(timestamp, payerId, excludeTransactionResults = []) {
+    const params = [timestamp, payerId];
+    const transactionsFilter = this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
     const query = [
       TransactionService.ethereumTransactionDetailsQuery,
-      `where ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} = $1`,
+      `where ${EthereumTransaction.getFullName(
+        EthereumTransaction.CONSENSUS_TIMESTAMP
+      )} = $1 and ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} = $2`,
+      transactionsFilter,
     ].join('\n');
 
-    const rows = await super.getRows(query, [timestamp], 'getEthereumTransactionByTimestamp');
+    const rows = await super.getRows(query, params, 'getEthereumTransactionByTimestamp');
     return rows.map((row) => new EthereumTransaction(row));
   }
 
