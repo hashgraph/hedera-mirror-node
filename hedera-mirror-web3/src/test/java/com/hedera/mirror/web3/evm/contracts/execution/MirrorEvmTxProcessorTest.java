@@ -45,6 +45,7 @@ import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
+import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -137,6 +138,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
+    @Mock
+    private PrngLogic prngLogic;
+
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
@@ -166,8 +170,9 @@ class MirrorEvmTxProcessorTest {
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
+                        prngLogic,
                         false),
-                ccps(gasCalculator, evmProperties),
+                ccps(gasCalculator, evmProperties, prngLogic),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),

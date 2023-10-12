@@ -44,6 +44,7 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
+import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -76,8 +77,10 @@ public class EvmOperationConstructionUtil {
     public static final String EVM_VERSION = EVM_VERSION_0_34;
 
     public static Map<String, Provider<ContractCreationProcessor>> ccps(
-            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
+            final GasCalculator gasCalculator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrngLogic prngLogic) {
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties, prngLogic);
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1),
@@ -95,8 +98,9 @@ public class EvmOperationConstructionUtil {
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final PrngLogic prngLogic,
             final boolean isEstimate) {
-        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties, prngLogic);
 
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
@@ -148,7 +152,9 @@ public class EvmOperationConstructionUtil {
     }
 
     private static EVM constructEvm(
-            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final GasCalculator gasCalculator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrngLogic prngLogic) {
         final var operationRegistry = new OperationRegistry();
         final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
@@ -166,7 +172,8 @@ public class EvmOperationConstructionUtil {
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator))
+                        new HederaExtCodeSizeOperation(gasCalculator, validator),
+                        new HederaPrngSeedOperation(gasCalculator, prngLogic))
                 .forEach(operationRegistry::put);
 
         return new EVM(

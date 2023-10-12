@@ -43,6 +43,7 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
+import com.hedera.services.txns.util.PrngLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -66,6 +67,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final TraceProperties traceProperties;
     private final BasicHbarCentExchange basicHbarCentExchange;
     private final PrngSystemPrecompiledContract prngSystemPrecompiledContract;
+    private final PrngLogic prngLogic;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -81,7 +83,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final PrngLogic prngLogic) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -95,6 +98,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.databaseAccessors = databaseAccessors;
         this.basicHbarCentExchange = basicHbarCentExchange;
         this.prngSystemPrecompiledContract = prngSystemPrecompiledContract;
+        this.prngLogic = prngLogic;
     }
 
     @Override
@@ -142,8 +146,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
+                        prngLogic,
                         isEstimate),
-                ccps(gasCalculator, evmProperties),
+                ccps(gasCalculator, evmProperties, prngLogic),
                 blockMetaSource,
                 mirrorEvmContractAliases,
                 codeCache,
