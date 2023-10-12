@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -49,22 +48,25 @@ public interface AccountBalanceRepository
             value =
                     """
         with account_balance_snapshot as (
-          select * from account_balance
+          select account_id, balance from account_balance
           where (account_id, consensus_timestamp)
-            in (select account_id, max(consensus_timestamp) from account_balance group by account_id)
+            in (select account_id, max(consensus_timestamp)
+                from account_balance
+                where consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
+                group by account_id)
         )
         insert into account_balance (account_id, balance, consensus_timestamp)
         select e.id, e.balance, :consensusTimestamp
         from entity e left join account_balance_snapshot abs on e.id = abs.account_id
-        where e.id = 2 or
+        where
+            e.id = 2 or
             (e.balance is not null and
-            e.balance_timestamp is not null and
-            e.deleted is not true and
-            (abs.consensus_timestamp is null or e.balance_timestamp > abs.consensus_timestamp))
+             e.deleted is not true and
+             (abs is null or abs.balance is null or e.balance <> abs.balance))
         order by e.id
         """)
     @Transactional
-    int updateBalanceSnapshot(long consensusTimestamp);
+    int updateBalanceSnapshot(long lowerRangeTimestamp, long upperRangeTimestamp, long consensusTimestamp);
 
     @Override
     @EntityGraph("AccountBalance.tokenBalances")
@@ -72,9 +74,6 @@ public interface AccountBalanceRepository
 
     @EntityGraph("AccountBalance.tokenBalances")
     List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
-
-    @Query(value = "select * from account_balance order by consensus_timestamp desc limit 1", nativeQuery = true)
-    Optional<AccountBalance> findLatest();
 
     @Modifying
     @Override

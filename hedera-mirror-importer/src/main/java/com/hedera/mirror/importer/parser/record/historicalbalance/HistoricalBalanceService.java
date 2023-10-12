@@ -20,9 +20,11 @@ import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID
 import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamFilename.FileType;
@@ -55,6 +57,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class HistoricalBalanceService {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
+    private static final String TOKEN_BALANCE_TABLE_NAME = "token_balance";
+    private static final long LOWER_RANGE = 0L;
+    private static final long UPPER_RANGE = 9223372036854775807L;
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
@@ -128,13 +133,8 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                int accountBalancesCount = (properties.isDedupe() && !includeAllBalances(timestamp))
-                        ? accountBalanceRepository.updateBalanceSnapshot(timestamp)
-                        : accountBalanceRepository.balanceSnapshot(timestamp);
-                int tokenBalancesCount = 0;
-                if (properties.isTokenBalances()) {
-                    tokenBalancesCount = tokenBalanceRepository.balanceSnapshot(timestamp);
-                }
+                int accountBalancesCount = balanceSnapshot(timestamp);
+                int tokenBalancesCount = tokenBalanceSnapshot(timestamp);
 
                 long loadEnd = Instant.now().getEpochSecond();
                 String filename = StreamFilename.getFilename(
@@ -185,30 +185,34 @@ public class HistoricalBalanceService {
                 .isPresent();
     }
 
-    private boolean includeAllBalances(long timestamp) {
-        long lastBalanceTimestamp = accountBalanceRepository
-                .findLatest()
-                .map(a -> a.getId().getConsensusTimestamp())
-                .orElse(0L);
-        if (lastBalanceTimestamp == 0L) {
-            // There is no previous account balance snapshot, include all balances
-            return true;
+    private int balanceSnapshot(long timestamp) {
+        if (properties.isDedupe()) {
+            var range = getPartitionRange(timestamp, ACCOUNT_BALANCE_TABLE_NAME);
+            return accountBalanceRepository.updateBalanceSnapshot(
+                    range.lowerEndpoint(), range.upperEndpoint(), timestamp);
+        }
+        return accountBalanceRepository.balanceSnapshot(timestamp);
+    }
+
+    private int tokenBalanceSnapshot(long timestamp) {
+        if (!properties.isTokenBalances()) {
+            return 0;
         }
 
-        var partitions = timePartitionService.getOverlappingTimePartitions(
-                ACCOUNT_BALANCE_TABLE_NAME, lastBalanceTimestamp, timestamp);
-        if (partitions.isEmpty()) {
-            // Within the current partition, do not include all balances
-            return false;
+        if (properties.isDedupe()) {
+            var range = getPartitionRange(timestamp, TOKEN_BALANCE_TABLE_NAME);
+            return tokenBalanceRepository.updateBalanceSnapshot(
+                    range.lowerEndpoint(), range.upperEndpoint(), timestamp);
         }
+        return tokenBalanceRepository.balanceSnapshot(timestamp);
+    }
 
-        var lowerEndpoint =
-                partitions.get(partitions.size() - 1).getTimestampRange().lowerEndpoint();
-        if (lastBalanceTimestamp < lowerEndpoint && timestamp > lowerEndpoint) {
-            // Include all balances when creating a snapshot for a new partition
-            return true;
-        }
-
-        return false;
+    private Range<Long> getPartitionRange(long timestamp, String tableName) {
+        var partitions = timePartitionService.getTimePartitions(tableName);
+        return partitions.stream()
+                .filter(p -> p.getTimestampRange().contains(timestamp))
+                .findFirst()
+                .map(TimePartition::getTimestampRange)
+                .orElse(Range.closedOpen(LOWER_RANGE, UPPER_RANGE));
     }
 }

@@ -235,7 +235,7 @@ create index if not exists token_allowance_history__owner_spender_token_lower_ti
 
 -- token_balance
 alter table if exists token_balance
-    add constraint token_balance__pk primary key (token_id, account_id, consensus_timestamp);
+    add constraint token_balance__pk primary key (account_id, token_id, consensus_timestamp);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp

@@ -72,40 +72,32 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void updateBalanceSnapshot() {
+        long lowerRangeTimestamp = 0L;
+        long upperRangeTimestamp = 400L;
         long timestamp = 100;
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp)).isZero();
+        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+                .isZero();
         assertThat(accountBalanceRepository.findAll()).isEmpty();
 
         // 0.0.2 is always included in the balance snapshot regardless of balance timestamp
         var treasuryAccount =
                 domainBuilder.entity().customize(a -> a.id(2L).num(2L)).persist();
-        var account = domainBuilder
-                .entity()
-                .customize(e -> e.balanceTimestamp(timestamp))
-                .persist();
+        var account = domainBuilder.entity().persist();
         var contract = domainBuilder
                 .entity()
-                .customize(e -> e.balanceTimestamp(timestamp).deleted(null).type(EntityType.CONTRACT))
+                .customize(e -> e.deleted(null).type(EntityType.CONTRACT))
                 .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.balance(null).balanceTimestamp(null))
-                .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.balanceTimestamp(timestamp).deleted(true))
-                .persist();
-        var fileWithBalance = domainBuilder
-                .entity()
-                .customize(e -> e.balanceTimestamp(timestamp).type(EntityType.FILE))
-                .persist();
+        domainBuilder.entity().customize(e -> e.balance(null)).persist();
+        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        var fileWithBalance =
+                domainBuilder.entity().customize(e -> e.type(EntityType.FILE)).persist();
         var unknownWithBalance = domainBuilder
                 .entity()
-                .customize(e -> e.balanceTimestamp(timestamp).type(EntityType.UNKNOWN))
+                .customize(e -> e.type(EntityType.UNKNOWN))
                 .persist();
         domainBuilder
                 .entity()
-                .customize(e -> e.balance(null).balanceTimestamp(null).type(EntityType.TOPIC))
+                .customize(e -> e.balance(null).type(EntityType.TOPIC))
                 .persist();
 
         var expected = Stream.of(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance)
@@ -114,21 +106,23 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                         .id(new AccountBalance.Id(timestamp, e.toEntityId()))
                         .build())
                 .collect(Collectors.toList());
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp)).isEqualTo(expected.size());
+
+        // Update Balance Snapshot includes all balances
+        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+                .isEqualTo(expected.size());
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        // Always insert an entry for the treasuryAccount
+        // Update Balance Snapshot with no changes will always insert an entry for the treasuryAccount
         expected.add(AccountBalance.builder()
                 .balance(treasuryAccount.getBalance())
                 .id(new AccountBalance.Id(timestamp + 1, treasuryAccount.toEntityId()))
                 .build());
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp + 1))
+        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp, 400L, timestamp + 1))
                 .isEqualTo(1);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         long timestamp2 = 200;
         account.setBalance(account.getBalance() + 1);
-        account.setBalanceTimestamp(timestamp2);
         entityRepository.save(account);
         expected.add(AccountBalance.builder()
                 .balance(account.getBalance())
@@ -140,26 +134,24 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .build());
 
         // Insert the new entry for account, but also insert an entry for the treasuryAccount
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp2)).isEqualTo(2);
+        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp2))
+                .isEqualTo(2);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         var timestamp3 = 300L;
-        var account2 = domainBuilder
-                .entity()
-                .customize(e -> e.balanceTimestamp(timestamp3))
-                .persist();
+        var account2 = domainBuilder.entity().persist();
         expected.add(AccountBalance.builder()
                 .balance(account2.getBalance())
                 .id(new AccountBalance.Id(timestamp3, account2.toEntityId()))
                 .build());
         treasuryAccount.setBalance(treasuryAccount.getBalance() + 1);
-        treasuryAccount.setBalanceTimestamp(1L);
         entityRepository.save(treasuryAccount);
         expected.add(AccountBalance.builder()
                 .balance(treasuryAccount.getBalance())
                 .id(new AccountBalance.Id(timestamp3, treasuryAccount.toEntityId()))
                 .build());
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp3)).isEqualTo(2);
+        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp3))
+                .isEqualTo(2);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 

@@ -33,7 +33,9 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -47,6 +49,7 @@ import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,6 +57,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
@@ -66,6 +70,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private final EntityRepository entityRepository;
     private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
+    private final TimePartitionService timePartitionService;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TransactionTemplate transactionTemplate;
@@ -104,6 +109,12 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         tokenAccounts = Lists.newArrayList(tokenAccount);
     }
 
+    @AfterEach
+    void resetProperties() {
+        properties.setTokenBalances(true);
+        properties.setDedupe(false);
+    }
+
     @ParameterizedTest
     @CsvSource({"true,false", "false,true", "true,true", "false,false"})
     void generate(boolean tokenBalances, boolean isDedupe) {
@@ -126,8 +137,6 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when
         // balance changes
         account.setBalance(account.getBalance() + 5);
-        account.setBalanceTimestamp(
-                balanceTimestamp + properties.getMinFrequency().toNanos());
         entityRepository.save(account);
         tokenAccount.setBalance(tokenAccount.getBalance() + 18);
         tokenAccountRepository.save(tokenAccount);
@@ -151,8 +160,24 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         balanceTimestamp += properties.getMinFrequency().plusSeconds(1).toNanos();
         verifyGeneratedBalances(balanceTimestamp);
 
-        // reset tokenBalances to true
-        properties.setTokenBalances(true);
+        // when
+        // balances change again
+        account.setBalance(account.getBalance() + 1);
+        entityRepository.save(account);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccountRepository.save(tokenAccount);
+        // new entity, tokenAccount
+        var additionalEntity = domainBuilder.entity().persist();
+        entities.add(additionalEntity);
+        tokenAccounts.add(domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(additionalEntity.getId()))
+                .persist());
+
+        // then
+        // process a record file which should trigger the next balance snapshot
+        balanceTimestamp += properties.getMinFrequency().plusSeconds(1).toNanos();
+        verifyGeneratedBalances(balanceTimestamp);
     }
 
     @Test
@@ -227,6 +252,42 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         verifyGeneratedBalances(balanceTimestamp);
     }
 
+    @EnabledIfV2
+    @ParameterizedTest
+    @CsvSource({"true,false", "false,true", "true,true", "false,false"})
+    void generatePartitionBoundary(boolean tokenBalances, boolean isDedupe) {
+        // given
+        properties.setTokenBalances(tokenBalances);
+        properties.setDedupe(isDedupe);
+        parseRecordFile(1L);
+
+        // This test assumes that the account_balance and token_balance partitions are identical, such that each will
+        // have a balance generated near the end of the partition and a balance generated at the beginning of the next
+        // partition.
+        // If the partitions do not match, then the token balance snapshot may not be generated at the beginning of the
+        // next partition.
+        var partitions = timePartitionService.getTimePartitions("account_balance");
+        var priorPartition = partitions.get(partitions.size() - 2);
+        var lastPartition = partitions.get(partitions.size() - 1);
+        var balanceTimestamp = priorPartition.getTimestampRange().lowerEndpoint()
+                + properties.getMinFrequency().plusSeconds(1).toNanos();
+
+        // when
+        // Place last balance snapshot at the end of the prior partition
+        verifyGeneratedBalances(balanceTimestamp);
+
+        account.setBalance(account.getBalance() + 5);
+        entityRepository.save(account);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccountRepository.save(tokenAccount);
+
+        balanceTimestamp = lastPartition.getTimestampRange().lowerEndpoint();
+
+        // then
+        // Balance snapshot in new partition
+        verifyGeneratedBalances(balanceTimestamp);
+    }
+
     private RecordFile parseRecordFile(final Long consensusEnd) {
         return transactionTemplate.execute(t -> {
             var recordFile = domainBuilder
@@ -254,10 +315,10 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
     private void verifyGeneratedBalances(long balanceTimestamp) {
         var expectedAccountBalanceFiles = Lists.newArrayList(accountBalanceFileRepository.findAll());
-        var expectedTokenBalances = Lists.newArrayList(tokenBalanceRepository.findAll());
         var expectedAccountBalances = new HashMap<Long, List<AccountBalance>>();
         for (AccountBalance accountBalance : accountBalanceRepository.findAll()) {
-            if (expectedAccountBalances.containsKey(accountBalance.getId().getAccountId())) {
+            if (expectedAccountBalances.containsKey(
+                    accountBalance.getId().getAccountId().getNum())) {
                 expectedAccountBalances
                         .get(accountBalance.getId().getAccountId().getNum())
                         .add(accountBalance);
@@ -266,6 +327,21 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         accountBalance.getId().getAccountId().getNum(), Lists.newArrayList(accountBalance));
             }
         }
+        var expectedTokenBalances = new HashMap<Pair<EntityId, EntityId>, List<TokenBalance>>();
+        for (TokenBalance tokenBalance : tokenBalanceRepository.findAll()) {
+            var key = Pair.of(
+                    tokenBalance.getId().getAccountId(), tokenBalance.getId().getTokenId());
+            if (expectedTokenBalances.containsKey(key)) {
+                expectedTokenBalances.get(key).add(tokenBalance);
+            } else {
+                expectedTokenBalances.put(key, Lists.newArrayList(tokenBalance));
+            }
+        }
+
+        var accountBalancePartitions = timePartitionService.getTimePartitions("account_balance");
+        var lastPartition = accountBalancePartitions.isEmpty()
+                ? null
+                : accountBalancePartitions.get(accountBalancePartitions.size() - 1);
 
         // when, a record file with consensus end signaling min frequency has passed
         parseRecordFile(balanceTimestamp);
@@ -277,10 +353,20 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
             if (!expectedAccountBalances.containsKey(entity.getId())) {
                 expectedAccountBalances.computeIfAbsent(entity.getId(), k -> Lists.newArrayList(updatedAccountBalance));
                 updatedEntitiesCount++;
-            } else if (!properties.isDedupe()) {
+            } else if (!properties.isDedupe()
+                    || (lastPartition != null
+                            && balanceTimestamp
+                                    == lastPartition.getTimestampRange().lowerEndpoint())) {
                 expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
                 updatedEntitiesCount++;
             } else {
+                if (updatedAccountBalance.getId().getAccountId().getId() == 2L) {
+                    // Always include the treasury account
+                    expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
+                    updatedEntitiesCount++;
+                    continue;
+                }
+
                 for (var accountBalance : expectedAccountBalances.get(entity.getId())) {
                     if (accountBalance.getBalance() != updatedAccountBalance.getBalance()) {
                         expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
@@ -297,8 +383,35 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                 .synthetic(true)
                 .build());
         if (properties.isTokenBalances()) {
-            tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
+            var tokenBalancePartitions = timePartitionService.getTimePartitions("token_balance");
+            var lastTokenBalancePartition = tokenBalancePartitions.isEmpty()
+                    ? null
+                    : tokenBalancePartitions.get(tokenBalancePartitions.size() - 1);
+            for (var tokenAccount : tokenAccounts) {
+                var tokenBalance = getTokenBalance(balanceTimestamp, tokenAccount);
+                var key = Pair.of(
+                        tokenBalance.getId().getAccountId(),
+                        tokenBalance.getId().getTokenId());
+                if (!expectedTokenBalances.containsKey(key)) {
+                    expectedTokenBalances.computeIfAbsent(key, k -> Lists.newArrayList(tokenBalance));
+                } else if (!properties.isDedupe()
+                        || (lastTokenBalancePartition != null
+                                && balanceTimestamp
+                                        == lastTokenBalancePartition
+                                                .getTimestampRange()
+                                                .lowerEndpoint())) {
+                    expectedTokenBalances.get(key).add(tokenBalance);
+                } else {
+                    for (var balance : expectedTokenBalances.get(key)) {
+                        if (balance.getBalance() != tokenBalance.getBalance()) {
+                            expectedTokenBalances.get(key).add(tokenBalance);
+                            break;
+                        }
+                    }
+                }
+            }
         }
+
         await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.FIVE_SECONDS)
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())
@@ -307,7 +420,9 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         var expectedAccountBalancesList = new ArrayList<AccountBalance>();
         expectedAccountBalances.values().forEach(list -> expectedAccountBalancesList.addAll(list));
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalancesList);
-        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenBalances);
+        var expectedTokenBalanceList = new ArrayList<TokenBalance>();
+        expectedTokenBalances.values().forEach(list -> expectedTokenBalanceList.addAll(list));
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenBalanceList);
     }
 
     private static AccountBalance getAccountBalance(long consensusTimestamp, Entity entity) {
