@@ -295,19 +295,18 @@ class ContractService extends BaseService {
    * @return {Promise<{ContractResult}[]>}
    */
   async getContractResultsByHash(hash, excludeTransactionResults = []) {
-    const transactionHashDetails = this.getContractTransactionHashDetailsByHash(hash);
+    const transactionHashDetails = this.getContractTransactionDetailsByHash(hash);
     if (!transactionHashDetails) {
       return [];
     }
-    return this.getContractResultsByContractIdAndTimestamp(
+    return this.getContractResultsByTimestampsAndContractId(
       transactionHashDetails.consensusTimestamp,
       transactionHashDetails.entityId,
       excludeTransactionResults
     );
   }
 
-  //TODO rename put contractid last
-  async getContractResultsByContractIdAndTimestamp(timestamps, contractId, excludeTransactionResults = []) {
+  async getContractResultsByTimestampsAndContractId(timestamps, contractId, excludeTransactionResults = []) {
     let params = [timestamps];
     let transactionsFilter = '';
     let timestampsOpAndValue = '= $1';
@@ -347,7 +346,7 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractTransactionHashDetailsByHash(hash) {
+  async getContractTransactionDetailsByHash(hash) {
     const transactionHashDetailsQuery = `select ${ContractTransactionHash.HASH}, 
                                                 ${ContractTransactionHash.PAYER_ACCOUNT_ID}, 
                                                 ${ContractTransactionHash.CONSENSUS_TIMESTAMP}, 

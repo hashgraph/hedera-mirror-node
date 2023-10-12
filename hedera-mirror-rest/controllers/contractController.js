@@ -949,7 +949,7 @@ class ContractController extends BaseController {
    */
   getContractResultsByTimestamp = async (req, res) => {
     const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req);
-    const contractResults = await ContractService.getContractResultsByContractIdAndTimestamp(timestamp, contractId);
+    const contractResults = await ContractService.getContractResultsByTimestampsAndContractId(timestamp, contractId);
     if (contractResults.length === 0) {
       throw new NotFoundError();
     }
@@ -1064,7 +1064,7 @@ class ContractController extends BaseController {
     const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      transactionDetails = await ContractService.getContractTransactionHashDetailsByHash(ethHash);
+      transactionDetails = await ContractService.getContractTransactionDetailsByHash(ethHash);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
@@ -1103,7 +1103,7 @@ class ContractController extends BaseController {
         transactionDetails.payerAccountId,
         excludeTransactionResults
       ),
-      ContractService.getContractResultsByContractIdAndTimestamp(
+      ContractService.getContractResultsByTimestampsAndContractId(
         transactionDetails.consensusTimestamp,
         transactionDetails.entityId,
         excludeTransactionResults
@@ -1180,7 +1180,7 @@ class ContractController extends BaseController {
     let tx;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      tx = await ContractService.getContractResultsByHash(hash);
+      tx = [await ContractService.getContractTransactionDetailsByHash(hash)];
     } else {
       transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);

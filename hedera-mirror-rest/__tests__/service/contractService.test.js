@@ -751,12 +751,12 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('No match', async () => {
-    const contractResults = await ContractService.getContractResultsByContractIdAndTimestamp('1', '2');
+    const contractResults = await ContractService.getContractResultsByTimestampsAndContractId('1', '2');
     expect(contractResults).toHaveLength(0);
   });
 
   test('Sing row match single timestamp', async () => {
-    const contractResults = await ContractService.getContractResultsByContractIdAndTimestamp(
+    const contractResults = await ContractService.getContractResultsByTimestampsAndContractId(
       expected[0].consensusTimestamp,
       expected[0].contractId
     );
@@ -764,7 +764,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('Sing row match multiple timestamps', async () => {
-    const contractResults = await ContractService.getContractResultsByContractIdAndTimestamp([
+    const contractResults = await ContractService.getContractResultsByTimestampsAndContractId([
       expected[0].consensusTimestamp,
       '100',
     ]);
