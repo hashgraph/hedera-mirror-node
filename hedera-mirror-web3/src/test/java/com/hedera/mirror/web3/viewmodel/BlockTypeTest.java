@@ -20,7 +20,6 @@ import static java.lang.Long.MAX_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.web3.exception.UnsupportedBlockTypeException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -48,9 +47,9 @@ class BlockTypeTest {
 
     @CsvSource({"pending", "PENDING", "safe", "SAFE", "finalized", "FINALIZED"})
     @ParameterizedTest
-    void unsupported(String value) {
+    void unsupportedDefaultToLatest(String value) {
         var blockType = BlockType.of(value);
-        assertThat(blockType).isNotNull().returns(BlockType.UNSUPPORTED.name(), BlockType::name);
+        assertThat(blockType).isNotNull().returns(BlockType.LATEST.name(), BlockType::name);
     }
 
     @ValueSource(strings = {MAX_VALUE + "1", "0xabcdefghijklmnopqrstuvwxyz", "abcdefghijklmnopqrstuvwxyz", "lastest"})

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.viewmodel;
 
-import com.hedera.mirror.web3.exception.UnsupportedBlockTypeException;
 import org.apache.commons.lang3.StringUtils;
 
 public record BlockType(String name, long number) {
@@ -25,9 +24,8 @@ public record BlockType(String name, long number) {
 
     public static final BlockType EARLIEST = new BlockType("earliest", 0L);
     public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
-    public static final BlockType UNSUPPORTED = new BlockType("", 0L);
 
-    public static BlockType of(final String value) throws UnsupportedBlockTypeException {
+    public static BlockType of(final String value) {
         if (StringUtils.isEmpty(value)) {
             return LATEST;
         }
@@ -37,11 +35,8 @@ public record BlockType(String name, long number) {
             case "earliest" -> {
                 return EARLIEST;
             }
-            case "latest" -> {
+            case "latest", "safe", "pending", "finalized" -> {
                 return LATEST;
-            }
-            case "safe", "pending", "finalized" -> {
-                return UNSUPPORTED;
             }
         }
 
@@ -58,12 +53,6 @@ public record BlockType(String name, long number) {
             return new BlockType(value, blockNumber);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid block value: " + value, e);
-        }
-    }
-
-    public static void validateBlockTypeIsSupported(BlockType value) {
-        if (value == UNSUPPORTED) {
-            throw new UnsupportedBlockTypeException("Unsupported block type passed.");
         }
     }
 }

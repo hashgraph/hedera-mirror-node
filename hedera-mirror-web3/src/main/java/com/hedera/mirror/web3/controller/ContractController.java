@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.controller;
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.mirror.web3.viewmodel.BlockType.validateBlockTypeIsSupported;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -33,7 +32,6 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.exception.UnsupportedBlockTypeException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
@@ -84,7 +82,6 @@ class ContractController {
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
-        validateBlockTypeIsSupported(request.getBlock());
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
@@ -145,13 +142,6 @@ class ContractController {
     private Mono<GenericErrorResponse> invalidJson(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return errorResponse(e.getReason(), "Unable to parse JSON", StringUtils.EMPTY);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> unsupportedBlockType(final UnsupportedBlockTypeException e) {
-        log.warn("Unsupported block type passed");
-        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
