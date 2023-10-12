@@ -74,6 +74,7 @@ public class HistoricalBalanceService {
     private final Timer generateDurationMetricFailure;
     private final Timer generateDurationMetricSuccess;
 
+    @SuppressWarnings("java:S107")
     public HistoricalBalanceService(
             AccountBalanceFileRepository accountBalanceFileRepository,
             AccountBalanceRepository accountBalanceRepository,
