@@ -26,10 +26,8 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperati
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
-import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.services.contracts.execution.LivePricesSource;
@@ -41,6 +39,7 @@ import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -136,15 +135,7 @@ public class EvmConfiguration {
     }
 
     @Bean
-    TokenAccessorImpl tokenAccessor(
-            final MirrorNodeEvmProperties evmProperties,
-            final StoreImpl store,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        return new TokenAccessorImpl(evmProperties, store, mirrorEvmContractAliases);
-    }
-
-    @Bean
-    @Scope(value = "prototype", proxyMode = ScopedProxyMode.TARGET_CLASS)
+    @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE, proxyMode = ScopedProxyMode.TARGET_CLASS)
     MirrorEvmTxProcessor mirrorEvmTxProcessor(
             final HederaEvmWorldState worldState,
             final LivePricesSource pricesAndFees,

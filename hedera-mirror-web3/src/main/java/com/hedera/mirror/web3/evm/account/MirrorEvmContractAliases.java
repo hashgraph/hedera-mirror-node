@@ -103,7 +103,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isInUse(final Address address) {
-        return ContractCallContext.containsAlias(address);
+        return ContractCallContext.get().containsAlias(address);
     }
 
     public void link(final Address alias, final Address address) {

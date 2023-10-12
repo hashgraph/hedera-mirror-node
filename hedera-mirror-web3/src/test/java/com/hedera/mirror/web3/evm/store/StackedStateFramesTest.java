@@ -128,18 +128,6 @@ class StackedStateFramesTest {
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
     }
 
-    @Test
-    void replaceEntireStack() {
-        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
-        final var sut = new StackedStateFrames(accessors);
-        final var newStack = new RWCachingStateFrame<>(Optional.empty(), Character.class);
-        initContractCallContext();
-        sut.replaceEntireStack(newStack);
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(1);
-        assertThat(sut.top()).isEqualTo(newStack);
-    }
-
     static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override

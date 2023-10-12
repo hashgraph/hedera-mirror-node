@@ -97,7 +97,7 @@ public class ContractCallContext implements AutoCloseable {
         THREAD_LOCAL.set(new ContractCallContext());
     }
 
-    public static boolean containsAlias(final Address address) {
+    public boolean containsAlias(final Address address) {
         ContractCallContext contractCallContext = get();
         return contractCallContext.getAliases().containsKey(address)
                         && !contractCallContext.getPendingRemovals().contains(address)
@@ -105,14 +105,13 @@ public class ContractCallContext implements AutoCloseable {
     }
 
     public void resetState() {
-        ContractCallContext contractCallContext = get();
-        contractCallContext.stack = contractCallContext.stackBase;
-        contractCallContext.isCreate = false;
-        contractCallContext.isEstimate = false;
-        contractCallContext.aliases.clear();
-        contractCallContext.pendingAliases.clear();
-        contractCallContext.pendingRemovals.clear();
-        contractCallContext.blockTimestamp = ContractCallContext.UNSET_TIMESTAMP;
+        stack = stackBase;
+        isEstimate = false;
+        isCreate = false;
+        aliases.clear();
+        pendingAliases.clear();
+        pendingRemovals.clear();
+        blockTimestamp = ContractCallContext.UNSET_TIMESTAMP;
     }
 
     public static void cleanThread() {
@@ -124,21 +123,19 @@ public class ContractCallContext implements AutoCloseable {
         cleanThread();
     }
 
-    public static int getStackHeight() {
-        ContractCallContext contractCallContext = get();
-        return contractCallContext.stack.height() - contractCallContext.stackBase.height();
+    public int getStackHeight() {
+        return stack.height() - stackBase.height();
     }
 
-    public static void setStack(CachingStateFrame<Object> stack) {
-        ContractCallContext contractCallContext = get();
-        contractCallContext.stack = stack;
+    public void setStack(CachingStateFrame<Object> stack) {
+        this.stack = stack;
     }
 
-    public static CachingStateFrame<Object> getStack() {
+    public CachingStateFrame<Object> getStack() {
         return get().stack;
     }
 
-    public static void updateStackFromUpstream() {
+    public void updateStackFromUpstream() {
         ContractCallContext contractCallContext = get();
         if (contractCallContext.stack == contractCallContext.stackBase) {
             throw new EmptyStackException();
@@ -154,22 +151,11 @@ public class ContractCallContext implements AutoCloseable {
         this.isEstimate = isEstimate;
     }
 
-    public static CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
-        ContractCallContext contractCallContext = get();
-        contractCallContext.stack = frame;
-        contractCallContext.stackBase = frame;
-        return contractCallContext.stack;
+    public boolean isCreate() {
+        return isCreate;
     }
 
-    public Map<Address, Address> getAliases() {
-        return get().aliases;
-    }
-
-    public Map<Address, Address> getPendingAliases() {
-        return get().pendingAliases;
-    }
-
-    public Set<Address> getPendingRemovals() {
-        return get().pendingRemovals;
+    public void setIsCreate(boolean isCreate) {
+        this.isCreate = isCreate;
     }
 }

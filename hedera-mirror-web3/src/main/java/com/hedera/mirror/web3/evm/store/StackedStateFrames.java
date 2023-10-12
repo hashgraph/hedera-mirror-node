@@ -16,10 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.getStack;
-import static com.hedera.mirror.web3.common.ContractCallContext.getStackHeight;
-import static com.hedera.mirror.web3.common.ContractCallContext.setStack;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
@@ -74,14 +70,14 @@ public class StackedStateFrames {
      * of it (after initial construction).
      */
     public int height() {
-        return getStackHeight();
+        return ContractCallContext.get().getStackHeight();
     }
 
     /** Return the _total_ height (aka depth) of the stacked cache _including_ the always-present stack base of a
      * RO-cache frame on top of the DB-based frame.
      */
     public int cachedFramesDepth() {
-        return getStack().height();
+        return ContractCallContext.get().getStack().height();
     }
 
     /** Get the top of the stacked cache.  (Make your queries of the cache here, at the top: they'll be propagated
@@ -89,20 +85,22 @@ public class StackedStateFrames {
      */
     @NonNull
     public CachingStateFrame<Object> top() {
-        return getStack();
+        return ContractCallContext.get().getStack();
     }
 
     /** Push a new RW-frame cache on top of the stacked cache. */
     @NonNull
     public CachingStateFrame<Object> push() {
-        CachingStateFrame<Object> newFrame = new RWCachingStateFrame<>(Optional.of(getStack()), valueClasses);
-        setStack(newFrame);
+        final var contractCallContext = ContractCallContext.get();
+        CachingStateFrame<Object> newFrame =
+                new RWCachingStateFrame<>(Optional.of(contractCallContext.getStack()), valueClasses);
+        contractCallContext.setStack(newFrame);
         return newFrame;
     }
 
     /** Pop a frame's cache from the top of the stacked cache. */
     public void pop() {
-        ContractCallContext.updateStackFromUpstream();
+        ContractCallContext.get().updateStackFromUpstream();
     }
 
     /** Get the classes of all the value types this stacked cache can hold. */
@@ -118,20 +116,11 @@ public class StackedStateFrames {
     @VisibleForTesting
     @NonNull
     CachingStateFrame<Object> push(@NonNull final CachingStateFrame<Object> frame) {
-        if (!frame.getUpstream().equals(Optional.of(getStack()))) {
+        final var contractCallContext = ContractCallContext.get();
+        if (!frame.getUpstream().equals(Optional.of(contractCallContext.getStack()))) {
             throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         }
-        setStack(frame);
+        contractCallContext.setStack(frame);
         return frame;
-    }
-
-    /** For test purposes only you may want to step on the entire stack, including the stack base. (You might want to
-     * replace the upstream-most `DatabaseStackedStateFrame` with some more agreeable thing, a mock, or just a
-     * basic replacement.)
-     */
-    @VisibleForTesting
-    @NonNull
-    CachingStateFrame<Object> replaceEntireStack(@NonNull final CachingStateFrame<Object> frame) {
-        return ContractCallContext.replaceEntireStack(frame);
     }
 }

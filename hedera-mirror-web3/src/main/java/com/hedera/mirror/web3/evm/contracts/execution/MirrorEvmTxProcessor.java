@@ -44,13 +44,11 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
+public class MirrorEvmTxProcessor extends HederaEvmTxProcessor implements MirrorEvmTxProcessorInterface {
 
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
-    private final MirrorOperationTracer operationTracer;
     private final Store store;
-    private boolean isCreate;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessor(
@@ -67,9 +65,9 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Store store) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
+        super.setOperationTracer(operationTracer);
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
-        this.operationTracer = operationTracer;
         this.store = store;
     }
 
@@ -86,9 +84,9 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
-        super.setOperationTracer(operationTracer);
-        isCreate = Address.ZERO.equals(receiver);
-        ContractCallContext.get().setIsEstimate(isEstimate);
+        final var contractCallContext = ContractCallContext.get();
+        contractCallContext.setIsCreate(Address.ZERO.equals(receiver));
+        contractCallContext.setIsEstimate(isEstimate);
 
         store.wrap();
         if (isEstimate) {
@@ -110,7 +108,9 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     @SuppressWarnings("java:S5411")
     @Override
     protected HederaFunctionality getFunctionType() {
-        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
+        return ContractCallContext.get().isCreate()
+                ? HederaFunctionality.ContractCreate
+                : HederaFunctionality.ContractCall;
     }
 
     @SuppressWarnings("java:S5411")
@@ -124,7 +124,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                     ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
-        return isCreate
+        return ContractCallContext.get().isCreate()
                 ? baseInitialFrame
                         .type(MessageFrame.Type.CONTRACT_CREATION)
                         .address(to)
