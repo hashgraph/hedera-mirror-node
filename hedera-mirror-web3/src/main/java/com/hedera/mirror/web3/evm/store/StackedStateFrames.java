@@ -61,7 +61,7 @@ public class StackedStateFrames {
         // so that you can commit specific changes from a nested transaction
     }
 
-    public CachingStateFrame<Object> getEmptyStackBase() {
+    public CachingStateFrame<Object> getInitializedStackBase() {
         final var database = new DatabaseBackedStateFrame<>(accessors, valueClasses);
         return new ROCachingStateFrame<>(Optional.of(database), valueClasses);
     }

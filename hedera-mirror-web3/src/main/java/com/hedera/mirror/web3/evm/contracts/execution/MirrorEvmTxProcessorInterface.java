@@ -23,6 +23,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface MirrorEvmTxProcessorInterface {
+
+    @SuppressWarnings("java:S107")
     HederaEvmTransactionProcessingResult execute(
             HederaEvmAccount sender,
             Address receiver,

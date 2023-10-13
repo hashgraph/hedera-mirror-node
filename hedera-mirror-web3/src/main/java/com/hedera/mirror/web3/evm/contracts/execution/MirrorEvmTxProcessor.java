@@ -71,7 +71,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor implements Mirror
         this.store = store;
     }
 
-    @SuppressWarnings("java:S107")
     public HederaEvmTransactionProcessingResult execute(
             final HederaEvmAccount sender,
             final Address receiver,

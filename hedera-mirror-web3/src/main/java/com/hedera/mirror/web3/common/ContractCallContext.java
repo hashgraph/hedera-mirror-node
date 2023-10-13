@@ -86,7 +86,7 @@ public class ContractCallContext implements AutoCloseable {
     public static ContractCallContext startThread(final StackedStateFrames stackedStateFrames) {
         ContractCallContext contractCallContext = new ContractCallContext();
         THREAD_LOCAL.set(contractCallContext);
-        contractCallContext.stackBase = stackedStateFrames.getEmptyStackBase();
+        contractCallContext.stackBase = stackedStateFrames.getInitializedStackBase();
         contractCallContext.stack = contractCallContext.stackBase;
 
         return contractCallContext;
