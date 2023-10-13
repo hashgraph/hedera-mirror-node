@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -565,6 +566,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
+                .hapiVersion(RecordFile.HAPI_VERSION_0_27_0)
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build());
@@ -821,6 +823,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
+                .hapiVersion(RecordFile.HAPI_VERSION_0_27_0)
                 .transactionRecord(record)
                 .transaction(updateTransaction)
                 .build());
@@ -885,6 +888,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var transactionId = transactionId(account.toEntityId(), domainBuilder.timestamp());
         var recordItem = recordItemBuilder
                 .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .transactionBody(b -> b.setStakedNodeId(newStakedNodeId).setAccountIDToUpdate(protoAccountId))
                 .transactionBodyWrapper(w -> w.setTransactionID(transactionId))
                 .record(r -> r.addPaidStakingRewards(accountAmount(account.getId(), 200L))
