@@ -38,8 +38,13 @@ public record BlockType(String name, long number) {
             case "latest", "safe", "pending", "finalized" -> {
                 return LATEST;
             }
+            default -> {
+                return extractNumericBlock(value);
+            }
         }
+    }
 
+    private static BlockType extractNumericBlock(String value) {
         int radix = 10;
         var cleanedValue = value;
 
