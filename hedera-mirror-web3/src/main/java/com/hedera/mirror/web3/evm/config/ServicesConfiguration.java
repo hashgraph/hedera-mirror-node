@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -25,6 +24,7 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
