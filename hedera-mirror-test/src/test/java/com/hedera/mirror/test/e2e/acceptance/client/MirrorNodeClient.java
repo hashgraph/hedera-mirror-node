@@ -32,6 +32,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorBlockResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
@@ -218,6 +219,11 @@ public class MirrorNodeClient {
 
     public ContractCallResponse contractsCall(ContractCallRequest request) {
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, request);
+    }
+
+    public MirrorBlockResponse getBlocks() {
+        log.debug("Get blocks data by Mirror Node");
+        return callRestEndpoint("/blocks", MirrorBlockResponse.class);
     }
 
     public List<MirrorNetworkNode> getNetworkNodes() {

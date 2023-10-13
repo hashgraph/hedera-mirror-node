@@ -52,6 +52,10 @@ contract EstimateGasContract is Caller {
         return counter;
     }
 
+    function getCounter() public view returns (uint256) {
+        return counter;
+    }
+
     function getMockContractAddress() public view returns (address) {
         return address(mockContract);
     }
