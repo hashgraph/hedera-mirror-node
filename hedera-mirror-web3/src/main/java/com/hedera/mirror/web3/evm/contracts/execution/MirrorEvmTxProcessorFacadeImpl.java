@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
@@ -43,7 +44,6 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hedera.services.txns.util.PrngLogic;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.List;
@@ -67,7 +67,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final TraceProperties traceProperties;
     private final BasicHbarCentExchange basicHbarCentExchange;
     private final PrngSystemPrecompiledContract prngSystemPrecompiledContract;
-    private final PrngLogic prngLogic;
+    private final HederaPrngSeedOperation prngSeedOperation;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -84,7 +84,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
-            final PrngLogic prngLogic) {
+            final HederaPrngSeedOperation prngSeedOperation) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -98,7 +98,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.databaseAccessors = databaseAccessors;
         this.basicHbarCentExchange = basicHbarCentExchange;
         this.prngSystemPrecompiledContract = prngSystemPrecompiledContract;
-        this.prngLogic = prngLogic;
+        this.prngSeedOperation = prngSeedOperation;
     }
 
     @Override
@@ -146,9 +146,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
-                        prngLogic,
+                        prngSeedOperation,
                         isEstimate),
-                ccps(gasCalculator, evmProperties, prngLogic),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 mirrorEvmContractAliases,
                 codeCache,

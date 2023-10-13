@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -110,6 +111,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -674,5 +676,10 @@ public class ServicesConfiguration {
             final MirrorNodeEvmProperties evmProperties) {
         return new TokenUpdateKeysPrecompile(
                 syntheticTxnFactory, precompilePricingUtils, tokenUpdateLogic, optionValidator, evmProperties);
+    }
+
+    @Bean
+    HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {
+        return new HederaPrngSeedOperation(gasCalculator, prngLogic);
     }
 }

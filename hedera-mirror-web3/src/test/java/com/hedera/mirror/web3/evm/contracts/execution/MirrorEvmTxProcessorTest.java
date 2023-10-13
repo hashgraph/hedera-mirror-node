@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -45,7 +46,6 @@ import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -139,7 +139,7 @@ class MirrorEvmTxProcessorTest {
     private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
     @Mock
-    private PrngLogic prngLogic;
+    private HederaPrngSeedOperation prngSeedOperation;
 
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
@@ -170,9 +170,9 @@ class MirrorEvmTxProcessorTest {
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
-                        prngLogic,
+                        prngSeedOperation,
                         false),
-                ccps(gasCalculator, evmProperties, prngLogic),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),

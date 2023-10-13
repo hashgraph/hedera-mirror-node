@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution;
+package com.hedera.mirror.web3.evm.contracts.operations;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.services.txns.util.PrngLogic;
-import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.evm.EVM;
@@ -35,7 +34,6 @@ public class HederaPrngSeedOperation extends AbstractOperation {
 
     private final long gasCost;
 
-    @Inject
     public HederaPrngSeedOperation(GasCalculator gasCalculator, PrngLogic prngLogic) {
         super(0x44, "PRNGSEED", 0, 1, gasCalculator);
         this.prngLogic = prngLogic;
