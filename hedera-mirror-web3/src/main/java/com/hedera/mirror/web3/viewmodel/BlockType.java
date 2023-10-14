@@ -20,21 +20,31 @@ import org.apache.commons.lang3.StringUtils;
 
 public record BlockType(String name, long number) {
 
-    public static final BlockType EARLIEST = new BlockType("earliest", 0L);
-    public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
-    public static final BlockType PENDING = new BlockType("pending", Long.MAX_VALUE);
     private static final String HEX_PREFIX = "0x";
 
-    public static BlockType of(final String value) {
+    public static final BlockType EARLIEST = new BlockType("earliest", 0L);
+    public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
 
-        if (StringUtils.isEmpty(value) || BlockType.LATEST.name().equalsIgnoreCase(value)) {
-            return BlockType.LATEST;
-        } else if (BlockType.EARLIEST.name().equalsIgnoreCase(value)) {
-            return BlockType.EARLIEST;
-        } else if (BlockType.PENDING.name().equalsIgnoreCase(value)) {
-            return BlockType.PENDING;
+    public static BlockType of(final String value) {
+        if (StringUtils.isEmpty(value)) {
+            return LATEST;
         }
 
+        final String blockTypeName = value.toLowerCase();
+        switch (blockTypeName) {
+            case "earliest" -> {
+                return EARLIEST;
+            }
+            case "latest", "safe", "pending", "finalized" -> {
+                return LATEST;
+            }
+            default -> {
+                return extractNumericBlock(value);
+            }
+        }
+    }
+
+    private static BlockType extractNumericBlock(String value) {
         int radix = 10;
         var cleanedValue = value;
 
