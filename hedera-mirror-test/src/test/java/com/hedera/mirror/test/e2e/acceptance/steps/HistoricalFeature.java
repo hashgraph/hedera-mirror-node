@@ -44,6 +44,7 @@ public class HistoricalFeature extends AbstractFeature {
     private DeployedContract deployedContract;
     private String contractSolidityAddress;
     private ExpandedAccountId receiverAccountId;
+    private ExpandedAccountId deletableAccountId;
     private final AccountClient accountClient;
 
     @Given("I successfully create estimateGas contract")
@@ -98,7 +99,23 @@ public class HistoricalFeature extends AbstractFeature {
         var responseFromType =
                 callContract(blockType, data, contractSolidityAddress).getResultAsNumber();
         var responseFromLatest = callContract(data, contractSolidityAddress).getResultAsNumber();
-//        assertEquals(responseFromLatest, responseFromType);
+        //        assertEquals(responseFromLatest, responseFromType);
+    }
+
+    @Then("I verify the response from non existing account")
+    public void getHistoricalDataForNonExistingAccount() throws InterruptedException {
+        deletableAccountId = accountClient.getAccount(AccountNameEnum.ALICE);
+        var data = encodeData(
+                ESTIMATE_GAS,
+                ADDRESS_BALANCE,
+                asAddress(deletableAccountId.getAccountId().toSolidityAddress()));
+        networkTransactionResponse = accountClient.delete(deletableAccountId);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var blockAfterDeletion = getLastBlockNumber();
+        waitForBlocks(2);
+        var response = callContract(blockAfterDeletion, data, contractSolidityAddress);
+        var test = "tes";
+        assertEquals(response.getResultAsNumber().intValue(), 0);
     }
 
     private String getLastBlockNumber() {
