@@ -24,6 +24,9 @@ spec:
   values:
     prometheus:
       prometheus:
+      defaultRules:
+        disabled:
+          KubeHpaMaxedOut: true
         prometheusSpec:
           externalLabels:
             cluster: mainnet-na
@@ -45,6 +48,8 @@ spec:
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
+      image:
+        tag: v2.10.5
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-na"} } }'
