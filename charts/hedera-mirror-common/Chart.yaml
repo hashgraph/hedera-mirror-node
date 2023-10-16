@@ -26,7 +26,7 @@ dependencies:
   - condition: traefik.enabled
     name: traefik
     repository: https://helm.traefik.io/traefik
-    version: 23.2.0
+    version: 24.0.0
   - alias: zfs
     condition: zfs.enabled
     name: zfs-localpv
