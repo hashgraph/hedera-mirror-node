@@ -38,6 +38,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -66,6 +67,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final TraceProperties traceProperties;
     private final BasicHbarCentExchange basicHbarCentExchange;
     private final PrngSystemPrecompiledContract prngSystemPrecompiledContract;
+    private final HederaPrngSeedOperation prngSeedOperation;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorFacadeImpl(
@@ -81,7 +83,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final List<DatabaseAccessor<Object, ?>> databaseAccessors,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final HederaPrngSeedOperation prngSeedOperation) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.traceProperties = traceProperties;
@@ -95,6 +98,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.databaseAccessors = databaseAccessors;
         this.basicHbarCentExchange = basicHbarCentExchange;
         this.prngSystemPrecompiledContract = prngSystemPrecompiledContract;
+        this.prngSeedOperation = prngSeedOperation;
     }
 
     @Override
@@ -142,8 +146,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
+                        prngSeedOperation,
                         isEstimate),
-                ccps(gasCalculator, evmProperties),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 mirrorEvmContractAliases,
                 codeCache,
