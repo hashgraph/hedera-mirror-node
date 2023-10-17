@@ -109,24 +109,30 @@ public class EntityIdServiceImpl implements EntityIdService {
 
         EntityId entityId = entity.toEntityId();
         EntityType type = entity.getType();
-        GeneratedMessageV3.Builder<?> builder;
 
         switch (type) {
-            case ACCOUNT -> builder = AccountID.newBuilder()
-                    .setShardNum(entityId.getShard())
-                    .setRealmNum(entityId.getRealm())
-                    .setAlias(alias);
-            case CONTRACT -> builder = ContractID.newBuilder()
-                    .setShardNum(entityId.getShard())
-                    .setRealmNum(entityId.getRealm())
-                    .setEvmAddress(alias);
-            default -> {
-                Utility.handleRecoverableError("Invalid Entity: {} entity can't have alias", type);
-                return;
-            }
-        }
+            case ACCOUNT -> {
+                var builder = AccountID.newBuilder()
+                        .setShardNum(entityId.getShard())
+                        .setRealmNum(entityId.getRealm())
+                        .setAlias(alias);
+                cache.put(builder.build(), entityId);
 
-        cache.put(builder.build(), entityId);
+                // Accounts can have an alias and an EVM address so warm the cache with both
+                if (entity.getAlias() != null && entity.getEvmAddress() != null) {
+                    builder.setAlias(DomainUtils.fromBytes(entity.getEvmAddress()));
+                    cache.put(builder.build(), entityId);
+                }
+            }
+            case CONTRACT -> {
+                var builder = ContractID.newBuilder()
+                        .setShardNum(entityId.getShard())
+                        .setRealmNum(entityId.getRealm())
+                        .setEvmAddress(alias);
+                cache.put(builder.build(), entityId);
+            }
+            default -> Utility.handleRecoverableError("Invalid Entity: {} entity can't have alias", type);
+        }
     }
 
     private EntityId load(AccountID accountId) {

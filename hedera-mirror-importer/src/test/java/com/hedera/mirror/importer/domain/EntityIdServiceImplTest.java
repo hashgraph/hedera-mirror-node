@@ -298,16 +298,23 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"false", ","})
-    void storeAccount(Boolean deleted) {
+    @CsvSource(
+            nullValues = "null",
+            value = {"false", "null"})
+    void notifyAccount(Boolean deleted) {
         Entity account =
                 domainBuilder.entity().customize(e -> e.deleted(deleted)).get();
+        var alias = getProtoAccountId(account);
+        var evmAddress = alias.toBuilder()
+                .setAlias(DomainUtils.fromBytes(account.getEvmAddress()))
+                .build();
         entityIdService.notify(account);
-        assertThat(entityIdService.lookup(getProtoAccountId(account))).hasValue(account.toEntityId());
+        assertThat(entityIdService.lookup(alias)).hasValue(account.toEntityId());
+        assertThat(entityIdService.lookup(evmAddress)).hasValue(account.toEntityId());
     }
 
     @Test
-    void storeAccountDeleted() {
+    void notifyAccountDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
         entityIdService.notify(account);
         var accountId = getProtoContractId(account);
@@ -316,7 +323,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
-    void storeContract(Boolean deleted) {
+    void notifyContract(Boolean deleted) {
         Entity contract = domainBuilder
                 .entity()
                 .customize(c -> c.alias(null).deleted(deleted).type(CONTRACT))
@@ -326,7 +333,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void storeContractDeleted() {
+    void notifyContractDeleted() {
         Entity contract = domainBuilder
                 .entity()
                 .customize(c -> c.alias(null).deleted(true).type(CONTRACT))
@@ -337,12 +344,12 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void storeNull() {
+    void notifyNull() {
         assertDoesNotThrow(() -> entityIdService.notify(null));
     }
 
     @Test
-    void unknownEntityType() {
+    void notifyUnknown() {
         Entity contract = domainBuilder
                 .entity()
                 .customize(
