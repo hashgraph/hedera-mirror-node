@@ -35,6 +35,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public interface Store {
 
+    StackedStateFrames getStackedStateFrames();
+
     Account getAccount(Address address, OnMissing throwIfMissing);
 
     /**

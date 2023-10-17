@@ -27,13 +27,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -50,6 +53,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
     private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
@@ -82,7 +86,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private EntityAddressSequencer entityAddressSequencer;
 
     @Mock
-    private EntityDatabaseAccessor entityDatabaseAccessor;
+    private EntityRepository entityRepository;
 
     private Store store;
 
@@ -90,10 +94,12 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @BeforeEach
     void setUp() {
-        final List<DatabaseAccessor<Object, ?>> accessors =
-                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        store = new StoreImpl(accessors);
-        store.wrap();
+        final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
+        final List<DatabaseAccessor<Object, ?>> accessors = List.of(
+                entityDatabaseAccessor,
+                new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
+        final var stackedStateFrames = new StackedStateFrames(accessors);
+        store = new StoreImpl(stackedStateFrames);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
@@ -108,6 +114,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
@@ -127,6 +134,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 mirrorEvmContractAliases,
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();
@@ -147,6 +155,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 mirrorEvmContractAliases,
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
@@ -160,6 +169,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void accountTests() {
         updatedHederaEvmAccount.setBalance(Wei.of(100));
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();

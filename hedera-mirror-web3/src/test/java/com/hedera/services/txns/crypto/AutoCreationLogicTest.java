@@ -33,7 +33,9 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -66,6 +68,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
 
@@ -103,10 +106,10 @@ class AutoCreationLogicTest {
 
     @BeforeEach
     void setUp() {
-        List<DatabaseAccessor<Object, ?>> accessors =
+        final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
-        store = new StoreImpl(accessors);
-        store.wrap();
+        final var stackedStateFrames = new StackedStateFrames(accessors);
+        store = new StoreImpl(stackedStateFrames);
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
     }
 
@@ -153,6 +156,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownChange(evmAddressAlias);
 
+        store.wrap();
         final var result = subject.create(input, at, store, ids, aliasManager);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
@@ -182,6 +186,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
+        store.wrap();
         final var result = subject.create(input, at, store, ids, aliasManager);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());

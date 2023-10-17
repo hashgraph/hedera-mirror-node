@@ -139,7 +139,7 @@ class DeleteTokenPrecompileTest {
                 new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(deletePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test

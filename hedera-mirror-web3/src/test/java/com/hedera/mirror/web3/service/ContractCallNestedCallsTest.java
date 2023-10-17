@@ -32,7 +32,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedEthCallContractFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
+    void nestedPrecompileTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =
@@ -55,7 +55,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedEthCallContractFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
+    void nestedReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =

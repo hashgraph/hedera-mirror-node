@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -58,6 +60,10 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     }
 
     private Token tokenFromEntity(Entity entity) {
+        if (!TOKEN.equals(entity.getType())) {
+            throw new WrongTypeException("Trying to map token from a different type");
+        }
+
         final var databaseToken = tokenRepository.findById(entity.getId()).orElse(null);
 
         if (databaseToken == null) {

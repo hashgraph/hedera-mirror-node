@@ -138,7 +138,7 @@ class FreezeTokenPrecompileTest {
         staticFreezeTokenPrecompile = Mockito.mockStatic(FreezeTokenPrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @AfterEach

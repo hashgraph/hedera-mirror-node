@@ -21,16 +21,16 @@ import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -44,7 +44,11 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -58,14 +62,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
 
     // mock precompile signature
     private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
     private static final Pair<Long, Bytes> FAILURE_RESULT = Pair.of(0L, null);
-
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @Mock
     private EvmInfrastructureFactory evmInfrastructureFactory;
@@ -97,12 +100,6 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private HederaEvmWorldStateTokenAccount account;
 
-    @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Mock
-    private EntityAddressSequencer entityAddressSequencer;
-
     private MirrorHTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
@@ -120,9 +117,9 @@ class MirrorHTSPrecompiledContractTest {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        store = new StoreImpl(accessors);
-        store.wrap(); // Create top-level RWCachingStateFrame
+        final var stackedStateFrames = new StackedStateFrames(accessors);
 
+        store = new StoreImpl(stackedStateFrames);
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
@@ -133,8 +130,7 @@ class MirrorHTSPrecompiledContractTest {
                         evmInfrastructureFactory,
                         mirrorNodeEvmProperties,
                         precompileMapper,
-                        new EvmHTSPrecompiledContract(evmInfrastructureFactory),
-                        false));
+                        new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
     }
 
     @Test
