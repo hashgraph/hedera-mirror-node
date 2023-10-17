@@ -21,7 +21,6 @@ import EntityId from './entityId';
 import {EntityService} from './service/index.js';
 import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
-import * as math from 'mathjs';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
@@ -108,6 +107,9 @@ const getBalances = async (req, res) => {
   };
 
   if (tsQuery) {
+    // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
+    tsQuery = tsQuery.concat(' and account_id = ?');
+    tsParams.push('2');
     const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams);
     if (balanceTimestamp === undefined) {
       return;

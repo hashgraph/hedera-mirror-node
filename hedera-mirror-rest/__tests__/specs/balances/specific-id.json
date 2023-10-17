@@ -21,6 +21,11 @@
     "balances": [
       {
         "timestamp": 2345,
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": 2345,
         "id": 7,
         "balance": 70
       },
