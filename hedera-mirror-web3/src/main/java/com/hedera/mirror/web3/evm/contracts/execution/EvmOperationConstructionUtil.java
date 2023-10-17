@@ -38,6 +38,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
@@ -65,9 +66,9 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 /**
- * This is a temporary utility class for creating all besu evm related fields needed by the
- * {@link MirrorEvmTxProcessor} execution. With the introduction of the precompiles, this creation will be refactored
- * and encapsulated in the evm module library.
+ * This is a temporary utility class for creating all besu evm related fields needed by the {@link MirrorEvmTxProcessor}
+ * execution. With the introduction of the precompiles, this creation will be refactored and encapsulated in the evm
+ * module library.
  */
 @UtilityClass
 public class EvmOperationConstructionUtil {
@@ -76,8 +77,10 @@ public class EvmOperationConstructionUtil {
     public static final String EVM_VERSION = EVM_VERSION_0_34;
 
     public static Map<String, Provider<ContractCreationProcessor>> ccps(
-            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
-        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
+            final GasCalculator gasCalculator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final HederaPrngSeedOperation prngSeedOperation) {
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties, prngSeedOperation);
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1),
@@ -94,8 +97,9 @@ public class EvmOperationConstructionUtil {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final PrngSystemPrecompiledContract prngSystemPrecompiledContract) {
-        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties);
+            final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final HederaPrngSeedOperation prngSeedOperation) {
+        final var evm = constructEvm(gasCalculator, mirrorNodeEvmProperties, prngSeedOperation);
 
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, gasCalculator);
@@ -141,7 +145,9 @@ public class EvmOperationConstructionUtil {
     }
 
     private static EVM constructEvm(
-            final GasCalculator gasCalculator, final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+            final GasCalculator gasCalculator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final HederaPrngSeedOperation prngSeedOperation) {
         final var operationRegistry = new OperationRegistry();
         final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
@@ -159,7 +165,8 @@ public class EvmOperationConstructionUtil {
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator))
+                        new HederaExtCodeSizeOperation(gasCalculator, validator),
+                        prngSeedOperation)
                 .forEach(operationRegistry::put);
 
         return new EVM(

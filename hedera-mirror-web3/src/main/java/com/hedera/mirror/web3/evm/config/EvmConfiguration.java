@@ -33,6 +33,7 @@ import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -151,6 +152,7 @@ public class EvmConfiguration {
             final MirrorOperationTracer mirrorOperationTracer,
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
+            final HederaPrngSeedOperation prngSeedOperation,
             final Store store) {
         return new MirrorEvmTxProcessorImpl(
                 worldState,
@@ -165,8 +167,9 @@ public class EvmConfiguration {
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngSystemPrecompiledContract),
-                ccps(gasCalculator, evmProperties),
+                        prngSystemPrecompiledContract,
+                        prngSeedOperation),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 mirrorEvmContractAliases,
                 abstractCodeCache,

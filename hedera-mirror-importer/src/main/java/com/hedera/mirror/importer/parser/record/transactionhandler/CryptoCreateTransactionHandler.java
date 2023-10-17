@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_27_0;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 
 import com.google.protobuf.ByteString;
@@ -104,6 +105,9 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
+            return;
+        }
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
         entity.setDeclineReward(transactionBody.getDeclineReward());
 

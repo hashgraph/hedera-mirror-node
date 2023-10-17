@@ -44,6 +44,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -147,7 +148,11 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
+    @Mock
+    private HederaPrngSeedOperation prngSeedOperation;
+
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
+
     private Pair<ResponseCodeEnum, Long> result;
 
     @BeforeEach
@@ -175,8 +180,9 @@ class MirrorEvmTxProcessorTest {
                         evmProperties,
                         precompileMapper,
                         basicHbarCentExchange,
-                        prngSystemPrecompiledContract),
-                ccps(gasCalculator, evmProperties),
+                        prngSystemPrecompiledContract,
+                        prngSeedOperation),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),

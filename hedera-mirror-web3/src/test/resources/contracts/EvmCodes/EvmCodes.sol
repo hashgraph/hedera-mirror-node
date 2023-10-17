@@ -206,4 +206,8 @@ contract EvmCodes {
             }
         }
     }
+
+    function getBlockPrevrandao() external view returns (uint256) {
+        return block.prevrandao;
+    }
 }
