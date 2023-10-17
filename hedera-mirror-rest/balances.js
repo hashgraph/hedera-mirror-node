@@ -107,9 +107,6 @@ const getBalances = async (req, res) => {
   };
 
   if (tsQuery) {
-    // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
-    tsQuery = tsQuery.concat(' and account_id = ?');
-    tsParams.push('2');
     const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams);
     if (balanceTimestamp === undefined) {
       return;
@@ -160,10 +157,16 @@ const getBalances = async (req, res) => {
 };
 
 const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
+  if (!tsQuery || !tsQuery.includes('account_id')) {
+    // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
+    tsQuery = tsQuery ? tsQuery.concat(' and account_id = ?') : ' account_id = ?';
+    tsParams.push('2');
+  }
+
   const query = `
     select consensus_timestamp
     from account_balance
-     ${tsQuery ? ' where ' : ''} ${tsQuery}
+    where ${tsQuery}
     order by consensus_timestamp ${order}
     limit 1`;
 
