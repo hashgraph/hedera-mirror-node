@@ -20,7 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.init;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -786,7 +786,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         long result;
-        try (ContractCallContext ctx = startThread(store.getStackedStateFrames())) {
+        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
             result = processor
                     .execute(
                             serviceParameters.getSender(),

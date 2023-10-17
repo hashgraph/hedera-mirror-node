@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.token;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -41,6 +39,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -67,7 +66,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +73,7 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
 
@@ -152,13 +151,6 @@ class TokenAccessorImplTest {
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
-
-        startThread(stackedStateFrames);
-    }
-
-    @AfterEach
-    void clean() {
-        cleanThread();
     }
 
     @Test

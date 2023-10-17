@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorImpl;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
@@ -151,7 +152,7 @@ public class EvmConfiguration {
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
             final Store store) {
-        return new MirrorEvmTxProcessor(
+        return new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFees,
                 evmProperties,

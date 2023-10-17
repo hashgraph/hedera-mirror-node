@@ -54,7 +54,7 @@ public class BinaryGasEstimator {
 
         ContractCallContext contractCallContext = ContractCallContext.get();
         while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {
-            contractCallContext.resetState();
+            contractCallContext.reset();
 
             long mid = (hi + lo) / 2;
             HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);

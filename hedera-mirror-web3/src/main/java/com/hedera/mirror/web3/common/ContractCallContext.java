@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
 
 @Getter
@@ -32,36 +32,22 @@ public class ContractCallContext implements AutoCloseable {
 
     private static final ThreadLocal<ContractCallContext> THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
-    /**
-     * Constant for representing an unset or disabled timestamp for filtering.
-     */
-    public static final long UNSET_TIMESTAMP = -1L;
-
-    /**
-     * Long value which stores the block timestamp used for filtering of historical data.
-     * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
-     * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
-     */
-    @SuppressWarnings("java:S1068")
-    private long blockTimestamp = UNSET_TIMESTAMP;
-
-    /** Boolean flag which determines whether the transaction is estimate gas or not*/
-    private boolean isEstimate = false;
-
-    /** Boolean flag which determines whether we should make a contract call or contract create transaction simulation */
-    private boolean isCreate = false;
-
     /** Map of account aliases that were committed */
-    @NonNull
     private final Map<Address, Address> aliases = new HashMap<>();
 
-    @NonNull
     /** Map of account aliases that are added by the current frame and are not yet committed */
     private final Map<Address, Address> pendingAliases = new HashMap<>();
 
-    @NonNull
     /** Set of account aliases that are deleted by the current frame and are not yet committed */
     private final Set<Address> pendingRemovals = new HashSet<>();
+
+    /** Boolean flag which determines whether we should make a contract call or contract init transaction simulation */
+    @Setter
+    private boolean create = false;
+
+    /** Boolean flag which determines whether the transaction is estimate gas or not */
+    @Setter
+    private boolean estimate = false;
 
     /** Current top of stack (which is all linked together) */
     private CachingStateFrame<Object> stack;
@@ -75,87 +61,62 @@ public class ContractCallContext implements AutoCloseable {
         return THREAD_LOCAL.get();
     }
 
-    /** Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
+    /**
+     * Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
      * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
      * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
-     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that actually
-     * hits the database (via the database accessors), all subsequent executions will fetch the same values
+     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that
+     * actually hits the database (via the database accessors), all subsequent executions will fetch the same values
      * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
      * using this method.)
      */
-    public static ContractCallContext startThread(final StackedStateFrames stackedStateFrames) {
-        ContractCallContext contractCallContext = new ContractCallContext();
-        THREAD_LOCAL.set(contractCallContext);
-        contractCallContext.stackBase = stackedStateFrames.getInitializedStackBase();
-        contractCallContext.stack = contractCallContext.stackBase;
-
-        return contractCallContext;
-    }
-
-    // This method is needed only for the juint tests.
-    public static void initContractCallContext() {
-        THREAD_LOCAL.set(new ContractCallContext());
+    public static ContractCallContext init(final StackedStateFrames stackedStateFrames) {
+        var context = new ContractCallContext();
+        if (stackedStateFrames != null) {
+            context.stackBase = context.stack = stackedStateFrames.getInitializedStackBase();
+        }
+        THREAD_LOCAL.set(context);
+        return context;
     }
 
     public boolean containsAlias(final Address address) {
-        ContractCallContext contractCallContext = get();
-        return contractCallContext.getAliases().containsKey(address)
-                        && !contractCallContext.getPendingRemovals().contains(address)
-                || contractCallContext.getPendingAliases().containsKey(address);
+        return aliases.containsKey(address) && !pendingRemovals.contains(address)
+                || pendingAliases.containsKey(address);
     }
 
-    public void resetState() {
-        stack = stackBase;
-        isEstimate = false;
-        isCreate = false;
+    public void reset() {
         aliases.clear();
+        create = false;
+        estimate = false;
         pendingAliases.clear();
         pendingRemovals.clear();
-        blockTimestamp = ContractCallContext.UNSET_TIMESTAMP;
-    }
-
-    public static void cleanThread() {
-        THREAD_LOCAL.remove();
+        stack = stackBase;
     }
 
     @Override
     public void close() {
-        cleanThread();
+        THREAD_LOCAL.remove();
     }
 
     public int getStackHeight() {
         return stack.height() - stackBase.height();
     }
 
-    public void setStack(CachingStateFrame<Object> stack) {
-        this.stack = stack;
+    public CachingStateFrame<Object> getStack() {
+        return stack;
     }
 
-    public CachingStateFrame<Object> getStack() {
-        return get().stack;
+    public void setStack(CachingStateFrame<Object> stack) {
+        this.stack = stack;
+        if (stackBase == null) {
+            stackBase = stack;
+        }
     }
 
     public void updateStackFromUpstream() {
-        ContractCallContext contractCallContext = get();
-        if (contractCallContext.stack == contractCallContext.stackBase) {
+        if (stack == stackBase) {
             throw new EmptyStackException();
         }
-        setStack(contractCallContext.stack.getUpstream().orElseThrow(EmptyStackException::new));
-    }
-
-    public boolean isEstimate() {
-        return isEstimate;
-    }
-
-    public void setIsEstimate(boolean isEstimate) {
-        this.isEstimate = isEstimate;
-    }
-
-    public boolean isCreate() {
-        return isCreate;
-    }
-
-    public void setIsCreate(boolean isCreate) {
-        this.isCreate = isCreate;
+        setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
     }
 }

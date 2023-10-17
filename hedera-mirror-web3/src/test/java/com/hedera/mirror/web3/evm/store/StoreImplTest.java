@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,6 +29,7 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -60,7 +59,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +66,7 @@ import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class StoreImplTest {
 
@@ -168,12 +167,6 @@ class StoreImplTest {
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
         subject = new StoreImpl(stackedStateFrames);
-        startThread(stackedStateFrames);
-    }
-
-    @AfterEach
-    void clean() {
-        cleanThread();
     }
 
     @Test

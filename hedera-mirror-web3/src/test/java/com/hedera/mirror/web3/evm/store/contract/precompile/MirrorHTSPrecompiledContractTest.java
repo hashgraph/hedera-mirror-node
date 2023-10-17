@@ -16,17 +16,16 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -45,14 +44,17 @@ import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,6 +62,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class MirrorHTSPrecompiledContractTest {
 
@@ -115,10 +118,8 @@ class MirrorHTSPrecompiledContractTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        startThread(stackedStateFrames);
 
         store = new StoreImpl(stackedStateFrames);
-        store.wrap(); // Create top-level RWCachingStateFrame
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
@@ -130,11 +131,6 @@ class MirrorHTSPrecompiledContractTest {
                         mirrorNodeEvmProperties,
                         precompileMapper,
                         new EvmHTSPrecompiledContract(evmInfrastructureFactory)));
-    }
-
-    @AfterEach
-    void clean() {
-        cleanThread();
     }
 
     @Test

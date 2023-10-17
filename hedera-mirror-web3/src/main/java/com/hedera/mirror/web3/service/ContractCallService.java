@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
+import static com.hedera.mirror.web3.common.ContractCallContext.init;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -58,7 +58,7 @@ public class ContractCallService {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
-        try (ContractCallContext ctx = startThread(store.getStackedStateFrames())) {
+        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
             Bytes result;
             if (params.isEstimate()) {
                 result = estimateGas(params);

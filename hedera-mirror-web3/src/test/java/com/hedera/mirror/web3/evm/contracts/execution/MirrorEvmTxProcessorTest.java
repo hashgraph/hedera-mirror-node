@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.initContractCallContext;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +27,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -77,6 +77,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmTxProcessorTest {
 
@@ -146,12 +147,11 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
-    private MirrorEvmTxProcessor mirrorEvmTxProcessor;
+    private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
     @BeforeEach
     void setup() {
-        initContractCallContext();
         setupGasCalculator();
         final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
@@ -162,7 +162,7 @@ class MirrorEvmTxProcessorTest {
         when(evmProperties.chainIdBytes32()).thenReturn(chainId);
         when(evmProperties.getEvmSpecVersion()).thenReturn(EvmSpecVersion.SHANGHAI);
 
-        mirrorEvmTxProcessor = new MirrorEvmTxProcessor(
+        mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFeesProvider,
                 evmProperties,
@@ -184,7 +184,6 @@ class MirrorEvmTxProcessorTest {
                 store);
 
         final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
-        mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 

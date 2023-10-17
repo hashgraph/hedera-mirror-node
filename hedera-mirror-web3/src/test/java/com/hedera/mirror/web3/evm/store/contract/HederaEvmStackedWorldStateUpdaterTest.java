@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.cleanThread;
-import static com.hedera.mirror.web3.common.ContractCallContext.startThread;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -29,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -48,13 +47,13 @@ import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
     private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
@@ -101,7 +100,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
-        startThread(stackedStateFrames);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,
@@ -111,17 +109,12 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 store);
-        store.wrap();
-    }
-
-    @AfterEach
-    void clean() {
-        cleanThread();
     }
 
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
@@ -141,6 +134,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 mirrorEvmContractAliases,
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         assertNull(updater.getAccount(address));
         subject.commit();
@@ -161,6 +155,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 mirrorEvmContractAliases,
                 store);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         subject.createAccount(address, aNonce, Wei.of(aBalance));
         subject.deleteAccount(address);
         assertThat(updater.getDeletedAccountAddresses()).isEmpty();
@@ -174,6 +169,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     void accountTests() {
         updatedHederaEvmAccount.setBalance(Wei.of(100));
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
+        store.wrap();
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
         assertThat(subject.getAccount(address).getBalance()).isEqualTo(Wei.ONE);
         assertThat(subject.getTouchedAccounts()).isNotEmpty();
