@@ -51,7 +51,6 @@ public class ContractCallContext implements AutoCloseable {
      * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
      * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
      */
-    @SuppressWarnings("java:S1068")
     @Setter
     private long blockTimestamp = UNSET_TIMESTAMP;
 
