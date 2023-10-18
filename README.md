@@ -125,7 +125,6 @@ associated with the downloading of stream files are paid for by the requester an
     - [Web3 API](docs/web3/README.md)
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
-- [Operations](docs/operations.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Releasing
