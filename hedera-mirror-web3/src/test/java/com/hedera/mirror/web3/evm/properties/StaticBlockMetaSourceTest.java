@@ -49,9 +49,12 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void getBlockHashReturnsCorrectValue() {
-        final var fileHash = "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
+        final var fileHash =
+                "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
         given(repository.findHashByIndex(1)).willReturn(Optional.of(fileHash));
-        final var expected = Bytes.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765").toArrayUnsafe());
+        final var expected =
+                Bytes.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765")
+                        .toArrayUnsafe());
         assertThat(subject.getBlockHash(1)).isEqualTo(Hash.wrap(Bytes32.wrap(expected)));
     }
 

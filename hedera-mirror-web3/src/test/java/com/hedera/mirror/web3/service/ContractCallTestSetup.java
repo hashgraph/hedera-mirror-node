@@ -1856,7 +1856,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 .toArrayUnsafe()))
                 .persist();
 
-        recordFileForBlockHash = domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+        recordFileForBlockHash = domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(contractBytes))
+                .persist();
     }
 
     private EntityId systemExchangeRateContractPersist() {

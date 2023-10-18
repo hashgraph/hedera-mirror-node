@@ -22,11 +22,8 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import jakarta.inject.Named;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
@@ -39,8 +36,8 @@ public class StaticBlockMetaSource implements BlockMetaSource {
     public Hash getBlockHash(long blockNo) {
         final var fileHash = recordFileRepository.findHashByIndex(blockNo);
 
-        return BlockHashUtil.ethHashFrom(fileHash
-                .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo))));
+        return BlockHashUtil.ethHashFrom(fileHash.orElseThrow(
+                () -> new MissingResultException(String.format("No record file with index: %d", blockNo))));
     }
 
     @Override

@@ -23,9 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.mirror.web3.evm.utils.BlockHashUtil;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.swirlds.common.crypto.Hash;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
     private static final String TRUE = "0x0000000000000000000000000000000000000000000000000000000000000001";
+
     @Autowired
     private RecordFileRepository recordFileRepository;
 
@@ -149,15 +148,18 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
     @Test
     void getBlockHashReturnsCorrectHash() {
-        // Persist all entities so that we can get a specific record file hash and pass it to functionEncodeDecoder#functionHashFor.
+        // Persist all entities so that we can get a specific record file hash and pass it to
+        // functionEncodeDecoder#functionHashFor.
         persistEntities();
         areEntitiesPersisted = true;
 
-        final var functionHash = functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, recordFileForBlockHash.getIndex());
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "getBlockHash", EVM_CODES_ABI_PATH, recordFileForBlockHash.getIndex());
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo(BlockHashUtil.ethHashFrom(recordFileForBlockHash.getHash()).toString());
+                .isEqualTo(BlockHashUtil.ethHashFrom(recordFileForBlockHash.getHash())
+                        .toString());
     }
 
     @Test
