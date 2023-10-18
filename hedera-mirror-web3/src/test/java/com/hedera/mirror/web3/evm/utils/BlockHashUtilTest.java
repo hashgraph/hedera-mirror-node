@@ -23,7 +23,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.Test;
 
-public class BlockHashUtilTest {
+class BlockHashUtilTest {
 
     @Test
     void testEthHashFromReturnsCorrectValue() {
