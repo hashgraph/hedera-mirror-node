@@ -1,0 +1,118 @@
+{
+  "description": "Balances api call with deduplicated account balances",
+  "setup": {
+    "balances": [
+      {
+        "timestamp": 1566560003000000001,
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": 1566560003000000001,
+        "id": 17,
+        "realm_num": 1,
+        "balance": 70,
+        "tokens": [
+          {
+            "token_num": 70000,
+            "balance": 7
+          },
+          {
+            "token_num": 70007,
+            "balance": 700
+          }
+        ]
+      },
+      {
+        "timestamp": 1568238403000000000,
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": 1568238403000000000,
+        "id": 18,
+        "realm_num": 1,
+        "balance": 80
+      },
+      {
+        "timestamp": 1568238403000000000,
+        "id": 20,
+        "realm_num": 1,
+        "balance": 19,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 1000
+          }
+        ]
+      },
+      {
+        "timestamp": 1569238403000000000,
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": 1569238403000000000,
+        "id": 19,
+        "realm_num": 1,
+        "balance": 90
+      },
+      {
+        "timestamp": 1569238403000000000,
+        "id": 20,
+        "realm_num": 1,
+        "balance": 20,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 1001
+          }
+        ]
+      }
+    ]
+  },
+  "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1569238403.000000000",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "1569238403.000000000",
+    "balances": [
+      {
+        "account": "0.1.20",
+        "balance": 20,
+        "tokens": [
+          {
+            "balance": 1001,
+            "token_id": "0.0.90000"
+          }
+        ]
+      },
+      {
+        "account": "0.1.19",
+        "balance": 90,
+        "tokens": []
+      },
+      {
+        "account": "0.1.18",
+        "balance": 80,
+        "tokens": []
+      },
+      {
+        "account": "0.1.17",
+        "balance": 70,
+        "tokens": [
+          {
+            "balance": 700,
+            "token_id": "0.0.70007"
+          },
+          {
+            "balance": 7,
+            "token_id": "0.0.70000"
+          }
+        ]
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}
