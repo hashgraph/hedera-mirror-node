@@ -52,4 +52,22 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
 
         assertThat(recordFileRepository.findLatest()).get().isEqualTo(latest);
     }
+
+    @Test
+    void findConsensusEndByBlockNumber() {
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
+        long blockNumber = latest.getIndex();
+
+        assertThat(recordFileRepository.findConsensusEndByBlockNumber(blockNumber))
+                .get()
+                .isEqualTo(latest.getConsensusEnd());
+    }
+
+    @Test
+    void findConsensusEndByBlockNumberNotExists() {
+        long nonExistentBlockNumber = 1L;
+        assertThat(recordFileRepository.findConsensusEndByBlockNumber(nonExistentBlockNumber))
+                .isEmpty();
+    }
 }

@@ -54,6 +54,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -763,6 +764,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(BlockType.LATEST)
                 .build();
     }
 
@@ -780,6 +782,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(BlockType.LATEST)
                 .build();
     }
 
@@ -796,7 +799,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             serviceParameters.getCallData(),
                             Instant.now(),
                             serviceParameters.isStatic(),
-                            true)
+                            true,
+                            BlockType.LATEST)
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);

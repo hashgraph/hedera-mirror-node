@@ -89,6 +89,7 @@ class ContractController {
         final var data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
         final var isStaticCall = false;
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
+        final var block = request.getBlock();
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -99,6 +100,7 @@ class ContractController {
                 .isStatic(isStaticCall)
                 .callType(callType)
                 .isEstimate(request.isEstimate())
+                .block(block)
                 .build();
     }
 

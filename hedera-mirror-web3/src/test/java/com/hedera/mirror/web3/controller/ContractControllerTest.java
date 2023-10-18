@@ -452,6 +452,7 @@ class ContractControllerTest {
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);
         request.setData("0x1079023a");
+        request.setBlock(BlockType.LATEST);
         return request;
     }
 

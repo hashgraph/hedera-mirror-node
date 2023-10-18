@@ -36,6 +36,8 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -56,6 +58,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -75,6 +78,9 @@ import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -151,6 +157,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private HederaPrngSeedOperation prngSeedOperation;
 
+    @Mock
+    private RecordFileRepository recordFileRepository;
+
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
 
     private Pair<ResponseCodeEnum, Long> result;
@@ -187,14 +196,16 @@ class MirrorEvmTxProcessorTest {
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
                 mirrorOperationTracer,
-                store);
+                store,
+                recordFileRepository);
 
         final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
-    @Test
-    void assertSuccessExecution() {
+    @ParameterizedTest
+    @MethodSource("provideIsEstimateAndBlockTypeParameters")
+    void assertSuccessExecution(boolean isEstimate, BlockType block) {
         givenValidMockWithoutGetOrCreate();
         given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
@@ -203,7 +214,7 @@ class MirrorEvmTxProcessorTest {
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
         var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, true);
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, isEstimate, block);
 
         assertThat(result)
                 .isNotNull()
@@ -312,5 +323,15 @@ class MirrorEvmTxProcessorTest {
         given(gasCalculator.getHighTierGasCost()).willReturn(10L);
         given(gasCalculator.getJumpDestOperationGasCost()).willReturn(1L);
         given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
+    }
+
+    static Stream<Arguments> provideIsEstimateAndBlockTypeParameters() {
+        return Stream.of(
+                Arguments.of(true, BlockType.LATEST),
+                Arguments.of(false, BlockType.of("0x0")),
+                Arguments.of(false, BlockType.LATEST),
+                Arguments.of(false, BlockType.of("0x0")),
+                Arguments.of(false, BlockType.of("0xD5")),
+                Arguments.of(false, BlockType.of("0x2540BE3FF")));
     }
 }

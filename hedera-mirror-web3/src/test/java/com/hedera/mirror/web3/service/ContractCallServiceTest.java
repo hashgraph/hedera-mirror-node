@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
+    // add tests in this class
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
 
     @BeforeEach

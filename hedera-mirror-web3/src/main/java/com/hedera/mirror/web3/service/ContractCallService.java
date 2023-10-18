@@ -119,7 +119,8 @@ public class ContractCallService {
                     params.getCallData(),
                     Instant.now(),
                     params.isStatic(),
-                    isEstimate);
+                    isEstimate,
+                    params.getBlock());
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }

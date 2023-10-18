@@ -21,6 +21,8 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -34,6 +36,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -49,6 +52,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final Store store;
+    private final RecordFileRepository recordFileRepository;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorImpl(
@@ -62,13 +66,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
-            final Store store) {
+            final Store store,
+            final RecordFileRepository recordFileRepository) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         super.setOperationTracer(operationTracer);
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.store = store;
+        this.recordFileRepository = recordFileRepository;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -79,13 +85,19 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final Bytes callData,
             final Instant consensusTime,
             final boolean isStatic,
-            final boolean isEstimate) {
+            final boolean isEstimate,
+            final BlockType block) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(receiver.equals(Address.ZERO));
         final var contractCallContext = ContractCallContext.get();
         contractCallContext.setCreate(Address.ZERO.equals(receiver));
         contractCallContext.setEstimate(isEstimate);
+
+        if (!isEstimate) {
+            Optional<Long> blockTimestamp = recordFileRepository.findConsensusEndByBlockNumber(block.number());
+            blockTimestamp.ifPresent(contractCallContext::setBlockTimestamp);
+        }
 
         store.wrap();
         if (isEstimate) {

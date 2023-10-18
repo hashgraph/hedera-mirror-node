@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.time.Instant;
@@ -33,5 +34,6 @@ public interface MirrorEvmTxProcessor {
             Bytes callData,
             Instant consensusTime,
             boolean isStatic,
-            boolean isEstimate);
+            boolean isEstimate,
+            final BlockType blockType);
 }
