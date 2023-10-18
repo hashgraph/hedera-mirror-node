@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class ContractCallContextTest {
+class ContractCallContextTest {
 
     @Test
     void testGet() {
@@ -38,8 +38,8 @@ public class ContractCallContextTest {
 
         context.reset();
 
-        assertThat(context.isEstimate()).isEqualTo(false);
-        assertThat(context.isCreate()).isEqualTo(false);
+        assertThat(context.isEstimate()).isFalse();
+        assertThat(context.isCreate()).isFalse();
         context.close();
     }
 
