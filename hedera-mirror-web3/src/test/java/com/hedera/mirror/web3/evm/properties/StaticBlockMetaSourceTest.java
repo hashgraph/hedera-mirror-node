@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
+import com.hedera.mirror.web3.evm.utils.BlockHashUtil;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -52,10 +53,10 @@ class StaticBlockMetaSourceTest {
         final var fileHash =
                 "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
         given(repository.findHashByIndex(1)).willReturn(Optional.of(fileHash));
-        final var expected =
-                Bytes.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765")
-                        .toArrayUnsafe());
-        assertThat(subject.getBlockHash(1)).isEqualTo(Hash.wrap(Bytes32.wrap(expected)));
+        final var expected = Hash.wrap(
+                Bytes32.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765")
+                        .toArrayUnsafe()));
+        assertThat(subject.getBlockHash(1)).isEqualTo(expected);
     }
 
     @Test
