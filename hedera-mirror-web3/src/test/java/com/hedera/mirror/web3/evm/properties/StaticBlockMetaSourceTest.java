@@ -25,6 +25,8 @@ import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +49,10 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void getBlockHashReturnsCorrectValue() {
-        final var fileHash = "0x00000000000000000000000000000000000000000000000000000000000004e4";
+        final var fileHash = "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
         given(repository.findHashByIndex(1)).willReturn(Optional.of(fileHash));
-        assertThat(subject.getBlockHash(1)).isEqualTo(Hash.fromHexString(fileHash));
+        final var expected = Bytes.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765").toArrayUnsafe());
+        assertThat(subject.getBlockHash(1)).isEqualTo(Hash.wrap(Bytes32.wrap(expected)));
     }
 
     @Test
