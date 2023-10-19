@@ -65,5 +65,3 @@ dependencies {
     testImplementation("org.gaul:s3proxy")
     testImplementation("org.testcontainers:junit-jupiter")
 }
-
-tasks.assemble { dependsOn("package") }
