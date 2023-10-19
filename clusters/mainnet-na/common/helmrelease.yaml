@@ -24,9 +24,9 @@ spec:
   values:
     prometheus:
       prometheus:
-      defaultRules:
-        disabled:
-          KubeHpaMaxedOut: true
+        defaultRules:
+          disabled:
+            KubeHpaMaxedOut: true
         prometheusSpec:
           externalLabels:
             cluster: mainnet-na
