@@ -48,7 +48,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
                     select *
                     from entity
                     where evm_address = ?1 and lower(timestamp_range) <= ?2
-                    and deleted = false
+                    and deleted is not true
                     order by timestamp_range desc
                     limit 1
                     """,
@@ -75,14 +75,14 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
                         select *
                         from entity
                         where id = ?1 and lower(timestamp_range) <= ?2
-                        and deleted = false
+                        and deleted is not true
                     )
                     union all
                     (
                         select *
                         from entity_history
                         where id = ?1 and lower(timestamp_range) <= ?2
-                        and deleted = false
+                        and deleted is not true
                         order by lower(timestamp_range) desc
                         limit 1
                     )
