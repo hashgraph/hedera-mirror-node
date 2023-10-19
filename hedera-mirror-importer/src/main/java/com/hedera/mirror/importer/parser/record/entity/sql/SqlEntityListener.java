@@ -852,7 +852,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
      * @return the merged token
      */
     private Token mergeToken(Token previous, Token current) {
-        previous.setTimestampUpper(current.getTimestampLower());
+        if (current.isHistory()) {
+            previous.setTimestampUpper(current.getTimestampLower());
+        }
 
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
         current.setDecimals(previous.getDecimals());

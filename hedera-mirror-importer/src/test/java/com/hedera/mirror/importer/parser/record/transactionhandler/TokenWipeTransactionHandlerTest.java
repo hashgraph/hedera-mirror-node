@@ -81,7 +81,6 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), Token::getTokenId);
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction, accountId));
@@ -111,7 +110,6 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(token.getValue())
                 .returns(recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(), Token::getTotalSupply)
-                .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), Token::getTokenId);
 
         assertThat(nft.getValue())
