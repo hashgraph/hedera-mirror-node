@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -162,6 +163,14 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findHistoricalEntityByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
+        // persist older entity in entity history
+        domainBuilder
+                .entityHistory()
+                .customize(e -> e.timestampRange(
+                        Range.closedOpen(entityHistory.getTimestampLower() - 10, entityHistory.getTimestampLower())))
+                .persist();
+
+        // verify that we get the latest valid entity from entity history
         Optional<Entity> queryResult = entityRepository.findByIdAndTimestampAndDeletedIsFalse(
                 entityHistory.getId(), entityHistory.getTimestampLower() + 1);
         assertEntityFields(entityHistory, queryResult);
@@ -171,18 +180,18 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     void findHistoricalEntityByIdAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        assertThat(entityRepository
-                .findByIdAndTimestampAndDeletedIsFalse(entityHistory.getId(), entityHistory.getTimestampLower())
-                .isEmpty());
+        Optional<Entity> queryResult = entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+                entityHistory.getId(), entityHistory.getTimestampLower());
+        assertEntityFields(entityHistory, queryResult);
     }
 
     @Test
     void findHistoricalEntityByIdAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalseCall() {
         EntityHistory entityHistory = domainBuilder.entityHistory().persist();
 
-        assertThat(entityRepository
-                .findByIdAndTimestampAndDeletedIsFalse(entityHistory.getId(), entityHistory.getTimestampLower() - 1)
-                .isEmpty());
+        assertThat(entityRepository.findByIdAndTimestampAndDeletedIsFalse(
+                        entityHistory.getId(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
     }
 
     @Test
