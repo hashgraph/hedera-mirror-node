@@ -72,4 +72,83 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                         TokenAccountAssociationsCount::getTokenCount)
                 .containsExactlyInAnyOrder(tuple(true, 2), tuple(false, 1));
     }
+
+    @Test
+    void findByIdAndTimestampLessThanBlock() {
+        final var tokenAccount = domainBuilder.tokenAccount().persist();
+
+        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower() + 1))
+                .get()
+                .isEqualTo(tokenAccount);
+    }
+
+    @Test
+    void findByIdAndTimestampEqualToBlock() {
+        final var tokenAccount = domainBuilder.tokenAccount().persist();
+
+        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower()))
+                .get()
+                .isEqualTo(tokenAccount);
+    }
+
+    @Test
+    void findByIdAndTimestampGreaterThanBlock() {
+        final var tokenAccount = domainBuilder.tokenAccount().persist();
+
+        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalLessThanBlock() {
+        final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
+
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower() + 1))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(tokenAccountHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalEqualToBlock() {
+        final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
+
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(tokenAccountHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalGreaterThanBlock() {
+        final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
+
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalReturnsLatestEntry() {
+        long tokenId = 1L;
+        long accountId = 2L;
+        final var tokenAccountHistory1 = domainBuilder
+                .tokenAccountHistory()
+                .customize(t -> t.tokenId(tokenId).accountId(accountId))
+                .persist();
+
+        final var tokenAccountHistory2 = domainBuilder
+                .tokenAccountHistory()
+                .customize(t -> t.tokenId(tokenId).accountId(accountId))
+                .persist();
+
+        final var latestTimestamp =
+                Math.max(tokenAccountHistory1.getTimestampLower(), tokenAccountHistory2.getTimestampLower());
+
+        assertThat(repository.findByIdAndTimestamp(tokenAccountHistory1.getId(), latestTimestamp + 1))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).returns(latestTimestamp, TokenAccount::getTimestampLower));
+    }
 }

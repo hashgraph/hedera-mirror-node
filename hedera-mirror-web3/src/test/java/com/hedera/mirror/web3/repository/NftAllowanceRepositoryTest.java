@@ -65,4 +65,84 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                         .orElse(false))
                 .isFalse();
     }
+
+    @Test
+    void findByIdAndTimestampLessThanBlockTimestamp() {
+        final var allowance = domainBuilder.nftAllowance().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower() + 1))
+                .get()
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByIdAndTimestampEqualToBlockTimestamp() {
+        final var allowance = domainBuilder.nftAllowance().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower()))
+                .get()
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByIdAndTimestampGreaterThanBlockTimestamp() {
+        final var allowance = domainBuilder.nftAllowance().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalLessThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(
+                        allowanceHistory.getId(), allowanceHistory.getTimestampLower() + 1))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(allowanceHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalEqualToBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(
+                        allowanceHistory.getId(), allowanceHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(allowanceHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalGreaterThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(
+                        allowanceHistory.getId(), allowanceHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalReturnsLatestEntry() {
+        long tokenId = 1L;
+        long owner = 2L;
+        long spender = 3L;
+        final var allowanceHistory1 = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender))
+                .persist();
+
+        final var allowanceHistory2 = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender))
+                .persist();
+
+        final var latestTimestamp =
+                Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
+
+        assertThat(allowanceRepository.findByIdAndTimestamp(allowanceHistory1.getId(), latestTimestamp + 1))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).returns(latestTimestamp, NftAllowance::getTimestampLower));
+    }
 }

@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
@@ -33,4 +34,42 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     Optional<NftAllowance> findById(Id id);
 
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
+
+    /**
+     * Retrieves the most recent state of an nft allowance by its ID up to a given block timestamp.
+     * The method considers both the current state of the nft allowance and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param id              the ID of the nft allowance to be retrieved.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the nft allowance's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
+    @Query(
+            value =
+                    """
+                    (
+                        select *
+                        from nft_allowance
+                        where token_id = :#{#id.tokenId}
+                            and owner = :#{#id.owner}
+                            and spender = :#{#id.spender}
+                            and lower(timestamp_range) <= :blockTimestamp
+                    )
+                    union all
+                    (
+                        select *
+                        from nft_allowance_history
+                        where token_id = :#{#id.tokenId}
+                            and owner = :#{#id.owner}
+                            and spender = :#{#id.spender}
+                            and lower(timestamp_range) <= :blockTimestamp
+                        order by lower(timestamp_range) desc
+                        limit 1
+                    )
+                    order by timestamp_range desc
+                    limit 1
+                    """,
+            nativeQuery = true)
+    Optional<NftAllowance> findByIdAndTimestamp(Id id, long blockTimestamp);
 }
