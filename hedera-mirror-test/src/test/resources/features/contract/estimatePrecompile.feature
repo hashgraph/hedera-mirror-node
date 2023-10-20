@@ -169,3 +169,22 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with exchange rate tinybars to tinycents
     #Then I call estimateGas with pseudo random seed
     #Then I call estimateGas with pseudo random number
+    #### These tests below are recommended to be kept at the end as they change the state #####
+    Then I call estimateGas with balanceOf function for fungible token and execute it using gas limit
+    Then I call estimateGas with balanceOf function for NFT and execute it with gas limit
+    And I update the account and token keys
+    Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimateGas with transferToken function and execute it with gas limit
+    And I associate the contract with the receiver account
+    Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimateGas with transferNFT function and execute it with gas limit
+    Then I call estimateGas with mintToken function for fungible token and execute it using gas limit
+    Then I call estimateGas with mintToken function for NFT and execute it using gas limit
+    And I approve the receiver to use the token
+    Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimateGas with allowance function for fungible token and execute it with gas limit
+    Then I call estimateGas with allowance function for NFT and execute it with gas limit
+    Then I call estimateGas with approve function and execute it with gas limit
+    Then I call estimateGas with approveNFT function and execute it with gas limit
+    Then I call estimateGas with transferFrom function with fungible and execute it with gas limit
+    Then I call estimateGas with transferFromNFT function and execute it with gas limit
