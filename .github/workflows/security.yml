@@ -33,6 +33,27 @@ jobs:
           name: dependency-check-report
           path: build/reports/dependency-check-report.html
 
+  gosec:
+    env:
+      GO111MODULE: on
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tmp
+
+      - name: Copy hedera-mirror-rosetta to workspace root
+        working-directory: .
+        run: |
+          cp -r /tmp/hedera-mirror-rosetta/* .
+          rm -fr /tmp
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@v2.18.2
+        with:
+          args: ./...
+
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: SonarCloud
