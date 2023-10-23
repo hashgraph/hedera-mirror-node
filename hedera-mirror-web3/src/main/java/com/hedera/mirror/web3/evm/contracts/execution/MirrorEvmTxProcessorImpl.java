@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -94,9 +95,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         contractCallContext.setCreate(Address.ZERO.equals(receiver));
         contractCallContext.setEstimate(isEstimate);
 
-        if (!isEstimate) {
-            Optional<Long> blockTimestamp = recordFileRepository.findConsensusEndByBlockNumber(block.number());
-            blockTimestamp.ifPresent(contractCallContext::setBlockTimestamp);
+        if (!isEstimate && block != BlockType.LATEST) {
+            setBlockTimestampToContractCallContext(block, contractCallContext);
         }
 
         store.wrap();
@@ -150,5 +150,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                         .inputData(payload)
                         .code(code)
                         .build();
+    }
+
+    public void setBlockTimestampToContractCallContext(BlockType block, ContractCallContext contractCallContext) {
+        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(block.number());
+        recordFile.map(RecordFile::getConsensusEnd).ifPresent(contractCallContext::setBlockTimestamp);
     }
 }

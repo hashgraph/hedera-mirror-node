@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
@@ -48,13 +49,18 @@ class StaticBlockMetaSourceTest {
     @Test
     void getBlockHashReturnsCorrectValue() {
         final var fileHash = "0x00000000000000000000000000000000000000000000000000000000000004e4";
-        given(repository.findHashByIndex(1)).willReturn(Optional.of(fileHash));
+
+        final var recordFile = new RecordFile();
+        recordFile.setHash(fileHash);
+
+        given(repository.findRecordFileByIndex(1)).willReturn(Optional.of(recordFile));
+
         assertThat(subject.getBlockHash(1)).isEqualTo(Hash.fromHexString(fileHash));
     }
 
     @Test
     void getBlockHashThrowsExceptionWhitMissingFileId() {
-        given(repository.findHashByIndex(1)).willReturn(Optional.empty());
+        given(repository.findRecordFileByIndex(1)).willReturn(Optional.empty());
         assertThatThrownBy(() -> subject.getBlockHash(1)).isInstanceOf(MissingResultException.class);
     }
 
