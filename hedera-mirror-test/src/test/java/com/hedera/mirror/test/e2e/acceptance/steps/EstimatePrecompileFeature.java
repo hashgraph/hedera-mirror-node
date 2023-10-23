@@ -1640,8 +1640,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         return executeContractResult;
     }
 
-    private void verifySuccessfulTransaction(ExecuteContractResult executeContractResult) {
-        String transactionId = executeContractResult.networkTransactionResponse().getTransactionIdStringNoCheckSum();
+    private void verifySuccessfulTransaction(ExecuteContractResult contractResult) {
+        String transactionId = contractResult.networkTransactionResponse().getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
         MirrorTransaction mirrorTransaction =
                 mirrorTransactionsResponse.getTransactions().get(0);
