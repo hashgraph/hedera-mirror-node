@@ -69,7 +69,7 @@ dependencies {
         api("commons-io:commons-io:2.14.0")
         api("io.cucumber:cucumber-bom:7.14.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.58.0")
+        api("io.grpc:grpc-bom:1.59.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.0")
         api("io.projectreactor:reactor-core-micrometer:1.0.11")
         api("io.swagger:swagger-annotations:1.6.11")
