@@ -27,6 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
@@ -61,8 +63,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
-    @Test
-    void pureCallWithCustomBlock() {
+    @ParameterizedTest
+    @MethodSource("provideBlockTypes")
+    void pureCallWithCustomBlock(BlockType blockType) {
         domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.index(1L))
@@ -74,7 +77,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.of("0x1"));
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
@@ -488,5 +491,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         private final String functionSignature;
         private final String errorDetail;
         private final String errorData;
+    }
+
+    static Stream<BlockType> provideBlockTypes() {
+        return Stream.of(BlockType.EARLIEST, BlockType.of("0x1"), BlockType.of("0x100"));
     }
 }

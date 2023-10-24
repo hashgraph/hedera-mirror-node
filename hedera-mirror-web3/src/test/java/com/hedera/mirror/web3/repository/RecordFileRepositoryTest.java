@@ -57,7 +57,7 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findConsensusEndByBlockNumber() {
+    void findRecordFileByIndex() {
         domainBuilder.recordFile().persist();
         var latest = domainBuilder.recordFile().persist();
         long blockNumber = latest.getIndex();
@@ -68,7 +68,7 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findConsensusEndByBlockNumberNotExists() {
+    void findRecordFileByIndexNotExists() {
         long nonExistentBlockNumber = 1L;
         assertThat(recordFileRepository.findRecordFileByIndex(nonExistentBlockNumber))
                 .isEmpty();
