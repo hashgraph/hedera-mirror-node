@@ -84,12 +84,6 @@ public class CallFeature extends AbstractFeature {
         return new String[] {address1, address2};
     }
 
-    @RetryAsserts
-    @Then("the mirror node REST API should return status {int} for the estimate contract transaction")
-    public void verifyMirrorAPIResponses(int status) {
-        verifyMirrorTransactionsResponse(mirrorClient, status);
-    }
-
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
         deployedContract = getContract(ERC);
