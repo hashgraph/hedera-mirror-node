@@ -54,5 +54,3 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-core")
 }
-
-tasks.assemble { dependsOn("package") }

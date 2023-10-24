@@ -45,6 +45,7 @@ dependencies {
     implementation("com.google.guava:guava")
     implementation("com.hedera.hashgraph:sdk")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
+    implementation("io.grpc:grpc-inprocess")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")
     implementation("io.micrometer:micrometer-registry-prometheus")
