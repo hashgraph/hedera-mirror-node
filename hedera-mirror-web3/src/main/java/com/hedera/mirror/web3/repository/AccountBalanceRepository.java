@@ -61,27 +61,24 @@ public interface AccountBalanceRepository extends CrudRepository<AccountBalance,
     @Query(
             value =
                     """
-                       with balance_snapshot as (
-                          select consensus_timestamp
-                          from account_balance_file
-                          where consensus_timestamp <= ?2
-                          order by consensus_timestamp desc
-                          limit 1
-                        ), base as (
-                            select balance
-                            from account_balance as ab, balance_snapshot as s
-                            where
-                              ab.consensus_timestamp = s.consensus_timestamp and
-                              ab.account_id = ?1
-                        ), change as (
-                            select sum(amount) as amount
-                            from crypto_transfer as ct, balance_snapshot as s
-                            where
-                              ct.entity_id = ?1 and
-                              ct.consensus_timestamp > s.consensus_timestamp and
-                              ct.consensus_timestamp <= ?2
-                        )
-                        select coalesce((select balance from base), 0) + coalesce((select amount from change), 0)
+                    with balance_snapshot as (
+                        select balance, consensus_timestamp
+                        from account_balance as ab
+                        where
+                            ab.account_id = ?1 and
+                            consensus_timestamp <= ?2
+                        order by consensus_timestamp desc
+                        limit 1
+                    ), change as (
+                        select sum(amount) as amount
+                        from crypto_transfer as ct, balance_snapshot as s
+                        where
+                            ct.entity_id = ?1 and
+                            ct.consensus_timestamp > s.consensus_timestamp and
+                            ct.consensus_timestamp <= ?2 and
+                            (ct.errata is null or ct.errata <> 'DELETE')
+                    )
+                    select coalesce((select balance from balance_snapshot), 0) + coalesce((select amount from change), 0)
                     """,
             nativeQuery = true)
     Optional<Long> findHistoricalAccountBalanceUpToTimestamp(long accountId, long blockTimestamp);
