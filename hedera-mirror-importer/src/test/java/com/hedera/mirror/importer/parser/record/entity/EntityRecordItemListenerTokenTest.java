@@ -1076,7 +1076,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long pauseTimeStamp = 15L;
         insertAndParseTransaction(pauseTimeStamp, transaction);
         // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isEqualTo(0L);
+        assertThat(tokenHistoryRepository.count()).isZero();
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.PAUSED);
     }
 
@@ -1101,7 +1101,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long unpauseTimeStamp = 20L;
         insertAndParseTransaction(unpauseTimeStamp, transaction);
         // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isEqualTo(0L);
+        assertThat(tokenHistoryRepository.count()).isZero();
 
         assertTokenInRepository(
                 TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.UNPAUSED);
@@ -1550,7 +1550,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
 
         // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isEqualTo(0L);
+        assertThat(tokenHistoryRepository.count()).isZero();
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, burnTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY - amount);
@@ -1772,7 +1772,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, mintTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY + amount);
         // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isEqualTo(0L);
+        assertThat(tokenHistoryRepository.count()).isZero();
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0)))
                 .get()
@@ -2885,7 +2885,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
         // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isEqualTo(0L);
+        assertThat(tokenHistoryRepository.count()).isZero();
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(wipeTimestamp, 0)))
                 .get()

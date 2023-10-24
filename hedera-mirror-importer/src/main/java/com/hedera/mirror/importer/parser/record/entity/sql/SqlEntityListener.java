@@ -852,69 +852,94 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
      * @return the merged token
      */
     private Token mergeToken(Token previous, Token current) {
-        if (current.isHistory()) {
-            previous.setTimestampUpper(current.getTimestampLower());
-        }
-
-        current.setCreatedTimestamp(previous.getCreatedTimestamp());
-        current.setDecimals(previous.getDecimals());
-        current.setFreezeDefault(previous.getFreezeDefault());
-        current.setInitialSupply(previous.getInitialSupply());
-        current.setMaxSupply(previous.getMaxSupply());
-        current.setSupplyType(previous.getSupplyType());
-        current.setType(previous.getType());
-
-        if (current.getFeeScheduleKey() == null) {
-            current.setFeeScheduleKey(previous.getFeeScheduleKey());
-        }
-
-        if (current.getFreezeKey() == null) {
-            current.setFreezeKey(previous.getFreezeKey());
-        }
-
-        if (current.getKycKey() == null) {
-            current.setKycKey(previous.getKycKey());
-        }
-
-        if (current.getName() == null) {
-            current.setName(previous.getName());
-        }
-
-        if (current.getPauseKey() == null) {
-            current.setPauseKey(previous.getPauseKey());
-        }
-
-        if (current.getPauseStatus() == null) {
-            current.setPauseStatus(previous.getPauseStatus());
-        }
-
-        if (current.getSupplyKey() == null) {
-            current.setSupplyKey(previous.getSupplyKey());
-        }
-
-        if (current.getSymbol() == null) {
-            current.setSymbol(previous.getSymbol());
-        }
-
-        if (current.getTreasuryAccountId() == null) {
-            current.setTreasuryAccountId(previous.getTreasuryAccountId());
-        }
-
-        if (current.getWipeKey() == null) {
-            current.setWipeKey(previous.getWipeKey());
-        }
-
         Long currentTotalSupply = current.getTotalSupply();
         Long previousTotalSupply = previous.getTotalSupply();
 
-        if (currentTotalSupply == null) {
-            current.setTotalSupply(previousTotalSupply);
-        } else if (previousTotalSupply != null && currentTotalSupply < 0) {
-            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
-            current.setTotalSupply(previousTotalSupply + currentTotalSupply);
+        if (!current.isHistory()) {
+            if (currentTotalSupply > 0) {
+                previous.setTotalSupply(previousTotalSupply + currentTotalSupply);
+            } else {
+                previous.setTotalSupply(previousTotalSupply - currentTotalSupply);
+            }
+            return previous;
         }
 
-        return current;
+        // If previous doesn't have history, merge reversely from current to previous
+        var src = previous.isHistory() ? previous : current;
+        var dest = previous.isHistory() ? current : previous;
+
+        boolean isSameTimestampLower = Objects.equals(current.getTimestampLower(), previous.getTimestampLower());
+        if (current.isHistory() && isSameTimestampLower) {
+            // Copy from current to previous if the updates have the same lower timestamp (thus from same transaction)
+            src = current;
+            dest = previous;
+        }
+
+        dest.setCreatedTimestamp(src.getCreatedTimestamp());
+        dest.setDecimals(src.getDecimals());
+        dest.setFreezeDefault(src.getFreezeDefault());
+        dest.setInitialSupply(src.getInitialSupply());
+        dest.setMaxSupply(src.getMaxSupply());
+        dest.setSupplyType(src.getSupplyType());
+        dest.setType(src.getType());
+
+        if (dest.getFeeScheduleKey() == null) {
+            dest.setFeeScheduleKey(src.getFeeScheduleKey());
+        }
+
+        if (dest.getFreezeKey() == null) {
+            dest.setFreezeKey(src.getFreezeKey());
+        }
+
+        if (dest.getKycKey() == null) {
+            dest.setKycKey(src.getKycKey());
+        }
+
+        if (dest.getName() == null) {
+            dest.setName(src.getName());
+        }
+
+        if (dest.getPauseKey() == null) {
+            dest.setPauseKey(src.getPauseKey());
+        }
+
+        if (dest.getPauseStatus() == null) {
+            dest.setPauseStatus(src.getPauseStatus());
+        }
+
+        if (dest.getSupplyKey() == null) {
+            dest.setSupplyKey(src.getSupplyKey());
+        }
+
+        if (dest.getSymbol() == null) {
+            dest.setSymbol(src.getSymbol());
+        }
+
+        if (dest.getTreasuryAccountId() == null) {
+            dest.setTreasuryAccountId(src.getTreasuryAccountId());
+        }
+
+        if (dest.getWipeKey() == null) {
+            dest.setWipeKey(src.getWipeKey());
+        }
+
+        if (!dest.isHistory()) {
+            dest.setTimestampRange(src.getTimestampRange());
+        } else if (!isSameTimestampLower) {
+            src.setTimestampUpper(dest.getTimestampLower());
+        }
+
+        Long destTotalSupply = dest.getTotalSupply();
+        Long srcTotalSupply = src.getTotalSupply();
+
+        if (destTotalSupply == null) {
+            dest.setTotalSupply(srcTotalSupply);
+        } else if (srcTotalSupply != null && destTotalSupply < 0) {
+            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
+            dest.setTotalSupply(srcTotalSupply + destTotalSupply);
+        }
+
+        return dest;
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
