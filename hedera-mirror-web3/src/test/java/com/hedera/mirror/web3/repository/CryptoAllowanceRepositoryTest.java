@@ -18,6 +18,9 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -34,5 +37,124 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
         assertThat(cryptoAllowanceRepository.findByOwner(allowance.getOwner()))
                 .hasSize(1)
                 .contains(allowance);
+    }
+
+    @Test
+    void findByIdAndTimestampLessThanBlockTimestamp() {
+        final var allowance = domainBuilder.cryptoAllowance().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower() + 1))
+                .get()
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByIdAndTimestampEqualToBlockTimestamp() {
+        final var allowance = domainBuilder.cryptoAllowance().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower()))
+                .get()
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByIdAndTimestampGreaterThanBlockTimestamp() {
+        final var allowance = domainBuilder.cryptoAllowance().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowance.getId(), allowance.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalLessThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.cryptoAllowanceHistory().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(
+                allowanceHistory.getId(), allowanceHistory.getTimestampLower() + 1))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(allowanceHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalEqualToBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.cryptoAllowanceHistory().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(
+                allowanceHistory.getId(), allowanceHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(allowanceHistory);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalGreaterThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder.cryptoAllowanceHistory().persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(
+                allowanceHistory.getId(), allowanceHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalReturnsLatestEntry() {
+        long spender = 1L;
+        final var allowanceHistory1 = domainBuilder
+                .cryptoAllowanceHistory()
+                .customize(a -> a.spender(spender))
+                .persist();
+
+        final var allowanceHistory2 = domainBuilder
+                .cryptoAllowanceHistory()
+                .customize(a -> a.spender(spender))
+                .persist();
+
+        final var latestTimestamp =
+                Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowanceHistory1.getId(), latestTimestamp + 1))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).returns(latestTimestamp, CryptoAllowance::getTimestampLower));
+    }
+
+    @Test
+    void findByIdAndTimestampWithTransferHappyPath() {
+        long payerAccountId = 1L;
+        long cryptoAllowanceTimestamp = System.currentTimeMillis();
+        long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 1;
+        long blockTimestamp = cryptoAllowanceTimestamp + 2;
+
+        final var allowance = domainBuilder.cryptoAllowance()
+                .customize(a -> a.payerAccountId(EntityId.of(payerAccountId)).amount(3).timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        final var cryptoTransfer = domainBuilder.cryptoTransfer()
+                .customize(c -> c.payerAccountId(EntityId.of(payerAccountId)).amount(1).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowance.getId(), blockTimestamp))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).returns(2L, CryptoAllowance::getAmount));
+    }
+
+    @Test
+    void findByIdAndTimestampWithTransferAfterBlockTimestamp() {
+        long payerAccountId = 1L;
+        long cryptoAllowanceTimestamp = System.currentTimeMillis();
+        long blockTimestamp = cryptoAllowanceTimestamp + 1;
+        long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 2;
+
+        final var allowance = domainBuilder.cryptoAllowance()
+                .customize(a -> a.payerAccountId(EntityId.of(payerAccountId)).amount(3).timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        // This transfer should not be selected and the amount should not be subtracted from the allowance.
+        final var cryptoTransfer = domainBuilder.cryptoTransfer()
+                .customize(c -> c.payerAccountId(EntityId.of(payerAccountId)).amount(1).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        assertThat(cryptoAllowanceRepository.findByIdAndTimestamp(allowance.getId(), blockTimestamp))
+                .hasValueSatisfying(
+                        actual -> assertThat(actual).returns(3L, CryptoAllowance::getAmount));
     }
 }
