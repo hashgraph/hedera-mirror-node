@@ -31,7 +31,6 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKENS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF_NFT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES;
@@ -120,7 +119,6 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -138,11 +136,10 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -404,30 +401,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 nonFungibleKycUnfrozenTokenId, deployedEstimatePrecompileContract.contractId());
     }
 
-    @Then("I call estimateGas with approve function")
-    public void approveEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                APPROVE,
-                asAddress(fungibleTokenId),
-                asAddress(receiverAccountAlias),
-                new BigInteger("10"));
-
-        validateGasEstimation(data, APPROVE, estimatePrecompileContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with approveNFT function")
-    public void approveNftEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                APPROVE_NFT,
-                asAddress(nonFungibleKycUnfrozenTokenId),
-                asAddress(receiverAccountAlias),
-                new BigInteger("1"));
-
-        validateGasEstimation(data, APPROVE_NFT, estimatePrecompileContractSolidityAddress);
-    }
-
     @Then("I call estimateGas with ERC approve function")
     public void ercApproveEstimateGas() {
         var data = encodeData(
@@ -479,19 +452,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         networkTransactionResponse = accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 10);
     }
 
-    @Then("I call estimateGas with transferFrom function")
-    public void transferFromEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                TRANSFER_FROM,
-                asAddress(fungibleTokenId),
-                asAddress(admin),
-                asAddress(receiverAccountAlias),
-                new BigInteger("5"));
-
-        validateGasEstimation(data, TRANSFER_FROM, estimatePrecompileContractSolidityAddress);
-    }
-
     @Then("I call estimateGas with ERC transferFrom function")
     public void ercTransferFromEstimateGas() {
         var data = encodeData(
@@ -537,19 +497,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         networkTransactionResponse = accountClient.approveNft(id, receiverAccount.getAccountId());
     }
 
-    @Then("I call estimateGas with transferFromNFT function")
-    public void transferFromNFTEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                TRANSFER_FROM_NFT,
-                asAddress(nonFungibleTokenId),
-                asAddress(admin),
-                asAddress(receiverAccountAlias),
-                new BigInteger("1"));
-
-        validateGasEstimation(data, TRANSFER_FROM_NFT, estimatePrecompileContractSolidityAddress);
-    }
-
     @Then("I call estimateGas with transferFromNFT with invalid serial number")
     public void transferFromNFTInvalidSerialEstimateGas() {
         var data = encodeData(
@@ -561,19 +508,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 new BigInteger("50"));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with transferToken function")
-    public void transferTokenEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                TRANSFER_TOKEN,
-                asAddress(fungibleTokenId),
-                asAddress(admin),
-                asAddress(receiverAccountAlias),
-                5L);
-
-        validateGasEstimation(data, TRANSFER_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferNFT function")
@@ -751,26 +685,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
         validateGasEstimation(data, CRYPTO_TRANSFER, estimatePrecompileContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with mintToken function for fungible token")
-    public void mintFungibleTokenEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                MINT_TOKEN,
-                asAddress(fungibleKycUnfrozenTokenId),
-                1L,
-                asByteArray(new ArrayList<>()));
-
-        validateGasEstimation(data, MINT_TOKEN, estimatePrecompileContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with mintToken function for NFT")
-    public void mintNFTEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(Arrays.asList("0x02")));
-
-        validateGasEstimation(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with burnToken function for fungible token")
@@ -1181,30 +1095,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
     }
 
-    @Then("I call estimateGas with allowance function for fungible token")
-    public void allowanceFungibleEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                ALLOWANCE,
-                asAddress(fungibleKycUnfrozenTokenId),
-                asAddress(admin),
-                asAddress(receiverAccountAlias));
-
-        validateGasEstimation(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with allowance function for NFT")
-    public void allowanceNonFungibleEstimateGas() {
-        var data = encodeData(
-                ESTIMATE_PRECOMPILE,
-                ALLOWANCE,
-                asAddress(nonFungibleKycUnfrozenTokenId),
-                asAddress(admin),
-                asAddress(receiverAccountAlias));
-
-        validateGasEstimation(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
-    }
-
     @Then("I call estimateGas with ERC allowance function for fungible token")
     public void ercAllowanceFungibleEstimateGas() {
         var data = encodeData(
@@ -1305,20 +1195,6 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, TOTAL_SUPPLY_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, TOTAL_SUPPLY_NFT, ercTestContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with balanceOf function for fungible token")
-    public void balanceOfEstimateGas() {
-        var data = encodeData(ERC, BALANCE_OF, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
-
-        validateGasEstimation(data, BALANCE_OF, ercTestContractSolidityAddress);
-    }
-
-    @Then("I call estimateGas with balanceOf function for NFT")
-    public void balanceOfNFTEstimateGas() {
-        var data = encodeData(ERC, BALANCE_OF_NFT, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(admin));
-
-        validateGasEstimation(data, BALANCE_OF_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ownerOf function for NFT")
@@ -1626,9 +1502,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimation(data, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, estimatePrecompileContractSolidityAddress);
     }
 
-    private ExecuteContractResult executeContractTransaction(
+    private void executeContractTransaction(
             DeployedContract deployedContract,
-            long gas,
+            int gas,
             ContractMethods contractMethods,
             ContractFunctionParameters parameters) {
 
@@ -1637,45 +1513,25 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = executeContractResult.networkTransactionResponse();
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        return executeContractResult;
     }
 
-    private void verifySuccessfulTransaction(ExecuteContractResult contractResult) {
-        String transactionId = contractResult.networkTransactionResponse().getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
-        MirrorTransaction mirrorTransaction =
-                mirrorTransactionsResponse.getTransactions().get(0);
-
-        assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
-    }
-
-    public long estimateGas(String data, String contractAddress) {
+    public int validateAndReturnGas(String data, ContractMethods contractMethods, String contractAddress) {
         var response = estimateContract(data, contractAddress);
-        return response.getResultAsNumber().longValue();
+        var estimateGasValue = response.getResultAsNumber().intValue();
+        assertTrue(isWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation));
+        return estimateGasValue;
     }
 
-    @Then("I call estimateGas with balanceOf function for fungible token and execute it using gas limit")
-    public void executeBalanceOfFunctionWithLimitedGas() {
-        var data = encodeData(ERC, BALANCE_OF, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
-        var estimateGasValue = estimateGas(data, ercTestContractSolidityAddress);
+    @Then("I call estimateGas with balanceOf function for {string} and verify the estimated gas against HAPI")
+    public void executeBalanceOfFunctionWithLimitedGas(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
+        var estimateGasValue = validateAndReturnGas(data, BALANCE_OF, ercTestContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
-                .addAddress(fungibleKycUnfrozenTokenId.toSolidityAddress())
+                .addAddress(tokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress());
-        var result = executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, parameters);
-        verifySuccessfulTransaction(result);
-    }
-
-    @Then("I call estimateGas with balanceOf function for NFT and execute it with gas limit")
-    public void executeBalanceOfFunctionNonFungibleWithLimitedGas() {
-        var data = encodeData(ERC, BALANCE_OF_NFT, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(admin));
-        var estimateGasValue = estimateGas(data, ercTestContractSolidityAddress);
-
-        var parameters = new ContractFunctionParameters()
-                .addAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress())
-                .addAddress(admin.getAccountId().toSolidityAddress());
-        var result = executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, parameters);
     }
 
     @And("I update the account and token keys")
@@ -1706,7 +1562,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 tokenUpdate.transactionId, tokenUpdate.getReceipt(accountClient.getClient()));
     }
 
-    @Then("I call estimateGas with transferToken function and execute it with gas limit")
+    @Then("I call estimateGas with transferToken function and verify the estimated gas against HAPI")
     public void executeTransferForFungibleWithGasLimit() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1715,16 +1571,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(admin),
                 asAddress(secondReceiverAccount),
                 5L);
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, TRANSFER_TOKEN, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(fungibleTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
                 .addInt64(5L);
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_TOKEN, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_TOKEN, parameters);
     }
 
     @And("I associate the contract with the receiver account")
@@ -1732,7 +1586,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         networkTransactionResponse = tokenClient.associate(secondReceiverAccount, nonFungibleTokenId);
     }
 
-    @Then("I call estimateGas with transferNFT function and execute it with gas limit")
+    @Then("I call estimateGas with transferNFT function and verify the estimated gas against HAPI")
     public void executeTransferTokenNonFungibleWithGasLimit() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1741,16 +1595,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(admin),
                 asAddress(receiverAccountAlias),
                 2L);
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, TRANSFER_NFT, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(nonFungibleTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
                 .addInt64(2L);
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_NFT, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_NFT, parameters);
     }
 
     @And("I approve the receiver to use the token")
@@ -1762,7 +1614,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         networkTransactionResponse = accountClient.approveToken(fungibleTokenId, accountId, 10);
     }
 
-    @Then("I call estimateGas with allowance function for fungible token and execute it with gas limit")
+    @Then("I call estimateGas with allowance function for fungible token and verify the estimated gas against HAPI")
     public void executeAllowanceFungibleWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1770,18 +1622,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(fungibleKycUnfrozenTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(fungibleKycUnfrozenTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(receiverAccountAlias);
-        var result =
-                executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, parameters);
     }
 
-    @Then("I call estimateGas with allowance function for NFT and execute it with gas limit")
+    @Then("I call estimateGas with allowance function for NFT and verify the estimated gas against HAPI")
     public void executeAllowanceNonFungibleWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1789,18 +1639,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(nonFungibleKycUnfrozenTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, ALLOWANCE, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(receiverAccountAlias);
-        var result =
-                executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, ALLOWANCE, parameters);
     }
 
-    @Then("I call estimateGas with approve function and execute it with gas limit")
+    @Then("I call estimateGas with approve function and verify the estimated gas against HAPI")
     public void executeApproveWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1808,18 +1656,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(fungibleTokenId),
                 asAddress(receiverAccountAlias),
                 new BigInteger("10"));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, APPROVE, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(fungibleTokenId.toSolidityAddress())
                 .addAddress(receiverAccountAlias)
                 .addUint256(new BigInteger("10"));
-        var result =
-                executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, APPROVE, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, APPROVE, parameters);
     }
 
-    @Then("I call estimateGas with approveNFT function and execute it with gas limit")
+    @Then("I call estimateGas with approveNFT function and verify the estimated gas against HAPI")
     public void executeApproveNftWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1827,18 +1673,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(nonFungibleKycUnfrozenTokenId),
                 asAddress(receiverAccountAlias),
                 new BigInteger("1"));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, APPROVE_NFT, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(nonFungibleKycUnfrozenTokenId.toSolidityAddress())
                 .addAddress(receiverAccountAlias)
                 .addUint256(new BigInteger("1"));
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, APPROVE_NFT, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, APPROVE_NFT, parameters);
     }
 
-    @Then("I call estimateGas with transferFrom function with fungible and execute it with gas limit")
+    @Then("I call estimateGas with transferFrom function with fungible and verify the estimated gas against HAPI")
     public void executeTransferFromWithGasLimit() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1847,19 +1691,17 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(admin),
                 asAddress(receiverAccountAlias),
                 new BigInteger("5"));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, TRANSFER_FROM, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(fungibleTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
                 .addUint256(new BigInteger("5"));
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_FROM, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_FROM, parameters);
     }
 
-    @Then("I call estimateGas with transferFromNFT function and execute it with gas limit")
+    @Then("I call estimateGas with transferFromNFT function and verify the estimated gas against HAPI")
     public void executeTransferFromNFTWithGasLimit() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -1868,46 +1710,40 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(admin),
                 asAddress(secondReceiverAccount.getAccountId().toSolidityAddress()),
                 new BigInteger("3"));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, TRANSFER_FROM_NFT, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(nonFungibleTokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
                 .addUint256(new BigInteger("3"));
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_FROM_NFT, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_FROM_NFT, parameters);
     }
 
-    @Then("I call estimateGas with mintToken function for fungible token and execute it using gas limit")
+    @Then("I call estimateGas with mintToken function for fungible token and verify the estimated gas against HAPI")
     public void executeMintFungibleTokenWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, MINT_TOKEN, asAddress(fungibleTokenId), 1L, asByteArray(new ArrayList<>()));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, MINT_TOKEN, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(fungibleTokenId.toSolidityAddress())
                 .addInt64(1L)
                 .addBytesArray(new byte[][] {{}});
-        var result = executeContractTransaction(
-                deployedEstimatePrecompileContract, estimateGasValue, MINT_TOKEN, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_TOKEN, parameters);
     }
 
-    @Then("I call estimateGas with mintToken function for NFT and execute it using gas limit")
+    @Then("I call estimateGas with mintToken function for NFT and verify the estimated gas against HAPI")
     public void executeMintNonFungibleWithLimitedGas() {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(Arrays.asList("0x02")));
-        var estimateGasValue = estimateGas(data, estimatePrecompileContractSolidityAddress);
+        var estimateGasValue = validateAndReturnGas(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
 
         var parameters = new ContractFunctionParameters()
                 .addAddress(nonFungibleTokenId.toSolidityAddress())
                 .addInt64(0L)
                 .addBytesArray(new byte[][] {{0x02}});
-        var result =
-                executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_NFT, parameters);
-        verifySuccessfulTransaction(result);
+        executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_NFT, parameters);
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
