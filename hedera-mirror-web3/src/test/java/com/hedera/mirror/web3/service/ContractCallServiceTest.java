@@ -216,8 +216,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000L);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -226,9 +226,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void transferThruContract() {
         // transferHbarsToAddress(address)
-        final var stateChangePayable = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
+        final var transferHbarsInput = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e9";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(stateChangePayable), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
+                Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }

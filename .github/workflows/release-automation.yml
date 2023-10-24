@@ -103,7 +103,7 @@ jobs:
           MILESTONE_NUMBER: ${{ steps.milestone.outputs.milestone_id }}
 
       - name: Commit and Tag
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           commit_message: Bump versions for ${{ env.RELEASE_TAG }}

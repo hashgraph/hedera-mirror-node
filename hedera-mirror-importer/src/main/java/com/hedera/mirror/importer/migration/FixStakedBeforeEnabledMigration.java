@@ -20,7 +20,6 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -31,9 +30,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
-    static final Map<String, Long> LAST_HAPI_26_RECORD_FILE_CONSENSUS_END = Map.of(
-            MirrorProperties.HederaNetwork.MAINNET, 1658419200981687000L,
-            MirrorProperties.HederaNetwork.TESTNET, 1656691197976341207L);
+    static final Long LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET = 1658419200981687000L;
 
     private static final String MIGRATION_SQL =
             """
@@ -95,15 +92,14 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
     @Override
     protected void doMigrate() {
         var hederaNetwork = mirrorProperties.getNetwork();
-        Long consensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(hederaNetwork);
-        if (consensusEnd == null) {
+        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(hederaNetwork)) {
             return;
         }
 
         var stopwatch = Stopwatch.createStarted();
-        long epochDay = Utility.getEpochDay(consensusEnd);
+        long epochDay = Utility.getEpochDay(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET);
         var params = new MapSqlParameterSource()
-                .addValue("consensusEnd", consensusEnd)
+                .addValue("consensusEnd", LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET)
                 .addValue("epochDay", epochDay);
         int count = jdbcOperations.update(MIGRATION_SQL, params);
         log.info("Fixed staking information for {} {} accounts in {}", count, hederaNetwork, stopwatch);

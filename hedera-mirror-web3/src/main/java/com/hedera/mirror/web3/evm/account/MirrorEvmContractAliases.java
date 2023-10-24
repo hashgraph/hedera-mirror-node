@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -25,28 +26,25 @@ import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.HashMap;
-import java.util.HashSet;
+import jakarta.inject.Named;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
+@Named
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-
-    final Map<Address, Address> aliases = new HashMap<>();
-    final Map<Address, Address> pendingAliases = new HashMap<>();
-    final Set<Address> pendingRemovals = new HashSet<>();
 
     final Store store;
 
     public boolean maybeLinkEvmAddress(@Nullable final JKey key, final Address address) {
         final var evmAddress = tryAddressRecovery(key);
         if (isRecoveredEvmAddress(evmAddress)) {
-            link(Address.wrap(Bytes.wrap(evmAddress)), address); // NOSONAR we have a null check
+            if (evmAddress != null) { // NOSONAR - null check is required
+                link(Address.wrap(Bytes.wrap(evmAddress)), address);
+            }
             return true;
         } else {
             return false;
@@ -78,10 +76,14 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     private Optional<Address> resolveFromAliases(Address alias) {
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
         if (pendingAliases.containsKey(alias)) {
             return Optional.ofNullable(pendingAliases.get(alias));
         }
-        if (aliases.containsKey(alias) && !pendingRemovals.contains(alias)) {
+        Map<Address, Address> aliases = contractCallContext.getAliases();
+        if (aliases.containsKey(alias)
+                && !contractCallContext.getPendingRemovals().contains(alias)) {
             return Optional.ofNullable(aliases.get(alias));
         }
         return Optional.empty();
@@ -101,29 +103,33 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isInUse(final Address address) {
-        return aliases.containsKey(address) && !pendingRemovals.contains(address)
-                || pendingAliases.containsKey(address);
+        return ContractCallContext.get().containsAlias(address);
     }
 
     public void link(final Address alias, final Address address) {
-        pendingAliases.put(alias, address);
-        pendingRemovals.remove(alias);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().put(alias, address);
+        contractCallContext.getPendingRemovals().remove(alias);
     }
 
     public void unlink(Address alias) {
-        pendingRemovals.add(alias);
-        pendingAliases.remove(alias);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingRemovals().add(alias);
+        contractCallContext.getPendingAliases().remove(alias);
     }
 
     public void commit() {
-        aliases.putAll(pendingAliases);
-        aliases.keySet().removeAll(pendingRemovals);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> aliases = contractCallContext.getAliases();
+        aliases.putAll(contractCallContext.getPendingAliases());
+        aliases.keySet().removeAll(contractCallContext.getPendingRemovals());
 
         resetPendingChanges();
     }
 
     public void resetPendingChanges() {
-        pendingAliases.clear();
-        pendingRemovals.clear();
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().clear();
+        contractCallContext.getPendingRemovals().clear();
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service.utils;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import jakarta.inject.Named;
@@ -51,7 +52,10 @@ public class BinaryGasEstimator {
         final long estimateIterationThreshold =
                 Math.max(minimumThreshold, properties.getEstimateGasIterationThreshold());
 
+        ContractCallContext contractCallContext = ContractCallContext.get();
         while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {
+            contractCallContext.reset();
+
             long mid = (hi + lo) / 2;
             HederaEvmTransactionProcessingResult transactionResult = call.apply(mid);
             iterationsMade++;

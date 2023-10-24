@@ -28,6 +28,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -38,8 +39,10 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -70,6 +73,7 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class TokenAccessorImplTest {
 
@@ -144,7 +148,8 @@ class TokenAccessorImplTest {
                 new TokenRelationshipDatabaseAccessor(
                         tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
-        store = new StoreImpl(accessors);
+        final var stackedStateFrames = new StackedStateFrames(accessors);
+        store = new StoreImpl(stackedStateFrames);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 
@@ -194,6 +199,7 @@ class TokenAccessorImplTest {
     void isTokenAddress() {
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getId()).thenReturn(0L);
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(0L)).thenReturn(Optional.of(token));
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
@@ -210,6 +216,7 @@ class TokenAccessorImplTest {
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isFrozen(ACCOUNT, TOKEN));
     }
 
@@ -223,6 +230,7 @@ class TokenAccessorImplTest {
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isKyc(ACCOUNT, TOKEN));
     }
 
@@ -237,6 +245,7 @@ class TokenAccessorImplTest {
         when(token.getType()).thenReturn(null);
         when(token.getSupplyType()).thenReturn(null);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(customFeeRepository.findById(any())).thenReturn(Optional.of(customFee));
         assertThat(tokenAccessor.infoForTokenCustomFees(TOKEN)).isNotEmpty();
         assertEquals(
@@ -258,6 +267,7 @@ class TokenAccessorImplTest {
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getKey()).thenReturn(key.toByteArray());
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(token.getWipeKey()).thenReturn(key.toByteArray());
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
@@ -270,6 +280,7 @@ class TokenAccessorImplTest {
     void symbolOfWithMissingToken() {
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         final var result = tokenAccessor.symbolOf(TOKEN);
@@ -280,6 +291,7 @@ class TokenAccessorImplTest {
     void symbolOf() {
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(token.getSymbol()).thenReturn("symbol");
@@ -291,6 +303,7 @@ class TokenAccessorImplTest {
     void nameOfWithMissingToken() {
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         final var result = tokenAccessor.nameOf(TOKEN);
@@ -301,6 +314,7 @@ class TokenAccessorImplTest {
     void nameOf() {
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(token.getType()).thenReturn(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(token.getName()).thenReturn("name");

@@ -35,21 +35,13 @@ configurations.all {
 
 repositories {
     maven {
-        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
-    }
-    maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
-    }
-    maven {
-        // org.gaul:s3proxy:2.1.0-SNAPSHOT depends on snapshot artifacts from the repo, remove it when upgrading
-        // s3proxy to a GA release
-        url = uri("https://repository.apache.org/content/repositories/snapshots")
     }
 }
 
 dependencyManagement {
     imports {
-        mavenBom("io.grpc:grpc-bom:1.49.2")
+        mavenBom("io.grpc:grpc-bom:1.58.0")
         mavenBom(SpringBootPlugin.BOM_COORDINATES)
     }
 }
@@ -62,8 +54,7 @@ dependencies {
 
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
-    // Can remove -Xlint:-cast after https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/15
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-cast"))
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,109 +16,22 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
-import java.util.Map;
-import javax.inject.Provider;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.code.CodeFactory;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
-
-    private final AbstractCodeCache codeCache;
-    private final MirrorEvmContractAliases aliasManager;
-    private final boolean isCreate;
+public interface MirrorEvmTxProcessor {
 
     @SuppressWarnings("java:S107")
-    public MirrorEvmTxProcessor(
-            final HederaEvmMutableWorldState worldState,
-            final PricesAndFeesProvider pricesAndFeesProvider,
-            final EvmProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
-            final BlockMetaSource blockMetaSource,
-            final MirrorEvmContractAliases aliasManager,
-            final AbstractCodeCache codeCache,
-            final boolean isCreate) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
-
-        this.aliasManager = aliasManager;
-        this.codeCache = codeCache;
-        this.isCreate = isCreate;
-    }
-
-    public HederaEvmTransactionProcessingResult execute(
-            final HederaEvmAccount sender,
-            final Address receiver,
-            final long providedGasLimit,
-            final long value,
-            final Bytes callData,
-            final Instant consensusTime,
-            final boolean isStatic) {
-        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
-        // in cases where the receiver is the zero address, we know it's a contract create scenario
-        super.setupFields(receiver.equals(Address.ZERO));
-
-        return super.execute(
-                sender,
-                receiver,
-                gasPrice,
-                providedGasLimit,
-                value,
-                callData,
-                isStatic,
-                aliasManager.resolveForEvm(receiver));
-    }
-
-    @Override
-    protected HederaFunctionality getFunctionType() {
-        return isCreate ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
-    }
-
-    @Override
-    protected MessageFrame buildInitialFrame(
-            final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
-
-        if (code == null) {
-            throw new MirrorEvmTransactionException(
-                    ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
-        }
-
-        if (isCreate) {
-            return baseInitialFrame
-                    .type(MessageFrame.Type.CONTRACT_CREATION)
-                    .address(to)
-                    .contract(to)
-                    .inputData(Bytes.EMPTY)
-                    .code(CodeFactory.createCode(payload, 0, false))
-                    .build();
-        } else {
-            return baseInitialFrame
-                    .type(MessageFrame.Type.MESSAGE_CALL)
-                    .address(to)
-                    .contract(to)
-                    .inputData(payload)
-                    .code(code)
-                    .build();
-        }
-    }
+    HederaEvmTransactionProcessingResult execute(
+            HederaEvmAccount sender,
+            Address receiver,
+            long providedGasLimit,
+            long value,
+            Bytes callData,
+            Instant consensusTime,
+            boolean isStatic,
+            boolean isEstimate);
 }

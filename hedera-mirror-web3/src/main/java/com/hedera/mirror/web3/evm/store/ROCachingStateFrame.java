@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import java.util.Optional;
 import lombok.NonNull;
 
@@ -35,9 +36,13 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
         return switch (entry.state()) {
             case NOT_YET_FETCHED -> upstreamFrame.flatMap(upstreamFrame -> {
                 final var upstreamAccessor = upstreamFrame.getAccessor(klass);
-                final var upstreamValue = upstreamAccessor.get(key);
-                cache.fill(key, upstreamValue.orElse(null));
-                return upstreamValue;
+                try {
+                    final var upstreamValue = upstreamAccessor.get(key);
+                    cache.fill(key, upstreamValue.orElse(null));
+                    return upstreamValue;
+                } catch (final WrongTypeException e) {
+                    throw new CacheAccessIncorrectTypeException(e.getMessage());
+                }
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
             case MISSING, DELETED -> Optional.empty();

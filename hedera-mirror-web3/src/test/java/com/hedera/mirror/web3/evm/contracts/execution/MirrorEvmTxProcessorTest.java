@@ -27,8 +27,11 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
@@ -41,6 +44,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -74,6 +78,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmTxProcessorTest {
 
@@ -120,6 +125,9 @@ class MirrorEvmTxProcessorTest {
     private BlockMetaSource blockMetaSource;
 
     @Mock
+    private MirrorOperationTracer mirrorOperationTracer;
+
+    @Mock
     private PrecompileMapper precompileMapper;
 
     @Mock
@@ -135,9 +143,16 @@ class MirrorEvmTxProcessorTest {
     private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @Mock
+    private StoreImpl store;
+
+    @Mock
     private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
 
-    private MirrorEvmTxProcessor mirrorEvmTxProcessor;
+    @Mock
+    private HederaPrngSeedOperation prngSeedOperation;
+
+    private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
+
     private Pair<ResponseCodeEnum, Long> result;
 
     @BeforeEach
@@ -152,7 +167,7 @@ class MirrorEvmTxProcessorTest {
         when(evmProperties.chainIdBytes32()).thenReturn(chainId);
         when(evmProperties.getEvmSpecVersion()).thenReturn(EvmSpecVersion.SHANGHAI);
 
-        mirrorEvmTxProcessor = new MirrorEvmTxProcessor(
+        mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFeesProvider,
                 evmProperties,
@@ -166,15 +181,15 @@ class MirrorEvmTxProcessorTest {
                         precompileMapper,
                         basicHbarCentExchange,
                         prngSystemPrecompiledContract,
-                        false),
-                ccps(gasCalculator, evmProperties),
+                        prngSeedOperation),
+                ccps(gasCalculator, evmProperties, prngSeedOperation),
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
-                false);
+                mirrorOperationTracer,
+                store);
 
         final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
-        mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
@@ -187,8 +202,8 @@ class MirrorEvmTxProcessorTest {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
-        final var result =
-                mirrorEvmTxProcessor.execute(sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true);
+        var result = mirrorEvmTxProcessor.execute(
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, true);
 
         assertThat(result)
                 .isNotNull()

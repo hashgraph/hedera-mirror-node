@@ -31,6 +31,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-logging")
+    testImplementation("io.grpc:grpc-inprocess")
     testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
     testImplementation("com.hedera.hashgraph:sdk")

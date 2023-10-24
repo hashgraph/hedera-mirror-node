@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.importer.db;
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_TABLE_TIME_PARTITION;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_OVERLAPPING_TIME_PARTITION;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION;
 
 import com.google.common.collect.Range;
 import jakarta.inject.Named;
@@ -26,33 +28,28 @@ import java.util.List;
 import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-@CacheConfig(cacheManager = CACHE_MANAGER_TABLE_TIME_PARTITION)
 @CustomLog
 @Named
 @RequiredArgsConstructor
 public class TimePartitionServiceImpl implements TimePartitionService {
 
-    public static final String CACHE_NAME_TABLES = "tables";
-    public static final String CACHE_NAME_TABLE_OVERLAPPING_PARTITIONS = "tablesOverlappingPartitions";
-
     private static final String GET_TIME_PARTITIONS_SQL =
             """
-            select
-              parent.relname as parent,
-              child.relname as name,
-              pg_get_expr(child.relpartbound, child.oid) as range
-            from pg_inherits
-            join pg_class parent on pg_inherits.inhparent = parent.oid
-            join pg_class child  on pg_inherits.inhrelid = child.oid
-            join pg_namespace nmsp_parent on nmsp_parent.oid = parent.relnamespace
-            join pg_namespace nmsp_child  on nmsp_child.oid = child.relnamespace
-            where parent.relname = ? and pg_get_expr(child.relpartbound, child.oid) like 'FOR VALUES FROM%';
-            """;
+                    select
+                      parent.relname as parent,
+                      child.relname as name,
+                      pg_get_expr(child.relpartbound, child.oid) as range
+                    from pg_inherits
+                    join pg_class parent on pg_inherits.inhparent = parent.oid
+                    join pg_class child  on pg_inherits.inhrelid = child.oid
+                    join pg_namespace nmsp_parent on nmsp_parent.oid = parent.relnamespace
+                    join pg_namespace nmsp_child  on nmsp_child.oid = child.relnamespace
+                    where parent.relname = ? and pg_get_expr(child.relpartbound, child.oid) like 'FOR VALUES FROM%';
+                    """;
     private static final Pattern RANGE_PATTERN = Pattern.compile("^FOR VALUES FROM \\('(\\d+)'\\) TO \\('(\\d+)'\\)$");
     private static final RowMapper<TimePartition> ROW_MAPPER = (rs, rowNum) -> TimePartition.builder()
             .name(rs.getString("name"))
@@ -62,7 +59,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Cacheable(cacheNames = CACHE_NAME_TABLE_OVERLAPPING_PARTITIONS)
+    @Cacheable(cacheManager = CACHE_OVERLAPPING_TIME_PARTITION, cacheNames = CACHE_NAME)
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
         if (toTimestamp < fromTimestamp) {
@@ -109,7 +106,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
         return Collections.unmodifiableList(overlappingPartitions);
     }
 
-    @Cacheable(cacheNames = CACHE_NAME_TABLES)
+    @Cacheable(cacheManager = CACHE_TIME_PARTITION, cacheNames = CACHE_NAME)
     @Override
     public List<TimePartition> getTimePartitions(String tableName) {
         try {

@@ -25,11 +25,13 @@ import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
+@Named
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractStateRepository contractStateRepository;
     private final ContractRepository contractRepository;
@@ -86,7 +88,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isTokenAccount(final Address address) {
-        return !store.getToken(address, OnMissing.DONT_THROW).isEmptyToken();
+        final var maybeToken = store.getToken(address, OnMissing.DONT_THROW);
+        return !maybeToken.isEmptyToken();
     }
 
     @Override

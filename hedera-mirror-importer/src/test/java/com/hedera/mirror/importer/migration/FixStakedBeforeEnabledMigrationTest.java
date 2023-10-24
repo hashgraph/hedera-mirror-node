@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.migration.FixStakedBeforeEnabledMigration.LAST_HAPI_26_RECORD_FILE_CONSENSUS_END;
+import static com.hedera.mirror.importer.migration.FixStakedBeforeEnabledMigration.LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -31,8 +31,6 @@ import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
@@ -47,7 +45,6 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     private final MirrorProperties mirrorProperties;
     private final FixStakedBeforeEnabledMigration migration;
 
-    private long lastHapi26RecordFileConsensusEnd;
     private long lastHapi26EpochDay;
 
     @AfterEach
@@ -62,11 +59,10 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         assertEntityStakes().isEmpty();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
-    void notStaked(String network) {
+    @Test
+    void notStaked() {
         // given
-        setupForNetwork(network);
+        setupForMainnet();
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.declineReward(false).stakedNodeId(-1L).stakePeriodStart(-1L))
@@ -86,13 +82,13 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     @Test
     void otherNetwork() {
         // given
-        setupForNetwork(HederaNetwork.MAINNET);
+        setupForMainnet();
         mirrorProperties.setNetwork(HederaNetwork.OTHER);
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
-                        .timestampRange(Range.atLeast(lastHapi26RecordFileConsensusEnd)))
+                        .timestampRange(Range.atLeast(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET)))
                 .get();
         persistEntity(entity);
         var entityStake = MigrationEntityStake.builder()
@@ -110,11 +106,10 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         assertEntityStakes().containsExactly(entityStake);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
-    void stakedAfterEnabled(String network) {
+    @Test
+    void stakedAfterEnabled() {
         // given
-        setupForNetwork(network);
+        setupForMainnet();
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(lastHapi26EpochDay + 1L))
@@ -135,13 +130,12 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         assertEntityStakes().containsExactly(entityStake);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
-    void stakedAfterEnabledWithHistory(String network) {
+    @Test
+    void stakedAfterEnabledWithHistory() {
         // given
-        setupForNetwork(network);
-        long stakingSetTimestamp = lastHapi26RecordFileConsensusEnd - 100L;
-        long lastUpdateTimestamp = lastHapi26RecordFileConsensusEnd + 300L;
+        setupForMainnet();
+        long stakingSetTimestamp = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET - 100L;
+        long lastUpdateTimestamp = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET + 300L;
         // the history row has different setting and the current staking is set after 0.27.0 upgrade
         var entity = domainBuilder
                 .entity()
@@ -174,16 +168,15 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         assertEntityStakes().containsExactly(entityStake);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
-    void stakedBeforeEnabled(String network) {
+    @Test
+    void stakedBeforeEnabled() {
         // given
-        setupForNetwork(network);
+        setupForMainnet();
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L)
                         .stakePeriodStart(lastHapi26EpochDay)
-                        .timestampRange(Range.atLeast(lastHapi26RecordFileConsensusEnd)))
+                        .timestampRange(Range.atLeast(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET)))
                 .get();
         persistEntity(entity);
         var entityStake = MigrationEntityStake.builder()
@@ -205,13 +198,12 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
         assertEntityStakes().containsExactly(entityStake);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {HederaNetwork.MAINNET, HederaNetwork.TESTNET})
-    void stakedBeforeEnabledInHistory(String network) {
+    @Test
+    void stakedBeforeEnabledInHistory() {
         // given
-        setupForNetwork(network);
-        long stakingSetTimestamp = lastHapi26RecordFileConsensusEnd - 100L;
-        long lastUpdateTimestamp = lastHapi26RecordFileConsensusEnd + 300L;
+        setupForMainnet();
+        long stakingSetTimestamp = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET - 100L;
+        long lastUpdateTimestamp = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET + 300L;
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L)
@@ -265,17 +257,14 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
                 .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pending_reward", "staked_node_id_start");
     }
 
-    private void persistLastHapi26RecordFile(long consensusEnd) {
+    private void setupForMainnet() {
+        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        lastHapi26EpochDay = Utility.getEpochDay(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET);
+        // Persist last Hapi version 26 RecordFile
         domainBuilder
                 .recordFile()
-                .customize(r -> r.consensusEnd(consensusEnd).consensusStart(consensusEnd - 2 * 1_000_000_000))
+                .customize(r -> r.consensusEnd(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET)
+                        .consensusStart(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET - 2 * 1_000_000_000))
                 .persist();
-    }
-
-    private void setupForNetwork(String network) {
-        mirrorProperties.setNetwork(network);
-        lastHapi26RecordFileConsensusEnd = LAST_HAPI_26_RECORD_FILE_CONSENSUS_END.get(network);
-        lastHapi26EpochDay = Utility.getEpochDay(lastHapi26RecordFileConsensusEnd);
-        persistLastHapi26RecordFile(lastHapi26RecordFileConsensusEnd);
     }
 }
