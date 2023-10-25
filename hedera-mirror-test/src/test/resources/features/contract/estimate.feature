@@ -1,4 +1,4 @@
-@contractbase @fullsuite @estimate @web3
+@contractbase @fullsuite @estimate @web3 @acceptance
 Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas
@@ -42,3 +42,4 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with IERC20 token approve using evm address as receiver
     Then I call estimateGas with IERC20 token associate using evm address as receiver
     Then I call estimateGas with IERC20 token dissociate using evm address as receiver
+    Then I call estimateGas with contract deploy with bytecode as data
