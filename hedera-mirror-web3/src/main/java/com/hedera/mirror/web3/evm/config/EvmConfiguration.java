@@ -142,8 +142,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_RECORD_FILE_EARLIEST)
     CacheManager cacheManagerRecordFileEarliest() {
         final var caffeine = Caffeine.newBuilder()
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .maximumSize(1000)
+                .maximumSize(1)
                 .recordStats();
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_RECORD_FILE_EARLIEST_INDEX));
