@@ -65,10 +65,11 @@ public abstract class CachingStateFrame<K> {
     @NonNull
     public <V> Accessor<K, V> getAccessor(@NonNull Class<V> klass) {
         final var accessor = (AccessorImpl<V>) accessors.get(klass);
+
         if (accessor != null) {
             return accessor;
         }
-        throw new CacheAccessIncorrectType("%s values aren't cached here".formatted(klass.getName()));
+        throw new CacheAccessIncorrectTypeException("%s values aren't cached here".formatted(klass.getName()));
     }
 
     /** Do the actual commit of entries from a descendant cache level to this one. */
@@ -137,16 +138,17 @@ public abstract class CachingStateFrame<K> {
     }
 
     /** Signals that a type error occurred with the _value_ type */
-    public static class CacheAccessIncorrectType extends EvmException {
+    @SuppressWarnings("java:S110")
+    public static class CacheAccessIncorrectTypeException extends EvmException {
 
         @Serial
         private static final long serialVersionUID = 8163169205069277937L;
 
-        public CacheAccessIncorrectType(@NonNull final String message) {
+        public CacheAccessIncorrectTypeException(@NonNull final String message) {
             super(message);
         }
 
-        public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
+        public CacheAccessIncorrectTypeException(@NonNull final String message, @NonNull final Throwable cause) {
             super(message, cause);
         }
     }
@@ -175,7 +177,7 @@ public abstract class CachingStateFrame<K> {
             try {
                 return oe.flatMap(o -> Optional.of(klass.cast(o)));
             } catch (final ClassCastException ex) {
-                throw new CacheAccessIncorrectType(
+                throw new CacheAccessIncorrectTypeException(
                         "Accessor for class %s fetched object of class %s"
                                 .formatted(
                                         klass.getTypeName(), oe.get().getClass().getTypeName()),
@@ -187,7 +189,7 @@ public abstract class CachingStateFrame<K> {
         @Override
         public void set(@NonNull final K key, @NonNull V value) {
             if (!klass.isInstance(value)) {
-                throw new CacheAccessIncorrectType("Trying to store %s in accessor for class %s"
+                throw new CacheAccessIncorrectTypeException("Trying to store %s in accessor for class %s"
                         .formatted(value.getClass().getTypeName(), klass.getTypeName()));
             }
             setValue(klass, cache, key, value);

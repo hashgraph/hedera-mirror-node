@@ -20,9 +20,11 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 
+@Named
 @RequiredArgsConstructor
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;

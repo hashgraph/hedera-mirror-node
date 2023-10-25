@@ -4,6 +4,7 @@
     "accounts": [
       {
         "balance": 70,
+        "balance_timestamp": "2345",
         "num": 7
       },
       {
@@ -14,13 +15,8 @@
     "contracts": [
       {
         "balance": 90,
+        "balance_timestamp": "2344",
         "num": 9
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 2345
       }
     ],
     "tokenaccounts": [
@@ -52,8 +48,8 @@
     "accounts": [
       {
         "balance": {
-          "timestamp": "0.000002345",
           "balance": 70,
+          "timestamp": "0.000002345",
           "tokens": [
             {
               "token_id": "0.0.100001",
@@ -85,8 +81,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002345",
           "balance": 90,
+          "timestamp": "0.000002344",
           "tokens": []
         },
         "account": "0.0.9",

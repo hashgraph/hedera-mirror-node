@@ -4,6 +4,7 @@ Feature: EstimateGas Contract Base Coverage Feature
   Scenario Outline: Validate EstimateGas
     Given I successfully create EstimateGas contract from contract bytes
     Given I successfully create fungible token
+    Then the mirror node REST API should return status 200 for the estimate contract creation
     And lower deviation is 5% and upper deviation is 20%
     Then I call estimateGas without arguments that multiplies two numbers
     Then I call estimateGas with function msgSender
@@ -14,6 +15,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that changes contract slot information by updating global contract field with the passed argument
     Then I call estimateGas with function that successfully deploys a new smart contract via CREATE op code
     Then I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code
+    Then I get mock contract address and getAddress selector
     Then I call estimateGas with function that makes a static call to a method from a different contract
     Then I call estimateGas with function that makes a delegate call to a method from a different contract
     Then I call estimateGas with function that makes a call code to a method from a different contract

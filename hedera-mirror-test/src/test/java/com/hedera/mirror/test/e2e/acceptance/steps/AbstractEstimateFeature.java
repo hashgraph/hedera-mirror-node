@@ -19,14 +19,10 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import java.nio.ByteBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 abstract class AbstractEstimateFeature extends AbstractFeature {
@@ -36,18 +32,6 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
 
     @Autowired
     protected MirrorNodeClient mirrorClient;
-
-    @Value("classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json")
-    protected Resource estimatePrecompileTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
-    protected Resource ercTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    protected Resource precompileTestContract;
-
-    @Value("classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json")
-    protected Resource estimateGasTestContract;
 
     /**
      * Checks if the estimatedGas is within the specified range of the actualGas.
@@ -84,7 +68,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param solidityAddress The address of the solidity contract.
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(String data, int actualGasUsed, String solidityAddress) {
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .data(data)
                 .to(solidityAddress)
@@ -93,7 +77,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+        assertTrue(isWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
     }
 
     /**
@@ -103,13 +87,13 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * then sends the request. It expects the call to result in a "400 Bad Request" response, and will throw an
      * assertion error if the response is anything other than that.
      *
-     * @param encodedFunctionCall The encoded function data to be sent.
+     * @param data The encoded function data to be sent.
      * @param contractAddress     The address of the contract.
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
-    protected void assertContractCallReturnsBadRequest(ByteBuffer encodedFunctionCall, String contractAddress) {
+    protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(Strings.encode(encodedFunctionCall))
+                .data(data)
                 .to(contractAddress)
                 .estimate(true)
                 .build();

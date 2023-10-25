@@ -20,26 +20,32 @@
     "accounts": [
       {
         "balance": 10,
+        "balance_timestamp": "2010",
         "num": 1
       },
       {
         "balance": 20,
+        "balance_timestamp": "2020",
         "num": 2
       },
       {
         "balance": 30,
+        "balance_timestamp": "2030",
         "num": 3
       },
       {
         "balance": 40,
+        "balance_timestamp": "2040",
         "num": 4
       },
       {
         "balance": 50,
+        "balance_timestamp": "2050",
         "num": 5
       },
       {
         "balance": 60,
+        "balance_timestamp": "2060",
         "num": 6
       },
       {
@@ -62,12 +68,6 @@
         "num": 10,
         "expiration_timestamp": "9223372036854775807",
         "receiver_sig_required": true
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 1800,
-        "consensus_end": 2000
       }
     ],
     "tokenaccounts": [
@@ -123,8 +123,8 @@
     "accounts": [
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 10,
+          "timestamp": "0.000002010",
           "tokens": [
             {
               "token_id": "0.0.90000",
@@ -156,8 +156,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 20,
+          "timestamp": "0.000002020",
           "tokens": [
             {
               "token_id": "0.0.90001",
@@ -189,8 +189,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 30,
+          "timestamp": "0.000002030",
           "tokens": []
         },
         "account": "0.0.3",
@@ -213,8 +213,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 40,
+          "timestamp": "0.000002040",
           "tokens": []
         },
         "account": "0.0.4",
@@ -237,8 +237,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 50,
+          "timestamp": "0.000002050",
           "tokens": [
             {
               "token_id": "0.0.100001",
@@ -270,8 +270,8 @@
       },
       {
         "balance": {
-          "timestamp": "0.000002000",
           "balance": 60,
+          "timestamp": "0.000002060",
           "tokens": []
         },
         "account": "0.0.6",

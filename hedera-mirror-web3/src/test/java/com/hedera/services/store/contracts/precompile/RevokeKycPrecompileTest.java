@@ -141,7 +141,7 @@ public class RevokeKycPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(revokeKycPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test

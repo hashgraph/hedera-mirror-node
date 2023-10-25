@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
-import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectType;
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Optional;
@@ -29,37 +29,6 @@ import org.junit.jupiter.api.Test;
 class CachingStateFrameTest {
 
     // Test construction produces a correct instance
-
-    /** A no-additional-behavior-at-all subclass of the abstract `CachingStateFrame`, suitable for constructor tests. */
-    static class BareCachingStateFrame<K> extends CachingStateFrame<K> {
-
-        public BareCachingStateFrame(
-                @NonNull final Optional<CachingStateFrame<K>> upstreamFrame,
-                @NonNull final Class<?>... klassesToCache) {
-            super(upstreamFrame, klassesToCache);
-        }
-
-        @Override
-        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {}
-
-        @NonNull
-        @Override
-        protected Optional<Object> getValue(
-                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
-            return Optional.empty();
-        }
-
-        @Override
-        protected void setValue(
-                @NonNull final Class<?> klass,
-                @NonNull final UpdatableReferenceCache<K> cache,
-                @NonNull final K key,
-                @NonNull final Object value) {}
-
-        @Override
-        protected void deleteValue(
-                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {}
-    }
 
     @Test
     void constructWithNoUpstream() {
@@ -98,7 +67,8 @@ class CachingStateFrameTest {
         final var sut = new BareCachingStateFrame<Integer>(Optional.empty(), Integer.class);
 
         assertThat(sut.getAccessor(Integer.class)).isNotNull();
-        assertThatExceptionOfType(CacheAccessIncorrectType.class).isThrownBy(() -> sut.getAccessor(String.class));
+        assertThatExceptionOfType(CacheAccessIncorrectTypeException.class)
+                .isThrownBy(() -> sut.getAccessor(String.class));
         assertThat(sut.getInternalCaches())
                 .isNotNull()
                 .hasSize(1)
@@ -112,7 +82,8 @@ class CachingStateFrameTest {
 
         assertThat(sut.getAccessor(Integer.class)).isNotNull();
         assertThat(sut.getAccessor(Character.class)).isNotNull();
-        assertThatExceptionOfType(CacheAccessIncorrectType.class).isThrownBy(() -> sut.getAccessor(String.class));
+        assertThatExceptionOfType(CacheAccessIncorrectTypeException.class)
+                .isThrownBy(() -> sut.getAccessor(String.class));
         assertThat(sut.getInternalCaches())
                 .isNotNull()
                 .hasSize(2)
@@ -120,8 +91,153 @@ class CachingStateFrameTest {
                 .doesNotContainValue(null);
     }
 
+    @Test
+    void accessorForSingleType() {
+        final var actual = new StringBuilder(500);
+        final var sut = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
+
+        final var keys = List.of(2, 4, 6, 8);
+        final var values = List.of(10, 20, 30, 40);
+        assertThat(values).hasSize(keys.size());
+
+        final var expected = new StringBuilder(500);
+        final var sutAccessor = sut.getAccessor(Integer.class);
+        for (int i = 0; i < keys.size(); i++) {
+            final var key = keys.get(i);
+            final var value = values.get(i);
+
+            expected.append("S-I-%d-%d;D-I-%d;G-I-%d;".formatted(key, value, key, key));
+
+            sutAccessor.set(key, value);
+            sutAccessor.delete(key);
+            sutAccessor.get(key);
+        }
+
+        assertThat(actual.toString()).hasToString(expected.toString());
+    }
+
     // Test accessors - not semantics of caching, but just that they pass through correctly to lower-level methods for
     // cache access
+
+    @Test
+    void accessorsForTwoTypes() {
+        final var actual = new StringBuilder(500);
+        final var sut =
+                new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class, Character.class);
+
+        final var keys = List.of(2, 4, 6, 8);
+        final var valuesI = List.of(10, 20, 30, 40);
+        final var valuesC = List.of('A', 'b', 'X', 'y');
+        assertThat(valuesI).hasSize(keys.size());
+        assertThat(valuesC).hasSize(keys.size());
+
+        final var expected = new StringBuilder(500);
+        final var sutAccessorI = sut.getAccessor(Integer.class);
+        final var sutAccessorC = sut.getAccessor(Character.class);
+        for (int i = 0; i < keys.size(); i++) {
+            final var key = keys.get(i);
+            final var valueI = valuesI.get(i);
+            final var valueC = valuesC.get(i);
+
+            expected.append("S-I-%d-%d;S-C-%d-%c;D-I-%d;D-C-%d;G-I-%d;G-C-%d;"
+                    .formatted(key, valueI, key, valueC, key, key, key, key));
+
+            sutAccessorI.set(key, valueI);
+            sutAccessorC.set(key, valueC);
+            sutAccessorI.delete(key);
+            sutAccessorC.delete(key);
+            sutAccessorI.get(key);
+            sutAccessorC.get(key);
+        }
+
+        assertThat(actual.toString()).hasToString(expected.toString());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void setFailsOnBadValueType() {
+        final var sut = new BareCachingStateFrame<Integer>(Optional.empty(), Character.class);
+        final var sutAccessorAsFetched = sut.getAccessor(Character.class);
+        // N.B.: Really have to go out of your way - via unchecked casting - to violate the type safety
+        final var sutAccessor =
+                (CachingStateFrame.Accessor<Integer, String>) (CachingStateFrame.Accessor) sutAccessorAsFetched;
+
+        assertThatExceptionOfType(CacheAccessIncorrectTypeException.class)
+                .isThrownBy(() -> sutAccessor.set(7, "foobar"));
+    }
+
+    @Test
+    void getFailsOnBadValueType() {
+        final var sut = new BareCachingStateFrame<Integer>(Optional.empty(), Character.class) {
+            @NonNull
+            @Override
+            protected Optional<Object> getValue(
+                    @NonNull final Class<?> klass,
+                    @NonNull final UpdatableReferenceCache<Integer> cache,
+                    @NonNull final Integer key) {
+                return Optional.of("foobar" /* returning String, not Character */);
+            }
+        };
+        final var sutAccessor = sut.getAccessor(Character.class);
+
+        assertThatExceptionOfType(CacheAccessIncorrectTypeException.class).isThrownBy(() -> sutAccessor.get(7));
+    }
+
+    // Accessors detect type errors
+
+    @Test
+    void commitDoesNothingIfNoUpstreamFrames() {
+        final var actual = new StringBuilder(500);
+        final var sut = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
+
+        sut.commit();
+
+        assertThat(actual).isEmpty();
+    }
+
+    // Test commit properly updates upstream frames
+
+    @Test
+    void commitCallsUpstreamUpdate() {
+        final var actual = new StringBuilder(500);
+        final var us0 = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
+        final var sut = new BareCachingStateFrame<>(Optional.of(us0), Integer.class);
+
+        sut.commit();
+
+        assertThat(actual).hasToString("U;");
+    }
+
+    /** A no-additional-behavior-at-all subclass of the abstract `CachingStateFrame`, suitable for constructor tests. */
+    static class BareCachingStateFrame<K> extends CachingStateFrame<K> {
+
+        public BareCachingStateFrame(
+                @NonNull final Optional<CachingStateFrame<K>> upstreamFrame,
+                @NonNull final Class<?>... klassesToCache) {
+            super(upstreamFrame, klassesToCache);
+        }
+
+        @Override
+        public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {}
+
+        @NonNull
+        @Override
+        protected Optional<Object> getValue(
+                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+            return Optional.empty();
+        }
+
+        @Override
+        protected void setValue(
+                @NonNull final Class<?> klass,
+                @NonNull final UpdatableReferenceCache<K> cache,
+                @NonNull final K key,
+                @NonNull final Object value) {}
+
+        @Override
+        protected void deleteValue(
+                @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {}
+    }
 
     /** A spying `CachingStateFrame` that records accesses to the methods underlying value accessors */
     static class RecordingCachingStateFrame<K> extends CachingStateFrame<K> {
@@ -165,118 +281,5 @@ class CachingStateFrameTest {
                 @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
             spy.append("%s-%s-%s;".formatted("D", klass.getSimpleName().charAt(0), key.toString()));
         }
-    }
-
-    @Test
-    void accessorForSingleType() {
-        final var actual = new StringBuilder(500);
-        final var sut = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
-
-        final var keys = List.of(2, 4, 6, 8);
-        final var values = List.of(10, 20, 30, 40);
-        assertThat(values).hasSize(keys.size());
-
-        final var expected = new StringBuilder(500);
-        final var sutAccessor = sut.getAccessor(Integer.class);
-        for (int i = 0; i < keys.size(); i++) {
-            final var key = keys.get(i);
-            final var value = values.get(i);
-
-            expected.append("S-I-%d-%d;D-I-%d;G-I-%d;".formatted(key, value, key, key));
-
-            sutAccessor.set(key, value);
-            sutAccessor.delete(key);
-            sutAccessor.get(key);
-        }
-
-        assertThat(actual.toString()).hasToString(expected.toString());
-    }
-
-    @Test
-    void accessorsForTwoTypes() {
-        final var actual = new StringBuilder(500);
-        final var sut =
-                new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class, Character.class);
-
-        final var keys = List.of(2, 4, 6, 8);
-        final var valuesI = List.of(10, 20, 30, 40);
-        final var valuesC = List.of('A', 'b', 'X', 'y');
-        assertThat(valuesI).hasSize(keys.size());
-        assertThat(valuesC).hasSize(keys.size());
-
-        final var expected = new StringBuilder(500);
-        final var sutAccessorI = sut.getAccessor(Integer.class);
-        final var sutAccessorC = sut.getAccessor(Character.class);
-        for (int i = 0; i < keys.size(); i++) {
-            final var key = keys.get(i);
-            final var valueI = valuesI.get(i);
-            final var valueC = valuesC.get(i);
-
-            expected.append("S-I-%d-%d;S-C-%d-%c;D-I-%d;D-C-%d;G-I-%d;G-C-%d;"
-                    .formatted(key, valueI, key, valueC, key, key, key, key));
-
-            sutAccessorI.set(key, valueI);
-            sutAccessorC.set(key, valueC);
-            sutAccessorI.delete(key);
-            sutAccessorC.delete(key);
-            sutAccessorI.get(key);
-            sutAccessorC.get(key);
-        }
-
-        assertThat(actual.toString()).hasToString(expected.toString());
-    }
-
-    // Accessors detect type errors
-
-    @Test
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    void setFailsOnBadValueType() {
-        final var sut = new BareCachingStateFrame<Integer>(Optional.empty(), Character.class);
-        final var sutAccessorAsFetched = sut.getAccessor(Character.class);
-        // N.B.: Really have to go out of your way - via unchecked casting - to violate the type safety
-        final var sutAccessor =
-                (CachingStateFrame.Accessor<Integer, String>) (CachingStateFrame.Accessor) sutAccessorAsFetched;
-
-        assertThatExceptionOfType(CacheAccessIncorrectType.class).isThrownBy(() -> sutAccessor.set(7, "foobar"));
-    }
-
-    @Test
-    void getFailsOnBadValueType() {
-        final var sut = new BareCachingStateFrame<Integer>(Optional.empty(), Character.class) {
-            @NonNull
-            @Override
-            protected Optional<Object> getValue(
-                    @NonNull final Class<?> klass,
-                    @NonNull final UpdatableReferenceCache<Integer> cache,
-                    @NonNull final Integer key) {
-                return Optional.of("foobar" /* returning String, not Character */);
-            }
-        };
-        final var sutAccessor = sut.getAccessor(Character.class);
-
-        assertThatExceptionOfType(CacheAccessIncorrectType.class).isThrownBy(() -> sutAccessor.get(7));
-    }
-
-    // Test commit properly updates upstream frames
-
-    @Test
-    void commitDoesNothingIfNoUpstreamFrames() {
-        final var actual = new StringBuilder(500);
-        final var sut = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
-
-        sut.commit();
-
-        assertThat(actual).isEmpty();
-    }
-
-    @Test
-    void commitCallsUpstreamUpdate() {
-        final var actual = new StringBuilder(500);
-        final var us0 = new RecordingCachingStateFrame<Integer>(actual, Optional.empty(), Integer.class);
-        final var sut = new BareCachingStateFrame<>(Optional.of(us0), Integer.class);
-
-        sut.commit();
-
-        assertThat(actual).hasToString("U;");
     }
 }

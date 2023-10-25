@@ -40,22 +40,14 @@ class UpdatableReferenceCacheTest {
 
     ///// Common types/values/methods for this test start here:
 
-    enum ValueIs {
-        MISSING,
-        NULL,
-        NON_NULL
-    }
-
-    enum ValueFrom {
-        NOWHERE,
-        ORIGINAL,
-        CURRENT
-    }
-
     static final String THIS_KEY = "THIS KEY";
     static final Long ORIGINAL_VALUE = 10L;
     static final Long UPDATED_VALUE = -25L;
     static final Long NEW_VALUE = -100L;
+    final UpdatableReferenceCacheSpy sut = new UpdatableReferenceCacheSpy(); // cache that maps String->Long
+
+    @InjectSoftAssertions
+    SoftAssertions softly;
 
     void setInitialCacheLineState(@NonNull final ValueIs originalValueIs, @NonNull final ValueIs currentValueIs) {
         switch (originalValueIs) {
@@ -71,13 +63,6 @@ class UpdatableReferenceCacheTest {
     }
 
     ///// Per-test setup starts here:
-
-    final UpdatableReferenceCacheSpy sut = new UpdatableReferenceCacheSpy(); // cache that maps String->Long
-
-    @InjectSoftAssertions
-    SoftAssertions softly;
-
-    ///// Tests start here:
 
     @Test
     void emptyCacheTest() {
@@ -121,6 +106,8 @@ class UpdatableReferenceCacheTest {
         final var actualGet = sut.get(THIS_KEY);
         softly.assertThat(actualGet).isEqualTo(expected);
     }
+
+    ///// Tests start here:
 
     @Test
     void cannotGetWithANullKeyTest() {
@@ -328,8 +315,6 @@ class UpdatableReferenceCacheTest {
                 .isEqualTo(expectedCurrent);
     }
 
-    ///// Utility methods beyond this point:
-
     /** Like `Map.of` but doesn't barf on `null` values */
     // TODO: Move to utils class
     @NonNull
@@ -367,6 +352,8 @@ class UpdatableReferenceCacheTest {
                                                 obj.getClass().getTypeName()));
     }
 
+    ///// Utility methods beyond this point:
+
     /** Throw an exception (with message) in the context of an _expression_ (where a `throw` statement by itself is
      * not acceptable).
      */
@@ -382,5 +369,17 @@ class UpdatableReferenceCacheTest {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    enum ValueIs {
+        MISSING,
+        NULL,
+        NON_NULL
+    }
+
+    enum ValueFrom {
+        NOWHERE,
+        ORIGINAL,
+        CURRENT
     }
 }

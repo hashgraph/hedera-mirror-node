@@ -29,23 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class DatabaseBackedStateFrameTest {
 
-    static class DatabaseAccessorStub<K, V> extends DatabaseAccessor<K, V> {
-        public K cannedKey;
-        public Optional<V> cannedValue = Optional.empty();
-
-        @Override
-        public @NonNull Optional<V> get(@NonNull final K key) {
-            return key == cannedKey ? cannedValue : Optional.empty();
-        }
-
-        public void setCannedKV(@NonNull final K key, @Nullable final V value) {
-            cannedKey = key;
-            cannedValue = Optional.ofNullable(value);
-        }
-    }
-
     final DatabaseAccessorStub<Integer, Long> dbAccessorForLong = new DatabaseAccessorStub<>() {};
-
     final List<DatabaseAccessor<Integer, ?>> someAccessors = List.of(
             dbAccessorForLong,
             new DatabaseAccessorStub<Integer, String>() {},
@@ -112,5 +96,20 @@ class DatabaseBackedStateFrameTest {
         final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses);
 
         assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(sut::commit);
+    }
+
+    static class DatabaseAccessorStub<K, V> extends DatabaseAccessor<K, V> {
+        public K cannedKey;
+        public Optional<V> cannedValue = Optional.empty();
+
+        @Override
+        public @NonNull Optional<V> get(@NonNull final K key) {
+            return key == cannedKey ? cannedValue : Optional.empty();
+        }
+
+        public void setCannedKV(@NonNull final K key, @Nullable final V value) {
+            cannedKey = key;
+            cannedValue = Optional.ofNullable(value);
+        }
     }
 }

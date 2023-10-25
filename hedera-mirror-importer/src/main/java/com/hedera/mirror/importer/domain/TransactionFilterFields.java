@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.domain;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import java.util.Collection;
 import java.util.Set;
 import lombok.Value;
@@ -27,15 +27,12 @@ import lombok.Value;
  */
 @Value
 public class TransactionFilterFields {
+    public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), null);
     /**
-     * entities contains:
-     * (1) Main entity associated with the transaction
-     * (2) Transaction payer account (when present)
+     * entities contains: (1) Main entity associated with the transaction (2) Transaction payer account (when present)
      * (3) crypto transfer receivers/senders
      */
     Collection<EntityId> entities;
 
-    TransactionType transactionType;
-
-    public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), null);
+    RecordItem recordItem;
 }

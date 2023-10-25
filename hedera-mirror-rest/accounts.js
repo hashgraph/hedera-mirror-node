@@ -22,10 +22,10 @@ import EntityId from './entityId';
 import * as utils from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
-import {InvalidArgumentError, NotFoundError} from './errors';
+import {NotFoundError} from './errors';
 import {Entity} from './model';
 import balances from './balances';
-import {opsMap, parseInteger} from './utils';
+import {opsMap} from './utils';
 import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
@@ -42,7 +42,7 @@ const processRow = (row) => {
       ? null
       : {
           balance: row.balance,
-          timestamp: utils.nsToSecNs(row.consensus_timestamp),
+          timestamp: utils.nsToSecNs(row.balance_timestamp),
           tokens: utils.parseTokenBalances(row.token_balances),
         };
   const entityId = EntityId.parse(row.id);
@@ -87,6 +87,7 @@ const processRow = (row) => {
 const entityFields = [
   'e.alias',
   'e.auto_renew_period',
+  'e.balance_timestamp',
   'e.created_timestamp',
   'e.decline_reward',
   'e.deleted',
@@ -178,14 +179,7 @@ const getEntityBalanceQuery = (
   ];
 
   if (accountBalanceQuery.query) {
-    const consensusTimestampSelect = `(case 
-            when upper(e.timestamp_range) is null
-              then COALESCE(ab.consensus_timestamp, (select max(consensus_end) from record_file)) 
-            else COALESCE(ab.consensus_timestamp, upper(e.timestamp_range))
-          end) as consensus_timestamp`;
     const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
-
-    selectFields.push(consensusTimestampSelect);
     selectFields.push(balanceSelect);
 
     queries.push(
@@ -207,7 +201,6 @@ const getEntityBalanceQuery = (
     );
   } else {
     const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
-    selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
     selectFields.push('e.balance as balance');
 
     queries.push(` select ${selectFields.join(',\n')}

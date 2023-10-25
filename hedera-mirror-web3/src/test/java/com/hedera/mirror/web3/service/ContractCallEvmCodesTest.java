@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -125,6 +126,16 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
                         "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923");
+    }
+
+    @Test
+    void getBlockPrevrandao() {
+        final var functionHash = functionEncodeDecoder.functionHashFor("getBlockPrevrandao", EVM_CODES_ABI_PATH);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        String result = contractCallService.processCall(serviceParameters);
+        assertThat(result).isNotBlank();
+        assertTrue(result.length() > "0x".length());
     }
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {

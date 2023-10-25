@@ -189,7 +189,9 @@ class EntityRecordItemListenerEntityTransactionTest extends AbstractEntityRecord
                 continue;
             }
 
-            var recordItem = ((RecordItemBuilder.Builder<?>) method.invoke(recordItemBuilder)).build();
+            var recordItem = ((RecordItemBuilder.Builder<?>) method.invoke(recordItemBuilder))
+                    .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
+                    .build();
             argumentsList.add(Arguments.of(method.getName(), recordItem));
 
             if (recordItem.getTransactionBody().hasContractCall()) {

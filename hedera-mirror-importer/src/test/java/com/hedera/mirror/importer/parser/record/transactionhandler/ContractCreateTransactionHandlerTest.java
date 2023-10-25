@@ -56,8 +56,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.springframework.data.util.Version;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -282,12 +284,14 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
-    @Test
-    void updateTransactionStakedAccountId() {
+    @ParameterizedTest
+    @ValueSource(ints = {27, 28})
+    void updateTransactionStakedAccountId(int minorVersion) {
         // given
         final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
                 .contractCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(
                         b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountId))
                 .build();
@@ -314,6 +318,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var nodeId = 1L;
         var recordItem = recordItemBuilder
                 .contractCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(
                         b -> b.clearAutoRenewAccountId().setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
@@ -332,6 +337,31 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+    }
+
+    @Test
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking() {
+        // given
+        final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
+        var recordItem = recordItemBuilder
+                .contractCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                .transactionBody(
+                        b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountId))
+                .build();
+        var transaction = transaction(recordItem);
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        verify(entityListener).onEntity(entityCaptor.capture());
+        assertThat(entityCaptor.getValue())
+                .isNotNull()
+                .returns(null, Entity::getDeclineReward)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedNodeId)
+                .returns(null, Entity::getStakePeriodStart);
     }
 
     @ParameterizedTest

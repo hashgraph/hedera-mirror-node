@@ -141,7 +141,7 @@ public class HistoricalBalanceService {
                     long maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
                             partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
                     accountBalancesCount = updateBalanceSnapshot(
-                            lastConsensusTimestamp, partitionRange, maxConsensusTimestamp, timestamp);
+                            lastConsensusTimestamp, maxConsensusTimestamp, partitionRange, timestamp);
                     tokenBalancesCount = properties.isTokenBalances()
                             ? updateTokenBalanceSnapshot(lastConsensusTimestamp, maxConsensusTimestamp, timestamp)
                             : 0;
@@ -204,11 +204,11 @@ public class HistoricalBalanceService {
     }
 
     private int updateBalanceSnapshot(
-            long lastConsensusTimestamp, Range<Long> partitionRange, long maxConsensusTimestamp, long timestamp) {
+            long lastConsensusTimestamp, long maxConsensusTimestamp, Range<Long> partitionRange, long timestamp) {
         return partitionRange.lowerEndpoint() > lastConsensusTimestamp
                 ?
-                // Between the last snapshot and this one a partition boundary has been crossed. Add all accounts to the
-                // snapshot
+                // Between the last snapshot and this one a partition boundary has been crossed.
+                // Add all accounts to the snapshot
                 accountBalanceRepository.balanceSnapshot(timestamp)
                 : accountBalanceRepository.updateBalanceSnapshot(
                         maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);
@@ -218,8 +218,8 @@ public class HistoricalBalanceService {
         var partitionRange = getPartitionRange(timestamp, TOKEN_BALANCE_TABLE_NAME);
         return partitionRange.lowerEndpoint() > lastConsensusTimestamp
                 ?
-                // Between the last snapshot and this one a partition boundary has been crossed. Add all token balances
-                // to the snapshot
+                // Between the last snapshot and this one a partition boundary has been crossed.
+                // Add all token balances to the snapshot
                 tokenBalanceRepository.balanceSnapshot(timestamp)
                 : tokenBalanceRepository.updateBalanceSnapshot(
                         maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);

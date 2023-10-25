@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import com.hedera.mirror.web3.ContextExtension;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
@@ -27,24 +29,19 @@ import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ContextExtension.class)
 class StackedStateFramesTest {
-
-    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
-        @NonNull
-        @Override
-        public Optional<V> get(@NonNull final K key) {
-            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
-        }
-    }
 
     @Test
     void constructionHappyPath() {
 
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {}, new BareDatabaseAccessor<Integer, String>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
-        final var sut = new StackedStateFrames<>(accessors);
+        final var sut = new StackedStateFrames(accessors);
+        ContractCallContext.get().setStack(sut.getInitializedStackBase());
 
         final var softly = new SoftAssertions();
         softly.assertThat(sut.height()).as("visible height").isZero();
@@ -64,29 +61,31 @@ class StackedStateFramesTest {
 
     @Test
     void constructWithDuplicatedValueTypesFails() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {},
-                new BareDatabaseAccessor<Integer, String>() {},
-                new BareDatabaseAccessor<Integer, List<Integer>>() {},
-                new BareDatabaseAccessor<Integer, String>() {});
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {},
+                new BareDatabaseAccessor<Object, String>() {},
+                new BareDatabaseAccessor<Object, List<Integer>>() {},
+                new BareDatabaseAccessor<Object, String>() {});
 
-        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<>(accessors));
+        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames(accessors));
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
     void constructWithDifferingKeyTypesFails() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(
-                new BareDatabaseAccessor<Integer, Character>() {}, (BareDatabaseAccessor<Integer, Character>)
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {}, (BareDatabaseAccessor<Object, Character>)
                         (BareDatabaseAccessor) new BareDatabaseAccessor<Long, String>() {});
 
-        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<>(accessors));
+        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames(accessors));
     }
 
     @Test
     void pushAndPopDoSo() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
-        final var sut = new StackedStateFrames<>(accessors);
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
+        final var sut = new StackedStateFrames(accessors);
+        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+
         final var roOnTopOfBase = sut.top();
 
         assertThat(sut.height()).isZero();
@@ -102,27 +101,11 @@ class StackedStateFramesTest {
     }
 
     @Test
-    void resetToBaseDoes() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
-        final var sut = new StackedStateFrames<>(accessors);
-        final var roOnTopOfBase = sut.top();
-
-        sut.push();
-        sut.push();
-        sut.push();
-        assertThat(sut.height()).isEqualTo(3);
-        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
-
-        sut.resetToBase();
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
-        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
-    }
-
-    @Test
     void forcePushOfSpecificFrameWithProperUpstream() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
-        final var sut = new StackedStateFrames<>(accessors);
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
+        final var sut = new StackedStateFrames(accessors);
+        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+
         final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
         assertThat(sut.height()).isEqualTo(1);
@@ -131,21 +114,19 @@ class StackedStateFramesTest {
 
     @Test
     void forcePushOfSpecificFrameWithBadUpstream() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
-        final var sut = new StackedStateFrames<>(accessors);
+        final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
+        final var sut = new StackedStateFrames(accessors);
+        ContractCallContext.get().setStack(sut.getInitializedStackBase());
         final var newTos = new RWCachingStateFrame<>(
-                Optional.of(new RWCachingStateFrame<Integer>(Optional.empty(), Character.class)), Character.class);
+                Optional.of(new RWCachingStateFrame<>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
     }
 
-    @Test
-    void replaceEntireStack() {
-        final var accessors = List.<DatabaseAccessor<Integer, ?>>of(new BareDatabaseAccessor<Integer, Character>() {});
-        final var sut = new StackedStateFrames<>(accessors);
-        final var newStack = new RWCachingStateFrame<Integer>(Optional.empty(), Character.class);
-        sut.replaceEntireStack(newStack);
-        assertThat(sut.height()).isZero();
-        assertThat(sut.cachedFramesDepth()).isEqualTo(1);
-        assertThat(sut.top()).isEqualTo(newStack);
+    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
+        @NonNull
+        @Override
+        public Optional<V> get(@NonNull final K key) {
+            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
+        }
     }
 }

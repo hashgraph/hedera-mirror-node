@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_27_0;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -99,7 +100,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                 entity.setMemo(transactionBody.getMemoWrapper().getValue());
                 break;
             case MEMO:
-                if (transactionBody.getMemo().length() > 0) {
+                if (!transactionBody.getMemo().isEmpty()) {
                     entity.setMemo(transactionBody.getMemo());
                 }
                 break;
@@ -119,6 +120,9 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
+            return;
+        }
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
         if (transactionBody.hasDeclineReward()) {
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());

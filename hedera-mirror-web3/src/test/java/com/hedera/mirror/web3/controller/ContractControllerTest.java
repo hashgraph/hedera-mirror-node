@@ -380,7 +380,7 @@ class ContractControllerTest {
 
     @NullAndEmptySource
     @ParameterizedTest
-    @ValueSource(strings = {"earliest", "pending", "latest", "0", "0x1a"})
+    @ValueSource(strings = {"earliest", "latest", "0", "0x1a", "pending", "safe", "finalized"})
     void callValidBlockType(String value) {
         final var request = request();
         request.setBlock(BlockType.of(value));
