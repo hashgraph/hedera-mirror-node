@@ -123,6 +123,44 @@ class EntityRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findHistoricalEntityByEvmAddressAndTimestampRangeGreaterThanBlockTimestampAndDeletedIsFalse() {
+        EntityHistory entityHistory =
+                domainBuilder.entityHistory().persist();
+        Entity entity = domainBuilder.entity().customize(e -> e.id(entityHistory.getId())).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressAndTimestamp(
+                entity.getEvmAddress(), entityHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findEntityByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
+        EntityHistory entityHistory =
+                domainBuilder.entityHistory().persist();
+
+        // Both entity and entity history will be queried in union but entity record is the latest valid
+        Entity entity = domainBuilder.entity().customize(e -> e.id(entityHistory.getId())).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressAndTimestamp(
+                entity.getEvmAddress(), entity.getTimestampLower()))
+                .get()
+                .isEqualTo(entity);
+    }
+
+    @Test
+    void findHistoricalEntityByEvmAddressAndTimestampRangeEqualToBlockTimestampAndDeletedIsFalse() {
+        Entity entity = domainBuilder.entity().persist();
+        // Both entity and entity history will be queried in union but entity history record is the latest valid
+        EntityHistory entityHistory = domainBuilder.entityHistory().customize(e -> e.id(entity.getId())).persist();
+
+        assertThat(entityRepository.findActiveByEvmAddressAndTimestamp(
+                entity.getEvmAddress(), entityHistory.getTimestampLower()))
+                .get()
+                .usingRecursiveComparison()
+                .isEqualTo(entityHistory);
+    }
+
+    @Test
     void findByIdAndTimestampRangeLessThanBlockTimestampAndDeletedIsFalseCall() {
         Entity entity = domainBuilder.entity().persist();
 
