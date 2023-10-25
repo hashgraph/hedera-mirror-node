@@ -168,7 +168,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void accountTests() {
-        updatedHederaEvmAccount.setBalance(Wei.ONE);
+        updatedHederaEvmAccount.setBalance(Wei.of(100));
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.wrap();
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);

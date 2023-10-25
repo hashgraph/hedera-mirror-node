@@ -56,7 +56,6 @@ dependencies {
     implementation("software.amazon.awssdk:netty-nio-client")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sts")
-    implementation("tech.pegasys:jc-kzg-4844")
     runtimeOnly(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation(project(path = ":common", configuration = "testClasses"))

@@ -40,7 +40,6 @@ dependencies {
     api("org.apache.tuweni:tuweni-bytes")
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
-    api("tech.pegasys:jc-kzg-4844")
     testImplementation("org.hyperledger.besu:evm")
     testClasses(sourceSets["test"].output)
 }
