@@ -18,6 +18,10 @@ description = "Hedera Mirror Node Common"
 
 plugins { id("java-conventions") }
 
+repositories {
+    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
+}
+
 dependencies {
     val testClasses by configurations.creating
     annotationProcessor(group = "com.querydsl", name = "querydsl-apt", classifier = "jakarta")
@@ -36,6 +40,7 @@ dependencies {
     api("org.apache.tuweni:tuweni-bytes")
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
+    api("tech.pegasys:jc-kzg-4844")
     testImplementation("org.hyperledger.besu:evm")
     testClasses(sourceSets["test"].output)
 }

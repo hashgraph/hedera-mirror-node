@@ -57,7 +57,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.3.1")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.39.0")
+        api("com.hedera.evm:hedera-evm:0.43.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
@@ -84,7 +84,7 @@ dependencies {
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.1.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
-        api("org.hyperledger.besu:evm:22.7.6")
+        api("org.hyperledger.besu:evm:23.10.0")
         api("org.jetbrains:annotations:24.0.1")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
@@ -95,6 +95,7 @@ dependencies {
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.21.5")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.3")
+        api("tech.pegasys:jc-kzg-4844:0.7.0")
     }
 }
 

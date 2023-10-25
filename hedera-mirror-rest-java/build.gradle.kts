@@ -23,6 +23,10 @@ plugins {
     id("spring-conventions")
 }
 
+repositories {
+    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
+}
+
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
@@ -36,6 +40,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
+    implementation("tech.pegasys:jc-kzg-4844")
     runtimeOnly(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")

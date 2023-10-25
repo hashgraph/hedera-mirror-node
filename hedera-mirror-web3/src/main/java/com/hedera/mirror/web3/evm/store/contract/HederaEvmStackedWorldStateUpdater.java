@@ -38,8 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 
 @SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
@@ -72,12 +71,12 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public EvmAccount createAccount(Address address, long nonce, Wei balance) {
+    public MutableAccount createAccount(Address address, long nonce, Wei balance) {
         persistAccount(address, nonce, balance);
         final UpdateTrackingAccount account = new UpdateTrackingAccount<>(address, null);
         account.setNonce(nonce);
         account.setBalance(balance);
-        return new WrappedEvmAccount(track(account));
+        return track(account);
     }
 
     @Override
@@ -89,11 +88,10 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     @Override
-    public EvmAccount getAccount(final Address address) {
+    public MutableAccount getAccount(final Address address) {
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdateTrackingAccount<>(proxyAccount, null);
-            return new WrappedEvmAccount(newMutable);
+            return new UpdateTrackingAccount<>(proxyAccount, null);
         }
 
         return super.getAccount(address);

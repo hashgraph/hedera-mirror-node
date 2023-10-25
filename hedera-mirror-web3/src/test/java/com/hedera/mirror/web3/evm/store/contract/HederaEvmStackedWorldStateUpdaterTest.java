@@ -47,6 +47,7 @@ import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -167,7 +168,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void accountTests() {
-        updatedHederaEvmAccount.setBalance(Wei.of(100));
+        updatedHederaEvmAccount.setBalance(Wei.ONE);
         when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
         store.wrap();
         assertThat(subject.createAccount(address, 1, Wei.ONE).getAddress()).isEqualTo(address);
