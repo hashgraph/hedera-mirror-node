@@ -32,6 +32,22 @@ public interface ContractStateRepository extends CrudRepository<ContractState, L
     Optional<byte[]> findStorage(final Long contractId, final byte[] key);
 
 
+    /**
+     * This method retrieves the most recent contract state storage value up to given block timestamp.
+     *
+     * <p>The method first queries the contract_state table for the most recent contract state storage value
+     * before or equal the specified block timestamp. If no matching record is found there,
+     * it then checks the contract_state_change table for the most recent contract state storage value
+     * before or equal to the specified block timestamp.
+     *
+     * <p>The combined result of these two queries is then ordered by their respective timestamps in descending order
+     * to get the most recent value.
+     *
+     * @param id             The ID of the contract.
+     * @param slot           The slot in the contract's storage.
+     * @param blockTimestamp The block timestamp up to which to retrieve the storage value.
+     * @return An {@code Optional} containing the byte array of the storage value if found, or an empty {@code Optional} if not.
+     */
     @Query(value =
             """
             select value
