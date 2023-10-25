@@ -17,8 +17,8 @@
 package com.hedera.mirror.importer.db;
 
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_OVERLAPPING_TIME_PARTITION;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION_OVERLAP;
 
 import com.google.common.collect.Range;
 import jakarta.inject.Named;
@@ -59,7 +59,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Cacheable(cacheManager = CACHE_OVERLAPPING_TIME_PARTITION, cacheNames = CACHE_NAME)
+    @Cacheable(cacheManager = CACHE_TIME_PARTITION_OVERLAP, cacheNames = CACHE_NAME)
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
         if (toTimestamp < fromTimestamp) {

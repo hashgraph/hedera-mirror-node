@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity.topic;
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_OVERLAPPING_TIME_PARTITION;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION_OVERLAP;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -75,7 +75,7 @@ public abstract class AbstractTopicMessageLookupIntegrationTest extends Integrat
     private CacheManager cacheManager1;
 
     @Autowired
-    @Qualifier(CACHE_OVERLAPPING_TIME_PARTITION)
+    @Qualifier(CACHE_TIME_PARTITION_OVERLAP)
     private CacheManager cacheManager2;
 
     @BeforeEach
