@@ -105,6 +105,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
+    private final Collection<ContractTransaction> contractTransactions;
     private final Collection<ContractTransactionHash> contractTransactionHashes;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
@@ -175,6 +176,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
+        contractTransactions = new ArrayList<>();
         contractTransactionHashes = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
@@ -285,6 +287,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             state.setSlot(contractStateChange.getSlot());
             state.setValue(value);
             contractStates.merge(state.getId(), state, this::mergeContractState);
+        }
+    }
+
+    @Override
+    public void onContractTransactions(Collection<ContractTransaction> contractTransactions) {
+        if (entityProperties.getPersist().isContractTransaction()) {
+            this.contractTransactions.addAll(contractTransactions);
         }
     }
 
@@ -500,8 +509,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
-            contractTransactionHashes.clear();
             contractStates.clear();
+            contractTransactions.clear();
+            contractTransactionHashes.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
@@ -553,6 +563,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
+            batchPersister.persist(contractTransactions);
             batchPersister.persist(contractTransactionHashes);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);

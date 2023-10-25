@@ -949,17 +949,13 @@ class ContractController extends BaseController {
    */
   getContractResultsByTimestamp = async (req, res) => {
     const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req);
-    const contractResults = await ContractService.getContractResultsByTimestampsAndContractId(timestamp, contractId);
-    if (contractResults.length === 0) {
+    const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(timestamp, contractId);
+    if (!contractDetails) {
       throw new NotFoundError();
     }
-    const contractResult = contractResults[0];
-    const [ethTransactions, recordFile, contractLogs, contractStateChanges] = await Promise.all([
-      TransactionService.getEthTransactionByTimestampAndPayerId(timestamp, contractResult.payerAccountId),
-      RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
-      ContractService.getContractLogsByTimestamps(timestamp, contractId),
-      ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
-    ]);
+
+    const [contractResults, ethTransactions, recordFile, contractLogs, contractStateChanges] =
+      await this.getDetailedContractResults(contractDetails, [], contractId);
 
     const ethTransaction = ethTransactions[0];
 
@@ -1091,30 +1087,25 @@ class ContractController extends BaseController {
         throw new Error('Transaction invariance breached');
       }
       transactionDetails = transactions[0];
+      // want to look up involved contract parties using the payer account id
+      transactionDetails.entityId = transactionDetails.payerAccountId;
     }
 
     if (!transactionDetails) {
       throw new NotFoundError();
     }
 
-    const [ethTransactions, contractResults, recordFile, contractLogs, contractStateChanges] = await Promise.all([
-      TransactionService.getEthTransactionByTimestampAndPayerId(
-        transactionDetails.consensusTimestamp,
-        transactionDetails.payerAccountId,
-        excludeTransactionResults
-      ),
-      ContractService.getContractResultsByTimestampsAndContractId(
-        transactionDetails.consensusTimestamp,
-        transactionDetails.entityId,
-        excludeTransactionResults
-      ),
-      RecordFileService.getRecordFileBlockDetailsFromTimestamp(transactionDetails.consensusTimestamp),
-      ContractService.getContractLogsByTimestamps(transactionDetails.consensusTimestamp, transactionDetails.entityId),
-      ContractService.getContractStateChangesByTimestamps(
-        transactionDetails.consensusTimestamp,
-        transactionDetails.entityId
-      ),
-    ]);
+    const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(
+      transactionDetails.consensusTimestamp,
+      transactionDetails.entityId
+    );
+
+    if (!contractDetails) {
+      throw new NotFoundError();
+    }
+
+    const [contractResults, ethTransactions, recordFile, contractLogs, contractStateChanges] =
+      await this.getDetailedContractResults(contractDetails, excludeTransactionResults, undefined);
 
     if (contractResults.length === 0) {
       if (ethTransactions.length !== 0) {
@@ -1152,6 +1143,28 @@ class ContractController extends BaseController {
     }
   };
 
+  getDetailedContractResults = async (contractDetails, excludedTransactionResults = [], contractId = undefined) => {
+    return Promise.all([
+      ContractService.getContractResultsByTimestamps(
+        contractDetails.consensusTimestamp,
+        contractDetails.query,
+        excludedTransactionResults
+      ),
+      TransactionService.getEthTransactionByTimestampAndPayerId(
+        contractDetails.consensusTimestamp,
+        contractDetails.payerAccountId,
+        excludedTransactionResults
+      ),
+      RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractDetails.consensusTimestamp),
+      ContractService.getContractLogsByTimestamps(contractDetails.consensusTimestamp, contractDetails.query),
+      ContractService.getContractStateChangesByTimestamps(
+        contractDetails.consensusTimestamp,
+        contractId,
+        contractDetails.query
+      ),
+    ]);
+  };
+
   getContractActions = async (req, res) => {
     // Supported args: index, limit, order
     const rawFilters = utils.buildAndValidateFilters(req.query, acceptedContractActionsParameters);
@@ -1180,16 +1193,17 @@ class ContractController extends BaseController {
     let tx;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      tx = [await ContractService.getContractTransactionDetailsByHash(hash)];
+      tx = await ContractService.getContractTransactionDetailsByHash(hash);
     } else {
       transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
+      tx = tx[0];
     }
 
     let payerAccountId;
-    if (tx.length) {
-      consensusTimestamp = tx[0].consensusTimestamp;
-      payerAccountId = tx[0].payerAccountId;
+    if (tx) {
+      consensusTimestamp = tx.consensusTimestamp;
+      payerAccountId = tx.payerAccountId;
     } else {
       throw new NotFoundError();
     }

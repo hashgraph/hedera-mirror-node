@@ -35,7 +35,7 @@ class TransactionService extends BaseService {
   static transactionDetailsFromTransactionIdQuery = `
     select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.NONCE},
            ${Transaction.SCHEDULED}, ${Transaction.TYPE},
-           ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.ENTITY_ID}
+           ${Transaction.PAYER_ACCOUNT_ID}
     from ${Transaction.tableName}
     where ${Transaction.PAYER_ACCOUNT_ID} = $1 
           and ${Transaction.CONSENSUS_TIMESTAMP} >= $2 and ${Transaction.CONSENSUS_TIMESTAMP} <= $3
@@ -87,22 +87,6 @@ class TransactionService extends BaseService {
     );
   }
 
-  async getEthTransactionByHash(hash, excludeTransactionResults = [], limit = undefined) {
-    const params = [hash];
-    const transactionsFilter = this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
-    const query = [
-      TransactionService.ethereumTransactionDetailsQuery,
-      `where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`,
-      transactionsFilter,
-      this.getOrderByQuery(
-        OrderSpec.from(EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP), orderFilterValues.ASC)
-      ),
-      limit ? `limit ${limit}` : '',
-    ].join('\n');
-
-    const rows = await super.getRows(query, params, 'getEthereumTransactionByHash');
-    return rows.map((row) => new EthereumTransaction(row));
-  }
   async getEthTransactionByTimestampAndPayerId(timestamp, payerId, excludeTransactionResults = []) {
     const params = [timestamp, payerId];
     const transactionsFilter = this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
@@ -114,7 +98,7 @@ class TransactionService extends BaseService {
       transactionsFilter,
     ].join('\n');
 
-    const rows = await super.getRows(query, params, 'getEthereumTransactionByTimestamp');
+    const rows = await super.getRows(query, params, 'getEthTransactionByTimestampAndPayerId');
     return rows.map((row) => new EthereumTransaction(row));
   }
 

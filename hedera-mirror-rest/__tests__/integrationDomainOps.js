@@ -48,6 +48,11 @@ const setup = async (testDataJson) => {
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
+  await loadContractTransactions(
+    testDataJson.contractlogs,
+    testDataJson.contractresults,
+    testDataJson.contractStateChanges
+  );
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
@@ -190,6 +195,51 @@ const loadContractStateChanges = async (contractStateChanges) => {
   }
 };
 
+const loadContractTransactions = async (contractLogs, contractResults, contractStateChanges) => {
+  const mergedLogs = (contractResults || []).map((log) => {
+    return {...contractLogDefaults, ...log};
+  });
+  const mergedResults = (contractResults || []).map((result) => {
+    return {...contractResultDefaults, ...result};
+  });
+  const mergedStateChanges = (contractStateChanges || []).map((stateChange) => {
+    return {...defaultContractStateChange, ...stateChange};
+  });
+  const consensusToDetailsMapping = mergedResults
+    .concat(mergedLogs)
+    .concat(mergedStateChanges)
+    .reduce((map, obj) => {
+      const key = obj.consensus_timestamp;
+      let details = map[key];
+      if (!details) {
+        details = {
+          payerAccountId: obj.payer_account_id,
+          ids: [],
+        };
+        map[key] = details;
+      }
+      if (obj.contract_id !== undefined && details.ids.indexOf(obj.contract_id) === -1) {
+        details.ids.push(obj.contract_id);
+      }
+      if (obj.payer_account_id !== undefined && details.ids.indexOf(obj.payer_account_id) === -1) {
+        details.ids.push(obj.payer_account_id);
+        details.payerAccountId = details.payerAccountId || obj.payer_account_id;
+      }
+      return map;
+    }, {});
+
+  for (const key in consensusToDetailsMapping) {
+    const details = consensusToDetailsMapping[key];
+    for (const id of details.ids) {
+      await addContractTransaction({
+        consensus_timestamp: key,
+        contract_id: id,
+        payer_account_id: details.payerAccountId || contractResultDefaults.payer_account_id,
+        involved_contract_ids: `{${details.ids.join(',')}}`,
+      });
+    }
+  }
+};
 const loadCryptoAllowances = async (cryptoAllowances) => {
   if (cryptoAllowances == null) {
     return;
@@ -979,6 +1029,15 @@ const contractResultDefaults = {
 
 const contractResultInsertFields = Object.keys(contractResultDefaults);
 
+const contractTransactionHashDefaults = {
+  consensus_timestamp: contractResultDefaults.consensus_timestamp,
+  entity_id: contractResultDefaults.contract_id,
+  hash: contractResultDefaults.transaction_hash,
+  payer_account_id: contractResultDefaults.payer_account_id,
+};
+
+const contractTransactionHashInsertFields = Object.keys(contractTransactionHashDefaults);
+
 const addContractResult = async (contractResultInput) => {
   const contractResult = {
     ...contractResultDefaults,
@@ -989,8 +1048,14 @@ const addContractResult = async (contractResultInput) => {
     ['bloom', 'call_result', 'failed_initcode', 'function_parameters', 'function_result', 'transaction_hash'],
     contractResult
   );
-
+  const contractHash = {
+    consensus_timestamp: contractResult.consensus_timestamp,
+    entity_id: contractResult.contract_id,
+    hash: contractResult.transaction_hash,
+    payer_account_id: contractResult.payer_account_id,
+  };
   await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
+  await insertDomainObject('contract_transaction_hash', contractTransactionHashInsertFields, contractHash);
 };
 
 const contractLogDefaults = {
@@ -1039,6 +1104,10 @@ const addContractStateChange = async (contractStateChangeInput) => {
   convertByteaFields(['slot', 'value_read', 'value_written'], contractStateChange);
 
   await insertDomainObject('contract_state_change', Object.keys(contractStateChange), contractStateChange);
+};
+
+const addContractTransaction = async (contractTransaction) => {
+  await insertDomainObject('contract_transaction', Object.keys(contractTransaction), contractTransaction);
 };
 
 const defaultCryptoAllowance = {
@@ -1505,6 +1574,7 @@ export default {
   loadContractStateChanges,
   loadContractStates,
   loadContracts,
+  loadContractTransactions,
   loadCryptoAllowances,
   loadEntities,
   loadEthereumTransactions,

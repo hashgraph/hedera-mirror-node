@@ -14,23 +14,13 @@
  * limitations under the License.
  */
 
-class ContractTransactionHash {
+class ContractTransaction {
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static ENTITY_ID = 'entity_id';
-  static HASH = 'hash';
+  static CONTRACT_ID = 'contract_id';
+  static INVOLVED_CONTRACT_IDS = 'involved_contract_ids';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
-  static tableAlias = 'cth';
-  static tableName = 'contract_transaction_hash';
-
-  /**
-   * Parses contract_transaction_hash table columns into object
-   */
-  constructor(transactionHash) {
-    this.consensusTimestamp = transactionHash[ContractTransactionHash.CONSENSUS_TIMESTAMP];
-    this.entityId = transactionHash[ContractTransactionHash.ENTITY_ID];
-    this.hash = transactionHash[ContractTransactionHash.HASH];
-    this.payerAccountId = transactionHash[ContractTransactionHash.PAYER_ACCOUNT_ID];
-  }
+  static tableAlias = 'ct';
+  static tableName = 'contract_transaction';
 
   /**
    * Gets full column name with table alias prepended.
@@ -41,6 +31,15 @@ class ContractTransactionHash {
   static getFullName(columnName) {
     return `${this.tableAlias}.${columnName}`;
   }
+  /**
+   * Parses contract_transaction table columns into object
+   */
+  constructor(contractTransaction, idColumn = 'contract_id') {
+    this.consensusTimestamp = contractTransaction[ContractTransaction.CONSENSUS_TIMESTAMP];
+    this.contractId = contractTransaction[ContractTransaction.CONTRACT_ID];
+    this.involvedContractIds = contractTransaction[ContractTransaction.INVOLVED_CONTRACT_IDS] || [];
+    this.payerAccountId = contractTransaction[ContractTransaction.PAYER_ACCOUNT_ID];
+    this.query = `${idColumn} in (${this.involvedContractIds.join(',')})`;
+  }
 }
-
-export default ContractTransactionHash;
+export default ContractTransaction;

@@ -18,16 +18,8 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
-import com.hedera.mirror.common.domain.entity.CryptoAllowance;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.contract.*;
+import com.hedera.mirror.common.domain.entity.*;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.CustomFee;
@@ -65,9 +57,11 @@ public interface EntityListener {
 
     default void onContractLog(ContractLog contractLog) {}
 
+    default void onContractResult(ContractResult contractResult) throws ImporterException {}
+
     default void onContractStateChange(ContractStateChange contractStateChange) {}
 
-    default void onContractResult(ContractResult contractResult) throws ImporterException {}
+    default void onContractTransactions(Collection<ContractTransaction> contractTransactions) {}
 
     default void onCryptoAllowance(CryptoAllowance cryptoAllowance) {}
 

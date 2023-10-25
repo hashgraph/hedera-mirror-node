@@ -18,11 +18,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.*;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
@@ -99,6 +95,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) throws ImporterException {
         onEach(EntityListener::onContractStateChange, contractStateChange);
+    }
+
+    @Override
+    public void onContractTransactions(Collection<ContractTransaction> contractTransactions) {
+        onEach(EntityListener::onContractTransactions, contractTransactions);
     }
 
     @Override

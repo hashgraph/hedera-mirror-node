@@ -29,6 +29,8 @@ select create_distributed_table('contract_state', 'contract_id', colocate_with =
 
 select create_distributed_table('contract_state_change', 'contract_id', colocate_with => 'entity');
 
+select create_distributed_table('contract_transaction', 'contract_id', colocate_with => 'entity');
+
 select create_distributed_table('crypto_allowance', 'owner', colocate_with => 'entity');
 
 select create_distributed_table('crypto_allowance_history', 'owner', colocate_with => 'crypto_allowance');

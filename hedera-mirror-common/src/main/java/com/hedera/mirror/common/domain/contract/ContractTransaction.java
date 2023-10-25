@@ -16,16 +16,32 @@
 
 package com.hedera.mirror.common.domain.contract;
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hedera.mirror.common.converter.ListToStringSerializer;
 import jakarta.persistence.Entity;
-import lombok.*;
+import java.util.Collections;
+import java.util.List;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ContractTransactionHash extends TransactionHash {
-    private Long entityId;
+@SuperBuilder
+public class ContractTransaction {
+    @jakarta.persistence.Id
+    private Long consensusTimestamp;
+
+    @jakarta.persistence.Id
+    private Long contractId;
+
+    @Builder.Default
+    @JsonSerialize(using = ListToStringSerializer.class)
+    private List<Long> involvedContractIds = Collections.emptyList();
+
+    private long payerAccountId;
+
+    private Long validStartNs;
 }

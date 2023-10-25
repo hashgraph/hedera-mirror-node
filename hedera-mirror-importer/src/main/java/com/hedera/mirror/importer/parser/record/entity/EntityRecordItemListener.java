@@ -157,7 +157,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!entityTransactions.isEmpty()) {
             entityListener.onEntityTransactions(entityTransactions.values());
         }
-
+        var contractTransactions = recordItem.getContractTransactions();
+        if (!contractTransactions.isEmpty()) {
+            entityListener.onContractTransactions(contractTransactions);
+        }
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
