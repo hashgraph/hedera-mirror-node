@@ -5,4 +5,4 @@ patch: {}
 exclude:
   global:
     - hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor/OperatorProperties.java
-
+    - hedera-mirror-rest/tokens.js
