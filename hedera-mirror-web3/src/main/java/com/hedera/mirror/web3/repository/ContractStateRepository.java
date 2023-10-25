@@ -30,4 +30,44 @@ public interface ContractStateRepository extends CrudRepository<ContractState, L
     @Query(value = "select value from contract_state where contract_id = ?1 and slot =?2", nativeQuery = true)
     @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_CONTRACT_STATE, unless = "#result == null")
     Optional<byte[]> findStorage(final Long contractId, final byte[] key);
+
+
+    @Query(value =
+            """
+            select value
+            from (
+                (
+                    select
+                        contract_id,
+                        created_timestamp,
+                        modified_timestamp,
+                        slot,
+                        value
+                    from contract_state
+                    where contract_id = ?1
+                    and slot = ?2
+                    and created_timestamp <= ?3
+                    order by created_timestamp desc
+                    limit 1
+                )
+                union all
+                (
+                    select
+                        contract_id,
+                        consensus_timestamp as created_timestamp,
+                        consensus_timestamp as modified_timestamp,
+                        slot,
+                        value_written as value
+                    from contract_state_change
+                    where contract_id = ?1
+                    and slot = ?2
+                    and consensus_timestamp <= ?3
+                    order by consensus_timestamp desc
+                    limit 1
+                )
+                order by created_timestamp desc
+                limit 1
+            ) as combined_result
+            """, nativeQuery = true)
+    Optional<byte[]> findStorageByBlockTimestamp(long id, byte[] slot, long blockTimestamp);
 }

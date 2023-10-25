@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.ContractState;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,58 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
         assertThat(contractStateRepository.findStorage(contractState.getContractId(), contractState.getSlot()))
                 .get()
                 .isEqualTo(contractState.getValue());
+    }
+
+    @Test
+    void findStorageOfContractStateByBlockTimestampSuccessfulCall() {
+        ContractState contractState = domainBuilder.contractState().persist();
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(contractState.getContractId(),
+                contractState.getSlot(),
+                contractState.getCreatedTimestamp()))
+                .get()
+                .isEqualTo(contractState.getValue());
+    }
+
+    @Test
+    void findStorageOfContractStateChangeByBlockTimestampSuccessfulCall() {
+        ContractStateChange contractStateChange = domainBuilder.contractStateChange().persist();
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(contractStateChange.getContractId(),
+                contractStateChange.getSlot(),
+                contractStateChange.getConsensusTimestamp()))
+                .get()
+                .isEqualTo(contractStateChange.getValueWritten());
+    }
+
+    @Test
+    void findLatestStorageByBlockTimestampSuccessfulCall() {
+        domainBuilder.contractStateChange().persist();
+        ContractState contractState = domainBuilder.contractState().persist();
+
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(contractState.getContractId(),
+                contractState.getSlot(),
+                contractState.getCreatedTimestamp()))
+                .get()
+                .isEqualTo(contractState.getValue());
+    }
+
+    @Test
+    void findStorageOfContractStateByBlockTimestampFailCall() {
+        ContractState contractState = domainBuilder.contractState().persist();
+
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(contractState.getContractId(),
+                contractState.getSlot(),
+                contractState.getCreatedTimestamp() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findStorageOfContractStateChangeByBlockTimestampFailCall() {
+        ContractStateChange contractStateChange = domainBuilder.contractStateChange().persist();
+
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(contractStateChange.getContractId(),
+                contractStateChange.getSlot(),
+                contractStateChange.getConsensusTimestamp() - 1))
+                .isEmpty();
     }
 
     @Test
