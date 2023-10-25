@@ -1075,8 +1075,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Transaction transaction = tokenPauseTransaction(TOKEN_ID, true);
         long pauseTimeStamp = 15L;
         insertAndParseTransaction(pauseTimeStamp, transaction);
-        // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isZero();
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.PAUSED);
     }
 
@@ -1100,8 +1098,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         transaction = tokenPauseTransaction(TOKEN_ID, false);
         long unpauseTimeStamp = 20L;
         insertAndParseTransaction(unpauseTimeStamp, transaction);
-        // History row should not be created
-        assertThat(tokenHistoryRepository.count()).isZero();
 
         assertTokenInRepository(
                 TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.UNPAUSED);

@@ -52,6 +52,7 @@ class TokenPauseTransactionHandler extends AbstractTransactionHandler {
 
         Token token = new Token();
         token.setPauseStatus(TokenPauseStatusEnum.PAUSED);
+        token.setTimestampLower(recordItem.getConsensusTimestamp());
         token.setTokenId(transaction.getEntityId().getId());
         entityListener.onToken(token);
     }

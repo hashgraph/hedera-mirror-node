@@ -109,4 +109,14 @@ public class AbstractToken implements History {
     public void setSymbol(String symbol) {
         this.symbol = DomainUtils.sanitize(symbol);
     }
+
+    public void updateTotalSupply(Long newTotalSupply) {
+        if (newTotalSupply != null && this.totalSupply != null) {
+            if (this.totalSupply < 0) {
+                this.totalSupply += newTotalSupply;
+            } else {
+                this.totalSupply = newTotalSupply;
+            }
+        }
+    }
 }

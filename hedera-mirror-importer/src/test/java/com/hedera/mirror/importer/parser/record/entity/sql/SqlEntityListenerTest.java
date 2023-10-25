@@ -1947,6 +1947,94 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onTokenMergeWithCreateThenUpdateThenMint() {
+        // given
+        // Create does not have a history row
+        var tokenCreate = domainBuilder.token().get();
+        sqlEntityListener.onToken(tokenCreate);
+
+        // Update has a history row
+        var tokenUpdate = domainBuilder
+                .token()
+                .customize(t -> t.freezeDefault(true)
+                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .tokenId(tokenCreate.getTokenId())
+                        .totalSupply(null))
+                .get();
+        sqlEntityListener.onToken(tokenUpdate);
+
+        // Token mint does not have history
+        var tokenMint = domainBuilder
+                .token()
+                .customize(t ->
+                        t.tokenId(tokenCreate.getTokenId()).timestampRange(null).totalSupply(5_000L))
+                .get();
+        sqlEntityListener.onToken(tokenMint);
+        completeFileAndCommit();
+
+        // then
+        var tokenMerged = TestUtils.clone(tokenUpdate);
+        tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
+        tokenMerged.setDecimals(tokenCreate.getDecimals());
+        tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
+        tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
+        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
+        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
+        tokenMerged.setType(tokenCreate.getType());
+        tokenMerged.setTotalSupply(tokenMint.getTotalSupply());
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+
+        var tokenHistory = TestUtils.clone(tokenCreate);
+        tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
+        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
+    }
+
+    @Test
+    void onTokenMergeWithCreateThenMintThenUpdate() {
+        // given
+        // Create does not have a history row
+        var tokenCreate = domainBuilder.token().get();
+        sqlEntityListener.onToken(tokenCreate);
+
+        // Token mint does not have history
+        var tokenMint = domainBuilder
+                .token()
+                .customize(t ->
+                        t.tokenId(tokenCreate.getTokenId()).timestampRange(null).totalSupply(-5_000L))
+                .get();
+        sqlEntityListener.onToken(tokenMint);
+
+        // Update has a history row
+        var tokenUpdate = domainBuilder
+                .token()
+                .customize(t -> t.freezeDefault(true)
+                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .tokenId(tokenCreate.getTokenId())
+                        .totalSupply(null))
+                .get();
+        sqlEntityListener.onToken(tokenUpdate);
+
+        completeFileAndCommit();
+
+        // then
+        var tokenMerged = TestUtils.clone(tokenUpdate);
+        tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
+        tokenMerged.setDecimals(tokenCreate.getDecimals());
+        tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
+        tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
+        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
+        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
+        tokenMerged.setType(tokenCreate.getType());
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+
+        var tokenHistory = TestUtils.clone(tokenCreate);
+        tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
+        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
+    }
+
+    @Test
     void onTokenConsecutiveNegativeTotalSupply() {
         // given
         var tokenCreate = domainBuilder.token().get();
