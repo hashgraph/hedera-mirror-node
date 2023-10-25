@@ -159,8 +159,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     #Then I call estimateGas with pseudo random seed
     #Then I call estimateGas with pseudo random number
     #### These tests below are recommended to be kept at the end as they change the state #####
-    Then I call estimateGas with balanceOf function for "FUNGIBLE_KYC_UNFROZEN" and verify the estimated gas against HAPI
-    Then I call estimateGas with balanceOf function for "NFT_KYC_UNFROZEN" and verify the estimated gas against HAPI
+    Then I call estimateGas with balanceOf function for "FUNGIBLE" and verify the estimated gas against HAPI
+    Then I call estimateGas with balanceOf function for "NFT" and verify the estimated gas against HAPI
     And I update the account and token keys
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferToken function and verify the estimated gas against HAPI
