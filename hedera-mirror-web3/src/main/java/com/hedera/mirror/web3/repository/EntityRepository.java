@@ -45,13 +45,14 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
                     """
                     select *
                     from entity
-                    where evm_address = ?1 and lower(timestamp_range) <= ?2
+                    where evm_address = ?1
+                    and created_timestamp <= ?2
                     and deleted is not true
-                    order by timestamp_range desc
+                    order by created_timestamp desc
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<Entity> findByEvmAddressAndTimestampAndDeletedIsFalse(byte[] evmAddress, long blockTimestamp);
+    Optional<Entity> findActiveByEvmAddressAndTimestamp(byte[] evmAddress, long blockTimestamp);
 
     /**
      * Retrieves the most recent state of an entity by its ID up to a given block timestamp.
@@ -88,5 +89,5 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<Entity> findByIdAndTimestampAndDeletedIsFalse(long id, long blockTimestamp);
+    Optional<Entity> findActiveByIdAndTimestamp(long id, long blockTimestamp);
 }
