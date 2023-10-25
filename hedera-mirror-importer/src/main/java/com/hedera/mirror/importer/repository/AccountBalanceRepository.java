@@ -42,31 +42,36 @@ public interface AccountBalanceRepository
     @Transactional
     int balanceSnapshot(long consensusTimestamp);
 
+    @Override
     @Modifying
     @Query(
             nativeQuery = true,
             value =
                     """
-        with account_balance_snapshot as (
-          select account_id, balance from account_balance
-          where (account_id, consensus_timestamp)
-            in (select account_id, max(consensus_timestamp)
-                from account_balance
-                where consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
-                group by account_id)
-        )
         insert into account_balance (account_id, balance, consensus_timestamp)
-        select e.id, e.balance, :consensusTimestamp
-        from entity e left join account_balance_snapshot abs on e.id = abs.account_id
+        select id, balance, :consensusTimestamp
+        from entity
         where
-            e.id = 2 or
-            (e.balance is not null and
-             e.deleted is not true and
-             (abs is null or abs.balance is null or e.balance <> abs.balance))
-        order by e.id
+          id = 2 or
+          (balance is not null and
+           deleted is not true and
+           balance_timestamp > :maxConsensusTimestamp and
+           balance_timestamp < :upperRangeTimestamp)
+        order by id
         """)
     @Transactional
-    int updateBalanceSnapshot(long lowerRangeTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+    int updateBalanceSnapshot(long maxConsensusTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+          select coalesce(max(consensus_timestamp), 0) as consensus_timestamp
+          from account_balance
+          where account_id = 2 and consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
+        """)
+    @Transactional
+    long getMaxConsensusTimestampInRange(long lowerRangeTimestamp, long upperRangeTimestamp);
 
     @Override
     @EntityGraph("AccountBalance.tokenBalances")

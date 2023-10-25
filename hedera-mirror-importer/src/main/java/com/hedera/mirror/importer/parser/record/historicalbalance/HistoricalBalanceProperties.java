@@ -37,7 +37,7 @@ public class HistoricalBalanceProperties {
 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
 
-    private boolean dedupe = false;
+    private boolean deduplicate = false;
 
     private boolean enabled = true;
 

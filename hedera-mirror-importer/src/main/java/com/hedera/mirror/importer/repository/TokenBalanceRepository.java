@@ -40,29 +40,22 @@ public interface TokenBalanceRepository
     @Transactional
     int balanceSnapshot(long consensusTimestamp);
 
+    @Override
     @Modifying
     @Query(
             nativeQuery = true,
             value =
                     """
-        with token_balance_snapshot as (
-          select account_id, balance, token_id from token_balance
-          where (account_id, token_id, consensus_timestamp)
-            in (select account_id, token_id, max(consensus_timestamp)
-                from token_balance
-                where consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
-                group by account_id, token_id)
-        )
         insert into token_balance (account_id, balance, consensus_timestamp, token_id)
-        select ta.account_id, ta.balance, :consensusTimestamp, ta.token_id
-        from token_account ta left join token_balance_snapshot tbs on ta.account_id = tbs.account_id and
-          ta.token_id = tbs.token_id
-        where ta.associated is true and
-          (tbs is null or tbs.balance is null or ta.balance <> tbs.balance)
-        order by ta.account_id, ta.token_id\s
+        select account_id, balance, :consensusTimestamp, token_id
+        from token_account
+        where associated is true and
+          balance_timestamp > :maxConsensusTimestamp and
+          balance_timestamp < :upperRangeTimestamp
+        order by account_id, token_id
         """)
     @Transactional
-    int updateBalanceSnapshot(long lowerRangeTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+    int updateBalanceSnapshot(long maxConsensusTimestamp, long upperRangeTimestamp, long consensusTimestamp);
 
     @Modifying
     @Override

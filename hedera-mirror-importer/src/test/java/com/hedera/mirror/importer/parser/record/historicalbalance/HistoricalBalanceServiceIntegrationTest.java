@@ -47,10 +47,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -78,52 +78,75 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private Entity account;
     private TokenAccount tokenAccount;
 
-    private List<Entity> entities;
-    private List<TokenAccount> tokenAccounts;
+    private List<Entity> entities = new ArrayList<>();
+    private List<TokenAccount> tokenAccounts = new ArrayList<>();
 
-    @BeforeEach
     void setup() {
         // common database setup
+        var balanceTimestamp = domainBuilder.timestamp() + Durations.ONE_MINUTE.toNanos();
         var treasuryAccount =
                 domainBuilder.entity().customize(e -> e.id(2L).num(2L)).persist();
-        account = domainBuilder.entity().persist();
+        account = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp))
+                .persist();
         var contract = domainBuilder
                 .entity()
-                .customize(e -> e.deleted(null).type(CONTRACT))
+                .customize(
+                        e -> e.balanceTimestamp(balanceTimestamp).deleted(null).type(CONTRACT))
                 .persist();
-        var fileWithBalance =
-                domainBuilder.entity().customize(e -> e.type(FILE)).persist();
-        var unknownWithBalance =
-                domainBuilder.entity().customize(e -> e.type(UNKNOWN)).persist();
-        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        domainBuilder.entity().customize(e -> e.balance(null)).persist();
-        domainBuilder.entity().customize(e -> e.balance(null).type(TOPIC)).persist();
+        var fileWithBalance = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).type(FILE))
+                .persist();
+        var unknownWithBalance = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).type(UNKNOWN))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).deleted(true))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).balance(null))
+                .persist();
+        domainBuilder
+                .entity()
+                .customize(
+                        e -> e.balance(null).balanceTimestamp(balanceTimestamp).type(TOPIC))
+                .persist();
         tokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(account.getId()))
+                .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(balanceTimestamp))
                 .persist();
-        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(false).balanceTimestamp(balanceTimestamp))
+                .persist();
 
         // Only entities with valid balance
-        entities = Lists.newArrayList(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance);
-        tokenAccounts = Lists.newArrayList(tokenAccount);
+        entities.addAll(Stream.of(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance)
+                .toList());
+        tokenAccounts.add(tokenAccount);
     }
 
     @AfterEach
     void resetProperties() {
         properties.setTokenBalances(true);
-        properties.setDedupe(false);
+        properties.setDeduplicate(false);
     }
 
     @ParameterizedTest
     @CsvSource({"true,false", "false,true", "true,true", "false,false"})
-    void generate(boolean tokenBalances, boolean isDedupe) {
+    void generate(boolean tokenBalances, boolean isDeduplication) {
         // given
+        setup();
         properties.setTokenBalances(tokenBalances);
-        properties.setDedupe(isDedupe);
+        properties.setDeduplicate(isDeduplication);
 
         // when
-        parseRecordFile(null);
+        parseRecordFile(1L);
         // Download and parse the first account balance file
         var firstAccountBalanceFile = accountBalanceFileRepository.save(
                 domainBuilder.accountBalanceFile().get());
@@ -137,14 +160,19 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when
         // balance changes
         account.setBalance(account.getBalance() + 5);
+        account.setBalanceTimestamp(balanceTimestamp + 1);
         entityRepository.save(account);
-        tokenAccount.setBalance(tokenAccount.getBalance() + 18);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 5);
+        tokenAccount.setBalanceTimestamp(balanceTimestamp + 1);
         tokenAccountRepository.save(tokenAccount);
         // new entity, tokenAccount
-        entities.add(domainBuilder.entity().persist());
+        entities.add(domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(account.getBalanceTimestamp()))
+                .persist());
         tokenAccounts.add(domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(account.getId()))
+                .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(account.getBalanceTimestamp()))
                 .persist());
 
         // process a record file which doesn't reach the next balances snapshot interval
@@ -163,15 +191,21 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when
         // balances change again
         account.setBalance(account.getBalance() + 1);
+        account.setBalanceTimestamp(balanceTimestamp + 1);
         entityRepository.save(account);
         tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccount.setBalanceTimestamp(balanceTimestamp + 1);
         tokenAccountRepository.save(tokenAccount);
         // new entity, tokenAccount
-        var additionalEntity = domainBuilder.entity().persist();
+        var additionalEntity = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(account.getBalanceTimestamp()))
+                .persist();
         entities.add(additionalEntity);
         tokenAccounts.add(domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(additionalEntity.getId()))
+                .customize(ta -> ta.balanceTimestamp(additionalEntity.getBalanceTimestamp())
+                        .accountId(additionalEntity.getId()))
                 .persist());
 
         // then
@@ -183,6 +217,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     @Test
     void generateWhenAccountBalanceFileTableNotEmpty() {
         // given
+        setup();
         // account balance file table isn't empty before the run
         var firstAccountBalanceFile = domainBuilder.accountBalanceFile().persist();
         var latestAccountBalanceFile = domainBuilder.accountBalanceFile().persist();
@@ -199,6 +234,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     @Test
     void generateWhenNoAccountBalanceFiles() {
         // given
+        setup();
         // there's no account balance files at all. The first balances snapshot will be generated in min frequency +
         // initial delay relative to the first record file's consensus end
 
@@ -228,6 +264,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     @Test
     void generateWhenNoAccountBalanceFilesAndFirstRecordFileInDb() {
         // given
+        setup();
         var firstRecordFile = domainBuilder.recordFile().persist();
 
         // when
@@ -253,38 +290,63 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     }
 
     @EnabledIfV2
-    @ParameterizedTest
-    @CsvSource({"true,false", "false,true", "true,true", "false,false"})
-    void generatePartitionBoundary(boolean tokenBalances, boolean isDedupe) {
-        // given
-        properties.setTokenBalances(tokenBalances);
-        properties.setDedupe(isDedupe);
+    @Test
+    void deduplicationPartitionBoundary() {
+        properties.setTokenBalances(true);
+        properties.setDeduplicate(true);
+        var treasuryAccount =
+                domainBuilder.entity().customize(e -> e.id(2L).num(2L)).persist();
+        entities.add(treasuryAccount);
         parseRecordFile(1L);
 
-        // This test assumes that the account_balance and token_balance partitions are identical, such that each will
-        // have a balance generated near the end of the partition and a balance generated at the beginning of the next
-        // partition.
-        // If the partitions do not match, then the token balance snapshot may not be generated at the beginning of the
-        // next partition.
         var partitions = timePartitionService.getTimePartitions("account_balance");
         var priorPartition = partitions.get(partitions.size() - 2);
-        var lastPartition = partitions.get(partitions.size() - 1);
-        var balanceTimestamp = priorPartition.getTimestampRange().lowerEndpoint()
+        var currentPartition = partitions.get(partitions.size() - 1);
+        long balanceTimestamp = priorPartition.getTimestampRange().lowerEndpoint()
                 + properties.getMinFrequency().plusSeconds(1).toNanos();
 
-        // when
-        // Place last balance snapshot at the end of the prior partition
+        long finalBalanceTimestamp = balanceTimestamp;
+        var account = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(finalBalanceTimestamp))
+                .persist();
+        var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(account.getBalanceTimestamp()))
+                .persist();
+        tokenAccounts.add(tokenAccount);
+        entities.add(account);
+
+        var account2 = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(account.getBalanceTimestamp()))
+                .persist();
+        entities.add(account2);
+        tokenAccounts.add(domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(account2.getId()).balanceTimestamp(account2.getBalanceTimestamp()))
+                .persist());
+
+        // All balances are added to account_balance
+        verifyGeneratedBalances(balanceTimestamp);
+
+        balanceTimestamp += properties.getMinFrequency().plusSeconds(1).toNanos();
+        // Only the treasury account is added as no other accounts have had balance updates
         verifyGeneratedBalances(balanceTimestamp);
 
         account.setBalance(account.getBalance() + 5);
+        account.setBalanceTimestamp(balanceTimestamp + 1);
         entityRepository.save(account);
-        tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 5);
+        tokenAccount.setBalanceTimestamp(balanceTimestamp + 1);
         tokenAccountRepository.save(tokenAccount);
 
-        balanceTimestamp = lastPartition.getTimestampRange().lowerEndpoint();
+        balanceTimestamp += properties.getMinFrequency().plusSeconds(1).toNanos();
+        // Treasury account, account and tokenAccount have new entries in account_balance
+        verifyGeneratedBalances(balanceTimestamp);
 
-        // then
-        // Balance snapshot in new partition
+        // The timestamp has transitioned to a new partition, all accounts are added to account_balance
+        balanceTimestamp = currentPartition.getTimestampRange().lowerEndpoint();
         verifyGeneratedBalances(balanceTimestamp);
     }
 
@@ -353,10 +415,12 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
             if (!expectedAccountBalances.containsKey(entity.getId())) {
                 expectedAccountBalances.computeIfAbsent(entity.getId(), k -> Lists.newArrayList(updatedAccountBalance));
                 updatedEntitiesCount++;
-            } else if (!properties.isDedupe()
+            } else if (!properties.isDeduplicate()
                     || (lastPartition != null
                             && balanceTimestamp
                                     == lastPartition.getTimestampRange().lowerEndpoint())) {
+                // There is no partition or the balance timestamp is at the beginning of the last partition
+                // Expect all balances
                 expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
                 updatedEntitiesCount++;
             } else {
@@ -367,12 +431,13 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                     continue;
                 }
 
-                for (var accountBalance : expectedAccountBalances.get(entity.getId())) {
-                    if (accountBalance.getBalance() != updatedAccountBalance.getBalance()) {
-                        expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
-                        updatedEntitiesCount++;
-                        break;
-                    }
+                var foundBalance = expectedAccountBalances.get(entity.getId()).stream()
+                        .filter(accountBalance -> accountBalance.getBalance() == updatedAccountBalance.getBalance())
+                        .findFirst()
+                        .isPresent();
+                if (!foundBalance) {
+                    expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
+                    updatedEntitiesCount++;
                 }
             }
         }
@@ -394,7 +459,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         tokenBalance.getId().getTokenId());
                 if (!expectedTokenBalances.containsKey(key)) {
                     expectedTokenBalances.computeIfAbsent(key, k -> Lists.newArrayList(tokenBalance));
-                } else if (!properties.isDedupe()
+                } else if (!properties.isDeduplicate()
                         || (lastTokenBalancePartition != null
                                 && balanceTimestamp
                                         == lastTokenBalancePartition
@@ -402,16 +467,16 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                                                 .lowerEndpoint())) {
                     expectedTokenBalances.get(key).add(tokenBalance);
                 } else {
-                    for (var balance : expectedTokenBalances.get(key)) {
-                        if (balance.getBalance() != tokenBalance.getBalance()) {
-                            expectedTokenBalances.get(key).add(tokenBalance);
-                            break;
-                        }
+                    var foundToken = expectedTokenBalances.get(key).stream()
+                            .filter(balance -> balance.getBalance() == tokenBalance.getBalance())
+                            .findFirst()
+                            .isPresent();
+                    if (!foundToken) {
+                        expectedTokenBalances.get(key).add(tokenBalance);
                     }
                 }
             }
         }
-
         await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.FIVE_SECONDS)
                 .untilAsserted(() -> assertThat(accountBalanceFileRepository.findAll())

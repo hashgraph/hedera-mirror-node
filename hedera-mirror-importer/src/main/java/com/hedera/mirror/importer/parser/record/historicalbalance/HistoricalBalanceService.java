@@ -58,8 +58,7 @@ public class HistoricalBalanceService {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
     private static final String TOKEN_BALANCE_TABLE_NAME = "token_balance";
-    private static final long LOWER_RANGE = 0L;
-    private static final long UPPER_RANGE = 9223372036854775807L;
+    private static final Range<Long> DEFAULT_RANGE = Range.closedOpen(0L, Long.MAX_VALUE);
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
@@ -121,7 +120,8 @@ public class HistoricalBalanceService {
 
         try {
             long consensusEnd = event.getConsensusEnd();
-            if (!shouldGenerate(consensusEnd)) {
+            long lastConsensusTimestamp = getLastConsensusTimestamp();
+            if (!shouldGenerate(consensusEnd, lastConsensusTimestamp)) {
                 return;
             }
 
@@ -134,8 +134,22 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                int accountBalancesCount = balanceSnapshot(timestamp);
-                int tokenBalancesCount = tokenBalanceSnapshot(timestamp);
+                int tokenBalancesCount;
+                int accountBalancesCount;
+                if (properties.isDeduplicate()) {
+                    var partitionRange = getPartitionRange(timestamp, ACCOUNT_BALANCE_TABLE_NAME);
+                    long maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
+                            partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
+                    accountBalancesCount = updateBalanceSnapshot(
+                            lastConsensusTimestamp, partitionRange, maxConsensusTimestamp, timestamp);
+                    tokenBalancesCount = properties.isTokenBalances()
+                            ? updateTokenBalanceSnapshot(lastConsensusTimestamp, maxConsensusTimestamp, timestamp)
+                            : 0;
+                } else {
+                    accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
+                    tokenBalancesCount =
+                            properties.isTokenBalances() ? tokenBalanceRepository.balanceSnapshot(timestamp) : 0;
+                }
 
                 long loadEnd = Instant.now().getEpochSecond();
                 String filename = StreamFilename.getFilename(
@@ -172,7 +186,7 @@ public class HistoricalBalanceService {
         }
     }
 
-    private boolean shouldGenerate(long consensusEnd) {
+    private long getLastConsensusTimestamp() {
         return accountBalanceFileRepository
                 .findLatest()
                 .map(AccountBalanceFile::getConsensusTimestamp)
@@ -181,31 +195,34 @@ public class HistoricalBalanceService {
                         .map(RecordFile::getConsensusEnd)
                         .map(timestamp ->
                                 timestamp + properties.getInitialDelay().toNanos()))
-                .filter(lastTimestamp -> consensusEnd - lastTimestamp
-                        >= properties.getMinFrequency().toNanos())
-                .isPresent();
+                .orElse(0L);
     }
 
-    private int balanceSnapshot(long timestamp) {
-        if (properties.isDedupe()) {
-            var range = getPartitionRange(timestamp, ACCOUNT_BALANCE_TABLE_NAME);
-            return accountBalanceRepository.updateBalanceSnapshot(
-                    range.lowerEndpoint(), range.upperEndpoint(), timestamp);
-        }
-        return accountBalanceRepository.balanceSnapshot(timestamp);
+    private boolean shouldGenerate(long consensusEnd, long lastConsensusTimestamp) {
+        return consensusEnd - lastConsensusTimestamp
+                >= properties.getMinFrequency().toNanos();
     }
 
-    private int tokenBalanceSnapshot(long timestamp) {
-        if (!properties.isTokenBalances()) {
-            return 0;
-        }
+    private int updateBalanceSnapshot(
+            long lastConsensusTimestamp, Range<Long> partitionRange, long maxConsensusTimestamp, long timestamp) {
+        return partitionRange.lowerEndpoint() > lastConsensusTimestamp
+                ?
+                // Between the last snapshot and this one a partition boundary has been crossed. Add all accounts to the
+                // snapshot
+                accountBalanceRepository.balanceSnapshot(timestamp)
+                : accountBalanceRepository.updateBalanceSnapshot(
+                        maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);
+    }
 
-        if (properties.isDedupe()) {
-            var range = getPartitionRange(timestamp, TOKEN_BALANCE_TABLE_NAME);
-            return tokenBalanceRepository.updateBalanceSnapshot(
-                    range.lowerEndpoint(), range.upperEndpoint(), timestamp);
-        }
-        return tokenBalanceRepository.balanceSnapshot(timestamp);
+    private int updateTokenBalanceSnapshot(long lastConsensusTimestamp, long maxConsensusTimestamp, long timestamp) {
+        var partitionRange = getPartitionRange(timestamp, TOKEN_BALANCE_TABLE_NAME);
+        return partitionRange.lowerEndpoint() > lastConsensusTimestamp
+                ?
+                // Between the last snapshot and this one a partition boundary has been crossed. Add all token balances
+                // to the snapshot
+                tokenBalanceRepository.balanceSnapshot(timestamp)
+                : tokenBalanceRepository.updateBalanceSnapshot(
+                        maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);
     }
 
     private Range<Long> getPartitionRange(long timestamp, String tableName) {
@@ -214,6 +231,6 @@ public class HistoricalBalanceService {
                 .filter(p -> p.getTimestampRange().contains(timestamp))
                 .findFirst()
                 .map(TimePartition::getTimestampRange)
-                .orElse(Range.closedOpen(LOWER_RANGE, UPPER_RANGE));
+                .orElse(DEFAULT_RANGE);
     }
 }

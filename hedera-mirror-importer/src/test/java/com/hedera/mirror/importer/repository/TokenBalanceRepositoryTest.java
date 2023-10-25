@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance.Id;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,21 +56,24 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
     @Test
     void updateBalanceSnapshot() {
         long lowerRangeTimestamp = 0L;
-        long upperRangeTimestamp = 400L;
+        long upperRangeTimestamp = 500L;
         long timestamp = 100;
         assertThat(tokenBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
                 .isZero();
         assertThat(tokenBalanceRepository.findAll()).isEmpty();
 
-        var tokenAccount = domainBuilder.tokenAccount().persist();
-        var tokenAccount2 = domainBuilder.tokenAccount().persist();
+        var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.balanceTimestamp(1L))
+                .persist();
+        var tokenAccount2 = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.balanceTimestamp(1L))
+                .persist();
         domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
 
         var expected = Stream.of(tokenAccount, tokenAccount2)
-                .map(t -> TokenBalance.builder()
-                        .balance(t.getBalance())
-                        .id(new Id(timestamp, EntityId.of(t.getAccountId()), EntityId.of(t.getTokenId())))
-                        .build())
+                .map(t -> buildTokenBalance(t, timestamp))
                 .collect(Collectors.toList());
 
         // Update Balance Snapshot includes all balances
@@ -79,33 +83,43 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
 
         long timestamp2 = 200;
         tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccount.setBalanceTimestamp(timestamp2);
         tokenAccountRepository.save(tokenAccount);
-        expected.add(TokenBalance.builder()
-                .balance(tokenAccount.getBalance())
-                .id(new Id(
-                        timestamp2, EntityId.of(tokenAccount.getAccountId()), EntityId.of(tokenAccount.getTokenId())))
-                .build());
+        expected.add(buildTokenBalance(tokenAccount, timestamp2));
 
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp2))
-                .isEqualTo(1);
+        // Update includes only the updated token account
+        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp, upperRangeTimestamp, timestamp2))
+                .isOne();
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         var timestamp3 = 300L;
         tokenAccount2.setBalance(tokenAccount2.getBalance() + 1);
+        tokenAccount2.setBalanceTimestamp(timestamp3);
         tokenAccountRepository.save(tokenAccount2);
-        expected.add(TokenBalance.builder()
-                .balance(tokenAccount2.getBalance())
-                .id(new Id(
-                        timestamp3, EntityId.of(tokenAccount2.getAccountId()), EntityId.of(tokenAccount2.getTokenId())))
-                .build());
-        var tokenAccount3 = domainBuilder.tokenAccount().persist();
-        expected.add(TokenBalance.builder()
-                .balance(tokenAccount3.getBalance())
-                .id(new Id(
-                        timestamp3, EntityId.of(tokenAccount3.getAccountId()), EntityId.of(tokenAccount3.getTokenId())))
-                .build());
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp3))
+        expected.add(buildTokenBalance(tokenAccount2, timestamp3));
+        var tokenAccount3 = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.balanceTimestamp(timestamp3))
+                .persist();
+        expected.add(buildTokenBalance(tokenAccount3, timestamp3));
+
+        // Update includes only the token accounts with a balance timestamp greater than the max timestamp
+        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp2, upperRangeTimestamp, timestamp3))
                 .isEqualTo(2);
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        var timestamp4 = 400L;
+        tokenAccount.setBalance(tokenAccount.getBalance() + 1);
+        tokenAccount.setBalanceTimestamp(timestamp4);
+        tokenAccountRepository.save(tokenAccount);
+        // Update with no change as the update happens at a timestamp equal to the max consensus timestamp
+        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp4, upperRangeTimestamp, timestamp4))
+                .isZero();
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        domainBuilder.tokenAccount().customize(t -> t.balanceTimestamp(1L)).persist();
+        // Update with no change, above upperRange
+        assertThat(tokenBalanceRepository.updateBalanceSnapshot(0L, 1L, 2L)).isZero();
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
@@ -130,5 +144,12 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
         assertThat(tokenBalanceRepository.findById(tokenBalance1.getId())).get().isEqualTo(tokenBalance1);
         assertThat(tokenBalanceRepository.findAll())
                 .containsExactlyInAnyOrder(tokenBalance1, tokenBalance2, tokenBalance3);
+    }
+
+    private TokenBalance buildTokenBalance(TokenAccount tokenAccount, long timestamp) {
+        return TokenBalance.builder()
+                .balance(tokenAccount.getBalance())
+                .id(new Id(timestamp, EntityId.of(tokenAccount.getAccountId()), EntityId.of(tokenAccount.getTokenId())))
+                .build();
     }
 }
