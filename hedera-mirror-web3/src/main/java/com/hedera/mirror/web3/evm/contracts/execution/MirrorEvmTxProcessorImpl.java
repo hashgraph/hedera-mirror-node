@@ -95,8 +95,9 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         contractCallContext.setCreate(Address.ZERO.equals(receiver));
         contractCallContext.setEstimate(isEstimate);
 
-        if (!isEstimate && block != BlockType.LATEST) {
-            setBlockTimestampToContractCallContext(block, contractCallContext);
+        if (shouldSetBlockTimestamp(isEstimate, block)) {
+            long blockNumber = determineAppropriateBlockNumber(block);
+            setBlockTimestampToContractCallContext(blockNumber, contractCallContext);
         }
 
         store.wrap();
@@ -152,8 +153,17 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                         .build();
     }
 
-    public void setBlockTimestampToContractCallContext(BlockType block, ContractCallContext contractCallContext) {
-        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(block.number());
+    private boolean shouldSetBlockTimestamp(boolean isEstimate, BlockType block) {
+        return !isEstimate && block != BlockType.LATEST;
+    }
+
+    private long determineAppropriateBlockNumber(BlockType block) {
+        long minIndex = recordFileRepository.findMinimumIndex().orElse(BlockType.EARLIEST.number());
+        return Math.max(block.number(), minIndex);
+    }
+
+    public void setBlockTimestampToContractCallContext(long blockIndex, ContractCallContext contractCallContext) {
+        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(blockIndex);
         recordFile.map(RecordFile::getConsensusEnd).ifPresent(contractCallContext::setBlockTimestamp);
     }
 }

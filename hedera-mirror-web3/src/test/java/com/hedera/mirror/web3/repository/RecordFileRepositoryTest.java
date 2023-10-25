@@ -40,6 +40,14 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findMinimumIndex() {
+        var minimum = domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findMinimumIndex()).get().isEqualTo(minimum.getIndex());
+    }
+
+    @Test
     void findFileHashByIndex() {
         final var file = domainBuilder.recordFile().persist();
 

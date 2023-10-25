@@ -494,6 +494,12 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     static Stream<BlockType> provideBlockTypes() {
-        return Stream.of(BlockType.EARLIEST, BlockType.of("0x1"), BlockType.of("0x100"));
+        return Stream.of(BlockType.EARLIEST,
+                BlockType.of("0x1"),
+                BlockType.of("0x100"),
+                BlockType.of("safe"),
+                BlockType.of("pending"),
+                BlockType.of("finalized"),
+                BlockType.LATEST);
     }
 }

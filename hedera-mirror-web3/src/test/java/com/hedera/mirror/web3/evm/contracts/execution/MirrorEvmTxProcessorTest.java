@@ -330,7 +330,9 @@ class MirrorEvmTxProcessorTest {
                 Arguments.of(true, BlockType.LATEST),
                 Arguments.of(false, BlockType.of("0x0")),
                 Arguments.of(false, BlockType.LATEST),
-                Arguments.of(false, BlockType.of("0x0")),
+                Arguments.of(false, BlockType.of("safe")),
+                Arguments.of(false, BlockType.of("pending")),
+                Arguments.of(false, BlockType.of("finalized")),
                 Arguments.of(false, BlockType.of("0xD5")),
                 Arguments.of(false, BlockType.of("0x2540BE3FF")));
     }
