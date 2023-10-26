@@ -31,16 +31,13 @@ public interface ContractStateRepository extends CrudRepository<ContractState, L
     @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_CONTRACT_STATE, unless = "#result == null")
     Optional<byte[]> findStorage(final Long contractId, final byte[] key);
 
-
     /**
      * This method retrieves the most recent contract state storage value up to given block timestamp.
      *
-     * <p>The method first queries the contract_state table for the most recent contract state storage value
-     * before or equal the specified block timestamp. If no matching record is found there,
-     * it then checks the contract_state_change table for the most recent contract state storage value
+     * <p>The method queries contract_state_change table for the most recent contract state storage value
      * before or equal to the specified block timestamp.
      *
-     * <p>The combined result of these two queries is then ordered by their respective timestamps in descending order
+     * <p>The result of the query is then ordered by timestamp in descending order
      * to get the most recent value.
      *
      * @param id             The ID of the contract.
@@ -48,42 +45,18 @@ public interface ContractStateRepository extends CrudRepository<ContractState, L
      * @param blockTimestamp The block timestamp up to which to retrieve the storage value.
      * @return An {@code Optional} containing the byte array of the storage value if found, or an empty {@code Optional} if not.
      */
-    @Query(value =
-            """
-            select value
-            from (
-                (
-                    select
-                        contract_id,
-                        created_timestamp,
-                        modified_timestamp,
-                        slot,
-                        value
-                    from contract_state
-                    where contract_id = ?1
-                    and slot = ?2
-                    and created_timestamp <= ?3
-                    order by created_timestamp desc
-                    limit 1
-                )
-                union all
-                (
-                    select
-                        contract_id,
-                        consensus_timestamp as created_timestamp,
-                        consensus_timestamp as modified_timestamp,
-                        slot,
-                        value_written as value
-                    from contract_state_change
-                    where contract_id = ?1
-                    and slot = ?2
-                    and consensus_timestamp <= ?3
-                    order by consensus_timestamp desc
-                    limit 1
-                )
-                order by created_timestamp desc
-                limit 1
-            ) as combined_result
-            """, nativeQuery = true)
+    @Query(
+            value =
+                    """
+            select
+                coalesce(value_written, value_read) as value
+            from contract_state_change
+            where contract_id = ?1
+            and slot = ?2
+            and consensus_timestamp <= ?3
+            order by consensus_timestamp desc
+            limit 1
+            """,
+            nativeQuery = true)
     Optional<byte[]> findStorageByBlockTimestamp(long id, byte[] slot, long blockTimestamp);
 }
