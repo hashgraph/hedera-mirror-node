@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.mirror.web3.evm.utils.BlockHashUtil;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -158,8 +157,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo(BlockHashUtil.ethHashFrom(recordFileForBlockHash.getHash())
-                        .toString());
+                .isEqualTo("0x" + recordFileForBlockHash.getHash().substring(0, 64));
     }
 
     @Test

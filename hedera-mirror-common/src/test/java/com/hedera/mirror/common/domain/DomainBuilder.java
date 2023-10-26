@@ -730,19 +730,19 @@ public class DomainBuilder {
                 .consensusEnd(consensusEnd)
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .fileHash(numeric(96))
+                .fileHash(hash(96))
                 .gasUsed(100L)
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
-                .hash(numeric(96))
+                .hash(hash(96))
                 .index(id())
                 .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(instantString + ".rcd.gz")
                 .nodeId(id())
-                .previousHash(numeric(96))
+                .previousHash(hash(96))
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
                         .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
@@ -1062,8 +1062,8 @@ public class DomainBuilder {
         return RandomStringUtils.randomAlphanumeric(characters);
     }
 
-    public String numeric(int characters) {
-        return RandomStringUtils.randomNumeric(characters);
+    public String hash(int characters) {
+        return RandomStringUtils.random(characters, "0123456789abcdef");
     }
 
     public long timestamp() {

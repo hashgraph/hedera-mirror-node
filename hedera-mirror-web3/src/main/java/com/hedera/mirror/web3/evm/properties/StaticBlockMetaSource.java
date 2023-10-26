@@ -17,13 +17,13 @@
 package com.hedera.mirror.web3.evm.properties;
 
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
-import com.hedera.mirror.web3.evm.utils.BlockHashUtil;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import jakarta.inject.Named;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
@@ -36,8 +36,8 @@ public class StaticBlockMetaSource implements BlockMetaSource {
     public Hash getBlockHash(long blockNo) {
         final var fileHash = recordFileRepository.findHashByIndex(blockNo);
 
-        return BlockHashUtil.ethHashFrom(fileHash.orElseThrow(
-                () -> new MissingResultException(String.format("No record file with index: %d", blockNo))));
+        return fileHash.map(StaticBlockMetaSource::ethHashFrom)
+                .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
     }
 
     @Override
@@ -47,5 +47,9 @@ public class StaticBlockMetaSource implements BlockMetaSource {
                 .orElseThrow(() -> new MissingResultException("No record file available."));
         return new HederaBlockValues(
                 gasLimit, latestRecordFile.getIndex(), Instant.ofEpochSecond(0, latestRecordFile.getConsensusStart()));
+    }
+
+    public static Hash ethHashFrom(final String hash) {
+        return Hash.fromHexString(StringUtils.substring(hash, 0, 64));
     }
 }
