@@ -21,15 +21,18 @@ import {accountListName} from '../libex/constants.js';
 
 const urlTag = '/accounts?account.balance=ne:{balance}&order=desc';
 
+const getUrl = (testParameters) =>
+  `/accounts?account.balance=ne:${testParameters['DEFAULT_ACCOUNT_BALANCE']}&order=desc`;
+
 const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsBalanceNe') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/accounts?account.balance=ne:${testParameters['DEFAULT_ACCOUNT_BALANCE']}&order=desc`;
+    const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
   .requiredParameters('DEFAULT_ACCOUNT_BALANCE')
   .check('Accounts balance NE OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
-export {options, run, setup};
+export {getUrl, options, run, setup};
