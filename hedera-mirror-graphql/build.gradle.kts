@@ -24,6 +24,8 @@ plugins {
     id("spring-conventions")
 }
 
+repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
+
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
