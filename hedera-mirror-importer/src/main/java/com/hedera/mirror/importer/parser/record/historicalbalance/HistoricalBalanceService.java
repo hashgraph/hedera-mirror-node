@@ -133,25 +133,7 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                Optional<Long> maxConsensusTimestamp = Optional.empty();
-                if (properties.isDeduplicate()) {
-                    // For accurate deduplication the partition ranges of account_balance and token_balance need to be
-                    // equal
-                    var partitions = timePartitionService.getOverlappingTimePartitions(
-                            ACCOUNT_BALANCE_TABLE_NAME, lastConsensusTimestamp, timestamp);
-                    // If size >= 2 there is a partition boundary so get a full snapshot
-                    if (partitions.size() < 2) {
-                        // After v1 account_balance and token_balance are partitioned a size of 0 should throw an
-                        // exception.
-                        // In the meantime use default range for non-partitioned tables
-                        var partitionRange = partitions.size() == 0
-                                ? DEFAULT_RANGE
-                                : partitions.get(0).getTimestampRange();
-                        maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
-                                partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
-                    }
-                }
-
+                Optional<Long> maxConsensusTimestamp = getMaxConsensusTimestamp(lastConsensusTimestamp, timestamp);
                 int accountBalancesCount;
                 int tokenBalancesCount;
                 if (maxConsensusTimestamp.isEmpty()) {
@@ -213,6 +195,30 @@ public class HistoricalBalanceService {
                         .map(timestamp ->
                                 timestamp + properties.getInitialDelay().toNanos()))
                 .orElse(Long.MAX_VALUE);
+    }
+
+    private Optional<Long> getMaxConsensusTimestamp(long lastConsensusTimestamp, long timestamp) {
+        if (!properties.isDeduplicate()) {
+            return Optional.empty();
+        }
+
+        Optional<Long> maxConsensusTimestamp = Optional.empty();
+        // For accurate deduplication the partition ranges of account_balance and token_balance need to be
+        // equal
+        var partitions = timePartitionService.getOverlappingTimePartitions(
+                ACCOUNT_BALANCE_TABLE_NAME, lastConsensusTimestamp, timestamp);
+        // If size >= 2 there is a partition boundary so get a full snapshot
+        if (partitions.size() < 2) {
+            // After v1 account_balance and token_balance are partitioned a size of 0 should throw an
+            // exception.
+            // In the meantime use default range for non-partitioned tables
+            var partitionRange =
+                    partitions.isEmpty() ? DEFAULT_RANGE : partitions.get(0).getTimestampRange();
+            maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
+                    partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
+        }
+
+        return maxConsensusTimestamp;
     }
 
     private boolean shouldGenerate(long consensusEnd, long lastConsensusTimestamp) {
