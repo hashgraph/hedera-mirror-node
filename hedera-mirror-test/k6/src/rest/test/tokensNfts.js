@@ -18,7 +18,6 @@ import http from 'k6/http';
 
 import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
 import {nftListName} from '../libex/constants.js';
-import {computeTestParameters} from '../../lib/parameters';
 
 const urlTag = '/tokens/{id}/nfts';
 
