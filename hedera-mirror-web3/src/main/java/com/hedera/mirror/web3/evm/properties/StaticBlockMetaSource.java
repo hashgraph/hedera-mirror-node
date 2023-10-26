@@ -23,6 +23,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import jakarta.inject.Named;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
@@ -34,7 +35,8 @@ public class StaticBlockMetaSource implements BlockMetaSource {
     @Override
     public Hash getBlockHash(long blockNo) {
         final var fileHash = recordFileRepository.findHashByIndex(blockNo);
-        return fileHash.map(Hash::fromHexString)
+
+        return fileHash.map(StaticBlockMetaSource::ethHashFrom)
                 .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
     }
 
@@ -45,5 +47,9 @@ public class StaticBlockMetaSource implements BlockMetaSource {
                 .orElseThrow(() -> new MissingResultException("No record file available."));
         return new HederaBlockValues(
                 gasLimit, latestRecordFile.getIndex(), Instant.ofEpochSecond(0, latestRecordFile.getConsensusStart()));
+    }
+
+    public static Hash ethHashFrom(final String hash) {
+        return Hash.fromHexString(StringUtils.substring(hash, 0, 64));
     }
 }
