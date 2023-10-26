@@ -302,24 +302,6 @@ class ContractService extends BaseService {
     return rows.map((row) => new ContractState(row));
   }
 
-  /**
-   * Retrieves contract results based on the eth hash
-   *
-   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
-   * @return {Promise<{ContractResult}[]>}
-   */
-  async getContractResultsByHash(hash, excludeTransactionResults = []) {
-    const transactionHashDetails = this.getContractTransactionDetailsByHash(hash);
-    if (!transactionHashDetails) {
-      return [];
-    }
-    return this.getContractResultsByTimestamps(
-      transactionHashDetails.consensusTimestamp,
-      transactionHashDetails.payerAccountId,
-      excludeTransactionResults
-    );
-  }
-
   async getContractResultsByTimestamps(timestamps, involvedContractsQuery = '', excludeTransactionResults = []) {
     let params = [timestamps];
     let transactionsFilter = '';

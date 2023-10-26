@@ -72,9 +72,7 @@ public class RecordItem implements StreamItem {
     private final int transactionIndex;
     private final TransactionRecord transactionRecord;
     private final int transactionType;
-
-    @NonFinal
-    private Map<Long, ContractTransaction> contractTransactions;
+    private final Map<Long, ContractTransaction> contractTransactions = new HashMap<>();
 
     @Getter(PRIVATE)
     private final AtomicInteger logIndex = new AtomicInteger(0);
@@ -100,7 +98,7 @@ public class RecordItem implements StreamItem {
     private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
 
     public void addContractTransaction(EntityId entityId) {
-        getContractTransactionsMap().computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
+        contractTransactions.computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
                 .contractId(key)
                 .payerAccountId(payerAccountId.getId())
                 .consensusTimestamp(consensusTimestamp)
@@ -123,14 +121,6 @@ public class RecordItem implements StreamItem {
         getEntityTransactions().computeIfAbsent(entityId.getId(), id -> entityTransactionBuilder
                 .entityId(id)
                 .build());
-    }
-
-    private Map<Long, ContractTransaction> getContractTransactionsMap() {
-        if (contractTransactions == null) {
-            contractTransactions = new HashMap<>();
-        }
-
-        return contractTransactions;
     }
 
     public Map<Long, EntityTransaction> getEntityTransactions() {
@@ -171,7 +161,7 @@ public class RecordItem implements StreamItem {
     }
 
     public Collection<ContractTransaction> getContractTransactions() {
-        var ids = new ArrayList<>(getContractTransactionsMap().keySet());
+        var ids = new ArrayList<>(contractTransactions.keySet());
         contractTransactions.values().forEach(contractTransaction -> contractTransaction.setInvolvedContractIds(ids));
         return contractTransactions.values();
     }
