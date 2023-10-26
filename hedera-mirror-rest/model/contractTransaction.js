@@ -16,7 +16,7 @@
 
 class ContractTransaction {
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static CONTRACT_ID = 'contract_id';
+  static ENTITY_ID = 'entity_id';
   static INVOLVED_CONTRACT_IDS = 'involved_contract_ids';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static tableAlias = 'ct';
@@ -34,12 +34,11 @@ class ContractTransaction {
   /**
    * Parses contract_transaction table columns into object
    */
-  constructor(contractTransaction, idColumn = 'contract_id') {
+  constructor(contractTransaction) {
     this.consensusTimestamp = contractTransaction[ContractTransaction.CONSENSUS_TIMESTAMP];
-    this.contractId = contractTransaction[ContractTransaction.CONTRACT_ID];
+    this.entityId = contractTransaction[ContractTransaction.ENTITY_ID];
     this.involvedContractIds = contractTransaction[ContractTransaction.INVOLVED_CONTRACT_IDS] || [];
     this.payerAccountId = contractTransaction[ContractTransaction.PAYER_ACCOUNT_ID];
-    this.query = `${idColumn} in (${this.involvedContractIds.join(',')})`;
   }
 }
 export default ContractTransaction;

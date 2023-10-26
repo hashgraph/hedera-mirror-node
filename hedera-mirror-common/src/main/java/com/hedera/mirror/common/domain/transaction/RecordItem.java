@@ -99,7 +99,7 @@ public class RecordItem implements StreamItem {
 
     public void addContractTransaction(EntityId entityId) {
         contractTransactions.computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
-                .contractId(key)
+                .entityId(key)
                 .payerAccountId(payerAccountId.getId())
                 .consensusTimestamp(consensusTimestamp)
                 .build());

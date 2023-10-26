@@ -1147,7 +1147,7 @@ class ContractController extends BaseController {
     return Promise.all([
       ContractService.getContractResultsByTimestamps(
         contractDetails.consensusTimestamp,
-        contractDetails.query,
+        contractDetails.involvedContractIds,
         excludedTransactionResults
       ),
       TransactionService.getEthTransactionByTimestampAndPayerId(
@@ -1156,11 +1156,14 @@ class ContractController extends BaseController {
         excludedTransactionResults
       ),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractDetails.consensusTimestamp),
-      ContractService.getContractLogsByTimestamps(contractDetails.consensusTimestamp, contractDetails.query),
+      ContractService.getContractLogsByTimestamps(
+        contractDetails.consensusTimestamp,
+        contractDetails.involvedContractIds
+      ),
       ContractService.getContractStateChangesByTimestamps(
         contractDetails.consensusTimestamp,
         contractId,
-        contractDetails.query
+        contractDetails.involvedContractIds
       ),
     ]);
   };

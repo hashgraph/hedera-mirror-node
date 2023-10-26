@@ -29,7 +29,7 @@ class TransactionHashTest {
         bytes[1] = 0x22;
         bytes[2] = 0x25;
 
-        TransactionHash.TransactionHashBuilder<?, ?> builder = TransactionHash.builder()
+        TransactionHash.TransactionHashBuilder builder = TransactionHash.builder()
                 .consensusTimestamp(1)
                 .payerAccountId(5)
                 .hash(bytes);

@@ -70,7 +70,7 @@ create index if not exists contract_state_change__id_slot_timestamp
 
 -- contract_transaction
 alter table if exists contract_transaction
-    add constraint contract_transaction__pk primary key (consensus_timestamp, contract_id);
+    add constraint contract_transaction__pk primary key (consensus_timestamp, entity_id);
 
 -- contract_transaction_hash__hash
 create index if not exists contract_transaction_hash__hash

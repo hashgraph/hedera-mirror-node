@@ -238,11 +238,11 @@ class ContractService extends BaseService {
                                        where ${ContractTransactionHash.HASH} = $1 
                                        order by ${ContractTransactionHash.CONSENSUS_TIMESTAMP} asc limit 1`;
   static involvedContractsQuery = `select ${ContractTransaction.PAYER_ACCOUNT_ID},
-                                          ${ContractTransaction.CONTRACT_ID},
+                                          ${ContractTransaction.ENTITY_ID},
                                           ${ContractTransaction.INVOLVED_CONTRACT_IDS},
                                           ${ContractTransaction.CONSENSUS_TIMESTAMP}
                    from ${ContractTransaction.tableName}
-                   where ${ContractTransaction.CONSENSUS_TIMESTAMP} = $1 and ${ContractTransaction.CONTRACT_ID} = $2`;
+                   where ${ContractTransaction.CONSENSUS_TIMESTAMP} = $1 and ${ContractTransaction.ENTITY_ID} = $2`;
   constructor() {
     super();
   }
@@ -302,7 +302,7 @@ class ContractService extends BaseService {
     return rows.map((row) => new ContractState(row));
   }
 
-  async getContractResultsByTimestamps(timestamps, involvedContractsQuery = '', excludeTransactionResults = []) {
+  async getContractResultsByTimestamps(timestamps, involvedContractIds = [], excludeTransactionResults = []) {
     let params = [timestamps];
     let transactionsFilter = '';
     let timestampsOpAndValue = '= $1';
@@ -323,8 +323,8 @@ class ContractService extends BaseService {
       }
     }
     const conditions = [`${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
-    if (involvedContractsQuery) {
-      conditions.push(involvedContractsQuery);
+    if (involvedContractIds.length) {
+      conditions.push(`${ContractResult.CONTRACT_ID} in (${involvedContractIds.join(',')})`);
     }
     const whereClause = ` where ${conditions.join(' and ')} `;
     const query = [
@@ -355,17 +355,13 @@ class ContractService extends BaseService {
     })[0];
   }
 
-  async getInvolvedContractsByTimestampAndContractId(
-    timestamp,
-    contractId,
-    idColumn = ContractTransaction.CONTRACT_ID
-  ) {
+  async getInvolvedContractsByTimestampAndContractId(timestamp, contractId) {
     if (!timestamp || contractId === null || contractId === undefined) {
       return [];
     }
     const contractDetails = await super.getRows(ContractService.involvedContractsQuery, [timestamp, contractId]);
     return contractDetails.map((row) => {
-      return new ContractTransaction(row, idColumn);
+      return new ContractTransaction(row);
     })[0];
   }
 
@@ -433,7 +429,7 @@ class ContractService extends BaseService {
     return rows.map((cr) => new ContractLog(cr));
   }
 
-  async getContractLogsByTimestamps(timestamps, involvedContractsQuery = '') {
+  async getContractLogsByTimestamps(timestamps, involvedContractIds = []) {
     let params = [timestamps];
     let timestampsOpAndValue = '= $1';
     if (Array.isArray(timestamps)) {
@@ -443,8 +439,8 @@ class ContractService extends BaseService {
     }
 
     const conditions = [`${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
-    if (involvedContractsQuery) {
-      conditions.push(involvedContractsQuery);
+    if (involvedContractIds.length) {
+      conditions.push(`${ContractLog.CONTRACT_ID} in (${involvedContractIds.join(',')})`);
     }
     const whereClause = `where ${conditions.join(' and ')}`;
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
@@ -454,7 +450,7 @@ class ContractService extends BaseService {
     return rows.map((row) => new ContractLog(row));
   }
 
-  async getContractStateChangesByTimestamps(timestamps, contractId = null, involvedContractsQuery = '') {
+  async getContractStateChangesByTimestamps(timestamps, contractId = null, involvedContractIds = []) {
     let params = [timestamps];
     let timestampsOpAndValue = '= $1';
     if (Array.isArray(timestamps)) {
@@ -463,8 +459,8 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
     const conditions = [`${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
-    if (involvedContractsQuery) {
-      conditions.push(involvedContractsQuery);
+    if (involvedContractIds.length) {
+      conditions.push(`${ContractStateChange.CONTRACT_ID} in (${involvedContractIds.join(',')})`);
     }
     if (contractId) {
       params.push(contractId);

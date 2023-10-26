@@ -233,7 +233,7 @@ const loadContractTransactions = async (contractLogs, contractResults, contractS
     for (const id of details.ids) {
       await addContractTransaction({
         consensus_timestamp: key,
-        contract_id: id,
+        entity_id: id,
         payer_account_id: details.payerAccountId,
         involved_contract_ids: `{${details.ids.join(',')}}`,
       });

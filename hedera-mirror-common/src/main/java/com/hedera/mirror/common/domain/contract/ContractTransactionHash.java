@@ -16,16 +16,36 @@
 
 package com.hedera.mirror.common.domain.contract;
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
+import org.springframework.data.domain.Persistable;
 
-@SuperBuilder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ContractTransactionHash extends TransactionHash {
-    private Long entityId;
+public class ContractTransactionHash implements Persistable<byte[]> {
+    private long consensusTimestamp;
+
+    private long entityId;
+
+    @Id
+    private byte[] hash;
+
+    private long payerAccountId;
+
+    @JsonIgnore
+    @Override
+    public byte[] getId() {
+        return hash;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
 }

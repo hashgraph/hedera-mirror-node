@@ -35,13 +35,11 @@ public class ContractTransaction {
     private Long consensusTimestamp;
 
     @jakarta.persistence.Id
-    private Long contractId;
+    private Long entityId;
 
     @Builder.Default
     @JsonSerialize(using = ListToStringSerializer.class)
     private List<Long> involvedContractIds = Collections.emptyList();
 
     private long payerAccountId;
-
-    private Long validStartNs;
 }
