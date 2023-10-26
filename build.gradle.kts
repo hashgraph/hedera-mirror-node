@@ -83,7 +83,7 @@ dependencies {
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.1.0")
-        api("org.hyperledger.besu:secp256k1:0.6.1")
+        api("org.hyperledger.besu:secp256k1:0.8.0")
         api("org.hyperledger.besu:evm:23.10.0")
         api("org.jetbrains:annotations:24.0.1")
         api("org.mapstruct:mapstruct:$mapStructVersion")

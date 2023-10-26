@@ -18,10 +18,6 @@ description = "Hedera Mirror Node Common"
 
 plugins { id("java-conventions") }
 
-repositories {
-    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
-}
-
 dependencies {
     val testClasses by configurations.creating
     annotationProcessor(group = "com.querydsl", name = "querydsl-apt", classifier = "jakarta")

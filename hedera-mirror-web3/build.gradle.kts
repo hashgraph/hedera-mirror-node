@@ -18,9 +18,7 @@ description = "Hedera Mirror Node Web3"
 
 plugins { id("spring-conventions") }
 
-repositories {
-    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
-}
+repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
 
 dependencies {
     implementation("com.hedera.evm:hedera-evm")
@@ -40,7 +38,6 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     implementation("net.java.dev.jna:jna")
-    implementation("com.swirlds:swirlds-common")
     runtimeOnly(
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
