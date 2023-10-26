@@ -40,14 +40,40 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findStorageOfContractStateChangeByBlockTimestampSuccessfulCall() {
-        ContractStateChange contractStateChange =
+        ContractStateChange olderContractState =
                 domainBuilder.contractStateChange().persist();
+        ContractStateChange contractStateChange = domainBuilder
+                .contractStateChange()
+                .customize(
+                        cs -> cs.contractId(olderContractState.getContractId())
+                                .slot(olderContractState.getSlot()))
+                .persist();
+
         assertThat(contractStateRepository.findStorageByBlockTimestamp(
                         contractStateChange.getContractId(),
                         contractStateChange.getSlot(),
                         contractStateChange.getConsensusTimestamp()))
                 .get()
                 .isEqualTo(contractStateChange.getValueWritten());
+    }
+
+    @Test
+    void findStorageOfContractStateChangeWithEmptyValueWrittenByBlockTimestampSuccessfulCall() {
+        ContractStateChange olderContractState =
+                domainBuilder.contractStateChange().persist();
+        ContractStateChange contractStateChange = domainBuilder
+                .contractStateChange()
+                .customize(cs -> cs.contractId(olderContractState.getContractId())
+                        .slot(olderContractState.getSlot())
+                        .valueWritten(null))
+                .persist();
+
+        assertThat(contractStateRepository.findStorageByBlockTimestamp(
+                        contractStateChange.getContractId(),
+                        contractStateChange.getSlot(),
+                        contractStateChange.getConsensusTimestamp()))
+                .get()
+                .isEqualTo(contractStateChange.getValueRead());
     }
 
     @Test
