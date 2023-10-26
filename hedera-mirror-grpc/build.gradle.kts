@@ -18,8 +18,6 @@ description = "Hedera Mirror Node GRPC API"
 
 plugins { id("spring-conventions") }
 
-repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
-
 dependencies {
     implementation(project(":common"))
     implementation(project(":protobuf"))

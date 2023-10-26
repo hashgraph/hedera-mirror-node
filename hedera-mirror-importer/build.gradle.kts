@@ -18,8 +18,6 @@ description = "Hedera Mirror Node Importer"
 
 plugins { id("spring-conventions") }
 
-repositories { maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") } }
-
 dependencies {
     implementation(platform("com.google.cloud:spring-cloud-gcp-dependencies"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
