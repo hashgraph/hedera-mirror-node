@@ -27,14 +27,14 @@ interface BalanceSnapshotRepository {
     int balanceSnapshot(long consensusTimestamp);
 
     /**
-     * Updates the balance snapshot from state in database.
-     * Only adds entries for items with a balance_timestamp that is greater or equal to the maxConsensusTimestamp
-     * and less than the upperRangeTimestamp.
+     * Generates a balance snapshot from state in database.
+     * Only adds entries for items with a balance_timestamp that is greater or equal to the maxConsensusTimestamp.
+     *
+     * For performant results the caller should guarantee that the table state is at the time of consensusTimestamp.
      *
      * @param maxConsensusTimestamp
-     * @param upperRangeTimestamp The upper range timestamp of the partition.
      * @param consensusTimestamp  The consensus timestamp of the balance snapshot.
      * @return The number of balance rows inserted
      */
-    int updateBalanceSnapshot(long maxConsensusTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+    int balanceSnapshotDeduplicate(long maxConsensusTimestamp, long consensusTimestamp);
 }

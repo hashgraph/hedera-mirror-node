@@ -24,7 +24,6 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamFilename.FileType;
@@ -39,6 +38,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.CustomLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -57,7 +57,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class HistoricalBalanceService {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
-    private static final String TOKEN_BALANCE_TABLE_NAME = "token_balance";
     private static final Range<Long> DEFAULT_RANGE = Range.closedOpen(0L, Long.MAX_VALUE);
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
@@ -134,21 +133,39 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                int tokenBalancesCount;
-                int accountBalancesCount;
+                Optional<Long> maxConsensusTimestamp = Optional.empty();
                 if (properties.isDeduplicate()) {
-                    var partitionRange = getPartitionRange(timestamp, ACCOUNT_BALANCE_TABLE_NAME);
-                    long maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
-                            partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
-                    accountBalancesCount = updateBalanceSnapshot(
-                            lastConsensusTimestamp, maxConsensusTimestamp, partitionRange, timestamp);
-                    tokenBalancesCount = properties.isTokenBalances()
-                            ? updateTokenBalanceSnapshot(lastConsensusTimestamp, maxConsensusTimestamp, timestamp)
-                            : 0;
-                } else {
+                    // For accurate deduplication the partition ranges of account_balance and token_balance need to be
+                    // equal
+                    var partitions = timePartitionService.getOverlappingTimePartitions(
+                            ACCOUNT_BALANCE_TABLE_NAME, lastConsensusTimestamp, timestamp);
+                    // If size >= 2 there is a partition boundary so get a full snapshot
+                    if (partitions.size() < 2) {
+                        // After v1 account_balance and token_balance are partitioned a size of 0 should throw an
+                        // exception.
+                        // In the meantime use default range for non-partitioned tables
+                        var partitionRange = partitions.size() == 0
+                                ? DEFAULT_RANGE
+                                : partitions.get(0).getTimestampRange();
+                        maxConsensusTimestamp = accountBalanceRepository.getMaxConsensusTimestampInRange(
+                                partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
+                    }
+                }
+
+                int accountBalancesCount;
+                int tokenBalancesCount;
+                if (maxConsensusTimestamp.isEmpty()) {
+                    // get a full snapshot
                     accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
                     tokenBalancesCount =
                             properties.isTokenBalances() ? tokenBalanceRepository.balanceSnapshot(timestamp) : 0;
+                } else {
+                    // get a snapshot that has no duplicates
+                    accountBalancesCount =
+                            accountBalanceRepository.balanceSnapshotDeduplicate(maxConsensusTimestamp.get(), timestamp);
+                    tokenBalancesCount = properties.isTokenBalances()
+                            ? tokenBalanceRepository.balanceSnapshotDeduplicate(maxConsensusTimestamp.get(), timestamp)
+                            : 0;
                 }
 
                 long loadEnd = Instant.now().getEpochSecond();
@@ -195,42 +212,11 @@ public class HistoricalBalanceService {
                         .map(RecordFile::getConsensusEnd)
                         .map(timestamp ->
                                 timestamp + properties.getInitialDelay().toNanos()))
-                .orElse(0L);
+                .orElse(Long.MAX_VALUE);
     }
 
     private boolean shouldGenerate(long consensusEnd, long lastConsensusTimestamp) {
         return consensusEnd - lastConsensusTimestamp
                 >= properties.getMinFrequency().toNanos();
-    }
-
-    private int updateBalanceSnapshot(
-            long lastConsensusTimestamp, long maxConsensusTimestamp, Range<Long> partitionRange, long timestamp) {
-        return partitionRange.lowerEndpoint() > lastConsensusTimestamp
-                ?
-                // Between the last snapshot and this one a partition boundary has been crossed.
-                // Add all accounts to the snapshot
-                accountBalanceRepository.balanceSnapshot(timestamp)
-                : accountBalanceRepository.updateBalanceSnapshot(
-                        maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);
-    }
-
-    private int updateTokenBalanceSnapshot(long lastConsensusTimestamp, long maxConsensusTimestamp, long timestamp) {
-        var partitionRange = getPartitionRange(timestamp, TOKEN_BALANCE_TABLE_NAME);
-        return partitionRange.lowerEndpoint() > lastConsensusTimestamp
-                ?
-                // Between the last snapshot and this one a partition boundary has been crossed.
-                // Add all token balances to the snapshot
-                tokenBalanceRepository.balanceSnapshot(timestamp)
-                : tokenBalanceRepository.updateBalanceSnapshot(
-                        maxConsensusTimestamp, partitionRange.upperEndpoint(), timestamp);
-    }
-
-    private Range<Long> getPartitionRange(long timestamp, String tableName) {
-        var partitions = timePartitionService.getTimePartitions(tableName);
-        return partitions.stream()
-                .filter(p -> p.getTimestampRange().contains(timestamp))
-                .findFirst()
-                .map(TimePartition::getTimestampRange)
-                .orElse(DEFAULT_RANGE);
     }
 }

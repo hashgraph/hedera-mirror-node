@@ -72,11 +72,10 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void updateBalanceSnapshot() {
+    void balanceSnapshotDeduplicate() {
         long lowerRangeTimestamp = 0L;
-        long upperRangeTimestamp = 600L;
         long timestamp = 100;
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(lowerRangeTimestamp, timestamp))
                 .isZero();
         assertThat(accountBalanceRepository.findAll()).isEmpty();
 
@@ -117,13 +116,13 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .collect(Collectors.toList());
 
         // Update Balance Snapshot includes all balances
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(lowerRangeTimestamp, timestamp))
                 .isEqualTo(expected.size());
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
         expected.add(buildAccountBalance(treasuryAccount, timestamp + 1));
         // Update will always insert an entry for the treasuryAccount
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp, upperRangeTimestamp, timestamp + 1))
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(timestamp, timestamp + 1))
                 .isOne();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
@@ -135,11 +134,11 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         expected.add(buildAccountBalance(treasuryAccount, timestamp2));
 
         // Insert the new entry for account and also insert an entry for the treasuryAccount
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp, upperRangeTimestamp, timestamp2))
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(timestamp, timestamp2))
                 .isEqualTo(2);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var timestamp3 = 300L;
+        long timestamp3 = 300;
         var account2 = domainBuilder
                 .entity()
                 .customize(e -> e.balanceTimestamp(timestamp3))
@@ -150,18 +149,17 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         entityRepository.save(treasuryAccount);
         expected.add(buildAccountBalance(treasuryAccount, timestamp3));
         // Updates only account2 and treasuryAccount
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(timestamp2, upperRangeTimestamp, timestamp3))
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(timestamp2, timestamp3))
                 .isEqualTo(2);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var outOfRangeTimestamp = 2L;
-        expected.add(buildAccountBalance(treasuryAccount, outOfRangeTimestamp));
-        domainBuilder
-                .entity()
-                .customize(e -> e.balanceTimestamp(outOfRangeTimestamp))
-                .persist();
-        // Update above upperRange, out of range account is not added
-        assertThat(accountBalanceRepository.updateBalanceSnapshot(0L, 1L, outOfRangeTimestamp))
+        long timestamp4 = 400;
+        account.setBalance(account.getBalance() + 1);
+        account.setBalanceTimestamp(timestamp4);
+        entityRepository.save(account);
+        expected.add(buildAccountBalance(treasuryAccount, timestamp4));
+        // Update with timestamp equal to the max consensus timestamp, only the treasury account will be updated
+        assertThat(accountBalanceRepository.balanceSnapshotDeduplicate(timestamp4, timestamp4))
                 .isOne();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
@@ -170,7 +168,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
     void getMaxConsensusTimestampInRange() {
         // With no account balances present the max consensus timestamp is 0
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
-                .isZero();
+                .isEmpty();
 
         domainBuilder
                 .accountBalance()
@@ -178,7 +176,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         // With no treasury account present the max consensus timestamp is 0
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
-                .isZero();
+                .isEmpty();
 
         var treasuryId = EntityId.of(2);
         domainBuilder
@@ -186,6 +184,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .customize(a -> a.id(new AccountBalance.Id(3L, treasuryId)))
                 .persist();
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
+                .get()
                 .isEqualTo(3L);
 
         // Only the max timestamp is returned
@@ -194,15 +193,17 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .customize(a -> a.id(new AccountBalance.Id(5L, treasuryId)))
                 .persist();
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
+                .get()
                 .isEqualTo(5L);
 
         // Only the timestamp within the range is returned
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 4L))
+                .get()
                 .isEqualTo(3L);
 
         // Outside the lower range
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(10L, 20L))
-                .isZero();
+                .isEmpty();
     }
 
     @Test

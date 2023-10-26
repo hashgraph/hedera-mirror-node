@@ -50,12 +50,11 @@ public interface TokenBalanceRepository
         select account_id, balance, :consensusTimestamp, token_id
         from token_account
         where associated is true and
-          balance_timestamp > :maxConsensusTimestamp and
-          balance_timestamp < :upperRangeTimestamp
+          balance_timestamp > :maxConsensusTimestamp
         order by account_id, token_id
         """)
     @Transactional
-    int updateBalanceSnapshot(long maxConsensusTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+    int balanceSnapshotDeduplicate(long maxConsensusTimestamp, long consensusTimestamp);
 
     @Modifying
     @Override

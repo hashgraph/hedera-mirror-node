@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -55,23 +56,22 @@ public interface AccountBalanceRepository
           id = 2 or
           (balance is not null and
            deleted is not true and
-           balance_timestamp > :maxConsensusTimestamp and
-           balance_timestamp < :upperRangeTimestamp)
+           balance_timestamp > :maxConsensusTimestamp)
         order by id
         """)
     @Transactional
-    int updateBalanceSnapshot(long maxConsensusTimestamp, long upperRangeTimestamp, long consensusTimestamp);
+    int balanceSnapshotDeduplicate(long maxConsensusTimestamp, long consensusTimestamp);
 
     @Query(
             nativeQuery = true,
             value =
                     """
-          select coalesce(max(consensus_timestamp), 0) as consensus_timestamp
+          select max(consensus_timestamp) as consensus_timestamp
           from account_balance
           where account_id = 2 and consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
         """)
     @Transactional
-    long getMaxConsensusTimestampInRange(long lowerRangeTimestamp, long upperRangeTimestamp);
+    Optional<Long> getMaxConsensusTimestampInRange(long lowerRangeTimestamp, long upperRangeTimestamp);
 
     @Override
     @EntityGraph("AccountBalance.tokenBalances")

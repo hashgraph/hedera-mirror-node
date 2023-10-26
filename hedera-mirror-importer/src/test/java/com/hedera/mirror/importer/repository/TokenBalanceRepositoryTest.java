@@ -54,11 +54,10 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void updateBalanceSnapshot() {
+    void balanceSnapshotDeduplicate() {
         long lowerRangeTimestamp = 0L;
-        long upperRangeTimestamp = 500L;
         long timestamp = 100;
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+        assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(lowerRangeTimestamp, timestamp))
                 .isZero();
         assertThat(tokenBalanceRepository.findAll()).isEmpty();
 
@@ -77,7 +76,7 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
                 .collect(Collectors.toList());
 
         // Update Balance Snapshot includes all balances
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(lowerRangeTimestamp, upperRangeTimestamp, timestamp))
+        assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(lowerRangeTimestamp, timestamp))
                 .isEqualTo(expected.size());
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
@@ -88,11 +87,11 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
         expected.add(buildTokenBalance(tokenAccount, timestamp2));
 
         // Update includes only the updated token account
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp, upperRangeTimestamp, timestamp2))
+        assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(timestamp, timestamp2))
                 .isOne();
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var timestamp3 = 300L;
+        long timestamp3 = 300;
         tokenAccount2.setBalance(tokenAccount2.getBalance() + 1);
         tokenAccount2.setBalanceTimestamp(timestamp3);
         tokenAccountRepository.save(tokenAccount2);
@@ -104,22 +103,17 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
         expected.add(buildTokenBalance(tokenAccount3, timestamp3));
 
         // Update includes only the token accounts with a balance timestamp greater than the max timestamp
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp2, upperRangeTimestamp, timestamp3))
+        assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(timestamp2, timestamp3))
                 .isEqualTo(2);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
 
-        var timestamp4 = 400L;
+        long timestamp4 = 400;
         tokenAccount.setBalance(tokenAccount.getBalance() + 1);
         tokenAccount.setBalanceTimestamp(timestamp4);
         tokenAccountRepository.save(tokenAccount);
         // Update with no change as the update happens at a timestamp equal to the max consensus timestamp
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(timestamp4, upperRangeTimestamp, timestamp4))
+        assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(timestamp4, timestamp4))
                 .isZero();
-        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-
-        domainBuilder.tokenAccount().customize(t -> t.balanceTimestamp(1L)).persist();
-        // Update with no change, above upperRange
-        assertThat(tokenBalanceRepository.updateBalanceSnapshot(0L, 1L, 2L)).isZero();
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
