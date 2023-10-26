@@ -1922,10 +1922,8 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .token()
                 .customize(t -> t.freezeDefault(true)
                         .pauseStatus(TokenPauseStatusEnum.PAUSED)
-                        .supplyType(TokenSupplyTypeEnum.FINITE)
                         .tokenId(tokenCreate.getTokenId())
-                        .totalSupply(null)
-                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)) // Not possible, testing not updated
+                        .totalSupply(null))
                 .get();
         sqlEntityListener.onToken(tokenUpdate);
         completeFileAndCommit();
@@ -1958,7 +1956,6 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .token()
                 .customize(t -> t.freezeDefault(true)
                         .pauseStatus(TokenPauseStatusEnum.PAUSED)
-                        .supplyType(TokenSupplyTypeEnum.FINITE)
                         .tokenId(tokenCreate.getTokenId())
                         .totalSupply(null))
                 .get();
@@ -1990,48 +1987,75 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
     }
 
-    @Test
-    void onTokenMergeWithCreateThenMintThenUpdate() {
+    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    void onTokenMergeWithCreateThenMintThenUpdate(int commitIndex) {
         // given
         // Create does not have a history row
         var tokenCreate = domainBuilder.token().get();
-        sqlEntityListener.onToken(tokenCreate);
-
         // Token mint does not have history
         var tokenMint = domainBuilder
                 .token()
                 .customize(t ->
-                        t.tokenId(tokenCreate.getTokenId()).timestampRange(null).totalSupply(-5_000L))
+                        t.tokenId(tokenCreate.getTokenId()).timestampRange(null).totalSupply(5_000L))
                 .get();
-        sqlEntityListener.onToken(tokenMint);
 
         // Update has a history row
         var tokenUpdate = domainBuilder
                 .token()
                 .customize(t -> t.freezeDefault(true)
                         .pauseStatus(TokenPauseStatusEnum.PAUSED)
-                        .supplyType(TokenSupplyTypeEnum.FINITE)
                         .tokenId(tokenCreate.getTokenId())
-                        .totalSupply(null))
+                        .totalSupply(300L))
                 .get();
+
+        sqlEntityListener.onToken(tokenCreate);
+
+        if (commitIndex > 0) {
+            completeFileAndCommit();
+            assertThat(tokenRepository.findAll()).containsExactly(tokenCreate);
+            assertThat(findHistory(Token.class)).isEmpty();
+        }
+
+        sqlEntityListener.onToken(tokenMint);
+
+        var mergedMint = TestUtils.clone(tokenMint);
+        mergedMint.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
+        mergedMint.setDecimals(tokenCreate.getDecimals());
+        mergedMint.setFreezeDefault(tokenCreate.getFreezeDefault());
+        mergedMint.setInitialSupply(tokenCreate.getInitialSupply());
+        mergedMint.setMaxSupply(tokenCreate.getMaxSupply());
+        mergedMint.setSupplyType(tokenCreate.getSupplyType());
+        mergedMint.setTimestampRange(tokenCreate.getTimestampRange());
+        mergedMint.setType(tokenCreate.getType());
+
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenRepository.findAll()).containsExactly(mergedMint);
+            assertThat(findHistory(Token.class)).isEmpty();
+        }
+
         sqlEntityListener.onToken(tokenUpdate);
 
-        completeFileAndCommit();
-
-        // then
         var tokenMerged = TestUtils.clone(tokenUpdate);
         tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
         tokenMerged.setDecimals(tokenCreate.getDecimals());
         tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
         tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
-        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
-        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
-        tokenMerged.setType(tokenCreate.getType());
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
 
         var tokenHistory = TestUtils.clone(tokenCreate);
+
+        tokenHistory.setName(tokenMint.getName());
+        tokenHistory.setSymbol(tokenMint.getSymbol());
+        tokenHistory.setTreasuryAccountId(tokenMint.getTreasuryAccountId());
         tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
-        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
+        tokenHistory.setTotalSupply(5000L);
+
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+            assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
+        }
     }
 
     @Test
@@ -2092,7 +2116,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         var expected = TestUtils.clone(tokenCreate);
         expected.setTimestampLower(tokenDissociateDeleted.getTimestampLower());
-        expected.setTotalSupply(expected.getTotalSupply() - 10);
+        expected.setTotalSupply(expected.getTotalSupply());
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(expected);
 
         var history = TestUtils.clone(tokenCreate);

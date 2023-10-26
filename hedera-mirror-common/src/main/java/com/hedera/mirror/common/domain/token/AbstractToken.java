@@ -111,12 +111,15 @@ public class AbstractToken implements History {
     }
 
     public void updateTotalSupply(Long newTotalSupply) {
-        if (newTotalSupply != null && this.totalSupply != null) {
-            if (this.totalSupply < 0) {
-                this.totalSupply += newTotalSupply;
-            } else {
-                this.totalSupply = newTotalSupply;
-            }
+        if (newTotalSupply == null) {
+            return;
+        }
+
+        if (newTotalSupply < 0) {
+            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
+            totalSupply = totalSupply == null ? newTotalSupply : totalSupply + newTotalSupply;
+        } else {
+            totalSupply = newTotalSupply;
         }
     }
 }

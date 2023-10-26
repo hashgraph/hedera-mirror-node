@@ -914,15 +914,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setWipeKey(src.getWipeKey());
         }
 
-        Long destTotalSupply = dest.getTotalSupply();
-        Long srcTotalSupply = src.getTotalSupply();
-
-        if (destTotalSupply == null) {
-            dest.setTotalSupply(srcTotalSupply);
-        } else if (srcTotalSupply != null && destTotalSupply < 0) {
-            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
-            dest.setTotalSupply(srcTotalSupply + destTotalSupply);
-        }
+        dest.updateTotalSupply(src.getTotalSupply());
 
         return dest;
     }
