@@ -22,7 +22,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class AbstractTokenTest {
+class AbstractTokenTest {
 
     @ParameterizedTest
     @CsvSource(
