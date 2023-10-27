@@ -23,6 +23,7 @@ import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
 import * as math from 'mathjs';
 import * as utils from './utils';
+import config from './config.js';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
 
@@ -100,7 +101,6 @@ const getBalances = async (req, res) => {
     order,
     limit,
   } = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
-  let sqlQuery;
 
   res.locals[constants.responseDataLabel] = {
     timestamp: null,
@@ -110,35 +110,26 @@ const getBalances = async (req, res) => {
     },
   };
 
+  let sqlQuery;
   if (tsQuery) {
-    let consensusTsQuery = `ab.consensus_timestamp = ?`;
-    if (!accountQuery) {
-      // Use a single balanceTimestamp to improve query performance
-      const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams, order);
+    if (!config.query.deduplicateBalances) {
+      const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams);
+      if (balanceTimestamp === undefined) {
+        return;
+      }
+      sqlQuery = await getBalancesQuery(accountQuery, balanceQuery, limitQuery, order, pubKeyQuery);
       tsParams = [balanceTimestamp, balanceTimestamp];
     } else {
-      // For queries with account(s) specified, a timestamp range including the lower bound of the partition increases performance
-      consensusTsQuery = `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
-      // Get partition lower bound by subtracting 31 days from the timestamp
-      // Queries with this lower bound will hit two partitions at most
-      const upperBound = tsParams[0];
-      let oneMonthTimestamp = math.subtract(upperBound, NS_IN_MONTH);
-      const lowerPartitionBound = oneMonthTimestamp >= 0 ? oneMonthTimestamp : 0;
-      tsParams = [lowerPartitionBound, upperBound, lowerPartitionBound, upperBound];
+      [sqlQuery, tsParams] = await getDeduplicateBalancesQuery(
+        accountQuery,
+        balanceQuery,
+        limitQuery,
+        order,
+        pubKeyQuery,
+        tsParams,
+        tsQuery
+      );
     }
-
-    // Only need to join entity if we're selecting on publickey
-    const joinEntityClause = pubKeyQuery ? entityJoin : '';
-    const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, accountQuery);
-    const whereClause = `
-      where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
-    sqlQuery = `
-      select distinct on (account_id) ab.*, (${tokenBalanceSubQuery}) as token_balances
-      from account_balance ab
-      ${joinEntityClause}
-      ${whereClause}
-      order by ab.account_id ${order}, ab.consensus_timestamp desc
-      ${limitQuery}`;
   } else {
     // use current balance from entity table when there's no timestamp query filter
     const conditions = [accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ');
@@ -185,6 +176,61 @@ const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
   const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
   return rows[0]?.consensus_timestamp;
+};
+
+const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery) => {
+  // Only need to join entity if we're selecting on publickey
+  const joinEntityClause = pubKeyQuery ? entityJoin : '';
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order);
+  const whereClause = `
+      where ${[`ab.consensus_timestamp = ?`, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+  return `
+      select ab.*, (${tokenBalanceSubQuery}) as token_balances
+      from account_balance ab
+      ${joinEntityClause}
+      ${whereClause}
+      order by ab.account_id ${order}
+      ${limitQuery}`;
+};
+
+const getDeduplicateBalancesQuery = async (
+  accountQuery,
+  balanceQuery,
+  limitQuery,
+  order,
+  pubKeyQuery,
+  tsParams,
+  tsQuery
+) => {
+  let consensusTsQuery = `ab.consensus_timestamp = ?`;
+  if (!accountQuery) {
+    // Use a single balanceTimestamp to improve query performance
+    const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams, order);
+    tsParams = [balanceTimestamp, balanceTimestamp];
+  } else {
+    // For queries with account(s) specified, a timestamp range including the lower bound of the partition increases performance
+    consensusTsQuery = `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
+    // Get partition lower bound by subtracting 31 days from the timestamp
+    // Queries with this lower bound will hit two partitions at most
+    const upperBound = tsParams[0];
+    let oneMonthTimestamp = math.subtract(upperBound, NS_IN_MONTH);
+    const lowerPartitionBound = oneMonthTimestamp >= 0 ? oneMonthTimestamp : 0;
+    tsParams = [lowerPartitionBound, upperBound, lowerPartitionBound, upperBound];
+  }
+
+  // Only need to join entity if we're selecting on publickey
+  const joinEntityClause = pubKeyQuery ? entityJoin : '';
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, accountQuery);
+  const whereClause = `
+      where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+  const sqlQuery = `
+      select distinct on (account_id) ab.*, (${tokenBalanceSubQuery}) as token_balances
+      from account_balance ab
+      ${joinEntityClause}
+      ${whereClause}
+      order by ab.account_id ${order}, ab.consensus_timestamp desc
+      ${limitQuery}`;
+  return [sqlQuery, tsParams];
 };
 
 const getTokenBalanceSubQuery = (order, accountQuery) => {

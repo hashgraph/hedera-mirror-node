@@ -1,14 +1,19 @@
 {
   "description": "Balances api call with deduplicated account balances",
   "setup": {
+    "config": {
+      "query": {
+        "deduplicateBalances": true
+      }
+    },
     "balances": [
       {
-        "timestamp": 1566560003000000001,
+        "timestamp": 15,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 1566560003000000001,
+        "timestamp": 15,
         "id": 17,
         "realm_num": 1,
         "balance": 70,
@@ -24,18 +29,18 @@
         ]
       },
       {
-        "timestamp": 1568238403000000000,
+        "timestamp": 30,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 1568238403000000000,
+        "timestamp": 30,
         "id": 18,
         "realm_num": 1,
         "balance": 80
       },
       {
-        "timestamp": 1568238403000000000,
+        "timestamp": 30,
         "id": 20,
         "realm_num": 1,
         "balance": 19,
@@ -47,18 +52,18 @@
         ]
       },
       {
-        "timestamp": 1569238403000000000,
+        "timestamp": 45,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 1569238403000000000,
+        "timestamp": 45,
         "id": 19,
         "realm_num": 1,
         "balance": 90
       },
       {
-        "timestamp": 1569238403000000000,
+        "timestamp": 45,
         "id": 20,
         "realm_num": 1,
         "balance": 20,
@@ -68,13 +73,19 @@
             "balance": 1001
           }
         ]
+      },
+      {
+        "timestamp": 45,
+        "id": 21,
+        "realm_num": 1,
+        "balance": 21
       }
     ]
   },
-  "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1569238403.000000000",
+  "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=0.000000045",
   "responseStatus": 200,
   "responseJson": {
-    "timestamp": "1569238403.000000000",
+    "timestamp": "0.000000045",
     "balances": [
       {
         "account": "0.1.20",
