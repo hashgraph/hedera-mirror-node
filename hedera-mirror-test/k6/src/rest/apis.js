@@ -18,13 +18,13 @@ import exec from 'k6/execution';
 import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.3/index.js';
 
 import {getTestReportFilename, markdownReport} from '../lib/common.js';
-import {funcs, options, requiredParameters, scenarioDurationGauge, scenarios} from './test/index.js';
+import {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} from './test/index.js';
 import {setupTestParameters} from './libex/parameters.js';
 
 function handleSummary(data) {
   return {
     stdout: textSummary(data, {indent: ' ', enableColors: true}),
-    [getTestReportFilename()]: markdownReport(data, true, funcs, scenarios),
+    [getTestReportFilename()]: markdownReport(data, true, funcs, scenarios, getUrlFuncs),
   };
 }
 

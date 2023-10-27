@@ -21,15 +21,17 @@ import {accountListName} from '../libex/constants.js';
 
 const urlTag = '/accounts?balance=false&account.publickey={publicKey}';
 
+const getUrl = (testParameters) => `/accounts?balance=false&account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}`;
+
 const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsBalanceFalsePubkey') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL_PREFIX']}/accounts?balance=false&account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}${getUrl(testParameters)}`;
     return http.get(url);
   })
   .requiredParameters('DEFAULT_PUBLIC_KEY')
   .check('Accounts balance false with publickey OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
-export {options, run, setup};
+export {getUrl, options, run, setup};
