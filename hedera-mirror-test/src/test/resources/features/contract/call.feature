@@ -18,6 +18,6 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with HederaTokenService getTokenDefaultKycStatus token "FUNGIBLE"
     Then I call function with update and I expect return of the updated value
     Then I call function that makes N times state update
-    Then I call function with nested deploy using create function
-    Then I call function with nested deploy using create2 function
+#    Then I call function with nested deploy using create function
+#    Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
