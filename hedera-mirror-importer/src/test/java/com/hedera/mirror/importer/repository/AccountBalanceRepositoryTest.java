@@ -94,10 +94,6 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.balance(null).balanceTimestamp(null))
                 .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.deleted(true).balanceTimestamp(1L))
-                .persist();
         var fileWithBalance = domainBuilder
                 .entity()
                 .customize(e -> e.balanceTimestamp(1L).type(EntityType.FILE))

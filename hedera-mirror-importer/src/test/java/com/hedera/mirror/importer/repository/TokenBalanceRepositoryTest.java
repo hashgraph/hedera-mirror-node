@@ -69,7 +69,6 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
                 .tokenAccount()
                 .customize(t -> t.balanceTimestamp(1L))
                 .persist();
-        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
 
         var expected = Stream.of(tokenAccount, tokenAccount2)
                 .map(t -> buildTokenBalance(t, timestamp))

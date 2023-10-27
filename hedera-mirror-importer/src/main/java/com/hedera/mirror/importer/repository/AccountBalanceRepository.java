@@ -55,7 +55,6 @@ public interface AccountBalanceRepository
         where
           id = 2 or
           (balance is not null and
-           deleted is not true and
            balance_timestamp > :maxConsensusTimestamp)
         order by id
         """)

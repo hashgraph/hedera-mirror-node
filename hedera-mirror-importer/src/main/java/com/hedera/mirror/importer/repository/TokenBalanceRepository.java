@@ -49,8 +49,7 @@ public interface TokenBalanceRepository
         insert into token_balance (account_id, balance, consensus_timestamp, token_id)
         select account_id, balance, :consensusTimestamp, token_id
         from token_account
-        where associated is true and
-          balance_timestamp > :maxConsensusTimestamp
+        where balance_timestamp > :maxConsensusTimestamp
         order by account_id, token_id
         """)
     @Transactional
