@@ -713,6 +713,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenAccountRepository.findById(expectedTokenAccount.getId()))
                 .get()
                 .isEqualTo(expectedTokenAccount);
+        // No history row should be created for deleted token dissociate.
+        assertThat(tokenHistoryRepository.count()).isZero();
     }
 
     @Test

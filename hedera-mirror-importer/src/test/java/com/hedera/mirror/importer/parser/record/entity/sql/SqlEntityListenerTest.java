@@ -1981,6 +1981,37 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
     }
 
+    @Test
+    void onTokenMergeWithCreateThenUpdateThenBurn() {
+        // given
+        // Create does not have a history row
+        var tokenCreate = domainBuilder.token().get();
+
+        // Token mint does not have history
+        var tokenMint = Token.builder()
+                .tokenId(tokenCreate.getTokenId())
+                .totalSupply(5000L)
+                .build();
+
+        // Token burn does not have history
+        var tokenBurn = Token.builder()
+                .tokenId(tokenCreate.getTokenId())
+                .totalSupply(-500L)
+                .build();
+
+        sqlEntityListener.onToken(tokenCreate);
+        sqlEntityListener.onToken(tokenMint);
+        sqlEntityListener.onToken(tokenBurn);
+
+        completeFileAndCommit();
+
+        // then
+        tokenCreate.setTotalSupply(4500L);
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenCreate);
+
+        assertThat(findHistory(Token.class)).isEmpty();
+    }
+
     @ValueSource(ints = {1, 2, 3})
     @ParameterizedTest
     void onTokenMergeWithCreateThenMintThenUpdate(int commitIndex) {
