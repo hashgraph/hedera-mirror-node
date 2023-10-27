@@ -914,6 +914,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setWipeKey(src.getWipeKey());
         }
 
+        // This method should not be called with negative total supply since wipe/burn/token dissociate of a deleted
+        // token will not have history so will not reach here.
         dest.updateTotalSupply(src.getTotalSupply());
 
         return dest;
