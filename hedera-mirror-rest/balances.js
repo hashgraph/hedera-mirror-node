@@ -220,7 +220,7 @@ const getDeduplicateBalancesQuery = async (
 
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, accountQuery);
+  const tokenBalanceSubQuery = getTokenBalanceDeduplicateSubQuery(order, accountQuery);
   const whereClause = `
       where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
   const sqlQuery = `
@@ -233,7 +233,20 @@ const getDeduplicateBalancesQuery = async (
   return [sqlQuery, tsParams];
 };
 
-const getTokenBalanceSubQuery = (order, accountQuery) => {
+const getTokenBalanceSubQuery = (order) => {
+  return `
+    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+    from (
+      select token_id, balance
+      from token_balance tb
+      where tb.account_id = ab.account_id
+        and tb.consensus_timestamp = ?
+      order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}
+    ) as account_token_balance`;
+};
+
+const getTokenBalanceDeduplicateSubQuery = (order, accountQuery) => {
   const consensusTsQuery = accountQuery
     ? 'tb.consensus_timestamp >= ? and tb.consensus_timestamp <= ?'
     : 'tb.consensus_timestamp = ?';
