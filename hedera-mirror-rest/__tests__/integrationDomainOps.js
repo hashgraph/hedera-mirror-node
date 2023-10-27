@@ -196,7 +196,7 @@ const loadContractStateChanges = async (contractStateChanges) => {
 };
 
 const loadContractTransactions = async (contractLogs, contractResults, contractStateChanges) => {
-  const mergedLogs = (contractResults || []).map((log) => {
+  const mergedLogs = (contractLogs || []).map((log) => {
     return {...contractLogDefaults, ...log};
   });
   const mergedResults = (contractResults || []).map((result) => {

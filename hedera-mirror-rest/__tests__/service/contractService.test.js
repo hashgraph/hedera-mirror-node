@@ -1409,3 +1409,279 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
     );
   });
 });
+
+describe('ContractService.getContractTransactionDetailsByHash tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
+  const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
+  const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
+  const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+  const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+  const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
+
+  const inputContractResults = [
+    {
+      consensus_timestamp: 1,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 11,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 2,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: duplicateTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 12,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 3,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: wrongNonceTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 13,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 4,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 14,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 5,
+      payer_account_id: 10,
+      type: contractCreateType,
+      transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
+      transaction_nonce: 15,
+      gasLimit: 1000,
+    },
+  ];
+
+  const inputEthTransaction = [
+    {
+      consensus_timestamp: 1,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 2,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 3,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 4,
+      hash: ethereumTxHash,
+    },
+  ];
+
+  const expectedTransactionDetails = [
+    {
+      consensusTimestamp: 1,
+      entityId: 0,
+      hash: ethereumTxHashBuffer,
+      payerAccountId: 10,
+    },
+    {
+      consensusTimestamp: 2,
+      entityId: 0,
+      hash: ethereumTxHashBuffer,
+      payerAccountId: 10,
+    },
+    {
+      consensusTimestamp: 3,
+      entityId: 0,
+      hash: ethereumTxHashBuffer,
+      payerAccountId: 10,
+    },
+    {
+      consensusTimestamp: 4,
+      entityId: 0,
+      hash: ethereumTxHashBuffer,
+      payerAccountId: 10,
+    },
+  ];
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractResults(inputContractResults);
+    await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
+  });
+
+  test('No match', async () => {
+    const contractDetails = await ContractService.getContractTransactionDetailsByHash(
+      Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
+    );
+
+    expect(contractDetails).toHaveLength(0);
+  });
+
+  test('Match earliest transaction by same hash', async () => {
+    const transactionDetails = await ContractService.getContractTransactionDetailsByHash(ethereumTxHashBuffer, [], 1);
+    expect(transactionDetails).toEqual([expectedTransactionDetails[0]]);
+  });
+
+  test('Match all transactions by same hash', async () => {
+    const transactionDetails = await ContractService.getContractTransactionDetailsByHash(ethereumTxHashBuffer);
+    expect(transactionDetails).toEqual(expectedTransactionDetails);
+  });
+
+  test('Match all transactions with no duplicates and wrong nonces', async () => {
+    const transactionDetails = await ContractService.getContractTransactionDetailsByHash(ethereumTxHashBuffer, [
+      duplicateTransactionResult,
+      wrongNonceTransactionResult,
+    ]);
+    expect(transactionDetails).toEqual([expectedTransactionDetails[0], expectedTransactionDetails[3]]);
+  });
+
+  test('Match the earliest non successful transaction', async () => {
+    const transactionDetails = await ContractService.getContractTransactionDetailsByHash(
+      ethereumTxHashBuffer,
+      [successTransactionResult],
+      1
+    );
+    expect(transactionDetails).toEqual([expectedTransactionDetails[1]]);
+  });
+});
+
+describe('ContractService.getInvolvedContractsByTimestampAndContractId tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
+  const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+  const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+  const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
+
+  const inputContractResults = [
+    {
+      consensus_timestamp: 1,
+      contract_id: 1,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 11,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 2,
+      contract_id: 1,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: duplicateTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 12,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 3,
+      contract_id: 1,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: wrongNonceTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 13,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 4,
+      contract_id: 1,
+      payer_account_id: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      transaction_nonce: 14,
+      gasLimit: 1000,
+    },
+  ];
+
+  const inputContractStateChanges = [
+    {
+      consensus_timestamp: 1,
+      contract_id: 10,
+      payer_account_id: 10,
+      slot: '01',
+      value_read: '0101',
+      value_written: 'a1a1',
+    },
+    {
+      consensus_timestamp: 1,
+      contract_id: 11,
+      migration: true,
+      payer_account_id: 10,
+      slot: '02',
+      value_read: '0202',
+      value_written: 'a2a2',
+    },
+  ];
+
+  const inputContractLogs = [
+    {
+      consensus_timestamp: 1,
+      contract_id: 22,
+      data: '0x0012',
+      index: 0,
+      payer_account_id: 10,
+      root_contract_id: 1,
+      topic0: '0x000a',
+    },
+    {
+      consensus_timestamp: 1,
+      contract_id: 21,
+      data: '0x0013',
+      index: 1,
+      payer_account_id: 10,
+      root_contract_id: 1,
+      topic0: '0x000b',
+    },
+  ];
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractResults(inputContractResults);
+    await integrationDomainOps.loadContractTransactions(
+      inputContractLogs,
+      inputContractResults,
+      inputContractStateChanges
+    );
+  });
+
+  test('No match', async () => {
+    const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, 0);
+
+    expect(contractDetails).toBeUndefined();
+  });
+
+  test('Missing timestamp', async () => {
+    const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(undefined, 1);
+
+    expect(contractDetails).toBeUndefined();
+  });
+
+  test('Missing contractId', async () => {
+    const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, undefined);
+
+    expect(contractDetails).toBeUndefined();
+  });
+
+  test('Finds involved contract ids', async () => {
+    const transactionDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, 1);
+    const expected = [1, 21, 22, 11, 10];
+    expect(transactionDetails.involvedContractIds).toContainAllValues(expected);
+  });
+});

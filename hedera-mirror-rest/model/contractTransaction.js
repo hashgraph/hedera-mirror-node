@@ -19,18 +19,8 @@ class ContractTransaction {
   static ENTITY_ID = 'entity_id';
   static INVOLVED_CONTRACT_IDS = 'involved_contract_ids';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
-  static tableAlias = 'ct';
   static tableName = 'contract_transaction';
 
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
   /**
    * Parses contract_transaction table columns into object
    */

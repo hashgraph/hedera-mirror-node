@@ -1060,11 +1060,12 @@ class ContractController extends BaseController {
     const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      transactionDetails = await ContractService.getContractTransactionDetailsByHash(
+      const detailsByHash = await ContractService.getContractTransactionDetailsByHash(
         ethHash,
         excludeTransactionResults,
         1
       );
+      transactionDetails = detailsByHash[0];
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
@@ -1202,13 +1203,12 @@ class ContractController extends BaseController {
     } else {
       transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
-      tx = tx[0];
     }
 
     let payerAccountId;
-    if (tx) {
-      consensusTimestamp = tx.consensusTimestamp;
-      payerAccountId = transactionId ? transactionId.getEntityId().getEncodedId() : tx.payerAccountId;
+    if (tx.length) {
+      consensusTimestamp = tx[0].consensusTimestamp;
+      payerAccountId = transactionId ? transactionId.getEntityId().getEncodedId() : tx[0].payerAccountId;
     } else {
       throw new NotFoundError();
     }

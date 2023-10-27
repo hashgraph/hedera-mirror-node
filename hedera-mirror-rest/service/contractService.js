@@ -353,12 +353,12 @@ class ContractService extends BaseService {
     const transactionHashRows = await super.getRows(query.join('\n'), [hash], 'getTransactionHashDetailsByHash');
     return transactionHashRows.map((row) => {
       return new ContractTransactionHash(row);
-    })[0];
+    });
   }
 
   async getInvolvedContractsByTimestampAndContractId(timestamp, contractId) {
     if (!timestamp || contractId === null || contractId === undefined) {
-      return [];
+      return undefined;
     }
     const contractDetails = await super.getRows(ContractService.involvedContractsQuery, [timestamp, contractId]);
     return contractDetails.map((row) => {
