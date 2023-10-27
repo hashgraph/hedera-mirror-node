@@ -87,15 +87,13 @@ class TransactionService extends BaseService {
     );
   }
 
-  async getEthTransactionByTimestampAndPayerId(timestamp, payerId, excludeTransactionResults = []) {
+  async getEthTransactionByTimestampAndPayerId(timestamp, payerId) {
     const params = [timestamp, payerId];
-    const transactionsFilter = this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
     const query = [
       TransactionService.ethereumTransactionDetailsQuery,
       `where ${EthereumTransaction.getFullName(
         EthereumTransaction.CONSENSUS_TIMESTAMP
       )} = $1 and ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} = $2`,
-      transactionsFilter,
     ].join('\n');
 
     const rows = await super.getRows(query, params, 'getEthTransactionByTimestampAndPayerId');

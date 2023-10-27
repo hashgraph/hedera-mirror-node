@@ -1034,6 +1034,7 @@ const contractTransactionHashDefaults = {
   entity_id: contractResultDefaults.contract_id,
   hash: contractResultDefaults.transaction_hash,
   payer_account_id: contractResultDefaults.payer_account_id,
+  transaction_result: contractResultDefaults.transaction_result,
 };
 
 const contractTransactionHashInsertFields = Object.keys(contractTransactionHashDefaults);
@@ -1053,6 +1054,7 @@ const addContractResult = async (contractResultInput) => {
     entity_id: contractResult.contract_id,
     hash: contractResult.transaction_hash,
     payer_account_id: contractResult.payer_account_id,
+    transaction_result: contractResult.transaction_result,
   };
   await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
   await insertDomainObject('contract_transaction_hash', contractTransactionHashInsertFields, contractHash);

@@ -98,6 +98,7 @@ public class ContractResult implements Persistable<Long> {
                 .hash(transactionHash)
                 .entityId(contractId)
                 .payerAccountId(payerAccountId.getId())
+                .transactionResult(transactionResult)
                 .build();
     }
 }

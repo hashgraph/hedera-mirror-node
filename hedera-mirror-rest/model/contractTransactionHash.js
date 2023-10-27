@@ -19,6 +19,7 @@ class ContractTransactionHash {
   static ENTITY_ID = 'entity_id';
   static HASH = 'hash';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
+  static TRANSACTION_RESULT = 'transaction_result';
   static tableAlias = 'cth';
   static tableName = 'contract_transaction_hash';
 

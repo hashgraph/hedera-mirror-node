@@ -37,6 +37,8 @@ public class ContractTransactionHash implements Persistable<byte[]> {
 
     private long payerAccountId;
 
+    private Integer transactionResult;
+
     @JsonIgnore
     @Override
     public byte[] getId() {

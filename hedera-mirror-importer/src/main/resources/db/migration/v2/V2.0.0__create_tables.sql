@@ -191,10 +191,11 @@ comment on table contract_transaction is 'Maps contract parties to contract tran
 
 create table if not exists contract_transaction_hash
 (
-    consensus_timestamp bigint not null,
-    entity_id           bigint not null,
-    hash                bytea  not null,
-    payer_account_id    bigint not null
+    consensus_timestamp bigint   not null,
+    hash                bytea    not null,
+    payer_account_id    bigint   not null,
+    entity_id           bigint   not null,
+    transaction_result  smallint not null
 );
 comment on table contract_transaction_hash is 'First 32 bytes of network transaction hash (or ethereum hash) to transaction details mapping';
 

@@ -1060,7 +1060,11 @@ class ContractController extends BaseController {
     const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      transactionDetails = await ContractService.getContractTransactionDetailsByHash(ethHash);
+      transactionDetails = await ContractService.getContractTransactionDetailsByHash(
+        ethHash,
+        excludeTransactionResults,
+        1
+      );
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
@@ -1147,13 +1151,11 @@ class ContractController extends BaseController {
     return Promise.all([
       ContractService.getContractResultsByTimestamps(
         contractDetails.consensusTimestamp,
-        contractDetails.involvedContractIds,
-        excludedTransactionResults
+        contractDetails.involvedContractIds
       ),
       TransactionService.getEthTransactionByTimestampAndPayerId(
         contractDetails.consensusTimestamp,
-        contractDetails.payerAccountId,
-        excludedTransactionResults
+        contractDetails.payerAccountId
       ),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractDetails.consensusTimestamp),
       ContractService.getContractLogsByTimestamps(
@@ -1206,7 +1208,7 @@ class ContractController extends BaseController {
     let payerAccountId;
     if (tx) {
       consensusTimestamp = tx.consensusTimestamp;
-      payerAccountId = tx.payerAccountId;
+      payerAccountId = transactionId ? transactionId.getEntityId().getEncodedId() : tx.payerAccountId;
     } else {
       throw new NotFoundError();
     }
