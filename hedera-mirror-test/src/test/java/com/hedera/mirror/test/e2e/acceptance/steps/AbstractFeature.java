@@ -38,6 +38,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -199,6 +200,19 @@ abstract class AbstractFeature {
 
         Function function = Function.fromJson(json);
         return Strings.encode(function.encodeCallWithArgs(args));
+    }
+
+    protected byte[] encodeDataToByteArray(ContractResource resource, SelectorInterface method, Object... args) {
+        String json;
+        try (var in = getResourceAsStream(resource.getPath())) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Function function = Function.fromJson(json);
+        ByteBuffer byteBuffer = function.encodeCallWithArgs(args);
+        return byteBuffer.array();
     }
 
     protected String encodeData(SelectorInterface method, Object... args) {
