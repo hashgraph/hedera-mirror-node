@@ -860,6 +860,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return previous;
         }
 
+        if (!previous.hasHistory() && current.hasHistory()) {
+            current.updateTotalSupply(previous.getTotalSupply());
+            return current;
+        }
+
         // If previous doesn't have history, merge reversely from current to previous
         var src = previous.hasHistory() ? previous : current;
         var dest = previous.hasHistory() ? current : previous;

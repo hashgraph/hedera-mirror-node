@@ -1949,38 +1949,32 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         // Create does not have a history row
         var tokenCreate = domainBuilder.token().get();
+        var ts = tokenCreate.getCreatedTimestamp();
         sqlEntityListener.onToken(tokenCreate);
 
         // Update has a history row
-        var tokenUpdate = domainBuilder
-                .token()
-                .customize(t -> t.freezeDefault(true)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
-                        .tokenId(tokenCreate.getTokenId())
-                        .totalSupply(null))
-                .get();
+        var tokenUpdate = Token.builder()
+                .name("UpdateToken")
+                .tokenId(tokenCreate.getTokenId())
+                .timestampRange(Range.atLeast(ts + 1))
+                .build();
         sqlEntityListener.onToken(tokenUpdate);
 
         // Token mint does not have history
-        var tokenMint = domainBuilder
-                .token()
-                .customize(t ->
-                        t.tokenId(tokenCreate.getTokenId()).timestampRange(null).totalSupply(5_000L))
-                .get();
+        var tokenMint = Token.builder()
+                .tokenId(tokenCreate.getTokenId())
+                .totalSupply(5000L)
+                .build();
+
         sqlEntityListener.onToken(tokenMint);
         completeFileAndCommit();
 
         // then
-        var tokenMerged = TestUtils.clone(tokenUpdate);
-        tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
-        tokenMerged.setDecimals(tokenCreate.getDecimals());
-        tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
-        tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
-        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
-        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
-        tokenMerged.setType(tokenCreate.getType());
-        tokenMerged.setTotalSupply(tokenMint.getTotalSupply());
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+        var tokenMerge = TestUtils.clone(tokenCreate);
+        tokenMerge.setName(tokenUpdate.getName());
+        tokenMerge.setTimestampRange(tokenUpdate.getTimestampRange());
+        tokenMerge.setTotalSupply(tokenMint.getTotalSupply());
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerge);
 
         var tokenHistory = TestUtils.clone(tokenCreate);
         tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
@@ -2003,7 +1997,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // Update has a history row
         var tokenUpdate = Token.builder()
-                .freezeDefault(true)
+                .name("UpdateToken")
                 .tokenId(tokenCreate.getTokenId())
                 .timestampRange(Range.atLeast(ts + 1))
                 .build();
@@ -2031,7 +2025,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         var tokenMerge = TestUtils.clone(tokenCreate);
-        tokenMerge.setFreezeDefault(tokenUpdate.getFreezeDefault());
+        tokenMerge.setName(tokenUpdate.getName());
         tokenMerge.setTimestampRange(tokenUpdate.getTimestampRange());
 
         var tokenHistory = TestUtils.clone(tokenCreate);
