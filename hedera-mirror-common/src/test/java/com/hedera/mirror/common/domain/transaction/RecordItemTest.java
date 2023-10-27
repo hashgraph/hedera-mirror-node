@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.exception.ProtobufException;
@@ -57,6 +58,8 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
@@ -577,6 +580,66 @@ class RecordItemTest {
                 .build();
 
         assertThat(recordItem.getTransactionType()).isEqualTo(TransactionBody.DataCase.DATA_NOT_SET.getNumber());
+    }
+
+    @Test
+    void testAddContractTransaction() {
+        var random = new SecureRandom();
+        long id = random.nextLong(2000) + 2000L;
+        var now = Instant.now();
+        var payerAccountId = AccountID.newBuilder().setAccountNum(id++).build();
+        long consensusTimestamp = now.getEpochSecond() * 1_000_000_000 + now.getNano();
+        var validStart =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond() - 1).setNanos(now.getNano());
+        var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart))
+                .build();
+        var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+        var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.toByteString())
+                .build();
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var recordItem = RecordItem.builder()
+                .payerAccountId(EntityId.of(payerAccountId))
+                .transaction(transaction)
+                .transactionRecord(transactionRecord)
+                .build();
+        var account = EntityId.of(id++);
+
+        var expected1 = ContractTransaction.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .payerAccountId(payerAccountId.getAccountNum())
+                .entityId(account.getId())
+                .involvedContractIds(Collections.singletonList(account.getId()))
+                .build();
+
+        recordItem.addContractTransaction(account);
+        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1);
+
+        // adding same id doesn't result in additional record
+        recordItem.addContractTransaction(account);
+        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1);
+
+        // additional id results in another transaction record and the first is updated to include id of the new
+        var account2 = EntityId.of(id);
+        expected1.setInvolvedContractIds(Arrays.asList(account.getId(), account2.getId()));
+        var expected2 = ContractTransaction.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .payerAccountId(payerAccountId.getAccountNum())
+                .entityId(account2.getId())
+                .involvedContractIds(Arrays.asList(account.getId(), account2.getId()))
+                .build();
+        recordItem.addContractTransaction(account2);
+        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1, expected2);
     }
 
     @SuppressWarnings("java:S5778")

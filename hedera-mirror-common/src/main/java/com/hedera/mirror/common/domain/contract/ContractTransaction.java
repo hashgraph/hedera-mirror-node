@@ -19,17 +19,22 @@ package com.hedera.mirror.common.domain.contract;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.ListToStringSerializer;
 import jakarta.persistence.Entity;
+import jakarta.persistence.IdClass;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 @Data
 @Entity
 @NoArgsConstructor
-@SuperBuilder
+@AllArgsConstructor
+@Builder
+@IdClass(ContractTransaction.Id.class)
 public class ContractTransaction {
     @jakarta.persistence.Id
     private Long consensusTimestamp;
@@ -42,4 +47,15 @@ public class ContractTransaction {
     private List<Long> involvedContractIds = Collections.emptyList();
 
     private long payerAccountId;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Id implements Serializable {
+        @Serial
+        private static final long serialVersionUID = -6807023295883699004L;
+
+        private long consensusTimestamp;
+        private long entityId;
+    }
 }
