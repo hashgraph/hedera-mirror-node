@@ -469,7 +469,7 @@ public class CallFeature extends AbstractFeature {
         var results = response.getResultAsListDecimal();
 
         // BalanceBefore - amount = balanceAfter
-        assertThat(results.get(0) - 1L).isEqualTo(results.get(1)); // fails for NFT
+        assertThat(results.get(0) - 1L).isEqualTo(results.get(1));
         // totalSupplyBefore - amount = totaSupplyAfter
         assertThat(results.get(2) - 1L).isEqualTo(results.get(3));
     }
@@ -569,9 +569,6 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-081
     @Then("I call function that associates FUNGIBLE token dissociates and fails token transfer")
     public void ethCallAssociateFungibleTokenDissociateFailTransfer() {
-        //tokenClient.associate(secondReceiverAccount, fungibleTokenId);
-        //tokenClient.dissociate(secondReceiverAccount, fungibleTokenId);
-        //tokenClient.transferFungibleToken(fungibleTokenId, secondReceiverAccount, admin.getAccountId(), null, 1L);
         var data = encodeData(
                 PRECOMPILE,
                 ASSOCIATE_TOKEN_DISSOCIATE_FAIL_TRANSFER,
@@ -588,7 +585,7 @@ public class CallFeature extends AbstractFeature {
         // transfer after associate should pass -> response code 22 equals SUCCESS
         assertThat(Integer.parseInt(statusAfterAssociate, 16)).isEqualTo(22);
         // transfer after dissociate should fail > response code 237 equals to owner does not own the token
-        // assertThat(Integer.parseInt(statusAfterDissociate, 16)).isEqualTo(237); //atm failing, investigating with devs
+        // assertThat(Integer.parseInt(statusAfterDissociate, 16)).isEqualTo(184); //atm failing, investigating with devs
     }
 
     // ETHCALL-081
