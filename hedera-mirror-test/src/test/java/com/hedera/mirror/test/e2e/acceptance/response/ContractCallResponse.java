@@ -18,13 +18,18 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
+import com.esaulpaugh.headlong.abi.Address;
+import com.google.common.base.Splitter;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
 
 @Data
 @Named
@@ -64,16 +69,21 @@ public class ContractCallResponse {
         return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
 
-    public List<Long> getResultAsListDecimal() {
+    public List<Integer> getResultAsListDecimal() {
         result = result.replace("0x", "");
 
-        List<Long> results = new ArrayList<Long>();
-        int index = 0;
-        while (index < result.length()) {
-            results.add(Long.parseLong(result.substring(index, index + 64), 16));
-            index = index + 64;
-        }
-        return results;
+        return Splitter.fixedLength(64)
+                .splitToStream(result)
+                .map(TestUtil::hexToDecimal)
+                .toList();
     }
-    ;
+
+    public List<String> getResultAsListAddress() {
+        result = result.replace("0x", "");
+
+        return Splitter.fixedLength(64)
+                .splitToStream(result)
+                .map(TestUtil::hexToAddress)
+                .toList();
+    }
 }

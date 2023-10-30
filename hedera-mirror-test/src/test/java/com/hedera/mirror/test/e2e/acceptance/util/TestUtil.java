@@ -25,8 +25,10 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.proto.Key;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -151,6 +153,19 @@ public class TestUtil {
             throw new IllegalStateException("Function " + functionName + " is not present in the ABI.");
         }
     }
+
+    public static Integer hexToDecimal(String hex){
+        try {
+            return Integer.parseInt(hex, 16);
+        }catch (NumberFormatException e){
+            return Integer.parseInt(hex, 64);
+        }
+    }
+
+    public static String hexToAddress(String hex){
+        return Bytes.fromHexString(hex).slice(12).toUnprefixedHexString();
+    }
+
 
     public static class TokenTransferListBuilder {
         private Tuple tokenTransferList;

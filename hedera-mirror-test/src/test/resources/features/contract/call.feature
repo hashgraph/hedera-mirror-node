@@ -1,4 +1,4 @@
-@contractbase @fullsuite @acceptance @web3 @call @setupEth_callFeature
+@contractbase @fullsuite @acceptance @web3 @call
 Feature: eth_call Contract Base Coverage Feature
 
   Scenario Outline: Validate eth_call
@@ -57,5 +57,6 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function that approves NFT token and gets allowance
     Then I call function that associates FUNGIBLE token dissociates and fails token transfer
     Then I call function that associates NFT token dissociates and fails token transfer
-    Then I call function that approves FUNGIBLE token gets balance gets allowance transfers from gets balance gets allowance
-    Then I call function that approves NFT token gets balance gets allowance transfers from gets balance gets allowance
+    Then I call function that approves a FUNGIBLE token and transfers it
+    Then I call function that approves a NFT token and transfers it
+    Then I call function that grants and revokes KYC

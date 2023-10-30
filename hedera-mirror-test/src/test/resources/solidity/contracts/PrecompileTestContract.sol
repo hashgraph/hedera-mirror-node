@@ -443,13 +443,13 @@ contract PrecompileTestContract is HederaTokenService {
         responseCode = this.transferFrom(token, address(this), spender, amount);
         handleResponseCode(responseCode, "Failed to transfer Fungible token.");
 
-        uint256 allowanceAfter = IERC20(token).allowance(address(this), spender); //?
+        uint256 allowanceAfter = IERC20(token).allowance(address(this), spender);
         uint256 balanceAfter = IERC20(token).balanceOf(spender);
 
         return (allowanceBefore, balanceBefore, allowanceAfter, balanceAfter);
     }
 
-    function approveNftTransferFromGetAllowanceGetBalance(address token, address spender, uint256 serialNumber) external
+    function approveNftAndTransfer(address token, address spender, uint256 serialNumber) external
     returns(address, address, address){
         int responseCode = HederaTokenService.approveNFT(token, spender, serialNumber);
         handleResponseCode(responseCode, "Failed to approve NFT.");
@@ -465,28 +465,28 @@ contract PrecompileTestContract is HederaTokenService {
         return(approvalBefore, ownerAfter, allowedAfter);
     }
 
-    function associateTokenDissociateFailTransfer(address token, address from, address to, int64 amount, int64 serialNumber) external
+    function associateTokenDissociateFailTransfer(address token, address from, address to, uint256 amount, uint256 serialNumber) external
     returns(int, int){
         address[] memory tokens = new address[](1);
         int transferStatusAfterAssociate;
-        int transferStatusAfterDissociate;
+        int transferTokenStatusAfterDissociate;
         tokens[0] = token;
 
         int responseCode = HederaTokenService.associateToken(to, token);
         handleResponseCode(responseCode, "Failed to associate tokens.");
 
         if(amount > 0 && serialNumber == 0) {
-            transferStatusAfterAssociate = HederaTokenService.transferToken(token, from, to, amount);
+            transferStatusAfterAssociate = HederaTokenService.transferToken(token, from, to,  int64(uint64(amount)));
         } else {
-            transferStatusAfterAssociate = HederaTokenService.transferNFT(token, from, to, serialNumber);
+            transferStatusAfterAssociate = HederaTokenService.transferNFT(token, from, to, int64(uint64(serialNumber)));
         }
 
         //transfer the tokens back in order to be able to dissociate the account
         if(amount > 0 && serialNumber == 0) {
-            responseCode = HederaTokenService.transferToken(token, to, address(this), amount);
+            responseCode = HederaTokenService.transferToken(token, to, address(this),  int64(uint64(amount)));
             handleResponseCode(responseCode, "Failed to transfer Fungible token.");
         } else {
-            responseCode = HederaTokenService.transferNFT(token, to, address(this), serialNumber);
+            responseCode = HederaTokenService.transferNFT(token, to, address(this), int64(uint64(serialNumber)));
             handleResponseCode(responseCode, "Failed to transfer NFT token.");
         }
 
@@ -494,12 +494,37 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to dissociate token.");
 
         if(amount > 0 && serialNumber == 0) {
-            transferStatusAfterDissociate = HederaTokenService.transferToken(token, from, to, amount);
+            transferTokenStatusAfterDissociate = HederaTokenService.transferToken(token, from, to, int64(uint64(amount)));
         } else {
-            transferStatusAfterDissociate = HederaTokenService.transferNFT(token, from, to, serialNumber);
+            transferTokenStatusAfterDissociate = HederaTokenService.transferNFT(token, from, to, int64(uint64(serialNumber)));
         }
 
-        return (transferStatusAfterAssociate, transferStatusAfterDissociate);
+        return (transferStatusAfterAssociate, transferTokenStatusAfterDissociate);
+    }
+
+    function grantKycRevokeKyc(address token,address from, address account, uint256 amount) external
+    returns(bool, int256, bool, int256, int){
+        bool isKycAfterGrant;
+        bool isKycAfterRevoke;
+        int256 kycGrantStatus;
+        int256 kycRevokeStatus;
+        int transferStatusAfterRevoke;
+        int responseCode = HederaTokenService.grantTokenKyc(token, account);
+        handleResponseCode(responseCode, "Grant kyc failed.");
+
+        (kycGrantStatus, isKycAfterGrant) = HederaTokenService.isKyc(token, account);
+        if (kycGrantStatus != HederaResponseCodes.SUCCESS) revert("Is kyc operation failed");
+        if(!isKycAfterGrant) revert("Kyc status mismatch");
+
+        responseCode = HederaTokenService.revokeTokenKyc(token, account);
+        handleResponseCode(responseCode, "Revoke kyc failed.");
+
+        transferStatusAfterRevoke = HederaTokenService.transferToken(token, from, account,  int64(uint64(amount)));
+
+
+    (kycRevokeStatus, isKycAfterRevoke) = HederaTokenService.isKyc(token, account);
+
+        return(isKycAfterGrant, kycGrantStatus, isKycAfterRevoke, kycRevokeStatus, transferStatusAfterRevoke);
     }
 
     // Helper function to handle the common logic
