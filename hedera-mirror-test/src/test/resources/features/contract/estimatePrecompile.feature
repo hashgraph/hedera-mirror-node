@@ -158,6 +158,19 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with exchange rate tinybars to tinycents
     #Then I call estimateGas with pseudo random seed
     #Then I call estimateGas with pseudo random number
+    Then I call estimate gas that mints FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that mints NFT token and returns the total supply and balance of treasury
+    Then I call estimate gas that burns FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that wipes FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that wipes NFT token and returns the total supply and balance of treasury
+    Then I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token
+    Then I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token
+    Then I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status
+    Then I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status
+    Then I call estimate gas that approves FUNGIBLE token and gets allowance
+    Then I call estimate gas that approves NFT token and gets allowance
+    #Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer
+    #Then I call estimate gas that associates NFT token dissociates and fails token transfer
     #### These tests below are recommended to be kept at the end as they change the state #####
     Then I call estimateGas with balanceOf function for "FUNGIBLE" and verify the estimated gas against HAPI
     Then I call estimateGas with balanceOf function for "NFT" and verify the estimated gas against HAPI
@@ -177,3 +190,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with approveNFT function and verify the estimated gas against HAPI
     Then I call estimateGas with transferFrom function with fungible and verify the estimated gas against HAPI
     Then I call estimateGas with transferFromNFT function and verify the estimated gas against HAPI
+    Then I call estimate gas that approves a FUNGIBLE token and transfers it
+    And I approve and transfer NFT tokens to the precompile contract
+    Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimate gas that approves a NFT token and transfers it
+

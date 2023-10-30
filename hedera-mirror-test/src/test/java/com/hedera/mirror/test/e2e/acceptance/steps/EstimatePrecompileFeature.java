@@ -27,10 +27,18 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ALLOWANCE_ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_FUNGIBLE_GET_ALLOWANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT_GET_ALLOWANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER_FROM;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKENS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES;
@@ -46,6 +54,8 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_TOKENS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED_ERC;
@@ -64,7 +74,9 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_FROZEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_KYC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_TOKEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_NFT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME_NFT;
@@ -72,6 +84,8 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_FREEZE_UNFREEZE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_GRANT_REVOKE_KYC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.OWNER_OF;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PSEUDO_RANDOM_NUMBER;
@@ -109,7 +123,9 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_EXPIRY;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_INFO;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_KEYS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_ACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_TOKEN_ACCOUNT;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
@@ -395,7 +411,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         tokenClient.associate(deployedEstimatePrecompileContract.contractId(), fungibleTokenId);
         tokenClient.associate(deployedEstimatePrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
         tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
+        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
         tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
+
         // approve is also needed for the approveNFT function
         accountClient.approveNftAllSerials(nonFungibleKycUnfrozenTokenId, deployedPrecompileContract.contractId());
         networkTransactionResponse = accountClient.approveNftAllSerials(
@@ -1671,6 +1689,233 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, TRANSFER_FROM_NFT, data);
     }
 
+    @Then("I call estimate gas that mints FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasMintFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asByteArray(Arrays.asList("0x00")),
+                asAddress(admin));
+
+        validateGasEstimation(
+                data,
+                MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that mints NFT token and returns the total supply and balance of treasury")
+    public void estimateGasMintNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(nonFungibleTokenId),
+                0L,
+                asByteArray(Arrays.asList("0x02")),
+                asAddress(admin));
+
+        validateGasEstimation(
+                data,
+                MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that burns FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasBurnFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asLongArray(List.of()),
+                asAddress(admin));
+
+        validateGasEstimation(
+                data,
+                BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that burns NFT token and returns the total supply and balance of treasury")
+    public void estimateGasBurnNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(nonFungibleTokenId),
+                0L,
+                asLongArray(List.of(1L)),
+                asAddress(admin));
+
+        validateGasEstimation(
+                data,
+                BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that wipes FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasWipeFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asLongArray(List.of()),
+                asAddress(receiverAccountAlias));
+
+        validateGasEstimation(
+                data,
+                WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that wipes NFT token and returns the total supply and balance of treasury")
+    public void estimateGasWipeNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                0L,
+                asLongArray(List.of(1L)),
+                asAddress(receiverAccountAlias));
+
+        validateGasEstimation(
+                data,
+                WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token")
+    public void estimateGasPauseFungibleTokenGetStatusUnpauseGetStatus() {
+        var data = encodeData(PRECOMPILE, PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS, asAddress(fungibleTokenId));
+
+        validateGasEstimation(
+                data, PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token")
+    public void estimateGasPauseNFTTokenGetStatusUnpauseGetStatus() {
+        var data = encodeData(PRECOMPILE, PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS, asAddress(nonFungibleTokenId));
+
+        validateGasEstimation(data, PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status")
+    public void estimateGasFreezeFungibleTokenGetFreezeStatusUnfreezeGetFreezeStatus() {
+        var data = encodeData(
+                PRECOMPILE,
+                FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS,
+                asAddress(fungibleTokenId),
+                asAddress(admin));
+
+        validateGasEstimation(
+                data, FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status")
+    public void estimateGasFreezeNftTokenGetFreezeStatusUnfreezeGetFreezeStatus() {
+        var data = encodeData(
+                PRECOMPILE, FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS, asAddress(fungibleTokenId), asAddress(admin));
+
+        validateGasEstimation(data, FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that approves FUNGIBLE token and gets allowance")
+    public void estimateGasApproveFungibleTokenGetAllowance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_FUNGIBLE_GET_ALLOWANCE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"),
+                new BigInteger("0"));
+
+        validateGasEstimation(data, APPROVE_FUNGIBLE_GET_ALLOWANCE, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that approves NFT token and gets allowance")
+    public void estimateGasApproveNFTTokenGetAllowance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_NFT_GET_ALLOWANCE,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("0"),
+                new BigInteger("1"));
+
+        validateGasEstimation(data, APPROVE_NFT_GET_ALLOWANCE, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer")
+    public void estimateGasAssociateFungibleTokenDissociateFailTransfer() {
+        var data = encodeData(
+                PRECOMPILE,
+                ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"),
+                new BigInteger("0"));
+
+        validateGasEstimation(
+                data, ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that associates NFT token dissociates and fails token transfer")
+    public void estimateGasAssociateNftTokenDissociateFailTransfer() {
+        var data = encodeData(
+                PRECOMPILE,
+                ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                new BigInteger("0"),
+                new BigInteger("1"));
+
+        validateGasEstimation(
+                data, ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER, precompileTestContractSolidityAddress);
+    }
+
+    @Then(
+            "I call estimate gas that approves a FUNGIBLE token and transfers it")
+    public void estimateGasApproveFungibleTokenTransferFromGetAllowanceGetBalance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"));
+
+        validateGasEstimation(
+                data,
+                APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that approves a NFT token and transfers it")
+    public void approveNftTokenTransferFromGetAllowanceGetBalance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_NFT_TOKEN_AND_TRANSFER_FROM,
+                asAddress(nonFungibleTokenId),
+                asAddress(secondReceiverAccount),
+                new BigInteger("1"));
+
+        validateGasEstimation(
+                data, APPROVE_NFT_TOKEN_AND_TRANSFER_FROM, precompileTestContractSolidityAddress);
+    }
+
+    @And("I approve and transfer NFT tokens to the precompile contract")
+    public void approveAndTransferNftToPrecompileContract() throws InvalidProtocolBufferException {
+        accountClient.approveNftAllSerials(nonFungibleTokenId, deployedPrecompileContract.contractId());
+        networkTransactionResponse = tokenClient.transferNonFungibleToken(
+                nonFungibleTokenId,
+                receiverAccount,
+                AccountId.fromString(precompileTestContractSolidityAddress),
+                List.of(1L),
+                null);
+    }
+
     @Then("I call estimateGas with mintToken function for fungible token and verify the estimated gas against HAPI")
     public void executeMintFungibleTokenWithLimitedGas() {
         var data = encodeDataToByteArray(
@@ -1817,7 +2062,29 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         UNPAUSE_TOKEN("unpauseTokenExternal", 39112),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", 39699),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", 74920),
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 60427);
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 60427),
+        MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "mintTokenGetTotalSupplyAndBalanceOfTreasury", 68127),
+        MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "mintTokenGetTotalSupplyAndBalanceOfTreasury", 335855),
+        BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "burnTokenGetTotalSupplyAndBalanceOfTreasury", 66908),
+        BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "burnTokenGetTotalSupplyAndBalanceOfTreasury", 66886),
+        WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "wipeTokenGetTotalSupplyAndBalanceOfAccount", 88477),
+        WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR(
+                "wipeTokenGetTotalSupplyAndBalanceOfAccount", 88970),
+        PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345),
+        PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345),
+        FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
+        FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
+        APPROVE_FUNGIBLE_GET_ALLOWANCE("approveTokenGetAllowance", 733080),
+        APPROVE_NFT_GET_ALLOWANCE("approveTokenGetAllowance", 733127),
+        ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER("associateTokenDissociateFailTransfer", 21000),
+        ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER("associateTokenDissociateFailTransfer", 21000),
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE("approveFungibleTokenTransferFromGetAllowanceGetBalance", 752505),
+        APPROVE_NFT_TOKEN_AND_TRANSFER_FROM("approveNftAndTransfer", 765896);
 
         private final String selector;
         private final int actualGas;
