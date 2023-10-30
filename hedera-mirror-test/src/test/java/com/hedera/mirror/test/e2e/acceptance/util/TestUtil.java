@@ -152,6 +152,18 @@ public class TestUtil {
         }
     }
 
+    public static Integer hexToDecimal(String hex){
+        try {
+            return Integer.parseInt(hex, 16);
+        }catch (NumberFormatException e){
+            return Integer.parseInt(hex, 64);
+        }
+    }
+
+    public static String hexToAddress(String hex){
+        return Bytes.fromHexString(hex).slice(12).toUnprefixedHexString();
+    }
+
     public static class TokenTransferListBuilder {
         private Tuple tokenTransferList;
         private Address token;
