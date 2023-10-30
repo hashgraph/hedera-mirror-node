@@ -865,65 +865,61 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return current;
         }
 
-        // If previous doesn't have history, merge reversely from current to previous
-        var src = previous.hasHistory() ? previous : current;
-        var dest = previous.hasHistory() ? current : previous;
-
         previous.setTimestampUpper(current.getTimestampLower());
 
-        dest.setCreatedTimestamp(src.getCreatedTimestamp());
-        dest.setDecimals(src.getDecimals());
-        dest.setFreezeDefault(src.getFreezeDefault());
-        dest.setInitialSupply(src.getInitialSupply());
-        dest.setMaxSupply(src.getMaxSupply());
-        dest.setSupplyType(src.getSupplyType());
-        dest.setType(src.getType());
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setDecimals(previous.getDecimals());
+        current.setFreezeDefault(previous.getFreezeDefault());
+        current.setInitialSupply(previous.getInitialSupply());
+        current.setMaxSupply(previous.getMaxSupply());
+        current.setSupplyType(previous.getSupplyType());
+        current.setType(previous.getType());
 
-        if (dest.getFeeScheduleKey() == null) {
-            dest.setFeeScheduleKey(src.getFeeScheduleKey());
+        if (current.getFeeScheduleKey() == null) {
+            current.setFeeScheduleKey(previous.getFeeScheduleKey());
         }
 
-        if (dest.getFreezeKey() == null) {
-            dest.setFreezeKey(src.getFreezeKey());
+        if (current.getFreezeKey() == null) {
+            current.setFreezeKey(previous.getFreezeKey());
         }
 
-        if (dest.getKycKey() == null) {
-            dest.setKycKey(src.getKycKey());
+        if (current.getKycKey() == null) {
+            current.setKycKey(previous.getKycKey());
         }
 
-        if (dest.getName() == null) {
-            dest.setName(src.getName());
+        if (current.getName() == null) {
+            current.setName(previous.getName());
         }
 
-        if (dest.getPauseKey() == null) {
-            dest.setPauseKey(src.getPauseKey());
+        if (current.getPauseKey() == null) {
+            current.setPauseKey(previous.getPauseKey());
         }
 
-        if (dest.getPauseStatus() == null) {
-            dest.setPauseStatus(src.getPauseStatus());
+        if (current.getPauseStatus() == null) {
+            current.setPauseStatus(previous.getPauseStatus());
         }
 
-        if (dest.getSupplyKey() == null) {
-            dest.setSupplyKey(src.getSupplyKey());
+        if (current.getSupplyKey() == null) {
+            current.setSupplyKey(previous.getSupplyKey());
         }
 
-        if (dest.getSymbol() == null) {
-            dest.setSymbol(src.getSymbol());
+        if (current.getSymbol() == null) {
+            current.setSymbol(previous.getSymbol());
         }
 
-        if (dest.getTreasuryAccountId() == null) {
-            dest.setTreasuryAccountId(src.getTreasuryAccountId());
+        if (current.getTreasuryAccountId() == null) {
+            current.setTreasuryAccountId(previous.getTreasuryAccountId());
         }
 
-        if (dest.getWipeKey() == null) {
-            dest.setWipeKey(src.getWipeKey());
+        if (current.getWipeKey() == null) {
+            current.setWipeKey(previous.getWipeKey());
         }
 
         // This method should not be called with negative total supply since wipe/burn/token dissociate of a deleted
         // token will not have history so will not reach here.
-        dest.updateTotalSupply(src.getTotalSupply());
+        current.updateTotalSupply(previous.getTotalSupply());
 
-        return dest;
+        return current;
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
