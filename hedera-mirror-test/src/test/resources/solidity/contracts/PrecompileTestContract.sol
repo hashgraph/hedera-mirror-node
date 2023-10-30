@@ -277,4 +277,127 @@ contract PrecompileTestContract is HederaTokenService {
         }
         return responseResult;
     }
+
+    function mintTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, bytes[] memory metadata, address treasury) external
+    returns(uint256, uint256, int, int) {
+        uint256 balanceBeforeMint;
+        uint256 balanceAfterMint;
+        int totalSupplyBeforeMint;
+        int totalSupplyAfterMint;
+
+        if(amount > 0 && metadata.length == 0) {
+            balanceBeforeMint = IERC20(token).balanceOf(treasury);
+        } else {
+            balanceBeforeMint = IERC721(token).balanceOf(treasury);
+        }
+
+        (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to retrieve token info");
+        }
+        totalSupplyBeforeMint = retrievedTokenInfo.totalSupply;
+
+        (responseCode, totalSupplyAfterMint,) = HederaTokenService.mintToken(token, amount, metadata);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to mint token");
+        }
+
+        if(amount > 0 && metadata.length == 0) {
+            balanceAfterMint = IERC20(token).balanceOf(treasury);
+        } else {
+            balanceAfterMint = IERC721(token).balanceOf(treasury);
+        }
+
+        return (balanceBeforeMint, balanceAfterMint, totalSupplyBeforeMint, totalSupplyAfterMint);
+    }
+
+    function burnTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, int64[] memory serialNumbers, address treasury) external
+    returns(uint256, uint256, int, int){
+        uint256 balanceBeforeBurn;
+        uint256 balanceAfterBurn;
+        int totalSupplyBeforeBurn;
+        int totalSupplyAfterBurn;
+
+        if(amount > 0 && serialNumbers.length == 0) {
+            balanceBeforeBurn = IERC20(token).balanceOf(treasury);
+        } else {
+            balanceBeforeBurn = IERC721(token).balanceOf(treasury);
+        }
+
+        (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to retrieve token info before burn");
+        }
+        totalSupplyBeforeBurn = retrievedTokenInfo.totalSupply;
+
+        (responseCode, totalSupplyAfterBurn) = HederaTokenService.burnToken(token, amount, serialNumbers);
+        if (responseCode != HederaResponseCodes.SUCCESS){
+            revert("Failed to burn token");
+        }
+
+        if(amount > 0 && serialNumbers.length == 0) {
+            balanceAfterBurn = IERC20(token).balanceOf(treasury);
+        } else {
+            balanceAfterBurn  = IERC721(token).balanceOf(treasury);
+        }
+        return (balanceBeforeBurn, balanceAfterBurn, totalSupplyBeforeBurn, totalSupplyAfterBurn);
+    }
+
+    function wipeTokenGetTotalSupplyAndBalanceOfAccount(address token, int64 amount, int64[] memory serialNumbers, address account) external
+    returns (uint256, uint256, int, int){
+        uint256 balanceBeforeWipe;
+        uint256 balanceAfterWipe;
+        int totalSupplyBeforeWipe;
+        int totalSupplyAfterWipe;
+
+        balanceBeforeWipe = 0;
+        if(amount > 0 && serialNumbers.length == 0) {
+            balanceBeforeWipe = IERC20(token).balanceOf(account);
+        } else {
+            balanceBeforeWipe = IERC721(token).balanceOf(account);
+        }
+
+        (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info before wipe");
+        totalSupplyBeforeWipe = retrievedTokenInfo.totalSupply;
+
+        if(amount > 0 && serialNumbers.length == 0) {
+            responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
+        } else {
+            responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
+        }
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to wipe token");
+
+        (responseCode, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info after wipe");
+        totalSupplyAfterWipe = retrievedTokenInfo.totalSupply;
+
+        if(amount > 0 && serialNumbers.length == 0) {
+            balanceAfterWipe = IERC20(token).balanceOf(account);
+        } else {
+            balanceAfterWipe = IERC721(token).balanceOf(account);
+        }
+        return (balanceBeforeWipe, balanceAfterWipe, totalSupplyBeforeWipe, totalSupplyAfterWipe);
+    }
+
+    function pauseTokenGetPauseStatusUnpauseGetPauseStatus(address token) external
+    returns(bool, bool){
+        bool statusAfterPause;
+        bool statusAfterUnpause;
+        int responseCode = HederaTokenService.pauseToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to pause token");
+
+        (int response, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if (response != HederaResponseCodes.SUCCESS) revert("Failed to get token info after pause");
+        statusAfterPause = retrievedTokenInfo.pauseStatus;
+
+        responseCode = HederaTokenService.unpauseToken(token);
+        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to unpause token");
+
+        (response, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        if(response != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info after unpause");
+        statusAfterUnpause = retrievedTokenInfo.pauseStatus;
+
+        return(statusAfterPause, statusAfterUnpause);
+    }
 }

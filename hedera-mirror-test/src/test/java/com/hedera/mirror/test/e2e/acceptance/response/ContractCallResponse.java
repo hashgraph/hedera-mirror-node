@@ -21,6 +21,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -61,4 +64,16 @@ public class ContractCallResponse {
         // 3rd 32 bytes - actual string suffixed with zeroes
         return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
+
+    public List<Long> getResultAsListDecimal(){
+        result = result.replace("0x", "");
+
+        List<Long> results= new ArrayList<Long>();
+        int index =0;
+        while (index<result.length()) {
+            results.add(Long.parseLong(result.substring(index,index + 64), 16));
+            index=index+64;
+        }
+        return results;
+    };
 }

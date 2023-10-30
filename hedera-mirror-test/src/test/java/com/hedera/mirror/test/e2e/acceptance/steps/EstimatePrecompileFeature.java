@@ -111,6 +111,8 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_KEYS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_ACCOUNT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_TOKEN_ACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.*;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.*;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
@@ -119,8 +121,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -139,6 +142,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.And;
@@ -662,11 +666,11 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with cryptoTransfer function for nft")
     public void cryptoTransferNFTEstimateGas() {
         var tokenTransferList = (Object) new Tuple[] {
-            tokenTransferList()
-                    .forToken(nonFungibleTokenId.toSolidityAddress())
-                    .withNftTransfers(
-                            nftAmount(admin.getAccountId().toSolidityAddress(), receiverAccountAlias, 1L, false))
-                    .build()
+                tokenTransferList()
+                        .forToken(nonFungibleTokenId.toSolidityAddress())
+                        .withNftTransfers(
+                                nftAmount(admin.getAccountId().toSolidityAddress(), receiverAccountAlias, 1L, false))
+                        .build()
         };
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_NFT, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
@@ -676,12 +680,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with cryptoTransfer function for fungible tokens")
     public void cryptoTransferFungibleEstimateGas() {
         var tokenTransferList = (Object) new Tuple[] {
-            tokenTransferList()
-                    .forToken(fungibleTokenId.toSolidityAddress())
-                    .withAccountAmounts(
-                            accountAmount(admin.getAccountId().toSolidityAddress(), -3L, false),
-                            accountAmount(secondReceiverAccount.getAccountId().toSolidityAddress(), 3L, false))
-                    .build()
+                tokenTransferList()
+                        .forToken(fungibleTokenId.toSolidityAddress())
+                        .withAccountAmounts(
+                                accountAmount(admin.getAccountId().toSolidityAddress(), -3L, false),
+                                accountAmount(secondReceiverAccount.getAccountId().toSolidityAddress(), 3L, false))
+                        .build()
         };
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
@@ -1685,6 +1689,108 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(Arrays.asList("0x02")));
         var estimateGasValue = validateAndReturnGas(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
         executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_NFT, data);
+    // ETH_ESTIMATE-101
+    @Then("I call estimate gas that mints 1 FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasMintFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asByteArray(Arrays.asList("0x00")),
+                asAddress(admin));
+
+        validateGasEstimation(data, MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-102
+    @Then("I call estimate gas that mints 1 NFT token and returns the total supply and balance of treasury")
+    public void estimateGasMintNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(nonFungibleTokenId),
+                0L,
+                asByteArray(Arrays.asList("0x02")),
+                asAddress(admin));
+
+        validateGasEstimation(data, MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-105
+    @Then("I call estimate gas that burns 1 FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasBurnFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asLongArray(List.of()),
+                asAddress(admin));
+
+        validateGasEstimation(data, BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-106
+    @Then("I call estimate gas that burns 1 NFT token and returns the total supply and balance of treasury")
+    public void estimateGasBurnNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(nonFungibleTokenId),
+                0L,
+                asLongArray(List.of(1L)),
+                asAddress(admin));
+
+        validateGasEstimation(data, BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-103
+    @Then("I call estimate gas that wipes 1 FUNGIBLE token and returns the total supply and balance of treasury")
+    public void estimateGasWipeFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                1L,
+                asLongArray(List.of()),
+                asAddress(receiverAccountAlias));
+
+        validateGasEstimation(data, WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-104
+    @Then("I call estimate gas that wipes 1 NFT token and returns the total supply and balance of treasury")
+    public void estimateGasWipeNftTokenGetTotalSupplyAndBalanceOfTreasury() {
+        var data = encodeData(
+                PRECOMPILE,
+                WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                asAddress(fungibleTokenId),
+                0L,
+                asLongArray(List.of(1L)),
+                asAddress(receiverAccountAlias));
+
+        validateGasEstimation(data, WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token")
+    public void estimateGasPauseFungibleTokenGetStatusUnpauseGetStatus(){
+        var data = encodeData(
+                PRECOMPILE,
+                PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS,
+                asAddress(fungibleTokenId));
+
+        validateGasEstimation(data, PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    @Then("I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token")
+    public void estimateGasPauseNFTTokenGetStatusUnpauseGetStatus(){
+        var data = encodeData(
+                PRECOMPILE,
+                PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS,
+                asAddress(nonFungibleTokenId));
+
+        validateGasEstimation(data, PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
@@ -1817,7 +1923,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         UNPAUSE_TOKEN("unpauseTokenExternal", 39112),
         UPDATE_TOKEN_EXPIRY("updateTokenExpiryInfoExternal", 39699),
         UPDATE_TOKEN_INFO("updateTokenInfoExternal", 74920),
-        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 60427);
+        UPDATE_TOKEN_KEYS("updateTokenKeysExternal", 60427),
+        MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("mintTokenGetTotalSupplyAndBalanceOfTreasury", 68127),
+        MINT_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("mintTokenGetTotalSupplyAndBalanceOfTreasury",335855),
+        BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("burnTokenGetTotalSupplyAndBalanceOfTreasury", 66908),
+        BURN_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("burnTokenGetTotalSupplyAndBalanceOfTreasury",66886),
+        WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("wipeTokenGetTotalSupplyAndBalanceOfAccount", 88477),
+        WIPE_NFT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("wipeTokenGetTotalSupplyAndBalanceOfAccount", 88970),
+        PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345),
+        PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345);
+
 
         private final String selector;
         private final int actualGas;
