@@ -194,3 +194,12 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token
     Then I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status
     Then I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status
+    Then I call estimate gas that approves FUNGIBLE token and gets allowance
+    Then I call estimate gas that approves NFT token and gets allowance
+    #Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer
+    #Then I call estimate gas that associates NFT token dissociates and fails token transfer
+    And I approve and transfer NFT tokens to the precompile contract
+    Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimate gas that approves FUNGIBLE token gets balance gets allowance transfers from gets balance gets allowance
+    Then I call estimate gas that approves NFT token gets approved transfer from gets ownership gets approval
+

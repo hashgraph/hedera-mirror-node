@@ -397,6 +397,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         tokenClient.associate(deployedEstimatePrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
         tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
         tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
+        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
+
         // approve is also needed for the approveNFT function
         accountClient.approveNftAllSerials(nonFungibleKycUnfrozenTokenId, deployedPrecompileContract.contractId());
         networkTransactionResponse = accountClient.approveNftAllSerials(
@@ -1788,6 +1790,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 precompileTestContractSolidityAddress);
     }
 
+    // ETH_ESTIMATE-107
     @Then("I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token")
     public void estimateGasPauseFungibleTokenGetStatusUnpauseGetStatus() {
         var data = encodeData(PRECOMPILE, PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS, asAddress(fungibleTokenId));
@@ -1796,16 +1799,15 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 data, PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
     }
 
+    // ETH_ESTIMATE-116
     @Then("I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token")
-    public void estimateGasPauseNFTTokenGetStatusUnpauseGetStatus(){
-        var data = encodeData(
-                PRECOMPILE,
-                PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS,
-                asAddress(nonFungibleTokenId));
+    public void estimateGasPauseNFTTokenGetStatusUnpauseGetStatus() {
+        var data = encodeData(PRECOMPILE, PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS, asAddress(nonFungibleTokenId));
 
         validateGasEstimation(data, PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS, precompileTestContractSolidityAddress);
     }
 
+    // ETH_ESTIMATE-114
     @Then("I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status")
     public void estimateGasFreezeFungibleTokenGetFreezeStatusUnfreezeGetFreezeStatus() {
         var data = encodeData(
@@ -1814,18 +1816,119 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(fungibleTokenId),
                 asAddress(admin));
 
-        validateGasEstimation(data, FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
+        validateGasEstimation(
+                data, FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
     }
 
+    // ETH_ESTIMATE-115
     @Then("I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status")
     public void estimateGasFreezeNftTokenGetFreezeStatusUnfreezeGetFreezeStatus() {
         var data = encodeData(
-                PRECOMPILE,
-                FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS,
-                asAddress(fungibleTokenId),
-                asAddress(admin));
+                PRECOMPILE, FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS, asAddress(fungibleTokenId), asAddress(admin));
 
         validateGasEstimation(data, FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-109
+    @Then("I call estimate gas that approves FUNGIBLE token and gets allowance")
+    public void estimateGasApproveFungibleTokenGetAllowance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_FUNGIBLE_GET_ALLOWANCE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"),
+                new BigInteger("0"));
+
+        validateGasEstimation(data, APPROVE_FUNGIBLE_GET_ALLOWANCE, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-108
+    @Then("I call estimate gas that approves NFT token and gets allowance")
+    public void estimateGasApproveNFTTokenGetAllowance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_NFT_GET_ALLOWANCE,
+                asAddress(nonFungibleKycUnfrozenTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("0"),
+                new BigInteger("1"));
+
+        validateGasEstimation(data, APPROVE_NFT_GET_ALLOWANCE, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-110
+    @Then("I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer")
+    public void estimateGasAssociateFungibleTokenDissociateFailTransfer() {
+        var data = encodeData(
+                PRECOMPILE,
+                ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                1L,
+                0L);
+
+        validateGasEstimation(
+                data, ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-111
+    @Then("I call estimate gas that associates NFT token dissociates and fails token transfer")
+    public void estimateGasAssociateNftTokenDissociateFailTransfer() {
+        var data = encodeData(
+                PRECOMPILE,
+                ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                asAddress(fungibleTokenId),
+                asAddress(admin),
+                asAddress(receiverAccountAlias),
+                0L,
+                1L);
+
+        validateGasEstimation(
+                data, ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER, precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-112
+    @Then(
+            "I call estimate gas that approves FUNGIBLE token gets balance gets allowance transfers from gets balance gets allowance")
+    public void estimateGasApproveFungibleTokenTransferFromGetAllowanceGetBalance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                asAddress(fungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("1"));
+
+        validateGasEstimation(
+                data,
+                APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                precompileTestContractSolidityAddress);
+    }
+
+    // ETH_ESTIMATE-113
+    @Then("I call estimate gas that approves NFT token gets approved transfer from gets ownership gets approval")
+    public void approveNftTokenTransferFromGetAllowanceGetBalance() {
+        var data = encodeData(
+                PRECOMPILE,
+                APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                asAddress(nonFungibleTokenId),
+                asAddress(receiverAccountAlias),
+                new BigInteger("2"));
+
+        validateGasEstimation(
+                data, APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE, precompileTestContractSolidityAddress);
+    }
+
+    @And("I approve and transfer NFT tokens to the precompile contract")
+    public void approveAndTransferNftToPrecompileContract() throws InvalidProtocolBufferException {
+        accountClient.approveNftAllSerials(nonFungibleTokenId, deployedPrecompileContract.contractId());
+        networkTransactionResponse = tokenClient.transferNonFungibleToken(
+                nonFungibleTokenId,
+                admin,
+                AccountId.fromString(precompileTestContractSolidityAddress),
+                List.of(2L),
+                null);
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
@@ -1974,7 +2077,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         PAUSE_FUNGIBLE_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345),
         PAUSE_NFT_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus", 98345),
         FREEZE_FUNGIBLE_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
-        FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387);
+        FREEZE_NFT_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
+        APPROVE_FUNGIBLE_GET_ALLOWANCE("approveTokenGetAllowance", 733080),
+        APPROVE_NFT_GET_ALLOWANCE("approveTokenGetAllowance", 733127),
+        ASSOCIATE_FUNGIBLE_TOKEN_DISSOCIATE_FAIL_TRANSFER("associateTokenDissociateFailTransfer", 0),
+        ASSOCIATE_NFT_TOKEN_DISSOCIATE_FAIL_TRANSFER("associateTokenDissociateFailTransfer", 0),
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE(
+                "approveFungibleTokenTransferFromGetAllowanceGetBalance", 752505),
+        APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE(
+                "approveNftTransferFromGetAllowanceGetBalance", 765896);
+
         private final String selector;
         private final int actualGas;
     }
