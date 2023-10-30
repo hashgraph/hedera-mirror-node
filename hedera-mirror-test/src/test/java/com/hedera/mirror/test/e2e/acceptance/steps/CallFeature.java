@@ -80,8 +80,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
-    private static DeployedContract deployedContract;
     private static DeployedContract deployedPrecompileContract;
+    private DeployedContract deployedErcTestContract;
+    private DeployedContract deployedEstimatePrecompileContract;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
@@ -120,21 +121,20 @@ public class CallFeature extends AbstractFeature {
 
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
-        deployedContract = getContract(ERC);
-        ercContractAddress = deployedContract.contractId().toSolidityAddress();
+        deployedErcTestContract = getContract(ERC);
+        ercContractAddress = deployedErcTestContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
         deployedPrecompileContract = getContract(PRECOMPILE);
-        deployedContract = getContract(PRECOMPILE);
-        precompileContractAddress = deployedContract.contractId().toSolidityAddress();
+        precompileContractAddress = deployedPrecompileContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        deployedContract = getContract(ESTIMATE_GAS);
-        estimateContractAddress = deployedContract.contractId().toSolidityAddress();
+        deployedEstimatePrecompileContract = getContract(ESTIMATE_GAS);
+        estimateContractAddress = deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
         receiverAccountAlias = receiverAccountId.getPublicKey().toEvmAddress().toString();
@@ -582,7 +582,7 @@ public class CallFeature extends AbstractFeature {
                 0L);
         var response = callContract(data, precompileContractAddress);
         var statusAfterAssociate = response.getResult().substring(2, 66);
-        var statusAfterDissociate = response.getResult().substring(66);
+        var statusAfterDissociate = response.getResult().substring(66,130);
         var dissociateStatus = response.getResult().substring(130);
 
         // transfer after associate should pass -> response code 22 equals SUCCESS
