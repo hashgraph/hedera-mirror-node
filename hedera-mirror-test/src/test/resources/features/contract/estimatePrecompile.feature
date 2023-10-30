@@ -59,7 +59,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with transferTokens function
     And I mint a new NFT and approve second receiver account to all serial numbers
     Then the mirror node REST API should return status 200 for the HAPI transaction
-    Then I call estimate gas that burns 1 NFT token and returns the total supply and balance of treasury
     Then I call estimateGas with transferNFTs function
     Then I call estimateGas with cryptoTransfer function for hbars
     Then I call estimateGas with cryptoTransfer function for nft
@@ -74,6 +73,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with WipeTokenAccount function
     Then I call estimateGas with WipeTokenAccount function with invalid amount
+    Then I call estimate gas that burns NFT token and returns the total supply and balance of treasury
     And I transfer NFT to receiver account
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with WipeNFTAccount function
@@ -185,3 +185,12 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimate gas that wipes 1 NFT token and returns the total supply and balance of treasury
     Then I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token
     Then I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token
+    Then I call estimate gas that mints FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that mints NFT token and returns the total supply and balance of treasury
+    Then I call estimate gas that burns FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that wipes FUNGIBLE token and returns the total supply and balance of treasury
+    Then I call estimate gas that wipes NFT token and returns the total supply and balance of treasury
+    Then I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token
+    Then I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token
+    Then I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status
+    Then I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status

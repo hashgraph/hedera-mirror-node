@@ -23,7 +23,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -65,15 +64,16 @@ public class ContractCallResponse {
         return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
 
-    public List<Long> getResultAsListDecimal(){
+    public List<Long> getResultAsListDecimal() {
         result = result.replace("0x", "");
 
-        List<Long> results= new ArrayList<Long>();
-        int index =0;
-        while (index<result.length()) {
-            results.add(Long.parseLong(result.substring(index,index + 64), 16));
-            index=index+64;
+        List<Long> results = new ArrayList<Long>();
+        int index = 0;
+        while (index < result.length()) {
+            results.add(Long.parseLong(result.substring(index, index + 64), 16));
+            index = index + 64;
         }
         return results;
-    };
+    }
+    ;
 }

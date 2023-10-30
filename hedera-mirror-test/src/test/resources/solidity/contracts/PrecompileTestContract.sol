@@ -358,7 +358,9 @@ contract PrecompileTestContract is HederaTokenService {
         }
 
         (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info before wipe");
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to retrieve token info before wipe");
+        }
         totalSupplyBeforeWipe = retrievedTokenInfo.totalSupply;
 
         if(amount > 0 && serialNumbers.length == 0) {
@@ -366,10 +368,14 @@ contract PrecompileTestContract is HederaTokenService {
         } else {
             responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
         }
-        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to wipe token");
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to wipe token");
+        }
 
         (responseCode, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info after wipe");
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to retrieve token info after wipe");
+        }
         totalSupplyAfterWipe = retrievedTokenInfo.totalSupply;
 
         if(amount > 0 && serialNumbers.length == 0) {
@@ -385,19 +391,57 @@ contract PrecompileTestContract is HederaTokenService {
         bool statusAfterPause;
         bool statusAfterUnpause;
         int responseCode = HederaTokenService.pauseToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to pause token");
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to pause token");
+        }
 
         (int response, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
-        if (response != HederaResponseCodes.SUCCESS) revert("Failed to get token info after pause");
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert("Failed to get token info after pause");
+        }
         statusAfterPause = retrievedTokenInfo.pauseStatus;
 
         responseCode = HederaTokenService.unpauseToken(token);
-        if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to unpause token");
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to unpause token");
+        }
 
         (response, retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
-        if(response != HederaResponseCodes.SUCCESS) revert("Failed to retrieve token info after unpause");
+        if(response != HederaResponseCodes.SUCCESS) {
+            revert("Failed to retrieve token info after unpause");
+        }
         statusAfterUnpause = retrievedTokenInfo.pauseStatus;
 
         return(statusAfterPause, statusAfterUnpause);
+    }
+
+    function freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus(address token, address account) external
+    returns (bool, bool){
+        bool statusAfterFreeze;
+        bool statusAfterUnfreeze;
+
+        int responseCode = HederaTokenService.freezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to freeze token for the account");
+        }
+
+        (int response, bool isFrozen) = HederaTokenService.isFrozen(token, account);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert("Failed to check freeze status of account");
+        }
+        statusAfterFreeze = isFrozen;
+
+        responseCode = HederaTokenService.unfreezeToken(token, account);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert("Failed to unfreeze account");
+        }
+
+        (response, isFrozen) = HederaTokenService.isFrozen(token, account);
+        if (response != HederaResponseCodes.SUCCESS) {
+            revert("Failed to check unfreeze status of account");
+        }
+        statusAfterUnfreeze = isFrozen;
+
+        return(statusAfterFreeze, statusAfterUnfreeze);
     }
 }
