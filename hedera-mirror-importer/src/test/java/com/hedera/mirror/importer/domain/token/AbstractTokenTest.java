@@ -30,13 +30,22 @@ class AbstractTokenTest {
                     """
             -100, , -100
             , 500, 500
-            ,-500,-500
-            1200,-500, 700
+            , -500, -500
+            1200, -500, 700
             """)
-    void shouldUpdateTotalSupplyWithNewSupply(Long totalSupply, Long newSupply, Long expected) {
+    void shouldSetTotalSupplyToNewSupply(Long totalSupply, Long newSupply, Long expected) {
+        // given
+        // totalSupply will have a null value here
         var token = new Token();
+
+        // when
+        // This will set the initial value to totalSupply for the purpose of this test
         token.setTotalSupply(totalSupply);
-        token.updateTotalSupply(newSupply);
+
+        // This will be the updated value of totalSupply
+        token.setTotalSupply(newSupply);
+
+        // then
         assertThat(token.getTotalSupply()).isEqualTo(expected);
     }
 }

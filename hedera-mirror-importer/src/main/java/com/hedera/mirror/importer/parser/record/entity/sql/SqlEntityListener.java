@@ -856,14 +856,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Token mergeToken(Token previous, Token current) {
 
         if (!current.hasHistory()) {
-            previous.updateTotalSupply(current.getTotalSupply());
+            previous.setTotalSupply(current.getTotalSupply());
             return previous;
         }
 
         // When current has history, current should always have a null totalSupply,
         // Hence, it is safe to merge total supply from previous to current here.
         if (!previous.hasHistory()) {
-            current.updateTotalSupply(previous.getTotalSupply());
+            current.setTotalSupply(previous.getTotalSupply());
             return current;
         }
 
@@ -919,7 +919,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         // This method should not be called with negative total supply since wipe/burn/token dissociate of a deleted
         // token will not have history so will not reach here.
-        current.updateTotalSupply(previous.getTotalSupply());
+        current.setTotalSupply(previous.getTotalSupply());
 
         return current;
     }

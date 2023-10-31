@@ -110,7 +110,7 @@ public class AbstractToken implements History {
         this.symbol = DomainUtils.sanitize(symbol);
     }
 
-    public void updateTotalSupply(Long newTotalSupply) {
+    public void setTotalSupply(Long newTotalSupply) {
         if (newTotalSupply == null) {
             return;
         }
