@@ -615,8 +615,8 @@ public class CallFeature extends AbstractFeature {
         assertThat(results.get(0)).isEqualTo(1);
         // balance before + amount should equal the balance after
         assertThat(results.get(1) + 1).isEqualTo(results.get(3));
-        // allowance after transfer should be != 0
-        assertThat(results.get(2)).isEqualTo(0);
+        // allowance after transfer should be 0
+        assertThat(results.get(2)).isZero();
     }
 
     @Then(
@@ -658,7 +658,7 @@ public class CallFeature extends AbstractFeature {
         // KYC grant status should be SUCCESS = 22
         assertThat(results.get(1)).isEqualTo(22);
         // isKYC after revoke should be false
-        assertThat(results.get(2)).isEqualTo(0);
+        assertThat(results.get(2)).isZero();
         // KYC revoke status should be SUCCESS = 22
         assertThat(results.get(3)).isEqualTo(22);
         //transfer status after kyc revert should be failing with KYC should be granted
