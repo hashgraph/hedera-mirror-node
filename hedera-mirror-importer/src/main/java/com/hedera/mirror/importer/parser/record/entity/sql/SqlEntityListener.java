@@ -860,6 +860,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return previous;
         }
 
+        // When current has history, current should always have a null totalSupply,
+        // Hence, it is safe to merge total supply from previous to current
         if (!previous.hasHistory() && current.hasHistory()) {
             current.updateTotalSupply(previous.getTotalSupply());
             return current;

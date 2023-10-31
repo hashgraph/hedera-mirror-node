@@ -26,9 +26,11 @@ class AbstractTokenTest {
 
     @ParameterizedTest
     @CsvSource(
-            textBlock = """
+            textBlock =
+                    """
             -100, , -100
             , 500, 500
+            ,-500,-500
             1200,-500, 700
             """)
     void shouldUpdateTotalSupplyWithNewSupply(Long totalSupply, Long newSupply, Long expected) {
