@@ -140,25 +140,24 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountAliasToEvmAddressFromCache() {
         // given
-        var entity = domainBuilder
-                .entity()
-                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
-                .get();
-        entityIdService.notify(entity);
+        var entity =
+                domainBuilder.entity().customize(e -> e.evmAddress(EVM_ADDRESS)).get();
         var accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
                 .build();
-        // when, then
+
+        // when
+        entityIdService.notify(entity);
+
+        // then
         assertThat(entityIdService.lookup(accountId)).hasValue(entity.toEntityId());
     }
 
     @Test
     void lookupAccountAliasToEvmAddressFromDb() {
         // given
-        var entity = domainBuilder
-                .entity()
-                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
-                .persist();
+        var entity =
+                domainBuilder.entity().customize(e -> e.evmAddress(EVM_ADDRESS)).persist();
         var accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
                 .build();
@@ -298,16 +297,23 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {"false", ","})
-    void storeAccount(Boolean deleted) {
+    @CsvSource(
+            nullValues = "null",
+            value = {"false", "null"})
+    void notifyAccount(Boolean deleted) {
         Entity account =
                 domainBuilder.entity().customize(e -> e.deleted(deleted)).get();
+        var alias = getProtoAccountId(account);
+        var evmAddress = alias.toBuilder()
+                .setAlias(DomainUtils.fromBytes(account.getEvmAddress()))
+                .build();
         entityIdService.notify(account);
-        assertThat(entityIdService.lookup(getProtoAccountId(account))).hasValue(account.toEntityId());
+        assertThat(entityIdService.lookup(alias)).hasValue(account.toEntityId());
+        assertThat(entityIdService.lookup(evmAddress)).hasValue(account.toEntityId());
     }
 
     @Test
-    void storeAccountDeleted() {
+    void notifyAccountDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
         entityIdService.notify(account);
         var accountId = getProtoContractId(account);
@@ -316,7 +322,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
-    void storeContract(Boolean deleted) {
+    void notifyContract(Boolean deleted) {
         Entity contract = domainBuilder
                 .entity()
                 .customize(c -> c.alias(null).deleted(deleted).type(CONTRACT))
@@ -326,7 +332,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void storeContractDeleted() {
+    void notifyContractDeleted() {
         Entity contract = domainBuilder
                 .entity()
                 .customize(c -> c.alias(null).deleted(true).type(CONTRACT))
@@ -337,12 +343,12 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void storeNull() {
+    void notifyNull() {
         assertDoesNotThrow(() -> entityIdService.notify(null));
     }
 
     @Test
-    void unknownEntityType() {
+    void notifyUnknown() {
         Entity contract = domainBuilder
                 .entity()
                 .customize(

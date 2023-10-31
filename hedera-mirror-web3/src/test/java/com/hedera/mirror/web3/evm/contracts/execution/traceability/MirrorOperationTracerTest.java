@@ -105,7 +105,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
-        given(messageFrame.getMessageStackDepth()).willReturn(1);
+        given(messageFrame.getDepth()).willReturn(1);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
 
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
@@ -152,7 +152,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
-        given(messageFrame.getMessageStackDepth()).willReturn(1);
+        given(messageFrame.getDepth()).willReturn(1);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
 
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);
@@ -197,7 +197,7 @@ class MirrorOperationTracerTest {
         given(messageFrame.getReturnData()).willReturn(returnData);
         given(messageFrame.getSenderAddress()).willReturn(sender);
         given(messageFrame.getState()).willReturn(State.CODE_SUSPENDED);
-        given(messageFrame.getMessageStackDepth()).willReturn(1);
+        given(messageFrame.getDepth()).willReturn(1);
         given(mirrorEvmContractAliases.resolveForEvm(recipient)).willReturn(recipient);
 
         mirrorOperationTracer.tracePostExecution(messageFrame, operationResult);

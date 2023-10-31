@@ -18,6 +18,7 @@
  * ‍
  */
 
+import com.github.gradle.node.npm.task.NpmTask
 import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
 
 plugins {
@@ -32,30 +33,12 @@ springBoot {
     buildInfo()
 }
 
-// Temporary for backwards compatibility with tgz
-tasks.bootJar {
-    archiveFileName = "${projectDir.name}-v${project.version}.jar"
-}
-
 tasks.named("dockerBuild") {
     dependsOn(tasks.bootJar)
 }
 
-// Temporary until we move completely off VMs
-tasks.register<Tar>("package") {
-    val name = "${projectDir.name}-v${project.version}"
-    dependsOn(tasks.bootJar)
-    archiveFileName = "${name}.tgz"
-    compression = Compression.GZIP
-    into("/${name}") {
-        from("${layout.buildDirectory.asFile.get()}/libs")
-        exclude("*-plain.jar")
-        include("*.jar")
-    }
-    into("/${name}/scripts") {
-        from("scripts")
-        include("**/*")
-    }
+tasks.register<NpmTask>("run") {
+    dependsOn(tasks.bootRun)
 }
 
 // Export the function as an extra property
