@@ -573,7 +573,7 @@ public class CallFeature extends AbstractFeature {
         var statusAfterDissociate = response.getResultAsListDecimal().get(1);
 
         // transfer after associate should pass -> response code 22 equals SUCCESS
-        assertThat(statusAfterAssociate).isEqualTo(22L);
+        assertThat(statusAfterAssociate).isEqualTo(22);
         // transfer after dissociate should fail > response code 237 equals to owner does not own the token
         // assertThat(Integer.parseInt(statusAfterDissociate, 16)).isEqualTo(184); //atm failing, investigating with devs
     }
@@ -593,9 +593,9 @@ public class CallFeature extends AbstractFeature {
         var statusAfterDissociate = response.getResultAsListDecimal().get(1);
 
         // transfer after associate should pass -> response code 22 equals SUCCESS
-        assertThat(statusAfterAssociate).isEqualTo(22L);
+        assertThat(statusAfterAssociate).isEqualTo(22);
         // transfer after dissociate should fail -> response code 237 equals to owner does not own the NFT
-        assertThat(statusAfterDissociate).isEqualTo(237L);
+        assertThat(statusAfterDissociate).isEqualTo(237);
     }
 
     @Then(
@@ -654,15 +654,15 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(5);
 
         // isKYC after grant should be true
-        assertThat(results.get(0)).isEqualTo(1L);
+        assertThat(results.get(0)).isEqualTo(1);
         // KYC grant status should be SUCCESS = 22
-        assertThat(results.get(1)).isEqualTo(22L);
+        assertThat(results.get(1)).isEqualTo(22);
         // isKYC after revoke should be false
-        assertThat(results.get(2)).isEqualTo(0L);
+        assertThat(results.get(2)).isEqualTo(0);
         // KYC revoke status should be SUCCESS = 22
-        assertThat(results.get(3)).isEqualTo(22L);
+        assertThat(results.get(3)).isEqualTo(22);
         //transfer status after kyc revert should be failing with KYC should be granted
-        assertThat(results.get(4)).isEqualTo(176L);
+        assertThat(results.get(4)).isEqualTo(176);
     }
 
     private void validateAddresses(String[] addresses) {
