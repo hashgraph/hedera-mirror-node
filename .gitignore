@@ -145,6 +145,8 @@ hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/HederaRespons
 hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/HederaTokenService.sol
 hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/IHederaTokenService.sol
 hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/KeyHelper.sol
+hedera-mirror-test/src/test/resources/solidity/artifacts/@openzeppelin.contracts
+
 
 # Gradle
 .gradle

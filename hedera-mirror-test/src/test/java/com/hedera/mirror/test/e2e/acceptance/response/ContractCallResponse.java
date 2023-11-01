@@ -65,7 +65,7 @@ public class ContractCallResponse {
         return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
 
-    public List<Integer> getResultAsListDecimal() {
+    public List<BigInteger> getResultAsListDecimal() {
         result = result.replace("0x", "");
 
         return Splitter.fixedLength(64)
@@ -77,9 +77,6 @@ public class ContractCallResponse {
     public List<String> getResultAsListAddress() {
         result = result.replace("0x", "");
 
-        return Splitter.fixedLength(64)
-                .splitToStream(result)
-                .map(TestUtil::hexToAddress)
-                .toList();
+        return Splitter.fixedLength(64).splitToStream(result).toList();
     }
 }

@@ -22,14 +22,14 @@ import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenName
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER_FROM;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_TOKEN_GET_ALLOWANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.ASSOCIATE_TOKEN_DISSOCIATE_FAIL_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.FREEZE_TOKEN_GET_STATUS_UNFREEZE_GET_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DISSOCIATE_TOKEN_FAIL_TRANSFER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.FREEZE_UNFREEZE_GET_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.GRANT_KYC_REVOKE_KYC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR;
@@ -40,12 +40,12 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMe
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.IERC721_TOKEN_NAME_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.IERC721_TOKEN_SYMBOL_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.PAUSE_GET_STATUS_UNPAUSE_GET_STATUS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.PAUSE_UNPAUSE_GET_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.REENTRANCY_CALL_WITH_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.STATE_UPDATE_N_TIMES_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.UPDATE_COUNTER_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
@@ -116,7 +116,7 @@ public class CallFeature extends AbstractFeature {
         address1 = new BigInteger(address1, 16).toString(16);
         address2 = new BigInteger(address2, 16).toString(16);
 
-        return new String[] {address1, address2};
+        return new String[]{address1, address2};
     }
 
     @RetryAsserts
@@ -190,16 +190,8 @@ public class CallFeature extends AbstractFeature {
 
     @And("I associate FUNGIBLE token to receiver account")
     public void associateFungibleTokenToReceiver() {
-        var fungibleTokenStatus = mirrorClient.getTokenRelationships(receiverAccountId.getAccountId(), fungibleTokenId).getTokens().size();
-        var nftStatus = mirrorClient.getTokenRelationships(receiverAccountId.getAccountId(), nonFungibleTokenId).getTokens().size();
-
-        //if the tokens are already associated from the parallel tests run skip the association
-        if(fungibleTokenStatus == 0){
-            networkTransactionResponse = tokenClient.associate(receiverAccountId, fungibleTokenId);
-        }
-        if(nftStatus == 0){
-            networkTransactionResponse = tokenClient.associate(receiverAccountId, fungibleKycUnfrozenTokenId);
-        }
+        tokenClient.associate(receiverAccountId, fungibleTokenId);
+        networkTransactionResponse = tokenClient.associate(receiverAccountId, fungibleKycUnfrozenTokenId);
     }
 
     @And("I associate NFT token to receiver account")
@@ -373,11 +365,11 @@ public class CallFeature extends AbstractFeature {
         assertEquals(Integer.parseInt(balances[1], 16), 990000);
     }
 
-    @Then("I call function that mints FUNGIBLE token and returns the total supply and balance of treasury")
+    @Then("I mint FUNGIBLE token and get the total supply and balance")
     public void ethCallMintFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(fungibleTokenId),
                 1L,
                 asByteArray(Arrays.asList("0x00")),
@@ -388,16 +380,16 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore + amount = balanceAfter
-        assertThat(intValue(results.get(0) + 1L)).isEqualTo((results.get(1)));
+        assertThat(intValue(intValue(results.get(0)) + 1)).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore + amount = totalSupplyAfter
-        assertThat(intValue(results.get(2) + 1L)).isEqualTo(results.get(3));
+        assertThat(intValue(intValue(results.get(2)) + 1L)).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I call function that mints NFT token and returns the total supply and balance of treasury")
+    @Then("I mint NFT token and get the total supply and balance")
     public void ethCallMintNftTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(nonFungibleTokenId),
                 0L,
                 asByteArray(Arrays.asList("0x02")),
@@ -411,16 +403,16 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore + amount = balanceAfter
-        assertThat(results.get(0) + 1).isEqualTo(results.get(1));
+        assertThat(intValue(results.get(0)) + 1).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore + amount = totaSupplyAfter
-        assertThat(results.get(2) + 1).isEqualTo(results.get(3));
+        assertThat(intValue(results.get(2)) + 1).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I call function that burns FUNGIBLE token and returns the total supply and balance of treasury")
+    @Then("I burn FUNGIBLE token and get the total supply and balance")
     public void ethCallBurnFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(fungibleTokenId.toSolidityAddress()),
                 1L,
                 asLongArray(List.of()),
@@ -431,16 +423,16 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore - amount = balanceAfter
-        assertThat(intValue(results.get(0) - 1L)).isEqualTo(results.get(1));
+        assertThat(intValue(intValue(results.get(0)) - 1L)).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore - amount = totalSupplyAfter
-        assertThat(intValue(results.get(2) - 1L)).isEqualTo(results.get(3));
+        assertThat(intValue(intValue(results.get(2)) - 1L)).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I call function that burns NFT token and returns the total supply and balance of treasury")
+    @Then("I burn NFT and get the total supply and balance")
     public void ethCallBurnNftTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(nonFungibleTokenId.toSolidityAddress()),
                 0L,
                 asLongArray(List.of(1L)),
@@ -451,16 +443,16 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore - amount = balanceAfter
-        assertThat(results.get(0) - 1).isEqualTo(results.get(1));
+        assertThat(intValue(results.get(0)) - 1).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore - amount = totalSupplyAfter
-        assertThat(results.get(2) - 1).isEqualTo(results.get(3));
+        assertThat(intValue(results.get(2)) - 1).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I wipe FUNGIBLE token and return the total supply and balance of treasury")
+    @Then("I wipe FUNGIBLE token and get the total supply and balance")
     public void ethCallWipeFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(fungibleTokenId.toSolidityAddress()),
                 1L,
                 asLongArray(List.of()),
@@ -471,16 +463,16 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore - amount = balanceAfter
-        assertThat(intValue(results.get(0) - 1L)).isEqualTo(results.get(1));
+        assertThat(intValue(intValue(results.get(0)) - 1L)).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore - amount = totaSupplyAfter
-        assertThat(intValue(results.get(2) - 1L)).isEqualTo(results.get(3));
+        assertThat(intValue(intValue(results.get(2)) - 1L)).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I wipe NFT token and return the total supply and balance of treasury")
+    @Then("I wipe NFT and get the total supply and balance")
     public void ethCallWipeNftTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
                 PRECOMPILE,
-                WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR,
+                WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE,
                 asAddress(nonFungibleTokenId.toSolidityAddress()),
                 0L,
                 asLongArray(List.of(1L)),
@@ -491,41 +483,42 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore - amount = balanceAfter
-        assertThat(results.get(0) - 1).isEqualTo(results.get(1));
+        assertThat(intValue(results.get(0)) - 1).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore - amount = totalSupplyAfter
-        assertThat(results.get(2) - 1).isEqualTo(results.get(3));
+        assertThat(intValue(results.get(2)) - 1).isEqualTo(intValue(results.get(3)));
     }
 
-    @Then("I call function that pauses {string} token gets status unpauses and returns the status of the token")
+    @Then("I pause {string} token, unpause and get the status of the token")
     public void ethCallPauseTokenGetStatusUnpauseGetStatus(String tokenName) {
         var tokenId = tokenClient
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
-        var data = encodeData(PRECOMPILE, PAUSE_GET_STATUS_UNPAUSE_GET_STATUS, asAddress(tokenId));
+        var data = encodeData(PRECOMPILE, PAUSE_UNPAUSE_GET_STATUS, asAddress(tokenId));
         var response = callContract(data, precompileContractAddress);
         var statusAfterPause = response.getResult().substring(2, 66);
         var statusAfterUnpause = response.getResult().substring(66);
 
         assertThat(Integer.valueOf(statusAfterPause, 16)).isEqualTo(TokenPauseStatus.Paused_VALUE);
-        //assertThat(Integer.valueOf(statusAfterUnpause, 16)).isEqualTo(TokenPauseStatus.Unpaused_VALUE);//check fails for both Fungible and NFT
+        // assertThat(Integer.valueOf(statusAfterUnpause, 16)).isEqualTo(TokenPauseStatus.Unpaused_VALUE);//check fails
+        // for both Fungible and NFT
     }
 
-    @Then("I call function that freezes {string} token gets freeze status unfreezes and gets freeze status")
+    @Then("I freeze {string} token, unfreeze and get status")
     public void ethCallFreezeFungibleGetFreezeStatusUnfreezeGetFreezeStatus(String tokenName) {
         var tokenId = tokenClient
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
-        var data = encodeData(
-                PRECOMPILE, FREEZE_TOKEN_GET_STATUS_UNFREEZE_GET_STATUS, asAddress(tokenId), asAddress(admin));
+        var data = encodeData(PRECOMPILE, FREEZE_UNFREEZE_GET_STATUS, asAddress(tokenId), asAddress(admin));
         var response = callContract(data, precompileContractAddress);
         var statusAfterFreeze = response.getResult().substring(2, 66);
         var statusAfterUnfreeze = response.getResult().substring(66);
 
         assertThat(Integer.valueOf(statusAfterFreeze, 16)).isEqualTo(TokenFreezeStatus.Frozen_VALUE);
-        //assertThat(Integer.valueOf(statusAfterUnfreeze, 16)).isEqualTo(TokenFreezeStatus.Unfrozen_VALUE); // may fail here, was 0 before? @todo check
+        // assertThat(Integer.valueOf(statusAfterUnfreeze, 16)).isEqualTo(TokenFreezeStatus.Unfrozen_VALUE); // may fail
+        // here, was 0 before? @todo check
     }
 
-    @Then("I call function that approves FUNGIBLE token and gets allowance")
+    @Then("I approve a FUNGIBLE token and get allowance")
     public void ethCallApproveFungibleTokenGetAllowance() {
         var data = encodeData(
                 PRECOMPILE,
@@ -542,7 +535,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(new BigInteger(allowance)).isEqualTo(BigInteger.valueOf(1L));
     }
 
-    @Then("I call function that approves NFT token and gets allowance")
+    @Then("I approve a NFT token and get allowance")
     public void ethCallApproveNFTTokenGetAllowance() {
         var data = encodeData(
                 PRECOMPILE,
@@ -558,11 +551,11 @@ public class CallFeature extends AbstractFeature {
         assertThat(approvedAddress).isEqualTo(to32BytesString(receiverAccountAlias));
     }
 
-    @Then("I call function that associates FUNGIBLE token dissociates and fails token transfer")
+    @Then("I dissociate a FUNGIBLE token and fail transfer")
     public void ethCallAssociateFungibleTokenDissociateFailTransfer() {
         var data = encodeData(
                 PRECOMPILE,
-                ASSOCIATE_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                DISSOCIATE_TOKEN_FAIL_TRANSFER,
                 asAddress(fungibleTokenId),
                 asAddress(admin),
                 asAddress(secondReceiverAccount),
@@ -578,11 +571,11 @@ public class CallFeature extends AbstractFeature {
         // assertThat(Integer.parseInt(statusAfterDissociate, 16)).isEqualTo(184); //atm failing, investigating with devs
     }
 
-    @Then("I call function that associates NFT token dissociates and fails token transfer")
+    @Then("I dissociate a NFT and fail transfer")
     public void ethCallAssociateNftTokenDissociateFailTransfer() {
         var data = encodeData(
                 PRECOMPILE,
-                ASSOCIATE_TOKEN_DISSOCIATE_FAIL_TRANSFER,
+                DISSOCIATE_TOKEN_FAIL_TRANSFER,
                 asAddress(nonFungibleTokenId),
                 asAddress(receiverAccountAlias),
                 asAddress(secondReceiverAccount),
@@ -598,12 +591,11 @@ public class CallFeature extends AbstractFeature {
         assertThat(statusAfterDissociate).isEqualTo(237);
     }
 
-    @Then(
-            "I call function that approves a FUNGIBLE token and transfers it")
-    public void ethCallApproveFungibleTokenTransferFromGetAllowanceGetBalance() {
+    @Then("I approve a FUNGIBLE token and transfer it")
+    public void ethCallApproveFungibleTokenAndTransfer() {
         var data = encodeData(
                 PRECOMPILE,
-                APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE,
+                APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER,
                 asAddress(fungibleTokenId),
                 asAddress(receiverAccountAlias),
                 new BigInteger("1"));
@@ -612,35 +604,35 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // allowance before transfer should equal the amount
-        assertThat(results.get(0)).isEqualTo(1);
+        assertThat(intValue(results.get(0))).isEqualTo(1);
         // balance before + amount should equal the balance after
-        assertThat(results.get(1) + 1).isEqualTo(results.get(3));
+        assertThat(intValue(results.get(1)) + 1).isEqualTo(intValue(results.get(3)));
         // allowance after transfer should be 0
-        assertThat(results.get(2)).isZero();
+        assertThat(intValue(results.get(2))).isZero();
     }
 
-    @Then(
-            "I call function that approves a NFT token and transfers it")
-    public void ethCallApproveNftTokenTransferFromGetAllowanceGetBalance() {
+    @Then("I approve a NFT token and transfer it")
+    public void ethCallApproveNftTokenAndTransfer() {
         var data = encodeData(
                 PRECOMPILE,
-                APPROVE_NFT_TOKEN_AND_TRANSFER_FROM,
+                APPROVE_NFT_TOKEN_AND_TRANSFER,
                 asAddress(nonFungibleTokenId),
                 asAddress(receiverAccountAlias),
                 new BigInteger("2"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListAddress();
-        assertThat(results).isNotNull().hasSize(3);;
+
+        assertThat(results).isNotNull().hasSize(3);
 
         // allowed address before transfer should be the receiverAccount
-        assertThat(asAddress(results.get(0))).isEqualTo(asAddress(receiverAccountAlias));
+        assertThat(results.get(0)).isEqualTo(to32BytesString(receiverAccountAlias));
         // balance before + amount should equal the balance after
-        assertThat(asAddress(results.get(1))).isEqualTo(asAddress(receiverAccountAlias));
+        assertThat(results.get(1)).isEqualTo(to32BytesString(receiverAccountAlias));
         // allowance after transfer should be != 0
-        assertThat(asAddress(results.get(2))).isNotEqualTo(asAddress(receiverAccountAlias));
+        assertThat(results.get(2)).isNotEqualTo(to32BytesString(receiverAccountAlias));
     }
 
-    @Then("I call function that grants and revokes KYC")
+    @Then("I grant and revoke KYC")
     public void ethCallGrantKycRevokeKyc() {
         var data = encodeData(
                 PRECOMPILE,
@@ -661,7 +653,7 @@ public class CallFeature extends AbstractFeature {
         assertThat(results.get(2)).isZero();
         // KYC revoke status should be SUCCESS = 22
         assertThat(results.get(3)).isEqualTo(22);
-        //transfer status after kyc revert should be failing with KYC should be granted
+        // transfer status after kyc revert should be failing with KYC should be granted
         assertThat(results.get(4)).isEqualTo(176);
     }
 
@@ -699,16 +691,15 @@ public class CallFeature extends AbstractFeature {
         DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR("deployNestedContracts"),
         DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR("deployNestedContracts2"),
         REENTRANCY_CALL_WITH_GAS("reentrancyCallWithGas"),
-        MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("mintTokenGetTotalSupplyAndBalanceOfTreasury"),
-        BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("burnTokenGetTotalSupplyAndBalanceOfTreasury"),
-        WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE_OF_TREASURY_SELECTOR("wipeTokenGetTotalSupplyAndBalanceOfAccount"),
-        PAUSE_GET_STATUS_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus"),
-        FREEZE_TOKEN_GET_STATUS_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus"),
+        MINT_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE("mintTokenGetTotalSupplyAndBalanceOfTreasury"),
+        BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE("burnTokenGetTotalSupplyAndBalanceOfTreasury"),
+        WIPE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE("wipeTokenGetTotalSupplyAndBalanceOfAccount"),
+        PAUSE_UNPAUSE_GET_STATUS("pauseTokenGetPauseStatusUnpauseGetPauseStatus"),
+        FREEZE_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus"),
         APPROVE_TOKEN_GET_ALLOWANCE("approveTokenGetAllowance"),
-        ASSOCIATE_TOKEN_DISSOCIATE_FAIL_TRANSFER("associateTokenDissociateFailTransfer"),
-        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_GET_BALANCE(
-                "approveFungibleTokenTransferFromGetAllowanceGetBalance"),
-        APPROVE_NFT_TOKEN_AND_TRANSFER_FROM("approveNftAndTransfer"),
+        DISSOCIATE_TOKEN_FAIL_TRANSFER("associateTokenDissociateFailTransfer"),
+        APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance"),
+        APPROVE_NFT_TOKEN_AND_TRANSFER("approveNftAndTransfer"),
         GRANT_KYC_REVOKE_KYC("grantKycRevokeKyc");
 
         private final String selector;

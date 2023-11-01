@@ -158,15 +158,15 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with exchange rate tinybars to tinycents
     #Then I call estimateGas with pseudo random seed
     #Then I call estimateGas with pseudo random number
-    Then I call estimate gas that mints FUNGIBLE token and returns the total supply and balance of treasury
-    Then I call estimate gas that mints NFT token and returns the total supply and balance of treasury
-    Then I call estimate gas that burns FUNGIBLE token and returns the total supply and balance of treasury
-    Then I call estimate gas that wipes FUNGIBLE token and returns the total supply and balance of treasury
-    Then I call estimate gas that wipes NFT token and returns the total supply and balance of treasury
-    Then I call estimate gas that pauses FUNGIBLE token gets status unpauses and returns the status of the token
-    Then I call estimate gas that pauses NFT token gets status unpauses and returns the status of the token
-    Then I call estimate gas that freezes FUNGIBLE token gets freeze status unfreezes and gets freeze status
-    Then I call estimate gas that freezes NFT token gets freeze status unfreezes and gets freeze status
+    Then I call estimate gas that mints FUNGIBLE token and gets the total supply and balance
+    Then I call estimate gas that mints NFT token and gets the total supply and balance
+    Then I call estimate gas that burns FUNGIBLE token and gets the total supply and balance
+    Then I call estimate gas that wipes FUNGIBLE token and gets the total supply and balance
+    Then I call estimate gas that wipes NFT token and gets the total supply and balance
+    Then I call estimate gas that pauses FUNGIBLE token, unpauses and gets the token status
+    Then I call estimate gas that pauses NFT token, unpauses and gets the token status
+    Then I call estimate gas that freezes FUNGIBLE token, unfreezes and gets freeze status
+    Then I call estimate gas that freezes NFT token, unfreezes and gets freeze status
     Then I call estimate gas that approves FUNGIBLE token and gets allowance
     Then I call estimate gas that approves NFT token and gets allowance
     #Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer

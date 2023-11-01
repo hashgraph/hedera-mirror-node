@@ -23,10 +23,10 @@ Feature: eth_call Contract Base Coverage Feature
 #    Then I call function with nested deploy using create function
 #    Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
-    Then I call function that burns FUNGIBLE token and returns the total supply and balance of treasury
-    Then I call function that burns NFT token and returns the total supply and balance of treasury
-    Then I call function that pauses "FUNGIBLE" token gets status unpauses and returns the status of the token
-    Then I call function that pauses "NFT" token gets status unpauses and returns the status of the token
+    Then I burn FUNGIBLE token and get the total supply and balance
+    Then I burn NFT and get the total supply and balance
+    Then I pause "FUNGIBLE" token, unpause and get the status of the token
+    Then I pause "NFT" token, unpause and get the status of the token
     And I associate FUNGIBLE token to receiver account
     Then the mirror node should return status 200 for the HAPI transaction
     And I associate NFT token to receiver account
@@ -35,12 +35,12 @@ Feature: eth_call Contract Base Coverage Feature
     Then the mirror node should return status 200 for the HAPI transaction
     And I approve and transfer NFT token to receiver account
     Then the mirror node should return status 200 for the HAPI transaction
-    Then I call function that mints FUNGIBLE token and returns the total supply and balance of treasury
-    Then I call function that mints NFT token and returns the total supply and balance of treasury
-    Then I wipe FUNGIBLE token and return the total supply and balance of treasury
-    Then I wipe NFT token and return the total supply and balance of treasury
-    Then I call function that freezes "FUNGIBLE" token gets freeze status unfreezes and gets freeze status
-    Then I call function that freezes "NFT" token gets freeze status unfreezes and gets freeze status
+    Then I mint FUNGIBLE token and get the total supply and balance
+    Then I mint NFT token and get the total supply and balance
+    Then I wipe FUNGIBLE token and get the total supply and balance
+    Then I wipe NFT and get the total supply and balance
+    Then I freeze "FUNGIBLE" token, unfreeze and get status
+    Then I freeze "NFT" token, unfreeze and get status
     And I associate precompile contract with the tokens
     Then the mirror node should return status 200 for the HAPI transaction
     And I approve and transfer FUNGIBLE token to the precompile contract
@@ -49,10 +49,10 @@ Feature: eth_call Contract Base Coverage Feature
     Then the mirror node should return status 200 for the HAPI transaction
     And I approve and transfer NFT token to the precompile contract
     Then the mirror node should return status 200 for the HAPI transaction
-    Then I call function that approves FUNGIBLE token and gets allowance
-    Then I call function that approves NFT token and gets allowance
-    Then I call function that associates FUNGIBLE token dissociates and fails token transfer
-    Then I call function that associates NFT token dissociates and fails token transfer
-    Then I call function that approves a FUNGIBLE token and transfers it
-    Then I call function that approves a NFT token and transfers it
-    Then I call function that grants and revokes KYC
+    Then I approve a FUNGIBLE token and get allowance
+    Then I approve a NFT token and get allowance
+    Then I dissociate a FUNGIBLE token and fail transfer
+    Then I dissociate a NFT and fail transfer
+    Then I approve a FUNGIBLE token and transfer it
+    Then I approve a NFT token and transfer it
+    Then I grant and revoke KYC

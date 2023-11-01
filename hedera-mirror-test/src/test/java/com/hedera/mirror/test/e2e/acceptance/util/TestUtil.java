@@ -27,6 +27,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.json.JSONObject;
 
 @UtilityClass
@@ -152,16 +154,8 @@ public class TestUtil {
         }
     }
 
-    public static Integer hexToDecimal(String hex){
-        try {
-            return Integer.parseInt(hex, 16);
-        }catch (NumberFormatException e){
-            return Integer.parseInt(hex, 64);
-        }
-    }
-
-    public static String hexToAddress(String hex){
-        return Bytes.fromHexString(hex).slice(12).toUnprefixedHexString();
+    public static BigInteger hexToDecimal(String hex) {
+        return Bytes32.fromHexString(hex).toBigInteger();
     }
 
     public static class TokenTransferListBuilder {
