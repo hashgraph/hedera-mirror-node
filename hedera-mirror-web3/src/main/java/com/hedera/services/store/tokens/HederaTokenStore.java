@@ -148,7 +148,7 @@ public class HederaTokenStore {
             final var tokenRelationship =
                     store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.DONT_THROW);
 
-            if (!tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
+            if (!tokenRelationship.getAccount().getId().equals(Id.DEFAULT) || tokenRelationship.hasAssociation()) {
                 return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
             }
 
@@ -777,7 +777,7 @@ public class HederaTokenStore {
         if (aCounterPartyId != null) {
             key = asTokenRelationshipKey(aCounterPartyId, tId);
             tokenRelationship = store.getTokenRelationship(key, OnMissing.DONT_THROW);
-            if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
+            if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT) || !tokenRelationship.hasAssociation()) {
                 validity = validateAndAutoAssociate(aCounterPartyId, tId);
                 if (validity != OK) {
                     return validity;
