@@ -914,8 +914,8 @@ const nsToSecNsWithHyphen = (ns) => {
 
 /**
  * Given a timestamp, returns the timestamp of the first day of that month
- * @param upperBound
- * @returns {String}
+ * @param secNs nanoseconds since epoch
+ * @returns {String} ns at first day of month
  */
 const getFirstDayOfMonth = (secNs) => {
   if (_.isNil(secNs)) {
@@ -931,8 +931,8 @@ const getFirstDayOfMonth = (secNs) => {
 
 /**
  * Converts milliseconds to nanoseconds
- * @param {String|Number} Milliseconds since epoch
- * @return {String} ns Nanoseconds since epoch
+ * @param {String|Number} secNs milliseconds since epoch
+ * @return {String} nanoseconds since epoch
  */
 const secNsToMs = (secNs) => {
   if (_.isNil(secNs)) {
@@ -945,7 +945,7 @@ const secNsToMs = (secNs) => {
 /**
  * Converts nanoseconds to milliseconds
  * @param {String} nanoseconds since epoch
- * @return {String} ms milliseconds since epoch
+ * @return {String} milliseconds since epoch
  */
 const secMsToNs = (secMs) => {
   if (_.isNil(secMs)) {
