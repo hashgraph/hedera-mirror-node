@@ -659,7 +659,9 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.Unfrozen),
         NFT_KYC_UNFROZEN(
-                "nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
+                "nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+        NFT_HISTORICAL(
+                "nft_historical", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
 
         private final String symbol;
         private final TokenType tokenType;
