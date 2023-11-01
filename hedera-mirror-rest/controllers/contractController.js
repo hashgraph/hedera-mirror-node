@@ -1150,23 +1150,17 @@ class ContractController extends BaseController {
 
   getDetailedContractResults = async (contractDetails, excludedTransactionResults = [], contractId = undefined) => {
     return Promise.all([
-      ContractService.getContractResultsByTimestamps(
-        contractDetails.consensusTimestamp,
-        contractDetails.involvedContractIds
-      ),
+      ContractService.getContractResultsByTimestamps(contractDetails.consensusTimestamp, contractDetails.contractIds),
       TransactionService.getEthTransactionByTimestampAndPayerId(
         contractDetails.consensusTimestamp,
         contractDetails.payerAccountId
       ),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractDetails.consensusTimestamp),
-      ContractService.getContractLogsByTimestamps(
-        contractDetails.consensusTimestamp,
-        contractDetails.involvedContractIds
-      ),
+      ContractService.getContractLogsByTimestamps(contractDetails.consensusTimestamp, contractDetails.contractIds),
       ContractService.getContractStateChangesByTimestamps(
         contractDetails.consensusTimestamp,
         contractId,
-        contractDetails.involvedContractIds
+        contractDetails.contractIds
       ),
     ]);
   };

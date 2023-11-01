@@ -1470,25 +1470,6 @@ describe('ContractService.getContractTransactionDetailsByHash tests', () => {
     },
   ];
 
-  const inputEthTransaction = [
-    {
-      consensus_timestamp: 1,
-      hash: ethereumTxHash,
-    },
-    {
-      consensus_timestamp: 2,
-      hash: ethereumTxHash,
-    },
-    {
-      consensus_timestamp: 3,
-      hash: ethereumTxHash,
-    },
-    {
-      consensus_timestamp: 4,
-      hash: ethereumTxHash,
-    },
-  ];
-
   const expectedTransactionDetails = [
     {
       consensusTimestamp: 1,
@@ -1518,7 +1499,6 @@ describe('ContractService.getContractTransactionDetailsByHash tests', () => {
 
   beforeEach(async () => {
     await integrationDomainOps.loadContractResults(inputContractResults);
-    await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
   });
 
   test('No match', async () => {
@@ -1682,6 +1662,6 @@ describe('ContractService.getInvolvedContractsByTimestampAndContractId tests', (
   test('Finds involved contract ids', async () => {
     const transactionDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, 1);
     const expected = [1, 21, 22, 11, 10];
-    expect(transactionDetails.involvedContractIds).toContainAllValues(expected);
+    expect(transactionDetails.contractIds).toContainAllValues(expected);
   });
 });

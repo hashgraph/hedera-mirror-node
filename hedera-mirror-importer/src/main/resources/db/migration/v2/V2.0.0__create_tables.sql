@@ -182,10 +182,10 @@ comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists contract_transaction
 (
-    consensus_timestamp   bigint       not null,
-    entity_id             bigint       not null,
-    involved_contract_ids bigint array not null,
-    payer_account_id      bigint       not null
+    consensus_timestamp bigint       not null,
+    entity_id           bigint       not null,
+    contract_ids        bigint array not null,
+    payer_account_id    bigint       not null
 ) partition by range (consensus_timestamp);
 comment on table contract_transaction is 'Maps contract parties to contract transaction details for a given timestamp';
 

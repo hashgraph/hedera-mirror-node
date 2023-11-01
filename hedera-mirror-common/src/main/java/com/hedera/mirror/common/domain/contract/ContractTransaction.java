@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.domain.contract;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.ListToStringSerializer;
 import jakarta.persistence.Entity;
@@ -28,6 +29,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 @Data
 @Entity
@@ -35,7 +37,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @IdClass(ContractTransaction.Id.class)
-public class ContractTransaction {
+public class ContractTransaction implements Persistable<ContractTransaction.Id> {
     @jakarta.persistence.Id
     private Long consensusTimestamp;
 
@@ -44,9 +46,21 @@ public class ContractTransaction {
 
     @Builder.Default
     @JsonSerialize(using = ListToStringSerializer.class)
-    private List<Long> involvedContractIds = Collections.emptyList();
+    private List<Long> contractIds = Collections.emptyList();
 
     private long payerAccountId;
+
+    @Override
+    @JsonIgnore
+    public Id getId() {
+        return new ContractTransaction.Id(consensusTimestamp, entityId);
+    }
+
+    @Override
+    @JsonIgnore
+    public boolean isNew() {
+        return true;
+    }
 
     @Data
     @AllArgsConstructor

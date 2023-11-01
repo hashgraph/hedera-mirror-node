@@ -239,7 +239,7 @@ class ContractService extends BaseService {
                                        `;
   static involvedContractsQuery = `select ${ContractTransaction.PAYER_ACCOUNT_ID},
                                           ${ContractTransaction.ENTITY_ID},
-                                          ${ContractTransaction.INVOLVED_CONTRACT_IDS},
+                                          ${ContractTransaction.CONTRACT_IDS},
                                           ${ContractTransaction.CONSENSUS_TIMESTAMP}
                    from ${ContractTransaction.tableName}
                    where ${ContractTransaction.CONSENSUS_TIMESTAMP} = $1 and ${ContractTransaction.ENTITY_ID} = $2`;

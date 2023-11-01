@@ -32,7 +32,13 @@ import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.contract.*;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -329,7 +335,7 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .entityId(contractId)
                 .payerAccountId(payerAccountId)
-                .involvedContractIds(Arrays.asList(payerAccountId, contractId));
+                .contractIds(Arrays.asList(payerAccountId, contractId));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

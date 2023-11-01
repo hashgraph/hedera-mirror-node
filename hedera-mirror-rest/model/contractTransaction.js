@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 class ContractTransaction {
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static ENTITY_ID = 'entity_id';
-  static INVOLVED_CONTRACT_IDS = 'involved_contract_ids';
+  static CONTRACT_IDS = 'contract_ids';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static tableName = 'contract_transaction';
 
@@ -27,7 +27,7 @@ class ContractTransaction {
   constructor(contractTransaction) {
     this.consensusTimestamp = contractTransaction[ContractTransaction.CONSENSUS_TIMESTAMP];
     this.entityId = contractTransaction[ContractTransaction.ENTITY_ID];
-    this.involvedContractIds = contractTransaction[ContractTransaction.INVOLVED_CONTRACT_IDS] || [];
+    this.contractIds = contractTransaction[ContractTransaction.CONTRACT_IDS] || [];
     this.payerAccountId = contractTransaction[ContractTransaction.PAYER_ACCOUNT_ID];
   }
 }

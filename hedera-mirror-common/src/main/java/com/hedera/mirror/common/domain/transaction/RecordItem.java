@@ -33,7 +33,15 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import lombok.AccessLevel;
@@ -162,7 +170,7 @@ public class RecordItem implements StreamItem {
 
     public Collection<ContractTransaction> getContractTransactions() {
         var ids = new ArrayList<>(contractTransactions.keySet());
-        contractTransactions.values().forEach(contractTransaction -> contractTransaction.setInvolvedContractIds(ids));
+        contractTransactions.values().forEach(contractTransaction -> contractTransaction.setContractIds(ids));
         return contractTransactions.values();
     }
 

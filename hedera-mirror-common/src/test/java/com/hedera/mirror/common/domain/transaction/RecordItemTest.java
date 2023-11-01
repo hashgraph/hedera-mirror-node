@@ -619,7 +619,7 @@ class RecordItemTest {
                 .consensusTimestamp(consensusTimestamp)
                 .payerAccountId(payerAccountId.getAccountNum())
                 .entityId(account.getId())
-                .involvedContractIds(Collections.singletonList(account.getId()))
+                .contractIds(Collections.singletonList(account.getId()))
                 .build();
 
         recordItem.addContractTransaction(account);
@@ -631,12 +631,12 @@ class RecordItemTest {
 
         // additional id results in another transaction record and the first is updated to include id of the new
         var account2 = EntityId.of(id);
-        expected1.setInvolvedContractIds(Arrays.asList(account.getId(), account2.getId()));
+        expected1.setContractIds(Arrays.asList(account.getId(), account2.getId()));
         var expected2 = ContractTransaction.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .payerAccountId(payerAccountId.getAccountNum())
                 .entityId(account2.getId())
-                .involvedContractIds(Arrays.asList(account.getId(), account2.getId()))
+                .contractIds(Arrays.asList(account.getId(), account2.getId()))
                 .build();
         recordItem.addContractTransaction(account2);
         assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1, expected2);
