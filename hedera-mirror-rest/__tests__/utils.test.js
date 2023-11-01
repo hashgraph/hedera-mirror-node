@@ -120,6 +120,40 @@ describe('Utils nsToSecNs tests', () => {
   });
 });
 
+describe('Utils secNsToMs tests', () => {
+  test('Verify secNsToMs', () => {
+    const val = utils.secNsToMs('9223372036854775837');
+    expect(val).toBe('9223372036854.775837');
+  });
+
+  test('Verify secNsToMs returns correct result for 0', () => {
+    const val = utils.secNsToMs(0);
+    expect(val).toBe('0');
+  });
+
+  test('Verify secNsToMs returns correct result for null', () => {
+    const val = utils.secNsToMs(null);
+    expect(val).toBe(null);
+  });
+});
+
+describe('Utils secMsToNs tests', () => {
+  test('Verify secMsToNs', () => {
+    const val = utils.secMsToNs('9223372036854.775837');
+    expect(val).toBe('9223372036854775837');
+  });
+
+  test('Verify nsToSecNs returns correct result for 0', () => {
+    const val = utils.secMsToNs(0);
+    expect(val).toBe('0');
+  });
+
+  test('Verify nsToSecNs returns correct result for null', () => {
+    const val = utils.secMsToNs(null);
+    expect(val).toBe(null);
+  });
+});
+
 describe('Utils incrementTimestampByOneDay tests', () => {
   test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
     const val = utils.incrementTimestampByOneDay(1655164799999999999n);
@@ -139,6 +173,31 @@ describe('Utils incrementTimestampByOneDay tests', () => {
   test('Verify incrementTimestampByOneDay with 0', () => {
     const val = utils.incrementTimestampByOneDay(0);
     expect(val).toBe('86400.000000000');
+  });
+});
+
+describe('Utils getFirstDayOfMonth tests', () => {
+  test('Verify 0', () => {
+    const val = utils.getFirstDayOfMonth('0');
+    expect(val).toBe('0');
+  });
+
+  test('Verify undefined', () => {
+    expect(utils.getFirstDayOfMonth(undefined)).toBeNull();
+  });
+
+  test('Verify end of month', () => {
+    // December 31, 2023 11:59:59 PM
+    const val = utils.getFirstDayOfMonth('1704067199000000000');
+    // Expected to return: December 1, 2023 12:00:00 AM
+    expect(val).toBe('1701388800000000000');
+  });
+
+  test('Verify beginning of month', () => {
+    // February 1, 2022 12:00:00 AM
+    const timestamp = '1643673600000000000';
+    const val = utils.getFirstDayOfMonth(timestamp);
+    expect(val).toBe(timestamp);
   });
 });
 

@@ -8,12 +8,12 @@
     },
     "balances": [
       {
-        "timestamp": 15,
+        "timestamp": 1564617600000000000,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 15,
+        "timestamp": 1564617600000000000,
         "id": 17,
         "realm_num": 1,
         "balance": 70,
@@ -29,18 +29,18 @@
         ]
       },
       {
-        "timestamp": 30,
+        "timestamp": 1564618500000000000,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 30,
+        "timestamp": 1564618500000000000,
         "id": 18,
         "realm_num": 1,
         "balance": 80
       },
       {
-        "timestamp": 30,
+        "timestamp": 1564618500000000000,
         "id": 20,
         "realm_num": 1,
         "balance": 19,
@@ -52,18 +52,18 @@
         ]
       },
       {
-        "timestamp": 45,
+        "timestamp": 1566618500000000000,
         "id": 2,
         "balance": 2
       },
       {
-        "timestamp": 45,
+        "timestamp": 1566618500000000000,
         "id": 19,
         "realm_num": 1,
         "balance": 90
       },
       {
-        "timestamp": 45,
+        "timestamp": 1567295999000000000,
         "id": 20,
         "realm_num": 1,
         "balance": 20,
@@ -75,55 +75,138 @@
         ]
       },
       {
-        "timestamp": 45,
+        "timestamp": 1567295999000000000,
+        "id": 2,
+        "balance": 22
+      },
+      {
+        "timestamp": 1567295999000000000,
         "id": 21,
         "realm_num": 1,
         "balance": 21
       }
     ]
   },
-  "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=0.000000045",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "0.000000045",
-    "balances": [
-      {
-        "account": "0.1.20",
-        "balance": 20,
-        "tokens": [
+  "tests": [
+    {
+      "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567295999.000000000",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1567295999.000000000",
+        "balances": [
           {
-            "balance": 1001,
-            "token_id": "0.0.90000"
-          }
-        ]
-      },
-      {
-        "account": "0.1.19",
-        "balance": 90,
-        "tokens": []
-      },
-      {
-        "account": "0.1.18",
-        "balance": 80,
-        "tokens": []
-      },
-      {
-        "account": "0.1.17",
-        "balance": 70,
-        "tokens": [
-          {
-            "balance": 700,
-            "token_id": "0.0.70007"
+            "account": "0.1.20",
+            "balance": 20,
+            "tokens": [
+              {
+                "balance": 1001,
+                "token_id": "0.0.90000"
+              }
+            ]
           },
           {
-            "balance": 7,
-            "token_id": "0.0.70000"
+            "account": "0.1.19",
+            "balance": 90,
+            "tokens": []
+          },
+          {
+            "account": "0.1.18",
+            "balance": 80,
+            "tokens": []
+          },
+          {
+            "account": "0.1.17",
+            "balance": 70,
+            "tokens": [
+              {
+                "balance": 700,
+                "token_id": "0.0.70007"
+              },
+              {
+                "balance": 7,
+                "token_id": "0.0.70000"
+              }
+            ]
           }
-        ]
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=1567295999.000000000",
+        "/api/v1/balances?timestamp=lte:1567295999.000000000",
+        "/api/v1/balances?timestamp=gte:1567295999.000000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1567295999.000000000",
+        "balances": [
+          {
+            "account": "0.1.21",
+            "balance": 21,
+            "tokens": []
+          },
+          {
+            "account": "0.1.20",
+            "balance": 20,
+            "tokens": [
+              {
+                "balance": 1001,
+                "token_id": "0.0.90000"
+              }
+            ]
+          },
+          {
+            "account": "0.1.19",
+            "balance": 90,
+            "tokens": []
+          },
+          {
+            "account": "0.1.18",
+            "balance": 80,
+            "tokens": []
+          },
+          {
+            "account": "0.1.17",
+            "balance": 70,
+            "tokens": [
+              {
+                "balance": 700,
+                "token_id": "0.0.70007"
+              },
+              {
+                "balance": 7,
+                "token_id": "0.0.70000"
+              }
+            ]
+          },
+          {
+            "account": "0.0.2",
+            "balance": 22,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567296000.000000000",
+        "/api/v1/balances?timestamp=1567296000.000000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": null,
+        "balances": [],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }
