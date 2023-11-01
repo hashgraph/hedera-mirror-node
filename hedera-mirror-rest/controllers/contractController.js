@@ -955,7 +955,7 @@ class ContractController extends BaseController {
     }
 
     const [contractResults, ethTransactions, recordFile, contractLogs, contractStateChanges] =
-      await this.getDetailedContractResults(contractDetails, [], contractId);
+      await this.getDetailedContractResults(contractDetails, contractId);
 
     const ethTransaction = ethTransactions[0];
 
@@ -1110,7 +1110,7 @@ class ContractController extends BaseController {
     }
 
     const [contractResults, ethTransactions, recordFile, contractLogs, contractStateChanges] =
-      await this.getDetailedContractResults(contractDetails, excludeTransactionResults, undefined);
+      await this.getDetailedContractResults(contractDetails, undefined);
 
     if (contractResults.length === 0) {
       if (ethTransactions.length !== 0) {
@@ -1148,7 +1148,7 @@ class ContractController extends BaseController {
     }
   };
 
-  getDetailedContractResults = async (contractDetails, excludedTransactionResults = [], contractId = undefined) => {
+  getDetailedContractResults = async (contractDetails, contractId = undefined) => {
     return Promise.all([
       ContractService.getContractResultsByTimestamps(contractDetails.consensusTimestamp, contractDetails.contractIds),
       TransactionService.getEthTransactionByTimestampAndPayerId(
