@@ -47,6 +47,10 @@ spec:
             name: DEFAULT_ACCOUNT_ID_NFTS
             type: basic
             value: "1484550"
+          DEFAULT_ACCOUNT_ID_TIMESTAMP:
+            name: DEFAULT_ACCOUNT_ID_TIMESTAMP
+            type: basic
+            value: "1698181150.152"
           DEFAULT_ACCOUNT_ID_TOKEN:
             name: DEFAULT_ACCOUNT_ID_TOKEN
             type: basic
@@ -55,6 +59,10 @@ spec:
             name: DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
             type: basic
             value: "1323559"
+          DEFAULT_BALANCE_TIMESTAMP:
+            name: DEFAULT_BALANCE_TIMESTAMP
+            type: basic
+            value: "1698342740.152"
           DEFAULT_CONTRACT_ID:
             name: DEFAULT_CONTRACT_ID
             type: basic
