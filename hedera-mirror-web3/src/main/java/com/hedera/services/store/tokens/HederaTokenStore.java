@@ -768,7 +768,7 @@ public class HederaTokenStore {
          * we check if the account has any maxAutoAssociations set up, if they do check if we reached the limit and
          * auto associate. If not return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT
          */
-        if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT)) {
+        if (tokenRelationship.getAccount().getId().equals(Id.DEFAULT) || !tokenRelationship.hasAssociation()) {
             validity = validateAndAutoAssociate(aId, tId);
             if (validity != OK) {
                 return validity;
