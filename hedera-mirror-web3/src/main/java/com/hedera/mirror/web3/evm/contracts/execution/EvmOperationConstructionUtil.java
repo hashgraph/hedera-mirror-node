@@ -38,6 +38,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.services.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
@@ -166,7 +167,8 @@ public class EvmOperationConstructionUtil {
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        prngSeedOperation)
+                        prngSeedOperation,
+                        new HederaBlockHashOperation(gasCalculator))
                 .forEach(operationRegistry::put);
 
         return new EVM(

@@ -428,6 +428,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             .build();
 
     protected static RecordFile recordFileForBlockHash;
+    protected static RecordFile genesisRecordFileForBlockHash;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -809,6 +810,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void persistEntities() {
+        genesisBlockPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -1042,6 +1044,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
+    }
+
+    private void genesisBlockPersist() {
+        genesisRecordFileForBlockHash =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
     // Custom fees and rates persist

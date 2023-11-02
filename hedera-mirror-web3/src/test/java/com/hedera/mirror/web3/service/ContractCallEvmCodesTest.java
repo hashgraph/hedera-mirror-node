@@ -161,21 +161,26 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
     }
 
     @Test
-    void getGenesisBlockHashReturnsZero() {
+    void getGenesisBlockHashReturnsCorrectBlock() {
+        // Persist all entities so that we can get a specific record file hash and pass it to
+        // functionEncodeDecoder#functionHashFor.
+        persistEntities();
+        areEntitiesPersisted = true;
+
         final var functionHash = functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, 0L);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+                .isEqualTo("0x" + genesisRecordFileForBlockHash.getHash().substring(0, 64));
     }
 
     @Test
-    void getLatestBlockHashReturnsZero() {
+    void getLatestBlockHashIsNotEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor("getLatestBlockHash", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+                .isNotEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
