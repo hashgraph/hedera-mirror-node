@@ -37,7 +37,6 @@ import io.github.bucket4j.Bucket;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -244,7 +243,7 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse("data field must not exceed call size limit"));
     }
 
-    @Disabled("Disable flaky test temporarily")
+    @Test
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
 
