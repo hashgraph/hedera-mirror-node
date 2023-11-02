@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
 import AccountAlias from './accountAlias.js';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {EntityService} from './service/index.js';
-import {EvmAddressType, filterKeys} from './constants';
+import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
 import config from './config.js';
