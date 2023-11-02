@@ -226,8 +226,7 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
     }
 
-    // Temporary disable flaky test
-    @Disabled
+    @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
         request.setData("0x" + BYTES.repeat(4000));
@@ -245,7 +244,7 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse("data field must not exceed call size limit"));
     }
 
-    @Test
+    @Disabled("Disable flaky test temporarily")
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
 
