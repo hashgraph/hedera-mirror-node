@@ -174,9 +174,4 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         }
         return recordFileRepository.findRecordFileByIndex(block.number());
     }
-
-    private Optional<Long> getBlockIndexFromRecordFile(BlockType block) {
-        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(block.number());
-        return recordFile.map(RecordFile::getIndex);
-    }
 }
