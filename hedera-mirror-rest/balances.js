@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import AccountAlias from './accountAlias.js';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {EntityService} from './service/index.js';
-import {EvmAddressType} from './constants';
+import {EvmAddressType, filterKeys} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
 import config from './config.js';
+import {opsMap} from './utils';
+import * as math from 'mathjs';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
 
@@ -122,7 +125,8 @@ const getBalances = async (req, res) => {
         limitQuery,
         order,
         pubKeyQuery,
-        tsParams
+        tsParams,
+        tsQuery
       );
     }
   } else {
@@ -188,15 +192,19 @@ const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, p
       ${limitQuery}`;
 };
 
-const getDeduplicateBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams) => {
-  const upperBound = tsParams[0];
-  const lowerPartitionBound = utils.getFirstDayOfMonth(upperBound);
-  tsParams = [lowerPartitionBound, upperBound, lowerPartitionBound, upperBound];
-
-  const consensusTsQuery = `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
+const getDeduplicateBalancesQuery = async (
+  accountQuery,
+  balanceQuery,
+  limitQuery,
+  order,
+  pubKeyQuery,
+  tsParams,
+  tsQuery
+) => {
+  const [consensusTsQuery, deduplicateTsParams] = getDeduplicateTsQuery(tsParams, tsQuery);
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceDeduplicateSubQuery(order, accountQuery);
+  const tokenBalanceSubQuery = getTokenBalanceDeduplicateSubQuery(order, consensusTsQuery);
   const whereClause = `
       where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
   const sqlQuery = `
@@ -206,7 +214,45 @@ const getDeduplicateBalancesQuery = async (accountQuery, balanceQuery, limitQuer
       ${whereClause}
       order by ab.account_id ${order}, ab.consensus_timestamp desc
       ${limitQuery}`;
-  return [sqlQuery, tsParams];
+  return [sqlQuery, deduplicateTsParams];
+};
+
+const getDeduplicateTsQuery = (tsParams, tsQuery) => {
+  let upperBound = 0;
+  let gteParam = Number.MAX_VALUE;
+
+  // Combine the tsParams into a single upperBound and gteParam if present
+  tsQuery.split('?').forEach((value, index) => {
+    // eq operator has already been converted to the lte operator
+    if (value.includes(opsMap.lte)) {
+      upperBound = upperBound < tsParams[index] ? tsParams[index] : upperBound;
+    } else if (value.includes(opsMap.lt)) {
+      // Convert lt to lte to simplify query
+      const ltValue = math.subtract(math.bignumber(tsParams[index]), 1).toString();
+      upperBound = upperBound < ltValue ? ltValue : upperBound;
+    } else if (value.includes(opsMap.gte)) {
+      gteParam = gteParam > tsParams[index] ? tsParams[index] : gteParam;
+    } else if (value.includes(opsMap.gt)) {
+      // Convert gt to gte to simplify query
+      const gtValue = math.add(math.bignumber(tsParams[index]), 1).toString();
+      gteParam = gteParam > gtValue ? gtValue : gteParam;
+    }
+  });
+
+  const minTimestamp = gteParam !== Number.MAX_VALUE ? gteParam : upperBound;
+  // Extend the lower bound to the beginning of the month to capture the initial balances
+  // that may only be present at the beginning of the monthly partition.
+  const lowerBound = utils.getFirstDayOfMonth(minTimestamp);
+
+  let consensusTsQuery = `ab.consensus_timestamp >= ?`;
+  if (upperBound === 0) {
+    // Double the params to account for the query values for account_balance and token_balance together
+    return [consensusTsQuery, [lowerBound, lowerBound]];
+  }
+
+  consensusTsQuery = consensusTsQuery.concat(` and ab.consensus_timestamp <= ?`);
+  // Double the params to account for the query values for account_balance and token_balance together
+  return [consensusTsQuery, [lowerBound, upperBound, lowerBound, upperBound]];
 };
 
 const getTokenBalanceSubQuery = (order) => {
@@ -222,8 +268,8 @@ const getTokenBalanceSubQuery = (order) => {
     ) as account_token_balance`;
 };
 
-const getTokenBalanceDeduplicateSubQuery = (order, accountQuery) => {
-  const consensusTsQuery = 'tb.consensus_timestamp >= ? and tb.consensus_timestamp <= ?';
+const getTokenBalanceDeduplicateSubQuery = (order, consensusTsQuery) => {
+  consensusTsQuery = consensusTsQuery.replaceAll('ab.', 'tb.');
   return `
     select json_agg(json_build_object('token_id', token_id, 'balance', balance))
     from (

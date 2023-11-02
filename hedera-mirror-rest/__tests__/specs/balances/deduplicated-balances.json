@@ -63,7 +63,7 @@
         "balance": 90
       },
       {
-        "timestamp": 1567295999000000000,
+        "timestamp": 1567295999999000000,
         "id": 20,
         "realm_num": 1,
         "balance": 20,
@@ -75,12 +75,12 @@
         ]
       },
       {
-        "timestamp": 1567295999000000000,
+        "timestamp": 1567295999999000000,
         "id": 2,
         "balance": 22
       },
       {
-        "timestamp": 1567295999000000000,
+        "timestamp": 1567295999999000000,
         "id": 21,
         "realm_num": 1,
         "balance": 21
@@ -89,10 +89,10 @@
   },
   "tests": [
     {
-      "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567295999.000000000",
+      "url": "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567295999.999000000",
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "1567295999.000000000",
+        "timestamp": "1567295999.999000000",
         "balances": [
           {
             "account": "0.1.20",
@@ -136,13 +136,62 @@
     },
     {
       "urls": [
-        "/api/v1/balances?timestamp=1567295999.000000000",
-        "/api/v1/balances?timestamp=lte:1567295999.000000000",
-        "/api/v1/balances?timestamp=gte:1567295999.000000000"
+        "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=lt:1567295999.999000000&timestamp=gt:1564617600.000000000&order=asc",
+        "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=lte:1567295999.998000000&timestamp=gte:1564617599.999999999&order=asc"
       ],
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "1567295999.000000000",
+        "timestamp": "1566618500.000000000",
+        "balances": [
+          {
+            "account": "0.1.17",
+            "balance": 70,
+            "tokens": [
+              {
+                "balance": 7,
+                "token_id": "0.0.70000"
+              },
+              {
+                "balance": 700,
+                "token_id": "0.0.70007"
+              }
+            ]
+          },
+          {
+            "account": "0.1.18",
+            "balance": 80,
+            "tokens": []
+          },
+          {
+            "account": "0.1.19",
+            "balance": 90,
+            "tokens": []
+          },
+          {
+            "account": "0.1.20",
+            "balance": 19,
+            "tokens": [
+              {
+                "balance": 1000,
+                "token_id": "0.0.90000"
+              }
+            ]
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=1567295999.999000000",
+        "/api/v1/balances?timestamp=lte:1567295999.999000000",
+        "/api/v1/balances?timestamp=gte:1567295999.999000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1567295999.999000000",
         "balances": [
           {
             "account": "0.1.21",
@@ -197,7 +246,9 @@
     {
       "urls": [
         "/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567296000.000000000",
-        "/api/v1/balances?timestamp=1567296000.000000000"
+        "/api/v1/balances?timestamp=1567296000.000000000",
+        "/api/v1/balances?timestamp=gte:1567296000.000000000",
+        "/api/v1/balances?timestamp=gt:1567295999.999999999"
       ],
       "responseStatus": 200,
       "responseJson": {
