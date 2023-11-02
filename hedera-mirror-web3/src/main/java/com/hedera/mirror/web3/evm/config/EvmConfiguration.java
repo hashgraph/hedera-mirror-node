@@ -71,7 +71,6 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_NFT_ALLOWANCE = "nftAllowance";
     public static final String CACHE_NAME_RECORD_FILE_LATEST = "latest";
     public static final String CACHE_NAME_RECORD_FILE_LATEST_INDEX = "latestIndex";
-    public static final String CACHE_NAME_RECORD_FILE_EARLIEST_INDEX = "earliestIndex";
     public static final String CACHE_NAME_TOKEN = "token";
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
@@ -141,11 +140,9 @@ public class EvmConfiguration {
 
     @Bean(CACHE_MANAGER_RECORD_FILE_EARLIEST)
     CacheManager cacheManagerRecordFileEarliest() {
-        final var caffeine = Caffeine.newBuilder()
-                .maximumSize(1)
-                .recordStats();
+        final var caffeine = Caffeine.newBuilder().maximumSize(1).recordStats();
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_RECORD_FILE_EARLIEST_INDEX));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
     }

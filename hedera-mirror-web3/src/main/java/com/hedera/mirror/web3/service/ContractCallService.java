@@ -27,6 +27,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -60,14 +61,18 @@ public class ContractCallService {
 
         try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
             Bytes result;
-            if (params.isEstimate()) {
-                result = estimateGas(params);
-            } else {
-                final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
+            try {
+                if (params.isEstimate()) {
+                    result = estimateGas(params);
+                } else {
+                    final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
 
-                validateResult(ethCallTxnResult, params.getCallType());
+                    validateResult(ethCallTxnResult, params.getCallType());
 
-                result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
+                    result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
+                }
+            } catch (BlockNumberNotFoundException e) {
+                result = Bytes.EMPTY;
             }
 
             return result.toHexString();

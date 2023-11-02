@@ -23,7 +23,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -35,6 +37,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -82,6 +85,49 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideCustomBlockTypes")
+    void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .persist();
+
+        final var pureFuncHash = "8070450f";
+
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedResponse);
+
+        if (checkGas) {
+            assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        }
+    }
+
+    @Test
+    void pureCallWithOutOfRangeCustomBlockThrowsException() {
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .persist();
+
+        final var pureFuncHash = "8070450f";
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(pureFuncHash),
+                ETH_CALL_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.of("0x2540BE3FF"));
+
+        assertThrows(BlockNumberOutOfRangeException.class, () -> {
+            contractCallService.processCall(serviceParameters);
+        });
     }
 
     @Test
@@ -494,12 +540,20 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     static Stream<BlockType> provideBlockTypes() {
-        return Stream.of(BlockType.EARLIEST,
-                BlockType.of("0x1"),
-                BlockType.of("0x100"),
+        return Stream.of(
+                BlockType.EARLIEST,
                 BlockType.of("safe"),
                 BlockType.of("pending"),
                 BlockType.of("finalized"),
                 BlockType.LATEST);
+    }
+
+    static Stream<Arguments> provideCustomBlockTypes() {
+        return Stream.of(
+                Arguments.of(
+                        BlockType.of("0x1"),
+                        "0x0000000000000000000000000000000000000000000000000000000000000004",
+                        true),
+                Arguments.of(BlockType.of("0x100"), "0x", false));
     }
 }

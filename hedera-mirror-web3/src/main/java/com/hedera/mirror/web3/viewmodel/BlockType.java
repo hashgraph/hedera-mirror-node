@@ -55,6 +55,9 @@ public record BlockType(String name, long number) {
 
         try {
             long blockNumber = Long.parseLong(cleanedValue, radix);
+            if (blockNumber < 0) {
+                throw new IllegalArgumentException("Invalid block value: " + value);
+            }
             return new BlockType(value, blockNumber);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid block value: " + value, e);

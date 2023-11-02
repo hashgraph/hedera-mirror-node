@@ -21,6 +21,8 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
+import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -96,8 +98,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         contractCallContext.setEstimate(isEstimate);
 
         if (shouldSetBlockTimestamp(isEstimate, block)) {
-            long blockNumber = determineAppropriateBlockNumber(block);
-            setBlockTimestampToContractCallContext(blockNumber, contractCallContext);
+            Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
+            if (recordFileOptional.isPresent()) {
+                contractCallContext.setBlockTimestamp(recordFileOptional.get().getConsensusEnd());
+            } else {
+                throw new BlockNumberNotFoundException("Block number not found");
+            }
         }
 
         store.wrap();
@@ -157,13 +163,20 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         return !isEstimate && block != BlockType.LATEST;
     }
 
-    private long determineAppropriateBlockNumber(BlockType block) {
-        long minIndex = recordFileRepository.findMinimumIndex().orElse(BlockType.EARLIEST.number());
-        return Math.max(block.number(), minIndex);
+    private Optional<RecordFile> findRecordFileByBlock(BlockType block) {
+        if (block == BlockType.EARLIEST) {
+            return recordFileRepository.findRecordFileByIndex(
+                    recordFileRepository.findMinimumIndex().get());
+        }
+        long latestBlock = recordFileRepository.findLatestIndex().get();
+        if (block.number() > latestBlock) {
+            throw new BlockNumberOutOfRangeException("Unknown block number");
+        }
+        return recordFileRepository.findRecordFileByIndex(block.number());
     }
 
-    public void setBlockTimestampToContractCallContext(long blockIndex, ContractCallContext contractCallContext) {
-        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(blockIndex);
-        recordFile.map(RecordFile::getConsensusEnd).ifPresent(contractCallContext::setBlockTimestamp);
+    private Optional<Long> getBlockIndexFromRecordFile(BlockType block) {
+        Optional<RecordFile> recordFile = recordFileRepository.findRecordFileByIndex(block.number());
+        return recordFile.map(RecordFile::getIndex);
     }
 }
