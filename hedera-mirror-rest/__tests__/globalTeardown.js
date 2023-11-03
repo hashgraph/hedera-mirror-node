@@ -15,6 +15,8 @@
  */
 
 import fs from 'fs';
+import {getDatabase} from './globalSetup.js';
+import log4js from 'log4js';
 
 export default async function () {
   const tmpDir = process.env.MIGRATION_TMP_DIR;
@@ -22,4 +24,6 @@ export default async function () {
     fs.rmSync(tmpDir, {force: true, recursive: true});
     console.log(`Removed temp directory ${tmpDir}`);
   }
+  await getDatabase().stop();
+  log4js.shutdown();
 }
