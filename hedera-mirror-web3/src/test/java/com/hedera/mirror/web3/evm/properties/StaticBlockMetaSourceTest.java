@@ -53,14 +53,14 @@ class StaticBlockMetaSourceTest {
         final var recordFile = new RecordFile();
         recordFile.setHash(fileHash);
 
-        given(repository.findRecordFileByIndex(1)).willReturn(Optional.of(recordFile));
+        given(repository.findByIndex(1)).willReturn(Optional.of(recordFile));
 
         assertThat(subject.getBlockHash(1)).isEqualTo(Hash.fromHexString(fileHash));
     }
 
     @Test
     void getBlockHashThrowsExceptionWhitMissingFileId() {
-        given(repository.findRecordFileByIndex(1)).willReturn(Optional.empty());
+        given(repository.findByIndex(1)).willReturn(Optional.empty());
         assertThatThrownBy(() -> subject.getBlockHash(1)).isInstanceOf(MissingResultException.class);
     }
 

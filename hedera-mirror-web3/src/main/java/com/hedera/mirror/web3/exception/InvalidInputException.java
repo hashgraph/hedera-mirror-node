@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,12 @@ package com.hedera.mirror.web3.exception;
 
 import java.io.Serial;
 
-@SuppressWarnings("java:S110")
-public class InvalidParametersException extends InvalidInputException {
+public abstract class InvalidInputException extends Web3Exception {
 
     @Serial
-    private static final long serialVersionUID = -1728472056521963582L;
+    private static final long serialVersionUID = -5018557225908411121L;
 
-    public InvalidParametersException(String message) {
+    protected InvalidInputException(String message) {
         super(message);
     }
 }

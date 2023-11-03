@@ -28,9 +28,8 @@ import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
-import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -128,15 +127,8 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> blockValidationError(final BlockNumberOutOfRangeException e) {
-        log.warn("Block number out of range error: {}", e.getMessage());
-        return Mono.just(new GenericErrorResponse(e.getMessage()));
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
-        log.warn("Address validation error: {}", e.getMessage());
+    private Mono<GenericErrorResponse> inputValidationError(final InvalidInputException e) {
+        log.warn("Input validation error: {}", e.getMessage());
         return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 

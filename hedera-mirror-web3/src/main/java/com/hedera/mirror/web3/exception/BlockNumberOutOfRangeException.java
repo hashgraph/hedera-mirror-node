@@ -16,10 +16,9 @@
 
 package com.hedera.mirror.web3.exception;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-public class BlockNumberOutOfRangeException extends MirrorNodeException {
+public class BlockNumberOutOfRangeException extends InvalidInputException {
 
     @Serial
     private static final long serialVersionUID = 9163581929850980235L;

@@ -238,8 +238,7 @@ class MirrorEvmTxProcessorTest {
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-        given(recordFileRepository.findMinimumIndex()).willReturn(Optional.of(0L));
-        given(recordFileRepository.findRecordFileByIndex(0)).willReturn(Optional.of(recordFile));
+        given(recordFileRepository.findEarliest()).willReturn(Optional.of(recordFile));
 
         var result = mirrorEvmTxProcessor.execute(
                 sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, false, BlockType.EARLIEST);

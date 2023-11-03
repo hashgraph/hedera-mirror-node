@@ -33,7 +33,7 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 
     @Override
     public Hash getBlockHash(long blockNo) {
-        final var recordFile = recordFileRepository.findRecordFileByIndex(blockNo);
+        final var recordFile = recordFileRepository.findByIndex(blockNo);
         return recordFile
                 .map(rf -> Hash.fromHexString(rf.getHash()))
                 .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));

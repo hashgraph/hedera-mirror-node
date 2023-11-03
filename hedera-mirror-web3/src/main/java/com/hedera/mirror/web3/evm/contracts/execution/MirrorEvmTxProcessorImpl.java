@@ -52,6 +52,9 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
 
+    private static final String BLOCK_NOT_FOUND = "Block number not found";
+    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
+
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final Store store;
@@ -102,7 +105,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             if (recordFileOptional.isPresent()) {
                 contractCallContext.setBlockTimestamp(recordFileOptional.get().getConsensusEnd());
             } else {
-                throw new BlockNumberNotFoundException("Block number not found");
+                throw new BlockNumberNotFoundException(BLOCK_NOT_FOUND);
             }
         }
 
@@ -165,13 +168,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
     private Optional<RecordFile> findRecordFileByBlock(BlockType block) {
         if (block == BlockType.EARLIEST) {
-            return recordFileRepository.findRecordFileByIndex(
-                    recordFileRepository.findMinimumIndex().get());
+            return recordFileRepository.findEarliest();
         }
         long latestBlock = recordFileRepository.findLatestIndex().get();
         if (block.number() > latestBlock) {
-            throw new BlockNumberOutOfRangeException("Unknown block number");
+            throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
         }
-        return recordFileRepository.findRecordFileByIndex(block.number());
+        return recordFileRepository.findByIndex(block.number());
     }
 }

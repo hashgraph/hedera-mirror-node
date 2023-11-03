@@ -39,12 +39,12 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     Optional<Long> findLatestIndex();
 
     @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_EARLIEST, unless = "#result == null")
-    @Query("select min(r.index) from RecordFile r")
-    Optional<Long> findMinimumIndex();
+    @Query(value = "select * from record_file order by index asc limit 1", nativeQuery = true)
+    Optional<RecordFile> findEarliest();
 
     @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_INDEX, unless = "#result == null")
     @Query("select r from RecordFile r where r.index = ?1")
-    Optional<RecordFile> findRecordFileByIndex(long index);
+    Optional<RecordFile> findByIndex(long index);
 
     @Cacheable(
             cacheNames = CACHE_NAME_RECORD_FILE_LATEST,

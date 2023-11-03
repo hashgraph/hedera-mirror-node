@@ -16,10 +16,9 @@
 
 package com.hedera.mirror.web3.exception;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-public class BlockNumberNotFoundException extends MirrorNodeException {
+public class BlockNumberNotFoundException extends InvalidInputException {
 
     @Serial
     private static final long serialVersionUID = -5659665152399233219L;

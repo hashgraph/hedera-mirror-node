@@ -40,18 +40,18 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findMinimumIndex() {
-        var minimum = domainBuilder.recordFile().persist();
+    void findEarliest() {
+        var earliest = domainBuilder.recordFile().persist();
         domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findMinimumIndex()).get().isEqualTo(minimum.getIndex());
+        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(earliest);
     }
 
     @Test
     void findFileHashByIndex() {
         final var file = domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findRecordFileByIndex(file.getIndex()))
+        assertThat(recordFileRepository.findByIndex(file.getIndex()))
                 .map(RecordFile::getHash)
                 .hasValue(file.getHash());
     }
@@ -70,7 +70,7 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
         var latest = domainBuilder.recordFile().persist();
         long blockNumber = latest.getIndex();
 
-        assertThat(recordFileRepository.findRecordFileByIndex(blockNumber))
+        assertThat(recordFileRepository.findByIndex(blockNumber))
                 .map(RecordFile::getConsensusEnd)
                 .hasValue(latest.getConsensusEnd());
     }
@@ -78,7 +78,6 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     @Test
     void findRecordFileByIndexNotExists() {
         long nonExistentBlockNumber = 1L;
-        assertThat(recordFileRepository.findRecordFileByIndex(nonExistentBlockNumber))
-                .isEmpty();
+        assertThat(recordFileRepository.findByIndex(nonExistentBlockNumber)).isEmpty();
     }
 }
