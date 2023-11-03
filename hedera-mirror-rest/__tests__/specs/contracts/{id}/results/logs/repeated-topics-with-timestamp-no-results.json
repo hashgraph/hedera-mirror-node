@@ -1,26 +1,6 @@
 {
   "description": "Contract logs api calls with mismatching topics",
   "setup": {
-    "recordFiles": [
-      {
-        "index": 1,
-        "consensus_start": 1639010141000000000,
-        "consensus_end": 1639010141500000000,
-        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a"
-      },
-      {
-        "index": 2,
-        "consensus_start": 1639010151000000000,
-        "consensus_end": 1639010151500000000,
-        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b"
-      },
-      {
-        "index": 3,
-        "consensus_start": 1639010161000000000,
-        "consensus_end": 1639010161500000000,
-        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
-      }
-    ],
     "contractlogs": [
       {
         "consensus_timestamp": 1639010141000000000,

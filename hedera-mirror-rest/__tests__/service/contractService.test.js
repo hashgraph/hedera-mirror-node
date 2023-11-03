@@ -192,19 +192,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
-      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,
-             block_number,block_hash,evm_address
+      `with entity as (select evm_address, id from entity)
+      select cl.block_hash, cl.block_number, cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,evm_address
       from contract_log cl
       left join entity e on id = contract_id
-      left join lateral (
-        select index as block_number,hash as block_hash
-        from record_file
-        where consensus_end >= cl.consensus_timestamp
-        order by consensus_end asc
-        limit 1
-      ) as block on true
       where cl.contract_id = $1
       order by cl.consensus_timestamp desc, cl.index asc
       limit $2`
@@ -237,19 +229,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
-      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,
-             block_number, block_hash, evm_address
+      `with entity as (select evm_address, id from entity)
+      select cl.block_hash,cl.block_number,cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index, evm_address
       from contract_log cl
       left join entity e on id = contract_id
-      left join lateral (
-        select index as block_number,hash as block_hash
-        from record_file
-        where consensus_end >= cl.consensus_timestamp
-        order by consensus_end asc
-        limit 1
-      ) as block on true
       where cl.contract_id = $1 and cl.topic0 in ($2) and cl.topic1 in ($3) and cl.topic2 in ($4) and cl.topic3 in ($5)
       order by cl.consensus_timestamp desc, cl.index desc
       limit $6`
@@ -280,34 +264,20 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
-        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,block_number,block_hash,evm_address
+        with entity as (select evm_address, id from entity)
+        select cl.block_hash,cl.block_number,cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,evm_address
         from contract_log cl
         left join entity e on id = contract_id
-        left join lateral (
-          select index as block_number,hash as block_hash
-          from record_file
-          where consensus_end >= cl.consensus_timestamp
-          order by consensus_end asc
-          limit 1
-        ) as block on true
         where cl.contract_id = $1 and cl.topic0 in ($2) and cl.index >= $4 and cl.consensus_timestamp = $5
         order by cl.consensus_timestamp desc, cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
-        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,block_number,block_hash,evm_address
+        with entity as (select evm_address, id from entity)
+        select cl.block_hash,cl.block_number,cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,evm_address
         from contract_log cl
         left join entity e on id = contract_id
-        left join lateral (
-          select index as block_number,hash as block_hash
-          from record_file
-          where consensus_end >= cl.consensus_timestamp
-          order by consensus_end asc
-          limit 1
-        ) as block on true
         where cl.contract_id = $1 and cl.topic0 in ($2) and cl.consensus_timestamp > $6
         order by cl.consensus_timestamp desc, cl.index desc
         limit $3
@@ -340,8 +310,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select  consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
+        with entity as (select evm_address, id from entity)
         select
+          cl.block_hash,
+          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,
@@ -354,19 +326,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic3,
           cl.transaction_hash,
           cl.transaction_index,
-          block_number,
-          block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join lateral (
-            select index as block_number, hash as block_hash
-            from  record_file
-            where consensus_end >= cl.consensus_timestamp
-            order by consensus_end asc
-            limit 1
-          ) as block on true
         where  cl.contract_id = $1
           and cl.topic0 in ($2)
           and cl.index >= $4
@@ -376,8 +339,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
+        with entity as (select evm_address, id from entity)
         select
+          cl.block_hash,
+          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,
@@ -390,19 +355,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic3,
           cl.transaction_hash,
           cl.transaction_index,
-          block_number,
-          block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join lateral (
-            select index as block_number, hash as block_hash
-            from record_file
-            where  consensus_end >= cl.consensus_timestamp
-            order by consensus_end asc
-            limit 1
-          ) as block on true
         where
           cl.contract_id = $1
           and cl.topic0 in ($2)
@@ -413,8 +369,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
+        with entity as (select evm_address, id from entity)
         select
+          cl.block_hash,
+          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,
@@ -427,19 +385,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic3,
           cl.transaction_hash,
           cl.transaction_index,
-          block_number,
-          block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join lateral (
-            select index as block_number, hash as block_hash
-            from  record_file
-            where consensus_end >= cl.consensus_timestamp
-            order by consensus_end asc
-            limit 1
-          ) as block on true
         where
           cl.contract_id = $1
           and cl.topic0 in ($2)

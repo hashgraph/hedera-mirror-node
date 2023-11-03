@@ -35,7 +35,9 @@ import {
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
-const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
+const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOCK_HASH)},
+${ContractLog.getFullName(ContractLog.BLOCK_NUMBER)},
+${ContractLog.getFullName(ContractLog.BLOOM)},
 ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
 ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
 ${ContractLog.getFullName(ContractLog.DATA)},
@@ -138,27 +140,15 @@ class ContractService extends BaseService {
     `;
 
   static contractLogsExtendedQuery = `
-    with ${RecordFile.tableName} as (
-      select ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
-      from ${RecordFile.tableName}
-    ), ${Entity.tableName} as (
+    with  ${Entity.tableName} as (
       select ${Entity.EVM_ADDRESS}, ${Entity.ID}
       from ${Entity.tableName}
     )
     select ${contractLogsFields},
-      block_number,
-      block_hash,
       ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
-    left join lateral (
-      select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
-      from ${RecordFile.tableName}
-      where ${RecordFile.CONSENSUS_END} >= ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)}
-      order by ${RecordFile.CONSENSUS_END} asc
-      limit 1
-    ) as block on true
   `;
 
   static contractIdByEvmAddressQuery = `

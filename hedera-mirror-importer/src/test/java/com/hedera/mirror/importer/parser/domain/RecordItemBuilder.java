@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties.PersistProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -1013,12 +1014,21 @@ public class RecordItemBuilder {
                                 .build();
                     })
                     .collect(Collectors.toList());
-
+            var consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
+            var consensusStart = consensusTimestamp - 2 * 1_000_000_000L;
+            var hash = Hex.encodeHexString(DomainUtils.toBytes(record.getTransactionHash()));
             return recordItemBuilder
+                    .consensusTimestamp(consensusTimestamp)
                     .entityTransactionPredicate(entityTransactionPredicate)
                     .transactionRecord(record)
                     .transaction(transaction)
                     .sidecarRecords(sidecarRecords)
+                    .recordFile(RecordFile.builder()
+                            .consensusStart(consensusStart)
+                            .consensusEnd(consensusTimestamp)
+                            .hash(hash)
+                            .index(0L)
+                            .build())
                     .build();
         }
 

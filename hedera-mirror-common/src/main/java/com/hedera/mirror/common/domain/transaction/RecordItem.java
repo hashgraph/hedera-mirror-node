@@ -96,6 +96,11 @@ public class RecordItem implements StreamItem {
     @Setter
     private EthereumTransaction ethereumTransaction;
 
+    @NonFinal
+    @Setter
+    @Getter
+    private RecordFile recordFile;
+
     @Builder.Default
     @NonFinal
     @Setter

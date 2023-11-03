@@ -42,6 +42,8 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
 
         ContractLog contractLog = new ContractLog();
 
+        contractLog.setBlockHash(log.getRecordItem().getRecordFile().getHash());
+        contractLog.setBlockNumber(log.getRecordItem().getRecordFile().getIndex());
         contractLog.setBloom(empty);
         contractLog.setConsensusTimestamp(consensusTimestamp);
         contractLog.setContractId(log.getEntityId());

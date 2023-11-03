@@ -30,6 +30,8 @@ class ContractLog {
   static tableAlias = 'cl';
   static tableName = 'contract_log';
 
+  static BLOCK_HASH = 'block_hash';
+  static BLOCK_NUMBER = 'block_number';
   static BLOOM = 'bloom';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static CONTRACT_ID = 'contract_id';

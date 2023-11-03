@@ -141,6 +141,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             var aggregator = new RecordItemAggregator();
 
             long count = recordItems
+                    .doOnNext(item -> {
+                        item.setRecordFile(recordFile);
+                    })
                     .doOnNext(aggregator::accept)
                     .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)

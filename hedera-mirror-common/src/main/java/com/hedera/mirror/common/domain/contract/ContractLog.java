@@ -37,6 +37,9 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class ContractLog implements Persistable<ContractLog.Id> {
 
+    private String blockHash;
+    private long blockNumber;
+
     @ToString.Exclude
     private byte[] bloom;
 
