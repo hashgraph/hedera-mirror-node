@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -28,8 +27,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -38,11 +35,7 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
-import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
-import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -162,12 +155,6 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private HederaPrngSeedOperation prngSeedOperation;
 
-    @Mock
-    private RecordFileRepository recordFileRepository;
-
-    @Mock
-    private RecordFile recordFile;
-
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
 
     private Pair<ResponseCodeEnum, Long> result;
@@ -204,16 +191,15 @@ class MirrorEvmTxProcessorTest {
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
                 mirrorOperationTracer,
-                store,
-                recordFileRepository);
+                store);
 
         final DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
     @ParameterizedTest
-    @MethodSource("provideIsEstimateAndBlockTypeParameters")
-    void assertSuccessExecution(boolean isEstimate, BlockType block) {
+    @MethodSource("provideIsEstimateParameters")
+    void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
         given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
@@ -222,44 +208,12 @@ class MirrorEvmTxProcessorTest {
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
         var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, isEstimate, block);
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, isEstimate);
 
         assertThat(result)
                 .isNotNull()
                 .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
                 .returns(receiver.canonicalAddress(), r -> r.getRecipient().get());
-    }
-
-    @Test
-    void assertSuccessEthCallExecutionWithEarliestBlock() {
-        givenValidMockWithoutGetOrCreate();
-        given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
-        given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
-        given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-        given(recordFileRepository.findEarliest()).willReturn(Optional.of(recordFile));
-
-        var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, false, BlockType.EARLIEST);
-
-        assertThat(result)
-                .isNotNull()
-                .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
-                .returns(receiver.canonicalAddress(), r -> r.getRecipient().get());
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideBlockTypeAndException")
-    void assertEthCallExecutionWithValidBlockNumberButBlockNotFound(
-            BlockType blockType, Class<? extends MirrorNodeException> expectedException) {
-        given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-        given(recordFileRepository.findLatestIndex()).willReturn(Optional.of(10L));
-
-        assertThrows(expectedException, () -> {
-            mirrorEvmTxProcessor.execute(
-                    sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, false, blockType);
-        });
     }
 
     @Test
@@ -365,18 +319,7 @@ class MirrorEvmTxProcessorTest {
         given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
     }
 
-    static Stream<Arguments> provideIsEstimateAndBlockTypeParameters() {
-        return Stream.of(
-                Arguments.of(true, BlockType.LATEST),
-                Arguments.of(false, BlockType.LATEST),
-                Arguments.of(false, BlockType.of("safe")),
-                Arguments.of(false, BlockType.of("pending")),
-                Arguments.of(false, BlockType.of("finalized")));
-    }
-
-    static Stream<Arguments> provideBlockTypeAndException() {
-        return Stream.of(
-                Arguments.of(BlockType.of("0x5"), BlockNumberNotFoundException.class),
-                Arguments.of(BlockType.of("0x2540BE3FF"), BlockNumberOutOfRangeException.class));
+    static Stream<Arguments> provideIsEstimateParameters() {
+        return Stream.of(Arguments.of(true), Arguments.of(false));
     }
 }

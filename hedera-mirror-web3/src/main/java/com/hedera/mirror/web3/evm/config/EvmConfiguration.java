@@ -29,7 +29,6 @@ import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.services.contracts.execution.LivePricesSource;
@@ -164,8 +163,7 @@ public class EvmConfiguration {
             final BasicHbarCentExchange basicHbarCentExchange,
             final PrngSystemPrecompiledContract prngSystemPrecompiledContract,
             final HederaPrngSeedOperation prngSeedOperation,
-            final Store store,
-            final RecordFileRepository recordFileRepository) {
+            final Store store) {
         return new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFees,
@@ -186,7 +184,6 @@ public class EvmConfiguration {
                 mirrorEvmContractAliases,
                 abstractCodeCache,
                 mirrorOperationTracer,
-                store,
-                recordFileRepository);
+                store);
     }
 }

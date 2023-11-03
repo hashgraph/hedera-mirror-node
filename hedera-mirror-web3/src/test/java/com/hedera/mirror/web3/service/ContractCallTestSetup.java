@@ -803,8 +803,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                             serviceParameters.getCallData(),
                             Instant.now(),
                             serviceParameters.isStatic(),
-                            true,
-                            BlockType.LATEST)
+                            true)
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
