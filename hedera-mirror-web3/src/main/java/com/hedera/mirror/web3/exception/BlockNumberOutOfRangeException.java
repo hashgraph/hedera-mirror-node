@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.exception;
 
 import java.io.Serial;
 
+@SuppressWarnings("java:S110")
 public class BlockNumberOutOfRangeException extends InvalidInputException {
 
     @Serial

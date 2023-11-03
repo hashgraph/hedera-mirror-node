@@ -170,7 +170,11 @@ public class ContractCallService {
         if (block == BlockType.EARLIEST) {
             return recordFileRepository.findEarliest();
         }
-        long latestBlock = recordFileRepository.findLatestIndex().get();
+
+        long latestBlock = recordFileRepository
+                .findLatestIndex()
+                .orElseThrow(() -> new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
+
         if (block.number() > latestBlock) {
             throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
         }

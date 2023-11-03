@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.exception;
 
 import java.io.Serial;
 
+@SuppressWarnings("java:S110")
 public abstract class InvalidInputException extends Web3Exception {
 
     @Serial
