@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -426,6 +427,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static Key keyWithDelegatableContractId = Key.newBuilder()
             .setDelegatableContractId(contractIdFromEvmAddress(PRECOMPILE_TEST_CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
+
+    protected static RecordFile recordFileForBlockHash;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -1860,7 +1863,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 .toArrayUnsafe()))
                 .persist();
 
-        domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+        recordFileForBlockHash = domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(contractBytes))
+                .persist();
     }
 
     private EntityId systemExchangeRateContractPersist() {

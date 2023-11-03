@@ -140,25 +140,24 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountAliasToEvmAddressFromCache() {
         // given
-        var entity = domainBuilder
-                .entity()
-                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
-                .get();
-        entityIdService.notify(entity);
+        var entity =
+                domainBuilder.entity().customize(e -> e.evmAddress(EVM_ADDRESS)).get();
         var accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
                 .build();
-        // when, then
+
+        // when
+        entityIdService.notify(entity);
+
+        // then
         assertThat(entityIdService.lookup(accountId)).hasValue(entity.toEntityId());
     }
 
     @Test
     void lookupAccountAliasToEvmAddressFromDb() {
         // given
-        var entity = domainBuilder
-                .entity()
-                .customize(e -> e.alias(EVM_ADDRESS).evmAddress(EVM_ADDRESS))
-                .persist();
+        var entity =
+                domainBuilder.entity().customize(e -> e.evmAddress(EVM_ADDRESS)).persist();
         var accountId = AccountID.newBuilder()
                 .setAlias(DomainUtils.fromBytes(ALIAS_ECDSA_SECP256K1))
                 .build();

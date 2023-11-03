@@ -57,7 +57,6 @@ class TokenBurnTransactionHandler extends AbstractTransactionHandler {
         long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
 
         var token = new Token();
-        token.setTimestampLower(consensusTimestamp);
         token.setTotalSupply(newTotalSupply);
         token.setTokenId(tokenId.getId());
         entityListener.onToken(token);

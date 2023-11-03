@@ -23,7 +23,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,8 +52,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -64,7 +61,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
-import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -72,7 +68,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,9 +104,6 @@ class MirrorEvmTxProcessorTest {
 
     @Mock
     private Set<Operation> operations;
-
-    @Mock
-    private Transaction transaction;
 
     @Mock
     private HederaEvmWorldState.Updater updater;
@@ -221,7 +213,6 @@ class MirrorEvmTxProcessorTest {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
         final MessageFrame.Builder protoFrame = MessageFrame.builder()
-                .messageFrameStack(new ArrayDeque<>())
                 .worldUpdater(updater)
                 .initialGas(1L)
                 .originator(sender.canonicalAddress())
@@ -230,7 +221,6 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ONE)
                 .apparentValue(Wei.ONE)
                 .blockValues(hederaBlockValues)
-                .depth(1)
                 .completer(frame -> {})
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(hash -> null);
@@ -248,36 +238,30 @@ class MirrorEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
-        doReturn(Optional.of(receiver.canonicalAddress())).when(transaction).getTo();
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
-        given(transaction.getSender()).willReturn(sender.canonicalAddress());
-        given(transaction.getValue()).willReturn(Wei.of(1L));
         final long GAS_LIMIT = 300_000L;
+        final Wei oneWei = Wei.of(1L);
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
-                .messageFrameStack(new ArrayDeque<>())
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(mock(WorldUpdater.class))
                 .initialGas(GAS_LIMIT)
                 .originator(sender.canonicalAddress())
                 .gasPrice(Wei.ZERO)
                 .sender(sender.canonicalAddress())
-                .value(Wei.of(transaction.getValue().getAsBigInteger()))
-                .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
+                .value(oneWei)
+                .apparentValue(oneWei)
                 .blockValues(mock(BlockValues.class))
-                .depth(0)
                 .completer(__ -> {})
                 .miningBeneficiary(Address.ZERO)
                 .blockHashLookup(h -> null);
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
-                commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
+                commonInitialFrame, receiver.canonicalAddress(), Bytes.EMPTY, 0L);
 
         // expect:
-        assertThat(transaction)
-                .isNotNull()
-                .returns(buildMessageFrame.getSenderAddress(), Transaction::getSender)
-                .returns(buildMessageFrame.getApparentValue(), Transaction::getValue);
+        assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
+        assertThat(oneWei).isEqualTo(buildMessageFrame.getApparentValue());
     }
 
     private void givenValidMockWithoutGetOrCreate() {
@@ -285,22 +269,17 @@ class MirrorEvmTxProcessorTest {
         given(updater.updater()).willReturn(stackedUpdater);
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
 
-        final var evmAccount = mock(EvmAccount.class);
+        final var mutableAccount = mock(MutableAccount.class);
 
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn((long) 0);
 
         given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
         given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
 
-        final var senderMutableAccount = mock(MutableAccount.class);
-        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
-        given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
-        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
-
-        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
-        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
-        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
-        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(mutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(mutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(mutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(mutableAccount);
 
         given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
     }

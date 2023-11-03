@@ -26,6 +26,8 @@ import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,14 +50,14 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void getBlockHashReturnsCorrectValue() {
-        final var fileHash = "0x00000000000000000000000000000000000000000000000000000000000004e4";
-
+        final var fileHash =
+                "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
         final var recordFile = new RecordFile();
         recordFile.setHash(fileHash);
 
         given(repository.findByIndex(1)).willReturn(Optional.of(recordFile));
-
-        assertThat(subject.getBlockHash(1)).isEqualTo(Hash.fromHexString(fileHash));
+        final var expected = Hash.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765");
+        assertThat(subject.getBlockHash(1)).isEqualTo(expected);
     }
 
     @Test
@@ -79,5 +81,15 @@ class StaticBlockMetaSourceTest {
     void computeBlockValuesFailsFailsForMissingFileId() {
         given(repository.findLatest()).willReturn(Optional.empty());
         assertThatThrownBy(() -> subject.computeBlockValues(1)).isInstanceOf(MissingResultException.class);
+    }
+
+    @Test
+    void testEthHashFromReturnsCorrectValue() {
+        final var result = StaticBlockMetaSource.ethHashFrom(
+                "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100");
+        final var expected = Hash.wrap(
+                Bytes32.wrap(Bytes.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765")
+                        .toArrayUnsafe()));
+        assertThat(result).isEqualTo(expected);
     }
 }
