@@ -1,0 +1,16 @@
+**/.*
+*.iml
+*.log
+*.tgz
+.*
+.gradle
+!Dockerfile
+__tests__/
+application.yml
+build/
+check-state-proof/
+coverage/
+node/
+node_modules/
+pom.xml
+serverlist.json
