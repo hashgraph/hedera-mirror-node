@@ -183,6 +183,16 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isNotEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
+    @Test
+    void getBlockHashAfterTheLatestReturnsZero() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, Long.MAX_VALUE);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         if (!areEntitiesPersisted) {

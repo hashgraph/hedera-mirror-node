@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.services.evm.contracts.operations;
+package com.hedera.mirror.web3.evm.contracts.operations;
 
 import java.util.function.Function;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.BlockHashOperation;
@@ -53,9 +55,16 @@ public class HederaBlockHashOperation extends BlockHashOperation {
         }
 
         final long soughtBlock = blockArg.toLong();
-        final Function<Long, Hash> blockHashLookup = frame.getBlockHashLookup();
-        final Hash blockHash = blockHashLookup.apply(soughtBlock);
-        frame.pushStackItem(blockHash);
+        final BlockValues blockValues = frame.getBlockValues();
+        final long currentBlockNumber = blockValues.getNumber();
+
+        if (currentBlockNumber <= 0 || soughtBlock > currentBlockNumber) {
+            frame.pushStackItem(Bytes32.ZERO);
+        } else {
+            final Function<Long, Hash> blockHashLookup = frame.getBlockHashLookup();
+            final Hash blockHash = blockHashLookup.apply(soughtBlock);
+            frame.pushStackItem(blockHash);
+        }
 
         return successResponse;
     }
