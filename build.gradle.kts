@@ -34,7 +34,7 @@ extra.apply {
     set("protobufVersion", "3.24.4")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.5")
+    set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.4.6")
 }
 
