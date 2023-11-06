@@ -9,10 +9,10 @@
     "node": ">=16.13.0 < 21"
   },
   "scripts": {
-    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import register.js server.js",
+    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import=extensionless/register server.js",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
-    "start": "node --import ./register.js server.js",
-    "pretest": "node --import ./register.js __tests__/integration/generator.js",
+    "start": "node --import=extensionless/register server.js",
+    "pretest": "node --import=extensionless/register __tests__/integration/generator.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "Hedera Mirror Node Team",
