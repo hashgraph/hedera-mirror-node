@@ -217,34 +217,34 @@ const getDeduplicateBalancesQuery = async (
 };
 
 const getDeduplicateTsQuery = (tsParams, tsQuery) => {
-  let upperBound = 0;
-  let gteParam = Number.MAX_VALUE;
+  let upperBound = Number.MAX_VALUE;
+  let gteParam = 0;
 
   // Combine the tsParams into a single upperBound and gteParam if present
   tsQuery.split('?').forEach((value, index) => {
     // eq operator has already been converted to the lte operator
     if (value.includes(opsMap.lte)) {
-      upperBound = upperBound < tsParams[index] ? tsParams[index] : upperBound;
+      upperBound = upperBound < tsParams[index] ? upperBound : tsParams[index];
     } else if (value.includes(opsMap.lt)) {
       // Convert lt to lte to simplify query
       const ltValue = math.subtract(math.bignumber(tsParams[index]), 1).toString();
-      upperBound = upperBound < ltValue ? ltValue : upperBound;
+      upperBound = upperBound < ltValue ? upperBound : ltValue;
     } else if (value.includes(opsMap.gte)) {
-      gteParam = gteParam > tsParams[index] ? tsParams[index] : gteParam;
+      gteParam = gteParam > tsParams[index] ? gteParam : tsParams[index];
     } else if (value.includes(opsMap.gt)) {
       // Convert gt to gte to simplify query
       const gtValue = math.add(math.bignumber(tsParams[index]), 1).toString();
-      gteParam = gteParam > gtValue ? gtValue : gteParam;
+      gteParam = gteParam > gtValue ? gteParam : gtValue;
     }
   });
 
-  const minTimestamp = gteParam !== Number.MAX_VALUE ? gteParam : upperBound;
+  const minTimestamp = gteParam !== 0 ? gteParam : upperBound;
   // Extend the lower bound to the beginning of the month to capture the initial balances
   // that may only be present at the beginning of the monthly partition.
   const lowerBound = utils.getFirstDayOfMonth(minTimestamp);
 
   let consensusTsQuery = `ab.consensus_timestamp >= ?`;
-  if (upperBound === 0) {
+  if (upperBound === Number.MAX_VALUE) {
     // Double the params to account for the query values for account_balance and token_balance together
     return [consensusTsQuery, [lowerBound, lowerBound]];
   }
