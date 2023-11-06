@@ -9,8 +9,8 @@
     "node": ">=18.12.0 < 21"
   },
   "scripts": {
-    "dev": "nodemon --import ./register.js server.js",
-    "start": "node --import ./register.js server.js",
+    "dev": "nodemon --import=extensionless/register server.js",
+    "start": "node --import=extensionless/register server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --maxWorkers 2 --passWithNoTests --testPathPattern='.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",

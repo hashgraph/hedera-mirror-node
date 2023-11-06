@@ -9,7 +9,7 @@
   "main": "index.js",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "start": "node --import ./register.js index.js"
+    "start": "node --import=extensionless/register index.js"
   },
   "repository": {
     "type": "git",
