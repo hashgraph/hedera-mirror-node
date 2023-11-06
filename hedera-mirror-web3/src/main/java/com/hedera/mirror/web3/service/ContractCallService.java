@@ -71,14 +71,12 @@ public class ContractCallService {
             if (params.isEstimate()) {
                 result = estimateGas(params);
             } else {
-                final var contractCallContext = ContractCallContext.get();
                 BlockType block = params.getBlock();
 
                 if (block != BlockType.LATEST) {
                     Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
                     if (recordFileOptional.isPresent()) {
-                        contractCallContext.setBlockTimestamp(
-                                recordFileOptional.get().getConsensusEnd());
+                        ctx.setBlockTimestamp(recordFileOptional.get().getConsensusEnd());
                     } else {
                         // return default empty result when the block passed is valid but not found in DB
                         return Bytes.EMPTY.toHexString();
