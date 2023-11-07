@@ -22,6 +22,7 @@ import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import jakarta.inject.Named;
 import java.time.Duration;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.actuate.health.Health;
@@ -29,13 +30,11 @@ import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.Status;
 import reactor.core.publisher.Mono;
 
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class ClusterHealthIndicator implements ReactiveHealthIndicator {
 
-    private static final Mono<Health> NETWORK_STAKE_DOWN = health(Status.DOWN, "Rest Network stake endpoint is down");
-    private static final Mono<Health> NETWORK_STAKE_UNKNOWN =
-            health(Status.UNKNOWN, "Rest Network stake endpoint is unknown");
     private static final Mono<Health> UNKNOWN = health(Status.UNKNOWN, "Publishing is inactive");
     private static final Mono<Health> UP = health(Status.UP, "");
 
@@ -86,13 +85,20 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
                 .flatMap(statusCode -> {
                     if (statusCode.is2xxSuccessful()) {
                         return UP;
-                    } else if (statusCode.is5xxServerError()) {
-                        return NETWORK_STAKE_DOWN;
                     }
 
-                    return NETWORK_STAKE_UNKNOWN;
+                    var status = statusCode.is5xxServerError() ? Status.DOWN : Status.UNKNOWN;
+                    var statusMessage =
+                            String.format("Network stake status is %s with status code %s", status, statusCode.value());
+                    log.error(statusMessage);
+                    return health(status, statusMessage);
                 })
                 .timeout(Duration.ofSeconds(5))
-                .onErrorResume(e -> NETWORK_STAKE_UNKNOWN);
+                .onErrorResume(e -> {
+                    var statusMessage =
+                            String.format("Network stake status is %s with error: %s", Status.UNKNOWN, e.getMessage());
+                    log.error(statusMessage);
+                    return health(Status.UNKNOWN, statusMessage);
+                });
     }
 }

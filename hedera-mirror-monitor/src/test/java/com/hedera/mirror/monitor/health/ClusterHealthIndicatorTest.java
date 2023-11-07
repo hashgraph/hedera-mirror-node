@@ -66,6 +66,9 @@ class ClusterHealthIndicatorTest {
         "0.0, 0.0, 200, UNKNOWN", // publishing and subscribing inactive
         "1.0, 1.0, 400, UNKNOWN", // unknown network stake
         "1.0, 1.0, 500, DOWN", // network stake down
+        "0.0, 0.0, 500, DOWN", // publishing and subscribing inactive and network stake down
+        "0.0, 1.0, 500, DOWN", // network stake down and publishing inactive
+        "1.0, 0.0, 500, DOWN", // network stake down and subscribing inactive
     })
     void health(double publishRate, double subscribeRate, int networkStatusCode, Status status) {
         when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(publishRate)));
@@ -79,7 +82,7 @@ class ClusterHealthIndicatorTest {
 
     @Test
     void restNetworkStakeError() {
-        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(new RuntimeException()));
+        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(new RuntimeException("Test exception")));
         assertThat(clusterHealthIndicator.health().block())
                 .extracting(Health::getStatus)
                 .isEqualTo(Status.UNKNOWN);
