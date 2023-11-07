@@ -16,23 +16,22 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
-import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
+import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
+import static java.util.Objects.requireNonNullElse;
 
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.domain.StreamFilename.FileType;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -42,13 +41,14 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LocalStreamFileProvider implements StreamFileProvider {
 
-    static final String STREAMS = "streams";
+    private static final File[] EMPTY = new File[0];
 
     private final CommonDownloaderProperties properties;
+    private final LocalStreamFileProperties localProperties;
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath = properties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        var basePath = properties.getMirrorProperties().getStreamPath();
         return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
@@ -56,66 +56,79 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
-        // Number of items we plan do download in a single batch times two for file plus signature.
-        var batchSize = properties.getBatchSize() * 2;
+        var batchSize = properties.getBatchSize();
         var startAfter = lastFilename.getFilenameAfter();
-        var streamType = lastFilename.getStreamType();
 
-        var startingPathType = properties.getPathType();
-        var basePath = properties.getMirrorProperties().getDataPath().resolve(STREAMS);
-        var prefixPathRef = new AtomicReference<>(getPrefixPath(startingPathType, node, streamType));
-
-        return Mono.fromSupplier(() -> getDirectory(basePath, prefixPathRef.get(), lastFilename))
+        return listFiles(properties.getPathType(), node, lastFilename)
+                .switchIfEmpty(listFiles(NODE_ID, node, lastFilename))
                 .timeout(properties.getTimeout())
-                .flatMapIterable(dir -> Arrays.asList(dir.listFiles(f -> matches(startAfter, f))))
-                .switchIfEmpty(Flux.defer(() -> {
-                    // Since local FS access is fast and cheap (unlike S3), no refresh interval, state nor
-                    // complex logic is implemented for AUTO mode. Simply move on to the node ID based structure.
-                    if (startingPathType == PathType.AUTO) {
-                        log.debug(
-                                "Try node ID bucket structure after no files found in node account ID structure after: {}",
-                                startAfter);
-                        prefixPathRef.set(getPrefixPath(NODE_ID, node, streamType));
-                        var dir = getDirectory(basePath, prefixPathRef.get(), lastFilename);
-                        return Flux.fromArray(dir.listFiles(f -> matches(startAfter, f)));
-                    }
-                    return Flux.empty();
-                }))
                 .sort()
                 .take(batchSize)
-                .map(file -> toStreamFilename(prefixPathRef.get().toString(), file.getName()))
-                .filter(s -> s != EPOCH && s.getFileType() == FileType.SIGNATURE)
-                .map(streamFilename -> StreamFileData.from(basePath, streamFilename))
+                .map(this::toStreamFileData)
                 .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}", batchSize, startAfter));
     }
 
-    Path getPrefixPath(PathType pathType, ConsensusNode node, StreamType streamType) {
-        return switch (pathType) {
-            case ACCOUNT_ID, AUTO -> Path.of(
-                    streamType.getPath(), streamType.getNodePrefix() + node.getNodeAccountId());
-            case NODE_ID -> Path.of(
-                    properties.getMirrorProperties().getNetwork(),
-                    String.valueOf(properties.getMirrorProperties().getShard()),
-                    String.valueOf(node.getNodeId()),
-                    streamType.getNodeIdBasedSuffix());
-        };
+    private Flux<File> listFiles(PathType pathType, ConsensusNode node, StreamFilename streamFilename) {
+        var pathTypeProp = properties.getPathType();
+        var streamType = streamFilename.getStreamType();
+
+        // Once a node ID based file has been processed, optimize performance by disabling auto path lookup.
+        if (pathTypeProp == PathType.AUTO && streamFilename.isNodeId()) {
+            properties.setPathType(NODE_ID);
+        } // Skip when we fall back to listing by node ID, but we're not on auto.
+        else if (pathTypeProp != pathType && pathTypeProp != PathType.AUTO) {
+            return Flux.empty();
+        }
+
+        return getBasePaths(streamFilename)
+                .map(basePath -> {
+                    var prefix =
+                            switch (pathType) {
+                                case ACCOUNT_ID, AUTO -> Path.of(
+                                        streamType.getPath(), streamType.getNodePrefix() + node.getNodeAccountId());
+                                case NODE_ID -> Path.of(
+                                        properties.getMirrorProperties().getNetwork(),
+                                        String.valueOf(
+                                                properties.getMirrorProperties().getShard()),
+                                        String.valueOf(node.getNodeId()),
+                                        streamType.getNodeIdBasedSuffix());
+                            };
+
+                    return basePath.resolve(prefix).toFile();
+                })
+                .doOnNext(f -> log.debug("Listing files in {}", f))
+                .filter(File::exists)
+                .flatMapSequential(dir -> Flux.fromArray(
+                        requireNonNullElse(dir.listFiles(f -> matches(streamFilename.getFilenameAfter(), f)), EMPTY)));
     }
 
-    private File getDirectory(Path basePath, Path prefixPath, StreamFilename streamFilename) {
-        var path = basePath.resolve(prefixPath);
-        if (streamFilename.getFileType() == StreamFilename.FileType.SIDECAR) {
-            path = path.resolve(SIDECAR_FOLDER);
-        }
+    /*
+     * Search YYYY-MM-DD sub-folders if present, otherwise just search streams directory.
+     */
+    private Flux<Path> getBasePaths(StreamFilename streamFilename) {
+        var basePath = properties.getMirrorProperties().getStreamPath();
+        basePath.toFile().mkdirs();
 
-        var file = path.toFile();
-        if (!file.exists()) {
-            var created = file.mkdirs();
-            if (!created || !file.canRead() || !file.canExecute()) {
-                throw new FileOperationException("Unable to read local stream directory " + path);
+        try (var subDirs = Files.list(basePath)) {
+            var date = LocalDate.ofInstant(streamFilename.getInstant(), ZoneOffset.UTC)
+                    .toString();
+            var paths = subDirs.map(Path::toFile)
+                    .filter(f -> f.isDirectory()
+                            && f.getName().compareTo(date) >= 0
+                            && f.getName().length() == 10)
+                    .sorted()
+                    .limit(2) // Current and next day
+                    .map(File::toPath)
+                    .collect(Collectors.toSet());
+
+            if (paths.isEmpty()) {
+                return Flux.just(basePath);
             }
-        }
 
-        return file;
+            return Flux.fromIterable(paths);
+        } catch (Exception e) {
+            return Flux.error(new RuntimeException(e));
+        }
     }
 
     private boolean matches(String lastFilename, File file) {
@@ -124,25 +137,25 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         }
 
         var name = file.getName();
+
         if (name.compareTo(lastFilename) < 0) {
             try {
                 // Files before last file have been processed and can be deleted to optimize list + sort
-                Files.delete(file.toPath());
+                if (localProperties.isDeleteAfterProcessing()) {
+                    Files.delete(file.toPath());
+                }
             } catch (Exception e) {
                 log.warn("Unable to delete file {}: {}", file, e.getMessage());
             }
             return false;
         }
 
-        return true;
+        return name.contains(SIGNATURE_SUFFIX);
     }
 
-    private StreamFilename toStreamFilename(String path, String filename) {
-        try {
-            return StreamFilename.from(path, filename, File.separator);
-        } catch (Exception e) {
-            log.warn("Unable to parse stream filename for {}", filename, e);
-            return EPOCH; // Reactor doesn't allow null return values for map(), so use a sentinel that we filter later
-        }
+    private StreamFileData toStreamFileData(File file) {
+        var basePath = properties.getMirrorProperties().getStreamPath();
+        var filename = StreamFilename.from(basePath.relativize(file.toPath()).toString());
+        return StreamFileData.from(basePath, filename);
     }
 }
