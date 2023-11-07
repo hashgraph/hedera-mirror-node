@@ -611,6 +611,7 @@ class RecordItemTest {
         var recordItem = RecordItem.builder()
                 .payerAccountId(EntityId.of(payerAccountId))
                 .transaction(transaction)
+                .contractTransactionPredicate((entityId) -> true)
                 .transactionRecord(transactionRecord)
                 .build();
         var account = EntityId.of(id++);
@@ -640,6 +641,45 @@ class RecordItemTest {
                 .build();
         recordItem.addContractTransaction(account2);
         assertThat(recordItem.populateContractTransactions()).containsExactlyInAnyOrder(expected1, expected2);
+    }
+
+    @Test
+    void testAddContractTransactionDisabled() {
+        var random = new SecureRandom();
+        long id = random.nextLong(2000) + 2000L;
+        var now = Instant.now();
+        var payerAccountId = AccountID.newBuilder().setAccountNum(id++).build();
+        long consensusTimestamp = now.getEpochSecond() * 1_000_000_000 + now.getNano();
+        var validStart =
+                Timestamp.newBuilder().setSeconds(now.getEpochSecond() - 1).setNanos(now.getNano());
+        var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.getDefaultInstance())
+                .setTransactionID(
+                        TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart))
+                .build();
+        var signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(SIGNATURE_MAP)
+                .build();
+        var transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.toByteString())
+                .build();
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(
+                        Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()))
+                .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                .build();
+        var recordItem = RecordItem.builder()
+                .payerAccountId(EntityId.of(payerAccountId))
+                .transaction(transaction)
+                .contractTransactionPredicate((entityId) -> false)
+                .transactionRecord(transactionRecord)
+                .build();
+
+        var account = EntityId.of(id);
+        recordItem.addContractTransaction(account);
+
+        assertThat(recordItem.populateContractTransactions()).isEmpty();
     }
 
     @SuppressWarnings("java:S5778")
