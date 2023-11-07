@@ -61,15 +61,11 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.88.0")
+@TestPropertySource(properties = "spring.flyway.target=1.89.0")
 class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
 
     private static final String CLEANUP_SQL =
             """
-            drop function create_full_account_balance_snapshot(bigint, bigint);
-            drop function create_deduped_account_balance_snapshot(bigint, bigint);
-            drop function create_full_token_balance_snapshot(bigint, bigint);
-            drop function create_deduped_token_balance_snapshot(bigint, bigint);
             drop table account_balance;
             drop table token_balance;
             alter table account_balance_old rename to account_balance;
@@ -81,7 +77,7 @@ class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
     @Owner
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.89.0__time_partition_balance_tables.sql")
+    @Value("classpath:db/migration/v1/V1.89.1__time_partition_balance_tables.sql")
     private final Resource migrationSql;
 
     private final TimePartitionService timePartitionService;

@@ -27,6 +27,7 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,7 +41,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -68,10 +72,15 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
     private final AccountBalanceRepository accountBalanceRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final BackfillAndDeduplicateBalanceMigration migration;
+
+    @Value("classpath:db/migration/v1/V1.89.0__add_balance_deduplicate_functions.sql")
+    private final Resource migrationSql;
+
     private final TokenBalanceRepository tokenBalanceRepository;
 
     @AfterEach
     void teardown() {
+        addBalanceDeduplicateFunctions();
         jdbcTemplate.execute(REVERT_DDL);
         resetChecksum(migration);
     }
@@ -436,6 +445,13 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
         assertSchema();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactly(expectedTokenBalance);
+    }
+
+    @SneakyThrows
+    private void addBalanceDeduplicateFunctions() {
+        try (var is = migrationSql.getInputStream()) {
+            jdbcTemplate.execute(StreamUtils.copyToString(is, StandardCharsets.UTF_8));
+        }
     }
 
     private void assertSchema() {

@@ -48,13 +48,17 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
     private static final long EPOCH = 0L;
 
-    // Can't use spring data repositories because the migration runs with a different role, so it can drop the tables
+    // Can't use spring data repositories because the migration runs with a different role, so it can drop the resources
     // at the end
-    // To simplify the test case, the create_(deduped|full)_*_balance_snapshot functions are not dropped at the end
     private static final String CLEANUP_SQL =
             """
-            drop table account_balance_old;
-            drop table token_balance_old;
+            drop function if exists create_full_account_balance_snapshot(bigint, bigint);
+            drop function if exists create_deduped_account_balance_snapshot(bigint, bigint);
+            drop function if exists create_full_token_balance_snapshot(bigint, bigint);
+            drop function if exists create_deduped_token_balance_snapshot(bigint, bigint);
+
+            drop table if exists account_balance_old;
+            drop table if exists token_balance_old;
             """;
 
     private static final String CREATE_FULL_ACCOUNT_BALANCE_SNAPSHOT_SQL =
@@ -77,9 +81,9 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
             )
             """;
 
-    private static final long NO_BALANCE = -1;
+    private static final long MIN_INTERVAL = Duration.ofHours(4).toNanos();
 
-    private static final long ONE_HOUR_IN_NS = Duration.ofHours(1).toNanos();
+    private static final long NO_BALANCE = -1;
 
     private static final String PATCH_ORIGINAL_FIRST_ACCOUNT_BALANCE_SNAPSHOT_SQL =
             """
@@ -174,7 +178,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.89.0"); // The version balance table partitions are created
+        return MigrationVersion.fromVersion("1.89.1"); // The version balance table partitions are created
     }
 
     @Nonnull
@@ -232,7 +236,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
             return null;
         }
 
-        long lowerBound = last + 4 * ONE_HOUR_IN_NS;
+        long lowerBound = last + MIN_INTERVAL;
         var params = new MapSqlParameterSource()
                 .addValue("lowerBound", lowerBound)
                 .addValue("upperBound", lastConsensusTimestamp);
