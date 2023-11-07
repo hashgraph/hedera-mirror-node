@@ -137,16 +137,28 @@ class DissociateLogicTest {
 
     @Test
     void verifyDissociationForDeletedToken() {
-        final var updatedSpy = spyAccount.setOwnedNfts(5L);
+        final var initialOwnedNfts = 5L;
+        final var balanceToDeduct = 3L;
+        final var updatedSpy = spyAccount.setOwnedNfts(initialOwnedNfts);
         spyAccount = spy(updatedSpy);
-        tokenRelationship = tokenRelationship.setBalance(3L);
+        tokenRelationship = tokenRelationship.setBalance(balanceToDeduct);
         tokenRelationship = tokenRelationship.setNotYetPersisted(false);
+        tokenRelationship = tokenRelationship.setAccount(spyAccount);
+
         setupToken();
         setupTokenRelationship();
         when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         setupAccount();
         when(token.isDeleted()).thenReturn(true);
+
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
+
+        final var expectedTokenRelationship = tokenRelationship
+                .markAsDestroyed()
+                .setBalance(0L)
+                .setAccount(spyAccount.setOwnedNfts(initialOwnedNfts - balanceToDeduct));
+
+        verify(store).deleteTokenRelationship(expectedTokenRelationship);
     }
 
     @Test
