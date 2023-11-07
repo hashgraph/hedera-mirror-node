@@ -623,11 +623,11 @@ class RecordItemTest {
                 .build();
 
         recordItem.addContractTransaction(account);
-        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1);
+        assertThat(recordItem.populateContractTransactions()).containsExactlyInAnyOrder(expected1);
 
         // adding same id doesn't result in additional record
         recordItem.addContractTransaction(account);
-        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1);
+        assertThat(recordItem.populateContractTransactions()).containsExactlyInAnyOrder(expected1);
 
         // additional id results in another transaction record and the first is updated to include id of the new
         var account2 = EntityId.of(id);
@@ -639,7 +639,7 @@ class RecordItemTest {
                 .contractIds(Arrays.asList(account.getId(), account2.getId()))
                 .build();
         recordItem.addContractTransaction(account2);
-        assertThat(recordItem.getContractTransactions()).containsExactlyInAnyOrder(expected1, expected2);
+        assertThat(recordItem.populateContractTransactions()).containsExactlyInAnyOrder(expected1, expected2);
     }
 
     @SuppressWarnings("java:S5778")

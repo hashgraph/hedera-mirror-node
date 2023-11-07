@@ -80,10 +80,16 @@ public class RecordItem implements StreamItem {
     private final int transactionIndex;
     private final TransactionRecord transactionRecord;
     private final int transactionType;
-    private final Map<Long, ContractTransaction> contractTransactions = new HashMap<>();
 
     @Getter(PRIVATE)
     private final AtomicInteger logIndex = new AtomicInteger(0);
+
+    @NonFinal
+    @Setter
+    private Predicate<EntityId> contractTransactionPredicate;
+
+    @NonFinal
+    private Map<Long, ContractTransaction> contractTransactions;
 
     @Getter(AccessLevel.NONE)
     @NonFinal
@@ -106,7 +112,10 @@ public class RecordItem implements StreamItem {
     private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
 
     public void addContractTransaction(EntityId entityId) {
-        contractTransactions.computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
+        if (contractTransactionPredicate == null || !contractTransactionPredicate.test(entityId)) {
+            return;
+        }
+        getContractTransactions().computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
                 .entityId(key)
                 .payerAccountId(payerAccountId.getId())
                 .consensusTimestamp(consensusTimestamp)
@@ -168,7 +177,18 @@ public class RecordItem implements StreamItem {
                         DomainUtils.toBytes(getTransactionRecord().getTransactionHash()), 0, 32));
     }
 
-    public Collection<ContractTransaction> getContractTransactions() {
+    private Map<Long, ContractTransaction> getContractTransactions() {
+        if (contractTransactions == null) {
+            contractTransactions = new HashMap<>();
+        }
+
+        return contractTransactions;
+    }
+
+    public Collection<ContractTransaction> populateContractTransactions() {
+        if (contractTransactions == null || contractTransactions.isEmpty()) {
+            return Collections.emptyList();
+        }
         var ids = new ArrayList<>(contractTransactions.keySet());
         contractTransactions.values().forEach(contractTransaction -> contractTransaction.setContractIds(ids));
         return contractTransactions.values();

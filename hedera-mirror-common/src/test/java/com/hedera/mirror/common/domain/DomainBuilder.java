@@ -39,6 +39,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.contract.ContractTransaction;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -336,6 +337,17 @@ public class DomainBuilder {
                 .entityId(contractId)
                 .payerAccountId(payerAccountId)
                 .contractIds(Arrays.asList(payerAccountId, contractId));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder>
+            contractTransactionHash() {
+        var builder = ContractTransactionHash.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(id())
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
+                .hash(bytes(32));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

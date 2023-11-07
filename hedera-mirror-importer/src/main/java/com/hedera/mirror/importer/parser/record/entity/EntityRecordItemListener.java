@@ -91,6 +91,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         recordItem.setEntityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction);
+        recordItem.setContractTransactionPredicate(
+                entityId -> entityProperties.getPersist().isContractTransaction());
 
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
@@ -157,7 +159,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!entityTransactions.isEmpty()) {
             entityListener.onEntityTransactions(entityTransactions.values());
         }
-        var contractTransactions = recordItem.getContractTransactions();
+        var contractTransactions = recordItem.populateContractTransactions();
         if (!contractTransactions.isEmpty()) {
             entityListener.onContractTransactions(contractTransactions);
         }

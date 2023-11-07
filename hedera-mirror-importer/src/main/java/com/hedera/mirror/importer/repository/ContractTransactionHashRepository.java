@@ -16,17 +16,18 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.contract.ContractTransaction;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Repository;
 
-@Transactional
-public interface ContractTransactionRepository
-        extends CrudRepository<ContractTransaction, ContractTransaction.Id>, RetentionRepository {
+@Repository
+public interface ContractTransactionHashRepository
+        extends CrudRepository<ContractTransactionHash, byte[]>, RetentionRepository {
+
     @Modifying
     @Override
-    @Query("delete from ContractTransaction where consensusTimestamp <= ?1")
+    @Query("delete from ContractTransactionHash where consensusTimestamp <= ?1")
     int prune(long consensusTimestamp);
 }
