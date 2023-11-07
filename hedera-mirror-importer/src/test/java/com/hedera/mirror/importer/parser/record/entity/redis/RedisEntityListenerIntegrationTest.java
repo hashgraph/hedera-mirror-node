@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.entity.redis;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import org.junit.jupiter.api.TestInstance;
@@ -46,7 +47,7 @@ class RedisEntityListenerIntegrationTest extends BatchEntityListenerTest {
     }
 
     @Override
-    protected Flux<TopicMessage> subscribe(long topicId) {
-        return redisOperations.listenToChannel("topic." + topicId).map(m -> m.getMessage());
+    protected Flux<TopicMessage> subscribe(EntityId topicId) {
+        return redisOperations.listenToChannel("topic." + topicId.getId()).map(m -> m.getMessage());
     }
 }
