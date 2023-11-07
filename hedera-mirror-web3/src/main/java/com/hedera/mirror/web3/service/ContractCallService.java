@@ -82,7 +82,7 @@ public class ContractCallService {
                     }
                 }
 
-                final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
+                final var ethCallTxnResult = doProcessCall(params, params.getGas());
 
                 validateResult(ethCallTxnResult, params.getCallType());
 
@@ -106,7 +106,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas(), true);
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -118,7 +118,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, true),
+                gas -> doProcessCall(params, gas),
                 gasUsedByInitialCall,
                 params.getGas());
 
