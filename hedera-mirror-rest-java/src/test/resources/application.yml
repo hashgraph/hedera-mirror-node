@@ -24,7 +24,7 @@ spring:
       idPartitionSize: 1000000000000000
       maxEntityId: 5000000
       maxEntityIdRatio: 2.0
-      partitionStartDate: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
+      partitionStartDate: "'1970-01-01'"
       partitionTimeInterval: "'10 years'"
       schema: public
       shardCount: 2
