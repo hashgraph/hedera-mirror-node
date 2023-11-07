@@ -24,6 +24,12 @@ alter table if exists transaction reset (
     log_autovacuum_min_duration
     );
 
+-- auto vacuum daily with 15-minute interval account balance files
+alter table if exists account_balance_file set (
+  autovacuum_vacuum_insert_scale_factor = 0,
+  autovacuum_vacuum_insert_threshold = 96
+  );
+
 -- based on 12 contract actions per smart contract transaction and max 300 TPS
 alter table if exists contract_action set (
   autovacuum_vacuum_insert_scale_factor = 0,
