@@ -39,7 +39,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
@@ -130,15 +129,7 @@ public class ContractCallService {
             final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessor.execute(
-                    params.getSender(),
-                    params.getReceiver(),
-                    params.isEstimate() ? estimatedGas : params.getGas(),
-                    params.getValue(),
-                    params.getCallData(),
-                    Instant.now(),
-                    params.isStatic(),
-                    isEstimate);
+            transactionResult = mirrorEvmTxProcessor.execute(params, estimatedGas);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }

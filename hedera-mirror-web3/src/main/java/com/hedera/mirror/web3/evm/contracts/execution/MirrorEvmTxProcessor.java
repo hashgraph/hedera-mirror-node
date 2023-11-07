@@ -16,22 +16,11 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import java.time.Instant;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 public interface MirrorEvmTxProcessor {
 
     @SuppressWarnings("java:S107")
-    HederaEvmTransactionProcessingResult execute(
-            HederaEvmAccount sender,
-            Address receiver,
-            long providedGasLimit,
-            long value,
-            Bytes callData,
-            Instant consensusTime,
-            boolean isStatic,
-            boolean isEstimate);
+    HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas);
 }

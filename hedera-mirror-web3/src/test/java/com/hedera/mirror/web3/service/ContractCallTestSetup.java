@@ -80,7 +80,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.ToLongFunction;
@@ -797,16 +796,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         long result;
         try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
+
             result = processor
-                    .execute(
-                            serviceParameters.getSender(),
-                            serviceParameters.getReceiver(),
-                            serviceParameters.getGas(),
-                            serviceParameters.getValue(),
-                            serviceParameters.getCallData(),
-                            Instant.now(),
-                            serviceParameters.isStatic(),
-                            true)
+                    .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
