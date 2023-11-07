@@ -34,9 +34,9 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 
     @Override
     public Hash getBlockHash(long blockNo) {
-        final var fileHash = recordFileRepository.findHashByIndex(blockNo);
-
-        return fileHash.map(StaticBlockMetaSource::ethHashFrom)
+        final var recordFile = recordFileRepository.findByIndex(blockNo);
+        return recordFile
+                .map(rf -> ethHashFrom(rf.getHash()))
                 .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
     }
 

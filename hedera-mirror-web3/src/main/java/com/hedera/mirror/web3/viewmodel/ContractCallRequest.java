@@ -26,7 +26,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
-import org.hyperledger.besu.datatypes.Address;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class ContractCallRequest {
@@ -65,16 +65,7 @@ public class ContractCallRequest {
 
     @AssertTrue(message = "must not be empty")
     private boolean hasTo() {
-        final var isBlankOrEmpty = to == null || to.isEmpty();
-        if (!estimate && isBlankOrEmpty) {
-            return false;
-        }
-        /*When performing estimateGas with an empty "to" field, we set a default value of the zero address
-        to avoid any potential NullPointerExceptions throughout the process.*/
-        if (isBlankOrEmpty) {
-            to = Address.ZERO.toHexString();
-        }
-        return true;
+        return estimate || StringUtils.isNotEmpty(to);
     }
 
     @AssertTrue(message = "must not exceed call size limit")

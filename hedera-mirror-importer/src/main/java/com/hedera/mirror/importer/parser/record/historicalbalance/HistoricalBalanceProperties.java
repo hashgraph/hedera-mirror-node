@@ -37,6 +37,8 @@ public class HistoricalBalanceProperties {
 
     private final BalanceDownloaderProperties balanceDownloaderProperties;
 
+    private boolean deduplicate = false;
+
     private boolean enabled = true;
 
     @DurationMin(minutes = 2)

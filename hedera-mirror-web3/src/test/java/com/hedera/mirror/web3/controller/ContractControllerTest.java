@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -396,6 +397,23 @@ class ContractControllerTest {
     }
 
     @Test
+    void callWithBlockNumberOutOfRangeExceptionTest() {
+        final var request = request();
+        given(service.processCall(any())).willThrow(new BlockNumberOutOfRangeException("Unknown block number"));
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Unknown block number"));
+    }
+
+    @Test
     void callSuccess() {
         final var request = request();
         request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
@@ -452,6 +470,7 @@ class ContractControllerTest {
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);
         request.setData("0x1079023a");
+        request.setBlock(BlockType.LATEST);
         return request;
     }
 

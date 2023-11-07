@@ -1,16 +1,16 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "0.92.0-SNAPSHOT",
+  "version": "0.93.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=18.12.0 < 19"
+    "node": ">=18.12.0 < 21"
   },
   "scripts": {
-    "dev": "nodemon --experimental-specifier-resolution=node server.js",
-    "start": "node --experimental-specifier-resolution=node server.js",
+    "dev": "nodemon --import=extensionless/register server.js",
+    "start": "node --import=extensionless/register server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --maxWorkers 2 --passWithNoTests --testPathPattern='.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
@@ -22,10 +22,11 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "extend": "^3.0.2",
+    "extensionless": "^1.7.3",
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "mathjs": "^11.11.2",
+    "mathjs": "^12.0.0",
     "parse-duration": "^1.1.0",
     "pretty-ms": "^8.0.0"
   },

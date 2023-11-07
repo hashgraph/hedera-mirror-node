@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -70,6 +71,9 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -185,8 +189,9 @@ class MirrorEvmTxProcessorTest {
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
-    @Test
-    void assertSuccessExecution() {
+    @ParameterizedTest
+    @MethodSource("provideIsEstimateParameters")
+    void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
         given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
@@ -195,7 +200,7 @@ class MirrorEvmTxProcessorTest {
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
 
         var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, true);
+                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, isEstimate);
 
         assertThat(result)
                 .isNotNull()
@@ -291,5 +296,9 @@ class MirrorEvmTxProcessorTest {
         given(gasCalculator.getHighTierGasCost()).willReturn(10L);
         given(gasCalculator.getJumpDestOperationGasCost()).willReturn(1L);
         given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
+    }
+
+    static Stream<Arguments> provideIsEstimateParameters() {
+        return Stream.of(Arguments.of(true), Arguments.of(false));
     }
 }

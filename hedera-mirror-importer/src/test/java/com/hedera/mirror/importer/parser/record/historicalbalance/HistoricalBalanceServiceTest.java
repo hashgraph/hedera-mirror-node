@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -50,6 +51,7 @@ class HistoricalBalanceServiceTest {
         var balanceDownloaderProperties = mock(BalanceDownloaderProperties.class);
         var platformTransactionManager = mock(PlatformTransactionManager.class);
         var recordFileRepository = mock(RecordFileRepository.class);
+        var timePartitionService = mock(TimePartitionService.class);
         var tokenBalanceRepository = mock(TokenBalanceRepository.class);
         var pool = Executors.newFixedThreadPool(2);
 
@@ -71,6 +73,7 @@ class HistoricalBalanceServiceTest {
                 platformTransactionManager,
                 historicalBalanceProperties,
                 recordFileRepository,
+                timePartitionService,
                 tokenBalanceRepository);
 
         // when
