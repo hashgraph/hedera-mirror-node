@@ -31,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import reactor.test.StepVerifier;
 
-@CustomLog
 class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
 
     private final LocalStreamFileProperties localProperties = new LocalStreamFileProperties();
@@ -129,7 +127,8 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     }
 
     @Test
-    void listStartsAtNextDay() {
+    void listStartsAtNextDay() throws Exception {
+        localProperties.setDeleteAfterProcessing(false);
         var node = node("0.0.3");
         var previous =
                 createSignature("2022-07-13", "recordstreams", "record0.0.3", "2022-07-13T23_59_59.304284003Z.rcd_sig");
@@ -142,13 +141,19 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         assertThat(sigs).hasSize(1).extracting(StreamFileData::getFilename).containsExactly(expected.getName());
         sigs.forEach(
                 sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+        assertThat(Files.walk(dataPath)
+                        .peek(f -> System.out.println("File: " + f))
+                        .filter(p ->
+                                p.toString().contains(node.getNodeAccountId().toString()))
+                        .filter(p -> !p.toString().contains("sidecar"))
+                        .filter(p -> p.toFile().isFile()))
+                .hasSize(2);
     }
 
     @Test
     void listDeletesFiles() throws Exception {
         localProperties.setDeleteAfterProcessing(true);
-        var accountId = "0.0.3";
-        var node = node(accountId);
+        var node = node("0.0.3");
         getFileCopier(node).copy();
         var lastFilename = StreamFilename.from(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
@@ -157,7 +162,8 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(10));
         assertThat(Files.walk(dataPath)
-                        .filter(p -> p.toString().contains(accountId))
+                        .filter(p ->
+                                p.toString().contains(node.getNodeAccountId().toString()))
                         .filter(p -> !p.toString().contains("sidecar"))
                         .noneMatch(p -> p.toFile().isFile()))
                 .isTrue();
@@ -190,7 +196,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     @SneakyThrows
     private File createSignature(String... paths) {
         var subPath = Path.of("", paths);
-        var streamsDir = properties.getMirrorProperties().getDataPath().resolve(STREAMS);
+        var streamsDir = properties.getMirrorProperties().getStreamPath();
         var file = streamsDir.resolve(subPath).toFile();
         file.getParentFile().mkdirs();
         file.createNewFile();
