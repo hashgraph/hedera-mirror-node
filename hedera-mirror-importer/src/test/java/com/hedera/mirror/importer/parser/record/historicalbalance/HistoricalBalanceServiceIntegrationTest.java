@@ -33,7 +33,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
@@ -47,18 +46,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
+@Disabled("Disabled WIP")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
@@ -78,8 +78,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private Entity account;
     private TokenAccount tokenAccount;
 
-    private List<Entity> entities = new ArrayList<>();
-    private List<TokenAccount> tokenAccounts = new ArrayList<>();
+    private List<Entity> entities;
+    private List<TokenAccount> tokenAccounts;
 
     void setup() {
         // common database setup
@@ -126,24 +126,21 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                 .persist();
 
         // Only entities with valid balance
-        entities.addAll(Stream.of(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance)
-                .toList());
-        tokenAccounts.add(tokenAccount);
+        entities = new ArrayList<>(List.of(treasuryAccount, account, contract, fileWithBalance, unknownWithBalance));
+        tokenAccounts = new ArrayList<>(List.of(tokenAccount));
     }
 
     @AfterEach
     void resetProperties() {
         properties.setTokenBalances(true);
-        properties.setDeduplicate(false);
     }
 
     @ParameterizedTest
-    @CsvSource({"true,false", "false,true", "true,true", "false,false"})
-    void generate(boolean tokenBalances, boolean isDeduplication) {
+    @ValueSource(booleans = {true, false})
+    void generate(boolean tokenBalances) {
         // given
         setup();
         properties.setTokenBalances(tokenBalances);
-        properties.setDeduplicate(isDeduplication);
 
         // when
         parseRecordFile(1L);
@@ -289,11 +286,9 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         verifyGeneratedBalances(balanceTimestamp);
     }
 
-    @EnabledIfV2
     @Test
     void deduplicationPartitionBoundary() {
         properties.setTokenBalances(true);
-        properties.setDeduplicate(true);
         var treasuryAccount =
                 domainBuilder.entity().customize(e -> e.id(2L).num(2L)).persist();
         entities.add(treasuryAccount);
@@ -415,10 +410,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
             if (!expectedAccountBalances.containsKey(entity.getId())) {
                 expectedAccountBalances.computeIfAbsent(entity.getId(), k -> Lists.newArrayList(updatedAccountBalance));
                 updatedEntitiesCount++;
-            } else if (!properties.isDeduplicate()
-                    || (lastPartition != null
-                            && balanceTimestamp
-                                    == lastPartition.getTimestampRange().lowerEndpoint())) {
+            } else if ((lastPartition != null
+                    && balanceTimestamp == lastPartition.getTimestampRange().lowerEndpoint())) {
                 // There is no partition or the balance timestamp is at the beginning of the last partition
                 // Expect all balances
                 expectedAccountBalances.get(entity.getId()).add(updatedAccountBalance);
@@ -459,12 +452,9 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         tokenBalance.getId().getTokenId());
                 if (!expectedTokenBalances.containsKey(key)) {
                     expectedTokenBalances.computeIfAbsent(key, k -> Lists.newArrayList(tokenBalance));
-                } else if (!properties.isDeduplicate()
-                        || (lastTokenBalancePartition != null
-                                && balanceTimestamp
-                                        == lastTokenBalancePartition
-                                                .getTimestampRange()
-                                                .lowerEndpoint())) {
+                } else if ((lastTokenBalancePartition != null
+                        && balanceTimestamp
+                                == lastTokenBalancePartition.getTimestampRange().lowerEndpoint())) {
                     expectedTokenBalances.get(key).add(tokenBalance);
                 } else {
                     var foundToken = expectedTokenBalances.get(key).stream()

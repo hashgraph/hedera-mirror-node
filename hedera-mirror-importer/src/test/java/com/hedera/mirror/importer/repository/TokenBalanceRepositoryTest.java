@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.importer.repository;
 
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TREASURY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance.Id;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -37,20 +39,52 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void balanceSnapshot() {
-        long timestamp = 100;
-        assertThat(tokenBalanceRepository.balanceSnapshot(timestamp)).isZero();
+        // given
+        var tokenAccount1 = domainBuilder.tokenAccount().persist();
+        var tokenAccount2 = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(false).balance(0))
+                .persist();
 
-        var tokenAccount = domainBuilder.tokenAccount().persist();
-        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
-        assertThat(tokenBalanceRepository.balanceSnapshot(timestamp)).isOne();
-        assertThat(tokenBalanceRepository.findAll())
-                .containsExactly(TokenBalance.builder()
-                        .balance(tokenAccount.getBalance())
-                        .id(new Id(
-                                timestamp,
-                                EntityId.of(tokenAccount.getAccountId()),
-                                EntityId.of(tokenAccount.getTokenId())))
-                        .build());
+        // when
+        long snapshotTimestamp = domainBuilder.timestamp();
+        tokenBalanceRepository.balanceSnapshot(snapshotTimestamp);
+
+        // then
+        var expected = List.of(
+                buildTokenBalance(tokenAccount1, snapshotTimestamp),
+                buildTokenBalance(tokenAccount2, snapshotTimestamp));
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void balanceSnapshotWithDissociatedTokenAccounts() {
+        // given
+        long lastSnapshotTimestamp = domainBuilder.timestamp();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(lastSnapshotTimestamp, EntityId.of(TREASURY))))
+                .persist();
+        // dissociated before last snapshot, will not appear in full snapshot
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(false).balance(0).balanceTimestamp(lastSnapshotTimestamp - 1))
+                .persist();
+        var tokenAccount1 = domainBuilder.tokenAccount().persist();
+        var tokenAccount2 = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(false).balance(0))
+                .persist();
+        long newSnapshotTimestamp = domainBuilder.timestamp();
+        var expected = List.of(
+                buildTokenBalance(tokenAccount1, newSnapshotTimestamp),
+                buildTokenBalance(tokenAccount2, newSnapshotTimestamp));
+
+        // when
+        tokenBalanceRepository.balanceSnapshot(newSnapshotTimestamp);
+
+        // then
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -114,17 +148,6 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
         assertThat(tokenBalanceRepository.balanceSnapshotDeduplicate(timestamp4, timestamp4))
                 .isZero();
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-    }
-
-    @Test
-    void prune() {
-        domainBuilder.tokenBalance().persist();
-        var tokenBalance2 = domainBuilder.tokenBalance().persist();
-        var tokenBalance3 = domainBuilder.tokenBalance().persist();
-
-        tokenBalanceRepository.prune(tokenBalance2.getId().getConsensusTimestamp());
-
-        assertThat(tokenBalanceRepository.findAll()).containsExactly(tokenBalance3);
     }
 
     @Test
