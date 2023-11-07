@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package com.hedera.mirror.web3.exception;
 import java.io.Serial;
 
 @SuppressWarnings("java:S110")
-public class InvalidParametersException extends InvalidInputException {
+public class BlockNumberOutOfRangeException extends InvalidInputException {
 
     @Serial
-    private static final long serialVersionUID = -1728472056521963582L;
+    private static final long serialVersionUID = 9163581929850980235L;
 
-    public InvalidParametersException(String message) {
+    public BlockNumberOutOfRangeException(String message) {
         super(message);
     }
 }

@@ -40,8 +40,9 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
      * @return an Optional containing the entity's state at the specified timestamp.
      *         If there is no record found for the given criteria, an empty Optional is returned.
      */
-    @Query(value =
-            """
+    @Query(
+            value =
+                    """
             with entity_cte as (
                 select id
                 from entity

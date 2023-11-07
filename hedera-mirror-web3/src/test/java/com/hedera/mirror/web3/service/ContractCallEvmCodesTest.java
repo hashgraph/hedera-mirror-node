@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -192,6 +193,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .gas(15_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
+                .block(BlockType.LATEST)
                 .build();
     }
 }

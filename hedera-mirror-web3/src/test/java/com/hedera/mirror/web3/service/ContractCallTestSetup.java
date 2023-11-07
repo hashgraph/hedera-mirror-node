@@ -55,6 +55,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -753,7 +754,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForExecution(
-            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
+            final Bytes callData,
+            final Address contractAddress,
+            final CallType callType,
+            final long value,
+            BlockType block) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -766,6 +771,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
                 .build();
     }
 
@@ -783,6 +789,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(BlockType.LATEST)
                 .build();
     }
 

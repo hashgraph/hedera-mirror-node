@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
@@ -61,8 +63,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -76,8 +78,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, ERC_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -92,8 +94,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -108,8 +110,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var functionName = ercFunction.name + "Redirect";
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -122,7 +124,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
-        final var serviceParameters = serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
