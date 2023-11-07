@@ -65,6 +65,7 @@ public interface Store {
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
 
+    void deleteTokenRelationship(TokenRelationship tokenRelationship);
     /**
      * Update fungible or non-fungible token into the in-memory state.
      */

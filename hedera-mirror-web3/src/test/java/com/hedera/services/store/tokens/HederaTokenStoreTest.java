@@ -207,7 +207,7 @@ class HederaTokenStoreTest {
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
-                .willReturn(new TokenRelationship(token, account, true));
+                .willReturn(new TokenRelationship(token, account));
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.THROW)).willReturn(account);
         given(store.getToken(asTypedEvmAddress(misc), OnMissing.DONT_THROW)).willReturn(token);
 
@@ -298,9 +298,9 @@ class HederaTokenStoreTest {
         given(store.getToken(asTypedEvmAddress(aNft.tokenId()), OnMissing.DONT_THROW))
                 .willReturn(token);
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, aNft.tokenId()), OnMissing.DONT_THROW))
-                .willReturn(new TokenRelationship(token, sponsorAccount, true));
+                .willReturn(new TokenRelationship(token, sponsorAccount));
         given(store.getTokenRelationship(asTokenRelationshipKey(counterparty, aNft.tokenId()), OnMissing.DONT_THROW))
-                .willReturn(new TokenRelationship(token, counterpartyAccount, true));
+                .willReturn(new TokenRelationship(token, counterpartyAccount));
         given(store.getUniqueToken(aNft, OnMissing.DONT_THROW)).willReturn(UniqueToken.getEmptyUniqueToken());
 
         final var status = subject.changeOwner(aNft, sponsor, counterparty);
@@ -371,9 +371,8 @@ class HederaTokenStoreTest {
                 Id.DEFAULT,
                 new byte[0]);
 
-        var counterpartyRel =
-                new TokenRelationship(token, counterpartyAccount, true).setBalance(startCounterpartyANfts);
-        var sponsorRel = new TokenRelationship(token, sponsorAccount, true).setBalance(startSponsorANfts);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyANfts);
+        var sponsorRel = new TokenRelationship(token, sponsorAccount).setBalance(startSponsorANfts);
 
         given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
                 .willReturn(
@@ -424,8 +423,8 @@ class HederaTokenStoreTest {
                 Id.DEFAULT,
                 new byte[0]);
 
-        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, true);
-        var sponsorRel = new TokenRelationship(token, sponsorAccount, true);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
+        var sponsorRel = new TokenRelationship(token, sponsorAccount);
 
         given(store.getAccount(asTypedEvmAddress(counterparty), OnMissing.THROW))
                 .willReturn(counterpartyAccount);
@@ -479,9 +478,8 @@ class HederaTokenStoreTest {
                 Id.fromGrpcAccount(sponsor),
                 Id.DEFAULT,
                 new byte[0]);
-        var counterpartyRel =
-                new TokenRelationship(token, counterpartyAccount, true).setBalance(startCounterpartyANfts);
-        var sponsorRel = new TokenRelationship(token, sponsorAccount, true).setBalance(startSponsorANfts);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyANfts);
+        var sponsorRel = new TokenRelationship(token, sponsorAccount).setBalance(startSponsorANfts);
 
         var updatedNft = nft.setOwner(Id.fromGrpcAccount(counterparty));
         var updatedSponsorAccount = sponsorAccount.setOwnedNfts(startSponsorNfts - 1);
@@ -547,9 +545,8 @@ class HederaTokenStoreTest {
                 Id.fromGrpcAccount(counterparty),
                 Id.DEFAULT,
                 new byte[0]);
-        var counterpartyRel =
-                new TokenRelationship(token, counterpartyAccount, true).setBalance(startCounterpartyTNfts);
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true).setBalance(startTreasuryTNfts);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount).setBalance(startTreasuryTNfts);
 
         var updatedNft = nft.setOwner(Id.DEFAULT);
         var updatedTreasuryAccount = treasuryAccount.setOwnedNfts(startTreasuryNfts + 1);
@@ -618,9 +615,8 @@ class HederaTokenStoreTest {
                 Id.fromGrpcAccount(primaryTreasury),
                 Id.DEFAULT,
                 new byte[0]);
-        var counterpartyRel =
-                new TokenRelationship(token, counterpartyAccount, true).setBalance(startCounterpartyTNfts);
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true).setBalance(startTreasuryTNfts);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount).setBalance(startTreasuryTNfts);
 
         var updatedNft = nft.setOwner(Id.fromGrpcAccount(counterparty));
         var updatedTreasuryAccount = treasuryAccount.setOwnedNfts(startTreasuryNfts - 1);
@@ -670,8 +666,8 @@ class HederaTokenStoreTest {
         var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
-        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, true);
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true).setFrozen(true);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount).setFrozen(true);
         var nft = new UniqueToken(
                 Id.fromGrpcToken(tNft.tokenId()),
                 tNft.serialNo(),
@@ -711,8 +707,8 @@ class HederaTokenStoreTest {
         var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId())).setTreasury(treasuryAccount);
-        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, true).setFrozen(true);
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setFrozen(true);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount);
         var nft = new UniqueToken(
                 Id.fromGrpcToken(tNft.tokenId()),
                 tNft.serialNo(),
@@ -812,7 +808,7 @@ class HederaTokenStoreTest {
     void refusesToAdjustFrozenRelationship() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true).setFrozen(true);
+        var tokenRelationship = new TokenRelationship(token, account).setFrozen(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
@@ -832,7 +828,7 @@ class HederaTokenStoreTest {
     void refusesToAdjustRevokedKycRelationship() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true).setKycGranted(false);
+        var tokenRelationship = new TokenRelationship(token, account).setKycGranted(false);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
@@ -852,7 +848,7 @@ class HederaTokenStoreTest {
     void refusesInvalidAdjustment() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true);
+        var tokenRelationship = new TokenRelationship(token, account);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
@@ -894,7 +890,7 @@ class HederaTokenStoreTest {
         account = account.setAutoAssociationMetadata(
                 setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, false)
+        var tokenRelationship = new TokenRelationship(token, account)
                 .setFrozen(false)
                 .setKycGranted(true)
                 .setBalance(0);
@@ -924,7 +920,7 @@ class HederaTokenStoreTest {
         account = account.setAutoAssociationMetadata(
                 setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true)
+        var tokenRelationship = new TokenRelationship(token, account)
                 .setFrozen(false)
                 .setKycGranted(true)
                 .setBalance(0);
@@ -959,7 +955,7 @@ class HederaTokenStoreTest {
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true).setBalance(1);
+        var tokenRelationship = new TokenRelationship(token, account).setBalance(1);
 
         var updatedAccount = account.setNumPositiveBalances(numPositiveBalances - 1);
         var updatedTokenRelationship = tokenRelationship.setBalance(0);
@@ -986,7 +982,7 @@ class HederaTokenStoreTest {
                 .setNumPositiveBalances(2);
         var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
         var tokenRelationship =
-                new TokenRelationship(token, account, true).setFrozen(false).setKycGranted(true);
+                new TokenRelationship(token, account).setFrozen(false).setKycGranted(true);
 
         final var aa =
                 AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
@@ -1043,7 +1039,7 @@ class HederaTokenStoreTest {
     void realAssociationsExist() {
         var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true);
+        var tokenRelationship = new TokenRelationship(token, account);
 
         given(store.getAccount(asTypedEvmAddress(sponsor), OnMissing.DONT_THROW))
                 .willReturn(account);
@@ -1122,7 +1118,7 @@ class HederaTokenStoreTest {
     void grantingRejectsUnknowableToken() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true);
+        var tokenRelationship = new TokenRelationship(token, account);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
                 .willReturn(account);
@@ -1139,7 +1135,7 @@ class HederaTokenStoreTest {
     void unfreezingInvalidWithoutFreezeKey() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account, true);
+        var tokenRelationship = new TokenRelationship(token, account);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
                 .willReturn(account);
@@ -1163,9 +1159,8 @@ class HederaTokenStoreTest {
         var counterpartyAccount =
                 new Account(0L, Id.fromGrpcAccount(counterparty), 0).setOwnedNfts(startCounterpartyNfts);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true).setBalance(startTreasuryTNfts);
-        var counterpartyRel =
-                new TokenRelationship(token, counterpartyAccount, true).setBalance(startCounterpartyTNfts);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount).setBalance(startTreasuryTNfts);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setBalance(startCounterpartyTNfts);
 
         given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.THROW))
                 .willReturn(treasuryAccount);
@@ -1207,8 +1202,8 @@ class HederaTokenStoreTest {
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true).setFrozen(true);
-        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, true);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount).setFrozen(true);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount);
 
         given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
@@ -1235,8 +1230,8 @@ class HederaTokenStoreTest {
         var treasuryAccount = new Account(0L, Id.fromGrpcAccount(primaryTreasury), 0);
         var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0);
         var token = new Token(Id.fromGrpcToken(tNft.tokenId()));
-        var treasuryRel = new TokenRelationship(token, treasuryAccount, true);
-        var counterpartyRel = new TokenRelationship(token, counterpartyAccount, true).setFrozen(true);
+        var treasuryRel = new TokenRelationship(token, treasuryAccount);
+        var counterpartyRel = new TokenRelationship(token, counterpartyAccount).setFrozen(true);
 
         given(store.getAccount(asTypedEvmAddress(primaryTreasury), OnMissing.DONT_THROW))
                 .willReturn(treasuryAccount);
@@ -1552,7 +1547,7 @@ class HederaTokenStoreTest {
                 .setType(TokenType.NON_FUNGIBLE_UNIQUE);
         var tokenRelationshipKey = asTokenRelationshipKey(newTreasury, nonfungible);
         var tokenRelationship =
-                new TokenRelationship(token, account, true).setKycGranted(true).setBalance(1L);
+                new TokenRelationship(token, account).setKycGranted(true).setBalance(1L);
         final var op = updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
                 .build();

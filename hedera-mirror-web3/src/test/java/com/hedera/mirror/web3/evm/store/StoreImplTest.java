@@ -249,7 +249,7 @@ class StoreImplTest {
     @Test
     void updateTokenRelationship() {
         var tokenRel = new TokenRelationship(
-                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
+                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L));
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
         // tokenRel is now persisted in store

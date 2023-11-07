@@ -108,7 +108,7 @@ class WipeLogicTest {
     @Test
     void followsHappyPathForUnique() {
         Account account = new Account(0L, idOfAccount, 0);
-        treasuryRel = new TokenRelationship(token, account, true);
+        treasuryRel = new TokenRelationship(token, account);
 
         givenValidUniqueTxnCtx();
         final var serials = List.of(1L, 2L, 3L);

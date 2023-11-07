@@ -80,7 +80,7 @@ class DissociateLogicTest {
     public void beforeEach() {
         when(accountId.asEvmAddress()).thenReturn(accountAddress);
         account = new Account(0L, accountId, 0L);
-        tokenRelationship = new TokenRelationship(token, account, false);
+        tokenRelationship = new TokenRelationship(token, account);
         dissociateLogic = new DissociateLogic();
         spyAccount = spy(account);
     }
@@ -147,7 +147,6 @@ class DissociateLogicTest {
         setupAccount();
         when(token.isDeleted()).thenReturn(true);
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
-        verify(store).updateTokenRelationship(any(TokenRelationship.class));
     }
 
     @Test
@@ -226,7 +225,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, false, 3L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, 3L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
@@ -263,7 +262,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, false, 0L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, 0L);
         setupToken();
         setupTokenRelationship();
         setupAccount();

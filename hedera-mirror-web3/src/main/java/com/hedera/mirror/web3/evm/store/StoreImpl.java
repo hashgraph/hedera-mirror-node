@@ -174,6 +174,23 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public void deleteTokenRelationship(TokenRelationship tokenRelationship) {
+        final var topFrame = stackedStateFrames.top();
+        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
+        try {
+            final var tokenRelationshipKey = keyFromRelationship(tokenRelationship);
+            final var tokenRel = tokenRelationshipAccessor.get(tokenRelationshipKey);
+            if (tokenRel.isEmpty()) {
+                return;
+            }
+
+            tokenRelationshipAccessor.delete(tokenRelationship);
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
+    }
+
+    @Override
     public void updateToken(final Token fungibleToken) {
         final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
         tokenAccessor.set(fungibleToken.getId().asEvmAddress(), fungibleToken);
@@ -187,7 +204,8 @@ public class StoreImpl implements Store {
 
     @Override
     public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW).hasAssociation();
+        TokenRelationship tokenRelationship = getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW);
+        return !(tokenRelationship.getAccount().getId().equals(Id.DEFAULT));
     }
 
     @Override
