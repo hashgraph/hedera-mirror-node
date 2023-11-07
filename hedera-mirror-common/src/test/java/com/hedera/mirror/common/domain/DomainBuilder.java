@@ -267,8 +267,6 @@ public class DomainBuilder {
 
     public DomainWrapper<ContractLog, ContractLog.ContractLogBuilder> contractLog() {
         var builder = ContractLog.builder()
-                .blockHash(hash(96))
-                .blockNumber(id())
                 .bloom(bytes(256))
                 .consensusTimestamp(timestamp())
                 .contractId(entityId())

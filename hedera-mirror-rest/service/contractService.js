@@ -33,11 +33,10 @@ import {
   RecordFile,
   EthereumTransaction,
 } from '../model';
+import {RecordFileService} from './index.js';
 
 const {default: defaultLimit} = getResponseLimit();
-const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOCK_HASH)},
-${ContractLog.getFullName(ContractLog.BLOCK_NUMBER)},
-${ContractLog.getFullName(ContractLog.BLOOM)},
+const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
 ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
 ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
 ${ContractLog.getFullName(ContractLog.DATA)},
@@ -412,7 +411,13 @@ class ContractService extends BaseService {
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
-    return rows.map((cr) => new ContractLog(cr));
+    const timestamps = [];
+    rows.forEach((row) => {
+      timestamps.push(row.consensus_timestamp);
+    });
+    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps);
+
+    return rows.map((cr) => new ContractLog(cr, recordFileMap.get(cr.consensus_timestamp)));
   }
 
   async getContractLogsByTimestamps(timestamps) {

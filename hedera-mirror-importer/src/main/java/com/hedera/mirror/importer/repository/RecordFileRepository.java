@@ -28,11 +28,6 @@ public interface RecordFileRepository extends StreamFileRepository<RecordFile, L
     @Query(value = "select r from RecordFile r order by r.consensusEnd limit 1")
     Optional<RecordFile> findFirst();
 
-    @Query(
-            nativeQuery = true,
-            value = "select * from record_file where ?1 <= consensus_end order by consensus_end asc limit 1")
-    Optional<RecordFile> findForTimestamp(long timestamp);
-
     @Override
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();

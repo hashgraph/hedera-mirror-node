@@ -214,7 +214,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
             long consensusStart = recordItem.getConsensusTimestamp();
             RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
-            recordItem.setRecordFile(recordFile);
+
             recordStreamFileListener.onStart();
             entityRecordItemListener.onItem(recordItem);
             // commit, close connection
@@ -234,7 +234,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
             // process each record item
             for (RecordItem recordItem : recordItems) {
-                recordItem.setRecordFile(recordFile);
                 entityRecordItemListener.onItem(recordItem);
             }
 

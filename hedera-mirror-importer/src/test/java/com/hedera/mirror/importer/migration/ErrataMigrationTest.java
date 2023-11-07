@@ -32,7 +32,6 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -78,7 +77,7 @@ public class ErrataMigrationTest extends IntegrationTest {
     private final TransactionRepository transactionRepository;
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
     }
 
@@ -142,16 +141,6 @@ public class ErrataMigrationTest extends IntegrationTest {
                 .accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET))
                 .persist();
-
-        // Ensure migration is able to find block information
-        domainBuilder
-                .recordFile()
-                .customize(rf -> {
-                    rf.consensusStart(0L);
-                    rf.consensusEnd(Instant.parse("2023-02-15T00:00:00.000z").toEpochMilli() * 1000000);
-                })
-                .persist();
-
         spuriousTransfer(RECEIVER_PAYER_TIMESTAMP, 10, TransactionType.CRYPTOTRANSFER, true, false); // Expected
         spuriousTransfer(1L, 15, TransactionType.CRYPTOTRANSFER, false, false); // Expected
         spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER, false, true); // Expected
@@ -198,14 +187,6 @@ public class ErrataMigrationTest extends IntegrationTest {
         domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(existingTimestamp))
-                .persist();
-        // Ensure migration is able to find block information
-        domainBuilder
-                .recordFile()
-                .customize(rf -> {
-                    rf.consensusStart(0L);
-                    rf.consensusEnd(Instant.parse("2023-02-15T00:00:00.000z").toEpochMilli() * 1000000);
-                })
                 .persist();
         errataMigration.doMigrate();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);

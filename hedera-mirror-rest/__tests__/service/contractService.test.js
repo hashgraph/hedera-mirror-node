@@ -193,8 +193,9 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `with entity as (select evm_address, id from entity)
-      select cl.block_hash, cl.block_number, cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,evm_address
+      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,
+             evm_address
       from contract_log cl
       left join entity e on id = contract_id
       where cl.contract_id = $1
@@ -230,8 +231,8 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `with entity as (select evm_address, id from entity)
-      select cl.block_hash,cl.block_number,cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index, evm_address
+      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,evm_address
       from contract_log cl
       left join entity e on id = contract_id
       where cl.contract_id = $1 and cl.topic0 in ($2) and cl.topic1 in ($3) and cl.topic2 in ($4) and cl.topic3 in ($5)
@@ -265,7 +266,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
       query,
       `(
         with entity as (select evm_address, id from entity)
-        select cl.block_hash,cl.block_number,cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
           cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,evm_address
         from contract_log cl
         left join entity e on id = contract_id
@@ -274,7 +275,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
         limit $3
       ) union (
         with entity as (select evm_address, id from entity)
-        select cl.block_hash,cl.block_number,cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
           cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,evm_address
         from contract_log cl
         left join entity e on id = contract_id
@@ -312,8 +313,6 @@ describe('ContractService.getContractLogsQuery tests', () => {
       `(
         with entity as (select evm_address, id from entity)
         select
-          cl.block_hash,
-          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,
@@ -341,8 +340,6 @@ describe('ContractService.getContractLogsQuery tests', () => {
       ) union (
         with entity as (select evm_address, id from entity)
         select
-          cl.block_hash,
-          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,
@@ -371,8 +368,6 @@ describe('ContractService.getContractLogsQuery tests', () => {
       ) union (
         with entity as (select evm_address, id from entity)
         select
-          cl.block_hash,
-          cl.block_number,
           cl.bloom,
           cl.contract_id,
           cl.consensus_timestamp,

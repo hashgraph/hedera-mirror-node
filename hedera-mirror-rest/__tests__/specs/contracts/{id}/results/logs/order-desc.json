@@ -1,6 +1,26 @@
 {
   "description": "Contract logs api calls with order param desc",
   "setup": {
+    "recordFiles": [
+      {
+        "index": 1,
+        "consensus_start": 1639010141000000000,
+        "consensus_end": 1639010141500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a"
+      },
+      {
+        "index": 2,
+        "consensus_start": 1639010151000000000,
+        "consensus_end": 1639010151500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b"
+      },
+      {
+        "index": 3,
+        "consensus_start": 1639010161000000000,
+        "consensus_end": 1639010161500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      }
+    ],
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -76,8 +96,8 @@
         ],
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
         "transaction_index": 2,
-        "block_hash": "0x0",
-        "block_number": 1
+        "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+        "block_number": 2
       },
       {
         "address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
@@ -95,7 +115,7 @@
         ],
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
         "transaction_index": 1,
-        "block_hash": "0x0",
+        "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a",
         "block_number": 1
       },
       {
@@ -114,7 +134,7 @@
         ],
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
         "transaction_index": 1,
-        "block_hash": "0x0",
+        "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a",
         "block_number": 1
       }
     ],

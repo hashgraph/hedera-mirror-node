@@ -994,8 +994,6 @@ const addContractResult = async (contractResultInput) => {
 };
 
 const contractLogDefaults = {
-  block_hash: '0x0',
-  block_number: 1,
   bloom: '0x0123',
   consensus_timestamp: 1234510001,
   contract_id: 1,

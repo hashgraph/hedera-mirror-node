@@ -21,7 +21,6 @@ import static com.hedera.mirror.importer.reader.record.RecordFileReader.MAX_TRAN
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
@@ -32,7 +31,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -41,14 +39,12 @@ import jakarta.inject.Named;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
@@ -80,7 +76,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
-    private final RecordFileRepository recordFileRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionOperations transactionOperations;
     private final TransactionRepository transactionRepository;
@@ -98,8 +93,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             RecordStreamFileListener recordStreamFileListener,
             TokenTransferRepository tokenTransferRepository,
             TransactionOperations transactionOperations,
-            TransactionRepository transactionRepository,
-            RecordFileRepository recordFileRepository) {
+            TransactionRepository transactionRepository) {
         super(mirrorProperties.getMigration());
         this.balanceOffsets = balanceOffsets;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
@@ -111,7 +105,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         this.tokenTransferRepository = tokenTransferRepository;
         this.transactionOperations = transactionOperations;
         this.transactionRepository = transactionRepository;
-        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
@@ -228,19 +221,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         Arrays.sort(resources, Comparator.comparing(Resource::getFilename));
         recordStreamFileListener.onStart();
-        var lastConsensusEnd = Instant.ofEpochSecond(
-                0,
-                ObjectUtils.getIfNull(
-                        recordFileRepository
-                                .findLatest()
-                                .orElse(new RecordFile())
-                                .getConsensusEnd(),
-                        () -> 0L));
-        var dateRangeFilter = new DateRangeFilter(
-                mirrorProperties.getStartDate(),
-                lastConsensusEnd.isBefore(mirrorProperties.getEndDate())
-                        ? lastConsensusEnd
-                        : mirrorProperties.getEndDate());
+        var dateRangeFilter = new DateRangeFilter(mirrorProperties.getStartDate(), mirrorProperties.getEndDate());
 
         for (Resource resource : resources) {
             String name = resource.getFilename();
@@ -256,9 +237,8 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                         .build();
                 long timestamp = recordItem.getConsensusTimestamp();
                 boolean inRange = dateRangeFilter.filter(timestamp);
+
                 if (transactionRepository.findById(timestamp).isEmpty() && inRange) {
-                    recordItem.setRecordFile(
-                            recordFileRepository.findForTimestamp(timestamp).orElseThrow());
                     entityRecordItemListener.onItem(recordItem);
                     consensusTimestamps.add(timestamp);
                     log.info("Processed errata {} successfully", name);
