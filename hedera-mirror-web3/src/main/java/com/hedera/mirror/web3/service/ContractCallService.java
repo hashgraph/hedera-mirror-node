@@ -126,7 +126,7 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(
-            final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
+            final CallServiceParameters params, final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
             transactionResult = mirrorEvmTxProcessor.execute(params, estimatedGas);

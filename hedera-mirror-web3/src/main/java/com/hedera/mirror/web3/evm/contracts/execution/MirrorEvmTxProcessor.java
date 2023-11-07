@@ -21,6 +21,5 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 
 public interface MirrorEvmTxProcessor {
 
-    @SuppressWarnings("java:S107")
     HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas);
 }
