@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
@@ -42,11 +43,11 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 
     @Override
     public BlockValues computeBlockValues(long gasLimit) {
-        final var latestRecordFile = recordFileRepository
-                .findLatest()
+        final var recordFile = recordFileRepository
+                .findByTimestamp(ContractCallContext.get().getBlockTimestamp())
                 .orElseThrow(() -> new MissingResultException("No record file available."));
         return new HederaBlockValues(
-                gasLimit, latestRecordFile.getIndex(), Instant.ofEpochSecond(0, latestRecordFile.getConsensusStart()));
+                gasLimit, recordFile.getIndex(), Instant.ofEpochSecond(0, recordFile.getConsensusStart()));
     }
 
     public static Hash ethHashFrom(final String hash) {

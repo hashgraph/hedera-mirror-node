@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
@@ -68,9 +69,10 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void computeBlockValuesWithCorrectValue() {
+        ContractCallContext.init(null);
         final var recordFile = domainBuilder.recordFile().get();
         final var timeStamp = Instant.ofEpochSecond(0, recordFile.getConsensusStart());
-        given(repository.findLatest()).willReturn(Optional.of(recordFile));
+        given(repository.findByTimestamp(-1)).willReturn(Optional.of(recordFile));
         final var result = subject.computeBlockValues(23L);
         assertThat(result.getGasLimit()).isEqualTo(23);
         assertThat(result.getNumber()).isEqualTo(recordFile.getIndex());
@@ -79,7 +81,8 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void computeBlockValuesFailsFailsForMissingFileId() {
-        given(repository.findLatest()).willReturn(Optional.empty());
+        ContractCallContext.init(null);
+        given(repository.findByTimestamp(-1)).willReturn(Optional.empty());
         assertThatThrownBy(() -> subject.computeBlockValues(1)).isInstanceOf(MissingResultException.class);
     }
 

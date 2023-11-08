@@ -57,6 +57,31 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findFileHashByTimestamp() {
+        final var file = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findByTimestamp(file.getConsensusEnd()))
+                .map(RecordFile::getHash)
+                .hasValue(file.getHash());
+    }
+
+    @Test
+    void findRecordFileByTimestamp() {
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findByTimestamp(latest.getConsensusEnd()))
+                .map(RecordFile::getConsensusEnd)
+                .hasValue(latest.getConsensusEnd());
+    }
+
+    @Test
+    void findRecordFileByTimestampNotExists() {
+        long nonExistentTimestamp = 123L;
+        assertThat(recordFileRepository.findByTimestamp(nonExistentTimestamp)).isEmpty();
+    }
+
+    @Test
     void findLatestFile() {
         domainBuilder.recordFile().persist();
         var latest = domainBuilder.recordFile().persist();
