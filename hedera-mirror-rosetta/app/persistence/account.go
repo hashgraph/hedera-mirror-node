@@ -62,7 +62,7 @@ const (
                                       select consensus_timestamp
                                       from account_balance
                                       where account_id = 2 and
-                                        consensus_timestamp > @lower_bound and
+                                        consensus_timestamp >= @lower_bound and
                                         consensus_timestamp <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
