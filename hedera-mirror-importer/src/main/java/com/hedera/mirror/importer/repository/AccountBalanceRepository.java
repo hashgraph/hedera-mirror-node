@@ -38,11 +38,11 @@ public interface AccountBalanceRepository
         select id, balance, :consensusTimestamp
         from entity
         where balance is not null and
-          (deleted is not true or balance_timestamp > coalesce((
-              select max(consensus_timestamp)
+          (deleted is not true or balance_timestamp > (
+              select coalesce(max(consensus_timestamp), 0)
               from account_balance
               where account_id = 2 and consensus_timestamp > :consensusTimestamp - 2592000000000000
-            ), 0))
+            ))
         order by id
         """)
     @Transactional

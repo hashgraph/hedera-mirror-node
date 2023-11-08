@@ -57,8 +57,10 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
             drop function if exists create_full_token_balance_snapshot(bigint, bigint);
             drop function if exists create_deduped_token_balance_snapshot(bigint, bigint);
 
-            drop table if exists account_balance_old;
-            drop table if exists token_balance_old;
+            truncate account_balance_old;
+            truncate token_balance_old;
+            drop table account_balance_old;
+            drop table token_balance_old;
             """;
 
     private static final String CREATE_FULL_ACCOUNT_BALANCE_SNAPSHOT_SQL =
@@ -185,7 +187,9 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
     @Override
     protected Optional<Long> migratePartial(Long last) {
         var stopwatch = Stopwatch.createStarted();
-        Long timestamp = getBalanceTimestamp(last);
+        jdbcTemplate.execute("set local work_mem = '512MB'"); // Use higher work_mem to avoid temp files
+
+        var timestamp = getBalanceTimestamp(last);
         if (timestamp == null) {
             patchSnapshotAtLastConsensusTimestamp(last);
             jdbcTemplate.execute(CLEANUP_SQL);
@@ -248,7 +252,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
             return;
         }
 
-        Stopwatch stopwatch = Stopwatch.createStarted();
+        var stopwatch = Stopwatch.createStarted();
         var params = new MapSqlParameterSource()
                 .addValue("balanceTimestamp", lastConsensusTimestamp)
                 .addValue("prevBalanceTimestamp", lastProcessedTimestamp);

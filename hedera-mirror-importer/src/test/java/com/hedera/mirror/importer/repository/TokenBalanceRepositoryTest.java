@@ -76,6 +76,13 @@ class TokenBalanceRepositoryTest extends AbstractRepositoryTest {
                 .customize(ta -> ta.associated(false).balance(0))
                 .persist();
         long newSnapshotTimestamp = domainBuilder.timestamp();
+        // Add treasury account balance at newSnapshotTimestamp to test the corner case that the SQL correctly
+        // compares token account balance timestamp against the max treasury account balance timestamp before
+        // newSnapshotTimestamp
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(newSnapshotTimestamp, EntityId.of(TREASURY))))
+                .persist();
         var expected = List.of(
                 buildTokenBalance(tokenAccount1, newSnapshotTimestamp),
                 buildTokenBalance(tokenAccount2, newSnapshotTimestamp));
