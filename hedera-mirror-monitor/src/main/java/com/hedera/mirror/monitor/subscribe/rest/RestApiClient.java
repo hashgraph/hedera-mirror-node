@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -64,5 +65,9 @@ public class RestApiClient {
                                 next.set(r.getLinks() != null ? r.getLinks().getNext() : null))
                         .flatMapIterable(NetworkNodesResponse::getNodes))
                 .repeat(() -> StringUtils.isNotBlank(next.get()));
+    }
+
+    public Mono<HttpStatusCode> getNetworkStakeStatusCode() {
+        return webClient.get().uri("/network/stake").exchangeToMono(r -> Mono.just(r.statusCode()));
     }
 }

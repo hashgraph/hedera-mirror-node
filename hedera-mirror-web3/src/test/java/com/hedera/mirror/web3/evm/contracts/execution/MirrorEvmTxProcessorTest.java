@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -51,7 +52,6 @@ import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -85,7 +85,6 @@ class MirrorEvmTxProcessorTest {
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
-    private final Instant consensusTime = Instant.now();
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -198,9 +197,16 @@ class MirrorEvmTxProcessorTest {
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-
-        var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, isEstimate);
+        final var params = CallServiceParameters.builder()
+                .sender(sender)
+                .receiver(receiver.canonicalAddress())
+                .gas(33_333L)
+                .value(1234L)
+                .callData(Bytes.EMPTY)
+                .isStatic(true)
+                .isEstimate(isEstimate)
+                .build();
+        var result = mirrorEvmTxProcessor.execute(params, params.getGas());
 
         assertThat(result)
                 .isNotNull()

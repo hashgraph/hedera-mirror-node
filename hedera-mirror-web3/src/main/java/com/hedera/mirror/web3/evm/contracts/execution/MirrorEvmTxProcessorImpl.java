@@ -21,6 +21,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -28,7 +29,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -71,37 +71,29 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.store = store;
     }
 
-    public HederaEvmTransactionProcessingResult execute(
-            final HederaEvmAccount sender,
-            final Address receiver,
-            final long providedGasLimit,
-            final long value,
-            final Bytes callData,
-            final Instant consensusTime,
-            final boolean isStatic,
-            final boolean isEstimate) {
-        final long gasPrice = gasPriceTinyBarsGiven(consensusTime, true);
+    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
+        final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
-        super.setupFields(receiver.equals(Address.ZERO));
+        super.setupFields(params.getReceiver().equals(Address.ZERO));
         final var contractCallContext = ContractCallContext.get();
-        contractCallContext.setCreate(Address.ZERO.equals(receiver));
-        contractCallContext.setEstimate(isEstimate);
+        contractCallContext.setCreate(Address.ZERO.equals(params.getReceiver()));
+        contractCallContext.setEstimate(params.isEstimate());
 
         store.wrap();
-        if (isEstimate) {
+        if (params.isEstimate()) {
             final var defaultAccount = Account.getDefaultAccount();
             store.updateAccount(defaultAccount);
         }
 
         return super.execute(
-                sender,
-                receiver,
+                params.getSender(),
+                params.getReceiver(),
                 gasPrice,
-                providedGasLimit,
-                value,
-                callData,
-                isStatic,
-                aliasManager.resolveForEvm(receiver));
+                params.isEstimate() ? estimatedGas : params.getGas(),
+                params.getValue(),
+                params.getCallData(),
+                params.isStatic(),
+                aliasManager.resolveForEvm(params.getReceiver()));
     }
 
     @SuppressWarnings("java:S5411")

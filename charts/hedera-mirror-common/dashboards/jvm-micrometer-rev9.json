@@ -2052,7 +2052,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[5m])) by (level)",
+          "expr": "sum(rate(logback_events_total{application=\"$application\", cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"}[5m])) by (level)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,

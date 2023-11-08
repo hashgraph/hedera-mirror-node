@@ -39,7 +39,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
@@ -83,7 +82,7 @@ public class ContractCallService {
                     }
                 }
 
-                final var ethCallTxnResult = doProcessCall(params, params.getGas(), false);
+                final var ethCallTxnResult = doProcessCall(params, params.getGas());
 
                 validateResult(ethCallTxnResult, params.getCallType());
 
@@ -107,7 +106,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas(), true);
+        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -119,7 +118,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, true),
+                gas -> doProcessCall(params, gas),
                 gasUsedByInitialCall,
                 params.getGas());
 
@@ -127,18 +126,10 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(
-            final CallServiceParameters params, final long estimatedGas, final boolean isEstimate) {
+            final CallServiceParameters params, final long estimatedGas) {
         HederaEvmTransactionProcessingResult transactionResult;
         try {
-            transactionResult = mirrorEvmTxProcessor.execute(
-                    params.getSender(),
-                    params.getReceiver(),
-                    params.isEstimate() ? estimatedGas : params.getGas(),
-                    params.getValue(),
-                    params.getCallData(),
-                    Instant.now(),
-                    params.isStatic(),
-                    isEstimate);
+            transactionResult = mirrorEvmTxProcessor.execute(params, estimatedGas);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
