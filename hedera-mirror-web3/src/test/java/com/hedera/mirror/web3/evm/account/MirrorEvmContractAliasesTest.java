@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.ContextExtension;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -33,6 +35,8 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Key;
 import java.security.InvalidKeyException;
+import java.util.Map;
+import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -44,6 +48,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmContractAliasesTest {
 
@@ -76,22 +81,23 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromAliases() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        ContractCallContext.get().getAliases().put(ALIAS, ADDRESS);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
     void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        ContractCallContext.get().getPendingAliases().put(ALIAS, ADDRESS);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
     void resolveForEvmWhenAliasAndPendingAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
-        mirrorEvmContractAliases.aliases.put(ALIAS, Address.ZERO);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().put(ALIAS, ADDRESS);
+        contractCallContext.getAliases().put(ALIAS, Address.ZERO);
 
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
@@ -106,86 +112,101 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void initializeWithEmptyAliasesMap() {
-        assertThat(mirrorEvmContractAliases.aliases).isNotNull().isEmpty();
-        assertThat(mirrorEvmContractAliases.pendingAliases).isNotNull().isEmpty();
-        assertThat(mirrorEvmContractAliases.pendingRemovals).isNotNull().isEmpty();
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        assertThat(contractCallContext.getAliases()).isNotNull().isEmpty();
+        assertThat(contractCallContext.getPendingAliases()).isNotNull().isEmpty();
+        assertThat(contractCallContext.getPendingRemovals()).isNotNull().isEmpty();
     }
 
     @Test
     void link() {
         mirrorEvmContractAliases.link(ALIAS, ADDRESS);
-
-        assertThat(mirrorEvmContractAliases.pendingAliases).hasSize(1).containsEntry(ALIAS, ADDRESS);
-        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        assertThat(contractCallContext.getPendingAliases()).hasSize(1).containsEntry(ALIAS, ADDRESS);
+        assertThat(contractCallContext.getPendingRemovals()).isEmpty();
     }
 
     @Test
     void unlink() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
+        pendingAliases.put(ALIAS, ADDRESS);
 
         mirrorEvmContractAliases.unlink(ALIAS);
 
-        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
-        assertThat(mirrorEvmContractAliases.pendingRemovals).hasSize(1).contains(ALIAS);
+        assertThat(pendingAliases).isEmpty();
+        assertThat(contractCallContext.getPendingRemovals()).hasSize(1).contains(ALIAS);
     }
 
     @Test
     void commitAddsAllFromPendingAliases() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
+        pendingAliases.put(ALIAS, ADDRESS);
 
         mirrorEvmContractAliases.commit();
 
-        assertThat(mirrorEvmContractAliases.aliases).containsEntry(ALIAS, ADDRESS);
-        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+        assertThat(contractCallContext.getAliases()).containsEntry(ALIAS, ADDRESS);
+        assertThat(pendingAliases).isEmpty();
     }
 
     @Test
     void commitRemovesAllFromPendingRemovals() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
-        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> aliases = contractCallContext.getAliases();
+        aliases.put(ALIAS, ADDRESS);
+        Set<Address> pendingRemovals = contractCallContext.getPendingRemovals();
+        pendingRemovals.add(ALIAS);
 
         mirrorEvmContractAliases.commit();
 
-        assertThat(mirrorEvmContractAliases.aliases).doesNotContainEntry(ALIAS, ADDRESS);
-        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+        assertThat(aliases).doesNotContainEntry(ALIAS, ADDRESS);
+        assertThat(pendingRemovals).isEmpty();
     }
 
     @Test
     void resetPendingChangesClearsPendingAliases() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
+        pendingAliases.put(ALIAS, ADDRESS);
 
         mirrorEvmContractAliases.resetPendingChanges();
 
-        assertThat(mirrorEvmContractAliases.pendingAliases).isEmpty();
+        assertThat(pendingAliases).isEmpty();
     }
 
     @Test
     void resetPendingChangesClearsPendingRemovals() {
-        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        Set<Address> pendingRemovals = contractCallContext.getPendingRemovals();
+        pendingRemovals.add(ALIAS);
 
         mirrorEvmContractAliases.resetPendingChanges();
 
-        assertThat(mirrorEvmContractAliases.pendingRemovals).isEmpty();
+        assertThat(pendingRemovals).isEmpty();
     }
 
     @Test
     void isInUseShouldBeTrueIfInPendingAliases() {
-        mirrorEvmContractAliases.pendingAliases.put(ALIAS, ADDRESS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getPendingAliases().put(ALIAS, ADDRESS);
 
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
     }
 
     @Test
     void isInUseShouldBeTrueIfInAliasesAndNotInPendingRemovals() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getAliases().put(ALIAS, ADDRESS);
 
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
     }
 
     @Test
     void isInUseShouldBeFalseIfInAliasesAndInPendingRemovals() {
-        mirrorEvmContractAliases.aliases.put(ALIAS, ADDRESS);
-        mirrorEvmContractAliases.pendingRemovals.add(ALIAS);
+        ContractCallContext contractCallContext = ContractCallContext.get();
+        contractCallContext.getAliases().put(ALIAS, ADDRESS);
+        contractCallContext.getPendingRemovals().add(ALIAS);
 
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
     }

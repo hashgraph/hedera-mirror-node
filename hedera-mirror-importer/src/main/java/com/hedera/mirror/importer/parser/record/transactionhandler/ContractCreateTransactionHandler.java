@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_27_0;
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -156,6 +157,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity contract) {
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
+            return;
+        }
+
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         contract.setDeclineReward(transactionBody.getDeclineReward());
 

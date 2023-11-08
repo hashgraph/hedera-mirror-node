@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.repository;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_RECORD_FILE_EARLIEST;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_RECORD_FILE_INDEX;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_RECORD_FILE_LATEST;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME;
@@ -37,9 +38,13 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     @Query("select max(r.index) from RecordFile r")
     Optional<Long> findLatestIndex();
 
+    @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_EARLIEST, unless = "#result == null")
+    @Query(value = "select * from record_file order by index asc limit 1", nativeQuery = true)
+    Optional<RecordFile> findEarliest();
+
     @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_INDEX, unless = "#result == null")
-    @Query("select r.hash from RecordFile r where r.index = ?1")
-    Optional<String> findHashByIndex(long index);
+    @Query("select r from RecordFile r where r.index = ?1")
+    Optional<RecordFile> findByIndex(long index);
 
     @Cacheable(
             cacheNames = CACHE_NAME_RECORD_FILE_LATEST,

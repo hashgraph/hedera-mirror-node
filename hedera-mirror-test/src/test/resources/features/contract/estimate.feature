@@ -1,8 +1,9 @@
-@contractbase @fullsuite @estimate @web3
+@contractbase @fullsuite @estimate @web3 @acceptance
 Feature: EstimateGas Contract Base Coverage Feature
 
   Scenario Outline: Validate EstimateGas
     Given I successfully create EstimateGas contract from contract bytes
+    Then the mirror node REST API should return status 200 for the estimate contract creation
     Given I successfully create fungible token
     And lower deviation is 5% and upper deviation is 20%
     Then I call estimateGas without arguments that multiplies two numbers
@@ -41,3 +42,4 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with IERC20 token approve using evm address as receiver
     Then I call estimateGas with IERC20 token associate using evm address as receiver
     Then I call estimateGas with IERC20 token dissociate using evm address as receiver
+    Then I call estimateGas with contract deploy with bytecode as data

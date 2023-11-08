@@ -166,7 +166,7 @@ class AssociatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(associatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @Test

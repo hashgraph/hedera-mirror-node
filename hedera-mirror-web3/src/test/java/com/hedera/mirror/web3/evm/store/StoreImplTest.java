@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.CustomFeeDatabaseAccessor;
@@ -66,6 +66,7 @@ import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class StoreImplTest {
 
@@ -115,9 +116,6 @@ class StoreImplTest {
     private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Mock
     private NftRepository nftRepository;
 
     @Mock
@@ -160,12 +158,15 @@ class StoreImplTest {
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
                 tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
+        final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
-                uniqueTokenDatabaseAccessor);
-        subject = new StoreImpl(accessors);
+                uniqueTokenDatabaseAccessor,
+                entityDatabaseAccessor);
+        final var stackedStateFrames = new StackedStateFrames(accessors);
+        subject = new StoreImpl(stackedStateFrames);
     }
 
     @Test
@@ -199,6 +200,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
+        when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         final var token = subject.getToken(TOKEN_ADDRESS, OnMissing.DONT_THROW);
         assertThat(token.getId()).isEqualTo(new Id(0, 0, 6L));
@@ -223,6 +225,7 @@ class StoreImplTest {
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
+        when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
         when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);

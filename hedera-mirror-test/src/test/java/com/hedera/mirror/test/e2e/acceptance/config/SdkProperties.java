@@ -39,7 +39,7 @@ public class SdkProperties {
     private Duration grpcDeadline = Duration.ofSeconds(10L);
 
     @Min(1)
-    private int maxAttempts = 100;
+    private int maxAttempts = 1000;
 
     @Min(1)
     private int maxNodesPerTransaction = Integer.MAX_VALUE;

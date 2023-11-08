@@ -42,6 +42,8 @@ import lombok.NonNull;
  */
 public class UpdatableReferenceCache<K> {
 
+    private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
+
     @NonNull
     protected final Map<K, Object> original = new HashMap<>(); // "missing" denoted by null values here
 
@@ -140,6 +142,4 @@ public class UpdatableReferenceCache<K> {
             super(message);
         }
     }
-
-    private static final String INVALID_STATE_MESSAGE = "Trying to do something in an invalid state";
 }

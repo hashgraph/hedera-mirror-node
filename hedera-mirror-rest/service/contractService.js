@@ -35,6 +35,7 @@ import {
   EthereumTransaction,
 } from '../model';
 import ContractTransaction from '../model/contractTransaction.js';
+import {RecordFileService} from './index.js';
 
 const {default: defaultLimit} = getResponseLimit();
 const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
@@ -140,27 +141,15 @@ class ContractService extends BaseService {
     `;
 
   static contractLogsExtendedQuery = `
-    with ${RecordFile.tableName} as (
-      select ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
-      from ${RecordFile.tableName}
-    ), ${Entity.tableName} as (
+    with  ${Entity.tableName} as (
       select ${Entity.EVM_ADDRESS}, ${Entity.ID}
       from ${Entity.tableName}
     )
     select ${contractLogsFields},
-      block_number,
-      block_hash,
       ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
-    left join lateral (
-      select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
-      from ${RecordFile.tableName}
-      where ${RecordFile.CONSENSUS_END} >= ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)}
-      order by ${RecordFile.CONSENSUS_END} asc
-      limit 1
-    ) as block on true
   `;
 
   static contractIdByEvmAddressQuery = `
@@ -321,6 +310,7 @@ class ContractService extends BaseService {
       ContractService.joinContractResultWithEvmAddress,
       whereClause,
     ].join('\n');
+
     const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
 
     return rows.map((row) => {
@@ -331,6 +321,14 @@ class ContractService extends BaseService {
     });
   }
 
+  /**
+   * Retrieves contract transaction details based on the eth hash
+   *
+   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
+   * @param {[]}excludeTransactionResults transaction result codes to exclude in result
+   * @param {number} limit number of results to return
+   * @return {Promise<{ContractResult}[]>}
+   */
   async getContractTransactionDetailsByHash(hash, excludeTransactionResults = [], limit = undefined) {
     let transactionsFilter;
 
@@ -427,7 +425,13 @@ class ContractService extends BaseService {
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
-    return rows.map((cr) => new ContractLog(cr));
+    const timestamps = [];
+    rows.forEach((row) => {
+      timestamps.push(row.consensus_timestamp);
+    });
+    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps);
+
+    return rows.map((cr) => new ContractLog(cr, recordFileMap.get(cr.consensus_timestamp)));
   }
 
   async getContractLogsByTimestamps(timestamps, involvedContractIds = []) {
@@ -459,6 +463,7 @@ class ContractService extends BaseService {
       const positions = _.range(1, timestamps.length + 1).map((i) => `$${i}`);
       timestampsOpAndValue = `in (${positions})`;
     }
+
     const conditions = [`${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
     if (involvedContractIds.length) {
       conditions.push(`${ContractStateChange.CONTRACT_ID} in (${involvedContractIds.join(',')})`);

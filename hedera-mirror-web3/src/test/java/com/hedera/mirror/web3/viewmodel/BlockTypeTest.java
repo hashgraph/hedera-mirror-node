@@ -36,9 +36,7 @@ class BlockTypeTest {
         "earliest,0",
         "EARLIEST,0",
         "latest," + MAX_VALUE,
-        "latest," + MAX_VALUE,
-        "pending," + MAX_VALUE,
-        "PENDING," + MAX_VALUE,
+        "latest," + MAX_VALUE
     })
     @ParameterizedTest
     void valid(String value, long number) {
@@ -47,7 +45,25 @@ class BlockTypeTest {
         assertThat(blockType).isNotNull().returns(valueLower, BlockType::name).returns(number, BlockType::number);
     }
 
-    @ValueSource(strings = {MAX_VALUE + "1", "0xabcdefghijklmnopqrstuvwxyz", "abcdefghijklmnopqrstuvwxyz", "lastest"})
+    @CsvSource({"pending", "PENDING", "safe", "SAFE", "finalized", "FINALIZED"})
+    @ParameterizedTest
+    void unsupportedDefaultToLatest(String value) {
+        var blockType = BlockType.of(value);
+        assertThat(blockType).isNotNull().returns(BlockType.LATEST.name(), BlockType::name);
+    }
+
+    @ValueSource(
+            strings = {
+                MAX_VALUE + "1",
+                "0xabcdefghijklmnopqrstuvwxyz",
+                "abcdefghijklmnopqrstuvwxyz",
+                "lastest",
+                "-1",
+                "0x-1",
+                "-100",
+                "-0x64",
+                "0x-64"
+            })
     @ParameterizedTest
     void invalid(String value) {
         assertThatThrownBy(() -> BlockType.of(value)).isInstanceOf(IllegalArgumentException.class);

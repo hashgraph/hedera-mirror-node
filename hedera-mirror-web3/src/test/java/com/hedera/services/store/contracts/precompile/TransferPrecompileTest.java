@@ -231,7 +231,7 @@ class TransferPrecompileTest {
                 entityAddressSequencer);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
         staticTransferPrecompile = Mockito.mockStatic(TransferPrecompile.class);
     }
 

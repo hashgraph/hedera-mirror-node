@@ -80,24 +80,12 @@ public class UpdatableReferenceCacheSpy extends UpdatableReferenceCache<String> 
         return current;
     }
 
-    public record Counts(int read, int updated, int deleted) {
-        public static Counts of(int r, int u, int d) {
-            return new Counts(r, u, d);
-        }
-    }
-
     /** Returns (for tests) a triple of #original accounts, #added accounts, #deleted accounts */
     public @NonNull Counts getCounts() {
         return Counts.of(
                 original.size(),
                 (int) current.values().stream().filter(Objects::nonNull).count(),
                 (int) current.values().stream().filter(Objects::isNull).count());
-    }
-
-    public enum Type {
-        READ_ONLY,
-        UPDATED,
-        CURRENT_STATE
     }
 
     /**
@@ -119,5 +107,17 @@ public class UpdatableReferenceCacheSpy extends UpdatableReferenceCache<String> 
                 yield r;
             }
         };
+    }
+
+    public enum Type {
+        READ_ONLY,
+        UPDATED,
+        CURRENT_STATE
+    }
+
+    public record Counts(int read, int updated, int deleted) {
+        public static Counts of(int r, int u, int d) {
+            return new Counts(r, u, d);
+        }
     }
 }

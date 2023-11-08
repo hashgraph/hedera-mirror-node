@@ -440,7 +440,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onToken(Token token) throws ImporterException {
         var merged = tokenState.merge(token.getTokenId(), token, this::mergeToken);
-        tokens.add(merged);
+        if (merged == token) {
+            tokens.add(merged);
+        }
     }
 
     @Override
@@ -650,7 +652,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @SuppressWarnings("java:S3776")
     private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
-        if (!current.isHistory()) {
+        if (!current.hasHistory()) {
             previous.addBalance(current.getBalance());
             if (current.getBalanceTimestamp() != null) {
                 previous.setBalanceTimestamp(current.getBalanceTimestamp());
@@ -668,11 +670,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         // If previous doesn't have history, merge reversely from current to previous
-        var src = previous.isHistory() ? previous : current;
-        var dest = previous.isHistory() ? current : previous;
+        var src = previous.hasHistory() ? previous : current;
+        var dest = previous.hasHistory() ? current : previous;
 
         boolean isSameTimestampLower = Objects.equals(current.getTimestampLower(), previous.getTimestampLower());
-        if (current.isHistory() && isSameTimestampLower) {
+        if (current.hasHistory() && isSameTimestampLower) {
             // Copy from current to previous if the updates have the same lower timestamp (thus from same transaction)
             src = current;
             dest = previous;
@@ -780,7 +782,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // There is at least one entity with history. If there is one without history, it must be dest and copy non-null
         // fields and timestamp range from src to dest. Otherwise, both have history, and it's a normal merge from
         // previous to current, so close the src entity's timestamp range
-        if (!dest.isHistory()) {
+        if (!dest.hasHistory()) {
             dest.setTimestampRange(src.getTimestampRange());
             // It's important to set the type since some non-history updates may have incorrect entity type.
             // For example, when a contract is created in a child transaction, the initial transfer to the contract may
@@ -796,7 +798,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private <T extends FungibleAllowance> T mergeFungibleAllowance(T previous, T current) {
-        if (current.isHistory()) {
+        if (current.hasHistory()) {
             // Current is an allowance grant / revoke so close the previous timestamp range
             previous.setTimestampUpper(current.getTimestampLower());
             return current;
@@ -872,6 +874,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
      * @return the merged token
      */
     private Token mergeToken(Token previous, Token current) {
+
+        if (!current.hasHistory()) {
+            previous.setTotalSupply(current.getTotalSupply());
+            return previous;
+        }
+
+        // When current has history, current should always have a null totalSupply,
+        // Hence, it is safe to merge total supply from previous to current here.
+        if (!previous.hasHistory()) {
+            current.setTotalSupply(previous.getTotalSupply());
+            return current;
+        }
+
         previous.setTimestampUpper(current.getTimestampLower());
 
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
@@ -922,22 +937,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setWipeKey(previous.getWipeKey());
         }
 
-        Long currentTotalSupply = current.getTotalSupply();
-        Long previousTotalSupply = previous.getTotalSupply();
-
-        if (currentTotalSupply == null) {
-            current.setTotalSupply(previousTotalSupply);
-        } else if (previousTotalSupply != null && currentTotalSupply < 0) {
-            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
-            current.setTotalSupply(previousTotalSupply + currentTotalSupply);
-        }
+        // This method should not be called with negative total supply since wipe/burn/token dissociate of a deleted
+        // token will not have history so will not reach here.
+        current.setTotalSupply(previous.getTotalSupply());
 
         return current;
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
-        if (!lastTokenAccount.isHistory()) {
-            if (newTokenAccount.isHistory()) {
+        if (!lastTokenAccount.hasHistory()) {
+            if (newTokenAccount.hasHistory()) {
                 lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
                 lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
                 lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
@@ -950,7 +959,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return mergeTokenAccountBalance(lastTokenAccount, newTokenAccount);
         }
 
-        if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
+        if (lastTokenAccount.hasHistory() && !newTokenAccount.hasHistory()) {
             return mergeTokenAccountBalance(lastTokenAccount, newTokenAccount);
         }
 

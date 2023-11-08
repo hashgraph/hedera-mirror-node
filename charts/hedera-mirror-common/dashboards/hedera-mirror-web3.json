@@ -1266,7 +1266,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jvm_memory_used_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "used",
@@ -1276,7 +1276,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jvm_memory_max_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jvm_memory_max_bytes{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
@@ -1541,7 +1541,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jvm_threads_states_threads{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (state)",
+          "expr": "avg(jvm_threads_states_threads{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (state)",
           "interval": "1m",
           "legendFormat": "{{ state }}",
           "refId": "A"
@@ -1700,7 +1700,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(process_files_open_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(process_files_open_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "open",
           "refId": "B"
@@ -1709,7 +1709,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(process_files_max_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(process_files_max_files{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "max",
           "refId": "A"
@@ -1829,7 +1829,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(hikaricp_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(hikaricp_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "active",
           "refId": "A"
@@ -1838,7 +1838,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(hikaricp_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(hikaricp_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "idle",
           "refId": "B"
@@ -1847,7 +1847,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(hikaricp_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(hikaricp_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
@@ -1857,7 +1857,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(hikaricp_connections_pending{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
+          "expr": "avg(hikaricp_connections_pending{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "pending",
@@ -1978,7 +1978,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jdbc_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jdbc_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "active",
           "refId": "A"
@@ -1987,7 +1987,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jdbc_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jdbc_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
           "legendFormat": "idle",
           "refId": "B"
@@ -1996,7 +1996,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jdbc_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "expr": "avg(jdbc_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "max",
@@ -2006,7 +2006,7 @@
           "datasource": {
             "uid": "${prometheus}"
           },
-          "expr": "sum(jdbc_connections_min{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
+          "expr": "avg(jdbc_connections_min{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
           "hide": false,
           "interval": "1m",
           "legendFormat": "min",
@@ -2434,7 +2434,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(cache_size{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (cache_manager, cache)",
+          "expr": "avg(cache_size{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (cache_manager, cache)",
           "hide": false,
           "interval": "1m",
           "legendFormat": "{{ cache_manager }}.{{ cache }}",
@@ -2541,7 +2541,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(cache_gets_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (cache_manager, cache)",
+          "expr": "avg(rate(cache_gets_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (cache_manager, cache)",
           "hide": false,
           "interval": "1m",
           "legendFormat": "{{ cache_manager }}.{{ cache }}",
@@ -2648,7 +2648,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(cache_puts_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (cache_manager, cache)",
+          "expr": "avg(rate(cache_puts_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (cache_manager, cache)",
           "hide": false,
           "interval": "1m",
           "legendFormat": "{{ cache_manager }}.{{ cache }}",
@@ -2866,7 +2866,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level) > 0",
+          "expr": "avg(rate(logback_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level) > 0",
           "interval": "1m",
           "legendFormat": "{{ level }}",
           "range": true,

@@ -24,8 +24,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -56,6 +57,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
 class HederaEvmWorldStateTest {
     final long balance = 1_234L;
@@ -100,7 +102,7 @@ class HederaEvmWorldStateTest {
     @Mock
     private NftRepository nftRepository;
 
-    private Store store;
+    private StoreImpl store;
 
     private HederaEvmWorldState subject;
 
@@ -118,8 +120,8 @@ class HederaEvmWorldStateTest {
                 tokenDatabaseAccessor,
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
-        store = new StoreImpl(accessors);
-        store.wrap();
+        final var stackedStateFrames = new StackedStateFrames(accessors);
+        store = new StoreImpl(stackedStateFrames);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,
@@ -214,6 +216,7 @@ class HederaEvmWorldStateTest {
                 false,
                 null,
                 0L);
+        store.wrap();
         store.updateAccount(accountModel);
         actualSubject.commit();
         final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);

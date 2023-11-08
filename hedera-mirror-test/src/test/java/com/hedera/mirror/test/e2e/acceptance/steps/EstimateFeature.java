@@ -27,6 +27,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_TO_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_BYTECODE_DATA;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DESTROY;
@@ -98,7 +99,19 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Given("I successfully create fungible token")
     public void createFungibleToken() {
-        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+        var tokenResponse = tokenClient.getToken(FUNGIBLE);
+        fungibleTokenId = tokenResponse.tokenId();
+        if (tokenResponse.response() != null) {
+            networkTransactionResponse = tokenResponse.response();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+        }
+    }
+
+    @Then("the mirror node REST API should return status {int} for the estimate contract creation")
+    public void verifyMirrorAPIResponses(int status) {
+        if (networkTransactionResponse != null) {
+            verifyMirrorTransactionsResponse(mirrorClient, status);
+        }
     }
 
     @And("lower deviation is {int}% and upper deviation is {int}%")
@@ -382,6 +395,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 encodeData(IERC20_TOKEN_DISSOCIATE), IERC20_TOKEN_DISSOCIATE, fungibleTokenId.toSolidityAddress());
     }
 
+    @Then("I call estimateGas with contract deploy with bytecode as data")
+    public void contractDeployEstimateGas() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null);
+    }
+
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
@@ -400,6 +419,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24350),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53477),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55693),
+        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 174704),
         DESTROY("destroy", 26171),
         GET_GAS_LEFT("getGasLeft", 21326),
         GET_MOCK_ADDRESS("getMockContractAddress", 0),
