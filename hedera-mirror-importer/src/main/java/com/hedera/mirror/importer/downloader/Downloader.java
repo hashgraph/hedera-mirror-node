@@ -360,11 +360,11 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 if (downloaderProperties.isWriteFiles()) {
                     Utility.archiveFile(
-                            streamFileData.getFilePath(), streamFile.getBytes(), mirrorProperties.getDataPath());
+                            streamFileData.getFilePath(), streamFile.getBytes(), mirrorProperties.getStreamPath());
                 }
 
                 if (downloaderProperties.isWriteSignatures()) {
-                    var destination = mirrorProperties.getDataPath();
+                    var destination = mirrorProperties.getStreamPath();
                     signatures.forEach(
                             s -> Utility.archiveFile(s.getFilename().getFilePath(), s.getBytes(), destination));
                 }

@@ -126,6 +126,19 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     }
 
     @Test
+    void sidecarWriteFiles() {
+        downloaderProperties.setWriteFiles(true);
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        assertThat(mirrorProperties.getDataPath())
+                .isNotEmptyDirectory()
+                .isDirectoryRecursivelyContaining(
+                        "glob:**/streams/recordstreams/record*/sidecar/2022-07-13T08_46_11.304284003Z_01.rcd.gz");
+    }
+
+    @Test
     void sidecarFileCorrupted() throws IOException {
         fileCopier.copy();
         Files.walk(s3Path).filter(p -> p.endsWith(SIDECAR_FILENAME)).forEach(AbstractDownloaderTest::corruptFile);
