@@ -31,7 +31,7 @@
       {
         "timestamp": 1564618500000000000,
         "id": 2,
-        "balance": 2
+        "balance": 222
       },
       {
         "timestamp": 1564618500000000000,
@@ -54,7 +54,7 @@
       {
         "timestamp": 1566618500000000000,
         "id": 2,
-        "balance": 2
+        "balance": 223
       },
       {
         "timestamp": 1566618500000000000,
@@ -235,6 +235,44 @@
           {
             "account": "0.0.2",
             "balance": 22,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=lt:1567295999.999000000&timestamp=gt:1564617600.000000000&timestamp=ne:1564618500.000000000&order=asc"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1566618500.000000000",
+        "balances": [
+          {
+            "account": "0.0.2",
+            "balance": 223,
+            "tokens": []
+          },
+          {
+            "account": "0.1.17",
+            "balance": 70,
+            "tokens": [
+              {
+                "balance": 7,
+                "token_id": "0.0.70000"
+              },
+              {
+                "balance": 700,
+                "token_id": "0.0.70007"
+              }
+            ]
+          },
+          {
+            "account": "0.1.19",
+            "balance": 90,
             "tokens": []
           }
         ],

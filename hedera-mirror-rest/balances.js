@@ -219,6 +219,7 @@ const getDeduplicateBalancesQuery = async (
 const getDeduplicateTsQuery = (tsParams, tsQuery) => {
   let upperBound = Number.MAX_VALUE;
   let gteParam = 0;
+  const neParams = [];
 
   // Combine the tsParams into a single upperBound and gteParam if present
   tsQuery.split('?').forEach((value, index) => {
@@ -235,6 +236,8 @@ const getDeduplicateTsQuery = (tsParams, tsQuery) => {
       // Convert gt to gte to simplify query
       const gtValue = math.add(math.bignumber(tsParams[index]), 1).toString();
       gteParam = gteParam > gtValue ? gteParam : gtValue;
+    } else if (value.includes(opsMap.ne)) {
+      neParams.push(tsParams[index]);
     }
   });
 
@@ -242,16 +245,23 @@ const getDeduplicateTsQuery = (tsParams, tsQuery) => {
   // Extend the lower bound to the beginning of the month to capture the initial balances
   // that may only be present at the beginning of the monthly partition.
   const lowerBound = utils.getFirstDayOfMonth(minTimestamp);
+  return getDeduplicatePartitionedTsQuery(upperBound, lowerBound, neParams);
+};
 
-  let consensusTsQuery = `ab.consensus_timestamp >= ?`;
+const getDeduplicatePartitionedTsQuery = (upperBound, lowerBound, neParams) => {
+  const neQuery = Array.from(neParams, (v) => '?').join(', ');
+  let consensusTsQuery = neQuery
+    ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp not in (${neQuery})`
+    : `ab.consensus_timestamp >= ?`;
+
   if (upperBound === Number.MAX_VALUE) {
     // Double the params to account for the query values for account_balance and token_balance together
-    return [consensusTsQuery, [lowerBound, lowerBound]];
+    return [consensusTsQuery, [lowerBound, ...neParams, lowerBound, ...neParams]];
   }
 
   consensusTsQuery = consensusTsQuery.concat(` and ab.consensus_timestamp <= ?`);
   // Double the params to account for the query values for account_balance and token_balance together
-  return [consensusTsQuery, [lowerBound, upperBound, lowerBound, upperBound]];
+  return [consensusTsQuery, [lowerBound, ...neParams, upperBound, lowerBound, ...neParams, upperBound]];
 };
 
 const getTokenBalanceSubQuery = (order) => {
