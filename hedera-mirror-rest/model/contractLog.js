@@ -20,11 +20,13 @@ class ContractLog {
   /**
    * Parses contract_log table columns into object
    */
-  constructor(contractLog) {
+  constructor(contractLog, recordFile) {
     Object.assign(
       this,
       _.mapKeys(contractLog, (v, k) => _.camelCase(k))
     );
+    this.blockHash = recordFile?.hash;
+    this.blockNumber = recordFile?.index ?? null;
   }
 
   static tableAlias = 'cl';
