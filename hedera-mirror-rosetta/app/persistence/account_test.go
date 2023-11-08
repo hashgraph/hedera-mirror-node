@@ -38,7 +38,6 @@ import (
 
 const (
 	account1 = int64(9000) + iota
-	treasury
 	account2
 	account3
 	account4
@@ -105,13 +104,13 @@ func (suite *accountRepositorySuite) SetupTest() {
 		Alias(suite.accountAlias).
 		Persist()
 
-	// account balance files, always add an account_balance row for feeCollector
+	// account balance files, always add an account_balance row for treasury
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, firstSnapshotTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
 		AddAccountBalance(account1, initialAccountBalance).
 		Persist()
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, thirdSnapshotTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
 		Persist()
 
 	// crypto transfers happened at <= first snapshot timestamp
@@ -241,7 +240,6 @@ func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	// tokens created at or before first account balance snapshot will not show up in account balance response
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	accountId := suite.accountId
 	repo := NewAccountRepository(dbClient)
@@ -266,6 +264,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 	accountId := suite.accountId
 	truncateTables(domain.CryptoTransfer{})
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, secondSnapshotTimestamp).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
 		AddAccountBalance(account1, initialAccountBalance+sum(cryptoTransferAmounts)).
 		Persist()
 	// extra transfers
@@ -365,7 +364,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountEntity()
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
 	accountId := suite.accountId
-	dbClient.GetDb().Where("account_id <> ?", feeCollectorAccountId.GetId()).Delete(&domain.AccountBalance{})
+	dbClient.GetDb().Where("account_id <> ?", treasuryAccountId.GetId()).Delete(&domain.AccountBalance{})
 
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
 	expectedAmounts := types.AmountSlice{hbarAmount}

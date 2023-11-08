@@ -46,17 +46,27 @@ const (
                                   entity_id = @account_id and
                                   (errata is null or errata <> 'DELETE')
                               ), 0) as value`
-	latestBalanceBeforeConsensus = `with balance_timestamp as (
+	latestBalanceBeforeConsensus = `select
+                                      bt.consensus_timestamp,
+                                      coalesce((
+                                        select balance
+                                        from account_balance as ab
+                                        where account_id = @account_id and
+                                          ab.consensus_timestamp <= bt.consensus_timestamp and
+                                          ab.consensus_timestamp >= @lower_bound and
+                                          ab.consensus_timestamp <= @timestamp
+                                        order by ab.consensus_timestamp desc
+                                        limit 1
+                                      ), 0) as balance
+                                    from (
                                       select consensus_timestamp
                                       from account_balance
-                                      where consensus_timestamp <= @timestamp
+                                      where account_id = 2 and
+                                        consensus_timestamp > @lower_bound and
+                                        consensus_timestamp <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
-                                    )
-                                    select bt.consensus_timestamp, coalesce(ab.balance, 0) as balance
-                                    from balance_timestamp bt
-                                    left join account_balance ab
-                                      on ab.consensus_timestamp = bt.consensus_timestamp and ab.account_id = @account_id`
+                                    ) as bt`
 	selectCryptoEntityWithAliasById = "select alias, id from entity where id = @id"
 	selectCryptoEntityByAlias       = `select id, deleted, timestamp_range
                                  from entity
@@ -71,6 +81,28 @@ const (
 	selectCryptoEntityById = `select id, deleted, timestamp_range
                               from entity
                               where type in ('ACCOUNT', 'CONTRACT') and id = @id`
+	// select the lower bound of the second last partition whose lower bound is LTE @timestamp. It's possible that
+	// @timestamp is in a partition for which the first account balance snapshot is yet to be filled, thus the need
+	// to look back one more partition for account balance
+	selectPreviousPartitionLowerBound = `with partition_info as (
+                                select
+                                  -- extract the from_timestamp from the string "FOR VALUES FROM ('xxx') to ('yyy')"
+                                  substring(pg_get_expr(child.relpartbound, child.oid) from 'FROM \(''(\d+)''\)')::bigint as from_timestamp
+                                from pg_inherits
+                                join pg_class as parent on pg_inherits.inhparent = parent.oid
+                                join pg_class as child on pg_inherits.inhrelid = child.oid
+                                where parent.relname = 'account_balance'
+                              ), last_two as (
+                                select *
+                                from partition_info
+                                where @timestamp >= from_timestamp
+                                order by from_timestamp desc
+                                limit 2
+                              )
+                              select from_timestamp
+                              from last_two
+                              order by from_timestamp
+                              limit 1`
 )
 
 type accountBalanceChange struct {
@@ -252,11 +284,24 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
 
+	var partitionLowerBound int64
+	if err := db.Raw(
+		selectPreviousPartitionLowerBound,
+		sql.Named("timestamp", timestamp),
+	).Scan(&partitionLowerBound).Error; err != nil {
+		log.Errorf(
+			databaseErrorFormat,
+			hErrors.ErrDatabaseError.Message,
+			fmt.Sprintf("%v looking for previous account_balance partition before %d", err, timestamp),
+		)
+	}
+
 	// gets the most recent balance at or before timestamp
 	ab := &accountBalance{}
 	if err := db.Raw(
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
+		sql.Named("lower_bound", partitionLowerBound),
 		sql.Named("timestamp", timestamp),
 	).First(ab).Error; err != nil {
 		log.Errorf(
