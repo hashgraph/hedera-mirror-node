@@ -279,8 +279,6 @@ class StoreImplTest {
 
     @Test
     void deleteNotExistingTokenRelationship() {
-        setupTokenAndAccount();
-
         final var tokenRelationship = subject.getTokenRelationship(
                 new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
 
