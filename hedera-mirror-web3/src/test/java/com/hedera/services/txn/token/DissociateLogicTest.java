@@ -146,17 +146,22 @@ class DissociateLogicTest {
         tokenRelationship = tokenRelationship.setAccount(spyAccount);
 
         setupToken();
-        setupTokenRelationship();
-        when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        setupAccount();
-        when(token.isDeleted()).thenReturn(true);
-
-        dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
 
         final var expectedTokenRelationship = tokenRelationship
                 .markAsDestroyed()
                 .setBalance(0L)
                 .setAccount(spyAccount.setOwnedNfts(initialOwnedNfts - balanceToDeduct));
+
+        when(store.hasAssociation(any(TokenRelationshipKey.class))).thenReturn(true);
+        when(store.getTokenRelationship(any(TokenRelationshipKey.class), any(OnMissing.class)))
+                .thenReturn(tokenRelationship)
+                .thenReturn(expectedTokenRelationship);
+
+        when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        setupAccount();
+        when(token.isDeleted()).thenReturn(true);
+
+        dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
 
         verify(store).deleteTokenRelationship(expectedTokenRelationship);
     }

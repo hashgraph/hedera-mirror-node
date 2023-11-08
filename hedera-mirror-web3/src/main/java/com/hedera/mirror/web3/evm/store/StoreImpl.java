@@ -168,7 +168,7 @@ public class StoreImpl implements Store {
         tokenRelationshipAccessor.set(tokenRelationshipKey, persistedTokenRel);
 
         final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(persistedTokenRel);
-        if (tokenRelationshipKeyWithAlias != tokenRelationshipKey) {
+        if (!tokenRelationshipKeyWithAlias.equals(tokenRelationshipKey)) {
             tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, persistedTokenRel);
         }
     }
@@ -177,14 +177,26 @@ public class StoreImpl implements Store {
     public void deleteTokenRelationship(TokenRelationship tokenRelationship) {
         final var topFrame = stackedStateFrames.top();
         final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
+        final var tokenRelationshipKey = keyFromRelationship(tokenRelationship);
         try {
-            final var tokenRelationshipKey = keyFromRelationship(tokenRelationship);
             final var tokenRel = tokenRelationshipAccessor.get(tokenRelationshipKey);
-            if (tokenRel.isEmpty()) {
-                return;
+            if (tokenRel.isPresent()) {
+                tokenRelationshipAccessor.delete(tokenRelationshipKey);
             }
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
+        final var tokenRelationshipKeyAlias = keyFromRelationshipWithAlias(tokenRelationship);
 
-            tokenRelationshipAccessor.delete(tokenRelationship);
+        if (tokenRelationshipKeyAlias.equals(tokenRelationshipKey)) {
+            return;
+        }
+
+        try {
+            final var tokenRelAlias = tokenRelationshipAccessor.get(tokenRelationshipKeyAlias);
+            if (tokenRelAlias.isPresent()) {
+                tokenRelationshipAccessor.delete(tokenRelationshipKeyAlias);
+            }
         } catch (UpdatableCacheUsageException ex) {
             // ignore, value has been deleted
         }
