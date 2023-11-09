@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import jakarta.annotation.Nonnull;
 import java.io.IOException;
@@ -175,5 +176,10 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
     private void onSuccess() {
         var paramSource = getSqlParamSource().addValue("checksum", getSuccessChecksum());
         namedParameterJdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
+    }
+
+    @VisibleForTesting
+    void setComplete(boolean complete) {
+        this.complete.set(complete);
     }
 }
