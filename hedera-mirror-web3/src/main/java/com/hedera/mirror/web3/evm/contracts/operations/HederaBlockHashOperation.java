@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.operations;
 
-import java.util.function.Function;
+import java.util.function.LongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -61,7 +61,7 @@ public class HederaBlockHashOperation extends BlockHashOperation {
         if (currentBlockNumber <= 0 || soughtBlock > currentBlockNumber) {
             frame.pushStackItem(Bytes32.ZERO);
         } else {
-            final Function<Long, Hash> blockHashLookup = frame.getBlockHashLookup();
+            final LongFunction<Hash> blockHashLookup = frame.getBlockHashLookup()::apply;
             final Hash blockHash = blockHashLookup.apply(soughtBlock);
             frame.pushStackItem(blockHash);
         }
