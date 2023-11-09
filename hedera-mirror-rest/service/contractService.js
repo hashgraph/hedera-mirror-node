@@ -356,12 +356,10 @@ class ContractService extends BaseService {
 
   async getInvolvedContractsByTimestampAndContractId(timestamp, contractId) {
     if (!timestamp || contractId === null || contractId === undefined) {
-      return undefined;
+      return null;
     }
-    const contractDetails = await super.getRows(ContractService.involvedContractsQuery, [timestamp, contractId]);
-    return contractDetails.map((row) => {
-      return new ContractTransaction(row);
-    })[0];
+    const contractDetails = await super.getSingleRow(ContractService.involvedContractsQuery, [timestamp, contractId]);
+    return _.isNull(contractDetails) ? null : new ContractTransaction(contractDetails);
   }
 
   /**

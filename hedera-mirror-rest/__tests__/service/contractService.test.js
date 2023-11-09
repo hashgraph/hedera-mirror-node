@@ -1588,19 +1588,19 @@ describe('ContractService.getInvolvedContractsByTimestampAndContractId tests', (
   test('No match', async () => {
     const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, 0);
 
-    expect(contractDetails).toBeUndefined();
+    expect(contractDetails).toBeNull();
   });
 
   test('Missing timestamp', async () => {
     const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(undefined, 1);
 
-    expect(contractDetails).toBeUndefined();
+    expect(contractDetails).toBeNull();
   });
 
   test('Missing contractId', async () => {
     const contractDetails = await ContractService.getInvolvedContractsByTimestampAndContractId(1, undefined);
 
-    expect(contractDetails).toBeUndefined();
+    expect(contractDetails).toBeNull();
   });
 
   test('Finds involved contract ids', async () => {
