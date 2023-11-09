@@ -48,9 +48,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         implements RecordStreamFileListener {
 
     static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
-
-    @VisibleForTesting
-    final AtomicBoolean executed = new AtomicBoolean(false);
+    private final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
@@ -304,6 +302,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         }
         // Update the isApproval value to true
         return false;
+    }
+
+    @VisibleForTesting
+    void setExecuted(boolean executed) {
+        this.executed.set(executed);
     }
 
     @Data

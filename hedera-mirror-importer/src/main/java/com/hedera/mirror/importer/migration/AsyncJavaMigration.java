@@ -62,9 +62,7 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
 
     protected final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final String schema;
-
-    @VisibleForTesting
-    final AtomicBoolean complete = new AtomicBoolean(false);
+    private final AtomicBoolean complete = new AtomicBoolean(false);
 
     protected AsyncJavaMigration(
             Map<String, MigrationProperties> migrationPropertiesMap,
@@ -178,5 +176,10 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
     private void onSuccess() {
         var paramSource = getSqlParamSource().addValue("checksum", getSuccessChecksum());
         namedParameterJdbcTemplate.update(UPDATE_CHECKSUM_SQL, paramSource);
+    }
+
+    @VisibleForTesting
+    void setComplete(boolean complete) {
+        this.complete.set(complete);
     }
 }

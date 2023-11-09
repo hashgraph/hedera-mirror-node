@@ -89,8 +89,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     @SneakyThrows
     void setup() {
         mirrorProperties.setNetwork(MAINNET);
-        migration.executed.set(false);
-        migration.complete.set(false);
+        migration.setExecuted(false);
+        migration.setComplete(false);
     }
 
     @AfterEach
