@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import java.util.EmptyStackException;
@@ -52,7 +53,7 @@ public class ContractCallContext implements AutoCloseable {
      * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
      */
     @Setter
-    private long blockTimestamp = UNSET_TIMESTAMP;
+    private RecordFile recordFile;
 
     /** Boolean flag which determines whether we should make a contract call or contract init transaction simulation */
     @Setter
@@ -103,7 +104,7 @@ public class ContractCallContext implements AutoCloseable {
         estimate = false;
         pendingAliases.clear();
         pendingRemovals.clear();
-        blockTimestamp = UNSET_TIMESTAMP;
+        recordFile = null;
         stack = stackBase;
     }
 

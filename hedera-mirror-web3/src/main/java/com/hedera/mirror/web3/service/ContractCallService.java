@@ -71,11 +71,11 @@ public class ContractCallService {
                 result = estimateGas(params);
             } else {
                 BlockType block = params.getBlock();
-
+                // if we have historical call then set corresponding file record
                 if (block != BlockType.LATEST) {
                     Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
                     if (recordFileOptional.isPresent()) {
-                        ctx.setBlockTimestamp(recordFileOptional.get().getConsensusEnd());
+                        ctx.setRecordFile(recordFileOptional.get());
                     } else {
                         // return default empty result when the block passed is valid but not found in DB
                         return Bytes.EMPTY.toHexString();

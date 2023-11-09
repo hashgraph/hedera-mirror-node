@@ -23,6 +23,7 @@ import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import jakarta.inject.Named;
 import java.time.Instant;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.besu.datatypes.Hash;
@@ -35,17 +36,24 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 
     @Override
     public Hash getBlockHash(long blockNo) {
-        final var recordFile = recordFileRepository.findByIndex(blockNo);
-        return recordFile
-                .map(rf -> ethHashFrom(rf.getHash()))
-                .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
+        var recordFile = ContractCallContext.get().getRecordFile();
+        if (Objects.isNull(recordFile)) {
+            recordFile = recordFileRepository
+                    .findByIndex(blockNo)
+                    .orElseThrow(
+                            () -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
+        }
+        return ethHashFrom(recordFile.getHash());
     }
 
     @Override
     public BlockValues computeBlockValues(long gasLimit) {
-        final var recordFile = recordFileRepository
-                .findByTimestamp(ContractCallContext.get().getBlockTimestamp())
-                .orElseThrow(() -> new MissingResultException("No record file available."));
+        var recordFile = ContractCallContext.get().getRecordFile();
+        if (Objects.isNull(recordFile)) {
+            recordFile = recordFileRepository
+                    .findLatest()
+                    .orElseThrow(() -> new MissingResultException("No record file available."));
+        }
         return new HederaBlockValues(
                 gasLimit, recordFile.getIndex(), Instant.ofEpochSecond(0, recordFile.getConsensusStart()));
     }
