@@ -33,6 +33,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -61,7 +62,8 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
     }
 

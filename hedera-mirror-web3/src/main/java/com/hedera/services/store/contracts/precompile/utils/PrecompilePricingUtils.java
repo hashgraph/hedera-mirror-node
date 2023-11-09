@@ -70,6 +70,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Copied Logic type from hedera-services. Differences with the original:
@@ -177,7 +178,8 @@ public class PrecompilePricingUtils {
             final Precompile precompile,
             final TransactionBody.Builder transactionBody,
             final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+            final HederaEvmContractAliases mirrorEvmContractAliases,
+            final Address senderAddress) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -190,7 +192,8 @@ public class PrecompilePricingUtils {
                 store,
                 mirrorEvmContractAliases);
 
-        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final long minimumFeeInTinybars =
+                precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
         // convert to gas cost

@@ -17,6 +17,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
@@ -176,7 +177,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -201,7 +202,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -226,7 +227,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);

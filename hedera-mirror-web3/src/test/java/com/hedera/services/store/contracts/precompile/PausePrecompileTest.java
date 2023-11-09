@@ -176,7 +176,8 @@ class PausePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -200,8 +201,8 @@ class PausePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        final long result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

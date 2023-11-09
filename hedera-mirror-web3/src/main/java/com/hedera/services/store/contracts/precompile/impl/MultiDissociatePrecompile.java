@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
 
@@ -71,9 +72,10 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
             long blockTimestamp,
             Builder transactionBody,
             Store store,
-            HederaEvmContractAliases hederaEvmContractAliases) {
+            HederaEvmContractAliases hederaEvmContractAliases,
+            Address senderAddress) {
         return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
+                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases, senderAddress);
     }
 
     @Override

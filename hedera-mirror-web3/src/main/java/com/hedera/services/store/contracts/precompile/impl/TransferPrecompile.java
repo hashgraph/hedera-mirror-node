@@ -190,7 +190,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var store = updater.getStore();
+        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var hederaTokenStore = initializeHederaTokenStore(store);
@@ -199,7 +201,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity, true);
         }
 
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody, senderAddress);
         final var changes = impliedTransfers.getAllBalanceChanges();
 
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
@@ -429,9 +431,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         long accumulatedCost = 0;
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody, senderAddress);
         final boolean customFees = !impliedTransfers.getAllBalanceChanges().isEmpty();
         // For fungible there are always at least two operations, so only charge half for each
         // operation
@@ -492,9 +495,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     protected ImpliedTransfers extrapolateImpliedTransferDetailsFromSyntheticTxn(
-            final TransactionBody transactionBody) {
-        final var senderAccount = getSenderAccountId(transactionBody);
-        final var senderAddress = EntityIdUtils.asTypedEvmAddress(senderAccount);
+            final TransactionBody transactionBody, final Address senderAddress) {
         final var explicitChanges = constructBalanceChanges(transactionBody, senderAddress);
         return new ImpliedTransfers(explicitChanges);
     }

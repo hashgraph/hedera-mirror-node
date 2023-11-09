@@ -45,7 +45,8 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         return 0;
     }
 
@@ -66,7 +67,8 @@ public class MockPrecompile implements Precompile {
             final long blockTimestamp,
             final TransactionBody.Builder transactionBody,
             final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            final HederaEvmContractAliases hederaEvmContractAliases,
+            final Address senderAddress) {
         return 0;
     }
 

@@ -270,7 +270,8 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         final var deleteAllowanceBody = transactionBody.getCryptoDeleteAllowance();
         final var isNftApprovalRevocation = deleteAllowanceBody.isInitialized();
         if (isNftApprovalRevocation) {

@@ -49,9 +49,10 @@ public abstract class AbstractWritePrecompile implements Precompile {
             long blockTimestamp,
             final TransactionBody.Builder transactionBody,
             final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+            final HederaEvmContractAliases mirrorEvmContractAliases,
+            final Address senderAddress) {
         return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, mirrorEvmContractAliases);
+                blockTimestamp, this, transactionBody, store, mirrorEvmContractAliases, senderAddress);
     }
 
     protected Address unalias(Address addressOrAlias, HederaEvmStackedWorldStateUpdater updater) {

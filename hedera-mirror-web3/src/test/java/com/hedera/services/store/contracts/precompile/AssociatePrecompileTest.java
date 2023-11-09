@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile.decodeAssociation;
 import static com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile.decodeMultipleAssociations;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -174,7 +175,7 @@ class AssociatePrecompileTest {
         givenTokenAssociate();
         givenPricingUtilsContext();
 
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -191,7 +192,12 @@ class AssociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -202,7 +208,7 @@ class AssociatePrecompileTest {
     void computeAssociateTokenHappyPathWorksWithoutParentFrame() {
         givenTokenAssociate();
 
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -221,7 +227,12 @@ class AssociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -232,7 +243,7 @@ class AssociatePrecompileTest {
     void computeMultiAssociateTokenHappyPathWorks() {
         givenTokenAssociate();
 
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -251,7 +262,12 @@ class AssociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -277,7 +293,12 @@ class AssociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -303,7 +324,12 @@ class AssociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

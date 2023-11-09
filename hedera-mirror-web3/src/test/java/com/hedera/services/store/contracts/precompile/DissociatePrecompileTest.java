@@ -18,6 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
@@ -195,7 +196,7 @@ class DissociatePrecompileTest {
 
     @Test
     void dissociateTokenHappyPathWorks() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -212,7 +213,12 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        Address.ZERO);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -221,7 +227,7 @@ class DissociatePrecompileTest {
 
     @Test
     void computeMultiDissociateTokenHappyPathWorks() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -238,7 +244,12 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        Address.ZERO);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -265,7 +276,12 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        Address.ZERO);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -291,7 +307,12 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME,
+                        transactionBody,
+                        store,
+                        hederaEvmContractAliases,
+                        senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

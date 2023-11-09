@@ -38,6 +38,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAUL
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
@@ -260,7 +261,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(UInt256.valueOf(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS_VALUE), result);
@@ -285,7 +287,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
 
         final var result = subject.computeInternal(frame);
 
@@ -312,7 +315,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -338,7 +342,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -364,7 +369,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -390,7 +396,8 @@ class TransferPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
 
         final var result = subject.computeInternal(frame);
 
@@ -487,13 +494,13 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferToken(eq(input), any()))
                 .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
-        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any(), any()))
+        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any(), any(), any()))
                 .thenReturn(EXPECTED_GAS_PRICE);
 
         transferPrecompile.body(input, a -> a, null);
 
         final long result = transferPrecompile.getGasRequirement(
-                TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases);
+                TEST_CONSENSUS_TIME, transactionBodyBuilder, store, hederaEvmContractAliases, senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -510,7 +517,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -529,7 +537,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -549,7 +558,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -568,7 +578,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -586,7 +597,8 @@ class TransferPrecompileTest {
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress);
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars

@@ -242,7 +242,8 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -266,7 +267,8 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -290,7 +292,8 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
@@ -314,7 +317,8 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
@@ -54,7 +55,8 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         return MINIMUM_GAS_COST;
     }
 
@@ -68,7 +70,8 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
             long blockTimestamp,
             Builder transactionBody,
             Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases) {
+            HederaEvmContractAliases mirrorEvmContractAliases,
+            Address senderAddress) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST, store);
     }

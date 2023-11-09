@@ -178,8 +178,8 @@ class FreezeTokenPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        final var result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

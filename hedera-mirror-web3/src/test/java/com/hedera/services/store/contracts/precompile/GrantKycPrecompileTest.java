@@ -17,6 +17,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
 import static java.util.function.UnaryOperator.identity;
@@ -167,7 +168,8 @@ public class GrantKycPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -192,7 +194,8 @@ public class GrantKycPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
         final var result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

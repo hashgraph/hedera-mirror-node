@@ -102,9 +102,10 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
             final long blockTimestamp,
             final TransactionBody.Builder transactionBody,
             final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            final HederaEvmContractAliases hederaEvmContractAliases,
+            final Address senderAddress) {
         return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
+                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases, senderAddress);
     }
 
     @Override

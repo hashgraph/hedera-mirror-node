@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -50,7 +51,7 @@ public interface Precompile {
     TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
-    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
+    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody, Address senderAddress);
 
     // Change the world state through the given frame
     RunResult run(MessageFrame frame, TransactionBody transactionBody);
@@ -59,7 +60,8 @@ public interface Precompile {
             long blockTimestamp,
             TransactionBody.Builder transactionBody,
             Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases);
+            HederaEvmContractAliases mirrorEvmContractAliases,
+            Address senderAddress);
 
     Set<Integer> getFunctionSelectors();
 

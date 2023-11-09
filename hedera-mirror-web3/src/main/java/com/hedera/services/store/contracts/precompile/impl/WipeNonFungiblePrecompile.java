@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
     private static final Function WIPE_TOKEN_ACCOUNT_NFT_FUNCTION =
@@ -71,7 +72,8 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(WIPE_NFT, consensusTime);
     }

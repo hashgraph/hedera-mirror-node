@@ -162,7 +162,8 @@ public class RevokeKycPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+                .getGasRequirement(
+                        HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -182,8 +183,8 @@ public class RevokeKycPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        final var result = subject.getPrecompile()
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

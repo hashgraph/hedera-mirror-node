@@ -87,9 +87,10 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
             final long blockTimestamp,
             final Builder transactionBody,
             final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            final HederaEvmContractAliases hederaEvmContractAliases,
+            final Address senderAddres) {
         return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
+                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases, senderAddres);
     }
 
     @Override

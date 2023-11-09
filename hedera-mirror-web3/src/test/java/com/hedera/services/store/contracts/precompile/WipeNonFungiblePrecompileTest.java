@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAUL
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.WipeNonFungiblePrecompile.decodeWipeNFT;
@@ -180,7 +181,8 @@ class WipeNonFungiblePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(NON_FUNGIBLE_WIPE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -203,7 +205,8 @@ class WipeNonFungiblePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(NON_FUNGIBLE_WIPE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

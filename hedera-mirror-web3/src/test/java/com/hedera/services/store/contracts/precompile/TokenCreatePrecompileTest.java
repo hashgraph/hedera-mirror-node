@@ -250,7 +250,8 @@ class TokenCreatePrecompileTest {
     @Test
     void testMinimumFeeInTinyBars() {
         final var expectedFee = 100_000L;
-        final var minimumFee = tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody);
+        final var minimumFee =
+                tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody, senderAddress);
         assertEquals(expectedFee, minimumFee);
     }
 
@@ -636,10 +637,13 @@ class TokenCreatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
 
         // then
-        assertEquals(subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
+        assertEquals(
+                subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress),
+                result);
     }
 
     @Test

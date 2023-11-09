@@ -266,7 +266,8 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -291,7 +292,8 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -316,7 +318,8 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

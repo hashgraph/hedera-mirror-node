@@ -176,7 +176,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement = precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties);
+        gasRequirement =
+                precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties, senderAddress);
         final Bytes result = computeInternal(frame);
 
         return result == null

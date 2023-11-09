@@ -20,6 +20,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAUL
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile.decodeDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
@@ -171,7 +172,8 @@ class DeleteTokenPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(DELETE_INPUT, a -> a);
         final var result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+                .getGasRequirement(
+                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

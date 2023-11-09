@@ -19,6 +19,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile.decodeUpdateTokenKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -195,7 +196,8 @@ class TokenUpdateKeysPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build());
+        subject.getPrecompile()
+                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build(), senderAddress);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
