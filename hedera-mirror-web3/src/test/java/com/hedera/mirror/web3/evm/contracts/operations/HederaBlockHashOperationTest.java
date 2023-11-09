@@ -34,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
-public class HederaBlockHashOperationTest {
+class HederaBlockHashOperationTest {
 
     @Mock
     private MessageFrame messageFrame;
