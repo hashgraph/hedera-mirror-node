@@ -102,7 +102,7 @@ public class CallFeature extends AbstractFeature {
     public void createNewEstimateTestContract() throws IOException {
         deployedContract = getContract(ESTIMATE_GAS);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
-        receiverAccountId = accountClient.getAccount(AccountNameEnum.ALICE);
+        receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
     // ETHCALL-017
@@ -282,7 +282,9 @@ public class CallFeature extends AbstractFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         networkTransactionResponse = accountClient.sendCryptoTransfer(
-                receiverAccountId.getAccountId(), Hbar.fromTinybars(initialBalance.longValue()));
+                receiverAccountId.getAccountId(),
+                Hbar.fromTinybars(initialBalance.longValue()),
+                receiverAccountId.getPrivateKey());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
