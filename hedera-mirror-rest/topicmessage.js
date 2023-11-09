@@ -165,8 +165,7 @@ const getTopicMessages = async (req, res) => {
 const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
   let pgSqlQuery = `select numrange(min(lower(timestamp_range)), max(upper(timestamp_range)))
                     from topic_message_lookup
-                    where ${TopicMessage.TOPIC_ID} = $1 and sequence_number_range && `;
-  console.log(`came here`);
+                    where ${TopicMessage.TOPIC_ID} = $1  and  sequence_number_range && `;
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
@@ -195,8 +194,8 @@ const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
         upperLimit = Number(filter.value);
       }
       if (abs(lowerLimit - upperLimit) == 0) {
-        return {};
         // return empty response
+        return {};
       }
       console.log(`lowerLimit is ${lowerLimit}`);
       // we add or subtract the limit depending on the order to obtain the range.
@@ -242,7 +241,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
       bound.parse(filter);
       // execute this sand get result
       const timestamp_range = await getTopicMessageTimestamps(topicId, filters);
-      pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= lower(${timestamp_range})  and ${TopicMessage.CONSENSUS_TIMESTAMP} < upper(${timestamp_range})`;
+      pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= ${timestamp_range.numrange.begin}  and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${timestamp_range.numrange.end}`;
       continue;
     }
 
@@ -272,13 +271,13 @@ const getTopicMessageTimestamps = async (topicId, filters) => {
   const pgObject = await extractSqlForTopicMessagesLookup(topicId, filters);
   const params = pgObject.params;
   const query = pgObject.query;
-  console.log(`The input is: ${query} and params: ${params}`);
+
   const row = await pool.queryQuietly(query, params);
-  if (row.length !== 1) {
-    console.log(`The output is: ${row.data}`);
+  if (row.rows.length !== 1) {
+    throw new NotFoundError();
   }
 
-  return _.isNil(row) ? null : row.data;
+  return _.isNil(row) ? null : row.rows[0];
 };
 /**
  * Retrieves topic message from
