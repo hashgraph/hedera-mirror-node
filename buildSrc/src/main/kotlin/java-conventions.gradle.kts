@@ -80,11 +80,11 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
-    if (System.getenv().containsKey("CI")) {
-        retry {
-            maxRetries = 3
-        }
-    }
+//    if (System.getenv().containsKey("CI")) {
+//        retry {
+//            maxRetries = 3
+//        }
+//    }
     useJUnitPlatform {
         excludeTags("largedbperf", "performance")
     }
