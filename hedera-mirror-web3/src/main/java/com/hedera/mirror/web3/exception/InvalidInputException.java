@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
-import {register} from 'node:module';
+package com.hedera.mirror.web3.exception;
 
-register('extensionless', import.meta.url);
+import java.io.Serial;
+
+@SuppressWarnings("java:S110")
+public abstract class InvalidInputException extends Web3Exception {
+
+    @Serial
+    private static final long serialVersionUID = -5018557225908411121L;
+
+    protected InvalidInputException(String message) {
+        super(message);
+    }
+}

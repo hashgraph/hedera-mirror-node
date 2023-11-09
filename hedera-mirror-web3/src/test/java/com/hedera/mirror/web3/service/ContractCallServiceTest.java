@@ -23,9 +23,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
@@ -33,7 +37,9 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
@@ -53,11 +59,75 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var pureFuncHash = "8070450f";
         final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideBlockTypes")
+    void pureCallWithCustomBlock(BlockType blockType) {
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .persist();
+
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+
+        final var pureFuncHash = "8070450f";
+        final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000004";
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideCustomBlockTypes")
+    void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .persist();
+
+        final var pureFuncHash = "8070450f";
+
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedResponse);
+
+        if (checkGas) {
+            assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        }
+    }
+
+    @Test
+    void pureCallWithOutOfRangeCustomBlockThrowsException() {
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .persist();
+
+        final var pureFuncHash = "8070450f";
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(pureFuncHash),
+                ETH_CALL_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.of("0x2540BE3FF"));
+
+        assertThrows(BlockNumberOutOfRangeException.class, () -> {
+            contractCallService.processCall(serviceParameters);
+        });
     }
 
     @Test
@@ -65,7 +135,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var pureFuncHash = "8070450f";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -78,8 +148,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void estimateGasWithoutReceiver() {
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), Address.ZERO, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("0x"), Address.ZERO, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -98,7 +168,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var successfulReadResponse =
                 "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047465737400000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(viewFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(viewFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
@@ -110,7 +180,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var viewFuncHash =
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(viewFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                Bytes.fromHexString(viewFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -123,8 +193,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void transferFunds() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 7L);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 7L, BlockType.LATEST);
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
 
@@ -140,7 +210,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
         final var expectedBalance = "0x000000000000000000000000000000000000000000000000000000e8d4a51000";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         final var isSuccessful = contractCallService.processCall(serviceParameters);
         assertThat(isSuccessful).isEqualTo(expectedBalance);
@@ -152,7 +222,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void estimateGasForBalanceCall() {
         final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -165,7 +235,11 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(revertFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(revertFunctionSignature),
+                ETH_CALL_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -180,7 +254,11 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @EnumSource(RevertFunctions.class)
     void testReverts(final RevertFunctions revertFunctions) {
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(revertFunctions.functionSignature), REVERTER_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(revertFunctions.functionSignature),
+                REVERTER_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -195,7 +273,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var wrongFunctionSignature = "0x542ec32e";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(wrongFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L);
+                Bytes.fromHexString(wrongFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -207,8 +285,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Test
     void transferNegative() {
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -217,7 +295,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Test
     void transferExceedsBalance() {
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L);
+                Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -228,7 +306,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // transferHbarsToAddress(address)
         final var transferHbarsInput = "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e9";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L);
+                Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
@@ -239,7 +317,11 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var transferHbarsInput = "0x80b9f03c00000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 90L);
+                Bytes.fromHexString(transferHbarsInput),
+                ETH_CALL_CONTRACT_ADDRESS,
+                ETH_ESTIMATE_GAS,
+                90L,
+                BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -256,7 +338,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var stateChangeHash =
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0);
+                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -274,7 +356,11 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         // deployViaCreate2()
         final var deployViaCreate2Hash = "0xdbb6f04a";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(deployViaCreate2Hash), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0);
+                Bytes.fromHexString(deployViaCreate2Hash),
+                ETH_CALL_CONTRACT_ADDRESS,
+                ETH_ESTIMATE_GAS,
+                0,
+                BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -321,7 +407,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var stateChangeHash =
                 "0x51fecdca000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004ed00000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0);
+                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
@@ -332,8 +418,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void contractCreationWork() {
         final var deployHash =
                 "0xc32723ed000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters =
-                serviceParametersForExecution(Bytes.fromHexString(deployHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0);
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(deployHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
@@ -349,7 +435,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 "000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
         final var stateChangeHash = "0x9ac27b62" + stateChange;
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0);
+                Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x" + stateChange);
 
@@ -361,7 +447,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var tokenNameCall = "0x6f0fccab0000000000000000000000000000000000000000000000000000000000000416";
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_ESTIMATE_GAS);
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(tokenNameCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0);
+                Bytes.fromHexString(tokenNameCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -451,5 +537,23 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         private final String functionSignature;
         private final String errorDetail;
         private final String errorData;
+    }
+
+    static Stream<BlockType> provideBlockTypes() {
+        return Stream.of(
+                BlockType.EARLIEST,
+                BlockType.of("safe"),
+                BlockType.of("pending"),
+                BlockType.of("finalized"),
+                BlockType.LATEST);
+    }
+
+    static Stream<Arguments> provideCustomBlockTypes() {
+        return Stream.of(
+                Arguments.of(
+                        BlockType.of("0x1"),
+                        "0x0000000000000000000000000000000000000000000000000000000000000004",
+                        true),
+                Arguments.of(BlockType.of("0x100"), "0x", false));
     }
 }

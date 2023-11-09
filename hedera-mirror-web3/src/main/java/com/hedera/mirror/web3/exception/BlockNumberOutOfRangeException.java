@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
-import {register} from 'node:module';
+package com.hedera.mirror.web3.exception;
 
-register('extensionless', import.meta.url);
+import java.io.Serial;
+
+@SuppressWarnings("java:S110")
+public class BlockNumberOutOfRangeException extends InvalidInputException {
+
+    @Serial
+    private static final long serialVersionUID = 9163581929850980235L;
+
+    public BlockNumberOutOfRangeException(String message) {
+        super(message);
+    }
+}

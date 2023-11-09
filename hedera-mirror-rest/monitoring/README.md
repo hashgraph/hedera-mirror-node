@@ -67,7 +67,7 @@ list of configuration properties.
 To run the monitor_apis backend:
 
 ```
-PORT=3000 pm2 start server.js --node-args="--import ./register.js"
+PORT=3000 pm2 start server.js --node-args="--import=extensionless/register"
 ```
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.

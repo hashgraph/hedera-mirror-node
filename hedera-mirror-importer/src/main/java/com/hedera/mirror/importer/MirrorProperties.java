@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
+
+    public static final String STREAMS = "streams";
     static final String NETWORK_PREFIX_DELIMITER = "-";
 
     @NotNull
@@ -43,6 +46,9 @@ public class MirrorProperties {
 
     @NotNull
     private Path dataPath = Paths.get(".", "data");
+
+    @Getter(lazy = true)
+    private final Path streamPath = dataPath.resolve(STREAMS);
 
     @NotNull
     private Instant endDate = Utility.MAX_INSTANT_LONG;

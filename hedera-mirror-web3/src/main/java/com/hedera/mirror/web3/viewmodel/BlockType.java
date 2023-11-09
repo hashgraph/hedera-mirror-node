@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 public record BlockType(String name, long number) {
 
     private static final String HEX_PREFIX = "0x";
+    private static final String NEGATIVE_NUMBER_PREFIX = "-";
 
     public static final BlockType EARLIEST = new BlockType("earliest", 0L);
     public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
@@ -51,6 +52,10 @@ public record BlockType(String name, long number) {
         if (value.startsWith(HEX_PREFIX)) {
             radix = 16;
             cleanedValue = StringUtils.removeStart(value, HEX_PREFIX);
+        }
+
+        if (cleanedValue.contains(NEGATIVE_NUMBER_PREFIX)) {
+            throw new IllegalArgumentException("Invalid block value: " + value);
         }
 
         try {

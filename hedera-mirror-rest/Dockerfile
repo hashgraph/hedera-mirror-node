@@ -26,4 +26,4 @@ RUN apt-get update && \
 USER node
 
 # Run
-ENTRYPOINT ["node", "--import", "./register.js", "server.js"]
+ENTRYPOINT ["node", "--import=extensionless/register", "server.js"]

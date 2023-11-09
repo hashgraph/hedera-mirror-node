@@ -9,17 +9,17 @@
     "node": ">=16.13.0 < 21"
   },
   "scripts": {
-    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import register.js server.js",
+    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import=extensionless/register server.js",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
-    "start": "node --import ./register.js server.js",
-    "pretest": "node --import ./register.js __tests__/integration/generator.js",
+    "start": "node --import=extensionless/register server.js",
+    "pretest": "node --import=extensionless/register __tests__/integration/generator.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.438.0",
+    "@aws-sdk/client-s3": "^3.441.0",
     "@godaddy/terminus": "^4.12.1",
     "@hashgraph/proto": "^2.13.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -30,7 +30,7 @@
     "express": "^4.18.2",
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^5.0.6",
-    "extensionless": "^1.7.0",
+    "extensionless": "^1.7.3",
     "extend": "^3.0.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
@@ -102,7 +102,7 @@
     "nodemon": "^3.0.1",
     "pg-format": "^1.0.4",
     "rewire": "^7.0.0",
-    "sinon": "^17.0.0",
+    "sinon": "^17.0.1",
     "supertest": "^6.3.3"
   },
   "jest-junit": {

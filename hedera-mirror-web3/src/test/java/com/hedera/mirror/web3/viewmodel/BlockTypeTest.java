@@ -52,7 +52,18 @@ class BlockTypeTest {
         assertThat(blockType).isNotNull().returns(BlockType.LATEST.name(), BlockType::name);
     }
 
-    @ValueSource(strings = {MAX_VALUE + "1", "0xabcdefghijklmnopqrstuvwxyz", "abcdefghijklmnopqrstuvwxyz", "lastest"})
+    @ValueSource(
+            strings = {
+                MAX_VALUE + "1",
+                "0xabcdefghijklmnopqrstuvwxyz",
+                "abcdefghijklmnopqrstuvwxyz",
+                "lastest",
+                "-1",
+                "0x-1",
+                "-100",
+                "-0x64",
+                "0x-64"
+            })
     @ParameterizedTest
     void invalid(String value) {
         assertThatThrownBy(() -> BlockType.of(value)).isInstanceOf(IllegalArgumentException.class);

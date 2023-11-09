@@ -14,6 +14,19 @@
  * limitations under the License.
  */
 
-import {register} from 'node:module';
+package com.hedera.mirror.importer.downloader.provider;
 
-register('extensionless', import.meta.url);
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+@Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Validated
+@ConfigurationProperties("hedera.mirror.importer.downloader.local")
+public class LocalStreamFileProperties {
+
+    private boolean deleteAfterProcessing = true;
+}
