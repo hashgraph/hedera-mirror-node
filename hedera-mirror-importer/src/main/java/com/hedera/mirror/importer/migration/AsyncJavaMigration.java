@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import jakarta.annotation.Nonnull;
 import java.io.IOException;
@@ -61,7 +62,9 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
 
     protected final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final String schema;
-    private final AtomicBoolean complete = new AtomicBoolean(false);
+
+    @VisibleForTesting
+    final AtomicBoolean complete = new AtomicBoolean(false);
 
     protected AsyncJavaMigration(
             Map<String, MigrationProperties> migrationPropertiesMap,

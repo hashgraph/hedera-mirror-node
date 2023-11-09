@@ -35,7 +35,6 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -46,7 +45,6 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +56,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -78,7 +75,6 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
             .hapiVersionMinor(39)
             .hapiVersionPatch(1)
             .build();
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final SyntheticCryptoTransferApprovalMigration migration;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TransactionRepository transactionRepository;
@@ -93,12 +89,8 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
     @SneakyThrows
     void setup() {
         mirrorProperties.setNetwork(MAINNET);
-        var activeField = migration.getClass().getDeclaredField("executed");
-        activeField.setAccessible(true);
-        activeField.set(migration, new AtomicBoolean(false));
-        var completeField = migration.getClass().getSuperclass().getDeclaredField("complete");
-        completeField.setAccessible(true);
-        completeField.set(migration, new AtomicBoolean(false));
+        migration.executed.set(false);
+        migration.complete.set(false);
     }
 
     @AfterEach

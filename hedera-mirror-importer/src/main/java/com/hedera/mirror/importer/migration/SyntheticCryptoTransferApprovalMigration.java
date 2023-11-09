@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -47,7 +48,9 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         implements RecordStreamFileListener {
 
     static final Version HAPI_VERSION_0_38_0 = new Version(0, 38, 0);
-    private final AtomicBoolean executed = new AtomicBoolean(false);
+
+    @VisibleForTesting
+    final AtomicBoolean executed = new AtomicBoolean(false);
     // The contract id of the first synthetic transfer that could have exhibited this problem
     private static final long GRANDFATHERED_ID = 2119900L;
     // The created timestamp of the grandfathered id contract
