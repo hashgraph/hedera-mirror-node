@@ -30,22 +30,26 @@ plugins {
 }
 
 configurations.all {
-    exclude(group = "commons-logging", "commons-logging")
     exclude(group = "org.slf4j", module = "slf4j-nop")
 }
 
 repositories {
     maven {
+        url = uri("https://oss.sonatype.org/content/repositories/snapshots")
+    }
+    maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
     }
     maven {
-        url = uri("https://artifacts.consensys.net/public/maven/maven/")
+        // org.gaul:s3proxy:2.1.0-SNAPSHOT depends on snapshot artifacts from the repo, remove it when upgrading
+        // s3proxy to a GA release
+        url = uri("https://repository.apache.org/content/repositories/snapshots")
     }
 }
 
 dependencyManagement {
     imports {
-        mavenBom("io.grpc:grpc-bom:1.58.0")
+        mavenBom("io.grpc:grpc-bom:1.49.2")
         mavenBom(SpringBootPlugin.BOM_COORDINATES)
     }
 }
@@ -80,11 +84,11 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
-//    if (System.getenv().containsKey("CI")) {
-//        retry {
-//            maxRetries = 3
-//        }
-//    }
+    if (System.getenv().containsKey("CI")) {
+        retry {
+            maxRetries = 3
+        }
+    }
     useJUnitPlatform {
         excludeTags("largedbperf", "performance")
     }
