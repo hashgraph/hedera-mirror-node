@@ -30,7 +30,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +49,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.79.0")
-class BackfillFailedEthereumTransactionContractResultMigrationTest extends IntegrationTest {
+class BackfillFailedEthereumTransactionContractResultMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private final ContractResultRepository contractResultRepository;
 

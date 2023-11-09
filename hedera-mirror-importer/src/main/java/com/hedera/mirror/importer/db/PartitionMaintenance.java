@@ -20,9 +20,10 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.leader.Leader;
 import jakarta.inject.Named;
-import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,10 +41,10 @@ public class PartitionMaintenance {
     @Owner
     private final JdbcTemplate jdbcTemplate;
 
+    @EventListener(ApplicationReadyEvent.class)
     @Leader
     @Retryable
     @Scheduled(cron = "${hedera.mirror.importer.db.maintenance.cron:0 0 0 * * ?}")
-    @Scheduled(initialDelay = 60, fixedDelay = Long.MAX_VALUE, timeUnit = TimeUnit.SECONDS)
     public synchronized void runMaintenance() {
         log.info("Running partition maintenance");
         Stopwatch stopwatch = Stopwatch.createStarted();

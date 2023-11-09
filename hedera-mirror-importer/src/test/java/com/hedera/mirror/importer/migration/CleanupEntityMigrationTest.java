@@ -27,7 +27,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -53,7 +52,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
-class CleanupEntityMigrationTest extends IntegrationTest {
+class CleanupEntityMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private final @Owner JdbcOperations jdbcOperations;
 

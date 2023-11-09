@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
@@ -51,7 +50,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")
-class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
+class AddAddressBookServiceEndpointsMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private final String baseAccountId = "0.0.";
     private final String baseIp = "127.0.0.";

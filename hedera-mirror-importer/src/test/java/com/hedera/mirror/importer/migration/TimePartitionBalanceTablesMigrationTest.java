@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
@@ -62,7 +61,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.89.0")
-class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
+class TimePartitionBalanceTablesMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private static final String CLEANUP_SQL =
             """

@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.annotation.Resource;
 import java.io.File;
@@ -41,7 +40,7 @@ import org.springframework.test.context.TestPropertySource;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.0")
-class AddRootContractIdMigrationTest extends IntegrationTest {
+class AddRootContractIdMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     @Resource
     @Owner

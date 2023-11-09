@@ -17,7 +17,8 @@
 package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -26,7 +27,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -51,7 +51,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
-class RemoveInvalidEntityMigrationTest extends IntegrationTest {
+class RemoveInvalidEntityMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private final @Owner JdbcOperations jdbcOperations;
 

@@ -23,7 +23,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
@@ -31,7 +31,6 @@ import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.annotation.Resource;
 import java.io.File;
@@ -56,7 +55,7 @@ import org.springframework.test.context.TestPropertySource;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.11")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-class RemoveEntityTypeMigrationTest extends IntegrationTest {
+class RemoveEntityTypeMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     @Resource
     @Owner

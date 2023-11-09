@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransactionParser;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.59.2")
-class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
+class ConvertEthereumTransactionValueMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private final ConvertEthereumTransactionValueMigration convertEthereumTransactionValueMigration;
 

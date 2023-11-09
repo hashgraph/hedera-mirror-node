@@ -60,7 +60,7 @@ import org.springframework.test.context.TestPropertySource;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.44.1")
-class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
+class SupportDeletedTokenDissociateMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
     private static final EntityId TREASURY = EntityId.of("0.0.200");
