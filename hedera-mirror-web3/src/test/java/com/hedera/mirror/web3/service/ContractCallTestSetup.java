@@ -993,9 +993,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId8 = nftPersistWithoutKycKey(
                 NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
+                nestedContractId,
                 spenderEntityId,
-                ownerEntityId,
+                nestedContractId,
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
@@ -1023,6 +1023,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(nestedContractId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, transferFromTokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
