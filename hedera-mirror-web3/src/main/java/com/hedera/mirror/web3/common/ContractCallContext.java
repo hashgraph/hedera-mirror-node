@@ -33,11 +33,6 @@ public class ContractCallContext implements AutoCloseable {
 
     private static final ThreadLocal<ContractCallContext> THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
-    /**
-     * Constant for representing an unset or disabled timestamp for filtering.
-     */
-    public static final long UNSET_TIMESTAMP = -1L;
-
     /** Map of account aliases that were committed */
     private final Map<Address, Address> aliases = new HashMap<>();
 

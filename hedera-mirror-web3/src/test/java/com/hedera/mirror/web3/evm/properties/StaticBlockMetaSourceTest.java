@@ -22,10 +22,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import java.time.Instant;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Hash;
@@ -40,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class StaticBlockMetaSourceTest {
     @Mock
-    private RecordFileRepository recordFileRepository;
+    private RecordFileRepository repository;
 
     private MockedStatic<ContractCallContext> staticMock;
 
@@ -52,7 +54,7 @@ class StaticBlockMetaSourceTest {
 
     @BeforeEach
     void setUp() {
-        subject = new StaticBlockMetaSource(recordFileRepository);
+        subject = new StaticBlockMetaSource(repository);
         staticMock = mockStatic(ContractCallContext.class);
         staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
@@ -64,18 +66,19 @@ class StaticBlockMetaSourceTest {
 
     @Test
     void getBlockHashReturnsCorrectValue() {
-        final var recordFile = domainBuilder.recordFile().get();
         final var fileHash =
                 "37313862636664302d616365352d343861632d396430612d36393036316337656236626333336466323864652d346100";
+        final var recordFile = new RecordFile();
         recordFile.setHash(fileHash);
-        given(contractCallContext.getRecordFile()).willReturn(recordFile);
+
+        given(repository.findByIndex(1)).willReturn(Optional.of(recordFile));
         final var expected = Hash.fromHexString("0x37313862636664302d616365352d343861632d396430612d3639303631633765");
         assertThat(subject.getBlockHash(1)).isEqualTo(expected);
     }
 
     @Test
     void getBlockHashThrowsExceptionWhitMissingFileId() {
-        given(contractCallContext.getRecordFile()).willReturn(null);
+        given(repository.findByIndex(1)).willReturn(Optional.empty());
         assertThatThrownBy(() -> subject.getBlockHash(1)).isInstanceOf(MissingResultException.class);
     }
 

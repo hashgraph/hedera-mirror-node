@@ -36,14 +36,10 @@ public class StaticBlockMetaSource implements BlockMetaSource {
 
     @Override
     public Hash getBlockHash(long blockNo) {
-        var recordFile = ContractCallContext.get().getRecordFile();
-        if (Objects.isNull(recordFile)) {
-            recordFile = recordFileRepository
-                    .findByIndex(blockNo)
-                    .orElseThrow(
-                            () -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
-        }
-        return ethHashFrom(recordFile.getHash());
+        final var recordFile = recordFileRepository.findByIndex(blockNo);
+        return recordFile
+                .map(rf -> ethHashFrom(rf.getHash()))
+                .orElseThrow(() -> new MissingResultException(String.format("No record file with index: %d", blockNo)));
     }
 
     @Override
