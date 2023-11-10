@@ -276,10 +276,8 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I successfully update the balance of an account and get the updated balance")
     public void getBalance() {
-        var data = encodeData(
-                ESTIMATE_GAS,
-                ADDRESS_BALANCE,
-                asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
+        final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
         var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         networkTransactionResponse = accountClient.sendCryptoTransfer(
                 receiverAccountId.getAccountId(),
