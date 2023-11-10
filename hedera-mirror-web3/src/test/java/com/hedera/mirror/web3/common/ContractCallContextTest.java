@@ -62,7 +62,7 @@ class ContractCallContextTest {
         assertThat(context.getRecordFile()).isEqualTo(recordFile);
 
         context.reset();
-        assertThat(context.getRecordFile()).isEqualTo(null);
+        assertThat(context.getRecordFile()).isNull();
 
         context.close();
     }
