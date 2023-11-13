@@ -628,15 +628,4 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         return allChanges;
     }
-
-    private AccountID getSenderAccountId(final TransactionBody transactionBody) {
-        final var transferOp = transactionBody.getCryptoTransfer();
-        if (transferOp.getTransfers().getAccountAmountsCount() > 0) {
-            return transferOp.getTransfers().getAccountAmounts(0).getAccountID();
-        } else if (transferOp.getTokenTransfers(0).getTransfersCount() > 0) {
-            return transferOp.getTokenTransfers(0).getTransfers(0).getAccountID();
-        } else {
-            return transferOp.getTokenTransfers(0).getNftTransfers(0).getSenderAccountID();
-        }
-    }
 }

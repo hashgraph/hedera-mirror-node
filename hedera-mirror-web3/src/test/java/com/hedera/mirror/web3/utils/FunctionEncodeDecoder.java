@@ -60,7 +60,6 @@ public class FunctionEncodeDecoder {
     private static final String INT64 = "(int64)";
     private static final String TRIPLE_ADDRESS = "(address,address,address)";
     private static final String ADDRESS_UINT = "(address,uint256)";
-    private static final String ADDRESS_UINT_UINT = "(address,uint256,uint256)";
     private static final String ADDRESS_DUO_UINT = "(address,address,uint256)";
     private static final String TRIPLE_ADDRESS_UINT = "(address,address,address,uint256)";
     public static final String TRIPLE_ADDRESS_INT64S = "(address,address[],address[],int64[])";
@@ -189,7 +188,6 @@ public class FunctionEncodeDecoder {
                     BigInteger.valueOf((long) parameters[3]));
             case ADDRESS_UINT -> Tuple.of(
                     convertAddress((Address) parameters[0]), BigInteger.valueOf((long) parameters[1]));
-            case ADDRESS_UINT_UINT -> Tuple.of(convertAddress((Address) parameters[0]), parameters[1], parameters[2]);
             case KEY_VALUE -> Tuple.of(Tuple.of(
                     parameters[0],
                     convertAddress((Address) parameters[1]),

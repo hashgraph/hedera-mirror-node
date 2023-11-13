@@ -210,7 +210,7 @@ contract DynamicEthCalls is HederaTokenService {
     }
 
     // Approve fungible/non-fungible token + transferFrom with spender + allowance + balance
-    function approveTokenTransferFromGetAllowanceGetBalance(address token, uint256 amount, uint256 serialNumber) external {
+    function approveTokenTransferFromGetAllowanceGetBalance(address token, address to, uint256 amount, uint256 serialNumber) external {
         address _spender = address(new SpenderContract());
         address[] memory tokens = new address[](1);
         tokens[0] = token;
@@ -219,17 +219,17 @@ contract DynamicEthCalls is HederaTokenService {
             if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to associate token");
             responseCode = HederaTokenService.approve(token, _spender, amount);
             if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to approve token for transfer");
-            uint256 balanceBeforeTransfer = IERC20(token).balanceOf(_spender);
+            uint256 balanceBeforeTransfer = IERC20(token).balanceOf(to);
             if(IERC20(token).allowance(address(this), _spender) != amount) revert("Allowance mismatch before transfer");
-            SpenderContract(_spender).spendFungible(token, amount, address(this));
-            if(IERC20(token).balanceOf(_spender) != balanceBeforeTransfer + amount) revert("Balance mismatch after transfer");
+            SpenderContract(_spender).spendFungible(token, amount, address(this), to);
+            if(IERC20(token).balanceOf(to) != balanceBeforeTransfer + amount) revert("Balance mismatch after transfer");
             if(IERC20(token).allowance(address(this), _spender) != 0) revert("Fungible token allowance mismatch after transfer");
         } else {
             int responseCode = HederaTokenService.approveNFT(token, _spender, serialNumber);
             if (responseCode != HederaResponseCodes.SUCCESS) revert("Failed to approve NFT for transfer");
             if(IERC721(token).getApproved(serialNumber) != _spender) revert("NFT approval mismatch before transfer");
-            SpenderContract(_spender).spendNFT(token, serialNumber, address(this));
-            if(IERC721(token).ownerOf(serialNumber) != _spender) revert("NFT ownership mismatch after transfer");
+            SpenderContract(_spender).spendNFT(token, serialNumber, address(this), to);
+            if(IERC721(token).ownerOf(serialNumber) != to) revert("NFT ownership mismatch after transfer");
             if(IERC721(token).getApproved(serialNumber) == _spender) revert("NFT allowance mismatch after transfer");
         }
     }
@@ -409,10 +409,10 @@ contract DynamicEthCalls is HederaTokenService {
 }
 
 contract SpenderContract {
-    function spendFungible(address token, uint256 amount, address from) public {
-        IERC20(token).transferFrom(from, address(this), amount);
+    function spendFungible(address token, uint256 amount, address from, address to) public {
+        IERC20(token).transferFrom(from, to, amount);
     }
-    function spendNFT(address token, uint256 serialNumber, address from) public {
-        IERC721(token).transferFrom(from, address(this), serialNumber);
+    function spendNFT(address token, uint256 serialNumber, address from, address to) public {
+        IERC721(token).transferFrom(from, to, serialNumber);
     }
 }
