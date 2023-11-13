@@ -463,15 +463,16 @@ class ContractService extends BaseService {
     }
 
     const conditions = [`${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
-    if (involvedContractIds.length) {
-      conditions.push(`${ContractStateChange.CONTRACT_ID} in (${involvedContractIds.join(',')})`);
-    }
+    const contractIdsQuery = involvedContractIds?.length
+      ? `${ContractStateChange.CONTRACT_ID} in (${involvedContractIds.join(',')})`
+      : true;
     if (contractId) {
       params.push(contractId);
       conditions.push(
-        `( ${ContractStateChange.MIGRATION} is false or ${ContractStateChange.CONTRACT_ID} = $${params.length})`
+        `(${ContractStateChange.CONTRACT_ID} = $${params.length} or (${contractIdsQuery} and migration is false))`
       );
     } else {
+      conditions.push(contractIdsQuery);
       conditions.push(`${ContractStateChange.MIGRATION} is false`);
     }
 
