@@ -942,7 +942,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with delete function for Fungible token")
     public void deleteFungibleEstimateGas() {
         var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
-        System.out.println(Thread.currentThread().getName() + "| Delete token data: " + data);
+
         validateGasEstimation(data, DELETE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 

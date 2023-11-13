@@ -188,6 +188,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(tokenIds.get(0)));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
+
         assertTrue(response.getResultAsBoolean());
     }
 

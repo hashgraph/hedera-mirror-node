@@ -185,6 +185,7 @@ public class CallFeature extends AbstractFeature {
 
         var data = encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
         var response = callContract(data, precompileContractAddress);
+
         assertThat(response.getResultAsBoolean()).isTrue();
     }
 
