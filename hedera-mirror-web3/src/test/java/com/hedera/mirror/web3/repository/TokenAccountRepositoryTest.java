@@ -77,7 +77,10 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampLessThanBlock() {
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
-        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower() + 1))
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccount.getId().getAccountId(),
+                        tokenAccount.getId().getTokenId(),
+                        tokenAccount.getTimestampLower() + 1))
                 .get()
                 .isEqualTo(tokenAccount);
     }
@@ -86,7 +89,10 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampEqualToBlock() {
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
-        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower()))
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccount.getId().getAccountId(),
+                        tokenAccount.getId().getTokenId(),
+                        tokenAccount.getTimestampLower()))
                 .get()
                 .isEqualTo(tokenAccount);
     }
@@ -95,7 +101,10 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampGreaterThanBlock() {
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
-        assertThat(repository.findByIdAndTimestamp(tokenAccount.getId(), tokenAccount.getTimestampLower() - 1))
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccount.getId().getAccountId(),
+                        tokenAccount.getId().getTokenId(),
+                        tokenAccount.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -104,7 +113,9 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
 
         assertThat(repository.findByIdAndTimestamp(
-                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower() + 1))
+                        tokenAccountHistory.getId().getAccountId(),
+                        tokenAccountHistory.getId().getTokenId(),
+                        tokenAccountHistory.getTimestampLower() + 1))
                 .get()
                 .usingRecursiveComparison()
                 .isEqualTo(tokenAccountHistory);
@@ -115,7 +126,9 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
 
         assertThat(repository.findByIdAndTimestamp(
-                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower()))
+                        tokenAccountHistory.getId().getAccountId(),
+                        tokenAccountHistory.getId().getTokenId(),
+                        tokenAccountHistory.getTimestampLower()))
                 .get()
                 .usingRecursiveComparison()
                 .isEqualTo(tokenAccountHistory);
@@ -126,7 +139,9 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var tokenAccountHistory = domainBuilder.tokenAccountHistory().persist();
 
         assertThat(repository.findByIdAndTimestamp(
-                        tokenAccountHistory.getId(), tokenAccountHistory.getTimestampLower() - 1))
+                        tokenAccountHistory.getId().getAccountId(),
+                        tokenAccountHistory.getId().getTokenId(),
+                        tokenAccountHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
 
@@ -147,7 +162,10 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         final var latestTimestamp =
                 Math.max(tokenAccountHistory1.getTimestampLower(), tokenAccountHistory2.getTimestampLower());
 
-        assertThat(repository.findByIdAndTimestamp(tokenAccountHistory1.getId(), latestTimestamp + 1))
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccountHistory1.getId().getAccountId(),
+                        tokenAccountHistory1.getId().getTokenId(),
+                        latestTimestamp + 1))
                 .hasValueSatisfying(
                         actual -> assertThat(actual).returns(latestTimestamp, TokenAccount::getTimestampLower));
     }

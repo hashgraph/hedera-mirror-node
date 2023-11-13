@@ -52,23 +52,34 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
      *         If there is no record found for the given criteria, an empty Optional is returned.
      */
     @Query(
-            value = "( "
-                    + "select n.* from nft n "
-                    + "left join entity e on e.id = n.token_id "
-                    + "where n.token_id=:tokenId and n.serial_number=:serialNumber and lower(n.timestamp_range)<=:blockTimestamp "
-                    + "and n.deleted is false and e.deleted is not true "
-                    + ") "
-                    + "union all "
-                    + "( "
-                    + "select n.* from nft_history n "
-                    + "left join entity_history e on e.id = n.token_id "
-                    + "where n.token_id=:tokenId and n.serial_number=:serialNumber and lower(n.timestamp_range)<=:blockTimestamp "
-                    + "and n.deleted is false and e.deleted is not true "
-                    + "order by lower(n.timestamp_range) desc "
-                    + "limit 1 "
-                    + ") "
-                    + "order by timestamp_range desc "
-                    + "limit 1 ",
+            value =
+                    """
+            select n.*
+            from (
+                (
+                    select *
+                    from nft
+                    where token_id = :tokenId
+                        and serial_number = :serialNumber
+                        and lower(timestamp_range) <= :blockTimestamp
+                        and deleted is not true
+                )
+                union all
+                (
+                    select *
+                    from nft_history
+                    where token_id = :tokenId
+                        and serial_number = :serialNumber
+                        and lower(timestamp_range) <= :blockTimestamp
+                        and deleted is not true
+                    order by lower(timestamp_range) desc
+                    limit 1
+                )
+            ) as n
+            join entity e on e.id = n.token_id
+            where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+            order by n.timestamp_range desc
+            limit 1""",
             nativeQuery = true)
     Optional<Nft> findActiveByIdAndTimestamp(long tokenId, long serialNumber, long blockTimestamp);
 

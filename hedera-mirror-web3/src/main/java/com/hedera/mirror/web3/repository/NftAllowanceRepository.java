@@ -51,18 +51,18 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                     (
                         select *
                         from nft_allowance
-                        where token_id = :#{#id.tokenId}
-                            and owner = :#{#id.owner}
-                            and spender = :#{#id.spender}
+                        where token_id = :tokenId
+                            and owner = :owner
+                            and spender = :spender
                             and lower(timestamp_range) <= :blockTimestamp
                     )
                     union all
                     (
                         select *
                         from nft_allowance_history
-                        where token_id = :#{#id.tokenId}
-                            and owner = :#{#id.owner}
-                            and spender = :#{#id.spender}
+                        where token_id = :tokenId
+                            and owner = :owner
+                            and spender = :spender
                             and lower(timestamp_range) <= :blockTimestamp
                         order by lower(timestamp_range) desc
                         limit 1
@@ -71,5 +71,5 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<NftAllowance> findByIdAndTimestamp(Id id, long blockTimestamp);
+    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long owner, long spender, long blockTimestamp);
 }

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -179,8 +180,28 @@ class NftRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findActiveByIdAndTimestampEntityDeleted() {
+    void findActiveByIdAndTimestampEntityDeletedAndNftStillValid() {
         final var nft = domainBuilder.nft().persist();
+        long blockTimestamp = nft.getTimestampLower();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getTokenId())
+                        .timestampRange(Range.closedOpen(blockTimestamp + 10, blockTimestamp + 20))
+                        .deleted(true))
+                .persist();
+
+        // Tests that NFT records remain valid if their linked entity is marked as deleted after the blockTimestamp.
+        // Verifies NFTs are considered active at blockTimestamp, even if the associated entity is currently deleted.
+
+        assertThat(nftRepository.findActiveByIdAndTimestamp(
+                        nft.getTokenId(), nft.getId().getSerialNumber(), nft.getTimestampLower()))
+                .get()
+                .isEqualTo(nft);
+    }
+
+    @Test
+    void findActiveByIdAndTimestampEntityDeleteAndNftIsDeleted() {
+        final var nft = domainBuilder.nft().customize(n -> n.deleted(true)).persist();
         domainBuilder
                 .entity()
                 .customize(e -> e.id(nft.getTokenId()).deleted(true))
@@ -188,6 +209,20 @@ class NftRepositoryTest extends Web3IntegrationTest {
 
         assertThat(nftRepository.findActiveByIdAndTimestamp(
                         nft.getTokenId(), nft.getId().getSerialNumber(), nft.getTimestampLower()))
+                .isEmpty();
+    }
+
+    @Test
+    void findActiveByIdAndTimestampEntityDeleteAndNftHistoryIsDeleted() {
+        final var nftHistory =
+                domainBuilder.nftHistory().customize(n -> n.deleted(true)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftHistory.getTokenId()).deleted(true))
+                .persist();
+
+        assertThat(nftRepository.findActiveByIdAndTimestamp(
+                        nftHistory.getTokenId(), nftHistory.getId().getSerialNumber(), nftHistory.getTimestampLower()))
                 .isEmpty();
     }
 
@@ -208,10 +243,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     @Test
     void findActiveByIdAndTimestampHistoricalLessThanBlock() {
         final var nftHistory = domainBuilder.nftHistory().persist();
-        domainBuilder
-                .entityHistory()
-                .customize(e -> e.id(nftHistory.getTokenId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(nftHistory.getTokenId())).persist();
 
         assertThat(nftRepository.findActiveByIdAndTimestamp(
                         nftHistory.getTokenId(),
@@ -225,10 +257,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     @Test
     void findActiveByIdAndTimestampHistoricalEqualToBlock() {
         final var nftHistory = domainBuilder.nftHistory().persist();
-        domainBuilder
-                .entityHistory()
-                .customize(e -> e.id(nftHistory.getTokenId()))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(nftHistory.getTokenId())).persist();
 
         assertThat(nftRepository.findActiveByIdAndTimestamp(
                         nftHistory.getTokenId(), nftHistory.getId().getSerialNumber(), nftHistory.getTimestampLower()))
@@ -283,7 +312,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
     void findActiveByIdAndTimestampHistoricalEntityDeletedIsNull() {
         final var nftHistory = domainBuilder.nftHistory().persist();
         domainBuilder
-                .entityHistory()
+                .entity()
                 .customize(e -> e.id(nftHistory.getTokenId()).deleted(null))
                 .persist();
 
@@ -302,13 +331,12 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .nftHistory()
                 .customize(n -> n.tokenId(tokenId).serialNumber(serialNumber))
                 .persist();
-        domainBuilder.entityHistory().customize(e -> e.id(tokenId)).persist();
+        domainBuilder.entity().customize(e -> e.id(tokenId)).persist();
 
         final var nftHistory2 = domainBuilder
                 .nftHistory()
                 .customize(n -> n.tokenId(tokenId).serialNumber(serialNumber))
                 .persist();
-        domainBuilder.entityHistory().customize(e -> e.id(tokenId)).persist();
 
         final var latestTimestamp = Math.max(nftHistory1.getTimestampLower(), nftHistory2.getTimestampLower());
 

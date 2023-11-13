@@ -56,16 +56,16 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                     (
                         select *
                         from token_account
-                        where account_id = :#{#id.accountId}
-                            and token_id = :#{#id.tokenId}
+                        where account_id = :accountId
+                            and token_id = :tokenId
                             and lower(timestamp_range) <= :blockTimestamp
                     )
                     union all
                     (
                         select *
                         from token_account_history
-                        where account_id = :#{#id.accountId}
-                            and token_id = :#{#id.tokenId}
+                        where account_id = :accountId
+                            and token_id = :tokenId
                             and lower(timestamp_range) <= :blockTimestamp
                         order by lower(timestamp_range) desc
                         limit 1
@@ -74,5 +74,5 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<TokenAccount> findByIdAndTimestamp(AbstractTokenAccount.Id id, long blockTimestamp);
+    Optional<TokenAccount> findByIdAndTimestamp(long accountId, long tokenId, long blockTimestamp);
 }
