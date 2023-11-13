@@ -1530,7 +1530,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with balanceOf function for {token} and verify the estimated gas against HAPI")
     public void executeBalanceOfFunctionWithLimitedGas(TokenNameEnum tokenName) {
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
         var data = encodeDataToByteArray(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var estimateGasValue = validateAndReturnGas(data, BALANCE_OF, ercTestContractSolidityAddress);
         executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, data);
