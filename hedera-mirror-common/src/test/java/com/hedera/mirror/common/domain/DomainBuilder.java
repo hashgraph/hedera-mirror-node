@@ -38,6 +38,8 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -109,6 +111,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -323,6 +326,28 @@ public class DomainBuilder {
                 .slot(bytes(128))
                 .valueRead(bytes(64))
                 .valueWritten(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractTransaction, ContractTransaction.ContractTransactionBuilder> contractTransaction() {
+        var payerAccountId = entityId().getId();
+        var contractId = entityId().getId();
+        var builder = ContractTransaction.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(contractId)
+                .payerAccountId(payerAccountId)
+                .contractIds(Arrays.asList(payerAccountId, contractId));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder>
+            contractTransactionHash() {
+        var builder = ContractTransactionHash.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(id())
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
+                .hash(bytes(32));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
