@@ -109,4 +109,17 @@ public class AbstractToken implements History {
     public void setSymbol(String symbol) {
         this.symbol = DomainUtils.sanitize(symbol);
     }
+
+    public void setTotalSupply(Long newTotalSupply) {
+        if (newTotalSupply == null) {
+            return;
+        }
+
+        if (newTotalSupply < 0) {
+            // Negative from a token transfer of a token dissociate of a deleted token, so we aggregate the change.
+            totalSupply = totalSupply == null ? newTotalSupply : totalSupply + newTotalSupply;
+        } else {
+            totalSupply = newTotalSupply;
+        }
+    }
 }

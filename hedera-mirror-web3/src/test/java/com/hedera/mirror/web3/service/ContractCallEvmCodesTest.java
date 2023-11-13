@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
@@ -161,17 +162,32 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
     }
 
     @Test
-    void getGenesisBlockHashReturnsZero() {
+    void getGenesisBlockHashReturnsCorrectBlock() {
+        // Persist all entities so that we can get a specific record file hash and pass it to
+        // functionEncodeDecoder#functionHashFor.
+        persistEntities();
+        areEntitiesPersisted = true;
+
         final var functionHash = functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, 0L);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+                .isEqualTo("0x" + genesisRecordFileForBlockHash.getHash().substring(0, 64));
     }
 
     @Test
-    void getLatestBlockHashReturnsZero() {
+    void getLatestBlockHashIsNotEmpty() {
         final var functionHash = functionEncodeDecoder.functionHashFor("getLatestBlockHash", EVM_CODES_ABI_PATH);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isNotEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
+    @Test
+    void getBlockHashAfterTheLatestReturnsZero() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, Long.MAX_VALUE);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
@@ -192,6 +208,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .gas(15_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
+                .block(BlockType.LATEST)
                 .build();
     }
 }

@@ -22,6 +22,7 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
@@ -166,7 +167,8 @@ public class EvmOperationConstructionUtil {
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
                         new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        prngSeedOperation)
+                        prngSeedOperation,
+                        new HederaBlockHashOperation(gasCalculator))
                 .forEach(operationRegistry::put);
 
         return new EVM(

@@ -20,8 +20,8 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with HederaTokenService getTokenDefaultKycStatus token FUNGIBLE
     Then I call function with update and I expect return of the updated value
     Then I call function that makes N times state update
-#    Then I call function with nested deploy using create function
-#    Then I call function with nested deploy using create2 function
+    Then I call function with nested deploy using create function
+    Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
     Then I burn FUNGIBLE token and get the total supply and balance
     Then I burn NFT and get the total supply and balance
@@ -56,3 +56,4 @@ Feature: eth_call Contract Base Coverage Feature
     Then I approve a FUNGIBLE token and transfer it
     Then I approve a NFT token and transfer it
     Then I grant and revoke KYC
+    Then I successfully update the balance of an account and get the updated balance

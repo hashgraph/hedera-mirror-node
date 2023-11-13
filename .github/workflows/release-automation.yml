@@ -117,7 +117,7 @@ jobs:
         with:
           bodyFile: ${{ env.RELEASE_NOTES_FILENAME }}.md
           commit: ${{ env.RELEASE_BRANCH }}
-          draft: true
+          draft: ${{ steps.version_parser.outputs.prerelease == '' }}
           name: ${{ env.RELEASE_TAG }}
           omitBody: ${{ steps.milestone.outputs.milestone_id == '' }}
           prerelease: ${{ steps.version_parser.outputs.prerelease != '' }}

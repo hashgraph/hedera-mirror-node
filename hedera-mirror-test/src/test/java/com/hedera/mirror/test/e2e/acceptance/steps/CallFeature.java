@@ -26,6 +26,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMe
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_TOKEN_GET_ALLOWANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.ADDRESS_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DISSOCIATE_TOKEN_FAIL_TRANSFER;
@@ -62,6 +63,7 @@ import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenPauseStatus;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -350,6 +352,20 @@ public class CallFeature extends AbstractFeature {
         String[] addresses = splitAddresses(response.getResult());
 
         validateAddresses(addresses);
+    }
+
+    @Then("I successfully update the balance of an account and get the updated balance")
+    public void getBalance() {
+        final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
+        var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+        networkTransactionResponse = accountClient.sendCryptoTransfer(
+                receiverAccountId.getAccountId(),
+                Hbar.fromTinybars(initialBalance.longValue()),
+                receiverAccountId.getPrivateKey());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+        assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
     }
 
     @RetryAsserts
@@ -701,6 +717,8 @@ public class CallFeature extends AbstractFeature {
         APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance"),
         APPROVE_NFT_TOKEN_AND_TRANSFER("approveNftAndTransfer"),
         GRANT_KYC_REVOKE_KYC("grantKycRevokeKyc");
+        ADDRESS_BALANCE("addressBalance"),
+        REENTRANCY_CALL_WITH_GAS("reentrancyCallWithGas");
 
         private final String selector;
     }

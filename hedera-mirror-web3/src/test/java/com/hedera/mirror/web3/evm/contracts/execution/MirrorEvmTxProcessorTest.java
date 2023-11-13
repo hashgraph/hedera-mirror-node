@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -51,8 +52,8 @@ import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -70,6 +71,9 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -81,7 +85,6 @@ class MirrorEvmTxProcessorTest {
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
-    private final Instant consensusTime = Instant.now();
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -185,17 +188,25 @@ class MirrorEvmTxProcessorTest {
         result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
-    @Test
-    void assertSuccessExecution() {
+    @ParameterizedTest
+    @MethodSource("provideIsEstimateParameters")
+    void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
         given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-
-        var result = mirrorEvmTxProcessor.execute(
-                sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true, true);
+        final var params = CallServiceParameters.builder()
+                .sender(sender)
+                .receiver(receiver.canonicalAddress())
+                .gas(33_333L)
+                .value(1234L)
+                .callData(Bytes.EMPTY)
+                .isStatic(true)
+                .isEstimate(isEstimate)
+                .build();
+        var result = mirrorEvmTxProcessor.execute(params, params.getGas());
 
         assertThat(result)
                 .isNotNull()
@@ -291,5 +302,9 @@ class MirrorEvmTxProcessorTest {
         given(gasCalculator.getHighTierGasCost()).willReturn(10L);
         given(gasCalculator.getJumpDestOperationGasCost()).willReturn(1L);
         given(gasCalculator.getZeroTierGasCost()).willReturn(0L);
+    }
+
+    static Stream<Arguments> provideIsEstimateParameters() {
+        return Stream.of(Arguments.of(true), Arguments.of(false));
     }
 }

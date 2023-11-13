@@ -45,8 +45,7 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
         ContractStateChange contractStateChange = domainBuilder
                 .contractStateChange()
                 .customize(
-                        cs -> cs.contractId(olderContractState.getContractId())
-                                .slot(olderContractState.getSlot()))
+                        cs -> cs.contractId(olderContractState.getContractId()).slot(olderContractState.getSlot()))
                 .persist();
 
         assertThat(contractStateRepository.findStorageByBlockTimestamp(

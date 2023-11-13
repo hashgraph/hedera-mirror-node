@@ -36,8 +36,8 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
         assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
-                accountBalance.getId().getAccountId().getId(),
-                accountBalance.getId().getConsensusTimestamp() + 1))
+                        accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp() + 1))
                 .get()
                 .isEqualTo(accountBalance);
     }
@@ -46,8 +46,8 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndTimestampEqualToBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
         assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
-                accountBalance.getId().getAccountId().getId(),
-                accountBalance.getId().getConsensusTimestamp()))
+                        accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp()))
                 .get()
                 .isEqualTo(accountBalance);
     }
@@ -56,31 +56,27 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     void findHistoricalByIdAndTimestampGreaterThanBlockTimestamp() {
         var accountBalance = domainBuilder.accountBalance().persist();
         assertThat(accountBalanceRepository.findByIdAndTimestampLessThan(
-                accountBalance.getId().getAccountId().getId(),
-                accountBalance.getId().getConsensusTimestamp() - 1))
+                        accountBalance.getId().getAccountId().getId(),
+                        accountBalance.getId().getConsensusTimestamp() - 1))
                 .isEmpty();
     }
 
     @Test
     void shouldNotIncludeBalanceBeforeConsensusTimestamp() {
-        var accountBalance1 = domainBuilder
-                .accountBalance()
-                .persist();
+        var accountBalance1 = domainBuilder.accountBalance().persist();
         long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
 
         persistCryptoTransfersBefore(3, consensusTimestamp, accountBalance1);
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
                 .get()
                 .isEqualTo(accountBalance1.getBalance());
     }
 
     @Test
     void shouldIncludeBalanceDuringValidTimestampRange() {
-        var accountBalance1 = domainBuilder
-                .accountBalance()
-                .persist();
+        var accountBalance1 = domainBuilder.accountBalance().persist();
 
         long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
         long historicalAccountBalance = accountBalance1.getBalance();
@@ -89,16 +85,14 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         historicalAccountBalance += TRANSFER_AMOUNT * 3;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
 
     @Test
     void shouldNotIncludeBalanceAfterTimestampFilter() {
-        var accountBalance1 = domainBuilder
-                .accountBalance()
-                .persist();
+        var accountBalance1 = domainBuilder.accountBalance().persist();
         long consensusTimestamp = accountBalance1.getId().getConsensusTimestamp();
         long historicalAccountBalance = accountBalance1.getBalance();
 
@@ -108,7 +102,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         persistCryptoTransfers(3, consensusTimestamp + 10, accountBalance1);
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
@@ -39,8 +40,8 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
     void dynamicCallsTestWithAliasSenderForEthCall(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
@@ -58,8 +59,8 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
     void dynamicCallsTestWithAliasSenderForEstimateGas(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)

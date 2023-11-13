@@ -22,7 +22,7 @@ import com.google.common.collect.Range;
 public interface History {
 
     @JsonIgnore
-    default boolean isHistory() {
+    default boolean hasHistory() {
         return getTimestampRange() != null;
     }
 

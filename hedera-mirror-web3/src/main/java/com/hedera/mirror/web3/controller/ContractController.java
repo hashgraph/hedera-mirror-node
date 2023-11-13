@@ -29,7 +29,7 @@ import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidParametersException;
+import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -85,10 +85,20 @@ class ContractController {
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
-        final var receiver = Address.fromHexString(request.getTo());
+        Address receiver;
+
+        /*When performing estimateGas with an empty "to" field, we set a default value of the zero address
+        to avoid any potential NullPointerExceptions throughout the process.*/
+        if ((request.getTo() == null || request.getTo().isEmpty()) && request.isEstimate()) {
+            receiver = Address.ZERO;
+        } else {
+            receiver = Address.fromHexString(request.getTo());
+        }
+
         final var data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
         final var isStaticCall = false;
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
+        final var block = request.getBlock();
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -99,6 +109,7 @@ class ContractController {
                 .isStatic(isStaticCall)
                 .callType(callType)
                 .isEstimate(request.isEstimate())
+                .block(block)
                 .build();
     }
 
@@ -125,8 +136,8 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
-        log.warn("Address validation error: {}", e.getMessage());
+    private Mono<GenericErrorResponse> inputValidationError(final InvalidInputException e) {
+        log.warn("Input validation error: {}", e.getMessage());
         return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 

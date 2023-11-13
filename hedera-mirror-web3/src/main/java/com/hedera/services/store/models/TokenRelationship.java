@@ -48,8 +48,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * Differences from the original:
  *  1. Added factory method that returns empty instance
  *  2. Added isEmptyTokenRelationship() method
- *  3. Add new hasAssociation field to reflect the field from the DB. It's possible that we have a token-account record,
- *  but no association between them
  */
 public class TokenRelationship {
     private final Token token;
@@ -60,8 +58,6 @@ public class TokenRelationship {
     private final boolean destroyed;
     private final boolean notYetPersisted;
     private final boolean automaticAssociation;
-    private final boolean hasAssociation;
-
     private final long balanceChange;
 
     @SuppressWarnings("java:S107")
@@ -74,7 +70,6 @@ public class TokenRelationship {
             boolean destroyed,
             boolean notYetPersisted,
             boolean automaticAssociation,
-            boolean hasAssociation,
             long balanceChange) {
         this.token = token;
         this.account = account;
@@ -84,11 +79,10 @@ public class TokenRelationship {
         this.destroyed = destroyed;
         this.notYetPersisted = notYetPersisted;
         this.automaticAssociation = automaticAssociation;
-        this.hasAssociation = hasAssociation;
         this.balanceChange = balanceChange;
     }
 
-    public TokenRelationship(Token token, Account account, boolean hasAssociation) {
+    public TokenRelationship(Token token, Account account) {
         this(
                 token,
                 account,
@@ -98,12 +92,11 @@ public class TokenRelationship {
                 false,
                 true,
                 false,
-                hasAssociation,
                 0);
     }
 
     public static TokenRelationship getEmptyTokenRelationship() {
-        return new TokenRelationship(new Token(Id.DEFAULT), new Account(0L, Id.DEFAULT, 0L), false);
+        return new TokenRelationship(new Token(Id.DEFAULT), new Account(0L, Id.DEFAULT, 0L));
     }
 
     public boolean isEmptyTokenRelationship() {
@@ -130,7 +123,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 balanceChange);
     }
 
@@ -151,7 +143,6 @@ public class TokenRelationship {
                 true,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 balanceChange);
     }
 
@@ -174,7 +165,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -197,7 +187,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -219,7 +208,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 oldTokenRel.balanceChange);
     }
     /**
@@ -240,7 +228,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -263,7 +250,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 oldTokenRel.automaticAssociation,
-                oldTokenRel.hasAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -286,29 +272,6 @@ public class TokenRelationship {
                 oldTokenRel.destroyed,
                 oldTokenRel.notYetPersisted,
                 automaticAssociation,
-                oldTokenRel.hasAssociation,
-                oldTokenRel.balanceChange);
-    }
-
-    /**
-     * Creates new instance of {@link TokenRelationship} with updated hasAssociation field in order to keep the
-     * object's immutability and avoid entry points for changing the state.
-     *
-     * @param oldTokenRel
-     * @return new instance of {@link TokenRelationship}
-     */
-    private TokenRelationship createNewTokenRelationshipWithAssociation(
-            TokenRelationship oldTokenRel, boolean hasAssociation) {
-        return new TokenRelationship(
-                oldTokenRel.token,
-                oldTokenRel.account,
-                oldTokenRel.balance,
-                oldTokenRel.frozen,
-                oldTokenRel.kycGranted,
-                oldTokenRel.destroyed,
-                oldTokenRel.notYetPersisted,
-                oldTokenRel.automaticAssociation,
-                hasAssociation,
                 oldTokenRel.balanceChange);
     }
 
@@ -388,17 +351,6 @@ public class TokenRelationship {
     public TokenRelationship markAsDestroyed() {
         validateFalse(notYetPersisted, FAIL_INVALID);
         return createNewDestroyedTokenRelationship(this);
-    }
-
-    /**
-     * Helper method for marking a given relationship as not associated
-     */
-    public TokenRelationship markAsNotAssociated() {
-        return createNewTokenRelationshipWithAssociation(this, false);
-    }
-
-    public boolean hasAssociation() {
-        return hasAssociation;
     }
 
     public boolean hasChangesForRecord() {

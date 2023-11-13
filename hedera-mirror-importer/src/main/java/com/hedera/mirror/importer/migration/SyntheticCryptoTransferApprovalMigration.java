@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -301,6 +302,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
         }
         // Update the isApproval value to true
         return false;
+    }
+
+    @VisibleForTesting
+    void setExecuted(boolean executed) {
+        this.executed.set(executed);
     }
 
     @Data

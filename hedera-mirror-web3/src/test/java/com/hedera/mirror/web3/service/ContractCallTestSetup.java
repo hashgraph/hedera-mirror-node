@@ -55,6 +55,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -79,7 +80,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.ToLongFunction;
@@ -428,6 +428,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             .build();
 
     protected static RecordFile recordFileForBlockHash;
+    protected static RecordFile genesisRecordFileForBlockHash;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -753,7 +754,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForExecution(
-            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
+            final Bytes callData,
+            final Address contractAddress,
+            final CallType callType,
+            final long value,
+            BlockType block) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -766,6 +771,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
                 .build();
     }
 
@@ -783,6 +789,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(BlockType.LATEST)
                 .build();
     }
 
@@ -790,16 +797,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         long result;
         try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
+
             result = processor
-                    .execute(
-                            serviceParameters.getSender(),
-                            serviceParameters.getReceiver(),
-                            serviceParameters.getGas(),
-                            serviceParameters.getValue(),
-                            serviceParameters.getCallData(),
-                            Instant.now(),
-                            serviceParameters.isStatic(),
-                            true)
+                    .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
@@ -809,6 +809,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void persistEntities() {
+        genesisBlockPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -1042,6 +1043,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
+    }
+
+    private void genesisBlockPersist() {
+        genesisRecordFileForBlockHash =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
     // Custom fees and rates persist

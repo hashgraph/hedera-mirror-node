@@ -30,6 +30,7 @@ plugins {
 }
 
 configurations.all {
+    exclude(group = "commons-logging", "commons-logging")
     exclude(group = "org.slf4j", module = "slf4j-nop")
 }
 

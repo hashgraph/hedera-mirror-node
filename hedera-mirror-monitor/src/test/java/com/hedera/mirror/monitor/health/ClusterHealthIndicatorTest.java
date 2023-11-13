@@ -25,22 +25,32 @@ import com.hedera.mirror.monitor.publish.generator.TransactionGenerator;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.TestScenario;
+import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import lombok.Getter;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.http.HttpStatusCode;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ClusterHealthIndicatorTest {
 
     @Mock
     private MirrorSubscriber mirrorSubscriber;
+
+    @Mock
+    private RestApiClient restApiClient;
 
     @Mock
     private TransactionGenerator transactionGenerator;
@@ -50,17 +60,32 @@ class ClusterHealthIndicatorTest {
 
     @ParameterizedTest
     @CsvSource({
-        "1.0, 1.0, UP", // healthy
-        "0.0, 1.0, UNKNOWN", // publishing inactive
-        "1.0, 0.0, UNKNOWN", // subscribing inactive
-        "0.0, 0.0, UNKNOWN", // publishing and subscribing inactive
+        "1.0, 1.0, 200, UP", // healthy
+        "0.0, 1.0, 200, UNKNOWN", // publishing inactive
+        "1.0, 0.0, 200, UNKNOWN", // subscribing inactive
+        "0.0, 0.0, 200, UNKNOWN", // publishing and subscribing inactive
+        "1.0, 1.0, 400, UNKNOWN", // unknown network stake
+        "1.0, 1.0, 500, DOWN", // network stake down
+        "0.0, 0.0, 500, DOWN", // publishing and subscribing inactive and network stake down
+        "0.0, 1.0, 500, DOWN", // network stake down and publishing inactive
+        "1.0, 0.0, 500, DOWN", // network stake down and subscribing inactive
     })
-    void health(double publishRate, double subscribeRate, Status status) {
+    void health(double publishRate, double subscribeRate, int networkStatusCode, Status status) {
         when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(publishRate)));
         when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(subscribeRate)));
+        when(restApiClient.getNetworkStakeStatusCode())
+                .thenReturn(Mono.just(HttpStatusCode.valueOf(networkStatusCode)));
         assertThat(clusterHealthIndicator.health().block())
                 .extracting(Health::getStatus)
                 .isEqualTo(status);
+    }
+
+    @Test
+    void restNetworkStakeError() {
+        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(new RuntimeException("Test exception")));
+        assertThat(clusterHealthIndicator.health().block())
+                .extracting(Health::getStatus)
+                .isEqualTo(Status.UNKNOWN);
     }
 
     private PublishScenario publishScenario(double rate) {

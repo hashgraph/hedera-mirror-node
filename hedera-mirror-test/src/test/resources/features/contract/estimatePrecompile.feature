@@ -171,6 +171,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimate gas that approves NFT token and gets allowance
     #Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer
     #Then I call estimate gas that associates NFT token dissociates and fails token transfer
+    Then I call estimateGas with pseudo random seed
+    Then I call estimateGas with pseudo random number
     #### These tests below are recommended to be kept at the end as they change the state #####
     Then I call estimateGas with balanceOf function for "FUNGIBLE" and verify the estimated gas against HAPI
     Then I call estimateGas with balanceOf function for "NFT" and verify the estimated gas against HAPI

@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
+import static com.hedera.mirror.importer.MirrorProperties.STREAMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import java.io.File;
@@ -29,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +39,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import reactor.test.StepVerifier;
 
 class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
+
+    private final LocalStreamFileProperties localProperties = new LocalStreamFileProperties();
 
     @Override
     protected String getProviderPathSeparator() {
@@ -54,20 +59,101 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     @BeforeEach
     void setup() throws Exception {
         super.setup();
-        streamFileProvider = new LocalStreamFileProvider(properties);
+        streamFileProvider = new LocalStreamFileProvider(properties, localProperties);
     }
 
     @Override
     protected FileCopier createFileCopier(Path dataPath) {
         var fromPath = Path.of("data", "recordstreams", "v6");
         return FileCopier.create(TestUtils.getResource(fromPath.toString()).toPath(), dataPath)
-                .to(LocalStreamFileProvider.STREAMS, StreamType.RECORD.getPath());
+                .to(STREAMS, StreamType.RECORD.getPath());
+    }
+
+    @Test
+    void listAll() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        fileCopier.copy();
+        var sigs = streamFileProvider
+                .list(node, StreamFilename.EPOCH)
+                .collectList()
+                .block();
+        assertThat(sigs).hasSize(2);
+        sigs.forEach(
+                sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+    }
+
+    @Test
+    void listByDay() {
+        var node = node("0.0.3");
+        createSignature("2022-07-13", "recordstreams", "record0.0.3", "2022-07-13T08_46_08.041986003Z.rcd_sig");
+        createSignature("2022-07-13", "recordstreams", "record0.0.3", "2022-07-13T08_46_11.304284003Z.rcd_sig");
+        var sigs = streamFileProvider
+                .list(node, StreamFilename.EPOCH)
+                .collectList()
+                .block();
+        assertThat(sigs).hasSize(2);
+        sigs.forEach(
+                sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+    }
+
+    @Test
+    void listByDayAuto() {
+        properties.setPathType(PathType.AUTO);
+        var node = node("0.0.3");
+        createSignature("2022-07-13", "demo", "0", "0", "record", "2022-07-13T23_59_59.304284003Z.rcd_sig");
+        createSignature("2022-07-14", "demo", "0", "0", "record", "2022-07-14T00_01_01.203216501Z.rcd_sig");
+        var sigs = streamFileProvider
+                .list(node, StreamFilename.EPOCH)
+                .collectList()
+                .block();
+        assertThat(sigs).hasSize(2);
+        sigs.forEach(
+                sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+    }
+
+    @Test
+    void listAcrossDays() {
+        var node = node("0.0.3");
+        createSignature("2022-07-13", "recordstreams", "record0.0.3", "2022-07-13T23_59_59.304284003Z.rcd_sig");
+        createSignature("2022-07-14", "recordstreams", "record0.0.3", "2022-07-14T00_01_01.203216501Z.rcd_sig");
+        var sigs = streamFileProvider
+                .list(node, StreamFilename.EPOCH)
+                .collectList()
+                .block();
+        assertThat(sigs).hasSize(2);
+        sigs.forEach(
+                sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+    }
+
+    @Test
+    void listStartsAtNextDay() throws Exception {
+        localProperties.setDeleteAfterProcessing(false);
+        var node = node("0.0.3");
+        var previous =
+                createSignature("2022-07-13", "recordstreams", "record0.0.3", "2022-07-13T23_59_59.304284003Z.rcd_sig");
+        var expected =
+                createSignature("2022-07-14", "recordstreams", "record0.0.3", "2022-07-14T00_01_01.203216501Z.rcd_sig");
+        var sigs = streamFileProvider
+                .list(node, StreamFilename.from(previous.getPath()))
+                .collectList()
+                .block();
+        assertThat(sigs).hasSize(1).extracting(StreamFileData::getFilename).containsExactly(expected.getName());
+        sigs.forEach(
+                sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
+        assertThat(Files.walk(dataPath)
+                        .peek(f -> System.out.println("File: " + f))
+                        .filter(p ->
+                                p.toString().contains(node.getNodeAccountId().toString()))
+                        .filter(p -> !p.toString().contains("sidecar"))
+                        .filter(p -> p.toFile().isFile()))
+                .hasSize(2);
     }
 
     @Test
     void listDeletesFiles() throws Exception {
-        var accountId = "0.0.3";
-        var node = node(accountId);
+        localProperties.setDeleteAfterProcessing(true);
+        var node = node("0.0.3");
         getFileCopier(node).copy();
         var lastFilename = StreamFilename.from(Instant.now().toString().replace(':', '_') + ".rcd.gz");
         StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
@@ -76,7 +162,8 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .expectComplete()
                 .verify(Duration.ofSeconds(10));
         assertThat(Files.walk(dataPath)
-                        .filter(p -> p.toString().contains(accountId))
+                        .filter(p ->
+                                p.toString().contains(node.getNodeAccountId().toString()))
                         .filter(p -> !p.toString().contains("sidecar"))
                         .noneMatch(p -> p.toFile().isFile()))
                 .isTrue();
@@ -104,5 +191,15 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .expectNext(data2)
                 .expectComplete()
                 .verify(Duration.ofSeconds(10L));
+    }
+
+    @SneakyThrows
+    private File createSignature(String... paths) {
+        var subPath = Path.of("", paths);
+        var streamsDir = properties.getMirrorProperties().getStreamPath();
+        var file = streamsDir.resolve(subPath).toFile();
+        file.getParentFile().mkdirs();
+        file.createNewFile();
+        return file;
     }
 }
