@@ -70,7 +70,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.14.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.59.0")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.0")
+        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
         api("io.projectreactor:reactor-core-micrometer:1.0.11")
         api("io.swagger:swagger-annotations:1.6.12")
         api("io.vertx:vertx-pg-client:$vertxVersion")
