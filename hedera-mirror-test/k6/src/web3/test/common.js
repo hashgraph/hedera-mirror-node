@@ -52,9 +52,9 @@ function ContractCallTestScenarioBuilder() {
   this._tags = {};
   this._sleep = 0;
 
-  this._block = null;
+  this._block = 'latest';
   this._data = null;
-  this._gas = null;
+  this._gas = 15000000;
   this._from = null;
   this._value = null;
   this._estimate = null;
