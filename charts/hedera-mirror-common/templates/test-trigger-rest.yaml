@@ -14,7 +14,7 @@ spec:
   event: deleted
   action: run
   execution: testsuite
-  delay: 60s
+  delay: 10s
   testSelector:
     name: test-suite-rest
     namespace: {{ .Values.testkube.namespace }}
