@@ -111,7 +111,7 @@ func (d dbParams) toJdbcUrl(endpoint string) string {
 
 func (d dbParams) toConfig() config.Db {
 	hostPort := strings.Split(d.endpoint, ":")
-	port, _ := strconv.ParseInt(hostPort[1], 10, 32)
+	port, _ := strconv.ParseUint(hostPort[1], 10, 16)
 	return config.Db{
 		Host:     hostPort[0],
 		Name:     d.name,
