@@ -258,7 +258,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
       continue;
     }
 
-    if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
+    if (config.query.v2.topicMessageLookups && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
       continue;
     }
 

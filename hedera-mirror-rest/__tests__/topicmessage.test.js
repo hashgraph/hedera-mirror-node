@@ -18,7 +18,9 @@ import * as constants from '../constants';
 import EntityId from '../entityId';
 import {assertSqlQueryEqual} from './testutils';
 import topicmessage from '../topicmessage';
+import config from '../config.js';
 
+config.query.v2.topicMessageLookups = false;
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
     verifyInvalidConsensusTimestamp(-1234567890.000000001);
