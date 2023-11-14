@@ -60,7 +60,7 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.89.0")
+@TestPropertySource(properties = "spring.flyway.target=1.89.1")
 class TimePartitionBalanceTablesMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
 
     private static final String CLEANUP_SQL =
@@ -76,7 +76,7 @@ class TimePartitionBalanceTablesMigrationTest extends PartitionMaintenanceDisabl
     @Owner
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.89.1__time_partition_balance_tables.sql")
+    @Value("classpath:db/migration/v1/V1.89.2__time_partition_balance_tables.sql")
     private final Resource migrationSql;
 
     private final TimePartitionService timePartitionService;

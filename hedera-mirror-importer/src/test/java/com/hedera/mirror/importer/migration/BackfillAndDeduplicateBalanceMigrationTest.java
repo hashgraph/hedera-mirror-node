@@ -73,7 +73,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
     private final @Owner JdbcTemplate jdbcTemplate;
     private final BackfillAndDeduplicateBalanceMigration migration;
 
-    @Value("classpath:db/migration/v1/V1.89.0__add_balance_deduplicate_functions.sql")
+    @Value("classpath:db/migration/v1/V1.89.1__add_balance_deduplicate_functions.sql")
     private final Resource migrationSql;
 
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -106,7 +106,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
         var account4 = EntityId.of(domainBuilder.id() + TREASURY);
         var token = EntityId.of(domainBuilder.id() + TREASURY);
 
-        // The balance snapshot already in db, processed by V1.89.0
+        // The balance snapshot already in db, processed by V1.89.2
         long sentinelTimestamp = LocalDate.now(UTC).toEpochSecond(LocalTime.of(22, 0), UTC) * 1_000_000_000L;
 
         // The first balance snapshot, ensured to be in the preceding partition
@@ -412,7 +412,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
     @Test
     void migrationNoChange() {
         // given
-        // there is no balance info before the portion already handled by V1.89.0, for simplicity, no data is populated
+        // there is no balance info before the portion already handled by V1.89.2, for simplicity, no data is populated
         // for account_balance_old and token_balance_old
         var treasury = EntityId.of(TREASURY);
         var account = EntityId.of(domainBuilder.id() + TREASURY);
