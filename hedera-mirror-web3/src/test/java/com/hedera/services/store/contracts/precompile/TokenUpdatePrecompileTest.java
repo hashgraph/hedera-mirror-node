@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
@@ -29,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -132,12 +133,18 @@ class TokenUpdatePrecompileTest {
     private HTSPrecompiledContract subject;
 
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompileStatic;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private PrecompileMapper precompileMapper;
 
     @BeforeEach
     void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final PrecompilePricingUtils pricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
@@ -157,6 +164,7 @@ class TokenUpdatePrecompileTest {
         if (!tokenUpdatePrecompileStatic.isClosed()) {
             tokenUpdatePrecompileStatic.close();
         }
+        staticMock.close();
     }
 
     @Test
@@ -177,7 +185,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -202,7 +210,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -227,7 +235,7 @@ class TokenUpdatePrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody, senderAddress);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);

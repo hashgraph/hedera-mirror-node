@@ -49,6 +49,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -97,7 +98,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -201,7 +201,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity, true);
         }
 
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody, senderAddress);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
         final var changes = impliedTransfers.getAllBalanceChanges();
 
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
@@ -431,10 +431,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(
-            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         long accumulatedCost = 0;
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody, senderAddress);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
         final boolean customFees = !impliedTransfers.getAllBalanceChanges().isEmpty();
         // For fungible there are always at least two operations, so only charge half for each
         // operation
@@ -495,8 +494,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     protected ImpliedTransfers extrapolateImpliedTransferDetailsFromSyntheticTxn(
-            final TransactionBody transactionBody, final Address senderAddress) {
-        final var explicitChanges = constructBalanceChanges(transactionBody, senderAddress);
+            final TransactionBody transactionBody) {
+        final var explicitChanges = constructBalanceChanges(transactionBody);
         return new ImpliedTransfers(explicitChanges);
     }
 
@@ -605,10 +604,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return false;
     }
 
-    private List<BalanceChange> constructBalanceChanges(
-            final TransactionBody transactionBody, final Address senderAddress) {
+    private List<BalanceChange> constructBalanceChanges(final TransactionBody transactionBody) {
         final List<BalanceChange> allChanges = new ArrayList<>();
-        final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+        final var accountId =
+                EntityIdUtils.accountIdFromEvmAddress(ContractCallContext.get().getSenderAddress());
         final var transferOp = transactionBody.getCryptoTransfer();
         for (final TokenTransferList tokenTransferList : transferOp.getTokenTransfersList()) {
             final var token = tokenTransferList.getToken();

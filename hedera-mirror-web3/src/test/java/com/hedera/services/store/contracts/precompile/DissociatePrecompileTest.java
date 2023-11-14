@@ -18,7 +18,6 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile.decodeDissociate;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
@@ -28,8 +27,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -72,10 +73,12 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -96,6 +99,10 @@ class DissociatePrecompileTest {
 
     private DissociatePrecompile dissociatePrecompile;
     private MultiDissociatePrecompile multiDissociatePrecompile;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private HrcParams hrcParams;
@@ -166,6 +173,8 @@ class DissociatePrecompileTest {
 
     @BeforeEach
     void setup() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         syntheticTxnFactory = new SyntheticTxnFactory();
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
@@ -178,6 +187,11 @@ class DissociatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(dissociatePrecompile, multiDissociatePrecompile));
         subject = new HTSPrecompiledContract(
                 evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -196,7 +210,7 @@ class DissociatePrecompileTest {
 
     @Test
     void dissociateTokenHappyPathWorks() {
-        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -213,12 +227,7 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME,
-                        transactionBody,
-                        store,
-                        hederaEvmContractAliases,
-                        Address.ZERO);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -227,7 +236,7 @@ class DissociatePrecompileTest {
 
     @Test
     void computeMultiDissociateTokenHappyPathWorks() {
-        given(frame.getSenderAddress()).willReturn(senderAddress);
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -244,12 +253,7 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME,
-                        transactionBody,
-                        store,
-                        hederaEvmContractAliases,
-                        Address.ZERO);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -276,12 +280,7 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME,
-                        transactionBody,
-                        store,
-                        hederaEvmContractAliases,
-                        Address.ZERO);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -307,12 +306,7 @@ class DissociatePrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME,
-                        transactionBody,
-                        store,
-                        hederaEvmContractAliases,
-                        senderAddress);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

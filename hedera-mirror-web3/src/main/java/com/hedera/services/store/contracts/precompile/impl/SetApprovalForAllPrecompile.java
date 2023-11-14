@@ -148,8 +148,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(
-            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
         return pricingUtils.getMinimumPriceInTinybars(APPROVE, consensusTime);
     }
 

@@ -17,7 +17,6 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
 import static java.util.function.UnaryOperator.identity;
@@ -25,7 +24,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -55,11 +56,13 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +80,11 @@ public class GrantKycPrecompileTest {
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder());
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private MessageFrame frame;
@@ -133,6 +141,8 @@ public class GrantKycPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenGrantKycToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
@@ -147,6 +157,11 @@ public class GrantKycPrecompileTest {
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -168,8 +183,7 @@ public class GrantKycPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -194,8 +208,7 @@ public class GrantKycPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
         final var result = subject.getPrecompile()
-                .getGasRequirement(
-                        HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

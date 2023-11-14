@@ -24,8 +24,10 @@ import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -110,6 +112,10 @@ class FreezeTokenPrecompileTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<FreezeTokenPrecompile> staticFreezeTokenPrecompile;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -126,6 +132,8 @@ class FreezeTokenPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenFreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
@@ -144,6 +152,7 @@ class FreezeTokenPrecompileTest {
     @AfterEach
     void closeMocks() {
         staticFreezeTokenPrecompile.close();
+        staticMock.close();
     }
 
     @Test
@@ -178,8 +187,8 @@ class FreezeTokenPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
+        final var result =
+                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

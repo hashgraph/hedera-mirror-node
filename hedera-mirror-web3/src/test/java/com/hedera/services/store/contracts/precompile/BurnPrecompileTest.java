@@ -29,8 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -75,11 +77,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -157,6 +161,11 @@ class BurnPrecompileTest {
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
 
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     @Mock
     private com.hedera.services.store.models.Account account;
 
@@ -230,6 +239,8 @@ class BurnPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
@@ -246,6 +257,11 @@ class BurnPrecompileTest {
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -266,8 +282,7 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -292,8 +307,7 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -318,8 +332,7 @@ class BurnPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

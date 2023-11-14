@@ -45,7 +45,6 @@ import com.hederahashgraph.api.proto.java.*;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -80,8 +79,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(
-            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
+    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
         requireNonNull(transactionBody, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(REVOKE_KYC, consensusTime);
     }

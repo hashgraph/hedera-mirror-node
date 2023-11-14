@@ -176,8 +176,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var now = frame.getBlockValues().getTimestamp();
-        gasRequirement =
-                precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties, senderAddress);
+        gasRequirement = precompile.getGasRequirement(now, transactionBody, store, mirrorNodeEvmProperties);
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -402,6 +401,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        ContractCallContext.get().setSenderAddress(senderAddress);
         this.store = updater.getStore();
         this.mirrorNodeEvmProperties = updater.aliases();
     }

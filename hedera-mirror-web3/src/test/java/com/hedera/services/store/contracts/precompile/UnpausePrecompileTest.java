@@ -24,9 +24,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -39,6 +41,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
+import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.UnpauseLogic;
@@ -139,10 +142,20 @@ class UnpausePrecompileTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnpausePrecompile> staticUnpausePrecompile;
+
+    private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     private UnpausePrecompile unpausePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenUnpause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
@@ -160,6 +173,7 @@ class UnpausePrecompileTest {
     @AfterEach
     void closeMocks() {
         staticUnpausePrecompile.close();
+        staticMock.close();
     }
 
     @Test
@@ -178,8 +192,7 @@ class UnpausePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -203,8 +216,8 @@ class UnpausePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases, senderAddress);
+        final long result =
+                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

@@ -86,7 +86,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -275,8 +274,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(
-            final Timestamp consensusTime, final TransactionBody transactionBody, final Address senderAddress) {
+    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
         return 100_000L;
     }
 
@@ -342,7 +340,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         final var tinybarsRequirement = calculatedFeeInTinybars
                 + (calculatedFeeInTinybars / 5)
-                - getMinimumFeeInTinybars(timestamp, transactionBody.build(), senderAddress) * gasPriceInTinybars;
+                - getMinimumFeeInTinybars(timestamp, transactionBody.build()) * gasPriceInTinybars;
 
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
@@ -357,10 +355,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             long blockTimestamp,
             Builder transactionBody,
             Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases,
-            Address senderAddress) {
+            HederaEvmContractAliases mirrorEvmContractAliases) {
         return getMinimumFeeInTinybars(
-                Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build(), senderAddress);
+                Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build());
     }
 
     /**

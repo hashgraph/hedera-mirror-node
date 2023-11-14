@@ -29,9 +29,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -76,11 +78,13 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -128,6 +132,11 @@ class MintPrecompileTest {
                     + "0000000000000000000000000000000000000000000000000000000000000003");
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private Id id;
@@ -205,6 +214,8 @@ class MintPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenMint, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
@@ -221,6 +232,11 @@ class MintPrecompileTest {
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -242,8 +258,7 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -267,8 +282,7 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -292,8 +306,7 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
         subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
@@ -317,8 +330,7 @@ class MintPrecompileTest {
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a);
         final long result = subject.getPrecompile()
-                .getGasRequirement(
-                        TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases, senderAddress);
+                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
