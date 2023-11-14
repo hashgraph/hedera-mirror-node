@@ -92,7 +92,7 @@ public class AccountFeature extends AbstractFeature {
         startingBalance = accountClient.getBalance(senderAccountId);
 
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount), null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -103,7 +103,8 @@ public class AccountFeature extends AbstractFeature {
                 "ED25519".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() : PrivateKey.generateECDSA();
 
         receiverAccountId = recipientPrivateKey.toAccountId(0, 0);
-        networkTransactionResponse = accountClient.sendCryptoTransfer(receiverAccountId, Hbar.fromTinybars(amount));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(receiverAccountId, Hbar.fromTinybars(amount), null);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -136,7 +137,7 @@ public class AccountFeature extends AbstractFeature {
     public void sendTinyHbars(long amount) {
         startingBalance = accountClient.getBalance(senderAccountId);
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount), null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -146,7 +147,7 @@ public class AccountFeature extends AbstractFeature {
         senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
         startingBalance = accountClient.getBalance(senderAccountId);
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount), null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -156,7 +157,7 @@ public class AccountFeature extends AbstractFeature {
         senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
         startingBalance = accountClient.getBalance(senderAccountId);
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.from(amount));
+                accountClient.sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.from(amount), null);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }

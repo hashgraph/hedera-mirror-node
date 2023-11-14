@@ -25,6 +25,7 @@ import ContractAction from './contractAction.js';
 import ContractLog from './contractLog';
 import ContractResult from './contractResult';
 import ContractStateChange from './contractStateChange';
+import ContractTransactionHash from './contractTransactionHash';
 import CryptoTransfer from './cryptoTransfer';
 import CustomFee from './customFee';
 import Entity from './entity';
@@ -69,6 +70,7 @@ export {
   ContractLog,
   ContractResult,
   ContractStateChange,
+  ContractTransactionHash,
   CryptoTransfer,
   CustomFee,
   Entity,

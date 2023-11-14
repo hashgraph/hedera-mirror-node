@@ -80,7 +80,7 @@ class DissociateLogicTest {
     public void beforeEach() {
         when(accountId.asEvmAddress()).thenReturn(accountAddress);
         account = new Account(0L, accountId, 0L);
-        tokenRelationship = new TokenRelationship(token, account, false);
+        tokenRelationship = new TokenRelationship(token, account);
         dissociateLogic = new DissociateLogic();
         spyAccount = spy(account);
     }
@@ -137,17 +137,33 @@ class DissociateLogicTest {
 
     @Test
     void verifyDissociationForDeletedToken() {
-        final var updatedSpy = spyAccount.setOwnedNfts(5L);
+        final var initialOwnedNfts = 5L;
+        final var balanceToDeduct = 3L;
+        final var updatedSpy = spyAccount.setOwnedNfts(initialOwnedNfts);
         spyAccount = spy(updatedSpy);
-        tokenRelationship = tokenRelationship.setBalance(3L);
+        tokenRelationship = tokenRelationship.setBalance(balanceToDeduct);
         tokenRelationship = tokenRelationship.setNotYetPersisted(false);
+        tokenRelationship = tokenRelationship.setAccount(spyAccount);
+
         setupToken();
-        setupTokenRelationship();
+
+        final var expectedTokenRelationship = tokenRelationship
+                .markAsDestroyed()
+                .setBalance(0L)
+                .setAccount(spyAccount.setOwnedNfts(initialOwnedNfts - balanceToDeduct));
+
+        when(store.hasAssociation(any(TokenRelationshipKey.class))).thenReturn(true);
+        when(store.getTokenRelationship(any(TokenRelationshipKey.class), any(OnMissing.class)))
+                .thenReturn(tokenRelationship)
+                .thenReturn(expectedTokenRelationship);
+
         when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         setupAccount();
         when(token.isDeleted()).thenReturn(true);
+
         dissociateLogic.dissociate(accountAddress, tokenAddresses, store);
-        verify(store).updateTokenRelationship(any(TokenRelationship.class));
+
+        verify(store).deleteTokenRelationship(expectedTokenRelationship);
     }
 
     @Test
@@ -226,7 +242,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, false, 3L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, 3L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
@@ -263,7 +279,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, false, 0L);
+                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, 0L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
