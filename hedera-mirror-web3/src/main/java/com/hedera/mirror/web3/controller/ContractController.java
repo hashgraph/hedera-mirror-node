@@ -37,7 +37,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
@@ -147,13 +146,6 @@ class ContractController {
     private Mono<GenericErrorResponse> mirrorEvmTransactionException(final MirrorEvmTransactionException e) {
         log.warn("Mirror EVM transaction error: {}", e.getMessage());
         return errorResponse(e.getMessage(), e.getDetail(), e.getData());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> invalidTransactionException(final InvalidTransactionException e) {
-        log.warn("Invalid transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage(), e.getResponseCode().name(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler

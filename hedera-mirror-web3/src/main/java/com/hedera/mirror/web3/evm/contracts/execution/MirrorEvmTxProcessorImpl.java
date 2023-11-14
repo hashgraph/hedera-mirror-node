@@ -16,12 +16,11 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -36,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeFactory;
@@ -120,7 +120,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
             final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
 
-            validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+            // If there is no bytecode, it means we have a non-token and non-contract account,
+            // hence the code should be null and there must be a value transfer.
+            if (code == null && value <= 0) {
+                throw new MirrorEvmTransactionException(
+                        ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            }
 
             return baseInitialFrame
                     .type(MessageFrame.Type.MESSAGE_CALL)
