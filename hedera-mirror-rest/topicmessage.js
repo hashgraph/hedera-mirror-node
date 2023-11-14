@@ -182,15 +182,15 @@ const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
       continue;
     }
 
-    // handle keys that do not require formatting first
     if (filter.key === constants.filterKeys.ORDER) {
       order = filter.value;
       continue;
     }
 
     if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
+      // validating seq number for invalid operators
       bound.parse(filter);
-      // handle the case for seqnumber =
+
       if (utils.gtGte.includes(filter.operator)) {
         lowerLimit = Number(filter.value);
       }
@@ -200,7 +200,8 @@ const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
       // check for null
       if (lowerLimit !== undefined && upperLimit !== undefined) {
         if (lowerLimit === upperLimit) {
-          return {};
+          // need to return an empty response
+          return null;
         }
       }
       console.log(`lowerLimit is ${lowerLimit}`);
@@ -239,6 +240,9 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 
   if (config.query.v2.topicMessageLookups) {
     const timestamp_range = await getTopicMessageTimestamps(topicId, filters);
+    if (timestamp_range === null) {
+      return {};
+    }
     pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= ${timestamp_range.numrange.begin}  and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${timestamp_range.numrange.end}`;
   }
 
@@ -282,6 +286,9 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 
 const getTopicMessageTimestamps = async (topicId, filters) => {
   const pgObject = await extractSqlForTopicMessagesLookup(topicId, filters);
+  if (pgObject === null) {
+    return null;
+  }
   const params = pgObject.params;
   const query = pgObject.query;
 
