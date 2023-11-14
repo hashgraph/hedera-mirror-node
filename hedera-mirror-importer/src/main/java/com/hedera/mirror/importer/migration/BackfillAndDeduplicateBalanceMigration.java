@@ -180,7 +180,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.89.1"); // The version balance table partitions are created
+        return MigrationVersion.fromVersion("1.89.2"); // The version balance table partitions are created
     }
 
     @Nonnull
