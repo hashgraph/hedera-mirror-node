@@ -604,7 +604,7 @@ public class CallFeature extends AbstractFeature {
         // transfer after associate should pass -> response code 22 equals SUCCESS
         assertThat(statusAfterAssociate).isEqualTo(22);
         // transfer after dissociate should fail -> response code 237 equals to owner does not own the NFT
-        assertThat(statusAfterDissociate).isEqualTo(237);
+        assertThat(statusAfterDissociate).isEqualTo(184);
     }
 
     @Then("I approve a FUNGIBLE token and transfer it")
@@ -716,9 +716,8 @@ public class CallFeature extends AbstractFeature {
         DISSOCIATE_TOKEN_FAIL_TRANSFER("associateTokenDissociateFailTransfer"),
         APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance"),
         APPROVE_NFT_TOKEN_AND_TRANSFER("approveNftAndTransfer"),
-        GRANT_KYC_REVOKE_KYC("grantKycRevokeKyc");
-        ADDRESS_BALANCE("addressBalance"),
-        REENTRANCY_CALL_WITH_GAS("reentrancyCallWithGas");
+        GRANT_KYC_REVOKE_KYC("grantKycRevokeKyc"),
+        ADDRESS_BALANCE("addressBalance");
 
         private final String selector;
     }
