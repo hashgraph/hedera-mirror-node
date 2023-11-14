@@ -249,7 +249,7 @@ class StoreImplTest {
     @Test
     void updateTokenRelationship() {
         var tokenRel = new TokenRelationship(
-                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L), false);
+                new com.hedera.services.store.models.Token(TOKEN_ID), new Account(0L, ACCOUNT_ID, 0L));
         subject.wrap();
         subject.updateTokenRelationship(tokenRel);
         // tokenRel is now persisted in store
@@ -258,6 +258,38 @@ class StoreImplTest {
                 tokenRel,
                 subject.getTokenRelationship(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW));
+    }
+
+    @Test
+    void deleteTokenRelationship() {
+        setupTokenAndAccount();
+
+        final var tokenRelationship = subject.getTokenRelationship(
+                new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
+
+        subject.wrap();
+        subject.deleteTokenRelationship(tokenRelationship);
+
+        var postDeleteRelationship = subject.getTokenRelationship(
+                new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
+
+        assertThat(postDeleteRelationship.getToken().getId()).isEqualTo(Id.DEFAULT);
+        assertThat(postDeleteRelationship.getAccount().getId()).isEqualTo(Id.DEFAULT);
+    }
+
+    @Test
+    void deleteNotExistingTokenRelationship() {
+        final var tokenRelationship = subject.getTokenRelationship(
+                new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
+
+        subject.wrap();
+        subject.deleteTokenRelationship(tokenRelationship);
+
+        var postDeleteRelationship = subject.getTokenRelationship(
+                new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
+
+        assertThat(postDeleteRelationship.getToken().getId()).isEqualTo(Id.DEFAULT);
+        assertThat(postDeleteRelationship.getAccount().getId()).isEqualTo(Id.DEFAULT);
     }
 
     @Test
@@ -330,5 +362,19 @@ class StoreImplTest {
         assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();
         assertThat(subject.hasApprovedForAll(ACCOUNT_ADDRESS, accountId, tokenId))
                 .isFalse();
+    }
+
+    private void setupTokenAndAccount() {
+        when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
+        when(tokenModel.getId()).thenReturn(6L);
+        when(tokenModel.getNum()).thenReturn(6L);
+        when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
+        when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(accountModel.getId()).thenReturn(19L);
+        when(accountModel.getNum()).thenReturn(19L);
+        when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
+        when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
     }
 }

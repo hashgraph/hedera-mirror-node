@@ -982,6 +982,8 @@ public class RecordItemBuilder {
         private final RecordItem.RecordItemBuilder recordItemBuilder;
 
         private Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
+        private Predicate<EntityId> contractTransactionPredicate =
+                (entityId) -> persistProperties.isContractTransaction();
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
@@ -1015,6 +1017,7 @@ public class RecordItemBuilder {
                     .collect(Collectors.toList());
 
             return recordItemBuilder
+                    .contractTransactionPredicate(contractTransactionPredicate)
                     .entityTransactionPredicate(entityTransactionPredicate)
                     .transactionRecord(record)
                     .transaction(transaction)
@@ -1024,6 +1027,11 @@ public class RecordItemBuilder {
 
         public Builder<T> entityTransactionPredicate(Predicate<EntityId> entityTransactionPredicate) {
             this.entityTransactionPredicate = entityTransactionPredicate;
+            return this;
+        }
+
+        public Builder<T> contractTransactionPredicate(Predicate<EntityId> contractTransactionPredicate) {
+            this.contractTransactionPredicate = contractTransactionPredicate;
             return this;
         }
 

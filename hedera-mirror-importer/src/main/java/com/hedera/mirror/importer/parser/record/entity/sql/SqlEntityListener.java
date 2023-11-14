@@ -27,6 +27,8 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
@@ -110,6 +112,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
+    private final Collection<ContractTransaction> contractTransactions;
+    private final Collection<ContractTransactionHash> contractTransactionHashes;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
@@ -179,6 +183,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
+        contractTransactions = new ArrayList<>();
+        contractTransactionHashes = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
@@ -268,6 +274,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResults.add(contractResult);
+        if (entityProperties.getPersist().isContractTransactionHash()) {
+            contractTransactionHashes.add(contractResult.toContractTransactionHash());
+        }
     }
 
     @Override
@@ -285,6 +294,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             state.setSlot(contractStateChange.getSlot());
             state.setValue(value);
             contractStates.merge(state.getId(), state, this::mergeContractState);
+        }
+    }
+
+    @Override
+    public void onContractTransactions(Collection<ContractTransaction> contractTransactions) {
+        if (entityProperties.getPersist().isContractTransaction()) {
+            this.contractTransactions.addAll(contractTransactions);
         }
     }
 
@@ -503,6 +519,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractResults.clear();
             contractStateChanges.clear();
             contractStates.clear();
+            contractTransactions.clear();
+            contractTransactionHashes.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
@@ -554,6 +572,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
+            batchPersister.persist(contractTransactions);
+            batchPersister.persist(contractTransactionHashes);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
             batchPersister.persist(entityTransactions);

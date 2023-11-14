@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -63,6 +64,7 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.ContractStateRepository;
+import com.hedera.mirror.importer.repository.ContractTransactionRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
@@ -93,6 +95,7 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -121,6 +124,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final ContractResultRepository contractResultRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final ContractStateRepository contractStateRepository;
+    private final ContractTransactionRepository contractTransactionRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final CustomFeeRepository customFeeRepository;
@@ -405,6 +409,45 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void onContractTransactionsPersistEnabled() {
+        var currentEnabledValue = entityProperties.getPersist().isContractTransaction();
+        entityProperties.getPersist().setContractTransaction(true);
+        ContractTransaction contractTransaction1 =
+                domainBuilder.contractTransaction().get();
+        ContractTransaction contractTransaction2 =
+                domainBuilder.contractTransaction().get();
+        ContractTransaction contractTransaction3 =
+                domainBuilder.contractTransaction().get();
+
+        sqlEntityListener.onContractTransactions(
+                Arrays.asList(contractTransaction1, contractTransaction2, contractTransaction3));
+        completeFileAndCommit();
+
+        assertThat(contractTransactionRepository.findAll())
+                .containsExactlyInAnyOrder(contractTransaction1, contractTransaction2, contractTransaction3);
+        entityProperties.getPersist().setContractTransaction(currentEnabledValue);
+    }
+
+    @Test
+    void onContractTransactionsPersistDisabled() {
+        var currentEnabledValue = entityProperties.getPersist().isContractTransaction();
+        entityProperties.getPersist().setContractTransaction(false);
+        ContractTransaction contractTransaction1 =
+                domainBuilder.contractTransaction().get();
+        ContractTransaction contractTransaction2 =
+                domainBuilder.contractTransaction().get();
+        ContractTransaction contractTransaction3 =
+                domainBuilder.contractTransaction().get();
+
+        sqlEntityListener.onContractTransactions(
+                Arrays.asList(contractTransaction1, contractTransaction2, contractTransaction3));
+        completeFileAndCommit();
+
+        assertThat(contractTransactionRepository.findAll()).isEmpty();
+        entityProperties.getPersist().setContractTransaction(currentEnabledValue);
     }
 
     @Test

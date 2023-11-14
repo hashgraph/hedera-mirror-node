@@ -18,19 +18,20 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
 
 import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
-import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
 import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 class NotifyingEntityListenerTest extends BatchEntityListenerTest {
@@ -47,9 +48,9 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
     @Test
     void onTopicMessagePayloadTooLong() throws InterruptedException {
         // given
-        TopicMessage topicMessage = topicMessage();
+        TopicMessage topicMessage = domainBuilder.topicMessage().get();
         topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
+        var topicMessages = subscribe(topicMessage.getTopicId());
 
         // when
         entityListener.onTopicMessage(topicMessage);
@@ -64,30 +65,44 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
     }
 
     @Override
-    protected Flux<TopicMessage> subscribe(long topicNum) {
-        try (var conn = dataSource.getConnection()) {
-            PgConnection connection = conn.unwrap(PgConnection.class);
-            connection.execSQLUpdate("listen topic_message");
-            return Flux.defer(() -> getNotifications(connection)).repeat().timeout(Duration.ofSeconds(2));
+    protected Flux<TopicMessage> subscribe(EntityId topicId) {
+        try {
+            var connection = dataSource.getConnection();
+            var pgConnection = connection.unwrap(PgConnection.class);
+            pgConnection.execSQLUpdate("listen topic_message");
+            return Flux.defer(() -> getNotifications(pgConnection, topicId))
+                    .repeat()
+                    .subscribeOn(Schedulers.parallel())
+                    .timeout(Duration.ofSeconds(3))
+                    .doFinally(s -> {
+                        try {
+                            connection.close();
+                        } catch (SQLException e) {
+                            // Ignore
+                        }
+                    })
+                    .doOnSubscribe(s -> log.info("Subscribed to {}", topicId));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return Flux.error(e);
         }
     }
 
-    private Flux<TopicMessage> getNotifications(PgConnection pgConnection) {
-        Collection<TopicMessage> topicMessages = new ArrayList<>();
+    private Flux<TopicMessage> getNotifications(PgConnection pgConnection, EntityId topicId) {
         try {
-            PGNotification[] notifications = pgConnection.getNotifications(100);
+            var topicMessages = new ArrayList<TopicMessage>();
+            var notifications = pgConnection.getNotifications(100);
+
             if (notifications != null) {
-                for (PGNotification pgNotification : notifications) {
-                    TopicMessage topicMessage =
-                            OBJECT_MAPPER.readValue(pgNotification.getParameter(), TopicMessage.class);
-                    topicMessages.add(topicMessage);
+                for (var pgNotification : notifications) {
+                    var topicMessage = OBJECT_MAPPER.readValue(pgNotification.getParameter(), TopicMessage.class);
+                    if (topicId.equals(topicMessage.getTopicId())) {
+                        topicMessages.add(topicMessage);
+                    }
                 }
             }
             return Flux.fromIterable(topicMessages);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return Flux.error(e);
         }
     }
 }
