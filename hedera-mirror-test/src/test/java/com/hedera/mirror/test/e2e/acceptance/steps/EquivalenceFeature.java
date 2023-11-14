@@ -16,17 +16,21 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
+import java.math.BigInteger;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,14 +38,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EquivalenceFeature extends AbstractFeature {
-    private DeployedContract deployedEquivalenceDestruct;
-    private String equivalenceContractSolidityAddress;
+    private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
+    private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
+    private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
-    @Given("I successfully create in-equivalence contract")
-    public void createNewEstimateContract() throws IOException {
+    private DeployedContract deployedEquivalenceDestruct;
+    private DeployedContract deployedEquivalenceCall;
+    private String equivalenceDestructContractSolidityAddress;
+    private String equivalenceCallContractSolidityAddress;
+
+    @Given("I successfully create selfdestruct contract")
+    public void createNewSelfDestructContract() throws IOException {
         deployedEquivalenceDestruct = getContract(EQUIVALENCE_DESTRUCT);
-        equivalenceContractSolidityAddress =
+        equivalenceDestructContractSolidityAddress =
                 deployedEquivalenceDestruct.contractId().toSolidityAddress();
+    }
+
+    @Given("I successfully create equivalence call contract")
+    public void createNewEquivalenceCallContract() throws IOException {
+        deployedEquivalenceCall = getContract(EQUIVALENCE_CALL);
+        equivalenceCallContractSolidityAddress =
+                deployedEquivalenceCall.contractId().toSolidityAddress();
     }
 
     @Then("the mirror node REST API should return status {int} for the contracts creation")
@@ -57,7 +74,7 @@ public class EquivalenceFeature extends AbstractFeature {
                 deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
-        assertEquals(extractedStatus, "INVALID_SOLIDITY_ADDRESS");
+        assertEquals(extractedStatus, INVALID_SOLIDITY_ADDRESS_EXCEPTION);
     }
 
     @Then("I execute selfdestruct and set beneficiary to valid {string} address")
@@ -67,7 +84,56 @@ public class EquivalenceFeature extends AbstractFeature {
         var message = executeContractCallTransaction(
                 deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
-        assertEquals(message, "Transaction successful");
+        assertEquals(message, TRANSACTION_SUCCESSFUL_MESSAGE);
+    }
+
+    @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
+    public void selfDestructAndSetBeneficiaryToDeletedContract() {
+        var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
+        var message = executeContractCallTransaction(
+                deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals(extractedStatus, OBTAINER_SAME_CONTRACT_ID_EXCEPTION);
+    }
+
+    @Then("I execute balance opcode to system account {string} address would return 0")
+    public void balanceOfAddress(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getBalance", parameters);
+        assertEquals(functionResult.getInt256(0), new BigInteger("0"));
+    }
+
+    @Then("I execute balance opcode against a contract with balance")
+    public void balanceOfContract() {
+        var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getBalance", parameters);
+        assertEquals(functionResult.getInt256(0), new BigInteger("10000"));
+    }
+
+    @Then("I verify extcodesize opcode against a system account {string} address returns 0")
+    public void extCodeSizeAgainstSystemAccount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getCodeSize", parameters);
+        assertEquals(functionResult.getInt256(0), new BigInteger("0"));
+    }
+
+    @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
+    public void extCodeCopyAgainstSystemAccount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "copyCode", parameters);
+        assertArrayEquals(functionResult.getBytes(0), new byte[0]);
+    }
+
+    @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
+    public void extCodeHashAgainstSystemAccount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getCodeHash", parameters);
+        assertArrayEquals(functionResult.getBytes(0), new byte[0]);
     }
 
     private static long extractAccountNumber(String account) {
@@ -106,10 +172,23 @@ public class EquivalenceFeature extends AbstractFeature {
 
             networkTransactionResponse = executeContractResult.networkTransactionResponse();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
-            return "Transaction successful"; // Or any other success message or relevant data
+            return "Transaction successful";
         } catch (Exception e) {
             // Return the exception message
             return e.getMessage();
         }
+    }
+
+    private ContractFunctionResult executeContractCallQuery(
+            ContractId contractId, String functionName, ContractFunctionParameters parameters) {
+        return contractClient.executeContractQuery(
+                contractId,
+                functionName,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                parameters);
     }
 }
