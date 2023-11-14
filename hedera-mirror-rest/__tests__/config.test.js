@@ -199,7 +199,6 @@ describe('Override query config', () => {
       maxTransactionConsensusTimestampRange: '10m',
     };
     const expected = {
-      deduplicateBalances: false,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTimestampRangeNs: 86400000000000n,
