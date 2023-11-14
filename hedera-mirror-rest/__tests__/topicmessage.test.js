@@ -20,7 +20,6 @@ import {assertSqlQueryEqual} from './testutils';
 import topicmessage from '../topicmessage';
 import config from '../config.js';
 
-config.query.v2.topicMessageLookups = false;
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
     verifyInvalidConsensusTimestamp(-1234567890.000000001);
@@ -109,6 +108,7 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   test('extractSqlFromTopicMessagesRequest', () => {
+    config.query.v2.topicMessageLookups = false;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
       {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
