@@ -23,6 +23,7 @@ import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprov
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
@@ -32,6 +33,7 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -40,14 +42,14 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +60,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class SyntheticCryptoTransferApprovalsMigrationTest extends AbstractAsyncJavaMigrationTest {
+class SyntheticCryptoTransferApprovalsMigrationTest extends IntegrationTest {
 
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
@@ -83,16 +85,12 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends AbstractAsyncJavaMig
     private Entity noKeyEntity;
     private Entity thresholdTwoKeyEntity;
 
-    @AfterEach
-    void after() throws Exception {
-        Field activeField = migration.getClass().getDeclaredField("executed");
-        activeField.setAccessible(true);
-        activeField.set(migration, new AtomicBoolean(false));
-    }
-
     @BeforeEach
+    @SneakyThrows
     void setup() {
         mirrorProperties.setNetwork(MAINNET);
+        migration.setExecuted(false);
+        migration.setComplete(false);
     }
 
     @AfterEach
@@ -224,9 +222,11 @@ class SyntheticCryptoTransferApprovalsMigrationTest extends AbstractAsyncJavaMig
 
         // when
         migration.onEnd(RECORD_FILE);
+        while (!migration.isComplete()) {
+            Uninterruptibles.sleepUninterruptibly(100L, TimeUnit.MILLISECONDS);
+        }
 
         // then
-        waitForCompletion(migration);
         assertTransfers(cryptoTransfersPair, nftTransfersTransactionPair, tokenTransfersPair);
     }
 

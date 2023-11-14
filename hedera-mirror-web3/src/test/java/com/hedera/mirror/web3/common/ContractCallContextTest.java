@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.web3.common;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.UNSET_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import org.junit.jupiter.api.Test;
 
 class ContractCallContextTest {
+
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
     void testGet() {
@@ -53,15 +55,14 @@ class ContractCallContextTest {
     }
 
     @Test
-    void testBlockTimestampIsClearedOnReset() {
+    void testRecordFileIsClearedOnReset() {
         ContractCallContext context = ContractCallContext.init(null);
-
-        long blockTimestamp = 1234567890L;
-        context.setBlockTimestamp(blockTimestamp);
-        assertThat(context.getBlockTimestamp()).isEqualTo(blockTimestamp);
+        final var recordFile = domainBuilder.recordFile().get();
+        context.setRecordFile(recordFile);
+        assertThat(context.getRecordFile()).isEqualTo(recordFile);
 
         context.reset();
-        assertThat(context.getBlockTimestamp()).isEqualTo(UNSET_TIMESTAMP);
+        assertThat(context.getRecordFile()).isNull();
 
         context.close();
     }

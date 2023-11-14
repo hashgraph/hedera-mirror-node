@@ -34,9 +34,6 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     protected final BatchEntityListener entityListener;
     protected final EntityListenerProperties properties;
 
-    private long consensusTimestamp = 1;
-    private long sequenceNumber = 1;
-
     @BeforeEach
     void setup() {
         properties.setEnabled(true);
@@ -52,21 +49,30 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onTopicMessage() throws InterruptedException {
+    void onTopicMessage() {
         // given
-        TopicMessage topicMessage1 = topicMessage();
-        TopicMessage topicMessage2 = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage1.getTopicId().getId());
-
-        // when
-        entityListener.onTopicMessage(topicMessage1);
-        entityListener.onTopicMessage(topicMessage2);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
-        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+        var topicId = EntityId.of(0L, 0L, 1000L);
+        var topicMessage1 =
+                domainBuilder.topicMessage().customize(t -> t.topicId(topicId)).get();
+        var topicMessage2 =
+                domainBuilder.topicMessage().customize(t -> t.topicId(topicId)).get();
+        var topicMessages = subscribe(topicId);
 
         // then
         StepVerifier.withVirtualTime(() -> topicMessages)
                 .thenAwait(Duration.ofSeconds(10L))
+                .then(() -> {
+                    try {
+                        // when
+                        entityListener.onTopicMessage(topicMessage1);
+                        entityListener.onTopicMessage(topicMessage2);
+                        entityListener.onSave(new EntityBatchSaveEvent(this));
+                        entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .thenAwait(Duration.ofSeconds(2L))
                 .expectNext(topicMessage1, topicMessage2)
                 .thenCancel()
                 .verify(Duration.ofMillis(2000));
@@ -75,7 +81,7 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessageEmpty() throws InterruptedException {
         // given
-        Flux<TopicMessage> topicMessages = subscribe(1);
+        var topicMessages = subscribe(EntityId.of(1L));
 
         // when
         entityListener.onSave(new EntityBatchSaveEvent(this));
@@ -93,8 +99,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     void onTopicMessageDisabled() throws InterruptedException {
         // given
         properties.setEnabled(false);
-        TopicMessage topicMessage = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
+        var topicMessage = domainBuilder.topicMessage().get();
+        var topicMessages = subscribe(topicMessage.getTopicId());
 
         // when
         entityListener.onTopicMessage(topicMessage);
@@ -112,8 +118,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
     @Test
     void onCleanup() throws InterruptedException {
         // given
-        TopicMessage topicMessage = topicMessage();
-        Flux<TopicMessage> topicMessages = subscribe(topicMessage.getTopicId().getId());
+        var topicMessage = domainBuilder.topicMessage().get();
+        var topicMessages = subscribe(topicMessage.getTopicId());
 
         // when
         entityListener.onTopicMessage(topicMessage);
@@ -128,20 +134,5 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
                 .verify(Duration.ofMillis(500));
     }
 
-    protected abstract Flux<TopicMessage> subscribe(long topicNum);
-
-    protected TopicMessage topicMessage() {
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(consensusTimestamp++);
-        topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000"));
-        topicMessage.setRunningHash("running hash".getBytes());
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(sequenceNumber++);
-        topicMessage.setTopicId(EntityId.of("0.0.101"));
-        topicMessage.setValidStartTimestamp(4L);
-        return topicMessage;
-    }
+    protected abstract Flux<TopicMessage> subscribe(EntityId topicId);
 }

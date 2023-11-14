@@ -232,7 +232,7 @@ public class ContractFeature extends AbstractFeature {
     @And("I create a hollow account using CryptoTransfer of {int} to the evm address")
     public void createHollowAccountWithCryptoTransfertoEvmAddress(int amount) {
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(create2ChildContractAccountId, Hbar.fromTinybars(amount));
+                accountClient.sendCryptoTransfer(create2ChildContractAccountId, Hbar.fromTinybars(amount), null);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

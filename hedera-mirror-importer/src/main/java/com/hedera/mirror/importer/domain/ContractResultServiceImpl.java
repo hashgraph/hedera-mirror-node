@@ -273,7 +273,9 @@ public class ContractResultServiceImpl implements ContractResultService {
 
             processContractLogs(functionResult, contractResult, recordItem);
         }
-
+        recordItem.addContractTransaction(contractEntityId);
+        // Add the transaction payer account id to enable proper lookup by transaction id
+        recordItem.addContractTransaction(contractResult.getPayerAccountId());
         entityListener.onContractResult(contractResult);
     }
 
@@ -312,6 +314,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractLog.setTransactionIndex(recordItem.getTransactionIndex());
             entityListener.onContractLog(contractLog);
 
+            recordItem.addContractTransaction(contractId);
             recordItem.addEntityId(contractId);
         }
     }
@@ -337,6 +340,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             entityListener.onContractStateChange(contractStateChange);
+            recordItem.addContractTransaction(contractId);
         }
 
         recordItem.addEntityId(contractId);
