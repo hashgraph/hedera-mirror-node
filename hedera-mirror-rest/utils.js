@@ -25,12 +25,12 @@ import pgRange, {Range} from 'pg-range';
 import util from 'util';
 
 import * as constants from './constants';
+import {filterKeys} from './constants';
 import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
 import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
-import {filterKeys} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -676,6 +676,83 @@ const parseResultParams = (req, columnName) => {
     query = `${columnName} != ${resultSuccess}`;
   }
   return query;
+};
+
+/**
+ * Based on the request parameters provided by the client, determine what makes
+ * for reasonable upper and lower timestamp bounds so that a limited number
+ * of partitions are accessed in the V2/Citus environment.
+ *
+ * Utilize any client provided upper (lte, lt) and/or lower (gte, gt) timestamp
+ * parameter values. If both are present, then no modification is necessary.
+ * Otherwise, calculate the missing bound based on offsetting by config.query.maxTimestampRangeNs.
+ * If neither is provided, set the upper bound to the current epoch time and
+ * calculate the lower based on that.
+ *
+ * This processing happens only when config.query.bindTimestampRange is true.
+ * timestamp request parameter value(s) are added and returned to the caller
+ * that then provides them for downstream processing, including validation
+ * and inclusion into generated SQL.
+ *
+ * @param parsedQueryParams the current request query parameters
+ * @return {Object} the potentially modified query parameters.
+ */
+const computeTimestampBounds = (parsedQueryParams) => {
+  const {bindTimestampRange, maxTimestampRangeNs} = config.query;
+  if (!bindTimestampRange) {
+    return parsedQueryParams;
+  }
+
+  let lowerBoundOpAndValue;
+  let upperBoundOpAndValue;
+
+  let queryTsValues = parsedQueryParams[constants.filterKeys.TIMESTAMP];
+  if (_.isNil(queryTsValues)) {
+    queryTsValues = [];
+  } else if (!Array.isArray(queryTsValues)) {
+    queryTsValues = [queryTsValues];
+  }
+
+  queryTsValues.forEach((tsValue) => {
+    const opAndValue = parseOperatorAndValueFromQueryParam(tsValue);
+    if (gtGte.includes(opAndValue.op)) {
+      lowerBoundOpAndValue = opAndValue;
+    } else if (ltLte.includes(opAndValue.op)) {
+      upperBoundOpAndValue = opAndValue;
+    }
+  });
+
+  // Fully bounded by client params. Return unmodified params for downstream use.
+  if (lowerBoundOpAndValue !== undefined && upperBoundOpAndValue !== undefined) {
+    return parsedQueryParams;
+  }
+
+  let lowerBoundNs;
+  let upperBoundNs;
+
+  // Derive and add query timestamp param upper and lower bounds based on what
+  // is already present.
+  if (lowerBoundOpAndValue === undefined) {
+    if (upperBoundOpAndValue === undefined) {
+      upperBoundNs = BigInt(Date.now()) * 1000000n;
+      const upperBoundQueryValue = `${constants.queryParamOperators.lte}:${nsToSecNs(upperBoundNs)}`;
+      queryTsValues.push(upperBoundQueryValue);
+    } else {
+      upperBoundNs = BigInt(parseTimestampParam(upperBoundOpAndValue.value));
+    }
+
+    lowerBoundNs = upperBoundNs - maxTimestampRangeNs;
+    const lowerBoundQueryValue = `${constants.queryParamOperators.gte}:${nsToSecNs(lowerBoundNs)}`;
+    queryTsValues.push(lowerBoundQueryValue);
+  } else {
+    lowerBoundNs = BigInt(parseTimestampParam(lowerBoundOpAndValue.value));
+    upperBoundNs = lowerBoundNs + maxTimestampRangeNs;
+    const upperBoundQueryValue = `${constants.queryParamOperators.lte}:${nsToSecNs(upperBoundNs)}`;
+    queryTsValues.push(upperBoundQueryValue);
+  }
+
+  parsedQueryParams[constants.filterKeys.TIMESTAMP] = queryTsValues;
+  return parsedQueryParams;
 };
 
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
@@ -1685,6 +1762,7 @@ export {
   buildPgSqlObject,
   calculateExpiryTimestamp,
   checkTimestampRange,
+  computeTimestampBounds,
   conflictingPathParam,
   convertGasPriceToTinyBars,
   convertMySqlStyleQueryToPostgres,

@@ -575,7 +575,7 @@ const getTransactionsInnerQuery = function (
 
 const reqToSql = function (req) {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
-  const parsedQueryParams = req.query;
+  const parsedQueryParams = utils.computeTimestampBounds(req.query);
   const sqlParams = [];
   let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
   accountQuery = utils.convertMySqlStyleQueryToPostgres(accountQuery, sqlParams.length + 1);
@@ -594,7 +594,7 @@ const reqToSql = function (req) {
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   sqlParams.push(...params);
 
-  const innerQuery = getTransactionsInnerQuery(
+  const timestampQuery = getTransactionsInnerQuery(
     accountQuery,
     tsQuery,
     resultTypeQuery,
@@ -603,7 +603,16 @@ const reqToSql = function (req) {
     transactionTypeQuery,
     order
   );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+
+  const pgSqlTimestampQuery = utils.convertMySqlStyleQueryToPostgres(timestampQuery, sqlParams.length);
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTransactions timestamp query: ${pgSqlTimestampQuery} ${utils.JSONStringify(sqlParams)}`);
+  }
+
+  // const {rows} = await pool.queryQuietly(pgSqlTimestampQuery, sqlParams);
+
+  const sqlQuery = getTransactionsOuterQuery(timestampQuery, order);
 
   return {
     limit,
