@@ -1,0 +1,9 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-web3-env
+  namespace: {{ .Values.testkube.namespace }}
+data:
+  {{- toYaml | .Values.testkube.test.config.web3 | nindent 2 }}
+{{- end }}

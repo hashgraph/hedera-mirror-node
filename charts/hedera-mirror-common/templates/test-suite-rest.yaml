@@ -12,14 +12,6 @@ spec:
         name: BASE_URL
         type: basic
         value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
-      DEFAULT_DURATION:
-        name: DEFAULT_DURATION
-        type: basic
-        value: {{ .Values.testkube.test.duration }}
-      DEFAULT_VUS:
-        name: DEFAULT_VUS
-        type: basic
-        value: {{ quote .Values.testkube.test.vus }}
       TEST_REPORTS_DIR:
         name: TEST_REPORTS_DIR
         type: basic
@@ -32,7 +24,11 @@ spec:
   {{- end }}
   steps:
     - delay:
-        duration: 600000
+        duration: 100000
     - execute:
         name: test-rest
+    - delay:
+        duration: 600000
+    - execute:
+        name: test-web3
 {{- end }}

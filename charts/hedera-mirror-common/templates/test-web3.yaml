@@ -2,7 +2,7 @@
 apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
-  name: test-rest
+  name: test-web3
   namespace: {{ .Values.testkube.namespace }}
 spec:
   content:
@@ -14,7 +14,7 @@ spec:
     type: git-dir
   executionRequest:
     args:
-      - /data/repo/hedera-mirror-test/k6/src/rest/apis.js
+      - /data/repo/hedera-mirror-test/k6/src/web3/apis.js
     artifactRequest:
       storageClassName: standard
       volumeMountPath: /share
@@ -22,6 +22,6 @@ spec:
       - mapToVariables: true
         mount: false
         reference:
-          name: test-rest-env
+          name: test-web3-env
   type: k6-custom/script
 {{- end }}

@@ -9,7 +9,7 @@ spec:
   executor_type: container
   features:
     - artifacts
-  image: loadimpact/k6:0.45.0
+  image: grafana/k6:0.47.0
   types:
     - k6-custom/script
 {{- end }}
