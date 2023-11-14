@@ -914,8 +914,8 @@ const nsToSecNsWithHyphen = (ns) => {
 
 /**
  * Given a timestamp, returns the timestamp of the first day of that month
- * @param secNs nanoseconds since epoch
- * @returns {String} ns at first day of month
+ * @param {BigInt} secNs nanoseconds since epoch
+ * @returns {BigInt} ns at first day of month
  */
 const getFirstDayOfMonth = (secNs) => {
   if (_.isNil(secNs)) {
@@ -923,45 +923,11 @@ const getFirstDayOfMonth = (secNs) => {
   }
 
   // Convert nanoseconds to milliseconds for Date object
-  const timestampMs = math.floor(Number(secNsToMs(secNs)));
-  const timestampDate = new Date(timestampMs);
+  const timestampMs = secNs / 1000000n;
+  const timestampDate = new Date(Number(timestampMs));
   const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
-  return secMsToNs(firstDayMs);
-};
-
-/**
- * Converts milliseconds to nanoseconds
- * @param {String|Number} secNs milliseconds since epoch
- * @return {String} nanoseconds since epoch
- */
-const secNsToMs = (secNs) => {
-  if (_.isNil(secNs)) {
-    return null;
-  }
-
-  return math.divide(math.bignumber(secNs), math.bignumber(1e6)).toString();
-};
-
-/**
- * Converts nanoseconds to milliseconds
- * @param {String} nanoseconds since epoch
- * @return {String} milliseconds since epoch
- */
-const secMsToNs = (secMs) => {
-  if (_.isNil(secMs)) {
-    return null;
-  }
-
-  return math.multiply(math.bignumber(secMs), math.bignumber(1e6)).toString();
-};
-
-/**
- * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
- * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
- * @return {String} ns Nanoseconds since epoch
- */
-const secNsToNs = (secNs) => {
-  return math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString();
+  // Convert milliseconds to nanoseconds
+  return BigInt(firstDayMs) * 1000000n;
 };
 
 const secNsToSeconds = (secNs) => {
@@ -1772,9 +1738,6 @@ export {
   parseTransactionTypeParam,
   randomString,
   resultSuccess,
-  secMsToNs,
-  secNsToNs,
-  secNsToMs,
   secNsToSeconds,
   toHexString,
   toHexStringNonQuantity,

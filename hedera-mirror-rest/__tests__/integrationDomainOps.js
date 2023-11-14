@@ -1499,6 +1499,7 @@ export default {
   loadAddressBookEntries,
   loadAddressBookServiceEndpoints,
   loadAddressBooks,
+  loadBalances,
   loadContractActions,
   loadContractLogs,
   loadContractResults,

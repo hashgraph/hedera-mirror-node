@@ -22,11 +22,11 @@ import {EntityService} from './service/index.js';
 import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
-import config from './config.js';
 import {opsMap} from './utils';
-import * as math from 'mathjs';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
+
+const MAX_UPPER_BOUND = BigInt(Number.MAX_VALUE);
 
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
@@ -110,24 +110,15 @@ const getBalances = async (req, res) => {
 
   let sqlQuery;
   if (tsQuery) {
-    if (!config.query.deduplicateBalances) {
-      const balanceTimestamp = await getAccountBalanceTimestamp(tsQuery, tsParams);
-      if (balanceTimestamp === undefined) {
-        return;
-      }
-      sqlQuery = await getBalancesQuery(accountQuery, balanceQuery, limitQuery, order, pubKeyQuery);
-      tsParams = [balanceTimestamp, balanceTimestamp];
-    } else {
-      [sqlQuery, tsParams] = await getDeduplicateBalancesQuery(
-        accountQuery,
-        balanceQuery,
-        limitQuery,
-        order,
-        pubKeyQuery,
-        tsParams,
-        tsQuery
-      );
-    }
+    [sqlQuery, tsParams] = getBalancesQuery(
+      accountQuery,
+      balanceQuery,
+      limitQuery,
+      order,
+      pubKeyQuery,
+      tsParams,
+      tsQuery
+    );
   } else {
     // use current balance from entity table when there's no timestamp query filter
     const conditions = [accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ');
@@ -159,51 +150,11 @@ const getBalances = async (req, res) => {
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
-const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
-  // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
-  tsQuery = tsQuery ? tsQuery.concat(' and account_id = ?') : ' account_id = ?';
-  tsParams.push('2');
-
-  const query = `
-    select consensus_timestamp
-    from account_balance
-    where ${tsQuery}
-    order by consensus_timestamp ${order}
-    limit 1`;
-
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
-  const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
-  return rows[0]?.consensus_timestamp;
-};
-
-const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery) => {
+const getBalancesQuery = (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
+  const [consensusTsQuery, deduplicateTsParams] = getTsQuery(tsParams, tsQuery);
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order);
-  const whereClause = `
-      where ${[`ab.consensus_timestamp = ?`, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
-  return `
-      select ab.*, (${tokenBalanceSubQuery}) as token_balances
-      from account_balance ab
-      ${joinEntityClause}
-      ${whereClause}
-      order by ab.account_id ${order}
-      ${limitQuery}`;
-};
-
-const getDeduplicateBalancesQuery = async (
-  accountQuery,
-  balanceQuery,
-  limitQuery,
-  order,
-  pubKeyQuery,
-  tsParams,
-  tsQuery
-) => {
-  const [consensusTsQuery, deduplicateTsParams] = getDeduplicateTsQuery(tsParams, tsQuery);
-  // Only need to join entity if we're selecting on publickey
-  const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceDeduplicateSubQuery(order, consensusTsQuery);
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, consensusTsQuery);
   const whereClause = `
       where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
   const sqlQuery = `
@@ -216,68 +167,85 @@ const getDeduplicateBalancesQuery = async (
   return [sqlQuery, deduplicateTsParams];
 };
 
-const getDeduplicateTsQuery = (tsParams, tsQuery) => {
-  let upperBound = Number.MAX_VALUE;
-  let gteParam = 0;
+const getTsQuery = (tsParams, tsQuery) => {
+  let upperBound = MAX_UPPER_BOUND;
+  let gteParam = 0n;
   const neParams = [];
 
   // Combine the tsParams into a single upperBound and gteParam if present
-  tsQuery.split('?').forEach((value, index) => {
-    // eq operator has already been converted to the lte operator
-    if (value.includes(opsMap.lte)) {
-      upperBound = upperBound < tsParams[index] ? upperBound : tsParams[index];
-    } else if (value.includes(opsMap.lt)) {
-      // Convert lt to lte to simplify query
-      const ltValue = math.subtract(math.bignumber(tsParams[index]), 1).toString();
-      upperBound = upperBound < ltValue ? upperBound : ltValue;
-    } else if (value.includes(opsMap.gte)) {
-      gteParam = gteParam > tsParams[index] ? gteParam : tsParams[index];
-    } else if (value.includes(opsMap.gt)) {
-      // Convert gt to gte to simplify query
-      const gtValue = math.add(math.bignumber(tsParams[index]), 1).toString();
-      gteParam = gteParam > gtValue ? gteParam : gtValue;
-    } else if (value.includes(opsMap.ne)) {
-      neParams.push(tsParams[index]);
-    }
-  });
+  tsQuery
+    .split('?')
+    .filter(Boolean)
+    .forEach((query, index) => {
+      const value = BigInt(tsParams[index]);
+      // eq operator has already been converted to the lte operator
+      if (query.includes(opsMap.lte)) {
+        upperBound = upperBound < value ? upperBound : value;
+      } else if (query.includes(opsMap.lt)) {
+        // Convert lt to lte to simplify query
+        const ltValue = value - 1n;
+        upperBound = upperBound < ltValue ? upperBound : ltValue;
+      } else if (query.includes(opsMap.gte)) {
+        gteParam = gteParam > value ? gteParam : value;
+      } else if (query.includes(opsMap.gt)) {
+        // Convert gt to gte to simplify query
+        const gtValue = value + 1n;
+        gteParam = gteParam > gtValue ? gteParam : gtValue;
+      } else if (query.includes(opsMap.ne)) {
+        neParams.push(value);
+      }
+    });
 
-  const minTimestamp = gteParam !== 0 ? gteParam : upperBound;
-  // Extend the lower bound to the beginning of the month to capture the initial balances
-  // that may only be present at the beginning of the monthly partition.
-  const lowerBound = utils.getFirstDayOfMonth(minTimestamp);
-  return getDeduplicatePartitionedTsQuery(upperBound, lowerBound, neParams);
+  const nowInNs = BigInt(Date.now()) * 1000000n;
+  if (upperBound !== MAX_UPPER_BOUND) {
+    if (gteParam === 0n) {
+      // There is an upper bound but no lowerBound
+      const firstDayOfUpperBoundMonth = utils.getFirstDayOfMonth(upperBound);
+      const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
+      const lowerBound =
+        firstDayOfUpperBoundMonth < firstDayOfCurrentMonth
+          ? // If the upper bound is in a month prior to the current month, the lower bound is the beginning of the month the upper bound is in
+            firstDayOfUpperBoundMonth
+          : // If upper bound is in the current or later month the lower bound is the beginning of the month before current month
+            utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
+      return getPartitionedTsQuery(lowerBound, neParams, upperBound);
+    } else {
+      // Both upper and lower bounds are provided
+      // Adjust the lower bound to the beginning of the month to get balances at the beginning of the partition
+      const lowerBound = utils.getFirstDayOfMonth(gteParam);
+      return getPartitionedTsQuery(lowerBound, neParams, upperBound);
+    }
+  } else {
+    // There is only a lower bound, set the lower bound to the minimum of (gteParam, the first day of the month before the current month)
+    const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
+    const firstDayOfPreviousMonth = utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
+    const lowerBound = gteParam > firstDayOfPreviousMonth ? firstDayOfPreviousMonth : gteParam;
+    return getPartitionedTsQuery(lowerBound, neParams);
+  }
 };
 
-const getDeduplicatePartitionedTsQuery = (upperBound, lowerBound, neParams) => {
+const getPartitionedTsQuery = (lowerBound, neParams, upperBound) => {
   const neQuery = Array.from(neParams, (v) => '?').join(', ');
   let consensusTsQuery = neQuery
     ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp not in (${neQuery})`
     : `ab.consensus_timestamp >= ?`;
 
-  if (upperBound === Number.MAX_VALUE) {
+  const lowerBoundString = lowerBound.toString();
+  if (!upperBound) {
     // Double the params to account for the query values for account_balance and token_balance together
-    return [consensusTsQuery, [lowerBound, ...neParams, lowerBound, ...neParams]];
+    return [consensusTsQuery, [lowerBoundString, ...neParams, lowerBoundString, ...neParams]];
   }
 
+  const upperBoundString = upperBound.toString();
   consensusTsQuery = consensusTsQuery.concat(` and ab.consensus_timestamp <= ?`);
   // Double the params to account for the query values for account_balance and token_balance together
-  return [consensusTsQuery, [lowerBound, ...neParams, upperBound, lowerBound, ...neParams, upperBound]];
+  return [
+    consensusTsQuery,
+    [lowerBoundString, ...neParams, upperBoundString, lowerBoundString, ...neParams, upperBoundString],
+  ];
 };
 
-const getTokenBalanceSubQuery = (order) => {
-  return `
-    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-    from (
-      select token_id, balance
-      from token_balance tb
-      where tb.account_id = ab.account_id
-        and tb.consensus_timestamp = ?
-      order by token_id ${order}
-      limit ${tokenBalanceLimit.multipleAccounts}
-    ) as account_token_balance`;
-};
-
-const getTokenBalanceDeduplicateSubQuery = (order, consensusTsQuery) => {
+const getTokenBalanceSubQuery = (order, consensusTsQuery) => {
   consensusTsQuery = consensusTsQuery.replaceAll('ab.', 'tb.');
   return `
     select json_agg(json_build_object('token_id', token_id, 'balance', balance))
@@ -359,5 +327,4 @@ const acceptedBalancesParameters = new Set([
 
 export default {
   getBalances,
-  getAccountBalanceTimestamp,
 };
