@@ -30,12 +30,16 @@ plugins {
 }
 
 configurations.all {
+    exclude(group = "commons-logging", "commons-logging")
     exclude(group = "org.slf4j", module = "slf4j-nop")
 }
 
 repositories {
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
+    }
+    maven {
+        url = uri("https://artifacts.consensys.net/public/maven/maven/")
     }
 }
 

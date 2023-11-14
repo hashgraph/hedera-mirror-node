@@ -40,6 +40,21 @@ public interface TokenBalanceRepository
     @Transactional
     int balanceSnapshot(long consensusTimestamp);
 
+    @Override
+    @Modifying
+    @Query(
+            nativeQuery = true,
+            value =
+                    """
+        insert into token_balance (account_id, balance, consensus_timestamp, token_id)
+        select account_id, balance, :consensusTimestamp, token_id
+        from token_account
+        where balance_timestamp > :maxConsensusTimestamp
+        order by account_id, token_id
+        """)
+    @Transactional
+    int balanceSnapshotDeduplicate(long maxConsensusTimestamp, long consensusTimestamp);
+
     @Modifying
     @Override
     @Query(nativeQuery = true, value = "delete from token_balance where consensus_timestamp <= ?1")

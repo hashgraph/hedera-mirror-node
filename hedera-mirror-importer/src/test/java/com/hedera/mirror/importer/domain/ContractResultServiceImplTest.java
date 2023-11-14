@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.domain;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
@@ -25,8 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
@@ -36,6 +38,9 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -131,5 +136,53 @@ class ContractResultServiceImplTest {
         } else {
             assertThat(capturedOutput.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
         }
+
+        verifyContractTransactions(recordItem, transaction, entityId);
+    }
+
+    private void verifyContractTransactions(RecordItem recordItem, Transaction transaction, EntityId entityId) {
+
+        var ids = new HashSet<Long>();
+        for (var sidecarRecord : recordItem.getSidecarRecords()) {
+            for (var stateChange : sidecarRecord.getStateChanges().getContractStateChangesList()) {
+                ids.add(stateChange.getContractId().getContractNum());
+            }
+        }
+
+        var functionResult = recordItem.getTransactionRecord().hasContractCreateResult()
+                ? recordItem.getTransactionRecord().getContractCreateResult()
+                : recordItem.getTransactionRecord().getContractCallResult();
+        for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
+            var contractLoginfo = functionResult.getLogInfo(index);
+            ids.add(contractLoginfo.getContractID().getContractNum());
+        }
+
+        var isContractCreateOrCall = recordItem.getTransactionBody().hasContractCall()
+                || recordItem.getTransactionBody().hasContractCreateInstance();
+        var rootId = isContractCreateOrCall ? transaction.getEntityId() : entityId;
+        ids.add(Objects.requireNonNullElse(rootId, EntityId.EMPTY).getId());
+        ids.add(recordItem
+                .getTransactionBody()
+                .getTransactionID()
+                .getAccountID()
+                .getAccountNum());
+
+        var idsList = new ArrayList<>(ids);
+        idsList.sort(Long::compareTo);
+        var contractTransactionRoot = ContractTransaction.builder()
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .contractIds(idsList)
+                .payerAccountId(recordItem.getPayerAccountId().getId());
+        var expectedContractTransactions = new ArrayList<ContractTransaction>();
+        ids.forEach(id -> expectedContractTransactions.add(
+                contractTransactionRoot.entityId(id).build()));
+
+        var actual = recordItem.populateContractTransactions();
+        actual.forEach(expectedTransaction -> {
+            var sorted = expectedTransaction.getContractIds();
+            sorted.sort(Long::compareTo);
+            expectedTransaction.setContractIds(sorted);
+        });
+        assertThat(actual).containsExactlyInAnyOrderElementsOf(expectedContractTransactions);
     }
 }

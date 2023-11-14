@@ -20,7 +20,7 @@ import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> {
@@ -35,22 +35,22 @@ public class MockLedgerWorldUpdater extends AbstractLedgerWorldUpdater<HederaEvm
     }
 
     @Override
-    public EvmAccount createAccount(Address address) {
+    public MutableAccount createAccount(Address address) {
         return super.createAccount(address);
     }
 
     @Override
-    public EvmAccount getOrCreate(Address address) {
+    public MutableAccount getOrCreate(Address address) {
         return super.getOrCreate(address);
     }
 
     @Override
-    public EvmAccount getOrCreateSenderAccount(Address address) {
+    public MutableAccount getOrCreateSenderAccount(Address address) {
         return super.getOrCreateSenderAccount(address);
     }
 
     @Override
-    public EvmAccount getSenderAccount(MessageFrame frame) {
+    public MutableAccount getSenderAccount(MessageFrame frame) {
         return super.getSenderAccount(frame);
     }
 

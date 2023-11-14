@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,20 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findEarliest() {
+        var earliest = domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(earliest);
+    }
+
+    @Test
     void findFileHashByIndex() {
         final var file = domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findHashByIndex(file.getIndex())).get().isEqualTo(file.getHash());
+        assertThat(recordFileRepository.findByIndex(file.getIndex()))
+                .map(RecordFile::getHash)
+                .hasValue(file.getHash());
     }
 
     @Test
@@ -51,5 +62,22 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
         var latest = domainBuilder.recordFile().persist();
 
         assertThat(recordFileRepository.findLatest()).get().isEqualTo(latest);
+    }
+
+    @Test
+    void findRecordFileByIndex() {
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
+        long blockNumber = latest.getIndex();
+
+        assertThat(recordFileRepository.findByIndex(blockNumber))
+                .map(RecordFile::getConsensusEnd)
+                .hasValue(latest.getConsensusEnd());
+    }
+
+    @Test
+    void findRecordFileByIndexNotExists() {
+        long nonExistentBlockNumber = 1L;
+        assertThat(recordFileRepository.findByIndex(nonExistentBlockNumber)).isEmpty();
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
@@ -126,6 +127,33 @@ public class ContractClient extends AbstractNetworkClient {
             contractExecuteTransaction.setFunction(functionName);
         } else {
             contractExecuteTransaction.setFunction(functionName, parameters);
+        }
+
+        if (payableAmount != null) {
+            contractExecuteTransaction.setPayableAmount(payableAmount);
+        }
+
+        var response = executeTransactionAndRetrieveReceipt(contractExecuteTransaction);
+
+        TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
+        logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
+
+        log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
+        return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
+    }
+
+    public ExecuteContractResult executeContract(
+            ContractId contractId, long gas, String functionName, byte[] parameters, Hbar payableAmount) {
+
+        ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
+                .setContractId(contractId)
+                .setGas(gas)
+                .setTransactionMemo(getMemo("Execute contract"));
+
+        if (parameters == null) {
+            contractExecuteTransaction.setFunction(functionName);
+        } else {
+            contractExecuteTransaction.setFunctionParameters(ByteString.copyFrom(parameters));
         }
 
         if (payableAmount != null) {

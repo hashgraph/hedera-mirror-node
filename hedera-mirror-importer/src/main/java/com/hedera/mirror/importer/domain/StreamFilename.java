@@ -247,6 +247,10 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return compressor != null;
     }
 
+    public boolean isNodeId() {
+        return !filePath.contains(streamType.getPath());
+    }
+
     @Override
     public String toString() {
         return filename;

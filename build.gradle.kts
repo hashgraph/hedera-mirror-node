@@ -31,10 +31,10 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.24.4")
+    set("protobufVersion", "3.25.0")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.5")
+    set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.4.6")
 }
 
@@ -47,7 +47,7 @@ dependencies {
         val testcontainersSpringBootVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:10.0.0")
+        api("com.esaulpaugh:headlong:10.0.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
@@ -57,7 +57,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.3.1")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.39.0")
+        api("com.hedera.evm:hedera-evm:0.43.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
@@ -66,13 +66,13 @@ dependencies {
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.14.0")
+        api("commons-io:commons-io:2.15.0")
         api("io.cucumber:cucumber-bom:7.14.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.58.0")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.0")
+        api("io.grpc:grpc-bom:1.59.0")
+        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
         api("io.projectreactor:reactor-core-micrometer:1.0.11")
-        api("io.swagger:swagger-annotations:1.6.11")
+        api("io.swagger:swagger-annotations:1.6.12")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
@@ -83,8 +83,8 @@ dependencies {
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.1.0")
-        api("org.hyperledger.besu:secp256k1:0.6.1")
-        api("org.hyperledger.besu:evm:22.7.6")
+        api("org.hyperledger.besu:secp256k1:0.8.0")
+        api("org.hyperledger.besu:evm:23.10.0")
         api("org.jetbrains:annotations:24.0.1")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
@@ -93,8 +93,8 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.19.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.21.0")
-        api("uk.org.webcompere:system-stubs-jupiter:2.1.3")
+        api("software.amazon.awssdk:bom:2.21.21")
+        api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }
 

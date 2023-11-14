@@ -56,7 +56,6 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
                                         false,
                                         false,
                                         Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
-                                        true,
                                         0))));
     }
 

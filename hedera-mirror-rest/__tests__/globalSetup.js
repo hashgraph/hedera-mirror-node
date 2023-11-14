@@ -26,9 +26,11 @@ const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.0.0';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
+let dockerDb;
+
 const createDbContainer = async (maxWorkers) => {
   const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
-  const dockerDb = await new PostgreSqlContainer(image).start();
+  dockerDb = await new PostgreSqlContainer(image).start();
   console.info(`Started PostgreSQL container ${image}`);
 
   process.env.INTEGRATION_DATABASE_URL = dockerDb.getConnectionUri();
@@ -72,6 +74,7 @@ const createDbContainer = async (maxWorkers) => {
   console.info(`Created temp directory ${tmpDir} for migration status`);
 };
 
+const getDatabase = () => dockerDb;
 const getDatabaseName = () => getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
 
 const getDatabaseNameForWorker = (workerId) => `${dbNamePrefix}_${workerId}`;
@@ -80,4 +83,4 @@ export default async function (globalConfig) {
   await createDbContainer(globalConfig.maxWorkers);
 }
 
-export {getDatabaseName};
+export {getDatabase, getDatabaseName};

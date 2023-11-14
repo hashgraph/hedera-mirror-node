@@ -147,6 +147,11 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
                         sidecar.getName(), sidecar.getHash(), sidecar.getActualHash(), HASH_TYPE_SIDECAR);
             }
 
+            if (downloaderProperties.isWriteFiles()) {
+                var streamPath = downloaderProperties.getMirrorProperties().getStreamPath();
+                Utility.archiveFile(streamFileData.getFilePath(), sidecar.getBytes(), streamPath);
+            }
+
             if (!sidecarProperties.isPersistBytes()) {
                 sidecar.setBytes(null);
             }

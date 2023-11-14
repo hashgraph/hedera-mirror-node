@@ -67,7 +67,6 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
         if (!emptyAlias) {
             entity.setAlias(alias);
-            entityIdService.notify(entity);
             if (emptyKey && alias.length > EVM_ADDRESS_LENGTH) {
                 entity.setKey(alias);
             }

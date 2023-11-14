@@ -104,6 +104,7 @@ function getSequentialTestScenarios(tests) {
   let gracefulStop = '0s';
 
   const funcs = {};
+  const getUrlFuncs = {};
   const requiredParameters = new Set();
   const scenarios = {};
   const thresholds = {};
@@ -122,6 +123,7 @@ function getSequentialTestScenarios(tests) {
       throw new Error(`Unsupported k6 executor ${executor} in test ${name}`);
     }
   }
+
   constantVusTests.sort();
   rampingVusTests.sort();
 
@@ -136,6 +138,11 @@ function getSequentialTestScenarios(tests) {
       if (func && func.requiredParameters) {
         func.requiredParameters.forEach((param) => requiredParameters.add(param));
       }
+
+      if (testModule.getUrl) {
+        getUrlFuncs[scenarioName] = testModule.getUrl;
+      }
+
       scenarios[scenarioName] = scenario;
 
       // update the scenario's startTime, so scenarios run in sequence
@@ -164,6 +171,7 @@ function getSequentialTestScenarios(tests) {
 
   return {
     funcs,
+    getUrlFuncs,
     options: testOptions,
     requiredParameters: [...requiredParameters.values()],
     scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME),
@@ -215,7 +223,7 @@ function satisfyParameters(available, required) {
   return required.length === 0 || required.every((param) => available.hasOwnProperty(param));
 }
 
-function markdownReport(data, includeUrlColumn, funcs, scenarios) {
+function markdownReport(data, includeUrlColumn, funcs, scenarios, getUrlFuncs = {}) {
   const header = `| Scenario ${
     includeUrlColumn && '| URL'
   } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Skipped? | Comment |
@@ -248,7 +256,8 @@ function markdownReport(data, includeUrlColumn, funcs, scenarios) {
   const scenarioUrls = {};
   if (includeUrlColumn) {
     for (const [name, scenario] of Object.entries(scenarios)) {
-      scenarioUrls[name] = scenario.tags.url;
+      const getUrl = getUrlFuncs[name];
+      scenarioUrls[name] = getUrl ? getUrl(availableParams) : scenario.tags.url;
     }
   }
 
