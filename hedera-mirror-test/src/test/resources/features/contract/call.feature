@@ -55,5 +55,7 @@ Feature: eth_call Contract Base Coverage Feature
     Then I dissociate a NFT and fail transfer
     Then I approve a FUNGIBLE token and transfer it
     Then I approve a NFT token and transfer it
+    And I associate FUNGIBLE_KYC_UNFROZEN token to receiver account
+    Then the mirror node should return status 200 for the HAPI transaction
     Then I grant and revoke KYC
     Then I successfully update the balance of an account and get the updated balance

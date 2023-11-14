@@ -18,15 +18,15 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_FOR_ETH_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.ADDRESS_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.APPROVE_TOKEN_GET_ALLOWANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.BURN_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.ADDRESS_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DISSOCIATE_TOKEN_FAIL_TRANSFER;
@@ -103,7 +103,6 @@ public class CallFeature extends AbstractFeature {
     private TokenId fungibleTokenId;
     private TokenId nonFungibleTokenId;
     private TokenId fungibleKycUnfrozenTokenId;
-    private String receiverAccountAlias;
     private ExpandedAccountId admin;
 
     public static String[] splitAddresses(String result) {
@@ -144,12 +143,11 @@ public class CallFeature extends AbstractFeature {
         deployedEstimatePrecompileContract = getContract(ESTIMATE_GAS);
         estimateContractAddress = deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
-        receiverAccountAlias = receiverAccountId.getPublicKey().toEvmAddress().toString();
-        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.DAVE);
+        receiverAccountId = accountClient.getAccount(AccountNameEnum.ALICE);
+        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.CAROL);
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
         fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN).tokenId();
-        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFT_FOR_ETH_CALL).tokenId();
     }
 
     @Given("I mint a NFT")
@@ -193,7 +191,6 @@ public class CallFeature extends AbstractFeature {
     @And("I associate FUNGIBLE token to receiver account")
     public void associateFungibleTokenToReceiver() {
         tokenClient.associate(receiverAccountId, fungibleTokenId);
-        networkTransactionResponse = tokenClient.associate(receiverAccountId, fungibleKycUnfrozenTokenId);
     }
 
     @And("I associate NFT token to receiver account")
@@ -206,6 +203,11 @@ public class CallFeature extends AbstractFeature {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
         tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
         networkTransactionResponse = tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
+    }
+
+    @And("I associate FUNGIBLE_KYC_UNFROZEN token to receiver account")
+    public void associateReceiverWithFungibleKyc() throws InvalidProtocolBufferException {
+        networkTransactionResponse = tokenClient.associate(secondReceiverAccount, fungibleKycUnfrozenTokenId);
     }
 
     @And("I approve and transfer NFT token to the precompile contract")
@@ -472,7 +474,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(fungibleTokenId.toSolidityAddress()),
                 1L,
                 asLongArray(List.of()),
-                asAddress(receiverAccountAlias));
+                asAddress(receiverAccountId));
 
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
@@ -492,7 +494,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(nonFungibleTokenId.toSolidityAddress()),
                 0L,
                 asLongArray(List.of(1L)),
-                asAddress(receiverAccountAlias));
+                asAddress(receiverAccountId));
 
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
@@ -540,7 +542,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 APPROVE_TOKEN_GET_ALLOWANCE,
                 asAddress(fungibleTokenId),
-                asAddress(receiverAccountAlias),
+                asAddress(secondReceiverAccount),
                 new BigInteger("1"),
                 new BigInteger("0"));
 
@@ -557,14 +559,14 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 APPROVE_TOKEN_GET_ALLOWANCE,
                 asAddress(nonFungibleTokenId),
-                asAddress(receiverAccountAlias),
+                asAddress(receiverAccountId),
                 new BigInteger("0"),
                 new BigInteger("2"));
         var response = callContract(data, precompileContractAddress);
         var approvedAddress = response.getResult().substring(66);
 
         // approved address should equal the spender
-        assertThat(approvedAddress).isEqualTo(to32BytesString(receiverAccountAlias));
+        assertThat(approvedAddress).isEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
     }
 
     @Then("I dissociate a FUNGIBLE token and fail transfer")
@@ -593,7 +595,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 DISSOCIATE_TOKEN_FAIL_TRANSFER,
                 asAddress(nonFungibleTokenId),
-                asAddress(receiverAccountAlias),
+                asAddress(receiverAccountId),
                 asAddress(secondReceiverAccount),
                 new BigInteger("0"),
                 new BigInteger("1"));
@@ -613,7 +615,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER,
                 asAddress(fungibleTokenId),
-                asAddress(receiverAccountAlias),
+                asAddress(receiverAccountId),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
@@ -633,7 +635,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 APPROVE_NFT_TOKEN_AND_TRANSFER,
                 asAddress(nonFungibleTokenId),
-                asAddress(receiverAccountAlias),
+                asAddress(receiverAccountId),
                 new BigInteger("2"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListAddress();
@@ -641,21 +643,22 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(3);
 
         // allowed address before transfer should be the receiverAccount
-        assertThat(results.get(0)).isEqualTo(to32BytesString(receiverAccountAlias));
+        assertThat(results.get(0)).isEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
         // balance before + amount should equal the balance after
-        assertThat(results.get(1)).isEqualTo(to32BytesString(receiverAccountAlias));
+        assertThat(results.get(1)).isEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
         // allowance after transfer should be != 0
-        assertThat(results.get(2)).isNotEqualTo(to32BytesString(receiverAccountAlias));
+        assertThat(results.get(2)).isNotEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
     }
 
     @Then("I grant and revoke KYC")
     public void ethCallGrantKycRevokeKyc() {
+        networkTransactionResponse = tokenClient.associate(secondReceiverAccount, fungibleKycUnfrozenTokenId);
         var data = encodeData(
                 PRECOMPILE,
                 GRANT_KYC_REVOKE_KYC,
                 asAddress(fungibleKycUnfrozenTokenId),
                 asAddress(admin),
-                asAddress(receiverAccountAlias),
+                asAddress(secondReceiverAccount),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
