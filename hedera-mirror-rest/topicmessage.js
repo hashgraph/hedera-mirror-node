@@ -23,8 +23,9 @@ import {TopicMessage} from './model';
 import * as utils from './utils';
 import {TopicMessageViewModel} from './viewmodel';
 import {filterKeys} from './constants';
-import {abs} from 'mathjs';
 import _ from 'lodash';
+import config from './config.js';
+import TopicMessageLookup from './model/topicMessageLookup.js';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -126,7 +127,7 @@ const getTopicMessages = async (req, res) => {
   const topicId = EntityId.parse(topicIdStr);
 
   // build sql query validated param and filters
-  const {query, params, order, limit} = extractSqlFromTopicMessagesRequest(topicId, filters);
+  const {query, params, order, limit} = await extractSqlFromTopicMessagesRequest(topicId, filters);
 
   const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
@@ -165,66 +166,16 @@ const getTopicMessages = async (req, res) => {
 const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
   let pgSqlQuery = `select numrange(min(lower(timestamp_range)), max(upper(timestamp_range)))
                     from topic_message_lookup
-                    where ${TopicMessage.TOPIC_ID} = $1  and  sequence_number_range && `;
+                    where ${TopicMessageLookup.TOPIC_ID} = $1 `;
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
   let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
-  for (const filter of filters) {
-    if (filter.key === constants.filterKeys.LIMIT) {
-      limit = filter.value;
-      continue;
-    }
-
-    // handle keys that do not require formatting first
-    if (filter.key === constants.filterKeys.ORDER) {
-      order = filter.value;
-      continue;
-    }
-
-    if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
-      let lowerLimit = 0;
-      let upperLimit = 0;
-      // handle the case for seqnumber =
-      if (utils.gtGte.includes(filter.operator)) {
-        lowerLimit = Number(filter.value);
-      }
-      if (utils.ltLte.includes(filter.operator)) {
-        upperLimit = Number(filter.value);
-      }
-      if (abs(lowerLimit - upperLimit) == 0) {
-        // return empty response
-        return {};
-      }
-      console.log(`lowerLimit is ${lowerLimit}`);
-      // we add or subtract the limit depending on the order to obtain the range.
-      if (order === constants.orderFilterValues.ASC) {
-        upperLimit = lowerLimit + limit;
-        console.log(`upperLimit is ${upperLimit}`);
-      } else {
-        lowerLimit = upperLimit - limit;
-      }
-
-      // add sequence number range
-      pgSqlQuery += ` '[${lowerLimit},${upperLimit})'::int8range`;
-    }
-  }
-
-  // close query
-  pgSqlQuery += ';';
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
-};
-const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
-  let pgSqlQuery = `select *
-                    from ${TopicMessage.tableName}
-                    where ${TopicMessage.TOPIC_ID} = $1`;
-  let nextParamCount = 2;
-  const pgSqlParams = [topicId.getEncodedId()];
+  let hasSequenceNumber = false;
   const bound = new Bound(filterKeys.SERIAL_NUMBER, 'serial_number');
-  // add filters
-  let limit = defaultLimit;
-  let order = constants.orderFilterValues.ASC;
+  let lowerLimit = undefined;
+  let upperLimit = undefined;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -239,9 +190,71 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 
     if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
       bound.parse(filter);
-      // execute this sand get result
-      const timestamp_range = await getTopicMessageTimestamps(topicId, filters);
-      pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= ${timestamp_range.numrange.begin}  and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${timestamp_range.numrange.end}`;
+      // handle the case for seqnumber =
+      if (utils.gtGte.includes(filter.operator)) {
+        lowerLimit = Number(filter.value);
+      }
+      if (utils.ltLte.includes(filter.operator)) {
+        upperLimit = Number(filter.value);
+      }
+      // check for null
+      if (lowerLimit !== undefined && upperLimit !== undefined) {
+        if (lowerLimit === upperLimit) {
+          return {};
+        }
+      }
+      console.log(`lowerLimit is ${lowerLimit}`);
+      // we add or subtract the limit depending on the order to obtain the range.
+      if (upperLimit === undefined && order === constants.orderFilterValues.ASC) {
+        upperLimit = lowerLimit + limit;
+        console.log(`upperLimit is ${upperLimit}`);
+      } else if (lowerLimit === undefined && order === constants.orderFilterValues.DESC) {
+        lowerLimit = upperLimit - limit;
+      }
+
+      // add sequence number range
+      hasSequenceNumber = true;
+    }
+  }
+  if (!hasSequenceNumber) {
+    pgSqlQuery += `  group by ${TopicMessageLookup.PARTITION} order by ${TopicMessageLookup.PARTITION} ${order}`;
+    // add limit
+    pgSqlQuery += ` limit ${limit}`;
+  } else {
+    pgSqlQuery += ` and  sequence_number_range && '[${lowerLimit},${upperLimit})'::int8range`;
+  }
+  // close query
+  pgSqlQuery += ';';
+  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+};
+const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
+  let pgSqlQuery = `select *
+                    from ${TopicMessage.tableName}
+                    where ${TopicMessage.TOPIC_ID} = $1`;
+  let nextParamCount = 2;
+  const pgSqlParams = [topicId.getEncodedId()];
+  // add filters
+  let limit = defaultLimit;
+  let order = constants.orderFilterValues.ASC;
+
+  if (config.query.v2.topicMessageLookups) {
+    const timestamp_range = await getTopicMessageTimestamps(topicId, filters);
+    pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= ${timestamp_range.numrange.begin}  and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${timestamp_range.numrange.end}`;
+  }
+
+  for (const filter of filters) {
+    if (filter.key === constants.filterKeys.LIMIT) {
+      limit = filter.value;
+      continue;
+    }
+
+    // handle keys that do not require formatting first
+    if (filter.key === constants.filterKeys.ORDER) {
+      order = filter.value;
+      continue;
+    }
+
+    if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
       continue;
     }
 
