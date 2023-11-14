@@ -192,7 +192,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var store = updater.getStore();
-        final var senderAddress = unalias(frame.getSenderAddress(), updater);
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var hederaTokenStore = initializeHederaTokenStore(store);

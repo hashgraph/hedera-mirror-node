@@ -450,10 +450,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @And("I approve the contract to use fungible token")
     public void approveFungibleWithReceiver() {
-        networkTransactionResponse = accountClient.approveToken(
-                fungibleTokenId, AccountId.fromSolidityAddress(ercTestContractSolidityAddress), 10);
-        networkTransactionResponse = accountClient.approveToken(
-                fungibleTokenId, AccountId.fromSolidityAddress(precompileTestContractSolidityAddress), 10);
+        final var ercTestContractId = AccountId.fromSolidityAddress(ercTestContractSolidityAddress);
+        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, ercTestContractId, 10);
+        final var precompileTestContractId = AccountId.fromSolidityAddress(precompileTestContractSolidityAddress);
+        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, precompileTestContractId, 10);
     }
 
     @Then("I call estimateGas with ERC transferFrom function")
