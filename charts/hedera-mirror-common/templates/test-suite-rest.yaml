@@ -8,10 +8,6 @@ spec:
   description: Mirrornode REST API performance test suite
   executionRequest:
     variables:
-      BASE_URL:
-        name: BASE_URL
-        type: basic
-        value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
       TEST_REPORTS_DIR:
         name: TEST_REPORTS_DIR
         type: basic

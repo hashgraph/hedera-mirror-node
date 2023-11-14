@@ -23,5 +23,10 @@ spec:
         mount: false
         reference:
           name: test-web3-env
+    variables:
+      BASE_URL:
+        name: BASE_URL
+        type: basic
+        value: http://{{ .Values.testkube.test.target.release }}-web3.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
   type: k6-custom/script
 {{- end }}
