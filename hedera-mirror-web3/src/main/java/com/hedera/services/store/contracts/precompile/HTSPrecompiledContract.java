@@ -401,6 +401,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        ContractCallContext.get().setSenderAddress(senderAddress);
         this.store = updater.getStore();
         this.mirrorNodeEvmProperties = updater.aliases();
     }

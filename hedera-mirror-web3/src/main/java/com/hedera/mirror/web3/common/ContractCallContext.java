@@ -58,6 +58,10 @@ public class ContractCallContext implements AutoCloseable {
     @Setter
     private boolean estimate = false;
 
+    /** Sender of the transaction */
+    @Setter
+    private Address senderAddress = null;
+
     /** Current top of stack (which is all linked together) */
     private CachingStateFrame<Object> stack;
 
@@ -100,6 +104,7 @@ public class ContractCallContext implements AutoCloseable {
         pendingAliases.clear();
         pendingRemovals.clear();
         recordFile = null;
+        senderAddress = null;
         stack = stackBase;
     }
 
