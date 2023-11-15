@@ -19,10 +19,8 @@ package com.hedera.mirror.web3.repository;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_ALLOWANCE;
 
-import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance.Id;
-import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +36,17 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
 
     List<TokenAllowance> findByOwner(long owner);
 
+    /**
+     * Retrieves the most recent state of a token allowance by its owner id and token id up to a given block timestamp.
+     * The method considers both the current state of the token allowance and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param owner the owner ID of the token allowance to be retrieved.
+     * @param tokenId the token ID of the token allowance to be retrieved.
+     * @param blockTimestamp the block timestamp used to filter the results.
+     * @return an Optional containing the token allowance's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
     @Query(
             value =
                     """
@@ -45,8 +54,8 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         (
                             select *
                             from token_allowance
-                            where spender = :#{#id.spender}
-                                and token_id = :#{#id.tokenId}
+                            where owner = :owner
+                                and token_id = :tokenId
                                 and lower(timestamp_range) <= :blockTimestamp
                             order by lower(timestamp_range) desc
                             limit 1
@@ -55,8 +64,8 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         (
                             select *
                             from token_allowance_history
-                            where spender = :#{#id.spender}
-                                and token_id = :#{#id.tokenId}
+                            where owner = :owner
+                                and token_id = :tokenId
                                 and lower(timestamp_range) <= :blockTimestamp
                             order by lower(timestamp_range) desc
                             limit 1
@@ -67,7 +76,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         select amount
                         from token_transfer
                         where payer_account_id = (select payer_account_id from token_allowance)
-                            and token_id = :#{#id.tokenId}
+                            and token_id = :tokenId
                             and consensus_timestamp <= :blockTimestamp
                             and consensus_timestamp > lower((select timestamp_range from token_allowance))
                     )
@@ -75,5 +84,5 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                     from token_allowance
                     """,
             nativeQuery = true)
-    Optional<TokenAllowance> findByIdAndTimestamp(Id id, long blockTimestamp);
+    Optional<TokenAllowance> findByOwnerAndTokenIdAndTimestamp(long owner, long tokenId, long blockTimestamp);
 }

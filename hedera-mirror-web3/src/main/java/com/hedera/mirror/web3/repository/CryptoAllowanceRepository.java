@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance.Id;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +26,16 @@ import org.springframework.data.repository.CrudRepository;
 public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowance, AbstractCryptoAllowance.Id> {
     List<CryptoAllowance> findByOwner(long owner);
 
+    /**
+     * Retrieves the most recent state of a crypto allowance by its owner id up to a given block timestamp.
+     * The method considers both the current state of the crypto allowance and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param owner the owner ID of the crypto allowance to be retrieved.
+     * @param blockTimestamp the block timestamp used to filter the results.
+     * @return an Optional containing the crypto allowance's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
     @Query(
             value =
                     """
@@ -34,7 +43,7 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
                         (
                             select *
                             from crypto_allowance
-                            where spender = :#{#id.spender}
+                            where owner = :owner
                                 and lower(timestamp_range) <= :blockTimestamp
                             order by lower(timestamp_range) desc
                             limit 1
@@ -43,7 +52,7 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
                         (
                             select *
                             from crypto_allowance_history
-                            where spender = :#{#id.spender}
+                            where owner = :owner
                                 and lower(timestamp_range) <= :blockTimestamp
                             order by lower(timestamp_range) desc
                             limit 1
@@ -61,5 +70,5 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
                     from crypto_allowance
                     """,
             nativeQuery = true)
-    Optional<CryptoAllowance> findByIdAndTimestamp(Id id, long blockTimestamp);
+    Optional<CryptoAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);
 }
