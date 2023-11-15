@@ -923,11 +923,11 @@ const getFirstDayOfMonth = (secNs) => {
   }
 
   // Convert nanoseconds to milliseconds for Date object
-  const timestampMs = secNs / 1000000n;
+  const timestampMs = secNs / constants.NANOSECONDS_PER_MILLISECOND;
   const timestampDate = new Date(Number(timestampMs));
   const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
   // Convert milliseconds to nanoseconds
-  return BigInt(firstDayMs) * 1000000n;
+  return BigInt(firstDayMs) * constants.NANOSECONDS_PER_MILLISECOND;
 };
 
 const secNsToSeconds = (secNs) => {

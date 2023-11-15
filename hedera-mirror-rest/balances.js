@@ -22,12 +22,8 @@ import {EntityService} from './service/index.js';
 import {EvmAddressType} from './constants';
 import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
-import {opsMap} from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
-
-const MAX_UPPER_BOUND = BigInt(Number.MAX_VALUE);
-
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
   const ret = {
@@ -168,7 +164,7 @@ const getBalancesQuery = (accountQuery, balanceQuery, limitQuery, order, pubKeyQ
 };
 
 const getTsQuery = (tsParams, tsQuery) => {
-  let upperBound = MAX_UPPER_BOUND;
+  let upperBound = constants.MAX_LONG;
   let gteParam = 0n;
   const neParams = [];
 
@@ -179,25 +175,29 @@ const getTsQuery = (tsParams, tsQuery) => {
     .forEach((query, index) => {
       const value = BigInt(tsParams[index]);
       // eq operator has already been converted to the lte operator
-      if (query.includes(opsMap.lte)) {
+      if (query.includes(utils.opsMap.lte)) {
         upperBound = upperBound < value ? upperBound : value;
-      } else if (query.includes(opsMap.lt)) {
+      } else if (query.includes(utils.opsMap.lt)) {
         // Convert lt to lte to simplify query
         const ltValue = value - 1n;
         upperBound = upperBound < ltValue ? upperBound : ltValue;
-      } else if (query.includes(opsMap.gte)) {
+      } else if (query.includes(utils.opsMap.gte)) {
         gteParam = gteParam > value ? gteParam : value;
-      } else if (query.includes(opsMap.gt)) {
+      } else if (query.includes(utils.opsMap.gt)) {
         // Convert gt to gte to simplify query
         const gtValue = value + 1n;
         gteParam = gteParam > gtValue ? gteParam : gtValue;
-      } else if (query.includes(opsMap.ne)) {
+      } else if (query.includes(utils.opsMap.ne)) {
         neParams.push(value);
       }
     });
 
-  const nowInNs = BigInt(Date.now()) * 1000000n;
-  if (upperBound !== MAX_UPPER_BOUND) {
+  if (gteParam > upperBound) {
+    throw new InvalidArgumentError('Invalid timestamp ranges: lt value is less than gt value');
+  }
+
+  const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+  if (upperBound !== constants.MAX_LONG) {
     if (gteParam === 0n) {
       // There is an upper bound but no lowerBound
       const firstDayOfUpperBoundMonth = utils.getFirstDayOfMonth(upperBound);
@@ -211,15 +211,13 @@ const getTsQuery = (tsParams, tsQuery) => {
       return getPartitionedTsQuery(lowerBound, neParams, upperBound);
     } else {
       // Both upper and lower bounds are provided
-      // Adjust the lower bound to the beginning of the month to get balances at the beginning of the partition
-      const lowerBound = utils.getFirstDayOfMonth(gteParam);
-      return getPartitionedTsQuery(lowerBound, neParams, upperBound);
+      return getPartitionedTsQuery(gteParam, neParams, upperBound);
     }
   } else {
-    // There is only a lower bound, set the lower bound to the minimum of (gteParam, the first day of the month before the current month)
+    // There is only a lower bound, set the lower bound to the maximum of (gteParam, the first day of the month before the current month)
     const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
     const firstDayOfPreviousMonth = utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    const lowerBound = gteParam > firstDayOfPreviousMonth ? firstDayOfPreviousMonth : gteParam;
+    const lowerBound = gteParam > firstDayOfPreviousMonth ? gteParam : firstDayOfPreviousMonth;
     return getPartitionedTsQuery(lowerBound, neParams);
   }
 };
@@ -230,19 +228,14 @@ const getPartitionedTsQuery = (lowerBound, neParams, upperBound) => {
     ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp not in (${neQuery})`
     : `ab.consensus_timestamp >= ?`;
 
-  const lowerBoundString = lowerBound.toString();
   if (!upperBound) {
     // Double the params to account for the query values for account_balance and token_balance together
-    return [consensusTsQuery, [lowerBoundString, ...neParams, lowerBoundString, ...neParams]];
+    return [consensusTsQuery, [lowerBound, ...neParams, lowerBound, ...neParams]];
   }
 
-  const upperBoundString = upperBound.toString();
   consensusTsQuery = consensusTsQuery.concat(` and ab.consensus_timestamp <= ?`);
   // Double the params to account for the query values for account_balance and token_balance together
-  return [
-    consensusTsQuery,
-    [lowerBoundString, ...neParams, upperBoundString, lowerBoundString, ...neParams, upperBoundString],
-  ];
+  return [consensusTsQuery, [lowerBound, ...neParams, upperBound, lowerBound, ...neParams, upperBound]];
 };
 
 const getTokenBalanceSubQuery = (order, consensusTsQuery) => {

@@ -19,13 +19,14 @@ import integrationDomainOps from './integrationDomainOps.js';
 import * as utils from '../utils.js';
 import request from 'supertest';
 import server from '../server.js';
+import * as constants from '../constants.js';
 
 setupIntegrationTest();
 
 describe('Balances deduplicate tests', () => {
   const fifteenDaysInNs = 1296000000000000n;
   const tenDaysInNs = 864000000000000n;
-  const currentNs = BigInt(Date.now()) * 1000000n;
+  const currentNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
 
   const beginningOfCurrentMonth = utils.getFirstDayOfMonth(currentNs);
   const beginningOfCurrentMonthSeconds = utils.nsToSecNs(beginningOfCurrentMonth);
@@ -45,6 +46,9 @@ describe('Balances deduplicate tests', () => {
 
   const beginningOfPreviousMonth = utils.getFirstDayOfMonth(endOfPreviousMonth);
   const beginningOfPreviousMonthSeconds = utils.nsToSecNs(beginningOfPreviousMonth);
+
+  // About a year in the past
+  const yearPreviousSeconds = utils.nsToSecNs(beginningOfNextMonth - 24n * fifteenDaysInNs);
 
   const tenDaysInToPreviousMonth = beginningOfPreviousMonth + tenDaysInNs;
   const tenDaysInToPreviousMonthSeconds = utils.nsToSecNs(tenDaysInToPreviousMonth);
@@ -150,7 +154,7 @@ describe('Balances deduplicate tests', () => {
     {
       name: 'Accounts with upper and lower bounds and ne',
       urls: [
-        `/api/v1/balances?timestamp=lt:${endOfPreviousMonthSeconds}&timestamp=gt:${beginningOfPreviousMonthSeconds}&timestamp=ne:${tenDaysInToPreviousMonthSeconds}&order=asc`,
+        `/api/v1/balances?timestamp=lt:${endOfPreviousMonthSeconds}&timestamp=gte:${beginningOfPreviousMonthSeconds}&timestamp=ne:${tenDaysInToPreviousMonthSeconds}&order=asc`,
       ],
       expected: {
         timestamp: `${middleOfPreviousMonthSeconds}`,
@@ -188,7 +192,7 @@ describe('Balances deduplicate tests', () => {
     {
       name: 'Accounts with upper and lower bounds lt',
       urls: [
-        `/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=lt:${endOfPreviousMonthSeconds}&timestamp=gt:${beginningOfPreviousMonthSeconds}&order=asc`,
+        `/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=lt:${endOfPreviousMonthSeconds}&timestamp=gte:${beginningOfPreviousMonthSeconds}&order=asc`,
       ],
       expected: {
         timestamp: `${middleOfPreviousMonthSeconds}`,
@@ -328,16 +332,10 @@ describe('Balances deduplicate tests', () => {
       },
     },
     {
-      name: 'Lower bound only',
+      name: 'Lower bound less than beginning of previous month',
       urls: [
-        `/api/v1/balances?timestamp=gte:${beginningOfCurrentMonthSeconds}`,
         `/api/v1/balances?timestamp=gte:${beginningOfPreviousMonthSeconds}`,
-        `/api/v1/balances?timestamp=gte:${endOfPreviousMonthSeconds}`,
-        `/api/v1/balances?timestamp=gte:${yearFutureSeconds}`,
-        `/api/v1/balances?timestamp=gt:${beginningOfCurrentMonthSeconds}`,
-        `/api/v1/balances?timestamp=gt:${beginningOfPreviousMonthSeconds}`,
-        `/api/v1/balances?timestamp=gt:${yearFutureSeconds}`,
-        `/api/v1/balances?timestamp=gt:${endOfPreviousMonthSeconds}`,
+        `/api/v1/balances?timestamp=gte:${yearPreviousSeconds}`,
       ],
       expected: {
         timestamp: `${endOfPreviousMonthSeconds}`,
@@ -380,6 +378,51 @@ describe('Balances deduplicate tests', () => {
                 token_id: '0.0.70000',
               },
             ],
+          },
+          {
+            account: '0.0.2',
+            balance: 22,
+            tokens: [],
+          },
+        ],
+        links: {
+          next: null,
+        },
+      },
+    },
+    {
+      name: 'Lower bound greater than beginning of previous month',
+      urls: [
+        `/api/v1/balances?timestamp=gt:${beginningOfPreviousMonthSeconds}`,
+        `/api/v1/balances?timestamp=gte:${tenDaysInToPreviousMonthSeconds}`,
+      ],
+      expected: {
+        timestamp: `${endOfPreviousMonthSeconds}`,
+        balances: [
+          {
+            account: '0.1.21',
+            balance: 21,
+            tokens: [],
+          },
+          {
+            account: '0.1.20',
+            balance: 20,
+            tokens: [
+              {
+                balance: 1001,
+                token_id: '0.0.90000',
+              },
+            ],
+          },
+          {
+            account: '0.1.19',
+            balance: 90,
+            tokens: [],
+          },
+          {
+            account: '0.1.18',
+            balance: 80,
+            tokens: [],
           },
           {
             account: '0.0.2',
@@ -562,12 +605,15 @@ describe('Balances deduplicate tests', () => {
       },
     },
     {
-      name: 'Upper bound in the past',
+      name: 'Upper bound in the past and lower bound greater than end of previous month',
       urls: [
         `/api/v1/balances?account.id=gte:0.1.16&account.id=lt:0.1.21&timestamp=1567296000.000000000`,
         `/api/v1/balances?timestamp=1567296000.000000000`,
         `/api/v1/balances?timestamp=lte:1567296000.000000000`,
         `/api/v1/balances?timestamp=lt:1567296000.000000000`,
+        `/api/v1/balances?timestamp=gte:${beginningOfCurrentMonthSeconds}`,
+        `/api/v1/balances?timestamp=gt:${endOfPreviousMonthSeconds}`,
+        `/api/v1/balances?timestamp=gte:${yearFutureSeconds}`,
       ],
       expected: {
         timestamp: null,
@@ -587,5 +633,13 @@ describe('Balances deduplicate tests', () => {
         expect(response.body).toEqual(spec.expected);
       });
     });
+  });
+
+  test('Invalid timestamp', async () => {
+    const url = `/api/v1/balances?timestamp=gte:${yearFutureSeconds}&timestamp=lt:${yearPreviousSeconds}`;
+    const response = await request(server).get(url);
+    expect(response.status).toEqual(400);
+    const err = JSON.parse(response.text);
+    expect(err._status.messages[0].message).toEqual('Invalid timestamp ranges: lt value is less than gt value');
   });
 });
