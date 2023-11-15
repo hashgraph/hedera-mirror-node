@@ -59,11 +59,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
-import com.hedera.hashgraph.sdk.proto.TokenPauseStatus;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -98,8 +96,8 @@ public class CallFeature extends AbstractFeature {
     private String estimateContractAddress;
     private ExpandedAccountId receiverAccountId;
     private ExpandedAccountId secondReceiverAccount;
-    private long balanceOfToken;
-    private long totalSupplyOfToken;
+    private ExpandedAccountId thirdReceiver;
+    private String secondReceiverAlias;
     private TokenId fungibleTokenId;
     private TokenId nonFungibleTokenId;
     private TokenId fungibleKycUnfrozenTokenId;
@@ -144,7 +142,9 @@ public class CallFeature extends AbstractFeature {
         estimateContractAddress = deployedEstimatePrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.ALICE);
-        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.CAROL);
+        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.BOB);
+        thirdReceiver = accountClient.getAccount(AccountNameEnum.DAVE);
+        secondReceiverAlias = secondReceiverAccount.getPublicKey().toEvmAddress().toString();
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
         fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN).tokenId();
         nonFungibleTokenId = tokenClient.getToken(NFT_FOR_ETH_CALL).tokenId();
@@ -516,9 +516,10 @@ public class CallFeature extends AbstractFeature {
         var statusAfterPause = response.getResult().substring(2, 66);
         var statusAfterUnpause = response.getResult().substring(66);
 
-        assertThat(Integer.valueOf(statusAfterPause, 16)).isEqualTo(TokenPauseStatus.Paused_VALUE);
-        // assertThat(Integer.valueOf(statusAfterUnpause, 16)).isEqualTo(TokenPauseStatus.Unpaused_VALUE);//check fails
-        // for both Fungible and NFT
+        //assert true
+        assertThat(Integer.valueOf(statusAfterPause, 16)).isEqualTo(1);
+        //assert false
+        assertThat(Integer.valueOf(statusAfterUnpause, 16)).isZero();
     }
 
     @Then("I freeze {string} token, unfreeze and get status")
@@ -531,9 +532,10 @@ public class CallFeature extends AbstractFeature {
         var statusAfterFreeze = response.getResult().substring(2, 66);
         var statusAfterUnfreeze = response.getResult().substring(66);
 
-        assertThat(Integer.valueOf(statusAfterFreeze, 16)).isEqualTo(TokenFreezeStatus.Frozen_VALUE);
-        // assertThat(Integer.valueOf(statusAfterUnfreeze, 16)).isEqualTo(TokenFreezeStatus.Unfrozen_VALUE); // may fail
-        // here, was 0 before? @todo check
+        //assert true
+        assertThat(Integer.valueOf(statusAfterFreeze, 16)).isEqualTo(1);
+        //assert false
+        assertThat(Integer.valueOf(statusAfterUnfreeze, 16)).isZero();
     }
 
     @Then("I approve a FUNGIBLE token and get allowance")
@@ -542,7 +544,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE,
                 APPROVE_TOKEN_GET_ALLOWANCE,
                 asAddress(fungibleTokenId),
-                asAddress(secondReceiverAccount),
+                asAddress(secondReceiverAlias),
                 new BigInteger("1"),
                 new BigInteger("0"));
 
@@ -576,7 +578,7 @@ public class CallFeature extends AbstractFeature {
                 DISSOCIATE_TOKEN_FAIL_TRANSFER,
                 asAddress(fungibleTokenId),
                 asAddress(admin),
-                asAddress(secondReceiverAccount),
+                asAddress(thirdReceiver),
                 new BigInteger("1"),
                 new BigInteger("0"));
         var response = callContract(data, precompileContractAddress);
@@ -585,8 +587,8 @@ public class CallFeature extends AbstractFeature {
 
         // transfer after associate should pass -> response code 22 equals SUCCESS
         assertThat(statusAfterAssociate).isEqualTo(22);
-        // transfer after dissociate should fail > response code 237 equals to owner does not own the token
-        // assertThat(Integer.parseInt(statusAfterDissociate, 16)).isEqualTo(184); //atm failing, investigating with devs
+        // transfer after dissociate should fail > response code 184 equals to owner does not own the token
+        assertThat(statusAfterDissociate).isEqualTo(184);
     }
 
     @Then("I dissociate a NFT and fail transfer")
@@ -596,7 +598,7 @@ public class CallFeature extends AbstractFeature {
                 DISSOCIATE_TOKEN_FAIL_TRANSFER,
                 asAddress(nonFungibleTokenId),
                 asAddress(receiverAccountId),
-                asAddress(secondReceiverAccount),
+                asAddress(secondReceiverAlias),
                 new BigInteger("0"),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
@@ -658,7 +660,7 @@ public class CallFeature extends AbstractFeature {
                 GRANT_KYC_REVOKE_KYC,
                 asAddress(fungibleKycUnfrozenTokenId),
                 asAddress(admin),
-                asAddress(secondReceiverAccount),
+                asAddress(secondReceiverAlias),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
