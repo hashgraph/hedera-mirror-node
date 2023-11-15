@@ -36,11 +36,11 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 
     /**
-     * Retrieves the most recent state of an nft allowance by its ID up to a given block timestamp.
+     * Retrieves the most recent state of an nft allowance by its owner up to a given block timestamp.
      * The method considers both the current state of the nft allowance and its historical states
      * and returns the one that was valid just before or equal to the provided block timestamp.
      *
-     * @param id              the ID of the nft allowance to be retrieved.
+     * @param owner the ID of the owner
      * @param blockTimestamp  the block timestamp used to filter the results.
      * @return an Optional containing the nft allowance's state at the specified timestamp.
      *         If there is no record found for the given criteria, an empty Optional is returned.
@@ -50,26 +50,24 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                     """
                     (
                         select *
-                        from nft_allowance
-                        where token_id = :tokenId
-                            and owner = :owner
-                            and spender = :spender
-                            and lower(timestamp_range) <= :blockTimestamp
-                    )
-                    union all
-                    (
-                        select *
-                        from nft_allowance_history
-                        where token_id = :tokenId
-                            and owner = :owner
-                            and spender = :spender
-                            and lower(timestamp_range) <= :blockTimestamp
-                        order by lower(timestamp_range) desc
+                            from nft_allowance
+                            where owner = :owner
+                                and approved_for_all = true
+                                and lower(timestamp_range) <= :blockTimestamp
+                        )
+                        union all
+                        (
+                            select *
+                            from nft_allowance_history
+                            where owner = :owner
+                                and approved_for_all = true
+                                and lower(timestamp_range) <= :blockTimestamp
+                            order by lower(timestamp_range) desc
+                            limit 1
+                        )
+                        order by timestamp_range desc
                         limit 1
-                    )
-                    order by timestamp_range desc
-                    limit 1
                     """,
             nativeQuery = true)
-    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long owner, long spender, long blockTimestamp);
+    Optional<NftAllowance> findByTimestampAndOwnerAndApprovedForAllIsTrue(long owner, long blockTimestamp);
 }

@@ -688,6 +688,7 @@ public class DomainBuilder {
                 .owner(entityId().getId())
                 .payerAccountId(entityId())
                 .spender(entityId().getId())
+                .approvedForAll(true)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
