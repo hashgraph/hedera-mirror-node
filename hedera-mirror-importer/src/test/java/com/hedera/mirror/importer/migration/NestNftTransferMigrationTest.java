@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -54,10 +56,11 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.80.1")
-class NestNftTransferMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class NestNftTransferMigrationTest extends IntegrationTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

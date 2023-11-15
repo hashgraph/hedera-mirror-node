@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
 import java.util.ArrayList;
@@ -37,13 +38,15 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.55.4")
-class MissingEvmAddressMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class MissingEvmAddressMigrationTest extends IntegrationTest {
 
     private static final String TABLE_IDS = "id";
 

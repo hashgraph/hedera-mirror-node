@@ -53,14 +53,16 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.44.1")
-class SupportDeletedTokenDissociateMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
     private static final EntityId TREASURY = EntityId.of("0.0.200");

@@ -18,15 +18,18 @@ package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
+import com.hedera.mirror.importer.IntegrationTest;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.Arrays;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.RowMapper;
 
-abstract class AbstractStakingMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+abstract class AbstractStakingMigrationTest extends IntegrationTest {
 
     private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
 

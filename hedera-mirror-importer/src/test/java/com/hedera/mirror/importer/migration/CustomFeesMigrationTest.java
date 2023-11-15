@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -56,9 +58,10 @@ import org.springframework.util.StreamUtils;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
-class CustomFeesMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class CustomFeesMigrationTest extends IntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
     private final @Owner JdbcTemplate jdbcTemplate;

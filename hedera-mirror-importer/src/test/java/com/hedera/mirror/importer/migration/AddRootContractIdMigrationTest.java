@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.annotation.Resource;
 import java.io.File;
@@ -32,15 +33,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.0")
-class AddRootContractIdMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class AddRootContractIdMigrationTest extends IntegrationTest {
 
     @Resource
     @Owner

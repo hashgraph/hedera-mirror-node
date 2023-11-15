@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.time.DurationMax;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -44,6 +45,7 @@ public class HistoricalBalanceProperties {
     @NotNull
     private Duration initialDelay = Duration.ofMinutes(2);
 
+    @DurationMax(days = 7)
     @DurationMin(minutes = 15)
     @DurationUnit(ChronoUnit.MINUTES)
     @NotNull

@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.annotation.Resource;
@@ -37,15 +38,17 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.39.2")
-class EntityTimestampMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class EntityTimestampMigrationTest extends IntegrationTest {
 
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
     private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001);

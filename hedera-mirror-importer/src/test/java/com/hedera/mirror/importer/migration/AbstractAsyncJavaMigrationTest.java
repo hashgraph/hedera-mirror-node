@@ -22,8 +22,9 @@ import static org.awaitility.Awaitility.await;
 import com.hedera.mirror.importer.IntegrationTest;
 import java.time.Duration;
 import java.util.Objects;
+import org.junit.jupiter.api.AfterEach;
 
-abstract class AbstractAsyncJavaMigrationTest extends IntegrationTest {
+abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> extends IntegrationTest {
 
     private static final String RESET_CHECKSUM_SQL = "update flyway_schema_history set checksum = -1 where script = ?";
 
@@ -37,23 +38,26 @@ abstract class AbstractAsyncJavaMigrationTest extends IntegrationTest {
             )
             """;
 
-    protected void resetChecksum(AsyncJavaMigration<?> migration) {
-        jdbcOperations.update(RESET_CHECKSUM_SQL, getScript(migration));
+    protected abstract T getMigration();
+
+    @AfterEach
+    void resetChecksum() {
+        jdbcOperations.update(RESET_CHECKSUM_SQL, getScript());
     }
 
-    protected void waitForCompletion(AsyncJavaMigration<?> migration) {
+    protected void waitForCompletion() {
         await().atMost(Duration.ofSeconds(5))
                 .pollDelay(Duration.ofMillis(100))
                 .pollInterval(Duration.ofMillis(100))
-                .untilAsserted(() -> assertThat(isMigrationCompleted(migration)).isTrue());
+                .untilAsserted(() -> assertThat(isMigrationCompleted()).isTrue());
     }
 
-    private String getScript(AsyncJavaMigration<?> migration) {
-        return migration.getClass().getName();
+    private String getScript() {
+        return getMigration().getClass().getName();
     }
 
-    private boolean isMigrationCompleted(AsyncJavaMigration<?> migration) {
-        var actual = jdbcOperations.queryForObject(SELECT_LAST_CHECKSUM_SQL, Integer.class, getScript(migration));
-        return Objects.equals(actual, migration.getSuccessChecksum());
+    private boolean isMigrationCompleted() {
+        var actual = jdbcOperations.queryForObject(SELECT_LAST_CHECKSUM_SQL, Integer.class, getScript());
+        return Objects.equals(actual, getMigration().getSuccessChecksum());
     }
 }

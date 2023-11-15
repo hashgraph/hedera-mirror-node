@@ -22,6 +22,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.NftHistory;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import java.io.File;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
@@ -31,16 +32,18 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.87.2")
-class AddNftHistoryRangesMigrationTest extends PartitionMaintenanceDisabledMigrationTest {
+class AddNftHistoryRangesMigrationTest extends IntegrationTest {
 
     private static final RowMapper<NftHistory> NFT_HISTORY_ROW_MAPPER = rowMapper(NftHistory.class);
 

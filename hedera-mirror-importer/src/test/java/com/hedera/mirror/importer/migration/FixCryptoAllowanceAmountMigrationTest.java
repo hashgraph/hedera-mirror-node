@@ -38,10 +38,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ import reactor.core.publisher.Flux;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTest {
+class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTest<FixCryptoAllowanceAmountMigration> {
 
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final DBProperties dbProperties;
@@ -63,7 +63,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     private final RecordFileParser recordFileParser;
     private final RecordItemBuilder recordItemBuilder;
 
-    private FixCryptoAllowanceAmountMigration migration;
+    private @Getter FixCryptoAllowanceAmountMigration migration;
 
     @BeforeEach
     void setup() {
@@ -73,18 +73,13 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
                 new FixCryptoAllowanceAmountMigration(dbProperties, entityProperties, mirrorProperties, jdbcTemplate);
     }
 
-    @AfterEach
-    void teardown() {
-        resetChecksum(migration);
-    }
-
     @Test
     void empty() {
         // given, when
         runMigration();
 
         // then
-        waitForCompletion(migration);
+        waitForCompletion();
         assertThat(tableExists("crypto_allowance_migration")).isFalse();
         assertThat(cryptoAllowanceRepository.findAll()).isEmpty();
         assertThat(findHistory(CryptoAllowance.class)).isEmpty();
@@ -262,7 +257,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
         recordFileParser.parse(recordFile);
 
         // then
-        waitForCompletion(migration);
+        waitForCompletion();
         assertThat(tableExists("crypto_allowance_migration")).isFalse();
 
         current1.setTimestampUpper(recordItem3.getConsensusTimestamp());

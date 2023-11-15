@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +50,8 @@ import org.springframework.util.StreamUtils;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrationTest {
+class BackfillAndDeduplicateBalanceMigrationTest
+        extends AbstractAsyncJavaMigrationTest<BackfillAndDeduplicateBalanceMigration> {
 
     private static final String REVERT_DDL =
             """
@@ -71,7 +73,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
 
     private final AccountBalanceRepository accountBalanceRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
-    private final BackfillAndDeduplicateBalanceMigration migration;
+    private final @Getter BackfillAndDeduplicateBalanceMigration migration;
 
     @Value("classpath:db/migration/v1/V1.89.1__add_balance_deduplicate_functions.sql")
     private final Resource migrationSql;
@@ -82,7 +84,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
     void teardown() {
         addBalanceDeduplicateFunctions();
         jdbcTemplate.execute(REVERT_DDL);
-        resetChecksum(migration);
+        resetChecksum();
     }
 
     @Test
@@ -90,7 +92,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
         // given, when
         runMigration();
         // then
-        waitForCompletion(migration);
+        waitForCompletion();
         assertSchema();
         assertThat(accountBalanceRepository.findAll()).isEmpty();
         assertThat(tokenBalanceRepository.findAll()).isEmpty();
@@ -403,7 +405,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
         runMigration();
 
         // then
-        waitForCompletion(migration);
+        waitForCompletion();
         assertSchema();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenBalances);
@@ -441,7 +443,7 @@ class BackfillAndDeduplicateBalanceMigrationTest extends AbstractAsyncJavaMigrat
         runMigration();
 
         // then
-        waitForCompletion(migration);
+        waitForCompletion();
         assertSchema();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactly(expectedTokenBalance);

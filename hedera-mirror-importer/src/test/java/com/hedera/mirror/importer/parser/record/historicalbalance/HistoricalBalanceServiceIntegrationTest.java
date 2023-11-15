@@ -51,12 +51,16 @@ import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@ExtendWith(OutputCaptureExtension.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
@@ -292,6 +296,24 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         .plus(properties.getInitialDelay())
                         .toNanos();
         verifyGeneratedBalances(balanceTimestamp, entities, tokenAccounts);
+    }
+
+    @Test
+    void noPartitionFound(CapturedOutput output) {
+        // given, first record file
+        var recordFile = domainBuilder.recordFile().persist();
+
+        // when, next record file at 21 years later parsed, which is guaranteed to be in a partition not created yet
+        long consensusEnd =
+                recordFile.getConsensusEnd() + Duration.ofDays(365 * 21).toNanos();
+        parseRecordFile(consensusEnd);
+
+        // then
+        var expectedMessage = String.format("No account_balance partition found for timestamp %d", consensusEnd);
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .atMost(Durations.FIVE_SECONDS)
+                .untilAsserted(() -> assertThat(output.getOut()).contains(expectedMessage));
+        assertThat(accountBalanceFileRepository.findAll()).isEmpty();
     }
 
     private RecordFile parseRecordFile(final Long consensusEnd) {
