@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.common;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 class ContractCallContextTest {
@@ -63,6 +64,18 @@ class ContractCallContextTest {
 
         context.reset();
         assertThat(context.getRecordFile()).isNull();
+
+        context.close();
+    }
+
+    @Test
+    void testSenderIsClearedOnReset() {
+        ContractCallContext context = ContractCallContext.init(null);
+        context.setSenderAddress(Address.ALTBN128_ADD);
+        assertThat(context.getSenderAddress()).isEqualTo(Address.ALTBN128_ADD);
+
+        context.reset();
+        assertThat(context.getSenderAddress()).isNull();
 
         context.close();
     }

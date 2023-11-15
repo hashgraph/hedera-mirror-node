@@ -115,7 +115,7 @@ public class CallFeature extends AbstractFeature {
         address1 = new BigInteger(address1, 16).toString(16);
         address2 = new BigInteger(address2, 16).toString(16);
 
-        return new String[]{address1, address2};
+        return new String[] {address1, address2};
     }
 
     @RetryAsserts
@@ -259,13 +259,21 @@ public class CallFeature extends AbstractFeature {
     // ETHCALL-020
     @RetryAsserts
     @Then("I call function with IERC721 token NFT balanceOf owner")
-    public void ierc721MetadataTokenBalanceOf() {
+    public void ierc721MetadatagetBalanceOfTokenTokenBalanceOf() {
         var balanceOfNft = getBalanceOfToken(nonFungibleTokenId, admin.getAccountId());
         var data = encodeData(
                 ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft);
+    }
+
+    @RetryAsserts
+    @Then("I verify the precompile contract bytecode is deployed")
+    public void contractDeployed() {
+        var response = mirrorClient.getContractInfo(precompileContractAddress);
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     // ETHCALL-025

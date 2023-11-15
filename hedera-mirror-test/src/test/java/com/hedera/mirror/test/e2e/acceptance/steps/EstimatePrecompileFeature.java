@@ -464,9 +464,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         assertContractCallReturnsBadRequest(data, ercTestContractSolidityAddress);
     }
 
-    @And("I approve receiver account to use fungible token")
+    @And("I approve the contract to use fungible token")
     public void approveFungibleWithReceiver() {
-        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 10);
+        final var ercTestContractId = AccountId.fromSolidityAddress(ercTestContractSolidityAddress);
+        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, ercTestContractId, 10);
+        final var precompileTestContractId = AccountId.fromSolidityAddress(precompileTestContractSolidityAddress);
+        networkTransactionResponse = accountClient.approveToken(fungibleTokenId, precompileTestContractId, 10);
     }
 
     @Then("I call estimateGas with ERC transferFrom function")
@@ -540,7 +543,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         validateGasEstimation(data, TRANSFER_NFT, estimatePrecompileContractSolidityAddress);
     }
 
-    @And("I approve receiver account to use fungible token and transfer fungible token to the erc contract")
+    @And("I approve the receiver account to use fungible token and transfer fungible token to the erc contract")
     public void approveAndTransferFungibleToken() {
         accountClient.approveToken(fungibleTokenId, receiverAccount.getAccountId(), 50L);
         networkTransactionResponse = tokenClient.transferFungibleToken(

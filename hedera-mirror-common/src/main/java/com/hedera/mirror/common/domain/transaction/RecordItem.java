@@ -21,6 +21,7 @@ import static lombok.AccessLevel.PRIVATE;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.StreamItem;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.exception.ProtobufException;
@@ -32,7 +33,9 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +84,13 @@ public class RecordItem implements StreamItem {
     @Getter(PRIVATE)
     private final AtomicInteger logIndex = new AtomicInteger(0);
 
+    @NonFinal
+    @Setter
+    private Predicate<EntityId> contractTransactionPredicate;
+
+    @NonFinal
+    private Map<Long, ContractTransaction> contractTransactions;
+
     @Getter(AccessLevel.NONE)
     @NonFinal
     private EntityTransaction.EntityTransactionBuilder entityTransactionBuilder;
@@ -100,6 +110,17 @@ public class RecordItem implements StreamItem {
     @NonFinal
     @Setter
     private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
+
+    public void addContractTransaction(EntityId entityId) {
+        if (contractTransactionPredicate == null || !contractTransactionPredicate.test(entityId)) {
+            return;
+        }
+        getContractTransactions().computeIfAbsent(entityId.getId(), key -> ContractTransaction.builder()
+                .entityId(key)
+                .payerAccountId(payerAccountId.getId())
+                .consensusTimestamp(consensusTimestamp)
+                .build());
+    }
 
     public void addEntityId(EntityId entityId) {
         if (entityTransactionPredicate == null || !entityTransactionPredicate.test(entityId)) {
@@ -154,6 +175,23 @@ public class RecordItem implements StreamItem {
                 .map(EthereumTransaction::getHash)
                 .orElseGet(() -> Arrays.copyOfRange(
                         DomainUtils.toBytes(getTransactionRecord().getTransactionHash()), 0, 32));
+    }
+
+    private Map<Long, ContractTransaction> getContractTransactions() {
+        if (contractTransactions == null) {
+            contractTransactions = new HashMap<>();
+        }
+
+        return contractTransactions;
+    }
+
+    public Collection<ContractTransaction> populateContractTransactions() {
+        if (contractTransactions == null || contractTransactions.isEmpty()) {
+            return Collections.emptyList();
+        }
+        var ids = new ArrayList<>(contractTransactions.keySet());
+        contractTransactions.values().forEach(contractTransaction -> contractTransaction.setContractIds(ids));
+        return contractTransactions.values();
     }
 
     public static class RecordItemBuilder {
