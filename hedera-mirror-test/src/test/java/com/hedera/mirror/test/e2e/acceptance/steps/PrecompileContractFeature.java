@@ -188,19 +188,13 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(response.getRuntimeBytecode()).isNotBlank();
         assertThat(response.getRuntimeBytecode()).isNotEqualTo("0x");
         assertThat(response.getBytecode()).isNotEqualTo("0x");
-        System.out.println("bitee: " + response.getBytecode());
-        System.out.println("bitee: " + response.getRuntimeBytecode());
     }
 
     @RetryAsserts
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
-        System.out.println(data);
-        System.out.println(precompileTestContractSolidityAddress);
-        System.out.println(asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
-
         assertTrue(response.getResultAsBoolean());
     }
 
