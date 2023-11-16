@@ -175,7 +175,13 @@ public class ContractClient extends AbstractNetworkClient {
     public ContractFunctionResult executeContractQuery(
             ContractId contractId, String functionName, Long gas, ContractFunctionParameters parameters) {
         ContractCallQuery contractCallQuery =
-                new ContractCallQuery().setContractId(contractId).setGas(gas).setFunction(functionName, parameters);
+                new ContractCallQuery().setContractId(contractId).setGas(gas);
+        if (parameters == null) {
+            contractCallQuery.setFunction(functionName);
+        } else {
+            contractCallQuery.setFunction(functionName, parameters);
+        }
+
         long costInTinybars = contractCallQuery.getCost(client).toTinybars();
 
         long additionalTinybars = 10000;

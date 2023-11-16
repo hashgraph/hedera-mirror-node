@@ -44,3 +44,11 @@ Feature: in-equivalence tests
     Then I verify extcodecopy opcode against a system account "0.0.999" address returns empty bytes
     Then I verify extcodehash opcode against a system account "0.0.999" address returns empty bytes
 
+  Scenario Outline: Validate in-equivalence tests for internal calls
+    Given I successfully create equivalence call contract
+    Then I execute internal call against PRNG precompile address without amount
+    Then I execute internal call against PRNG precompile address with amount
+    Then I make internal call to system account "0.0.741" with amount
+    Then I make internal call to system account "0.0.741" without amount
+
+

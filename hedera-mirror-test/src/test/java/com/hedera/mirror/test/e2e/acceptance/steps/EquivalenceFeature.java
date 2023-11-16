@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
-import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import io.cucumber.java.en.Given;
@@ -69,71 +68,104 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute selfdestruct and set beneficiary to invalid {string} address")
     public void selfDestructAndSetBeneficiary(String beneficiary) {
         var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var message = executeContractCallTransaction(
-                deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
-        assertEquals(extractedStatus, INVALID_SOLIDITY_ADDRESS_EXCEPTION);
+        assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, extractedStatus);
     }
 
     @Then("I execute selfdestruct and set beneficiary to valid {string} address")
     public void selfDestructAndSetBeneficiaryValid(String beneficiary) {
         var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var message = executeContractCallTransaction(
-                deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
-        assertEquals(message, TRANSACTION_SUCCESSFUL_MESSAGE);
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
     }
 
     @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
     public void selfDestructAndSetBeneficiaryToDeletedContract() {
         var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
-        var message = executeContractCallTransaction(
-                deployedEquivalenceDestruct.contractId(), "destroyContract", parameters, null);
+        var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
-        assertEquals(extractedStatus, OBTAINER_SAME_CONTRACT_ID_EXCEPTION);
+        assertEquals(OBTAINER_SAME_CONTRACT_ID_EXCEPTION, extractedStatus);
     }
 
     @Then("I execute balance opcode to system account {string} address would return 0")
     public void balanceOfAddress(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getBalance", parameters);
-        assertEquals(functionResult.getInt256(0), new BigInteger("0"));
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getBalance", parameters);
+        assertEquals(new BigInteger("0"), functionResult.getInt256(0));
     }
 
     @Then("I execute balance opcode against a contract with balance")
     public void balanceOfContract() {
         var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getBalance", parameters);
-        assertEquals(functionResult.getInt256(0), new BigInteger("10000"));
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getBalance", parameters);
+        assertEquals(new BigInteger("10000"), functionResult.getInt256(0));
     }
 
     @Then("I verify extcodesize opcode against a system account {string} address returns 0")
     public void extCodeSizeAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getCodeSize", parameters);
-        assertEquals(functionResult.getInt256(0), new BigInteger("0"));
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeSize", parameters);
+        assertEquals(new BigInteger("0"), functionResult.getInt256(0));
     }
 
     @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
     public void extCodeCopyAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "copyCode", parameters);
-        assertArrayEquals(functionResult.getBytes(0), new byte[0]);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "copyCode", parameters);
+        assertArrayEquals(new byte[0], functionResult.getBytes(0));
     }
 
     @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
     public void extCodeHashAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall.contractId(), "getCodeHash", parameters);
-        assertArrayEquals(functionResult.getBytes(0), new byte[0]);
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeHash", parameters);
+        assertArrayEquals(new byte[0], functionResult.getBytes(0));
+    }
+
+    @Then("I execute internal call against PRNG precompile address without amount")
+    public void executeInternalCallForPRNGWithoutAmount() {
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getPseudorandomSeed");
+        assertEquals(32, functionResult.getBytes32(0).length);
+    }
+
+    @Then("I execute internal call against PRNG precompile address with amount")
+    public void executeInternalCallForPRNGWithAmount() {
+        var functionResult = executeContractCallTransaction(
+                deployedEquivalenceCall, "getPseudorandomSeedWithAmount", null, Hbar.fromTinybars(2222222L));
+        //POTENTIAL BUG
+        //THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+    }
+
+    @Then("I make internal call to system account {string} with amount")
+    public void internalCallToSystemAddressWithAmount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
+        var functionResult = executeContractCallTransaction(
+                deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(100L));
+        // POTENTIAL BUG
+        // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_FEE_SUBMITTED
+        // WAITING TO BE CLARIFIED
+    }
+
+    @Then("I make internal call to system account {string} without amount")
+    public void internalCallToSystemAddressWithoutAmount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
+        var functionResult =
+                executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
+        // POTENTIAL BUG
+        // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_SOLIDITY_ADDRESS
+        // WAITING TO BE CLARIFIED
     }
 
     private static long extractAccountNumber(String account) {
@@ -156,11 +188,13 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     private String executeContractCallTransaction(
-            ContractId contractId, String functionName, ContractFunctionParameters parameters, Hbar payableAmount) {
-
+            DeployedContract deployedContract,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount) {
         try {
             ExecuteContractResult executeContractResult = contractClient.executeContract(
-                    contractId,
+                    deployedContract.contractId(),
                     contractClient
                             .getSdkClient()
                             .getAcceptanceTestProperties()
@@ -179,10 +213,33 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
+    private String executeContractCallTransaction(
+            DeployedContract deployedContract, String functionName, ContractFunctionParameters parameters) {
+        try {
+            ExecuteContractResult executeContractResult = contractClient.executeContract(
+                    deployedContract.contractId(),
+                    contractClient
+                            .getSdkClient()
+                            .getAcceptanceTestProperties()
+                            .getFeatureProperties()
+                            .getMaxContractFunctionGas(),
+                    functionName,
+                    parameters,
+                    null);
+
+            networkTransactionResponse = executeContractResult.networkTransactionResponse();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            return "Transaction successful";
+        } catch (Exception e) {
+            // Return the exception message
+            return e.getMessage();
+        }
+    }
+
     private ContractFunctionResult executeContractCallQuery(
-            ContractId contractId, String functionName, ContractFunctionParameters parameters) {
+            DeployedContract deployedContract, String functionName, ContractFunctionParameters parameters) {
         return contractClient.executeContractQuery(
-                contractId,
+                deployedContract.contractId(),
                 functionName,
                 contractClient
                         .getSdkClient()
@@ -190,5 +247,17 @@ public class EquivalenceFeature extends AbstractFeature {
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 parameters);
+    }
+
+    private ContractFunctionResult executeContractCallQuery(DeployedContract deployedContract, String functionName) {
+        return contractClient.executeContractQuery(
+                deployedContract.contractId(),
+                functionName,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                null);
     }
 }
