@@ -25,8 +25,6 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("com.github.vladimir-bukhtoyarov:bucket4j-core")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    // Temporary until spring-boot-starter-webflux bumps up the dependency
-    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("javax.inject:javax.inject:1")
     implementation("com.esaulpaugh:headlong")

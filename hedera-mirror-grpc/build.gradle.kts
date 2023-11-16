@@ -31,8 +31,6 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.projectreactor.addons:reactor-extra")
-    // Temporary until spring-boot-starter-webflux bumps up the dependency
-    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("io.projectreactor:reactor-core-micrometer")
     implementation("io.vertx:vertx-pg-client")
     implementation("io.vertx:vertx-codegen")
