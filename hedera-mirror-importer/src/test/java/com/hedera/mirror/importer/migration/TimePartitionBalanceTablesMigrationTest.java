@@ -60,7 +60,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
-@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.89.1")

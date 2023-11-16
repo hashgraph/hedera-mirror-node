@@ -26,7 +26,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
  * to start.
  */
 @TestConfiguration
-public class PartitionMaintenanceDisabledMigrationTestConfiguration {
+public class DisablePartitionMaintenanceConfiguration {
 
     @MockBean
     private PartitionMaintenance partitionMaintenance;

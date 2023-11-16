@@ -46,7 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
-@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @TestPropertySource(properties = "spring.flyway.target=1.45.1")
 @Tag("migration")
 class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {

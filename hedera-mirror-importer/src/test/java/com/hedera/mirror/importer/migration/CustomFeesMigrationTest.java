@@ -58,7 +58,7 @@ import org.springframework.util.StreamUtils;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
-@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
 class CustomFeesMigrationTest extends IntegrationTest {

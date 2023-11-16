@@ -49,7 +49,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
-@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")

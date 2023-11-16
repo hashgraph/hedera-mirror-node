@@ -23,6 +23,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> extends IntegrationTest {
 
@@ -41,6 +42,7 @@ abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> e
     protected abstract T getMigration();
 
     @AfterEach
+    @BeforeEach
     void resetChecksum() {
         jdbcOperations.update(RESET_CHECKSUM_SQL, getScript());
     }

@@ -28,7 +28,7 @@ import lombok.Data;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.RowMapper;
 
-@Import(PartitionMaintenanceDisabledMigrationTestConfiguration.class)
+@Import(DisablePartitionMaintenanceConfiguration.class)
 abstract class AbstractStakingMigrationTest extends IntegrationTest {
 
     private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
