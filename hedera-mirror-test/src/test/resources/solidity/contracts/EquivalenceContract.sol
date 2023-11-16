@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 contract EquivalenceContract {
+    address constant PRNG_PRECOMPILE_ADDRESS = address(0x169);
+
     function makeCallWithoutAmount(address _to, bytes memory _data) external returns (bool success, bytes memory returnData) {
         (success, returnData) = _to.call(_data);
     }
@@ -84,5 +86,19 @@ contract EquivalenceContract {
             extcodecopy(_address, add(code, 32), 0, size)
         }
         return code;
+    }
+
+    function getPseudorandomSeed() external returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRNG_PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        randomBytes = abi.decode(result, (bytes32));
+    }
+
+    function getPseudorandomSeedWithAmount() external payable returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRNG_PRECOMPILE_ADDRESS.call{value: msg.value}(
+            abi.encodeWithSignature("getPseudorandomSeed()"));
+        require(success);
+        randomBytes = abi.decode(result, (bytes32));
     }
 }
