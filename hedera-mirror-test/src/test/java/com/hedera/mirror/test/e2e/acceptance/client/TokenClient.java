@@ -592,6 +592,7 @@ public class TokenClient extends AbstractNetworkClient {
     @RequiredArgsConstructor
     @Getter
     public enum TokenNameEnum {
+        // also used in call.feature
         FUNGIBLE(
                 "fungible",
                 TokenType.FUNGIBLE_COMMON,

@@ -72,6 +72,7 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +124,15 @@ public class PrecompileContractFeature extends AbstractFeature {
                         TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN,
                         List.of(customFixedFee, customFractionalFee))
                 .tokenId();
+
+        var tokenAndResponse =
+                tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, Collections.emptyList());
+        if (tokenAndResponse.response() != null) {
+            this.networkTransactionResponse = tokenAndResponse.response();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+        }
+        var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
+        log.info("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")
@@ -170,10 +180,25 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
+    @RetryAsserts
+    @Given("I verify the precompile contract bytecode is deployed successfully")
+    public void contractDeployed() {
+        var response = mirrorClient.getContractInfo(precompileTestContractSolidityAddress);
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotEqualTo("0x");
+        assertThat(response.getBytecode()).isNotEqualTo("0x");
+        System.out.println("bitee: " + response.getBytecode());
+        System.out.println("bitee: " + response.getRuntimeBytecode());
+    }
+
+    @RetryAsserts
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
-
+        System.out.println(data);
+        System.out.println(precompileTestContractSolidityAddress);
+        System.out.println(asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         assertTrue(response.getResultAsBoolean());
