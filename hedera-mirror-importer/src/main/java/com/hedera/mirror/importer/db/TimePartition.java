@@ -33,7 +33,7 @@ public class TimePartition implements Comparable<TimePartition> {
 
     private String name;
     private String parent;
-    private String range;
+    //    private String range;
     private Range<Long> timestampRange;
 
     @Override

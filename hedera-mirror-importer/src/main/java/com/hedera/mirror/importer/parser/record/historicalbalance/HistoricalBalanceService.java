@@ -131,10 +131,11 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                Optional<Long> maxConsensusTimestamp = getMaxConsensusTimestamp(timestamp);
+                var maxConsensusTimestamp = getMaxConsensusTimestamp(timestamp);
+                boolean full = maxConsensusTimestamp.isEmpty();
                 int accountBalancesCount;
                 int tokenBalancesCount;
-                if (maxConsensusTimestamp.isEmpty()) {
+                if (full) {
                     // get a full snapshot
                     accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
                     tokenBalancesCount =
@@ -163,7 +164,8 @@ public class HistoricalBalanceService {
                 accountBalanceFileRepository.save(accountBalanceFile);
 
                 log.info(
-                        "Generated historical account balance file {} with {} account balances and {} token balances in {}",
+                        "Generated {} historical account balance file {} with {} account balances and {} token balances in {}",
+                        full ? "full" : "deduped",
                         filename,
                         accountBalancesCount,
                         tokenBalancesCount,

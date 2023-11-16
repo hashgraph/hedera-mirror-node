@@ -84,18 +84,10 @@ const (
 	// select the lower bound of the second last partition whose lower bound is LTE @timestamp. It's possible that
 	// @timestamp is in a partition for which the first account balance snapshot is yet to be filled, thus the need
 	// to look back one more partition for account balance
-	selectPreviousPartitionLowerBound = `with partition_info as (
-                                select
-                                  -- extract the from_timestamp from the string "FOR VALUES FROM ('xxx') to ('yyy')"
-                                  substring(pg_get_expr(child.relpartbound, child.oid) from 'FROM \(''(\d+)''\)')::bigint as from_timestamp
-                                from pg_inherits
-                                join pg_class as parent on pg_inherits.inhparent = parent.oid
-                                join pg_class as child on pg_inherits.inhrelid = child.oid
-                                where parent.relname = 'account_balance'
-                              ), last_two as (
+	selectPreviousPartitionLowerBound = `with last_two as (
                                 select *
-                                from partition_info
-                                where @timestamp >= from_timestamp
+                                from mirror_node_time_partitions
+                                where parent = 'account_balance' and @timestamp >= from_timestamp
                                 order by from_timestamp desc
                                 limit 2
                               )

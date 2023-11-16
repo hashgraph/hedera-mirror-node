@@ -67,19 +67,9 @@ begin
     order by consensus_timestamp
   loop
     -- find the partition
-    with partition_info as (
-      select
-        child.relname as name,
-        -- extract the from_timestamp from the string "FOR VALUES FROM ('xxx') to ('yyy')"
-        substring(pg_get_expr(child.relpartbound, child.oid) from 'FROM \(''(\d+)''\)')::bigint as from_timestamp
-      from pg_inherits
-      join pg_class as parent on pg_inherits.inhparent = parent.oid
-      join pg_class as child on pg_inherits.inhrelid = child.oid
-      where parent.relname = table_name::text
-    )
     select name into partition_name
-    from partition_info
-    where balance_timestamp >= from_timestamp
+    from mirror_node_time_partitions
+    where parent = table_name::text and balance_timestamp >= from_timestamp
     order by from_timestamp desc
     limit 1;
 

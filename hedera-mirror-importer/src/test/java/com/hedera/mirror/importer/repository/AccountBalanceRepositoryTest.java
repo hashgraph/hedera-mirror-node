@@ -209,7 +209,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .accountBalance()
                 .customize(a -> a.id(new AccountBalance.Id(5L, EntityId.of(1))))
                 .persist();
-        // With no treasury account present the max consensus timestamp is 0
+        // With no treasury account present the max consensus timestamp is empty
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
                 .isEmpty();
 
@@ -231,8 +231,8 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .isEqualTo(5L);
 
-        // Only the timestamp within the range is returned
-        assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 4L))
+        // Only the timestamp within the range is returned, also verifies lower is inclusive and upper is exclusive
+        assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(3L, 5L))
                 .get()
                 .isEqualTo(3L);
 

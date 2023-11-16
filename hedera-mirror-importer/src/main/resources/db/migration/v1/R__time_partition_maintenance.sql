@@ -11,17 +11,9 @@ declare
   next_to_ns bigint;
   partition_name text;
 begin
-    with partition_info as (
-      select
-        -- extract the to_timestamp from the string "FOR VALUES FROM ('xxx') to ('yyy')"
-        substring(pg_get_expr(child.relpartbound, child.oid) from 'TO \(''(\d+)''\)')::bigint as to_timestamp
-      from pg_inherits
-      join pg_class as parent on pg_inherits.inhparent = parent.oid
-      join pg_class as child on pg_inherits.inhrelid = child.oid
-      where parent.relname = table_name::text
-    )
     select to_timestamp into next_from_ns
-    from partition_info
+    from mirror_node_time_partitions
+    where parent = table_name::text
     order by to_timestamp desc
     limit 1;
 

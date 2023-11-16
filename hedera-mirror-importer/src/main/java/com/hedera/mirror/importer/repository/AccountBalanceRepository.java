@@ -74,7 +74,6 @@ public interface AccountBalanceRepository
           from account_balance
           where account_id = 2 and consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
         """)
-    @Transactional
     Optional<Long> getMaxConsensusTimestampInRange(long lowerRangeTimestamp, long upperRangeTimestamp);
 
     @Override

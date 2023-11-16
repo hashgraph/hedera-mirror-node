@@ -352,11 +352,9 @@ class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
         long fromNs = from.toEpochSecond(LocalTime.MIN, ZoneOffset.UTC) * 1_000_000_000;
         long toNs = to.toEpochSecond(LocalTime.MIN, ZoneOffset.UTC) * 1_000_000_000;
         var name = String.format("%s_p%s", parent, from.format(DateTimeFormatter.ofPattern("yyyy_MM")));
-        var range = String.format("FOR VALUES FROM ('%s') TO ('%s')", fromNs, toNs);
         return TimePartition.builder()
                 .name(name)
                 .parent(parent)
-                .range(range)
                 .timestampRange(Range.closedOpen(fromNs, toNs))
                 .build();
     }
