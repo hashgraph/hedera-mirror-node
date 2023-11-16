@@ -49,6 +49,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -97,7 +98,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -190,7 +190,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var store = updater.getStore();
         final var mirrorEvmContractAliases =
                 (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var hederaTokenStore = initializeHederaTokenStore(store);
@@ -493,9 +494,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     protected ImpliedTransfers extrapolateImpliedTransferDetailsFromSyntheticTxn(
             final TransactionBody transactionBody) {
-        final var senderAccount = getSenderAccountId(transactionBody);
-        final var senderAddress = EntityIdUtils.asTypedEvmAddress(senderAccount);
-        final var explicitChanges = constructBalanceChanges(transactionBody, senderAddress);
+        final var explicitChanges = constructBalanceChanges(transactionBody);
         return new ImpliedTransfers(explicitChanges);
     }
 
@@ -604,10 +603,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         return false;
     }
 
-    private List<BalanceChange> constructBalanceChanges(
-            final TransactionBody transactionBody, final Address senderAddress) {
+    private List<BalanceChange> constructBalanceChanges(final TransactionBody transactionBody) {
         final List<BalanceChange> allChanges = new ArrayList<>();
-        final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+        final var accountId =
+                EntityIdUtils.accountIdFromEvmAddress(ContractCallContext.get().getSenderAddress());
         final var transferOp = transactionBody.getCryptoTransfer();
         for (final TokenTransferList tokenTransferList : transferOp.getTokenTransfersList()) {
             final var token = tokenTransferList.getToken();
@@ -626,16 +625,5 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         return allChanges;
-    }
-
-    private AccountID getSenderAccountId(final TransactionBody transactionBody) {
-        final var transferOp = transactionBody.getCryptoTransfer();
-        if (transferOp.getTransfers().getAccountAmountsCount() > 0) {
-            return transferOp.getTransfers().getAccountAmounts(0).getAccountID();
-        } else if (transferOp.getTokenTransfers(0).getTransfersCount() > 0) {
-            return transferOp.getTokenTransfers(0).getTransfers(0).getAccountID();
-        } else {
-            return transferOp.getTokenTransfers(0).getNftTransfers(0).getSenderAccountID();
-        }
     }
 }

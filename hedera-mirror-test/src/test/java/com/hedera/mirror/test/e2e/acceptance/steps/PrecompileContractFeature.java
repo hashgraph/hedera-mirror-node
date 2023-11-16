@@ -175,6 +175,14 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
+    @RetryAsserts
+    @Then("I verify the precompile contract bytecode is deployed successfully")
+    public void contractDeployed() {
+        var response = mirrorClient.getContractInfo(precompileTestContractSolidityAddress);
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
+    }
+
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(tokenIds.get(0)));

@@ -28,7 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
@@ -131,12 +133,18 @@ class TokenUpdatePrecompileTest {
     private HTSPrecompiledContract subject;
 
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompileStatic;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private PrecompileMapper precompileMapper;
 
     @BeforeEach
     void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final PrecompilePricingUtils pricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
@@ -156,6 +164,7 @@ class TokenUpdatePrecompileTest {
         if (!tokenUpdatePrecompileStatic.isClosed()) {
             tokenUpdatePrecompileStatic.close();
         }
+        staticMock.close();
     }
 
     @Test
