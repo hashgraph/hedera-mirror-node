@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -44,9 +45,12 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.AfterEach;
@@ -55,9 +59,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(OutputCaptureExtension.class)
@@ -70,6 +77,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EntityRepository entityRepository;
+    private final FlywayProperties flywayProperties;
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
     private final TimePartitionService timePartitionService;
@@ -306,6 +315,7 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when, next record file at 21 years later parsed, which is guaranteed to be in a partition not created yet
         long consensusEnd =
                 recordFile.getConsensusEnd() + Duration.ofDays(365 * 21).toNanos();
+        var oldPartitionEnd = createRecordFilePartitions(consensusEnd);
         parseRecordFile(consensusEnd);
 
         // then
@@ -314,6 +324,70 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                 .atMost(Durations.FIVE_SECONDS)
                 .untilAsserted(() -> assertThat(output.getOut()).contains(expectedMessage));
         assertThat(accountBalanceFileRepository.findAll()).isEmpty();
+
+        // cleanup
+        deleteRecordFilePartitions(oldPartitionEnd);
+    }
+
+    /**
+     * Create record file partitions when the table is partitioned, to avoid the failure when test cases try to insert
+     * a row out of the partition range otherwise.
+     */
+    private Long createRecordFilePartitions(long endTimestamp) {
+        Long partitionEnd = Long.MAX_VALUE;
+        try {
+            partitionEnd = jdbcTemplate.queryForObject(
+                    """
+                select to_timestamp
+                from mirror_node_time_partitions
+                where parent = 'record_file'
+                order by to_timestamp desc
+                limit 1
+                """,
+                    Long.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return partitionEnd;
+        }
+
+        var partitionStartDate = flywayProperties.getPlaceholders().get("partitionStartDate");
+        var partitionTimeInterval = flywayProperties.getPlaceholders().get("partitionTimeInterval");
+        var partitionEndDate = String.format(
+                "'%s'",
+                Instant.ofEpochSecond(endTimestamp / 1_000_000_000)
+                        .atZone(ZoneOffset.UTC)
+                        .format(DateTimeFormatter.ISO_LOCAL_DATE));
+        jdbcTemplate.queryForObject(
+                """
+                select create_time_partitions(table_name := 'public.record_file',
+                  partition_interval := ?::interval,
+                  start_from := ?::timestamptz,
+                  end_at := ?::timestamptz)
+                """,
+                Boolean.class,
+                partitionTimeInterval,
+                partitionStartDate,
+                partitionEndDate);
+
+        return partitionEnd;
+    }
+
+    private void deleteRecordFilePartitions(Long fromTimestamp) {
+        var partitions = jdbcTemplate.queryForList(
+                """
+                select name
+                from mirror_node_time_partitions
+                where parent = 'record_file' and from_timestamp >= ?
+                order by from_timestamp
+                """,
+                String.class,
+                fromTimestamp);
+        if (partitions.isEmpty()) {
+            return;
+        }
+
+        var sql =
+                partitions.stream().map(p -> String.format("drop table %s", p)).collect(Collectors.joining(";"));
+        jdbcTemplate.execute(sql);
     }
 
     private RecordFile parseRecordFile(final Long consensusEnd) {
