@@ -49,6 +49,8 @@ dependencies {
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    // Temporary until spring-boot-starter-webflux bumps up the dependency
+    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("io.swagger:swagger-annotations")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.apache.commons:commons-lang3")

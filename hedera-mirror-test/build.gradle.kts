@@ -27,6 +27,8 @@ plugins {
 dependencies {
     implementation(platform("io.cucumber:cucumber-bom"))
     implementation("io.cucumber:cucumber-java")
+    // Temporary until spring-boot-starter-webflux bumps up the dependency
+    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")

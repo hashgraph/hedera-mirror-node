@@ -28,6 +28,8 @@ dependencies {
     implementation(project(":common"))
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    // Temporary until spring-boot-starter-webflux bumps up the dependency
+    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")

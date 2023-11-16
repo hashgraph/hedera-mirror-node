@@ -33,6 +33,8 @@ dependencies {
     implementation("com.graphql-java:graphql-java-extended-scalars")
     implementation("com.graphql-java:graphql-java-extended-validation")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
+    // Temporary until spring-boot-starter-webflux bumps up the dependency
+    implementation("io.projectreactor.netty:reactor-netty-http:1.1.13")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.mapstruct:mapstruct")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
