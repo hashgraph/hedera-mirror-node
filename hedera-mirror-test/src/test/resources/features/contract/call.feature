@@ -22,4 +22,4 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with nested deploy using create function
     Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
-    Then I successfully update the balance of an account and get the updated balance
+    Then I successfully update the balance of an account and get the updated balance after 2 seconds
