@@ -24,12 +24,13 @@ import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
-import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.boot.convert.DurationStyle;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,7 +47,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<Long> {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
+    private static final String DEFAULT_MIN_FREQUENCY = "4h";
     private static final long EPOCH = 0L;
+    private static final String MIN_FREQUENCY_KEY = "minFrequency";
+    private static final long NO_BALANCE = -1;
 
     // Can't use spring data repositories because the migration runs with a different role, so it can drop the resources
     // at the end
@@ -82,10 +86,6 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
               where consensus_timestamp >= :lowerBound and consensus_timestamp < :upperBound
             )
             """;
-
-    private static final long MIN_INTERVAL = Duration.ofHours(4).toNanos();
-
-    private static final long NO_BALANCE = -1;
 
     private static final String PATCH_ORIGINAL_FIRST_ACCOUNT_BALANCE_SNAPSHOT_SQL =
             """
@@ -150,6 +150,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
     private final TransactionOperations transactionOperations = transactionOperations();
 
     private Long lastConsensusTimestamp;
+    private long minFrequency;
 
     @Lazy
     public BackfillAndDeduplicateBalanceMigration(
@@ -169,6 +170,12 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
 
     @Override
     protected Long getInitial() {
+        minFrequency = DurationStyle.SIMPLE
+                .parse(
+                        migrationProperties.getParams().getOrDefault(MIN_FREQUENCY_KEY, DEFAULT_MIN_FREQUENCY),
+                        ChronoUnit.MINUTES)
+                .toNanos();
+
         lastConsensusTimestamp =
                 queryForObjectOrNull(SELECT_LAST_CONSENSUS_TIMESTAMP_SQL, EmptySqlParameterSource.INSTANCE, Long.class);
         if (lastConsensusTimestamp == null) {
@@ -240,7 +247,7 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
             return null;
         }
 
-        long lowerBound = last + MIN_INTERVAL;
+        long lowerBound = last + minFrequency;
         var params = new MapSqlParameterSource()
                 .addValue("lowerBound", lowerBound)
                 .addValue("upperBound", lastConsensusTimestamp);

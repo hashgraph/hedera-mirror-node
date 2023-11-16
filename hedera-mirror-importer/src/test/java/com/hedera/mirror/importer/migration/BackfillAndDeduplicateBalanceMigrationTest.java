@@ -20,10 +20,12 @@ import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TREASUR
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Lists;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
@@ -74,6 +76,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     private final AccountBalanceRepository accountBalanceRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final @Getter BackfillAndDeduplicateBalanceMigration migration;
+    private final MirrorProperties mirrorProperties;
 
     @Value("classpath:db/migration/v1/V1.89.1__add_balance_deduplicate_functions.sql")
     private final Resource migrationSql;
@@ -84,7 +87,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     void teardown() {
         addBalanceDeduplicateFunctions();
         jdbcTemplate.execute(REVERT_DDL);
-        resetChecksum();
+        getMigrationProperties().getParams().clear();
     }
 
     @Test
@@ -449,6 +452,117 @@ class BackfillAndDeduplicateBalanceMigrationTest
         assertThat(tokenBalanceRepository.findAll()).containsExactly(expectedTokenBalance);
     }
 
+    @Test
+    void minFrequency() {
+        // given min frequency is set to 6 minutes
+        getMigrationProperties().getParams().put("minFrequency", "6m");
+
+        var treasury = EntityId.of(TREASURY);
+        var account = EntityId.of(domainBuilder.id() + TREASURY);
+        var token = EntityId.of(domainBuilder.id() + TREASURY);
+        long sentinelTimestamp = domainBuilder.timestamp();
+        setSentinelTimestamp(sentinelTimestamp);
+
+        var timestamp = new AtomicLong(sentinelTimestamp - Duration.ofHours(1).toNanos());
+        long interval = Duration.ofMinutes(3).toNanos();
+        // first account balance file
+        domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(timestamp.get()))
+                .persist();
+        var oldAccountBalances = Lists.newArrayList(
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(100).id(new AccountBalance.Id(timestamp.get(), treasury)))
+                        .get(),
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(200).id(new AccountBalance.Id(timestamp.get(), account)))
+                        .get());
+        var oldTokenBalances = Lists.newArrayList(domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.balance(20).id(new TokenBalance.Id(timestamp.get(), account, token)))
+                .get());
+        var expectedAccountBalances = new ArrayList<>(oldAccountBalances);
+        var expectedTokenBalances = new ArrayList<>(oldTokenBalances);
+        // second account balance file, skipped since it's less than 6 minutes after the first
+        timestamp.addAndGet(interval);
+        domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(timestamp.get()))
+                .persist();
+        oldAccountBalances.addAll(List.of(
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(100).id(new AccountBalance.Id(timestamp.get(), treasury)))
+                        .get(),
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(210).id(new AccountBalance.Id(timestamp.get(), account)))
+                        .get()));
+        oldTokenBalances.add(domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.balance(30).id(new TokenBalance.Id(timestamp.get(), account, token)))
+                .get());
+        // third account balance file, a snapshot should be generated
+        timestamp.addAndGet(interval);
+        domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(timestamp.get()))
+                .persist();
+        var accountBalances = List.of(
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(100).id(new AccountBalance.Id(timestamp.get(), treasury)))
+                        .get(),
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(210).id(new AccountBalance.Id(timestamp.get(), account)))
+                        .get());
+        var tokenBalance = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.balance(30).id(new TokenBalance.Id(timestamp.get(), account, token)))
+                .get();
+        oldAccountBalances.addAll(accountBalances);
+        oldTokenBalances.add(tokenBalance);
+        expectedAccountBalances.addAll(accountBalances);
+        expectedTokenBalances.add(tokenBalance);
+        // the snapshot at sentinelTimestamp
+        domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(sentinelTimestamp))
+                .persist();
+        accountBalances = List.of(
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(100).id(new AccountBalance.Id(sentinelTimestamp, treasury)))
+                        .persist(),
+                domainBuilder
+                        .accountBalance()
+                        .customize(ab -> ab.balance(210).id(new AccountBalance.Id(sentinelTimestamp, account)))
+                        .persist());
+        tokenBalance = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.balance(30).id(new TokenBalance.Id(sentinelTimestamp, account, token)))
+                .persist();
+        oldAccountBalances.addAll(accountBalances);
+        oldTokenBalances.add(tokenBalance);
+        expectedAccountBalances.addAll(accountBalances);
+        expectedTokenBalances.add(tokenBalance);
+
+        persistOldAccountBalances(oldAccountBalances);
+        persistOldTokenBalances(oldTokenBalances);
+
+        // when
+        runMigration();
+
+        // then
+        waitForCompletion();
+        assertSchema();
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedAccountBalances);
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenBalances);
+    }
+
     @SneakyThrows
     private void addBalanceDeduplicateFunctions() {
         try (var is = migrationSql.getInputStream()) {
@@ -490,6 +604,10 @@ class BackfillAndDeduplicateBalanceMigrationTest
                     ps.setLong(3, tokenBalance.getId().getConsensusTimestamp());
                     ps.setLong(4, tokenBalance.getId().getTokenId().getId());
                 });
+    }
+
+    private MigrationProperties getMigrationProperties() {
+        return mirrorProperties.getMigration().get("backfillAndDeduplicateBalanceMigration");
     }
 
     @SneakyThrows
