@@ -60,6 +60,8 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     private final DBProperties dbProperties;
     private final EntityProperties entityProperties;
     private final @Owner JdbcTemplate jdbcTemplate;
+    private final @Getter Class<FixCryptoAllowanceAmountMigration> migrationClass =
+            FixCryptoAllowanceAmountMigration.class;
     private final RecordFileParser recordFileParser;
     private final RecordItemBuilder recordItemBuilder;
 

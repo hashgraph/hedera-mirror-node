@@ -76,6 +76,8 @@ class BackfillAndDeduplicateBalanceMigrationTest
     private final AccountBalanceRepository accountBalanceRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final @Getter BackfillAndDeduplicateBalanceMigration migration;
+    private final @Getter Class<BackfillAndDeduplicateBalanceMigration> migrationClass =
+            BackfillAndDeduplicateBalanceMigration.class;
     private final MirrorProperties mirrorProperties;
 
     @Value("classpath:db/migration/v1/V1.89.1__add_balance_deduplicate_functions.sql")

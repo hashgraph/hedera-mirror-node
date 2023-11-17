@@ -41,6 +41,8 @@ abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> e
 
     protected abstract T getMigration();
 
+    protected abstract Class<T> getMigrationClass();
+
     @AfterEach
     @BeforeEach
     void resetChecksum() {
@@ -55,7 +57,7 @@ abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> e
     }
 
     private String getScript() {
-        return getMigration().getClass().getName();
+        return getMigrationClass().getName();
     }
 
     private boolean isMigrationCompleted() {
