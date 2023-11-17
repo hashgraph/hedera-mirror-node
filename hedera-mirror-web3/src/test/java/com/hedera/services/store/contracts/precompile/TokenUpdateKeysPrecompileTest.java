@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
@@ -221,9 +220,8 @@ class TokenUpdateKeysPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
-        subject.getPrecompile(frame)
-                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build());
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
+        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build());
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -239,7 +237,7 @@ class TokenUpdateKeysPrecompileTest {
         given(updateLogic.validate(any())).willReturn(FAIL_INVALID);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -258,9 +256,6 @@ class TokenUpdateKeysPrecompileTest {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void givenMinimalContextForSuccessfulCall() {

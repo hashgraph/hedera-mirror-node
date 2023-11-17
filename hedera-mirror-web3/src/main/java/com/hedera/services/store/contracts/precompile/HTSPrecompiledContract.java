@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
@@ -158,10 +157,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var result = computePrecompile(input, frame);
-        return Pair.of(
-                ((ContractCallContext) frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME))
-                        .getGasRequirement(),
-                result.getOutput());
+        return Pair.of(ContractCallContext.get().getGasRequirement(), result.getOutput());
     }
 
     @NonNull
@@ -172,7 +168,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
         prepareFields(frame);
         try {
-            prepareComputation(frame, input, updater::unaliased);
+            prepareComputation(input, updater::unaliased);
         } catch (final NoSuchElementException e) {
             final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
@@ -181,8 +177,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
         final var now = frame.getBlockValues().getTimestamp();
 
-        final var contractCallContext =
-                (ContractCallContext) frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME);
+        final var contractCallContext = ContractCallContext.get();
         contractCallContext.setGasRequirement(
                 contractCallContext.getPrecompile().getGasRequirement(now, contractCallContext.getTransactionBody()));
         final Bytes result = computeInternal(frame);
@@ -219,8 +214,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     protected Bytes computeInternal(final MessageFrame frame) {
-        ContractCallContext contractCallContext =
-                frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME);
+        ContractCallContext contractCallContext = ContractCallContext.get();
         Bytes result;
         final var precompile = contractCallContext.getPrecompile();
         try {
@@ -266,12 +260,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
-    void prepareComputation(MessageFrame frame, Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-
+    void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final int functionId = input.getInt(0);
 
-        var contractCallContext =
-                (ContractCallContext) frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME);
+        var contractCallContext = ContractCallContext.get();
         var senderAddress = contractCallContext.getSenderAddress();
         Precompile precompile;
         switch (functionId) {
@@ -427,8 +419,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     void prepareFields(final MessageFrame frame) {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
-        ((ContractCallContext) frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME))
-                .setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
+        ContractCallContext.get().setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
     }
 
     private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
@@ -505,8 +496,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     @VisibleForTesting
-    Precompile getPrecompile(MessageFrame frame) {
-        return ((ContractCallContext) frame.getMessageFrameStack().getLast().getContextVariable(CONTEXT_NAME))
-                .getPrecompile();
+    Precompile getPrecompile() {
+        return ContractCallContext.get().getPrecompile();
     }
 }

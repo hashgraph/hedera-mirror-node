@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
@@ -647,15 +646,12 @@ class TokenCreatePrecompileTest {
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
 
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
-        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
-        assertEquals(subject.getPrecompile(frame).getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
+        assertEquals(subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
     }
 
     @Test
@@ -1107,7 +1103,7 @@ class TokenCreatePrecompileTest {
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.of(90_000_000_000L));
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -1123,10 +1119,7 @@ class TokenCreatePrecompileTest {
     private void prepareStaticContext() {
         staticTokenCreatePrecompile = mockStatic(TokenCreatePrecompile.class);
 
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 }

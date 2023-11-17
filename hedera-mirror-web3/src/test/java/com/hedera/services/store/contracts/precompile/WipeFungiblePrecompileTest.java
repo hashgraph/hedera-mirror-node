@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -199,13 +198,10 @@ class WipeFungiblePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -222,13 +218,10 @@ class WipeFungiblePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -246,13 +239,10 @@ class WipeFungiblePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, FUNGIBLE_WIPE_INPUT, a -> a);
-        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

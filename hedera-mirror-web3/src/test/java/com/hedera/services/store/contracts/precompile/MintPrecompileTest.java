@@ -262,8 +262,8 @@ class MintPrecompileTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, pretendArguments, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -285,8 +285,8 @@ class MintPrecompileTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, pretendArguments, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -308,8 +308,8 @@ class MintPrecompileTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, pretendArguments, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
@@ -331,8 +331,8 @@ class MintPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, FUNGIBLE_MINT_INPUT, a -> a);
-        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -443,9 +443,6 @@ class MintPrecompileTest {
         when(store.getToken(tokenAddress, OnMissing.THROW)).thenReturn(token);
         when(store.getTokenRelationship(new TokenRelationshipKey(tokenAddress, treasuryAddress), OnMissing.THROW))
                 .thenReturn(tokenRelationship);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void prepareStoreForFungibleMint(final long newTotalSupply) {
@@ -479,8 +476,5 @@ class MintPrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 }

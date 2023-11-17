@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -173,7 +172,7 @@ class DeleteTokenPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, DELETE_INPUT, a -> a);
+        subject.prepareComputation(DELETE_INPUT, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -190,13 +189,10 @@ class DeleteTokenPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, DELETE_INPUT, a -> a);
-        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(DELETE_INPUT, a -> a);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -219,9 +215,6 @@ class DeleteTokenPrecompileTest {
         given(worldUpdater.getStore()).willReturn(store);
         given(store.getToken(any(), any())).willReturn(token);
         given(token.delete()).willReturn(updatedToken);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void givenMinimalContextForSuccessfulCall() {

@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
@@ -181,7 +180,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a);
+        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -206,7 +205,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, a -> a);
+        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -247,9 +246,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
     private void givenMinimalContextForSuccessfulCall() {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void givenUpdateTokenContext() {

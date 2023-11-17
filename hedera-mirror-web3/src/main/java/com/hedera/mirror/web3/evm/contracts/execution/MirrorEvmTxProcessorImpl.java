@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
+import static com.hedera.mirror.web3.common.ContractCallContext.get;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -112,12 +112,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        final var functionType = getFunctionType();
-        final var contextVariables =
-                Map.of("HederaFunctionality", functionType, CONTEXT_NAME, ContractCallContext.get());
-        baseInitialFrame.contextVariables(contextVariables);
-
-        if (HederaFunctionality.ContractCreate.equals(functionType)) {
+        if (get().isCreate()) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)

@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
@@ -184,15 +183,12 @@ public class GrantKycPrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, GRANT_TOKEN_KYC_INPUT, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -213,14 +209,10 @@ public class GrantKycPrecompileTest {
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, GRANT_TOKEN_KYC_INPUT, a -> a);
-        final var result =
-                subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
+        final var result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

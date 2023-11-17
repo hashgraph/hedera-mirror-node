@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNFREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile.decodeUnfreeze;
@@ -179,7 +178,7 @@ class UnfreezeTokenPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, input, a -> a);
+        subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -200,8 +199,8 @@ class UnfreezeTokenPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, input, a -> a);
-        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -218,9 +217,6 @@ class UnfreezeTokenPrecompileTest {
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void givenFrameContext() {

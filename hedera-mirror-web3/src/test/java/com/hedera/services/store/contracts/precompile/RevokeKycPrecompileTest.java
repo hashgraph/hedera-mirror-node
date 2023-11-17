@@ -16,7 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.RevokeKycPrecompile.decodeRevokeTokenKyc;
 import static java.util.function.UnaryOperator.identity;
@@ -179,14 +178,10 @@ class RevokeKycPrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, REVOKE_TOKEN_KYC_INPUT, a -> a);
-        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -203,13 +198,10 @@ class RevokeKycPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
-        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(frame, REVOKE_TOKEN_KYC_INPUT, a -> a);
-        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -223,6 +215,7 @@ class RevokeKycPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
     }
 

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
@@ -204,8 +203,6 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
@@ -219,8 +216,6 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getRecipientAddress()).willReturn(Address.BLS12_G1ADD);
         given(messageFrame.isStatic()).willReturn(false);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
@@ -242,7 +237,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
@@ -261,7 +255,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.get(Address.BLS12_G1ADD)).willReturn(account);
         given(account.getNonce()).willReturn(-1L);
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
@@ -284,7 +277,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
         assertThat(FAILURE_RESULT).isEqualTo(precompileResult);
@@ -309,7 +301,6 @@ class MirrorHTSPrecompiledContractTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         final var precompileResult = subject.computeCosted(functionHash, messageFrame, gasCalculator, tokenAccessor);
 
@@ -331,7 +322,6 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
@@ -350,8 +340,6 @@ class MirrorHTSPrecompiledContractTest {
         given(blockValues.getTimestamp()).willReturn(10L);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-        given(messageFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         final var precompileResult =
                 subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor);
 
