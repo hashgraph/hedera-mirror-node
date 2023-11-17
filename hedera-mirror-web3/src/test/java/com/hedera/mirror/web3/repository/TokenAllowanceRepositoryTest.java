@@ -186,7 +186,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
-        assertThat(result.size()).isEqualTo(2);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount - 2 * amountForTransfer, TokenAllowance::getAmount);
         assertThat(result.get(1)).returns(initialAmount, TokenAllowance::getAmount);
     }
@@ -244,7 +244,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
-        assertThat(result.size()).isEqualTo(2);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount - amountForTransfer, TokenAllowance::getAmount);
         assertThat(result.get(1)).returns(initialAmount - amountForTransfer1, TokenAllowance::getAmount);
     }

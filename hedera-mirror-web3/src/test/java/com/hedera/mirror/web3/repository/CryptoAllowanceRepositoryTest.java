@@ -159,7 +159,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
-        assertThat(result.size()).isEqualTo(2);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(2L, CryptoAllowance::getAmount);
     }
 
@@ -206,7 +206,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
-        assertThat(result.size()).isEqualTo(2);
+        assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(1L, CryptoAllowance::getAmount);
         assertThat(result.get(1)).returns(2L, CryptoAllowance::getAmount);
     }

@@ -32,8 +32,8 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
      *
      * @param owner the owner ID of the crypto allowance to be retrieved.
      * @param blockTimestamp the block timestamp used to filter the results.
-     * @return an Optional containing the crypto allowance's state at the specified timestamp.
-     *         If there is no record found for the given criteria, an empty Optional is returned.
+     * @return a list containing the crypto allowances' states for the specified owner at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty list is returned.
      */
     @Query(
             value =
