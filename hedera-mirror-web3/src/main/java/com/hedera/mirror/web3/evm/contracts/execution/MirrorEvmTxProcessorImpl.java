@@ -68,9 +68,17 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
             final Store store) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(
+                worldState,
+                pricesAndFeesProvider,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                blockMetaSource,
+                dynamicProperties.fundingAccountAddress(),
+                operationTracer);
 
-        super.setOperationTracer(operationTracer);
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.store = store;
@@ -78,8 +86,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
     public synchronized HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
-        // in cases where the receiver is the zero address, we know it's a contract create scenario
-        super.setupFields(params.getReceiver().equals(Address.ZERO));
+
         final var contractCallContext = ContractCallContext.get();
         contractCallContext.setCreate(Address.ZERO.equals(params.getReceiver()));
         contractCallContext.setEstimate(params.isEstimate());
@@ -98,7 +105,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getValue(),
                 params.getCallData(),
                 params.isStatic(),
-                aliasManager.resolveForEvm(params.getReceiver()));
+                aliasManager.resolveForEvm(params.getReceiver()),
+                params.getReceiver().equals(Address.ZERO));
     }
 
     @SuppressWarnings("java:S5411")

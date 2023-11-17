@@ -100,6 +100,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final TokenAccessor tokenAccessor;
     private final PrecompilePricingUtils precompilePricingUtils;
 
+    @SuppressWarnings("java:S107")
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,

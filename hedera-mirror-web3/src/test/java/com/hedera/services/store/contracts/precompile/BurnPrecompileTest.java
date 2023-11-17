@@ -69,7 +69,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,12 +226,6 @@ class BurnPrecompileTest {
     private ContextOptionValidator contextOptionValidator;
 
     @Mock
-    private MessageFrame lastFrame;
-
-    @Mock
-    private Deque<MessageFrame> stack;
-
-    @Mock
     private TokenAccessor tokenAccessor;
 
     private HTSPrecompiledContract subject;
@@ -268,11 +261,6 @@ class BurnPrecompileTest {
 
         ContractCallContext.init(store.getStackedStateFrames());
     }
-
-    //    @AfterEach
-    //    void clean() {
-    //        staticMock.close();
-    //    }
 
     @Test
     void nftBurnHappyPathWorks() {

@@ -178,6 +178,7 @@ class MirrorEvmTxProcessorTest {
                     return new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
                 });
 
+        given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFeesProvider,
@@ -198,7 +199,6 @@ class MirrorEvmTxProcessorTest {
     @MethodSource("provideIsEstimateParameters")
     void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
-        given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
         final var params = CallServiceParameters.builder()
