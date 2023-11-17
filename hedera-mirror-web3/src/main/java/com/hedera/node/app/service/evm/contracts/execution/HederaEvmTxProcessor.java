@@ -48,7 +48,7 @@ public class HederaEvmTxProcessor {
     protected final HederaEvmOperationTracer tracer;
     protected final EvmProperties dynamicProperties;
 
-    @SuppressWarnings(" java:S107")
+    @SuppressWarnings("java:S107")
     protected HederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
             final PricesAndFeesProvider livePricesSource,
@@ -85,7 +85,7 @@ public class HederaEvmTxProcessor {
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
      */
-    @SuppressWarnings(" java:S107")
+    @SuppressWarnings("java:S107")
     public HederaEvmTransactionProcessingResult execute(
             final HederaEvmAccount sender,
             final Address receiver,
@@ -176,7 +176,7 @@ public class HederaEvmTxProcessor {
         return HederaFunctionality.NONE;
     }
 
-    @SuppressWarnings(" java:S1172")
+    @SuppressWarnings("java:S1172")
     protected MessageFrame buildInitialFrame(
             MessageFrame.Builder baseInitialFrame, Address to, Bytes payload, final long value) {
         return MessageFrame.builder().build();
