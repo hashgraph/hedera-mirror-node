@@ -107,8 +107,8 @@ const getBalances = async (req, res) => {
 
   let sqlQuery;
   if (tsQuery) {
-    const [consensusTsQuery, deduplicateTsParams] = await getTsQuery(tsParams, tsQuery);
-    if (!consensusTsQuery) {
+    const tsQueryResult = await getTsQuery(tsParams, tsQuery);
+    if (!tsQueryResult.consensusTsQuery) {
       return;
     }
 
@@ -118,8 +118,8 @@ const getBalances = async (req, res) => {
       limitQuery,
       order,
       pubKeyQuery,
-      deduplicateTsParams,
-      consensusTsQuery
+      tsQueryResult.tsParams,
+      tsQueryResult.consensusTsQuery
     );
   } else {
     // use current balance from entity table when there's no timestamp query filter
@@ -185,7 +185,7 @@ const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, p
   return [sqlQuery, tsParams];
 };
 
-const getTsQuery = (tsParams, tsQuery) => {
+const getTsQuery = async (tsParams, tsQuery) => {
   let upperBound = constants.MAX_LONG;
   let gteParam = 0n;
   const neParams = [];
@@ -217,7 +217,7 @@ const getTsQuery = (tsParams, tsQuery) => {
     });
 
   if (gteParam > upperBound) {
-    return [undefined, []];
+    return {};
   }
 
   let lowerBound = gteParam;
@@ -251,7 +251,7 @@ const getPartitionedTsQuery = async (lowerBound, neParams, upperBound) => {
   let accountBalanceQuery = `consensus_timestamp >= ? and consensus_timestamp <= ?`;
   const accountBalanceTimestamp = await getAccountBalanceTimestamp(accountBalanceQuery, [lowerBound, upperBound]);
   if (!accountBalanceTimestamp) {
-    return [undefined, []];
+    return {};
   }
 
   const beginningOfMonth = utils.getFirstDayOfMonth(accountBalanceTimestamp);
@@ -267,7 +267,7 @@ const getPartitionedTsQuery = async (lowerBound, neParams, upperBound) => {
     accountBalanceTimestamp,
     ...neParams,
   ];
-  return [consensusTsQuery, tsParams];
+  return {consensusTsQuery, tsParams};
 };
 
 const getTokenBalanceSubQuery = (order, consensusTsQuery) => {
