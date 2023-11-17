@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.repository;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -27,9 +26,9 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
     List<CryptoAllowance> findByOwner(long owner);
 
     /**
-     * Retrieves the most recent state of a crypto allowance by its owner id up to a given block timestamp.
-     * The method considers both the current state of the crypto allowance and its historical states
-     * and returns the one that was valid just before or equal to the provided block timestamp.
+     * Retrieves the most recent state of the crypto allowances by their owner id up to a given block timestamp.
+     * It takes into account the crypto transfers that happened up to the given block timestamp, sums them up
+     * and decreases the crypto allowances' amounts with the transfers that occurred.
      *
      * @param owner the owner ID of the crypto allowance to be retrieved.
      * @param blockTimestamp the block timestamp used to filter the results.
@@ -39,36 +38,44 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
     @Query(
             value =
                     """
-                    with crypto_allowance as (
+                    with crypto_allowances as (
+                        select *
+                        from
                         (
-                            select *
-                            from crypto_allowance
-                            where owner = :owner
-                                and lower(timestamp_range) <= :blockTimestamp
-                            order by lower(timestamp_range) desc
-                            limit 1
-                        )
-                        union all
-                        (
-                            select *
-                            from crypto_allowance_history
-                            where owner = :owner
-                                and lower(timestamp_range) <= :blockTimestamp
-                            order by lower(timestamp_range) desc
-                            limit 1
-                        )
-                        order by timestamp_range desc
-                        limit 1
-                    ), transfers as (
-                        select amount
-                        from crypto_transfer
-                        where payer_account_id = (select payer_account_id from crypto_allowance)
+                            select *, row_number() over (
+                                partition by spender
+                                order by lower(timestamp_range) desc
+                            ) as row_number
+                            from
+                            (
+                                (
+                                    select *
+                                    from crypto_allowance
+                                    where owner = :owner
+                                        and lower(timestamp_range) <= :blockTimestamp
+                                )
+                                union all
+                                (
+                                    select *
+                                    from crypto_allowance_history
+                                    where owner = :owner
+                                        and lower(timestamp_range) <= :blockTimestamp
+                                )
+                            ) as all_crypto_allowances
+                        ) as grouped_crypto_allowances
+                        where row_number = 1
+                        ), transfers as (
+                        select entity_id, sum(ct.amount) as amount
+                        from crypto_transfer ct join crypto_allowances ca on ct.entity_id = ca.spender
+                        where entity_id in (select spender from crypto_allowances)
+                            and is_approval is true
                             and consensus_timestamp <= :blockTimestamp
-                            and consensus_timestamp > lower((select timestamp_range from crypto_allowance))
-                    )
-                    select amount_granted, owner, payer_account_id, spender, timestamp_range, coalesce(amount - coalesce((select sum(amount) from transfers), 0), 0) as amount
-                    from crypto_allowance
+                            and consensus_timestamp > lower(ca.timestamp_range)
+                        group by entity_id
+                        )
+                     select amount_granted, owner, payer_account_id, spender, timestamp_range, coalesce(amount - coalesce((select amount from transfers tr where tr.entity_id = ca.spender), 0), 0) as amount
+                     from crypto_allowances ca
                     """,
             nativeQuery = true)
-    Optional<CryptoAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);
+    List<CryptoAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);
 }
