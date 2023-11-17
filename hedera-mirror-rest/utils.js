@@ -922,6 +922,10 @@ const getFirstDayOfMonth = (secNs) => {
     return null;
   }
 
+  if (typeof secNs !== 'BigInt') {
+    secNs = BigInt(secNs);
+  }
+
   // Convert nanoseconds to milliseconds for Date object
   const timestampMs = secNs / constants.NANOSECONDS_PER_MILLISECOND;
   const timestampDate = new Date(Number(timestampMs));

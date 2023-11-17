@@ -24,8 +24,9 @@ import * as constants from '../constants.js';
 setupIntegrationTest();
 
 describe('Balances deduplicate tests', () => {
-  const fifteenDaysInNs = 1296000000000000n;
-  const tenDaysInNs = 864000000000000n;
+  const fifteenDaysInNs = 1_296_000_000_000_000n;
+  const tenDaysInNs = 864_000_000_000_000n;
+  const nanoSecondsPerSecond = 1_000_000_000n;
   const currentNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
 
   const beginningOfCurrentMonth = utils.getFirstDayOfMonth(currentNs);
@@ -60,12 +61,12 @@ describe('Balances deduplicate tests', () => {
   beforeEach(async () => {
     await integrationDomainOps.loadBalances([
       {
-        timestamp: beginningOfPreviousMonth - 1n,
+        timestamp: beginningOfPreviousMonth - nanoSecondsPerSecond,
         id: 2,
         balance: 1,
       },
       {
-        timestamp: beginningOfPreviousMonth - 1n,
+        timestamp: beginningOfPreviousMonth - nanoSecondsPerSecond,
         id: 16,
         balance: 16,
       },
@@ -425,6 +426,20 @@ describe('Balances deduplicate tests', () => {
             tokens: [],
           },
           {
+            account: '0.1.17',
+            balance: 70,
+            tokens: [
+              {
+                balance: 700,
+                token_id: '0.0.70007',
+              },
+              {
+                balance: 7,
+                token_id: '0.0.70000',
+              },
+            ],
+          },
+          {
             account: '0.0.2',
             balance: 22,
             tokens: [],
@@ -614,6 +629,7 @@ describe('Balances deduplicate tests', () => {
         `/api/v1/balances?timestamp=gte:${beginningOfCurrentMonthSeconds}`,
         `/api/v1/balances?timestamp=gt:${endOfPreviousMonthSeconds}`,
         `/api/v1/balances?timestamp=gte:${yearFutureSeconds}`,
+        `/api/v1/balances?timestamp=gte:${yearFutureSeconds}&timestamp=lt:${yearPreviousSeconds}`,
       ],
       expected: {
         timestamp: null,
@@ -633,13 +649,5 @@ describe('Balances deduplicate tests', () => {
         expect(response.body).toEqual(spec.expected);
       });
     });
-  });
-
-  test('Invalid timestamp', async () => {
-    const url = `/api/v1/balances?timestamp=gte:${yearFutureSeconds}&timestamp=lt:${yearPreviousSeconds}`;
-    const response = await request(server).get(url);
-    expect(response.status).toEqual(400);
-    const err = JSON.parse(response.text);
-    expect(err._status.messages[0].message).toEqual('Invalid timestamp ranges: lt value is less than gt value');
   });
 });

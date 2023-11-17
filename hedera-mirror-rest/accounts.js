@@ -24,6 +24,7 @@ import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
 import {Entity} from './model';
+import balances from './balances';
 import {opsMap} from './utils';
 import {filterKeys} from './constants';
 
@@ -408,7 +409,7 @@ const getOneAccount = async (req, res) => {
       eqValues,
       false
     );
-    const balanceFileTs = await getAccountBalanceTimestamp(
+    const balanceFileTs = await balances.getAccountBalanceTimestamp(
       balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
       balanceFileTsParams,
       order
@@ -519,23 +520,6 @@ const getOneAccount = async (req, res) => {
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
-};
-
-const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
-  // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
-  tsQuery = tsQuery ? tsQuery.concat(' and account_id = ?') : ' account_id = ?';
-  tsParams.push('2');
-
-  const query = `
-    select consensus_timestamp
-    from account_balance
-    where ${tsQuery}
-    order by consensus_timestamp ${order}
-    limit 1`;
-
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
-  const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
-  return rows[0]?.consensus_timestamp;
 };
 
 const accounts = {

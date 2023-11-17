@@ -24,6 +24,7 @@ import {InvalidArgumentError} from './errors/index.js';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
+
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
   const ret = {
@@ -106,14 +107,19 @@ const getBalances = async (req, res) => {
 
   let sqlQuery;
   if (tsQuery) {
-    [sqlQuery, tsParams] = getBalancesQuery(
+    const [consensusTsQuery, deduplicateTsParams] = await getTsQuery(tsParams, tsQuery);
+    if (!consensusTsQuery) {
+      return;
+    }
+
+    [sqlQuery, tsParams] = await getBalancesQuery(
       accountQuery,
       balanceQuery,
       limitQuery,
       order,
       pubKeyQuery,
-      tsParams,
-      tsQuery
+      deduplicateTsParams,
+      consensusTsQuery
     );
   } else {
     // use current balance from entity table when there's no timestamp query filter
@@ -146,13 +152,29 @@ const getBalances = async (req, res) => {
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
-const getBalancesQuery = (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
-  const [consensusTsQuery, deduplicateTsParams] = getTsQuery(tsParams, tsQuery);
+const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
+  // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
+  tsQuery = tsQuery ? tsQuery.concat(' and account_id = ?') : ' account_id = ?';
+  tsParams.push('2');
+
+  const query = `
+    select consensus_timestamp
+    from account_balance
+    where ${tsQuery}
+    order by consensus_timestamp ${order}
+    limit 1`;
+
+  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
+  const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
+  return rows[0]?.consensus_timestamp;
+};
+
+const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, consensusTsQuery);
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQuery);
   const whereClause = `
-      where ${[consensusTsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+      where ${[tsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
   const sqlQuery = `
       select distinct on (account_id) ab.*, (${tokenBalanceSubQuery}) as token_balances
       from account_balance ab
@@ -160,7 +182,7 @@ const getBalancesQuery = (accountQuery, balanceQuery, limitQuery, order, pubKeyQ
       ${whereClause}
       order by ab.account_id ${order}, ab.consensus_timestamp desc
       ${limitQuery}`;
-  return [sqlQuery, deduplicateTsParams];
+  return [sqlQuery, tsParams];
 };
 
 const getTsQuery = (tsParams, tsQuery) => {
@@ -176,12 +198,14 @@ const getTsQuery = (tsParams, tsQuery) => {
       const value = BigInt(tsParams[index]);
       // eq operator has already been converted to the lte operator
       if (query.includes(utils.opsMap.lte)) {
+        // Query params are in the format of 'consensus_timestamp <= ?'
         upperBound = upperBound < value ? upperBound : value;
       } else if (query.includes(utils.opsMap.lt)) {
         // Convert lt to lte to simplify query
         const ltValue = value - 1n;
         upperBound = upperBound < ltValue ? upperBound : ltValue;
       } else if (query.includes(utils.opsMap.gte)) {
+        // Query params are in the format of 'consensus_timestamp >= ?'
         gteParam = gteParam > value ? gteParam : value;
       } else if (query.includes(utils.opsMap.gt)) {
         // Convert gt to gte to simplify query
@@ -193,49 +217,57 @@ const getTsQuery = (tsParams, tsQuery) => {
     });
 
   if (gteParam > upperBound) {
-    throw new InvalidArgumentError('Invalid timestamp ranges: lt value is less than gt value');
+    return [undefined, []];
   }
 
+  let lowerBound = gteParam;
   const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
   if (upperBound !== constants.MAX_LONG) {
     if (gteParam === 0n) {
       // There is an upper bound but no lowerBound
       const firstDayOfUpperBoundMonth = utils.getFirstDayOfMonth(upperBound);
       const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
-      const lowerBound =
+      lowerBound =
         firstDayOfUpperBoundMonth < firstDayOfCurrentMonth
-          ? // If the upper bound is in a month prior to the current month, the lower bound is the beginning of the month the upper bound is in
-            firstDayOfUpperBoundMonth
-          : // If upper bound is in the current or later month the lower bound is the beginning of the month before current month
+          ? // if the upper bound is in a month prior to the current month, the lower bound is the beginning of the month prior to the month the upper bound is in.
+            // For example if the upper bound month is November 2022, the lower bound timestamp is the beginning of October 2022.
+            utils.getFirstDayOfMonth(firstDayOfUpperBoundMonth - 1n)
+          : // If upper bound is in the current or later month the lower bound is the beginning of the month before current month.
+            // For example if the current month is November, the lower bound timestamp is the beginning of October.
             utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-      return getPartitionedTsQuery(lowerBound, neParams, upperBound);
-    } else {
-      // Both upper and lower bounds are provided
-      return getPartitionedTsQuery(gteParam, neParams, upperBound);
     }
   } else {
     // There is only a lower bound, set the lower bound to the maximum of (gteParam, the first day of the month before the current month)
     const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
     const firstDayOfPreviousMonth = utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    const lowerBound = gteParam > firstDayOfPreviousMonth ? gteParam : firstDayOfPreviousMonth;
-    return getPartitionedTsQuery(lowerBound, neParams);
+    lowerBound = gteParam > firstDayOfPreviousMonth ? gteParam : firstDayOfPreviousMonth;
   }
+
+  return getPartitionedTsQuery(lowerBound, neParams, upperBound);
 };
 
-const getPartitionedTsQuery = (lowerBound, neParams, upperBound) => {
+const getPartitionedTsQuery = async (lowerBound, neParams, upperBound) => {
   const neQuery = Array.from(neParams, (v) => '?').join(', ');
-  let consensusTsQuery = neQuery
-    ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp not in (${neQuery})`
-    : `ab.consensus_timestamp >= ?`;
-
-  if (!upperBound) {
-    // Double the params to account for the query values for account_balance and token_balance together
-    return [consensusTsQuery, [lowerBound, ...neParams, lowerBound, ...neParams]];
+  let accountBalanceQuery = `consensus_timestamp >= ? and consensus_timestamp <= ?`;
+  const accountBalanceTimestamp = await getAccountBalanceTimestamp(accountBalanceQuery, [lowerBound, upperBound]);
+  if (!accountBalanceTimestamp) {
+    return [undefined, []];
   }
 
-  consensusTsQuery = consensusTsQuery.concat(` and ab.consensus_timestamp <= ?`);
+  const beginningOfMonth = utils.getFirstDayOfMonth(accountBalanceTimestamp);
+  const consensusTsQuery = neQuery
+    ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ? and ab.consensus_timestamp not in (${neQuery})`
+    : `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
   // Double the params to account for the query values for account_balance and token_balance together
-  return [consensusTsQuery, [lowerBound, ...neParams, upperBound, lowerBound, ...neParams, upperBound]];
+  const tsParams = [
+    beginningOfMonth,
+    accountBalanceTimestamp,
+    ...neParams,
+    beginningOfMonth,
+    accountBalanceTimestamp,
+    ...neParams,
+  ];
+  return [consensusTsQuery, tsParams];
 };
 
 const getTokenBalanceSubQuery = (order, consensusTsQuery) => {
@@ -320,4 +352,5 @@ const acceptedBalancesParameters = new Set([
 
 export default {
   getBalances,
+  getAccountBalanceTimestamp,
 };

@@ -152,6 +152,10 @@ describe('Utils getFirstDayOfMonth tests', () => {
     expect(utils.getFirstDayOfMonth(undefined)).toBeNull();
   });
 
+  test('Verify negative', () => {
+    expect(utils.getFirstDayOfMonth(-100n)).toBe(0n);
+  });
+
   test('Verify end of month', () => {
     // December 31, 2023 11:59:59 PM
     const val = utils.getFirstDayOfMonth(1704067199000000000n);
@@ -164,6 +168,11 @@ describe('Utils getFirstDayOfMonth tests', () => {
     const timestamp = 1643673600000000000n;
     const val = utils.getFirstDayOfMonth(timestamp);
     expect(val).toBe(timestamp);
+  });
+
+  test('Non BigInt Input', () => {
+    const val = utils.getFirstDayOfMonth(2345);
+    expect(val).toBe(0n);
   });
 });
 
