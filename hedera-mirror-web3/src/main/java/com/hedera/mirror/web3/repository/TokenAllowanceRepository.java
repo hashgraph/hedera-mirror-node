@@ -43,8 +43,8 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
      *
      * @param owner the owner ID of the token allowance to be retrieved.
      * @param blockTimestamp the block timestamp used to filter the results.
-     * @return an Optional containing the token allowance's state at the specified timestamp.
-     *         If there is no record found for the given criteria, an empty Optional is returned.
+     * @return a list containing the token allowances' states for the specified owner at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty list is returned.
      */
     @Query(
             value =
