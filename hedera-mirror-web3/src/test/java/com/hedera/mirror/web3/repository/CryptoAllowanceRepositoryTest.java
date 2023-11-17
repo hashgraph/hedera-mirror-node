@@ -43,9 +43,9 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerAndTimestampLessThanBlockTimestamp() {
         final var allowance = domainBuilder.cryptoAllowance().persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(
-                        allowance.getOwner(), allowance.getTimestampLower() + 1))
-                .get()
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowance.getOwner(), allowance.getTimestampLower() + 1)
+                        .get(0))
                 .isEqualTo(allowance);
     }
 
@@ -53,9 +53,9 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerAndTimestampEqualToBlockTimestamp() {
         final var allowance = domainBuilder.cryptoAllowance().persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(
-                        allowance.getOwner(), allowance.getTimestampLower()))
-                .get()
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowance.getOwner(), allowance.getTimestampLower())
+                        .get(0))
                 .isEqualTo(allowance);
     }
 
@@ -72,9 +72,9 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerAndTimestampHistoricalLessThanBlockTimestamp() {
         final var allowanceHistory = domainBuilder.cryptoAllowanceHistory().persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(
-                        allowanceHistory.getOwner(), allowanceHistory.getTimestampLower() + 1))
-                .get()
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowanceHistory.getOwner(), allowanceHistory.getTimestampLower() + 1)
+                        .get(0))
                 .usingRecursiveComparison()
                 .isEqualTo(allowanceHistory);
     }
@@ -83,9 +83,9 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByOwnerAndTimestampHistoricalEqualToBlockTimestamp() {
         final var allowanceHistory = domainBuilder.cryptoAllowanceHistory().persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(
-                        allowanceHistory.getOwner(), allowanceHistory.getTimestampLower()))
-                .get()
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowanceHistory.getOwner(), allowanceHistory.getTimestampLower())
+                        .get(0))
                 .usingRecursiveComparison()
                 .isEqualTo(allowanceHistory);
     }
@@ -102,47 +102,113 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByOwnerAndTimestampHistoricalReturnsLatestEntry() {
         long owner = 1L;
+        long spender = 2L;
         final var allowanceHistory1 = domainBuilder
                 .cryptoAllowanceHistory()
-                .customize(a -> a.owner(owner))
+                .customize(a -> a.owner(owner).spender(spender))
                 .persist();
 
         final var allowanceHistory2 = domainBuilder
                 .cryptoAllowanceHistory()
-                .customize(a -> a.owner(owner))
+                .customize(a -> a.owner(owner).spender(spender))
                 .persist();
 
         final var latestTimestamp =
                 Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(allowanceHistory1.getOwner(), latestTimestamp + 1))
-                .hasValueSatisfying(
-                        actual -> assertThat(actual).returns(latestTimestamp, CryptoAllowance::getTimestampLower));
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowanceHistory1.getOwner(), latestTimestamp + 1)
+                        .get(0))
+                .returns(latestTimestamp, CryptoAllowance::getTimestampLower);
     }
 
     @Test
     void findByOwnerAndTimestampWithTransferHappyPath() {
-        long payerAccountId = 1L;
+        long spender = 1L;
+        long ownerId = 2L;
         long cryptoAllowanceTimestamp = System.currentTimeMillis();
         long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 1;
         long blockTimestamp = cryptoAllowanceTimestamp + 2;
 
         final var allowance = domainBuilder
                 .cryptoAllowance()
-                .customize(a -> a.payerAccountId(EntityId.of(payerAccountId))
+                .customize(a -> a.spender(spender)
+                        .owner(ownerId)
+                        .amount(3)
+                        .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        final var allowanceHistory = domainBuilder
+                .cryptoAllowanceHistory()
+                .customize(a -> a.spender(spender + 1)
+                        .owner(ownerId)
                         .amount(3)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
         final var cryptoTransfer = domainBuilder
                 .cryptoTransfer()
-                .customize(c -> c.payerAccountId(EntityId.of(payerAccountId))
-                        .amount(1)
-                        .consensusTimestamp(cryptoTransferTimestamp))
+                .customize(
+                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp))
-                .hasValueSatisfying(actual -> assertThat(actual).returns(2L, CryptoAllowance::getAmount));
+        final var cryptoTransfer1 = domainBuilder
+                .cryptoTransfer()
+                .customize(c ->
+                        c.entityId(spender + 1).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result.size()).isEqualTo(2);
+        assertThat(result.get(0)).returns(2L, CryptoAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithTransferMultipleEntries() {
+        long spender = 1L;
+        long ownerId = 2L;
+        long cryptoAllowanceTimestamp = System.currentTimeMillis();
+        long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 1;
+        long blockTimestamp = cryptoAllowanceTimestamp + 2;
+
+        final var allowance = domainBuilder
+                .cryptoAllowance()
+                .customize(a -> a.spender(spender)
+                        .owner(ownerId)
+                        .amount(3)
+                        .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        final var allowanceHistory = domainBuilder
+                .cryptoAllowanceHistory()
+                .customize(a -> a.spender(spender + 1)
+                        .owner(ownerId)
+                        .amount(3)
+                        .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        final var cryptoTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(
+                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        final var cryptoTransfer1 = domainBuilder
+                .cryptoTransfer()
+                .customize(
+                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        final var cryptoTransfer2 = domainBuilder
+                .cryptoTransfer()
+                .customize(c ->
+                        c.entityId(spender + 1).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result.size()).isEqualTo(2);
+        assertThat(result.get(0)).returns(1L, CryptoAllowance::getAmount);
+        assertThat(result.get(1)).returns(2L, CryptoAllowance::getAmount);
     }
 
     @Test
@@ -167,7 +233,9 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
-        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp))
-                .hasValueSatisfying(actual -> assertThat(actual).returns(3L, CryptoAllowance::getAmount));
+        assertThat(cryptoAllowanceRepository
+                        .findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp)
+                        .get(0))
+                .returns(3L, CryptoAllowance::getAmount);
     }
 }
