@@ -76,7 +76,6 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 mcps,
                 ccps,
                 blockMetaSource,
-                dynamicProperties.fundingAccountAddress(),
                 operationTracer);
 
         this.aliasManager = aliasManager;
@@ -84,7 +83,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.store = store;
     }
 
-    public synchronized HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
 
         final var contractCallContext = ContractCallContext.get();
@@ -106,7 +105,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getCallData(),
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
-                params.getReceiver().equals(Address.ZERO));
+                params.getReceiver().equals(Address.ZERO),
+                dynamicProperties.fundingAccountAddress());
     }
 
     @SuppressWarnings("java:S5411")

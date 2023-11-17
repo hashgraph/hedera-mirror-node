@@ -45,12 +45,10 @@ public class HederaEvmTxProcessor {
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
     protected final Map<String, Provider<ContractCreationProcessor>> ccps;
-    protected AbstractMessageProcessor messageCallProcessor;
-    protected AbstractMessageProcessor contractCreationProcessor;
     protected final HederaEvmOperationTracer tracer;
     protected final EvmProperties dynamicProperties;
-    protected Address coinbase;
 
+    @SuppressWarnings(" java:S107")
     protected HederaEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
             final PricesAndFeesProvider livePricesSource,
@@ -59,7 +57,6 @@ public class HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final Address coinbase,
             final HederaEvmOperationTracer tracer) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
@@ -68,11 +65,7 @@ public class HederaEvmTxProcessor {
 
         this.mcps = mcps;
         this.ccps = ccps;
-        this.messageCallProcessor = mcps.get(dynamicProperties.evmVersion()).get();
-        this.contractCreationProcessor =
-                ccps.get(dynamicProperties.evmVersion()).get();
         this.blockMetaSource = blockMetaSource;
-        this.coinbase = coinbase;
         this.tracer = tracer;
     }
 
@@ -92,6 +85,7 @@ public class HederaEvmTxProcessor {
      * @param mirrorReceiver the mirror form of the receiving {@link Address}; or the newly created
      *     address
      */
+    @SuppressWarnings(" java:S107")
     public HederaEvmTransactionProcessingResult execute(
             final HederaEvmAccount sender,
             final Address receiver,
@@ -101,7 +95,8 @@ public class HederaEvmTxProcessor {
             final Bytes payload,
             final boolean isStatic,
             final Address mirrorReceiver,
-            final boolean contractCreation) {
+            final boolean contractCreation,
+            final Address coinbase) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -131,14 +126,10 @@ public class HederaEvmTxProcessor {
 
         tracer.init(initialFrame);
 
-        if (dynamicProperties.dynamicEvmVersion()) {
-            final String evmVersion = dynamicProperties.evmVersion();
-            messageCallProcessor = mcps.get(evmVersion).get();
-            contractCreationProcessor = ccps.get(evmVersion).get();
-        }
+        final String evmVersion = dynamicProperties.evmVersion();
 
         while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), tracer);
+            process(messageFrameStack.peekFirst(), tracer, evmVersion);
         }
 
         final var gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
@@ -185,21 +176,22 @@ public class HederaEvmTxProcessor {
         return HederaFunctionality.NONE;
     }
 
+    @SuppressWarnings(" java:S1172")
     protected MessageFrame buildInitialFrame(
             MessageFrame.Builder baseInitialFrame, Address to, Bytes payload, final long value) {
         return MessageFrame.builder().build();
     }
 
-    protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
-        final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
+    protected void process(final MessageFrame frame, final OperationTracer operationTracer, final String evmVersion) {
+        final AbstractMessageProcessor executor = getMessageProcessor(frame.getType(), evmVersion);
 
         executor.process(frame, operationTracer);
     }
 
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
+    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, final String evmVersion) {
         return switch (type) {
-            case MESSAGE_CALL -> messageCallProcessor;
-            case CONTRACT_CREATION -> contractCreationProcessor;
+            case MESSAGE_CALL -> mcps.get(evmVersion).get();
+            case CONTRACT_CREATION -> ccps.get(evmVersion).get();
         };
     }
 }

@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -152,7 +153,6 @@ class MirrorEvmTxProcessorTest {
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         final String EVM_VERSION_0_34 = "v0.34";
-        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
         final var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
         final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
@@ -178,7 +178,6 @@ class MirrorEvmTxProcessorTest {
                     return new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
                 });
 
-        given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
                 pricesAndFeesProvider,
@@ -199,6 +198,7 @@ class MirrorEvmTxProcessorTest {
     @MethodSource("provideIsEstimateParameters")
     void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
+        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
         final var params = CallServiceParameters.builder()
