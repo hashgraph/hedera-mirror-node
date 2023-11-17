@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_27_0;
 import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -89,6 +90,9 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {
+        if (recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_27_0)) {
+            return;
+        }
         var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
 
         if (transactionBody.hasDeclineReward()) {

@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -104,19 +105,16 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private ViewGasCalculator viewGasCalculator;
     private TokenAccessor tokenAccessor;
     private Address senderAddress;
-    private final boolean isEstimate;
 
     public HTSPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
-            final boolean isEstimate) {
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract) {
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
-        this.isEstimate = isEstimate;
     }
 
     private static boolean isDelegateCall(final MessageFrame frame) {
@@ -222,7 +220,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             // if we have top level token call with estimate gas and missing sender - return empty result
             // N.B. this should be done for precompiles that depend on the sender address
             if (Address.ZERO.equals(senderAddress)
-                    && isEstimate
+                    && ContractCallContext.get().isEstimate()
                     && (precompile instanceof ERCTransferPrecompile
                             || precompile instanceof ApprovePrecompile
                             || precompile instanceof AssociatePrecompile
@@ -403,6 +401,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final var unaliasedSenderAddress =
                 updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
         this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
+        ContractCallContext.get().setSenderAddress(senderAddress);
         this.store = updater.getStore();
         this.mirrorNodeEvmProperties = updater.aliases();
     }

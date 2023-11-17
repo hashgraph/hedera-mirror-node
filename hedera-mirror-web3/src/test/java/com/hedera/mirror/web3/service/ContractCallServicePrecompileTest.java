@@ -26,6 +26,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -41,8 +42,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
         switch (contractFunc) {
             case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE -> customFeePersist(FIXED_FEE);
             case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,
@@ -63,8 +64,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -80,8 +81,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final long value = getValue(contractFunc);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -95,8 +96,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void nestedContractModificationFunctionsTest(final NestedContractModificationFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -124,8 +125,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.functionParameters);
         final long value = getValue(contractFunc);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, value);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, value, BlockType.LATEST);
         final var expectedResult = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.expectedResult);
         final var result = contractCallService.processCall(serviceParameters);
@@ -136,8 +137,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void nftInfoForInvalidSerialNo() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "getInformationForNonFungibleToken", PRECOMPILE_TEST_CONTRACT_ABI_PATH, NFT_ADDRESS, 4L);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -147,8 +148,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void tokenInfoForNonTokenAccount() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "getInformationForFungibleToken", PRECOMPILE_TEST_CONTRACT_ABI_PATH, SENDER_ADDRESS);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -158,8 +159,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void notExistingPrecompileCallFails() {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(UnsupportedOperationException.class)
@@ -385,6 +386,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
+        TRANSFER_FROM(
+                "transferFromExternal",
+                new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
         APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}, new Object[] {}),
         DELETE_ALLOWANCE(
                 "approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}, new Object[] {}),
@@ -460,10 +465,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
                 new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
-        TRANSFER_TOKEN(
-                "transferTokenExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, RECEIVER_ADDRESS, 1L},
-                new Object[] {}),
         TRANSFER_TOKEN_WITH(
                 "transferTokenExternal",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
@@ -519,10 +520,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKEN(
                 "transferNFTExternal",
                 new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
-                new Object[] {}),
-        TRANSFER_FROM(
-                "transferFromExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
                 new Object[] {}),
         TRANSFER_FROM_NFT(
                 "transferFromNFTExternal",

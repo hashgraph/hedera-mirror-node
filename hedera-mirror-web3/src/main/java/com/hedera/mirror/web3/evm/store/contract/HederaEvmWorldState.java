@@ -29,6 +29,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenA
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import jakarta.inject.Named;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,6 +39,7 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 @SuppressWarnings("java:S107")
+@Named
 public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private final HederaEvmEntityAccess hederaEvmEntityAccess;

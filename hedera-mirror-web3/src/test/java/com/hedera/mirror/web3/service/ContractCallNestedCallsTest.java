@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedEthCallContractFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
+    void nestedPrecompileTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =
@@ -45,8 +46,8 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                             CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 10000 * 100_000_000L;
                     default -> 0L;
                 };
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value, BlockType.LATEST);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.expectedResultFields);
 
@@ -55,7 +56,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(NestedEthCallContractFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
+    void nestedReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
         final var value =
@@ -68,8 +69,8 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                             CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 3050 * 100_000_000L;
                     default -> 0L;
                 };
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 

@@ -164,6 +164,22 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void getNonce() {
+        final long nonce = 2;
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        when(account.getEthereumNonce()).thenReturn(nonce);
+        final var result = mirrorEntityAccess.getNonce(ADDRESS);
+        assertThat(result).isEqualTo(nonce);
+    }
+
+    @Test
+    void getNonceForEmptyAccount() {
+        when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
+        final var result = mirrorEntityAccess.getNonce(ADDRESS);
+        assertThat(result).isZero();
+    }
+
+    @Test
     void isExtant() {
         when(store.getAccount(ADDRESS, OnMissing.DONT_THROW)).thenReturn(account);
         final var result = mirrorEntityAccess.isExtant(ADDRESS);
@@ -246,9 +262,9 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void fetchCodeIfPresentReturnsEmpty() {
+    void fetchCodeIfPresentReturnsNull() {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
-        assertThat(result).isEqualTo(Bytes.EMPTY);
+        assertThat(result).isNull();
     }
 }

@@ -20,6 +20,7 @@ import static com.hedera.mirror.importer.TestUtils.toEntityTransaction;
 import static com.hedera.mirror.importer.TestUtils.toEntityTransactions;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ALIAS;
 import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.STAKING_REWARD_ACCOUNT;
+import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
 import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
 import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static java.lang.String.format;
@@ -47,6 +48,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.ItemizedTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -565,6 +567,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
+                .hapiVersion(RecordFile.HAPI_VERSION_0_27_0)
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build());
@@ -821,6 +824,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(RecordItem.builder()
+                .hapiVersion(RecordFile.HAPI_VERSION_0_27_0)
                 .transactionRecord(record)
                 .transaction(updateTransaction)
                 .build());
@@ -885,6 +889,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var transactionId = transactionId(account.toEntityId(), domainBuilder.timestamp());
         var recordItem = recordItemBuilder
                 .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
                 .transactionBody(b -> b.setStakedNodeId(newStakedNodeId).setAccountIDToUpdate(protoAccountId))
                 .transactionBodyWrapper(w -> w.setTransactionID(transactionId))
                 .record(r -> r.addPaidStakingRewards(accountAmount(account.getId(), 200L))
@@ -1430,6 +1435,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoTransferWithAlias() {
+        var haltOnError = System.getProperty(HALT_ON_ERROR_PROPERTY, "false");
+        System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setItemizedTransfers(true);
         Entity entity = domainBuilder.entity().persist();
@@ -1448,13 +1455,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 ResponseCodeEnum.SUCCESS.getNumber());
 
         var transfer1 = accountAliasAmount(ALIAS_KEY, 1003).build();
-        var transfer2 =
-                accountAliasAmount(ByteString.copyFrom(entity.getAlias()), 1004).build();
+        var transfer2 = accountAliasAmount(DomainUtils.fromBytes(entity.getAlias()), 1004)
+                .build();
+        var transfer3 = accountAliasAmount(DomainUtils.fromBytes(entity.getEvmAddress()), 1005)
+                .build();
         // Crypto transfer to both existing alias and newly created alias accounts
         Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder()
                 .getTransfersBuilder()
                 .addAccountAmounts(transfer1)
-                .addAccountAmounts(transfer2));
+                .addAccountAmounts(transfer2)
+                .addAccountAmounts(transfer3));
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord recordTransfer = transactionRecordSuccess(
                 transactionBody, builder -> groupCryptoTransfersByAccountId(builder, List.of()));
@@ -1484,9 +1494,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
                         .asList()
                         .map(transfer ->
-                                ((ItemizedTransfer) transfer).getEntityId().getId())
+                                ((ItemizedTransfer) transfer).getEntityId().getNum())
                         .asList()
-                        .contains(newAccount.getAccountNum(), entity.getNum()));
+                        .containsExactly(newAccount.getAccountNum(), entity.getNum(), entity.getNum()));
+        System.setProperty(HALT_ON_ERROR_PROPERTY, haltOnError);
     }
 
     @Test

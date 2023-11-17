@@ -144,14 +144,15 @@ public class AccountClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
-        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount);
+    public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount, PrivateKey privateKey) {
+        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount, privateKey);
     }
 
     private NetworkTransactionResponse sendCryptoTransfer(
-            ExpandedAccountId sender, AccountId recipient, Hbar hbarAmount) {
+            ExpandedAccountId sender, AccountId recipient, Hbar hbarAmount, PrivateKey privateKey) {
         var cryptoTransferTransaction = getCryptoTransferTransaction(sender.getAccountId(), recipient, hbarAmount);
-        var response = executeTransactionAndRetrieveReceipt(cryptoTransferTransaction);
+        var response = executeTransactionAndRetrieveReceipt(
+                cryptoTransferTransaction, privateKey == null ? null : KeyList.of(privateKey), sender);
         log.info("Transferred {} from {} to {} via {}", hbarAmount, sender, recipient, response.getTransactionId());
         return response;
     }

@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,8 +34,8 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     void systemPrecompileFunctionsTestEthCall(final SystemContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.expectedResultFields);
 
@@ -47,7 +48,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
-                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -60,8 +61,8 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGas() {
         final var functionName = "getPseudorandomSeed";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
@@ -74,7 +75,8 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     void pseudoRandomGeneratorPrecompileFunctionsTestEthCall() {
         final var functionName = "getPseudorandomSeed";
         final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
-        final var serviceParameters = serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         final var result = contractCallService.processCall(serviceParameters);
 

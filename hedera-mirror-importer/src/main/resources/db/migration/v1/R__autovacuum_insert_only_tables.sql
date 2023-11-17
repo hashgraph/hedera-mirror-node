@@ -24,12 +24,6 @@ alter table if exists transaction reset (
     log_autovacuum_min_duration
     );
 
--- auto vacuum per each account balance snapshot if there are at least 10000 accounts' balance inserted
-alter table if exists account_balance set (
-  autovacuum_vacuum_insert_scale_factor = 0,
-  autovacuum_vacuum_insert_threshold = 10000
-  );
-
 -- auto vacuum daily with 15-minute interval account balance files
 alter table if exists account_balance_file set (
   autovacuum_vacuum_insert_scale_factor = 0,
@@ -87,12 +81,6 @@ alter table if exists sidecar_file set (
 alter table if exists staking_reward_transfer set (
   autovacuum_vacuum_insert_scale_factor = 0,
   autovacuum_vacuum_insert_threshold = 4000
-  );
-
--- autovacuum per each token balance snapshot if there are at least 10000 account token balance inserted
-alter table if exists token_balance set (
-  autovacuum_vacuum_insert_scale_factor = 0,
-  autovacuum_vacuum_insert_threshold = 10000
   );
 
 -- autovacuum every 10 minutes at 10K TPS crypto transfer transactions with two token transfer rows per transaction

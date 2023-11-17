@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -25,7 +24,6 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.Owner;
@@ -38,14 +36,12 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,18 +54,18 @@ import reactor.core.publisher.Flux;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
-
-    private static final String SCRIPT = FixCryptoAllowanceAmountMigration.class.getName();
+class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTest<FixCryptoAllowanceAmountMigration> {
 
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final DBProperties dbProperties;
     private final EntityProperties entityProperties;
     private final @Owner JdbcTemplate jdbcTemplate;
+    private final @Getter Class<FixCryptoAllowanceAmountMigration> migrationClass =
+            FixCryptoAllowanceAmountMigration.class;
     private final RecordFileParser recordFileParser;
     private final RecordItemBuilder recordItemBuilder;
 
-    private FixCryptoAllowanceAmountMigration migration;
+    private @Getter FixCryptoAllowanceAmountMigration migration;
 
     @BeforeEach
     void setup() {
@@ -79,11 +75,6 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
                 new FixCryptoAllowanceAmountMigration(dbProperties, entityProperties, mirrorProperties, jdbcTemplate);
     }
 
-    @AfterEach
-    void teardown() {
-        jdbcTemplate.update("update flyway_schema_history set checksum = -1 where script = ?", SCRIPT);
-    }
-
     @Test
     void empty() {
         // given, when
@@ -91,7 +82,7 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
 
         // then
         waitForCompletion();
-        assertThat(migrationTableExists()).isFalse();
+        assertThat(tableExists("crypto_allowance_migration")).isFalse();
         assertThat(cryptoAllowanceRepository.findAll()).isEmpty();
         assertThat(findHistory(CryptoAllowance.class)).isEmpty();
     }
@@ -269,7 +260,7 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
 
         // then
         waitForCompletion();
-        assertThat(migrationTableExists()).isFalse();
+        assertThat(tableExists("crypto_allowance_migration")).isFalse();
 
         current1.setTimestampUpper(recordItem3.getConsensusTimestamp());
         var current1Revoked = current1.toBuilder()
@@ -296,31 +287,9 @@ class FixCryptoAllowanceAmountMigrationTest extends IntegrationTest {
         assertThat(migration.skipMigration(configuration)).isEqualTo(!trackAllowance);
     }
 
-    private boolean isMigrationCompleted() {
-        var actual = jdbcTemplate.queryForObject(
-                "select (select checksum from flyway_schema_history where script = ?)", Integer.class, SCRIPT);
-        return Objects.equals(actual, migration.getSuccessChecksum());
-    }
-
-    private boolean migrationTableExists() {
-        try {
-            jdbcTemplate.execute("select 'crypto_allowance_migration'::regclass");
-            return true;
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
     @SneakyThrows
     private void runMigration() {
         migration.doMigrate();
-    }
-
-    private void waitForCompletion() {
-        await().atMost(Duration.ofSeconds(5))
-                .pollDelay(Duration.ofMillis(100))
-                .pollInterval(Duration.ofMillis(100))
-                .untilAsserted(() -> assertThat(isMigrationCompleted()).isTrue());
     }
 
     private static CryptoAllowance convert(CryptoAllowanceHistory history) {

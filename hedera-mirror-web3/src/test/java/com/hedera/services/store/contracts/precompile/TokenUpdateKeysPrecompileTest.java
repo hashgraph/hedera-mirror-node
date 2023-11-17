@@ -29,7 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -55,14 +57,21 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateKeysPrecompileTest {
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     @Mock
     private MirrorNodeEvmProperties evmProperties;
 
@@ -172,6 +181,8 @@ class TokenUpdateKeysPrecompileTest {
 
     @BeforeEach
     void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
@@ -181,7 +192,12 @@ class TokenUpdateKeysPrecompileTest {
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(tokenUpdateKeysPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test

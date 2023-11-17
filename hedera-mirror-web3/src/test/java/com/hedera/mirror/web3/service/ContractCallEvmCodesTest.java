@@ -18,15 +18,24 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
     private static final String TRUE = "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+    @Autowired
+    private RecordFileRepository recordFileRepository;
+
+    private boolean areEntitiesPersisted;
 
     @Test
     void chainId() {
@@ -127,9 +136,69 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                         "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923");
     }
 
+    @Test
+    void getBlockPrevrandao() {
+        final var functionHash = functionEncodeDecoder.functionHashFor("getBlockPrevrandao", EVM_CODES_ABI_PATH);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        String result = contractCallService.processCall(serviceParameters);
+        assertThat(result).isNotBlank();
+        assertTrue(result.length() > "0x".length());
+    }
+
+    @Test
+    void getBlockHashReturnsCorrectHash() {
+        // Persist all entities so that we can get a specific record file hash and pass it to
+        // functionEncodeDecoder#functionHashFor.
+        persistEntities();
+        areEntitiesPersisted = true;
+
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "getBlockHash", EVM_CODES_ABI_PATH, recordFileForBlockHash.getIndex());
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isEqualTo("0x" + recordFileForBlockHash.getHash().substring(0, 64));
+    }
+
+    @Test
+    void getGenesisBlockHashReturnsCorrectBlock() {
+        // Persist all entities so that we can get a specific record file hash and pass it to
+        // functionEncodeDecoder#functionHashFor.
+        persistEntities();
+        areEntitiesPersisted = true;
+
+        final var functionHash = functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, 0L);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isEqualTo("0x" + genesisRecordFileForBlockHash.getHash().substring(0, 64));
+    }
+
+    @Test
+    void getLatestBlockHashIsNotEmpty() {
+        final var functionHash = functionEncodeDecoder.functionHashFor("getLatestBlockHash", EVM_CODES_ABI_PATH);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isNotEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
+    @Test
+    void getBlockHashAfterTheLatestReturnsZero() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, Long.MAX_VALUE);
+        final var serviceParameters = serviceParametersForEvmCodes(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters))
+                .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
-        persistEntities();
+        if (!areEntitiesPersisted) {
+            persistEntities();
+        }
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -139,6 +208,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .gas(15_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
+                .block(BlockType.LATEST)
                 .build();
     }
 }

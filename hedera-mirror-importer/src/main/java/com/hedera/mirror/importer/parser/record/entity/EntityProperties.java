@@ -41,9 +41,9 @@ public class EntityProperties {
         private boolean claims = false;
 
         private boolean contracts = true;
-
         private boolean contractResults = true;
-
+        private boolean contractTransaction = true;
+        private boolean contractTransactionHash = true;
         private boolean cryptoTransferAmounts = true;
 
         /**

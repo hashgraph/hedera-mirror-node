@@ -26,7 +26,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -57,11 +59,13 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +81,11 @@ class DeleteTokenPrecompileTest {
             (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
             .setTokenDeletion(TokenDeleteTransactionBody.newBuilder().setToken(fungible));
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private MessageFrame frame;
@@ -127,6 +136,8 @@ class DeleteTokenPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
@@ -139,7 +150,12 @@ class DeleteTokenPrecompileTest {
                 new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(deletePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test

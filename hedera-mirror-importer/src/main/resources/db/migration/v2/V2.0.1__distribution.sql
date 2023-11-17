@@ -6,6 +6,8 @@
 
 
 -- Tables distributed on id
+select create_distributed_table('contract_transaction_hash', 'hash', shard_count := ${shardCount});
+
 select create_distributed_table('entity', 'id', shard_count := ${shardCount});
 
 select create_distributed_table('transaction_hash', 'hash', shard_count := ${shardCount});
@@ -26,6 +28,8 @@ select create_distributed_table('contract_result', 'contract_id', colocate_with 
 select create_distributed_table('contract_state', 'contract_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_state_change', 'contract_id', colocate_with => 'entity');
+
+select create_distributed_table('contract_transaction', 'entity_id', colocate_with => 'entity');
 
 select create_distributed_table('crypto_allowance', 'owner', colocate_with => 'entity');
 

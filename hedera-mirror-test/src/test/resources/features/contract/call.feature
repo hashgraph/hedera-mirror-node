@@ -2,12 +2,12 @@
 Feature: eth_call Contract Base Coverage Feature
 
   Scenario Outline: Validate eth_call
-    Given I ensure token "NFT" has been created
-    And I ensure token "FUNGIBLE" has been created
     Given I successfully create ERC contract
     Given I successfully create Precompile contract
+    Then I verify the precompile contract bytecode is deployed
     Given I successfully create EstimateGas contract
-    Then the mirror node REST API should return status 200 for the estimate contract transaction
+    Given I ensure token "NFT" has been created
+    And I ensure token "FUNGIBLE" has been created
     Then I call function with IERC721Metadata token "NFT" name
     Then I call function with IERC721Metadata token "NFT" symbol
     Then I call function with IERC721Metadata token "NFT" totalSupply
@@ -22,3 +22,4 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with nested deploy using create function
     Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
+    Then I successfully update the balance of an account and get the updated balance

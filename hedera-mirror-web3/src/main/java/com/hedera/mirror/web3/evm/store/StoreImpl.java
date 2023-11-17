@@ -22,8 +22,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
@@ -36,40 +36,55 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
+@Named
 public class StoreImpl implements Store {
 
-    private final StackedStateFrames<Object> stackedStateFrames;
+    private final StackedStateFrames stackedStateFrames;
 
-    public StoreImpl(final List<DatabaseAccessor<Object, ?>> databaseAccessors) {
-        this.stackedStateFrames = new StackedStateFrames<>(databaseAccessors);
+    public StoreImpl(final StackedStateFrames stackedStateFrames) {
+        this.stackedStateFrames = stackedStateFrames;
+    }
+
+    @Override
+    public StackedStateFrames getStackedStateFrames() {
+        return stackedStateFrames;
     }
 
     @Override
     public Account getAccount(final Address address, final OnMissing throwIfMissing) {
-        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        final var account = accountAccessor.get(address);
+        try {
+            final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
+            final var account = accountAccessor.get(address);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return account.orElseThrow(() -> missingEntityException(Account.class, address));
-        } else {
-            return account.orElse(Account.getEmptyAccount());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return account.orElseThrow(() -> missingEntityException(Account.class, address));
+            } else {
+                return account.orElse(Account.getEmptyAccount());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return Account.getEmptyAccount();
         }
     }
 
     @Override
     public Token getToken(final Address address, final OnMissing throwIfMissing) {
-        final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
-        final var token = tokenAccessor.get(address);
+        try {
+            final var tokenAccessor = stackedStateFrames.top().getAccessor(Token.class);
+            final var token = tokenAccessor.get(address);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return token.orElseThrow(() -> missingEntityException(Token.class, address));
-        } else {
-            return token.orElse(Token.getEmptyToken());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return token.orElseThrow(() -> missingEntityException(Token.class, address));
+            } else {
+                return token.orElse(Token.getEmptyToken());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return Token.getEmptyToken();
         }
     }
 
@@ -86,14 +101,18 @@ public class StoreImpl implements Store {
     @Override
     public TokenRelationship getTokenRelationship(
             final TokenRelationshipKey tokenRelationshipKey, final OnMissing throwIfMissing) {
-        final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
-        final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
+        try {
+            final var tokenRelationshipAccessor = stackedStateFrames.top().getAccessor(TokenRelationship.class);
+            final var tokenRelationship = tokenRelationshipAccessor.get(tokenRelationshipKey);
 
-        if (OnMissing.THROW.equals(throwIfMissing)) {
-            return tokenRelationship.orElseThrow(
-                    () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
-        } else {
-            return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
+            if (OnMissing.THROW.equals(throwIfMissing)) {
+                return tokenRelationship.orElseThrow(
+                        () -> missingEntityException(TokenRelationship.class, tokenRelationshipKey));
+            } else {
+                return tokenRelationship.orElse(TokenRelationship.getEmptyTokenRelationship());
+            }
+        } catch (CacheAccessIncorrectTypeException e) {
+            return TokenRelationship.getEmptyTokenRelationship();
         }
     }
 
@@ -149,8 +168,37 @@ public class StoreImpl implements Store {
         tokenRelationshipAccessor.set(tokenRelationshipKey, persistedTokenRel);
 
         final var tokenRelationshipKeyWithAlias = keyFromRelationshipWithAlias(persistedTokenRel);
-        if (tokenRelationshipKeyWithAlias != tokenRelationshipKey) {
+        if (!tokenRelationshipKeyWithAlias.equals(tokenRelationshipKey)) {
             tokenRelationshipAccessor.set(tokenRelationshipKeyWithAlias, persistedTokenRel);
+        }
+    }
+
+    @Override
+    public void deleteTokenRelationship(TokenRelationship tokenRelationship) {
+        final var topFrame = stackedStateFrames.top();
+        final var tokenRelationshipAccessor = topFrame.getAccessor(TokenRelationship.class);
+        final var tokenRelationshipKey = keyFromRelationship(tokenRelationship);
+        try {
+            final var tokenRel = tokenRelationshipAccessor.get(tokenRelationshipKey);
+            if (tokenRel.isPresent()) {
+                tokenRelationshipAccessor.delete(tokenRelationshipKey);
+            }
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
+        }
+        final var tokenRelationshipKeyAlias = keyFromRelationshipWithAlias(tokenRelationship);
+
+        if (tokenRelationshipKeyAlias.equals(tokenRelationshipKey)) {
+            return;
+        }
+
+        try {
+            final var tokenRelAlias = tokenRelationshipAccessor.get(tokenRelationshipKeyAlias);
+            if (tokenRelAlias.isPresent()) {
+                tokenRelationshipAccessor.delete(tokenRelationshipKeyAlias);
+            }
+        } catch (UpdatableCacheUsageException ex) {
+            // ignore, value has been deleted
         }
     }
 
@@ -168,7 +216,8 @@ public class StoreImpl implements Store {
 
     @Override
     public boolean hasAssociation(TokenRelationshipKey tokenRelationshipKey) {
-        return getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW).hasAssociation();
+        TokenRelationship tokenRelationship = getTokenRelationship(tokenRelationshipKey, OnMissing.DONT_THROW);
+        return !(tokenRelationship.getAccount().getId().equals(Id.DEFAULT));
     }
 
     @Override
@@ -185,6 +234,7 @@ public class StoreImpl implements Store {
     public void commit() {
         if (stackedStateFrames.height() > 1) { // commit only to upstream RWCachingStateFrame
             stackedStateFrames.top().commit();
+            stackedStateFrames.pop();
         }
     }
 

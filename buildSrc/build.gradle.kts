@@ -28,7 +28,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.bmuschko:gradle-docker-plugin:9.3.4")
+    implementation("com.bmuschko:gradle-docker-plugin:9.3.7")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:6.22.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.1")
@@ -41,9 +41,9 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.24.0")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.6")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.0.1")
-    implementation("org.owasp:dependency-check-gradle:8.4.0")
+    implementation("org.owasp:dependency-check-gradle:8.4.2")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.4")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.1.5")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {

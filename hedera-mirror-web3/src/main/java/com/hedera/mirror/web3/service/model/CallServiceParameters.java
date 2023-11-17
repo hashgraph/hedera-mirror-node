@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service.model;
 
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.Builder;
 import lombok.Value;
@@ -33,6 +34,7 @@ public class CallServiceParameters {
     boolean isStatic;
     CallType callType;
     boolean isEstimate;
+    BlockType block;
 
     public enum CallType {
         ETH_CALL,

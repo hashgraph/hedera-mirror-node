@@ -19,6 +19,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.ADDRESS_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMethods.HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -60,7 +62,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
-    private static DeployedContract deployedContract;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
@@ -84,27 +85,21 @@ public class CallFeature extends AbstractFeature {
         return new String[] {address1, address2};
     }
 
-    @RetryAsserts
-    @Then("the mirror node REST API should return status {int} for the estimate contract transaction")
-    public void verifyMirrorAPIResponses(int status) {
-        verifyMirrorTransactionsResponse(mirrorClient, status);
-    }
-
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
-        deployedContract = getContract(ERC);
+        var deployedContract = getContract(ERC);
         ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
-        deployedContract = getContract(PRECOMPILE);
+        var deployedContract = getContract(PRECOMPILE);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        deployedContract = getContract(ESTIMATE_GAS);
+        var deployedContract = getContract(ESTIMATE_GAS);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
@@ -170,6 +165,14 @@ public class CallFeature extends AbstractFeature {
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
+    }
+
+    @RetryAsserts
+    @Then("I verify the precompile contract bytecode is deployed")
+    public void contractDeployed() {
+        var response = mirrorClient.getContractInfo(precompileContractAddress);
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     // ETHCALL-025
@@ -278,6 +281,20 @@ public class CallFeature extends AbstractFeature {
         validateAddresses(addresses);
     }
 
+    @Then("I successfully update the balance of an account and get the updated balance")
+    public void getBalance() {
+        final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
+        var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+        networkTransactionResponse = accountClient.sendCryptoTransfer(
+                receiverAccountId.getAccountId(),
+                Hbar.fromTinybars(initialBalance.longValue()),
+                receiverAccountId.getPrivateKey());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+        assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
+    }
+
     @RetryAsserts
     @Then("I call function with transfer that returns the balance")
     public void ethCallReentrancyCallFunction() {
@@ -313,6 +330,7 @@ public class CallFeature extends AbstractFeature {
         STATE_UPDATE_N_TIMES_SELECTOR("updateStateNTimes"),
         DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR("deployNestedContracts"),
         DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR("deployNestedContracts2"),
+        ADDRESS_BALANCE("addressBalance"),
         REENTRANCY_CALL_WITH_GAS("reentrancyCallWithGas");
 
         private final String selector;

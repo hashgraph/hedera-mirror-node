@@ -19,7 +19,6 @@ package com.hedera.mirror.importer.parser.record.historicalbalance;
 import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID_NODE_ID;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -33,7 +32,10 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -41,18 +43,31 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Durations;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@ExtendWith(OutputCaptureExtension.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
@@ -62,74 +77,145 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final EntityRepository entityRepository;
+    private final FlywayProperties flywayProperties;
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final HistoricalBalanceProperties properties;
     private final RecordFileRepository recordFileRepository;
+    private final TimePartitionService timePartitionService;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TransactionTemplate transactionTemplate;
 
     private Entity account;
+    private long prevPartitionBalanceTimestamp;
+    private long partitionLowerBound;
     private TokenAccount tokenAccount;
+    private Entity treasuryAccount;
 
     private List<Entity> entities;
     private List<TokenAccount> tokenAccounts;
 
-    @BeforeEach
     void setup() {
         // common database setup
-        account = domainBuilder.entity().persist();
+        long now = DomainUtils.convertToNanosMax(Instant.now());
+        var partitions = timePartitionService.getOverlappingTimePartitions("account_balance", now, now);
+        partitionLowerBound = partitions.get(0).getTimestampRange().lowerEndpoint();
+        prevPartitionBalanceTimestamp = partitionLowerBound
+                - properties.getMinFrequency().minusMinutes(1).toNanos();
+        long balanceTimestamp = partitionLowerBound + Duration.ofMinutes(1).toNanos();
+
+        treasuryAccount =
+                domainBuilder.entity(2, prevPartitionBalanceTimestamp - 200).persist();
+        account = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp))
+                .persist();
         var contract = domainBuilder
                 .entity()
-                .customize(e -> e.deleted(null).type(CONTRACT))
+                .customize(
+                        e -> e.balanceTimestamp(balanceTimestamp).deleted(null).type(CONTRACT))
                 .persist();
-        var fileWithBalance =
-                domainBuilder.entity().customize(e -> e.type(FILE)).persist();
-        var unknownWithBalance =
-                domainBuilder.entity().customize(e -> e.type(UNKNOWN)).persist();
-        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        domainBuilder.entity().customize(e -> e.balance(null)).persist();
-        domainBuilder.entity().customize(e -> e.balance(null).type(TOPIC)).persist();
+        var fileWithBalance = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).type(FILE))
+                .persist();
+        var unknownWithBalance = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(balanceTimestamp).type(UNKNOWN))
+                .persist();
+        // deleted after the balance snapshot in previous partition
+        var deletedAccount1 = domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L)
+                        .balanceTimestamp(prevPartitionBalanceTimestamp + 100)
+                        .deleted(true))
+                .persist();
+        // deleted before the balance snapshot in previous partition
+        var deletedAccount2 = domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L)
+                        .balanceTimestamp(prevPartitionBalanceTimestamp - 100)
+                        .deleted(true))
+                .persist();
+        domainBuilder.topic().persist();
         tokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(account.getId()))
+                .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(balanceTimestamp))
                 .persist();
-        domainBuilder.tokenAccount().customize(ta -> ta.associated(false)).persist();
+        var dissociatedTokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.associated(false).balance(0).balanceTimestamp(balanceTimestamp))
+                .persist();
 
-        // Only entities with valid balance
-        entities = Lists.newArrayList(account, contract, fileWithBalance, unknownWithBalance);
-        tokenAccounts = Lists.newArrayList(tokenAccount);
+        // Only entities with valid balance, including deleted
+        entities = List.of(
+                treasuryAccount,
+                account,
+                contract,
+                fileWithBalance,
+                unknownWithBalance,
+                deletedAccount1,
+                deletedAccount2);
+        tokenAccounts = List.of(tokenAccount, dissociatedTokenAccount);
+    }
+
+    @AfterEach
+    void resetProperties() {
+        properties.setTokenBalances(true);
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void generate(boolean tokenBalances) {
         // given
+        setup();
         properties.setTokenBalances(tokenBalances);
+        var existinigAccountBalanceFile = domainBuilder
+                .accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(prevPartitionBalanceTimestamp))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(prevPartitionBalanceTimestamp, treasuryAccount.toEntityId())))
+                .persist();
 
-        // when
-        parseRecordFile(null);
-        // Download and parse the first account balance file
-        var firstAccountBalanceFile = accountBalanceFileRepository.save(
-                domainBuilder.accountBalanceFile().get());
+        // when, process a record file whose consensusEnd is partitionLowerBound, which is before last account balance
+        // file timestamp + min frequency
+        parseRecordFile(partitionLowerBound);
 
         // then
-        verifyNoNewAccountBalanceFile(List.of(firstAccountBalanceFile));
-        long balanceTimestamp = firstAccountBalanceFile.getConsensusTimestamp()
-                + properties.getMinFrequency().toNanos();
-        verifyGeneratedBalances(balanceTimestamp);
+        verifyNoNewAccountBalanceFile(List.of(existinigAccountBalanceFile));
+
+        // when, then
+        long balanceTimestamp =
+                prevPartitionBalanceTimestamp + properties.getMinFrequency().toNanos();
+        // this is the first snapshot in a partition, so it includes all non-deleted entities, and those deleted after
+        // prevPartitionBalanceTimestamp
+        var updatedEntities = entities.stream()
+                .filter(e ->
+                        !Boolean.TRUE.equals(e.getDeleted()) || e.getBalanceTimestamp() > prevPartitionBalanceTimestamp)
+                .toList();
+        verifyGeneratedBalances(balanceTimestamp, updatedEntities, tokenAccounts);
 
         // when
         // balance changes
         account.setBalance(account.getBalance() + 5);
+        account.setBalanceTimestamp(balanceTimestamp + 1);
         entityRepository.save(account);
-        tokenAccount.setBalance(tokenAccount.getBalance() + 18);
+        tokenAccount.setBalance(tokenAccount.getBalance() + 5);
+        tokenAccount.setBalanceTimestamp(balanceTimestamp + 1);
         tokenAccountRepository.save(tokenAccount);
         // new entity, tokenAccount
-        entities.add(domainBuilder.entity().persist());
-        tokenAccounts.add(domainBuilder
+        var newAccount = domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(account.getBalanceTimestamp()))
+                .persist();
+        var newTokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(ta -> ta.accountId(account.getId()))
-                .persist());
+                .customize(ta -> ta.accountId(account.getId()).balanceTimestamp(account.getBalanceTimestamp()))
+                .persist();
+        updatedEntities = List.of(treasuryAccount, account, newAccount);
+        var updatedTokenAccounts = List.of(tokenAccount, newTokenAccount);
 
         // process a record file which doesn't reach the next balances snapshot interval
         var existingAccountBalanceFiles = Lists.newArrayList(accountBalanceFileRepository.findAll());
@@ -139,18 +225,16 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // then
         verifyNoNewAccountBalanceFile(existingAccountBalanceFiles);
 
-        // when
+        // when, then
         // process a record file which should trigger the next balance snapshot
         balanceTimestamp += properties.getMinFrequency().plusSeconds(1).toNanos();
-        verifyGeneratedBalances(balanceTimestamp);
-
-        // reset tokenBalances to true
-        properties.setTokenBalances(true);
+        verifyGeneratedBalances(balanceTimestamp, updatedEntities, updatedTokenAccounts);
     }
 
     @Test
     void generateWhenAccountBalanceFileTableNotEmpty() {
         // given
+        setup();
         // account balance file table isn't empty before the run
         var firstAccountBalanceFile = domainBuilder.accountBalanceFile().persist();
         var latestAccountBalanceFile = domainBuilder.accountBalanceFile().persist();
@@ -160,13 +244,15 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
 
         // then
         verifyNoNewAccountBalanceFile(List.of(firstAccountBalanceFile, latestAccountBalanceFile));
-        verifyGeneratedBalances(latestAccountBalanceFile.getConsensusTimestamp()
-                + properties.getMinFrequency().toNanos());
+        long balanceTimestamp = latestAccountBalanceFile.getConsensusTimestamp()
+                + properties.getMinFrequency().toNanos();
+        verifyGeneratedBalances(balanceTimestamp, entities, tokenAccounts);
     }
 
     @Test
     void generateWhenNoAccountBalanceFiles() {
         // given
+        setup();
         // there's no account balance files at all. The first balances snapshot will be generated in min frequency +
         // initial delay relative to the first record file's consensus end
 
@@ -190,12 +276,13 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         .getMinFrequency()
                         .plus(properties.getInitialDelay())
                         .toNanos();
-        verifyGeneratedBalances(balanceTimestamp);
+        verifyGeneratedBalances(balanceTimestamp, entities, tokenAccounts);
     }
 
     @Test
     void generateWhenNoAccountBalanceFilesAndFirstRecordFileInDb() {
         // given
+        setup();
         var firstRecordFile = domainBuilder.recordFile().persist();
 
         // when
@@ -217,7 +304,90 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         .getMinFrequency()
                         .plus(properties.getInitialDelay())
                         .toNanos();
-        verifyGeneratedBalances(balanceTimestamp);
+        verifyGeneratedBalances(balanceTimestamp, entities, tokenAccounts);
+    }
+
+    @Test
+    void noPartitionFound(CapturedOutput output) {
+        // given, first record file
+        var recordFile = domainBuilder.recordFile().persist();
+
+        // when, next record file at 21 years later parsed, which is guaranteed to be in a partition not created yet
+        long consensusEnd =
+                recordFile.getConsensusEnd() + Duration.ofDays(365 * 21).toNanos();
+        var oldPartitionEnd = createRecordFilePartitions(consensusEnd);
+        parseRecordFile(consensusEnd);
+
+        // then
+        var expectedMessage = String.format("No account_balance partition found for timestamp %d", consensusEnd);
+        await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .atMost(Durations.FIVE_SECONDS)
+                .untilAsserted(() -> assertThat(output.getOut()).contains(expectedMessage));
+        assertThat(accountBalanceFileRepository.findAll()).isEmpty();
+
+        // cleanup
+        deleteRecordFilePartitions(oldPartitionEnd);
+    }
+
+    /**
+     * Create record file partitions when the table is partitioned, to avoid the failure when test cases try to insert
+     * a row out of the partition range otherwise.
+     */
+    private Long createRecordFilePartitions(long endTimestamp) {
+        Long partitionEnd = Long.MAX_VALUE;
+        try {
+            partitionEnd = jdbcTemplate.queryForObject(
+                    """
+                select to_timestamp
+                from mirror_node_time_partitions
+                where parent = 'record_file'
+                order by to_timestamp desc
+                limit 1
+                """,
+                    Long.class);
+        } catch (EmptyResultDataAccessException ex) {
+            return partitionEnd;
+        }
+
+        var partitionStartDate = flywayProperties.getPlaceholders().get("partitionStartDate");
+        var partitionTimeInterval = flywayProperties.getPlaceholders().get("partitionTimeInterval");
+        var partitionEndDate = String.format(
+                "'%s'",
+                Instant.ofEpochSecond(endTimestamp / 1_000_000_000)
+                        .atZone(ZoneOffset.UTC)
+                        .format(DateTimeFormatter.ISO_LOCAL_DATE));
+        jdbcTemplate.queryForObject(
+                """
+                select create_time_partitions(table_name := 'public.record_file',
+                  partition_interval := ?::interval,
+                  start_from := ?::timestamptz,
+                  end_at := ?::timestamptz)
+                """,
+                Boolean.class,
+                partitionTimeInterval,
+                partitionStartDate,
+                partitionEndDate);
+
+        return partitionEnd;
+    }
+
+    private void deleteRecordFilePartitions(Long fromTimestamp) {
+        var partitions = jdbcTemplate.queryForList(
+                """
+                select name
+                from mirror_node_time_partitions
+                where parent = 'record_file' and from_timestamp >= ?
+                order by from_timestamp
+                """,
+                String.class,
+                fromTimestamp);
+        if (partitions.isEmpty()) {
+            return;
+        }
+
+        var sql =
+                partitions.stream().map(p -> String.format("drop table %s", p)).collect(Collectors.joining(";"));
+        jdbcTemplate.execute(sql);
     }
 
     private RecordFile parseRecordFile(final Long consensusEnd) {
@@ -245,7 +415,8 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
                         .containsExactlyInAnyOrderElementsOf(existingAccountBalanceFiles));
     }
 
-    private void verifyGeneratedBalances(long balanceTimestamp) {
+    private void verifyGeneratedBalances(
+            long balanceTimestamp, Collection<Entity> updatedEntities, Collection<TokenAccount> updatedTokenAccounts) {
         var expectedAccountBalanceFiles = Lists.newArrayList(accountBalanceFileRepository.findAll());
         var expectedAccountBalances = Lists.newArrayList(accountBalanceRepository.findAll());
         var expectedTokenBalances = Lists.newArrayList(tokenBalanceRepository.findAll());
@@ -253,16 +424,16 @@ class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
         // when, a record file with consensus end signaling min frequency has passed
         parseRecordFile(balanceTimestamp);
 
-        // then, a synthetic account balance file, account balance, and token balance should generate
+        // then, account balance, a synthetic account balance file, and token balance should generate
         expectedAccountBalanceFiles.add(AccountBalanceFile.builder()
                 .consensusTimestamp(balanceTimestamp)
-                .count((long) entities.size())
+                .count((long) updatedEntities.size())
                 .nodeId(INVALID_NODE_ID)
                 .synthetic(true)
                 .build());
-        entities.forEach(entity -> expectedAccountBalances.add(getAccountBalance(balanceTimestamp, entity)));
+        updatedEntities.forEach(e -> expectedAccountBalances.add(getAccountBalance(balanceTimestamp, e)));
         if (properties.isTokenBalances()) {
-            tokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
+            updatedTokenAccounts.forEach(ta -> expectedTokenBalances.add(getTokenBalance(balanceTimestamp, ta)));
         }
         await().pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .atMost(Durations.FIVE_SECONDS)

@@ -26,15 +26,20 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "hedera.mirror.web3.cache")
 public class CacheProperties {
 
+    /**
+     *  entity, contract and token models are used mostly simultaneously, so we use the same configuration for consistent reads
+     */
+    private static final String ENTITY_CACHE_CONFIG = "expireAfterWrite=1s,maximumSize=10000,recordStats";
+
     @NotBlank
-    private String contractState = "expireAfterWrite=1s,maximumSize=10000,recordStats";
+    private String contractState = ENTITY_CACHE_CONFIG;
 
     @NotBlank
     private String fee = "expireAfterWrite=10m,maximumSize=20,recordStats";
 
     @NotBlank
-    private String entity = "expireAfterWrite=30s,maximumSize=10000,recordStats";
+    private String entity = ENTITY_CACHE_CONFIG;
 
     @NotBlank
-    private String token = "expireAfterWrite=2s,maximumSize=10000,recordStats";
+    private String token = ENTITY_CACHE_CONFIG;
 }

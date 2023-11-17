@@ -57,7 +57,6 @@ class TokenWipeTransactionHandler extends AbstractTransactionHandler {
         long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
 
         var token = new Token();
-        token.setTimestampLower(consensusTimestamp);
         token.setTokenId(tokenId.getId());
         token.setTotalSupply(newTotalSupply);
         entityListener.onToken(token);

@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.common.ContractCallContext.init;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -32,6 +33,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssoci
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -45,12 +47,15 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.hapi.utils.ByteStringUtils;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -75,7 +80,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.ToLongFunction;
@@ -153,7 +157,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
-
+    protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1111));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052));
@@ -177,7 +181,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
     protected static final byte[] ECDSA_KEY = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
-
+    protected static Key keyWithECDSASecp256K1 =
+            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
     // bit field representing the key type. Keys of all types that have corresponding bits set to 1
     // will be created for the token.
     // 0th bit: adminKey
@@ -189,8 +194,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     // 6th bit: pauseKey
     // 7th bit: ignored
     protected static final int АLL_CASES_KEY_TYPE = 0b1111111;
-    protected static Key keyWithECDSASecp256K1 =
-            Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDSA_KEY)).build();
     protected static final byte[] NEW_ECDSA_KEY = new byte[] {
         2, 64, 59, -126, 81, -22, 0, 35, 67, -70, 110, 96, 109, 2, -8, 111, -112, -100, -87, -85, 66, 36, 37, -97, 19,
         68, -87, -110, -13, -115, 74, 86, 90
@@ -424,8 +427,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             .setDelegatableContractId(contractIdFromEvmAddress(PRECOMPILE_TEST_CONTRACT_ADDRESS.toArrayUnsafe()))
             .build();
 
+    protected static RecordFile recordFileForBlockHash;
+    protected static RecordFile genesisRecordFileForBlockHash;
+
     @Autowired
-    protected MirrorEvmTxProcessorFacadeImpl processor;
+    protected MirrorEvmTxProcessor processor;
 
     @Autowired
     protected FunctionEncodeDecoder functionEncodeDecoder;
@@ -507,8 +513,252 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
     protected Path NESTED_CALLS_ABI_PATH;
 
+    /**
+     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
+     *
+     * @param actualGas   The actual gas used.
+     * @param expectedGas The expected gas used from the initial call.
+     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
+     */
+    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
+        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
+    }
+
+    private static TokenCreateWrapper getFungibleTokenWithKeys() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111,
+                        new KeyValueWrapper(
+                                false,
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                new byte[] {},
+                                new byte[] {},
+                                null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleTokenExpiryInUint32Range() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenWithKeys() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111,
+                        new KeyValueWrapper(
+                                false,
+                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                                new byte[] {},
+                                new byte[] {},
+                                null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenExpiryInUint32Range() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleToken() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleToken2() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleToken() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getFungibleHbarsTokenWrapper() {
+        final var keyValue =
+                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
+        return new TokenCreateWrapper(
+                true,
+                "Hbars",
+                "HBAR",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "TestMemo",
+                false,
+                BigInteger.valueOf(10_000_000L),
+                BigInteger.valueOf(12L),
+                2525L,
+                true,
+                List.of(
+                        new TokenKeyWrapper(0b0000001, keyValue),
+                        new TokenKeyWrapper(0b0000010, keyValue),
+                        new TokenKeyWrapper(0b0000100, keyValue),
+                        new TokenKeyWrapper(0b0001000, keyValue),
+                        new TokenKeyWrapper(0b0010000, keyValue),
+                        new TokenKeyWrapper(0b0100000, keyValue),
+                        new TokenKeyWrapper(0b1000000, keyValue)),
+                new TokenExpiryWrapper(
+                        9_999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+    }
+
+    private static TokenCreateWrapper getFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper() {
+        final var keyValue =
+                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
+        return new TokenCreateWrapper(
+                false,
+                "Hbars",
+                "HBAR",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "TestMemo",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                2_000_000_000L,
+                true,
+                List.of(
+                        new TokenKeyWrapper(0b0000001, keyValue),
+                        new TokenKeyWrapper(0b0000010, keyValue),
+                        new TokenKeyWrapper(0b0000100, keyValue),
+                        new TokenKeyWrapper(0b0001000, keyValue),
+                        new TokenKeyWrapper(0b0010000, keyValue),
+                        new TokenKeyWrapper(0b0100000, keyValue),
+                        new TokenKeyWrapper(0b1000000, keyValue)),
+                new TokenExpiryWrapper(
+                        9999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+    }
+
+    private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                "test",
+                true,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(
+                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+    }
+
+    // Get Custom Fee Wrappers
+    private static FixedFeeWrapper getFixedFee() {
+        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
+    }
+
+    private static FractionalFeeWrapper getFractionalFee() {
+        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
+    }
+
+    private static RoyaltyFeeWrapper getRoyaltyFee() {
+        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
+    }
+
+    private static TokenExpiryWrapper getTokenExpiry() {
+        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
+    }
+
     protected CallServiceParameters serviceParametersForExecution(
-            final Bytes callData, final Address contractAddress, final CallType callType, final long value) {
+            final Bytes callData,
+            final Address contractAddress,
+            final CallType callType,
+            final long value,
+            BlockType block) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         persistEntities();
 
@@ -521,6 +771,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
                 .build();
     }
 
@@ -538,24 +789,27 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(BlockType.LATEST)
                 .build();
     }
 
+    @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        return processor
-                .execute(
-                        serviceParameters.getSender(),
-                        serviceParameters.getReceiver(),
-                        serviceParameters.getGas(),
-                        serviceParameters.getValue(),
-                        serviceParameters.getCallData(),
-                        Instant.now(),
-                        serviceParameters.isStatic(),
-                        true)
-                .getGasUsed();
+        long result;
+        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
+
+            result = processor
+                    .execute(serviceParameters, serviceParameters.getGas())
+                    .getGasUsed();
+
+            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
+        }
+
+        return result;
     }
 
     protected void persistEntities() {
+        genesisBlockPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -626,6 +880,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 9999999999999L,
                 TokenPauseStatusEnum.PAUSED,
                 true);
+        final var transferFromTokenTreasuryEntityId = fungibleTokenPersist(
+                treasuryEntityId,
+                new byte[0],
+                TRANSFRER_FROM_TOKEN_ADDRESS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
         final var tokenTreasuryEntityId = fungibleTokenPersist(
                 treasuryEntityId,
                 new byte[0],
@@ -733,9 +995,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId8 = nftPersistWithoutKycKey(
                 NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
+                nestedContractId,
                 spenderEntityId,
-                ownerEntityId,
+                nestedContractId,
                 KEY_PROTO,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
@@ -743,6 +1005,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, transferFromTokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
@@ -762,6 +1025,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(nestedContractId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(nestedContractId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(nestedContractId, nftEntityId8, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ethAccount, transferFromTokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenGetKeyContractAddressEntityId, TokenFreezeStatusEnum.UNFROZEN);
 
@@ -778,6 +1043,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         nftCustomFeePersist(senderEntityId, nftEntityId);
 
+        allowancesPersist(senderEntityId, modificationContract, transferFromTokenTreasuryEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, modificationContract, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, nestedContractId, tokenEntityId, nftEntityId);
@@ -789,6 +1055,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
+    }
+
+    private void genesisBlockPersist() {
+        genesisRecordFileForBlockHash =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
     // Custom fees and rates persist
@@ -868,17 +1139,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(expiry + 1))
                 .persist();
-    }
-
-    /**
-     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
-     *
-     * @param actualGas   The actual gas used.
-     * @param expectedGas The expected gas used from the initial call.
-     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
-     */
-    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
-        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
     }
 
     private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
@@ -1614,7 +1874,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 .toArrayUnsafe()))
                 .persist();
 
-        domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
+        recordFileForBlockHash = domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(contractBytes))
+                .persist();
     }
 
     private EntityId systemExchangeRateContractPersist() {
@@ -1652,234 +1915,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(exchangeRateContractBytes))
                 .persist();
         return exchangeRateContractEntityId;
-    }
-
-    private static TokenCreateWrapper getFungibleTokenWithKeys() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111,
-                        new KeyValueWrapper(
-                                false,
-                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                                new byte[] {},
-                                new byte[] {},
-                                null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getFungibleTokenExpiryInUint32Range() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleTokenWithKeys() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111,
-                        new KeyValueWrapper(
-                                false,
-                                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
-                                new byte[] {},
-                                new byte[] {},
-                                null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleTokenExpiryInUint32Range() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getFungibleToken() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getFungibleToken2() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleToken() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getFungibleHbarsTokenWrapper() {
-        final var keyValue =
-                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
-        return new TokenCreateWrapper(
-                true,
-                "Hbars",
-                "HBAR",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "TestMemo",
-                false,
-                BigInteger.valueOf(10_000_000L),
-                BigInteger.valueOf(12L),
-                2525L,
-                true,
-                List.of(
-                        new TokenKeyWrapper(0b0000001, keyValue),
-                        new TokenKeyWrapper(0b0000010, keyValue),
-                        new TokenKeyWrapper(0b0000100, keyValue),
-                        new TokenKeyWrapper(0b0001000, keyValue),
-                        new TokenKeyWrapper(0b0010000, keyValue),
-                        new TokenKeyWrapper(0b0100000, keyValue),
-                        new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(
-                        9_999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
-    }
-
-    private static TokenCreateWrapper getFungibleTokenInheritKeys() {
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper() {
-        final var keyValue =
-                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
-        return new TokenCreateWrapper(
-                false,
-                "Hbars",
-                "HBAR",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "TestMemo",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                2_000_000_000L,
-                true,
-                List.of(
-                        new TokenKeyWrapper(0b0000001, keyValue),
-                        new TokenKeyWrapper(0b0000010, keyValue),
-                        new TokenKeyWrapper(0b0000100, keyValue),
-                        new TokenKeyWrapper(0b0001000, keyValue),
-                        new TokenKeyWrapper(0b0010000, keyValue),
-                        new TokenKeyWrapper(0b0100000, keyValue),
-                        new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(
-                        9999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
-    }
-
-    private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
-        return new TokenCreateWrapper(
-                false,
-                "TestNFT",
-                "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
-                "test",
-                true,
-                BigInteger.valueOf(0L),
-                BigInteger.valueOf(0L),
-                0L,
-                true,
-                List.of(new TokenKeyWrapper(
-                        0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
-    }
-
-    // Get Custom Fee Wrappers
-    private static FixedFeeWrapper getFixedFee() {
-        return new FixedFeeWrapper(10L, EntityIdUtils.tokenIdFromEvmAddress(SENDER_ADDRESS), false, false, null);
-    }
-
-    private static FractionalFeeWrapper getFractionalFee() {
-        return new FractionalFeeWrapper(10L, 10L, 1L, 100L, false, null);
-    }
-
-    private static RoyaltyFeeWrapper getRoyaltyFee() {
-        return new RoyaltyFeeWrapper(0L, 0L, FIXED_FEE_WRAPPER, null);
-    }
-
-    private static TokenExpiryWrapper getTokenExpiry() {
-        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
     }
 }

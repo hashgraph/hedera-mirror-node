@@ -31,8 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -66,11 +68,13 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,6 +91,11 @@ class WipeNonFungiblePrecompileTest {
             "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
             .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(nonFungible));
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
@@ -149,6 +158,8 @@ class WipeNonFungiblePrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenAccountWipe, Map.of(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, BigDecimal.valueOf(0)));
@@ -162,7 +173,12 @@ class WipeNonFungiblePrecompileTest {
                 new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void closeMocks() {
+        staticMock.close();
     }
 
     @Test

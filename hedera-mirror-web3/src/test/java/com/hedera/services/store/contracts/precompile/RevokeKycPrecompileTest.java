@@ -23,7 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -53,10 +55,12 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,6 +78,11 @@ public class RevokeKycPrecompileTest {
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenRevokeKyc(TokenRevokeKycTransactionBody.newBuilder());
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @Mock
     private AccessorFactory accessorFactory;
@@ -128,6 +137,8 @@ public class RevokeKycPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenRevokeKycFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
@@ -141,7 +152,12 @@ public class RevokeKycPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(revokeKycPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test

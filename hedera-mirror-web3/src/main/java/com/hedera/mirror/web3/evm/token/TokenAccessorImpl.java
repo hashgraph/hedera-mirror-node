@@ -39,6 +39,7 @@ import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -47,6 +48,7 @@ import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
+@Named
 public class TokenAccessorImpl implements TokenAccessor {
 
     private final MirrorNodeEvmProperties properties;
@@ -238,7 +240,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address address) {
-        final var token = store.getToken(address, OnMissing.DONT_THROW);
+        Token token = store.getToken(address, OnMissing.DONT_THROW);
 
         if (token.isEmptyToken()) {
             return Optional.empty();

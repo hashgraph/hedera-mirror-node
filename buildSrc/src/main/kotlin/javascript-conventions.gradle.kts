@@ -27,20 +27,7 @@ plugins {
     id("jacoco")
 }
 
-// Temporary until we move completely off VMs
-tasks.register<NpmTask>("package") {
-    dependsOn(tasks.npmInstall)
-    args = listOf("pack", "--silent")
-    doLast {
-        layout.buildDirectory.asFile.get().mkdirs()
-        fileTree(projectDir).matching { include("*.tgz") }.forEach {
-            val newName = it.name.replace("hashgraph-mirror-rest-", "hedera-mirror-rest-v")
-            it.renameTo(layout.buildDirectory.asFile.get().resolve(newName))
-        }
-    }
-}
-
-tasks.register<NpmTask>("start") {
+tasks.register<NpmTask>("run") {
     dependsOn(tasks.npmInstall)
     args = listOf("start")
 }

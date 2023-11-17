@@ -38,6 +38,8 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.contract.ContractTransaction;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -109,6 +111,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -326,6 +329,28 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<ContractTransaction, ContractTransaction.ContractTransactionBuilder> contractTransaction() {
+        var payerAccountId = entityId().getId();
+        var contractId = entityId().getId();
+        var builder = ContractTransaction.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(contractId)
+                .payerAccountId(payerAccountId)
+                .contractIds(Arrays.asList(payerAccountId, contractId));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder>
+            contractTransactionHash() {
+        var builder = ContractTransactionHash.builder()
+                .consensusTimestamp(timestamp())
+                .entityId(id())
+                .payerAccountId(id())
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
+                .hash(bytes(32));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
         long amount = id() + 1000;
         var spender = entityId();
@@ -374,11 +399,12 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
+        long timestamp = timestamp();
         var builder = CustomFeeHistory.builder()
                 .fixedFees(List.of(fixedFee()))
                 .fractionalFees(List.of(fractionalFee()))
                 .royaltyFees(List.of(royaltyFee()))
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -450,7 +476,7 @@ public class DomainBuilder {
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .type(ACCOUNT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -470,6 +496,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<EntityStakeHistory, EntityStakeHistory.EntityStakeHistoryBuilder<?, ?>> entityStakeHistory() {
+        long timestamp = timestamp();
         var builder = EntityStakeHistory.builder()
                 .declineRewardStart(false)
                 .endStakePeriod(0L)
@@ -478,7 +505,7 @@ public class DomainBuilder {
                 .stakedNodeIdStart(-1L)
                 .stakedToMe(0L)
                 .stakeTotalStart(0L)
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -630,13 +657,14 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NftHistory, NftHistory.NftHistoryBuilder<?, ?>> nftHistory() {
+        long timestamp = timestamp();
         var builder = NftHistory.builder()
                 .accountId(entityId())
                 .createdTimestamp(timestamp())
                 .deleted(false)
                 .metadata(bytes(16))
                 .serialNumber(id())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -654,12 +682,13 @@ public class DomainBuilder {
 
     public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?, ?>>
             nftAllowanceHistory() {
+        long timestamp = timestamp();
         var builder = NftAllowanceHistory.builder()
                 .approvedForAll(false)
                 .owner(entityId().getId())
                 .payerAccountId(entityId())
                 .spender(entityId().getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -726,19 +755,19 @@ public class DomainBuilder {
                 .consensusEnd(consensusEnd)
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .fileHash(text(96))
+                .fileHash(hash(96))
                 .gasUsed(100L)
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(28)
                 .hapiVersionPatch(0)
-                .hash(text(96))
+                .hash(hash(96))
                 .index(id())
                 .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(instantString + ".rcd.gz")
                 .nodeId(id())
-                .previousHash(text(96))
+                .previousHash(hash(96))
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
                         .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
@@ -837,7 +866,7 @@ public class DomainBuilder {
                 .supplyKey(key())
                 .supplyType(TokenSupplyTypeEnum.INFINITE)
                 .symbol(text(8))
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId())
                 .totalSupply(1_000_000_000L + id())
                 .treasuryAccountId(entityId())
@@ -873,7 +902,7 @@ public class DomainBuilder {
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -896,13 +925,14 @@ public class DomainBuilder {
             tokenAllowanceHistory() {
         long amount = id() + 1000;
         var spender = entityId();
+        long timestamp = timestamp();
         var builder = TokenAllowanceHistory.builder()
                 .amount(amount)
                 .amountGranted(amount)
                 .owner(id())
                 .payerAccountId(spender)
                 .spender(spender.getId())
-                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -961,7 +991,7 @@ public class DomainBuilder {
         var builder = TopicMessageLookup.builder()
                 .partition(String.format("topic_message_%d", id()))
                 .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
-                .timestampRange(Range.closedOpen(timestamp, timestamp + 1))
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .topicId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -1055,6 +1085,10 @@ public class DomainBuilder {
 
     public String text(int characters) {
         return RandomStringUtils.randomAlphanumeric(characters);
+    }
+
+    public String hash(int characters) {
+        return RandomStringUtils.random(characters, "0123456789abcdef");
     }
 
     public long timestamp() {

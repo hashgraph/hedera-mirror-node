@@ -85,6 +85,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Version;
 
 @ExtendWith(MockitoExtension.class)
 abstract class AbstractTransactionHandlerTest {
@@ -590,6 +591,7 @@ abstract class AbstractTransactionHandlerTest {
 
         return RecordItem.builder()
                 .entityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction)
+                .hapiVersion(new Version(0, 28, 0))
                 .transactionRecord(record)
                 .transaction(transaction)
                 .build();

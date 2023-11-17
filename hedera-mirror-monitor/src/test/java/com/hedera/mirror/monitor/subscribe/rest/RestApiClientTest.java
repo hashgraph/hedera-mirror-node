@@ -37,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
@@ -126,6 +127,21 @@ class RestApiClientTest {
                 .thenAwait(WAIT)
                 .expectErrorMatches(t -> t.getCause() instanceof ConnectException)
                 .verify(WAIT);
+    }
+
+    @Test
+    void getNetworkStakeStatusCode() {
+        when(exchangeFunction.exchange(isA(ClientRequest.class)))
+                .thenReturn(Mono.just(
+                        ClientResponse.create(HttpStatus.SERVICE_UNAVAILABLE).build()));
+
+        StepVerifier.withVirtualTime(() -> restApiClient.getNetworkStakeStatusCode())
+                .thenAwait(WAIT)
+                .expectNext(HttpStatusCode.valueOf(503))
+                .expectComplete()
+                .verify(WAIT);
+
+        verify(exchangeFunction).exchange(isA(ClientRequest.class));
     }
 
     private Mono<ClientResponse> response(Object response) {

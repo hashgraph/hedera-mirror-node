@@ -50,6 +50,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.data.util.Version;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -119,6 +121,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var stakedAccountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder
                 .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
                 .build();
         var transaction = transaction(recordItem);
@@ -137,12 +140,14 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
-    @Test
-    void updateTransactionStakedNodeId() {
+    @ParameterizedTest
+    @ValueSource(ints = {27, 28})
+    void updateTransactionStakedNodeId(int minorVersion) {
         // given
         long nodeId = 1L;
         var recordItem = recordItemBuilder
                 .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
         var transaction = transaction(recordItem);
@@ -160,6 +165,29 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+    }
+
+    @Test
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking() {
+        // given
+        var stakedAccountId = AccountID.newBuilder().setAccountNum(1L).build();
+        var recordItem = recordItemBuilder
+                .cryptoCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
+                .build();
+        var transaction = transaction(recordItem);
+        var accountId =
+                EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
+
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
+                .returns(null, Entity::getDeclineReward)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakePeriodStart);
     }
 
     @Test

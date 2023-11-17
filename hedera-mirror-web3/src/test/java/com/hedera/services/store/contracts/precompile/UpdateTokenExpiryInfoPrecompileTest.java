@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -108,9 +109,15 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> staticUpdateTokenExpiryInfoPrecompile;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @BeforeEach
     void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
@@ -123,7 +130,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(updateTokenExpiryInfoPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract, false);
+                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
     }
 
     @AfterEach
@@ -131,6 +138,7 @@ class UpdateTokenExpiryInfoPrecompileTest {
         if (!staticUpdateTokenExpiryInfoPrecompile.isClosed()) {
             staticUpdateTokenExpiryInfoPrecompile.close();
         }
+        staticMock.close();
     }
 
     @Test

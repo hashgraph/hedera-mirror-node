@@ -174,7 +174,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.9.0-debian-11-r25
+      tag: 14.9.0-debian-11-r54
     initdbScriptsCM: "{{ .Release.Name }}-init"
     maxConnections: 200
     password: ""  # Randomly generated if left blank

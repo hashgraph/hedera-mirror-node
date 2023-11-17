@@ -18,14 +18,18 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -33,11 +37,11 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(DynamicCallsContractFunctions.class)
-    void dynamicCallsTestWithAliasSender(DynamicCallsContractFunctions contractFunctions) {
+    void dynamicCallsTestWithAliasSenderForEthCall(DynamicCallsContractFunctions contractFunctions) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
-        final var serviceParameters =
-                serviceParametersForExecution(functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
         if (contractFunctions.expectedErrorMessage != null) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
@@ -47,6 +51,29 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     });
         } else {
             contractCallService.processCall(serviceParameters);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(DynamicCallsContractFunctions.class)
+    void dynamicCallsTestWithAliasSenderForEstimateGas(DynamicCallsContractFunctions contractFunctions) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                contractFunctions.name, DYNAMIC_ETH_CALLS_ABI_PATH, contractFunctions.functionParameters);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+        if (contractFunctions.expectedErrorMessage != null) {
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class)
+                    .satisfies(ex -> {
+                        MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                        assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
+                    });
+        } else {
+            final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+            assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+                    .as("result must be within 5-20% bigger than the gas used from the first call")
+                    .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
+                    .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
         }
     }
 
@@ -122,9 +149,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "IERC20: failed to transfer"),
         ASSOCIATE_DISSOCIATE_TRANSFER_NFT_FAIL(
                 "associateTokenDissociateFailTransfer",
-                new Object[] {
-                    NFT_TRANSFER_ADDRESS, FUNGIBLE_TOKEN_ADDRESS, OWNER_ADDRESS, BigInteger.ZERO, BigInteger.ONE
-                },
+                new Object[] {NFT_TRANSFER_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, BigInteger.ZERO, BigInteger.ONE},
                 "IERC721: failed to transfer"),
         ASSOCIATE_TRANSFER_NFT_EXCEPTION(
                 "associateTokenTransfer",
@@ -144,12 +169,25 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "approveTokenGetAllowance",
                 new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
-        APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
+
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
                 "approveTokenTransferFromGetAllowanceGetBalance",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
                 null),
-        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_2(
                 "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
+                null),
+        APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
+                "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_2(
+                "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY, SENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
+                "approveTokenTransferGetAllowanceGetBalance",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
                 null),
         APPROVE_NFT_TRANSFER_GET_ALLOWANCE(

@@ -11,7 +11,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 
 -- account_balance
 alter table if exists account_balance
-    add constraint account_balance__pk primary key (consensus_timestamp, account_id);
+    add constraint account_balance__pk primary key (account_id, consensus_timestamp);
 
 -- account_balance_file
 alter table if exists account_balance_file
@@ -47,9 +47,6 @@ create index if not exists contract_log__contract_id_timestamp_index
 alter table if exists contract_result
     add constraint contract_result__pk primary key (consensus_timestamp, contract_id);
 
-create index if not exists contract_result__hash
-    on contract_result using hash (transaction_hash);
-
 create index if not exists contract_result__id_sender_timestamp
     on contract_result (contract_id, sender_id, consensus_timestamp);
 
@@ -70,6 +67,14 @@ alter table if exists contract_state_change
 -- contract_state_change__id_slot_timestamp
 create index if not exists contract_state_change__id_slot_timestamp
     on contract_state_change (contract_id, slot, consensus_timestamp);
+
+-- contract_transaction
+alter table if exists contract_transaction
+    add constraint contract_transaction__pk primary key (consensus_timestamp, entity_id);
+
+-- contract_transaction_hash__hash
+create index if not exists contract_transaction_hash__hash
+    on contract_transaction_hash using hash (hash);
 
 -- crypto_allowance
 alter table if exists crypto_allowance
@@ -129,7 +134,6 @@ alter table if exists entity_transaction
 -- ethereum_transaction
 alter table if exists ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists ethereum_transaction__hash on ethereum_transaction using hash (hash);
 
 -- event_file
 alter table if exists event_file
@@ -235,7 +239,7 @@ create index if not exists token_allowance_history__owner_spender_token_lower_ti
 
 -- token_balance
 alter table if exists token_balance
-    add constraint token_balance__pk primary key (consensus_timestamp, account_id, token_id);
+    add constraint token_balance__pk primary key (account_id, token_id, consensus_timestamp);
 
 -- token_transfer
 create index if not exists token_transfer__token_account_timestamp

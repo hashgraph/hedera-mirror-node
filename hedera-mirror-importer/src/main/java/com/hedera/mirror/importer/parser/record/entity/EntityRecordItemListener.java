@@ -91,6 +91,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         recordItem.setEntityTransactionPredicate(entityProperties.getPersist()::shouldPersistEntityTransaction);
+        recordItem.setContractTransactionPredicate(
+                entityId -> entityProperties.getPersist().isContractTransaction());
 
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
@@ -157,7 +159,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!entityTransactions.isEmpty()) {
             entityListener.onEntityTransactions(entityTransactions.values());
         }
-
+        var contractTransactions = recordItem.populateContractTransactions();
+        if (!contractTransactions.isEmpty()) {
+            entityListener.onContractTransactions(contractTransactions);
+        }
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -394,7 +399,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 // to bring the account's balance of the token to 0. Set the totalSupply of the token object to the
                 // negative amount, later in the pipeline the token total supply will be reduced accordingly
                 Token token = new Token();
-                token.setTimestampLower(consensusTimestamp);
                 token.setTokenId(tokenId.getId());
                 token.setTotalSupply(accountAmount.getAmount());
                 entityListener.onToken(token);

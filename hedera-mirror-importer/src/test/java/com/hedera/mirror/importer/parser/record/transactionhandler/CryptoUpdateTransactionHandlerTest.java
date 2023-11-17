@@ -36,8 +36,11 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.data.util.Version;
 
 class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -65,6 +68,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     void updateTransactionDeclineReward(Boolean declineReward) {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(body -> body.clear().setDeclineReward(BoolValue.of(declineReward)))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -83,6 +87,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
                 .transactionBody(body -> body.clear().setStakedAccountId(accountId))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -94,10 +99,11 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @ParameterizedTest
-    @ValueSource(longs = {1, -1})
-    void updateTransactionStakedNodeId(Long nodeId) {
+    @CsvSource({"1,28", "-1,27"})
+    void updateTransactionStakedNodeId(Long nodeId, int minorVersion) {
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, minorVersion, 0)))
                 .transactionBody(body -> body.setStakedNodeId(nodeId))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
@@ -106,6 +112,28 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(true, Entity::getDeclineReward)
                 .returns(
                         Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart));
+    }
+
+    @Test
+    void doNotUpdateTransactionStakedAccountIdBeforeConsensusStaking() {
+        // Note, the HAPI version is less than 0.27.0 when staking was made live in services so staking will not happen
+        AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
+        RecordItem withStakedNodeIdSet = recordItemBuilder
+                .cryptoUpdate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                .transactionBody(body -> body.clear().setStakedAccountId(accountId))
+                .build();
+        var timestamp = withStakedNodeIdSet.getConsensusTimestamp();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(timestamp))
+                .get();
+        getTransactionHandler().updateTransaction(transaction, withStakedNodeIdSet);
+        assertCryptoUpdate(timestamp, t -> assertThat(t)
+                .returns(null, Entity::getDeclineReward)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedNodeId)
+                .returns(null, Entity::getStakePeriodStart));
     }
 
     private void assertCryptoUpdate(long timestamp, Consumer<Entity> extraAssert) {
