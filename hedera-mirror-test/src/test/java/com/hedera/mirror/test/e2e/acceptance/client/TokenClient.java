@@ -65,9 +65,7 @@ public class TokenClient extends AbstractNetworkClient {
     private final Collection<TokenAccount> tokenAccounts = new CopyOnWriteArrayList<>();
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
 
-    private final Map<TokenNameEnum, NetworkTransactionResponse> networkTransactionResponseMap =
-            new ConcurrentHashMap<>();
-    private final Map<TokenNameEnum, TokenId> tokenMap = new ConcurrentHashMap<>();
+    private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -80,12 +78,15 @@ public class TokenClient extends AbstractNetworkClient {
         deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
         deleteAll(tokenAccounts, tokenAccount -> dissociate(tokenAccount.accountId, tokenAccount.tokenId));
         tokenMap.clear();
-        networkTransactionResponseMap.clear();
     }
 
     @Override
     public int getOrder() {
         return -1;
+    }
+
+    public TokenResponse getToken(TokenNameEnum tokenNameEnum) {
+        return getToken(tokenNameEnum, List.of());
     }
 
     public TokenResponse getToken(TokenNameEnum tokenNameEnum, List<CustomFee> customFees) {
@@ -94,8 +95,7 @@ public class TokenClient extends AbstractNetworkClient {
             var operator = sdkClient.getExpandedOperatorAccountId();
             try {
                 var networkTransactionResponse = createToken(tokenNameEnum, operator, customFees);
-                networkTransactionResponseMap.put(tokenNameEnum, networkTransactionResponse);
-                return networkTransactionResponse.getReceipt().tokenId;
+                return new TokenResponse(networkTransactionResponse.getReceipt().tokenId, networkTransactionResponse);
             } catch (Exception e) {
                 log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
                 return null;
@@ -107,7 +107,7 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         log.debug("Retrieved token: {} with ID: {}", tokenNameEnum, tokenId);
-        return new TokenResponse(tokenId, networkTransactionResponseMap.get(tokenNameEnum));
+        return tokenMap.get(tokenNameEnum);
     }
 
     private NetworkTransactionResponse createToken(
@@ -598,8 +598,8 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
-        FUNGIBLE_2(
-                "fungible_2",
+        FUNGIBLE_DELETABLE(
+                "fungible_deletable",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
@@ -619,8 +619,8 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
-        NFT_2(
-                "non_fungible_2",
+        NFT_DELETABLE(
+                "non_fungible_deletable",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),

@@ -52,7 +52,6 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Collections;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -110,8 +109,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721Metadata token {string} name")
     public void ierc721MetadataTokenName(String tokenName) {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
-        var tokenId =
-                tokenClient.getToken(tokenNameEnum, Collections.emptyList()).tokenId();
+        var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
         var data = encodeData(ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
@@ -124,8 +122,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721Metadata token {string} symbol")
     public void ierc721MetadataTokenSymbol(String tokenName) {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
-        var tokenId =
-                tokenClient.getToken(tokenNameEnum, Collections.emptyList()).tokenId();
+        var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
         var data = encodeData(ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
@@ -138,7 +135,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721Metadata token {string} totalSupply")
     public void ierc721MetadataTokenTotalSupply(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
         var totalSupplyOfNft = mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply();
 
@@ -153,7 +150,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with IERC721 token {string} balanceOf owner")
     public void ierc721MetadataTokenBalanceOf(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
         var allTokens = mirrorClient
                 .getAccountDetailsByAccountId(AccountId.fromSolidityAddress(contractClient.getClientAddress()))
@@ -183,7 +180,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with HederaTokenService isToken token {string}")
     public void htsIsToken(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
         var data = encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
@@ -197,7 +194,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with HederaTokenService isFrozen token {string}, account")
     public void htsIsFrozen(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
         var data = encodeData(PRECOMPILE, HTS_IS_FROZEN_SELECTOR, asAddress(tokenId), asAddress(contractClient));
@@ -211,7 +208,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with HederaTokenService isKyc token {string}, account")
     public void htsIsKyc(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
         var data = encodeData(PRECOMPILE, HTS_IS_KYC_GRANTED_SELECTOR, asAddress(tokenId), asAddress(contractClient));
@@ -225,7 +222,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with HederaTokenService getTokenDefaultFreezeStatus token {string}")
     public void htsGetTokenDefaultFreezeStatus(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
         var data = encodeData(PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(tokenId));
@@ -239,7 +236,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with HederaTokenService getTokenDefaultKycStatus token {string}")
     public void htsGetTokenDefaultKycStatus(String tokenName) {
         var tokenId = tokenClient
-                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName), Collections.emptyList())
+                .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
         var data = encodeData(PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(tokenId));

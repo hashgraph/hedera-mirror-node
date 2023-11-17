@@ -46,7 +46,6 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,7 +92,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, NAME_SELECTOR, asAddress(fungibleTokenId));
         var getNameResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getNameResponse.getResultAsText()).isEqualTo("fungible_2_name");
+        assertThat(getNameResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol() + "_name");
     }
 
     @RetryAsserts
@@ -102,7 +101,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, SYMBOL_SELECTOR, asAddress(fungibleTokenId));
         var getSymbolResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getSymbolResponse.getResultAsText()).isEqualTo("fungible_2");
+        assertThat(getSymbolResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol());
     }
 
     @RetryAsserts
@@ -226,17 +225,14 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewFungibleToken() {
-        final var tokenId = tokenClient
-                .getToken(TokenNameEnum.FUNGIBLE_2, Collections.emptyList())
-                .tokenId();
+        final var tokenId =
+                tokenClient.getToken(TokenNameEnum.FUNGIBLE_DELETABLE).tokenId();
         fungibleTokenId = tokenId;
     }
 
     @Then("I create a new nft with infinite supplyType")
     public void createNewNft() {
-        final var tokenId = tokenClient
-                .getToken(TokenNameEnum.NFT_2, Collections.emptyList())
-                .tokenId();
+        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE).tokenId();
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
         nonFungibleTokenId = tokenId;
     }

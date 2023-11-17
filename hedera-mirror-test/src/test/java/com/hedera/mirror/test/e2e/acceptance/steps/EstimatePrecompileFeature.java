@@ -217,18 +217,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I successfully create fungible tokens")
     public void createFungibleToken() {
-        fungibleKycUnfrozenTokenId = tokenClient
-                .getToken(FUNGIBLE_KYC_UNFROZEN, Collections.emptyList())
-                .tokenId();
-        fungibleTokenId =
-                tokenClient.getToken(FUNGIBLE, Collections.emptyList()).tokenId();
+        fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN).tokenId();
+        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
     }
 
     @Given("I successfully create non fungible tokens")
     public void createNonFungibleToken() {
-        nonFungibleKycUnfrozenTokenId =
-                tokenClient.getToken(NFT_KYC_UNFROZEN, Collections.emptyList()).tokenId();
-        nonFungibleTokenId = tokenClient.getToken(NFT, Collections.emptyList()).tokenId();
+        nonFungibleKycUnfrozenTokenId = tokenClient.getToken(NFT_KYC_UNFROZEN).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
     }
 
     @Given("I mint and verify a new nft")
@@ -1530,7 +1526,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with balanceOf function for {token} and verify the estimated gas against HAPI")
     public void executeBalanceOfFunctionWithLimitedGas(TokenNameEnum tokenName) {
-        var tokenId = tokenClient.getToken(tokenName, Collections.emptyList()).tokenId();
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeDataToByteArray(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var estimateGasValue = validateAndReturnGas(data, BALANCE_OF, ercTestContractSolidityAddress);
         executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, data);
