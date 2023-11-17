@@ -68,40 +68,115 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByTimestampAndOwnerAndApprovedForAllIsTrueGreaterThanBlockTimestamp() {
-        final var allowance = domainBuilder.nftAllowance().persist();
+        final var allowance = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.approvedForAll(true))
+                .persist();
 
-        assertThat(allowanceRepository.findByTimestampAndOwnerAndApprovedForAllIsTrue(
+        assertThat(allowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(
                         allowance.getId().getOwner(), allowance.getTimestampLower() - 1))
                 .isEmpty();
     }
 
     @Test
-    void findByTimestampAndOwnerAndApprovedForAllIsTrueHistoricalLessThanBlockTimestamp() {
-        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+    void findByTimestampAndOwnerAndApprovedForAllIsFalseGreaterThanBlockTimestamp() {
+        final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(allowanceRepository.findByTimestampAndOwnerAndApprovedForAllIsTrue(
-                        allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1))
-                .get()
+        assertThat(allowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                        allowance.getId().getOwner(), allowance.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByTimestampAndOwnerAndApprovedForAllIsTrueEqualToBlockTimestamp() {
+        final var allowance = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.approvedForAll(true))
+                .persist();
+
+        assertThat(allowanceRepository
+                        .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                                allowance.getId().getOwner(), allowance.getTimestampLower())
+                        .get(0))
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByTimestampAndOwnerAndApprovedForAllIsTrueLessThanBlockTimestamp() {
+        final var allowance = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.approvedForAll(true))
+                .persist();
+
+        assertThat(allowanceRepository
+                        .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                                allowance.getId().getOwner(), allowance.getTimestampLower() + 1)
+                        .get(0))
+                .isEqualTo(allowance);
+    }
+
+    @Test
+    void findByTimestampAndOwnerAndApprovedForAllIsFalseLessThanBlockTimestamp() {
+        final var allowance = domainBuilder.nftAllowance().persist();
+
+        assertThat(allowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                        allowance.getId().getOwner(), allowance.getTimestampLower() + 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByTimestampAndOwnerAndApprovedForAllIsTrueHistoricalLessThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.approvedForAll(true))
+                .persist();
+
+        assertThat(allowanceRepository
+                        .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                                allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1)
+                        .get(0))
+                .usingRecursiveComparison()
+                .isEqualTo(allowanceHistory);
+    }
+
+    @Test
+    void findByTimestampAndOwnerAndApprovedForAllIsFalseHistoricalLessThanBlockTimestamp() {
+        final var allowanceHistory = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.approvedForAll(true))
+                .persist();
+
+        assertThat(allowanceRepository
+                        .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                                allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() + 1)
+                        .get(0))
                 .usingRecursiveComparison()
                 .isEqualTo(allowanceHistory);
     }
 
     @Test
     void findByTimestampAndOwnerAndApprovedForAllIsTrueHistoricalEqualToBlockTimestamp() {
-        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+        final var allowanceHistory = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.approvedForAll(true))
+                .persist();
 
-        assertThat(allowanceRepository.findByTimestampAndOwnerAndApprovedForAllIsTrue(
-                        allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower()))
-                .get()
+        assertThat(allowanceRepository
+                        .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                                allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower())
+                        .get(0))
                 .usingRecursiveComparison()
                 .isEqualTo(allowanceHistory);
     }
 
     @Test
     void findByTimestampAndOwnerAndApprovedForAllIsTrueHistoricalGreaterThanBlockTimestamp() {
-        final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
+        final var allowanceHistory = domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.approvedForAll(true))
+                .persist();
 
-        assertThat(allowanceRepository.findByTimestampAndOwnerAndApprovedForAllIsTrue(
+        assertThat(allowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(
                         allowanceHistory.getId().getOwner(), allowanceHistory.getTimestampLower() - 1))
                 .isEmpty();
     }
@@ -113,20 +188,23 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
         long spender = 3L;
         final var allowanceHistory1 = domainBuilder
                 .nftAllowanceHistory()
-                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender))
+                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender).approvedForAll(true))
                 .persist();
 
         final var allowanceHistory2 = domainBuilder
                 .nftAllowanceHistory()
-                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender))
+                .customize(a -> a.tokenId(tokenId).owner(owner).spender(spender).approvedForAll(true))
                 .persist();
 
         final var latestTimestamp =
                 Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
 
-        assertThat(allowanceRepository.findByTimestampAndOwnerAndApprovedForAllIsTrue(
-                        allowanceHistory1.getId().getOwner(), latestTimestamp + 1))
-                .hasValueSatisfying(
-                        actual -> assertThat(actual).returns(latestTimestamp, NftAllowance::getTimestampLower));
+        NftAllowance actualAllowance = allowanceRepository
+                .findByOwnerAndTimestampAndApprovedForAllIsTrue(
+                        allowanceHistory1.getId().getOwner(), latestTimestamp + 1)
+                .get(0);
+
+        assertThat(actualAllowance).usingRecursiveComparison().isEqualTo(allowanceHistory2);
+        assertThat(actualAllowance.getTimestampLower()).isEqualTo(latestTimestamp);
     }
 }
