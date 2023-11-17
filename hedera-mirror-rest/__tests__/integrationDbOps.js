@@ -116,7 +116,7 @@ const flywayMigrate = async () => {
       "placeholders.idPartitionSize": 1000000000000000,
       "placeholders.maxEntityId": 5000000,
       "placeholders.maxEntityIdRatio": 2.0,
-      "placeholders.partitionStartDate": "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
+      "placeholders.partitionStartDate": "'1970-01-01'",
       "placeholders.partitionTimeInterval": "'10 years'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "placeholders.schema": "public",
