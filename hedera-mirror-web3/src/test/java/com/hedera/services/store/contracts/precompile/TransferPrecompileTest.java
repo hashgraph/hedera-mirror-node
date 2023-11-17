@@ -37,7 +37,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiverAliased;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.wrapUnsafely;
@@ -84,10 +86,14 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
@@ -273,13 +279,22 @@ class TransferPrecompileTest {
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
                 .thenReturn(CRYPTO_TRANSFER_FUNGIBLE_WRAPPER);
 
-        given(transactionBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        final var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(TransferList.newBuilder()
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAccountID(sender)
+                                        .setAmount(1L)
+                                        .build())
+                                .addAccountAmounts(AccountAmount.newBuilder()
+                                        .setAccountID(sender)
+                                        .setAmount(1L)
+                                        .build())
+                                .build()));
 
         given(worldUpdater.getStore()).willReturn(store);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getMessageFrameStack()).willReturn(stack);
-        given(stack.getLast()).willReturn(lastFrame);
         given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
         given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
         given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
@@ -513,6 +528,22 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+
+        final var transactionBody = TransactionBody.newBuilder()
+                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(TokenTransferList.newBuilder()
+                                .setToken(HTSTestsUtil.token)
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(sender)
+                                        .setReceiverAccountID(receiverAliased)
+                                        .setSerialNumber(1L)
+                                        .build())
+                                .addNftTransfers(NftTransfer.newBuilder()
+                                        .setSenderAccountID(sender)
+                                        .setReceiverAccountID(receiverAliased)
+                                        .setSerialNumber(2L)
+                                        .build())
+                                .build()));
 
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);

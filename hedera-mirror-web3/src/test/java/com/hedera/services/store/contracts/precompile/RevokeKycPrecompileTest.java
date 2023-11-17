@@ -178,6 +178,7 @@ class RevokeKycPrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
@@ -215,7 +216,6 @@ class RevokeKycPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
     }
 
