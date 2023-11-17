@@ -77,7 +77,6 @@ public class TokenClient extends AbstractNetworkClient {
         log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), tokenAccounts.size());
         deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
         deleteAll(tokenAccounts, tokenAccount -> dissociate(tokenAccount.accountId, tokenAccount.tokenId));
-        tokenMap.clear();
     }
 
     @Override

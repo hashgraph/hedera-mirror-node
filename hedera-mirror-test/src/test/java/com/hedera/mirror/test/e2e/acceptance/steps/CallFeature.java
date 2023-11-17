@@ -281,6 +281,7 @@ public class CallFeature extends AbstractFeature {
         validateAddresses(addresses);
     }
 
+    @SuppressWarnings("java:S2925")
     @RetryAsserts
     @Then("I successfully update the balance of an account and get the updated balance after 2 seconds")
     public void getBalance() throws InterruptedException {
@@ -292,7 +293,7 @@ public class CallFeature extends AbstractFeature {
                 Hbar.fromTinybars(initialBalance.longValue()),
                 receiverAccountId.getPrivateKey());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        // wait for next block
+        // wait for token cache to expire
         Thread.sleep(2000);
         var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
