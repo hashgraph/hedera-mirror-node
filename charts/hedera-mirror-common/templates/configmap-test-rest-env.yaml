@@ -1,9 +1,0 @@
-{{- if .Values.testkube.enabled -}}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: test-rest-env
-  namespace: {{ .Values.testkube.namespace }}
-data:
-  {{- toYaml | .Values.testkube.test.config.rest | nindent 2 }}
-{{- end }}

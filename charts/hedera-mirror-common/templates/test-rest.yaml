@@ -2,6 +2,7 @@
 apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: test-rest
   namespace: {{ .Values.testkube.namespace }}
 spec:
@@ -22,7 +23,7 @@ spec:
       - mapToVariables: true
         mount: false
         reference:
-          name: test-rest-env
+          name: {{ include "hedera-mirror-common.fullname" . }}-test-rest
     variables:
       BASE_URL:
         name: BASE_URL

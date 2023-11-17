@@ -357,6 +357,11 @@ stackgres:
 
 testkube:
   enabled: false
+  executor:
+    image:
+      registry: docker.io
+      repository: grafana/k6
+      tag: 0.47.0
   namespace: testkube
   test:
     config:

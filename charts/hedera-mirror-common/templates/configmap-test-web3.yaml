@@ -1,0 +1,10 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-common.fullname" . }}-test-web3
+  namespace: {{ .Values.testkube.namespace }}
+data:
+  {{- toYaml .Values.testkube.test.config.web3 | nindent 2 }}
+{{- end }}

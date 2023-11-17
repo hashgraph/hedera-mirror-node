@@ -1,7 +1,8 @@
 {{- if .Values.testkube.enabled -}}
-apiVersion: tests.testkube.io/v2
+apiVersion: tests.testkube.io/v3
 kind: TestSuite
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: test-suite-rest
   namespace: {{ .Values.testkube.namespace }}
 spec:
@@ -19,12 +20,16 @@ spec:
   schedule: {{ quote .Values.testkube.test.schedule }}
   {{- end }}
   steps:
-    - delay:
-        duration: 100000
     - execute:
-        name: test-rest
-    - delay:
-        duration: 600000
+      - delay: 10s
+      stopOnFailure: false
     - execute:
-        name: test-web3
+      - test: test-rest
+      stopOnFailure: false
+    - execute:
+      - delay: 60s
+      stopOnFailure: false
+    - execute:
+      - test: test-web3
+      stopOnFailure: false
 {{- end }}

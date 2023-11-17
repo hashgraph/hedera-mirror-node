@@ -2,6 +2,7 @@
 apiVersion: executor.testkube.io/v1
 kind: Executor
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: k6-custom-executor
   namespace: {{ .Values.testkube.namespace }}
 spec:
@@ -9,7 +10,8 @@ spec:
   executor_type: container
   features:
     - artifacts
-  image: grafana/k6:0.47.0
+  {{ $image := .Values.testkube.executor.image }}
+  image: "{{ $image.registry }}/{{ $image.repository }}:{{ $image.tag }}"
   types:
     - k6-custom/script
 {{- end }}
