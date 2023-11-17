@@ -2,6 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-common.fullname" . }}-test-rest
   namespace: {{ .Values.testkube.namespace }}
 data:
