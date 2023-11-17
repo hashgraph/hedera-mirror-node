@@ -33,6 +33,7 @@ extra.apply {
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.0")
     set("reactorGrpcVersion", "1.2.4")
+    set("reactor-bom.version", "2022.0.13")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.4.6")

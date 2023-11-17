@@ -39,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -104,31 +105,35 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 : HederaFunctionality.ContractCall;
     }
 
-    @SuppressWarnings("java:S5411")
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        if (ContractCallContext.get().isCreate()) {
+            return baseInitialFrame
+                    .type(MessageFrame.Type.CONTRACT_CREATION)
+                    .address(to)
+                    .contract(to)
+                    .inputData(Bytes.EMPTY)
+                    .code(CodeFactory.createCode(payload, 0, false))
+                    .build();
+        } else {
+            final var resolvedForEvm = aliasManager.resolveForEvm(to);
+            final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
 
-        if (code == null) {
-            throw new MirrorEvmTransactionException(
-                    ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            // If there is no bytecode, it means we have a non-token and non-contract account,
+            // hence the code should be null and there must be a value transfer.
+            if (code == null && value <= 0) {
+                throw new MirrorEvmTransactionException(
+                        ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            }
+
+            return baseInitialFrame
+                    .type(MessageFrame.Type.MESSAGE_CALL)
+                    .address(to)
+                    .contract(to)
+                    .inputData(payload)
+                    .code(code == null ? CodeV0.EMPTY_CODE : code)
+                    .build();
         }
-
-        return ContractCallContext.get().isCreate()
-                ? baseInitialFrame
-                        .type(MessageFrame.Type.CONTRACT_CREATION)
-                        .address(to)
-                        .contract(to)
-                        .inputData(Bytes.EMPTY)
-                        .code(CodeFactory.createCode(payload, 0, false))
-                        .build()
-                : baseInitialFrame
-                        .type(MessageFrame.Type.MESSAGE_CALL)
-                        .address(to)
-                        .contract(to)
-                        .inputData(payload)
-                        .code(code)
-                        .build();
     }
 }

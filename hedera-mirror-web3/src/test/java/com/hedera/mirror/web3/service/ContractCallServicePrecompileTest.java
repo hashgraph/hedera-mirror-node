@@ -386,6 +386,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
+        TRANSFER_FROM(
+                "transferFromExternal",
+                new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
+                new Object[] {}),
         APPROVE("approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 1L}, new Object[] {}),
         DELETE_ALLOWANCE(
                 "approveExternal", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 0L}, new Object[] {}),
@@ -461,10 +465,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "createNonFungibleTokenWithCustomFeesExternal",
                 new Object[] {NON_FUNGIBLE_TOKEN, FIXED_FEE_WRAPPER, ROYALTY_FEE_WRAPPER},
                 new Object[] {SUCCESS_RESULT, MODIFICATION_CONTRACT_ADDRESS}),
-        TRANSFER_TOKEN(
-                "transferTokenExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, RECEIVER_ADDRESS, 1L},
-                new Object[] {}),
         TRANSFER_TOKEN_WITH(
                 "transferTokenExternal",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, SENDER_ALIAS, 1L},
@@ -520,10 +520,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         TRANSFER_NFT_TOKEN(
                 "transferNFTExternal",
                 new Object[] {NFT_TRANSFER_ADDRESS, OWNER_ADDRESS, SPENDER_ALIAS, 1L},
-                new Object[] {}),
-        TRANSFER_FROM(
-                "transferFromExternal",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
                 new Object[] {}),
         TRANSFER_FROM_NFT(
                 "transferFromNFTExternal",

@@ -146,6 +146,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private HederaPrngSeedOperation prngSeedOperation;
 
+    @Mock
+    private AbstractCodeCache codeCache;
+
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
 
     private Pair<ResponseCodeEnum, Long> result;
@@ -193,7 +196,6 @@ class MirrorEvmTxProcessorTest {
     void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
         given(autoCreationLogic.create(any(), any(), any(), any(), any())).willReturn(result);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(evmProperties.fundingAccountAddress()).willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
@@ -232,8 +234,7 @@ class MirrorEvmTxProcessorTest {
                 .blockHashLookup(hash -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
-                .isThrownBy(
-                        () -> mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L));
+                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 0L));
     }
 
     @Test
@@ -246,6 +247,7 @@ class MirrorEvmTxProcessorTest {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
+        given(hederaEvmContractAliases.isMirror(receiverAddress)).willReturn(true);
         final long GAS_LIMIT = 300_000L;
         final Wei oneWei = Wei.of(1L);
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
