@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
@@ -24,7 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -33,6 +33,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -50,19 +51,18 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,11 +80,6 @@ public class GrantKycPrecompileTest {
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder());
-
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
 
     @Mock
     private MessageFrame frame;
@@ -134,6 +129,15 @@ public class GrantKycPrecompileTest {
     @Mock
     private EvmInfrastructureFactory infrastructureFactory;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private HTSPrecompiledContract subject;
     private GrantKycLogic grantKycLogic;
     private GrantKycPrecompile grantKycPrecompile;
@@ -141,14 +145,12 @@ public class GrantKycPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenGrantKycToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         grantKycLogic = new GrantKycLogic();
@@ -156,12 +158,16 @@ public class GrantKycPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(grantKycPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
-    }
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                worldUpdater,
+                tokenAccessor,
+                precompilePricingUtils);
 
-    @AfterEach
-    void clean() {
-        staticMock.close();
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -178,12 +184,15 @@ public class GrantKycPrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.prepareComputation(frame, GRANT_TOKEN_KYC_INPUT, a -> a);
+        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -204,11 +213,14 @@ public class GrantKycPrecompileTest {
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(GRANT_TOKEN_KYC_INPUT, a -> a);
-        final var result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.prepareComputation(frame, GRANT_TOKEN_KYC_INPUT, a -> a);
+        final var result =
+                subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -223,7 +235,6 @@ public class GrantKycPrecompileTest {
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenFrameContext() {

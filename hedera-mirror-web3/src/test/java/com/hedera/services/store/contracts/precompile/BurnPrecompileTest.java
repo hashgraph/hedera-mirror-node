@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -29,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -41,6 +41,7 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -69,6 +70,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,13 +79,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -161,11 +161,6 @@ class BurnPrecompileTest {
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
 
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
-
     @Mock
     private com.hedera.services.store.models.Account account;
 
@@ -232,6 +227,15 @@ class BurnPrecompileTest {
     @Mock
     private ContextOptionValidator contextOptionValidator;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private HTSPrecompiledContract subject;
     private BurnPrecompile burnPrecompile;
     private PrecompileMapper precompileMapper;
@@ -239,14 +243,12 @@ class BurnPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenBurn, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, mirrorEvmContractAliases);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         contextOptionValidator = new ContextOptionValidator(evmProperties);
@@ -256,13 +258,22 @@ class BurnPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                worldUpdater,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
-    @AfterEach
-    void clean() {
-        staticMock.close();
-    }
+    //    @AfterEach
+    //    void clean() {
+    //        staticMock.close();
+    //    }
 
     @Test
     void nftBurnHappyPathWorks() {
@@ -278,11 +289,14 @@ class BurnPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
+
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(frame, pretendArguments, a -> a);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -303,11 +317,14 @@ class BurnPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
+
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(frame, pretendArguments, a -> a);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -330,9 +347,8 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(frame, FUNGIBLE_BURN_INPUT_V1, a -> a);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -462,7 +478,10 @@ class BurnPrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private static String convertToPaddedHex(int number) {

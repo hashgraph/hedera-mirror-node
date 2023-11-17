@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNPAUSE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile.decodeUnpause;
@@ -24,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -35,13 +35,13 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.pricing.AssetsLoader;
 import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
-import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.UnpauseLogic;
@@ -49,6 +49,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -124,6 +125,15 @@ class UnpausePrecompileTest {
     @Mock
     private UnaryOperator<byte[]> aliasResolver;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -143,37 +153,36 @@ class UnpausePrecompileTest {
     private HTSPrecompiledContract subject;
     private MockedStatic<UnpausePrecompile> staticUnpausePrecompile;
 
-    private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
-
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
-
     private UnpausePrecompile unpausePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenUnpause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
 
         unpausePrecompile = new UnpausePrecompile(precompilePricingUtils, syntheticTxnFactory, unpauseLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unpausePrecompile));
         staticUnpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                worldUpdater,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
     void closeMocks() {
         staticUnpausePrecompile.close();
-        staticMock.close();
     }
 
     @Test
@@ -189,10 +198,13 @@ class UnpausePrecompileTest {
         given(unpauseLogic.validateSyntax(any())).willReturn(OK);
         given(unpausePrecompile.body(pretendArguments, aliasResolver, bodyParams))
                 .willReturn(transactionBody);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.prepareComputation(frame, pretendArguments, a -> a);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -213,11 +225,13 @@ class UnpausePrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
 
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.prepareComputation(frame, input, a -> a);
+        final long result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -263,6 +277,5 @@ class UnpausePrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 }

@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -64,12 +66,25 @@ class PrecompilePricingUtilsTest {
     @Mock
     private AccessorFactory accessorFactory;
 
+    @Mock
+    private Store store;
+
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     @Test
     void failsToLoadCanonicalPrices() throws IOException {
         given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
         assertThrows(
                 PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () -> new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory));
+                () -> new PrecompilePricingUtils(
+                        assetLoader,
+                        exchange,
+                        feeCalculator,
+                        resourceCosts,
+                        accessorFactory,
+                        store,
+                        hederaEvmContractAliases));
     }
 
     @Test
@@ -83,8 +98,8 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        final PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         final long price = subject.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.operations;
 
+import jakarta.inject.Named;
 import java.util.function.LongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -34,6 +35,7 @@ import org.hyperledger.besu.evm.operation.Operation;
  * so the restriction for the latest 256 blocks is removed. The latest
  * block value can be returned as well.
  */
+@Named
 public class HederaBlockHashOperation extends BlockHashOperation {
     /**
      * Instantiates a new Block hash operation.

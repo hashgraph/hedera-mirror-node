@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
+
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
@@ -45,6 +48,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+@Named
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
@@ -72,7 +76,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.store = store;
     }
 
-    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
+    public synchronized HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
         // in cases where the receiver is the zero address, we know it's a contract create scenario
         super.setupFields(params.getReceiver().equals(Address.ZERO));
@@ -108,7 +112,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        if (ContractCallContext.get().isCreate()) {
+        final var functionType = getFunctionType();
+        final var contextVariables =
+                Map.of("HederaFunctionality", functionType, CONTEXT_NAME, ContractCallContext.get());
+        baseInitialFrame.contextVariables(contextVariables);
+
+        if (HederaFunctionality.ContractCreate.equals(functionType)) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)

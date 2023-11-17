@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.CONTEXT_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
@@ -28,14 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -50,6 +53,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
+import java.util.Deque;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -124,6 +128,21 @@ class TokenUpdatePrecompileTest {
     @Mock
     private ContextOptionValidator contextOptionValidator;
 
+    @Mock
+    private Store store;
+
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
+    @Mock
+    private HederaEvmContractAliases hederaEvmContractAliases;
+
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private final TransactionBody transactionBody = TransactionBody.newBuilder()
@@ -133,20 +152,14 @@ class TokenUpdatePrecompileTest {
     private HTSPrecompiledContract subject;
 
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompileStatic;
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
 
     @Mock
     private PrecompileMapper precompileMapper;
 
     @BeforeEach
     void setUp() {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
-        final PrecompilePricingUtils pricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils pricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         tokenUpdatePrecompileStatic = Mockito.mockStatic(TokenUpdatePrecompile.class);
 
@@ -156,7 +169,16 @@ class TokenUpdatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                worldUpdater,
+                tokenAccessor,
+                pricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
@@ -164,7 +186,6 @@ class TokenUpdatePrecompileTest {
         if (!tokenUpdatePrecompileStatic.isClosed()) {
             tokenUpdatePrecompileStatic.close();
         }
-        staticMock.close();
     }
 
     @Test
@@ -182,10 +203,11 @@ class TokenUpdatePrecompileTest {
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
+        subject.getPrecompile(frame).getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -207,10 +229,11 @@ class TokenUpdatePrecompileTest {
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
+        subject.getPrecompile(frame).getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -232,10 +255,11 @@ class TokenUpdatePrecompileTest {
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a);
+        subject.getPrecompile(frame).getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -258,7 +282,7 @@ class TokenUpdatePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
+        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -279,7 +303,7 @@ class TokenUpdatePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
+        subject.prepareComputation(frame, UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -339,13 +363,15 @@ class TokenUpdatePrecompileTest {
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenFrameContext() {
         givenMinimalFrameContext();
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(CONTEXT_NAME)).willReturn(ContractCallContext.get());
     }
 
     private void givenMinimalContextForSuccessfulCall() {

@@ -33,6 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
+import jakarta.inject.Named;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,6 +41,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
+@Named
 @SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account>

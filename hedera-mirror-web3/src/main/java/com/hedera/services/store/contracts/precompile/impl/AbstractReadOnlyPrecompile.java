@@ -16,8 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
@@ -64,12 +62,8 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(
-            long blockTimestamp,
-            Builder transactionBody,
-            Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases) {
+    public long getGasRequirement(long blockTimestamp, Builder transactionBody) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-        return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST, store);
+        return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST);
     }
 }
