@@ -415,7 +415,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
         stakingRewardTransfers.add(stakingRewardTransfer);
 
-        var current = entityState.get(stakingRewardTransfer.getConsensusTimestamp());
+        var current = entityState.get(stakingRewardTransfer.getAccountId());
         long consensusTimestamp = stakingRewardTransfer.getConsensusTimestamp();
         // The new stake period start is set to today - 1, so that when today ends, the account / contract will earn
         // staking reward for today
