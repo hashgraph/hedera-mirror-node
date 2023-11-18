@@ -188,12 +188,13 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
       // validating seq number to have only one eq and no ne operators.
       if (filter.operator === utils.opsMap.eq) {
         if (!_.isNil(equal)) {
-          throw new InvalidArgumentError(`Only one equal (eq) operator is allowed for ${this.filterKey}`);
+          throw new InvalidArgumentError(`Only one equal (eq) operator is allowed for ${filter.key}`);
         }
         equal = filter;
+        lowerLimit = Number(filter.value);
       }
       if (filter.operator === utils.opsMap.ne) {
-        throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${this.filterKey}`);
+        throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${filter.key}`);
       }
 
       // The lower limit is max of all lower limits

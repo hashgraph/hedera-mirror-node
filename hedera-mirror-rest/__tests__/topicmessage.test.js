@@ -19,6 +19,7 @@ import EntityId from '../entityId';
 import {assertSqlQueryEqual} from './testutils';
 import topicmessage from '../topicmessage';
 import config from '../config.js';
+import {InvalidArgumentError} from '../errors/index.js';
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
@@ -139,7 +140,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
   test('extractSqlFromTopicMessagesLookup for single sequence_number parameter', async () => {
     config.query.v2.topicMessageLookups = true;
     const filters = [
-      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '2'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
       {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
     ];
@@ -153,7 +154,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                          lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                          from topic_message_lookup
                          where topic_id = $1
-                           and sequence_number_range && '[3,6)'::int8range
+                           and sequence_number_range && '[2,5)'::int8range
                          order by sequence_number_range desc
                          limit 3`;
     assertSqlQueryEqual(query, expectedQuery);
@@ -186,6 +187,31 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(params).toStrictEqual([7]);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
+  });
+  test('extractSqlFromTopicMessagesLookup for multiple eq operator for sequence_number parameter', async () => {
+    config.query.v2.topicMessageLookups = true;
+    const filters = [
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '2'},
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '4'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+    ];
+
+    expect(() => {
+      topicmessage.extractSqlForTopicMessagesLookup(EntityId.parse('7'), filters);
+    }).toThrowError(InvalidArgumentError);
+  });
+  test('extractSqlFromTopicMessagesLookup for multiple ne operator for sequence_number parameter', async () => {
+    config.query.v2.topicMessageLookups = true;
+    const filters = [
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' != ', value: '2'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+    ];
+
+    expect(() => {
+      topicmessage.extractSqlForTopicMessagesLookup(EntityId.parse('7'), filters);
+    }).toThrowError(InvalidArgumentError);
   });
 });
 
