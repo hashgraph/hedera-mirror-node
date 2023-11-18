@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import Bound from './controllers/bound.js';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
@@ -22,7 +21,6 @@ import {InvalidArgumentError, NotFoundError} from './errors';
 import {TopicMessage} from './model';
 import * as utils from './utils';
 import {TopicMessageViewModel} from './viewmodel';
-import {filterKeys} from './constants';
 import _ from 'lodash';
 import config from './config.js';
 import TopicMessageLookup from './model/topicMessageLookup.js';
@@ -163,8 +161,8 @@ const getTopicMessages = async (req, res) => {
   res.locals[constants.responseDataLabel] = topicMessagesResponse;
 };
 
-const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
-  let pgSqlQuery = `select numrange(min(lower(timestamp_range)), max(upper(timestamp_range)))
+const extractSqlForTopicMessagesLookup = (topicId, filters) => {
+  let pgSqlQuery = `select lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                     from topic_message_lookup
                     where ${TopicMessageLookup.TOPIC_ID} = $1 `;
   const pgSqlParams = [topicId.getEncodedId()];
@@ -172,8 +170,7 @@ const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
   // add filters
   let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
-  let hasSequenceNumber = false;
-  const bound = new Bound(filterKeys.SERIAL_NUMBER, 'serial_number');
+  let equal = null;
   let lowerLimit = undefined;
   let upperLimit = undefined;
   for (const filter of filters) {
@@ -188,44 +185,57 @@ const extractSqlForTopicMessagesLookup = async (topicId, filters) => {
     }
 
     if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
-      // validating seq number for invalid operators
-      bound.parse(filter);
-
-      if (utils.gtGte.includes(filter.operator)) {
-        lowerLimit = Number(filter.value);
-      }
-      if (utils.ltLte.includes(filter.operator)) {
-        upperLimit = Number(filter.value);
-      }
-      // check for null
-      if (lowerLimit !== undefined && upperLimit !== undefined) {
-        if (lowerLimit === upperLimit) {
-          // need to return an empty response
-          return null;
+      // validating seq number to have only one eq and no ne operators.
+      if (filter.operator === utils.opsMap.eq) {
+        if (!_.isNil(equal)) {
+          throw new InvalidArgumentError(`Only one equal (eq) operator is allowed for ${this.filterKey}`);
         }
+        equal = filter;
       }
-      console.log(`lowerLimit is ${lowerLimit}`);
-      // we add or subtract the limit depending on the order to obtain the range.
-      if (upperLimit === undefined && order === constants.orderFilterValues.ASC) {
-        upperLimit = lowerLimit + limit;
-        console.log(`upperLimit is ${upperLimit}`);
-      } else if (lowerLimit === undefined && order === constants.orderFilterValues.DESC) {
-        lowerLimit = upperLimit - limit;
+      if (filter.operator === utils.opsMap.ne) {
+        throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${this.filterKey}`);
       }
 
-      // add sequence number range
-      hasSequenceNumber = true;
+      // The lower limit is max of all lower limits
+      if (filter.operator === utils.opsMap.gt) {
+        lowerLimit = lowerLimit === undefined ? 0 : lowerLimit;
+        lowerLimit = Math.max(lowerLimit, Number(filter.value) + 1);
+      }
+      if (filter.operator === utils.opsMap.gte) {
+        lowerLimit = lowerLimit === undefined ? 0 : lowerLimit;
+        lowerLimit = Math.max(lowerLimit, Number(filter.value));
+      }
+
+      // The upper limit is max of all upper limits
+      if (filter.operator === utils.opsMap.lt) {
+        upperLimit = upperLimit === undefined ? Number.MAX_SAFE_INTEGER : upperLimit;
+        upperLimit = Math.min(upperLimit, Number(filter.value) - 1);
+      }
+      if (filter.operator === utils.opsMap.lte) {
+        upperLimit = upperLimit === undefined ? Number.MAX_SAFE_INTEGER : upperLimit;
+        upperLimit = Math.min(upperLimit, Number(filter.value));
+      }
     }
   }
-  if (!hasSequenceNumber) {
-    pgSqlQuery += `  group by ${TopicMessageLookup.PARTITION} order by ${TopicMessageLookup.PARTITION} ${order}`;
-    // add limit
-    pgSqlQuery += ` limit ${limit}`;
-  } else {
-    pgSqlQuery += ` and  sequence_number_range && '[${lowerLimit},${upperLimit})'::int8range`;
+  // check for null
+  if (lowerLimit !== undefined && upperLimit !== undefined) {
+    if (lowerLimit === upperLimit) {
+      // need to return an empty response
+      return null;
+    }
   }
-  // close query
-  pgSqlQuery += ';';
+  // we add or subtract the limit depending on the order to obtain the range.
+  if (upperLimit === undefined) {
+    upperLimit = lowerLimit + Number(limit);
+  } else if (lowerLimit === undefined) {
+    lowerLimit = upperLimit - Number(limit);
+  }
+
+  pgSqlQuery += ` and  sequence_number_range && '[${lowerLimit},${upperLimit})'::int8range`;
+  pgSqlQuery += ` order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE} ${order}`;
+
+  pgSqlQuery += ` limit ${limit}`;
+
   return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
 };
 const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
@@ -234,18 +244,11 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
                     where ${TopicMessage.TOPIC_ID} = $1`;
   let nextParamCount = 2;
   const pgSqlParams = [topicId.getEncodedId()];
+
   // add filters
   let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
-
-  if (config.query.v2.topicMessageLookups) {
-    const timestamp_range = await getTopicMessageTimestamps(topicId, filters);
-    if (timestamp_range === null) {
-      return {};
-    }
-    pgSqlQuery += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= ${timestamp_range.numrange.begin}  and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${timestamp_range.numrange.end}`;
-  }
-
+  let hasSequenceNumberForV2 = false;
   for (const filter of filters) {
     if (filter.key === constants.filterKeys.LIMIT) {
       limit = filter.value;
@@ -259,6 +262,8 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
     }
 
     if (config.query.v2.topicMessageLookups && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
+      // add sequence number range
+      hasSequenceNumberForV2 = true;
       continue;
     }
 
@@ -269,6 +274,32 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 
     pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
     pgSqlParams.push(filter.value);
+  }
+
+  if (config.query.v2.topicMessageLookups) {
+    if (!hasSequenceNumberForV2) {
+      if (order === constants.orderFilterValues.ASC) {
+        pgSqlQuery += ` and sequence_number = (select MIN(lower(sequence_number_range)) 
+      from topic_message_lookup where ${TopicMessageLookup.TOPIC_ID} = $1)`;
+      } else {
+        pgSqlQuery += ` and sequence_number = (select MAX(upper(sequence_number_range)) 
+      from topic_message_lookup where ${TopicMessageLookup.TOPIC_ID} = $1)`;
+      }
+    } else {
+      // this needs to be fixed and gotten values
+      const rows = await getTopicMessageTimestamps(topicId, filters);
+      if (rows === null) {
+        return {};
+      }
+      pgSqlQuery += ` and ((${TopicMessage.CONSENSUS_TIMESTAMP} >= ${_.first(rows).timestamp_start} and ${
+        TopicMessage.CONSENSUS_TIMESTAMP
+      } < ${_.first(rows).timestamp_end})`;
+      rows.shift();
+      rows.map((row) => {
+        pgSqlQuery += ` or (${TopicMessage.CONSENSUS_TIMESTAMP} >= ${row.timestamp_start} and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${row.timestamp_end})`;
+      });
+      pgSqlQuery += `)`;
+    }
   }
 
   // add order
@@ -285,19 +316,19 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 };
 
 const getTopicMessageTimestamps = async (topicId, filters) => {
-  const pgObject = await extractSqlForTopicMessagesLookup(topicId, filters);
+  const pgObject = extractSqlForTopicMessagesLookup(topicId, filters);
   if (pgObject === null) {
     return null;
   }
   const params = pgObject.params;
   const query = pgObject.query;
 
-  const row = await pool.queryQuietly(query, params);
-  if (row.rows.length !== 1) {
+  const {rows} = await pool.queryQuietly(query, params);
+  if (rows.length === 0) {
     throw new NotFoundError();
   }
 
-  return _.isNil(row) ? null : row.rows[0];
+  return _.isNil(rows) ? null : rows;
 };
 /**
  * Retrieves topic message from
@@ -346,6 +377,7 @@ const acceptedTopicsParameters = new Set([
 if (utils.isTestEnv()) {
   Object.assign(topicmessage, {
     extractSqlFromTopicMessagesRequest,
+    extractSqlForTopicMessagesLookup,
     validateConsensusTimestampParam,
     validateGetSequenceMessageParams,
     validateGetTopicMessagesParams,
