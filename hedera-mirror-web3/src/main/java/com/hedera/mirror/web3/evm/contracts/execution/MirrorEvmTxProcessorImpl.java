@@ -105,8 +105,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getCallData(),
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
-                params.getReceiver().equals(Address.ZERO),
-                dynamicProperties.fundingAccountAddress());
+                params.getReceiver().equals(Address.ZERO));
     }
 
     @SuppressWarnings("java:S5411")
