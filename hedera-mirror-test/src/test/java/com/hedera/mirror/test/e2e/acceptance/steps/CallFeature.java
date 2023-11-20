@@ -281,6 +281,7 @@ public class CallFeature extends AbstractFeature {
         validateAddresses(addresses);
     }
 
+    @RetryAsserts
     @Then("I successfully update the balance of an account and get the updated balance")
     public void getBalance() {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());

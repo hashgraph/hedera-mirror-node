@@ -304,7 +304,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         }
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setPrecompile(precompile);
                         contractCallContext.setTransactionBody(precompile.body(
                                 input,
                                 aliasResolver,
@@ -313,14 +312,12 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setPrecompile(precompile);
                         contractCallContext.setTransactionBody(
                                 precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress)));
                     }
                     case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setPrecompile(precompile);
                         contractCallContext.setTransactionBody(precompile.body(
                                 input.slice(24),
                                 aliasResolver,
@@ -329,7 +326,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     default -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setPrecompile(precompile);
                         if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
                             contractCallContext.setTransactionBody(
@@ -340,7 +336,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             }
             case AbiConstants.ABI_ID_APPROVE -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true)));
             }
@@ -358,13 +353,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 OnMissing.THROW)
                         .getOwner();
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false)));
             }
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress)));
             }
@@ -375,13 +368,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists)));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null)));
             }
@@ -398,7 +389,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(precompile.body(
                         input,
                         aliasResolver,
@@ -406,11 +396,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             }
             default -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setPrecompile(precompile);
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new FunctionParam(functionId)));
             }
         }
+        contractCallContext.setPrecompile(precompile);
         contractCallContext.setGasRequirement(defaultGas());
     }
 
