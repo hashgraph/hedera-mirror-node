@@ -31,7 +31,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.25.0")
+    set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
     set("reactor-bom.version", "2022.0.13")
     set("snakeyaml.version", "2.0")
@@ -79,14 +79,14 @@ dependencies {
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:2.15.0.RELEASE")
         api("net.java.dev.jna:jna:5.13.0")
-        api("org.apache.commons:commons-compress:1.24.0")
+        api("org.apache.commons:commons-compress:1.25.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.1.0")
         api("org.hyperledger.besu:secp256k1:0.8.0")
         api("org.hyperledger.besu:evm:23.10.0")
-        api("org.jetbrains:annotations:24.0.1")
+        api("org.jetbrains:annotations:24.1.0")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.6")
@@ -94,7 +94,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
         api("org.testcontainers:junit-jupiter:1.19.1")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.21.21")
+        api("software.amazon.awssdk:bom:2.21.26")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }
