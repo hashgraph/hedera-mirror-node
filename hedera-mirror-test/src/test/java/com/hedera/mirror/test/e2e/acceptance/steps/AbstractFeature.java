@@ -219,6 +219,10 @@ abstract class AbstractFeature {
         return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
     }
 
+    protected byte[] encodeDataToByteArray(SelectorInterface method, Object... args) {
+        return new Function(method.getSelector()).encodeCallWithArgs(args).array();
+    }
+
     protected InputStream getResourceAsStream(String resourcePath) throws IOException {
         return resourceLoader.getResource(resourcePath).getInputStream();
     }

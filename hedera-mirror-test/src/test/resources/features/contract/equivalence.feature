@@ -46,9 +46,14 @@ Feature: in-equivalence tests
 
   Scenario Outline: Validate in-equivalence tests for internal calls
     Given I successfully create equivalence call contract
+    Given I ensure token "FUNGIBLE" has been created
+    And I associate "FUNGIBLE" to contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" without amount
+    Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" with amount
     Then I execute internal call against PRNG precompile address without amount
     Then I execute internal call against PRNG precompile address with amount
-    Then I make internal call to system account "0.0.741" with amount
+    Then I execute internal call against exchange rate precompile address without amount
+    Then I execute internal call against exchange rate precompile address with amount
     Then I make internal call to system account "0.0.741" without amount
-
-
+    Then I make internal call to system account "0.0.741" with amount
