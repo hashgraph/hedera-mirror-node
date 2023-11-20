@@ -135,6 +135,7 @@ const getEntityBalanceQuery = (
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
   const whereCondition = [entityStakeQuery.query].filter((x) => !!x).join(' and ');
+  const orderBy = ` order by ab.consensus_timestamp desc limit 1`;
   const entityWhereCondition = [
     `e.type in ('ACCOUNT', 'CONTRACT')`,
     entityBalanceQuery.query,
@@ -196,7 +197,7 @@ const getEntityBalanceQuery = (
                          left join entity_stake es on es.id = e.id
                          left join account_balance ab on ${accountBalanceQuery.query} ${
         whereCondition ? 'where' : ''
-      } ${whereCondition}
+      } ${whereCondition} ${orderBy}
             `
     );
   } else {
@@ -390,8 +391,7 @@ const getOneAccount = async (req, res) => {
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
-    tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
+    tokenBalanceQuery.query += ` and consensus_timestamp >= $${++paramCount} and consensus_timestamp <= $${++paramCount}`;
 
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
@@ -409,23 +409,45 @@ const getOneAccount = async (req, res) => {
       eqValues,
       false
     );
+
+    const tsQueryResult = await balances.getTsQuery(
+      balanceFileTsParams,
+      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte)
+    );
+    // TODO remove
     const balanceFileTs = await balances.getAccountBalanceTimestamp(
       balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
       balanceFileTsParams,
       order
     );
-    //Setting the timestamp to be the account balance timestamp
-    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(balanceFileTs);
-
-    //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
-    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
-
-    if (timestampExcluded) {
-      throw new NotFoundError('Not found');
+    // //Setting the timestamp to be the account balance timestamp
+    if (tsQueryResult.consensusTsQuery) {
+      tokenBalanceQuery.params.push(tsQueryResult.tsParams[0]);
+      tsQueryResult.consensusTsQuery = tsQueryResult.consensusTsQuery.replace(
+        '?',
+        (_) => `$${tokenBalanceQuery.params.length}`
+      );
+      tokenBalanceQuery.params.push(tsQueryResult.tsParams[1]);
+      tsQueryResult.consensusTsQuery = tsQueryResult?.consensusTsQuery.replace(
+        '?',
+        (_) => `$${tokenBalanceQuery.params.length}`
+      );
+    } else {
+      tokenBalanceQuery.params.push(undefined);
+      tokenBalanceQuery.params.push(undefined);
     }
 
-    accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
-    accountBalanceQuery.params = [balanceFileTs ?? null];
+    // TODO Fix
+    // Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
+    // const timestampExcluded = neValues.some((value) => value == balanceFileTs);
+    //
+    // if (timestampExcluded) {
+    //   throw new NotFoundError('Not found');
+    // }
+
+    accountBalanceQuery.query = tsQueryResult.consensusTsQuery
+      ? `ab.account_id = e.id and `.concat(tsQueryResult.consensusTsQuery)
+      : `ab.account_id = e.id`;
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(
@@ -441,6 +463,7 @@ const getOneAccount = async (req, res) => {
     logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${utils.JSONStringify(entityParams)}`);
   }
 
+  let test = await pool.queryQuietly(pgEntityQuery, entityParams);
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
@@ -473,6 +496,7 @@ const getOneAccount = async (req, res) => {
       logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
     }
 
+    let test = await pool.queryQuietly(pgTransactionsQuery, innerParams);
     // Execute query & get a promise
     transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
   } else {
@@ -488,7 +512,8 @@ const getOneAccount = async (req, res) => {
   }
 
   if (entityResults.rows.length !== 1) {
-    throw new NotFoundError('Error: Could not get entity information');
+    // TODO FIx here
+    //throw new NotFoundError('Error: Could not get entity information');
   }
 
   const ret = processRow(entityResults.rows[0]);
