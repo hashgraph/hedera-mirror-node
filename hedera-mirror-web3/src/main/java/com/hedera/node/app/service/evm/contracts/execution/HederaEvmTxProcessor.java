@@ -34,6 +34,13 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+/**
+ * Stateless invariant copy of its hedera-services counterpart. It is used to process EVM transactions in
+ * an asynchronous manner.
+ *
+ * All class fields are final and immutable and some of them moved in the execute method.
+ *
+ * */
 public class HederaEvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
 
@@ -95,8 +102,7 @@ public class HederaEvmTxProcessor {
             final Bytes payload,
             final boolean isStatic,
             final Address mirrorReceiver,
-            final boolean contractCreation,
-            final Address coinbase) {
+            final boolean contractCreation) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -117,7 +123,7 @@ public class HederaEvmTxProcessor {
                 .blockValues(blockValues)
                 .completer(unused -> {})
                 .isStatic(isStatic)
-                .miningBeneficiary(coinbase)
+                .miningBeneficiary(dynamicProperties.fundingAccountAddress())
                 .blockHashLookup(blockMetaSource::getBlockHash)
                 .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
 
