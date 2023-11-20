@@ -179,10 +179,27 @@ describe('Balances deduplicate tests', () => {
               },
             ],
           },
+          // Though 0.1.18's balance is at NE timestamp, its results are expected
+          {
+            account: '0.1.18',
+            balance: 80,
+            tokens: [],
+          },
           {
             account: '0.1.19',
             balance: 90,
             tokens: [],
+          },
+          // Though 0.1.20's balance is at NE timestamp, its results are expected
+          {
+            account: '0.1.20',
+            balance: 19,
+            tokens: [
+              {
+                balance: 1000,
+                token_id: '0.0.90000',
+              },
+            ],
           },
         ],
         links: {

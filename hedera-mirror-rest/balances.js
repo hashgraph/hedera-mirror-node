@@ -198,14 +198,14 @@ const getTsQuery = async (tsParams, tsQuery) => {
       const value = BigInt(tsParams[index]);
       // eq operator has already been converted to the lte operator
       if (query.includes(utils.opsMap.lte)) {
-        // Query params are in the format of 'consensus_timestamp <= ?'
+        // lte operator includes the lt operator, so this clause must before the lt clause
         upperBound = upperBound < value ? upperBound : value;
       } else if (query.includes(utils.opsMap.lt)) {
         // Convert lt to lte to simplify query
         const ltValue = value - 1n;
         upperBound = upperBound < ltValue ? upperBound : ltValue;
       } else if (query.includes(utils.opsMap.gte)) {
-        // Query params are in the format of 'consensus_timestamp >= ?'
+        // gte operator includes the gt operator, so this clause must come before the gt clause
         gteParam = gteParam > value ? gteParam : value;
       } else if (query.includes(utils.opsMap.gt)) {
         // Convert gt to gte to simplify query
@@ -243,30 +243,27 @@ const getTsQuery = async (tsParams, tsQuery) => {
     lowerBound = gteParam > firstDayOfPreviousMonth ? gteParam : firstDayOfPreviousMonth;
   }
 
-  return getPartitionedTsQuery(lowerBound, neParams, upperBound);
+  return getPartitionedTsQuery(lowerBound, upperBound, neParams);
 };
 
-const getPartitionedTsQuery = async (lowerBound, neParams, upperBound) => {
-  const neQuery = Array.from(neParams, (v) => '?').join(', ');
+const getPartitionedTsQuery = async (lowerBound, upperBound, neParams) => {
   let accountBalanceQuery = `consensus_timestamp >= ? and consensus_timestamp <= ?`;
-  const accountBalanceTimestamp = await getAccountBalanceTimestamp(accountBalanceQuery, [lowerBound, upperBound]);
+  let accountBalanceParams = [lowerBound, upperBound];
+  const neQuery = Array.from(neParams, (v) => '?').join(', ');
+  if (neQuery) {
+    accountBalanceQuery = accountBalanceQuery.concat(` and consensus_timestamp not in (${neQuery})`);
+    accountBalanceParams.push(...neParams);
+  }
+  const accountBalanceTimestamp = await getAccountBalanceTimestamp(accountBalanceQuery, accountBalanceParams);
+
   if (!accountBalanceTimestamp) {
     return {};
   }
 
   const beginningOfMonth = utils.getFirstDayOfMonth(accountBalanceTimestamp);
-  const consensusTsQuery = neQuery
-    ? `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ? and ab.consensus_timestamp not in (${neQuery})`
-    : `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
+  const consensusTsQuery = `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
   // Double the params to account for the query values for account_balance and token_balance together
-  const tsParams = [
-    beginningOfMonth,
-    accountBalanceTimestamp,
-    ...neParams,
-    beginningOfMonth,
-    accountBalanceTimestamp,
-    ...neParams,
-  ];
+  const tsParams = [beginningOfMonth, accountBalanceTimestamp, beginningOfMonth, accountBalanceTimestamp];
   return {consensusTsQuery, tsParams};
 };
 
