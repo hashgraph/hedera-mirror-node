@@ -39,4 +39,40 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                     + "where account_id = ?1 and associated is true group by balance>0",
             nativeQuery = true)
     List<TokenAccountAssociationsCount> countByAccountIdAndAssociatedGroupedByBalanceIsPositive(long accountId);
+
+    /**
+     * Retrieves the most recent state of a token account by its ID up to a given block timestamp.
+     * The method considers both the current state of the token account and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param id              the ID of the token account to be retrieved.
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the token account's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
+    @Query(
+            value =
+                    """
+                    (
+                        select *
+                        from token_account
+                        where account_id = :accountId
+                            and token_id = :tokenId
+                            and lower(timestamp_range) <= :blockTimestamp
+                    )
+                    union all
+                    (
+                        select *
+                        from token_account_history
+                        where account_id = :accountId
+                            and token_id = :tokenId
+                            and lower(timestamp_range) <= :blockTimestamp
+                        order by lower(timestamp_range) desc
+                        limit 1
+                    )
+                    order by timestamp_range desc
+                    limit 1
+                    """,
+            nativeQuery = true)
+    Optional<TokenAccount> findByIdAndTimestamp(long accountId, long tokenId, long blockTimestamp);
 }
