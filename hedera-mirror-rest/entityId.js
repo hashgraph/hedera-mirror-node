@@ -15,7 +15,7 @@
  */
 
 import _ from 'lodash';
-import mem from 'mem';
+import memoize from 'memoize';
 import quickLru from 'quick-lru';
 
 import config from './config';
@@ -299,7 +299,7 @@ const entityIdCacheOptions = {
   maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
 };
 
-const parseMemoized = mem(
+const parseMemoized = memoize(
   /**
    * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm address.
    * @param {string} id

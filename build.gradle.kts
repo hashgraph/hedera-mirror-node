@@ -36,7 +36,7 @@ extra.apply {
     set("reactor-bom.version", "2022.0.13")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.6")
-    set("vertxVersion", "4.4.6")
+    set("vertxVersion", "4.5.0")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -72,7 +72,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.59.0")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
-        api("io.projectreactor:reactor-core-micrometer:1.0.11")
+        api("io.projectreactor:reactor-core-micrometer:1.1.0")
         api("io.swagger:swagger-annotations:1.6.12")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -92,7 +92,7 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.6")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
-        api("org.testcontainers:junit-jupiter:1.19.1")
+        api("org.testcontainers:junit-jupiter:1.19.2")
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.21.26")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")

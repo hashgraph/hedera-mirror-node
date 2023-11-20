@@ -32,17 +32,13 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
-import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
@@ -50,15 +46,12 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -68,13 +61,13 @@ public class ERCContractFeature extends AbstractFeature {
     private static final int MAX_SUPPLY = 1;
 
     private final AccountClient accountClient;
-    private final List<TokenId> tokenIds = new CopyOnWriteArrayList<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-
     private ExpandedAccountId allowanceSpenderAccountId;
     private ExpandedAccountId spenderAccountId;
+    private TokenId fungibleTokenId;
+    private TokenId nonFungibleTokenId;
     private String spenderAccountAlias;
     private ExpandedAccountId spenderAccountIdForAllSerials;
     private ExpandedAccountId ecdsaAccount;
@@ -96,25 +89,25 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token name")
     public void nameContractCall() {
-        var data = encodeData(ERC, NAME_SELECTOR, asAddress(tokenIds.get(0)));
+        var data = encodeData(ERC, NAME_SELECTOR, asAddress(fungibleTokenId));
         var getNameResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getNameResponse.getResultAsText()).isEqualTo("TEST_name");
+        assertThat(getNameResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol() + "_name");
     }
 
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token symbol")
     public void symbolContractCall() {
-        var data = encodeData(ERC, SYMBOL_SELECTOR, asAddress(tokenIds.get(0)));
+        var data = encodeData(ERC, SYMBOL_SELECTOR, asAddress(fungibleTokenId));
         var getSymbolResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getSymbolResponse.getResultAsText()).isEqualTo("TEST");
+        assertThat(getSymbolResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol());
     }
 
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token decimals")
     public void decimalsContractCall() {
-        var data = encodeData(ERC, DECIMALS_SELECTOR, asAddress(tokenIds.get(0)));
+        var data = encodeData(ERC, DECIMALS_SELECTOR, asAddress(fungibleTokenId));
         var getDecimalsResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getDecimalsResponse.getResultAsNumber()).isEqualTo(10L);
@@ -123,7 +116,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token totalSupply")
     public void totalSupplyContractCall() {
-        var data = encodeData(ERC, TOTAL_SUPPLY_SELECTOR, asAddress(tokenIds.get(0)));
+        var data = encodeData(ERC, TOTAL_SUPPLY_SELECTOR, asAddress(fungibleTokenId));
         var getTotalSupplyResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getTotalSupplyResponse.getResultAsNumber()).isEqualTo(1_000_000L);
@@ -132,7 +125,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token ownerOf")
     public void ownerOfContractCall() {
-        var data = encodeData(ERC, GET_OWNER_OF_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        var data = encodeData(ERC, GET_OWNER_OF_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getOwnerOfResponse = callContract(data, ercTestContractSolidityAddress);
         tokenClient.validateAddress(getOwnerOfResponse.getResultAsAddress());
     }
@@ -140,7 +133,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token tokenUri")
     public void tokenURIContractCall() {
-        var data = encodeData(ERC, TOKEN_URI_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        var data = encodeData(ERC, TOKEN_URI_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getTokenURIResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getTokenURIResponse.getResultAsText()).isEqualTo("TEST_metadata");
@@ -149,7 +142,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved")
     public void getApprovedContractCall() {
-        var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo("0000000000000000000000000000000000000000");
@@ -159,7 +152,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I call the erc contract via the mirror node REST API for token allowance")
     public void allowanceContractCall() {
         var data = encodeData(
-                ERC, ALLOWANCE_SELECTOR, asAddress(tokenIds.get(0)), asAddress(tokenClient), asAddress(contractClient));
+                ERC, ALLOWANCE_SELECTOR, asAddress(fungibleTokenId), asAddress(tokenClient), asAddress(contractClient));
         var getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getAllowanceResponse.getResultAsNumber()).isZero();
@@ -171,7 +164,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(
                 ERC,
                 ALLOWANCE_SELECTOR,
-                asAddress(tokenIds.get(0)),
+                asAddress(fungibleTokenId),
                 asAddress(tokenClient),
                 asAddress(allowanceSpenderAccountId));
         var getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
@@ -185,7 +178,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
-                asAddress(tokenIds.get(1)),
+                asAddress(nonFungibleTokenId),
                 asAddress(tokenClient),
                 asAddress(contractClient));
         var getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
@@ -199,7 +192,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
-                asAddress(tokenIds.get(1)),
+                asAddress(nonFungibleTokenId),
                 asAddress(tokenClient),
                 asAddress(spenderAccountIdForAllSerials));
         var getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
@@ -210,7 +203,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token balance")
     public void balanceOfContractCall() {
-        var data = encodeData(ERC, BALANCE_OF_SELECTOR, asAddress(tokenIds.get(0)), asAddress(contractClient));
+        var data = encodeData(ERC, BALANCE_OF_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
         var getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(1000000);
@@ -219,7 +212,7 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved with response BOB")
     public void verifyNftAllowance() {
-        var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(tokenIds.get(1)), new BigInteger("1"));
+        var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
         assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo(spenderAccountAlias);
     }
@@ -232,38 +225,28 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewFungibleToken() {
-        createNewToken(
-                "TEST",
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                Collections.emptyList());
+        final var tokenId =
+                tokenClient.getToken(TokenNameEnum.FUNGIBLE_DELETABLE).tokenId();
+        fungibleTokenId = tokenId;
     }
 
-    @Then("I create a new nft with supplyType {string}")
-    public void createNewNft(String tokenSupplyType) {
-        TokenId tokenId = createNewToken(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenSupplyType.valueOf(tokenSupplyType),
-                Collections.emptyList());
+    @Then("I create a new nft with infinite supplyType")
+    public void createNewNft() {
+        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE).tokenId();
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
+        nonFungibleTokenId = tokenId;
     }
 
     @Then("I mint a serial number")
     public void mintNftToken() {
-        TokenId tokenId = tokenIds.get(1);
-        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, "TEST_metadata".getBytes());
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isOne();
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
-        tokenSerialNumbers.get(tokenId).add(serialNumber);
+        tokenSerialNumbers.get(nonFungibleTokenId).add(serialNumber);
     }
 
     @Then("the mirror node REST API should return status {int} for the erc contract transaction")
@@ -273,8 +256,8 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I approve {string} for nft")
     public void approveCryptoAllowance(String accountName) {
-        var serial = tokenSerialNumbers.get(tokenIds.get(1));
-        var nftId = new NftId(tokenIds.get(1), serial.get(0));
+        var serial = tokenSerialNumbers.get(nonFungibleTokenId);
+        var nftId = new NftId(nonFungibleTokenId, serial.get(0));
 
         spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
         spenderAccountAlias = spenderAccountId.getPublicKey().toEvmAddress().toString();
@@ -287,7 +270,7 @@ public class ERCContractFeature extends AbstractFeature {
     public void approveTokenAllowance(String accountName, long amount) {
         allowanceSpenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
         networkTransactionResponse =
-                accountClient.approveToken(tokenIds.get(0), allowanceSpenderAccountId.getAccountId(), amount);
+                accountClient.approveToken(fungibleTokenId, allowanceSpenderAccountId.getAccountId(), amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -296,7 +279,7 @@ public class ERCContractFeature extends AbstractFeature {
     public void approveCryptoAllowanceAllSerials(String accountName) {
         spenderAccountIdForAllSerials = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
         networkTransactionResponse =
-                accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSerials.getAccountId());
+                accountClient.approveNftAllSerials(nonFungibleTokenId, spenderAccountIdForAllSerials.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -306,14 +289,15 @@ public class ERCContractFeature extends AbstractFeature {
             "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
     public void isApprovedForAllWithAliasSecondContractCall() {
         ecdsaAccount = accountClient.getAccount(BOB);
-        tokenClient.associate(ecdsaAccount, tokenIds.get(1));
-        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), ecdsaAccount.getAccountId());
+        tokenClient.associate(ecdsaAccount, nonFungibleTokenId);
+        networkTransactionResponse =
+                accountClient.approveNftAllSerials(nonFungibleTokenId, ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
-                asAddress(tokenIds.get(1)),
+                asAddress(nonFungibleTokenId),
                 asAddress(tokenClient),
                 asAddress(mirrorClient
                         .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
@@ -325,10 +309,10 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
     public void allowanceAliasAccountsCall() {
-        tokenClient.associate(ecdsaAccount, tokenIds.get(0));
-        accountClient.approveToken(tokenIds.get(0), ecdsaAccount.getAccountId(), 1_000);
+        tokenClient.associate(ecdsaAccount, fungibleTokenId);
+        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
         networkTransactionResponse = tokenClient.transferFungibleToken(
-                tokenIds.get(0),
+                fungibleTokenId,
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 ecdsaAccount.getAccountId(),
                 ecdsaAccount.getPrivateKey(),
@@ -338,7 +322,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(
                 ERC,
                 ALLOWANCE_SELECTOR,
-                asAddress(tokenIds.get(0)),
+                asAddress(fungibleTokenId),
                 asAddress(tokenClient),
                 asAddress(mirrorClient
                         .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
@@ -354,41 +338,13 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(
                 ERC,
                 BALANCE_OF_SELECTOR,
-                asAddress(tokenIds.get(0)),
+                asAddress(fungibleTokenId),
                 asAddress(mirrorClient
                         .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
                         .getEvmAddress()));
         var getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
         assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
-    }
-
-    private TokenId createNewToken(
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
-            TokenType tokenType,
-            TokenSupplyType tokenSupplyType,
-            List<CustomFee> customFees) {
-        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.createToken(
-                admin,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                admin,
-                INITIAL_SUPPLY,
-                tokenSupplyType,
-                MAX_SUPPLY,
-                tokenType,
-                customFees);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-        tokenIds.add(tokenId);
-
-        return tokenId;
     }
 
     @Getter

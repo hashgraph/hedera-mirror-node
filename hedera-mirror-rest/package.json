@@ -30,8 +30,8 @@
     "express": "^4.18.2",
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^5.1.0",
-    "extensionless": "^1.7.3",
     "extend": "^3.0.2",
+    "extensionless": "^1.7.3",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
@@ -39,7 +39,7 @@
     "log4js": "^6.9.1",
     "long": "^5.2.3",
     "mathjs": "^12.1.0",
-    "mem": "^9.0.2",
+    "memoize": "^10.0.0",
     "parse-duration": "^1.1.0",
     "pg": "~8.11.3",
     "pg-range": "^1.1.2",
@@ -51,40 +51,6 @@
     "swagger-ui-express": "^5.0.0",
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
-  "bundledDependencies": [
-    "@awaitjs/express",
-    "@aws-sdk/client-s3",
-    "@godaddy/terminus",
-    "@hashgraph/proto",
-    "@trufflesuite/bigint-buffer",
-    "asn1js",
-    "body-parser",
-    "compression",
-    "cors",
-    "express",
-    "express-http-context",
-    "express-openapi-validator",
-    "extend",
-    "extensionless",
-    "ip-anonymize",
-    "js-yaml",
-    "json-bigint",
-    "lodash",
-    "log4js",
-    "long",
-    "mathjs",
-    "mem",
-    "parse-duration",
-    "pg",
-    "pg-range",
-    "prom-client",
-    "qs",
-    "quick-lru",
-    "rfc4648",
-    "swagger-stats",
-    "swagger-ui-express",
-    "word-wrap"
-  ],
   "devDependencies": {
     "@testcontainers/postgresql": "^10.2.2",
     "app-root-path": "^3.1.0",
@@ -112,5 +78,6 @@
   "baseUrlPath": "/api/v1",
   "overrides": {
     "protobufjs": "^7.2.4"
-  }
+  },
+  "bundleDependencies": true
 }
