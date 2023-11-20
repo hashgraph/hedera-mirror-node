@@ -3,7 +3,7 @@ apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
   labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: test-rest
+  name: test-web3
   namespace: {{ .Values.testkube.namespace }}
 spec:
   content:
@@ -15,7 +15,7 @@ spec:
     type: git-dir
   executionRequest:
     args:
-      - /data/repo/hedera-mirror-test/k6/src/rest/apis.js
+      - /data/repo/hedera-mirror-test/k6/src/web3/apis.js
     artifactRequest:
       storageClassName: standard
       volumeMountPath: /share
@@ -23,11 +23,11 @@ spec:
       - mapToVariables: true
         mount: false
         reference:
-          name: {{ include "hedera-mirror-common.fullname" . }}-test-rest
+          name: {{ include "hedera-mirror-common.fullname" . }}-test-web3
     variables:
       BASE_URL:
         name: BASE_URL
         type: basic
-        value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
+        value: http://{{ .Values.testkube.test.target.release }}-web3.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
   type: k6-custom/script
 {{- end }}

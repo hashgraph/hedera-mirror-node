@@ -17,14 +17,25 @@
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 const contract = __ENV.HTS_CONTRACT_ADDRESS;
-const selector = '0x1955de0b';
+const selector = '0xbff9834f';
 const token = __ENV.TOKEN_ADDRESS;
-const keyType = __ENV.KEY_TYPE;
 
+// call isToken to ramp up
 const {options, run} = new ContractCallTestScenarioBuilder()
-  .name('contractCallTokenKey') // use unique scenario name among all tests
+  .name('contractCallRampUp') // use unique scenario name among all tests
+  .args([token])
   .selector(selector)
-  .args([token, keyType])
+  .scenario({
+    executor: 'ramping-vus',
+    startVUs: 0,
+    stages: [
+      {
+        duration: __ENV.DEFAULT_RAMPUP_DURATION || __ENV.DEFAULT_DURATION,
+        target: __ENV.DEFAULT_RAMPUP_VUS || __ENV.DEFAULT_VUS,
+      },
+    ],
+    gracefulRampDown: '0s',
+  })
   .to(contract)
   .build();
 

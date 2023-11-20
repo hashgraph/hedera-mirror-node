@@ -105,11 +105,11 @@ The following parameters can be used to configure a web3 test:
 - ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/ErcTestContract.sol should be deployed)
 - HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (PrecompileTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/PrecompileTestContract.sol should be deployed)
 - KEY_TYPE - 64 character hex encoded key type without `0x` prefix
-- OPERATOR_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- NON_FUNGIBLE_TOKEN_ADDRESS - 64 character hex encoded non-fungible token address without `0x` prefix
+- RUN_ESTIMATE_TESTS - If set to true, estimate gas tests will be run.
 - SERIAL_NUMBER - 64 character hex encoded nft serial number without `0x` prefix
 - SPENDER_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - TOKEN_ADDRESS - 64 character hex encoded token address without `0x` prefix
-- RUN_ESTIMATE_TESTS - If set to true, estimate gas tests will be run.
 
 For k6 to be run we need to deploy contracts first. For that, we can use Hedera SDK.
 Example for ERC_CONTRACT deployment with js SDK
