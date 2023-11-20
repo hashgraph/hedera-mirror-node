@@ -120,7 +120,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function balanceOfRedirect(address token, address account) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20.balanceOf.selector, account));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -130,7 +130,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function nameRedirect(address token) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.name.selector));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -140,7 +140,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function symbolRedirect(address token) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.symbol.selector));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -150,7 +150,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function nameNFTRedirect(address token) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721Metadata.name.selector));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -160,7 +160,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function symbolNFTRedirect(address token) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC721Metadata.symbol.selector));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -170,7 +170,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function decimalsRedirect(address token) external
-    returns(bytes memory result)
+    returns (bytes memory result)
     {
         (int responseCode, bytes memory responseResult) = this.redirectForToken(token, abi.encodeWithSelector(IERC20Metadata.decimals.selector));
         if (responseCode != HederaResponseCodes.SUCCESS) {
@@ -279,13 +279,13 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function mintTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, bytes[] memory metadata, address treasury) external
-    returns(uint256, uint256, int, int) {
+    returns (uint256, uint256, int, int) {
         uint256 balanceBeforeMint;
         uint256 balanceAfterMint;
         int totalSupplyBeforeMint;
         int totalSupplyAfterMint;
 
-        if(amount > 0 && metadata.length == 0) {
+        if (amount > 0 && metadata.length == 0) {
             balanceBeforeMint = IERC20(token).balanceOf(treasury);
         } else {
             balanceBeforeMint = IERC721(token).balanceOf(treasury);
@@ -298,7 +298,7 @@ contract PrecompileTestContract is HederaTokenService {
         (responseCode, totalSupplyAfterMint,) = HederaTokenService.mintToken(token, amount, metadata);
         handleResponseCode(responseCode, "Failed to mint token.");
 
-        if(amount > 0 && metadata.length == 0) {
+        if (amount > 0 && metadata.length == 0) {
             balanceAfterMint = IERC20(token).balanceOf(treasury);
         } else {
             balanceAfterMint = IERC721(token).balanceOf(treasury);
@@ -308,13 +308,13 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function burnTokenGetTotalSupplyAndBalanceOfTreasury(address token, int64 amount, int64[] memory serialNumbers, address treasury) external
-    returns(uint256, uint256, int, int){
+    returns (uint256, uint256, int, int){
         uint256 balanceBeforeBurn;
         uint256 balanceAfterBurn;
         int totalSupplyBeforeBurn;
         int totalSupplyAfterBurn;
 
-        if(amount > 0 && serialNumbers.length == 0) {
+        if (amount > 0 && serialNumbers.length == 0) {
             balanceBeforeBurn = IERC20(token).balanceOf(treasury);
         } else {
             balanceBeforeBurn = IERC721(token).balanceOf(treasury);
@@ -327,10 +327,10 @@ contract PrecompileTestContract is HederaTokenService {
         (responseCode, totalSupplyAfterBurn) = HederaTokenService.burnToken(token, amount, serialNumbers);
         handleResponseCode(responseCode, "Failed to burn token.");
 
-        if(amount > 0 && serialNumbers.length == 0) {
+        if (amount > 0 && serialNumbers.length == 0) {
             balanceAfterBurn = IERC20(token).balanceOf(treasury);
         } else {
-            balanceAfterBurn  = IERC721(token).balanceOf(treasury);
+            balanceAfterBurn = IERC721(token).balanceOf(treasury);
         }
         return (balanceBeforeBurn, balanceAfterBurn, totalSupplyBeforeBurn, totalSupplyAfterBurn);
     }
@@ -343,7 +343,7 @@ contract PrecompileTestContract is HederaTokenService {
         int totalSupplyAfterWipe;
 
         balanceBeforeWipe = 0;
-        if(amount > 0 && serialNumbers.length == 0) {
+        if (amount > 0 && serialNumbers.length == 0) {
             balanceBeforeWipe = IERC20(token).balanceOf(account);
         } else {
             balanceBeforeWipe = IERC721(token).balanceOf(account);
@@ -353,7 +353,7 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to retrieve token info before wipe.");
         totalSupplyBeforeWipe = retrievedTokenInfo.totalSupply;
 
-        if(amount > 0 && serialNumbers.length == 0) {
+        if (amount > 0 && serialNumbers.length == 0) {
             responseCode = HederaTokenService.wipeTokenAccount(token, account, amount);
         } else {
             responseCode = HederaTokenService.wipeTokenAccountNFT(token, account, serialNumbers);
@@ -364,7 +364,7 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to retrieve token info after wipe.");
         totalSupplyAfterWipe = retrievedTokenInfo.totalSupply;
 
-        if(amount > 0 && serialNumbers.length == 0) {
+        if (amount > 0 && serialNumbers.length == 0) {
             balanceAfterWipe = IERC20(token).balanceOf(account);
         } else {
             balanceAfterWipe = IERC721(token).balanceOf(account);
@@ -373,7 +373,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function pauseTokenGetPauseStatusUnpauseGetPauseStatus(address token) external
-    returns(bool, bool){
+    returns (bool, bool){
         bool statusAfterPause;
         bool statusAfterUnpause;
         int responseCode = HederaTokenService.pauseToken(token);
@@ -390,7 +390,7 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to retrieve token info after unpause.");
         statusAfterUnpause = retrievedTokenInfo.pauseStatus;
 
-        return(statusAfterPause, statusAfterUnpause);
+        return (statusAfterPause, statusAfterUnpause);
     }
 
     function freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus(address token, address account) external
@@ -412,12 +412,12 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to check unfreeze status of account.");
         statusAfterUnfreeze = isFrozen;
 
-        return(statusAfterFreeze, statusAfterUnfreeze);
+        return (statusAfterFreeze, statusAfterUnfreeze);
     }
 
     function approveTokenGetAllowance(address token, address spender, uint256 amount, uint256 serialNumber) external
     returns (uint256, address) {
-        if(amount > 0 && serialNumber == 0) {
+        if (amount > 0 && serialNumber == 0) {
             int responseCode = HederaTokenService.approve(token, spender, amount);
             handleResponseCode(responseCode, "Failed to approve Fungible token.");
 
@@ -432,25 +432,28 @@ contract PrecompileTestContract is HederaTokenService {
         }
     }
 
-    function approveFungibleTokenTransferFromGetAllowanceGetBalance(address token, address spender, uint256 amount) external
-    returns(uint256, uint256,uint256, uint256){
-        int responseCode = HederaTokenService.approve(token, spender, amount);
+    function approveFungibleTokenTransferFromGetAllowanceGetBalance(address token, address receiver, uint256 amount) external
+    returns (uint256, uint256, uint256, uint256, uint256){
+
+        address _spender = address(new SpenderContract());
+        uint256 allowanceBeforeApprove = IERC20(token).allowance(address(this), _spender);
+        uint256 balanceBefore = IERC20(token).balanceOf(receiver);
+
+        int responseCode = HederaTokenService.approve(token, _spender, amount);
         handleResponseCode(responseCode, "Failed to approve Fungible token.");
+        uint256 allowanceBeforeTransfer = IERC20(token).allowance(address(this), _spender);
 
-        uint256 allowanceBefore = IERC20(token).allowance(address(this), spender);
-        uint256 balanceBefore = IERC20(token).balanceOf(spender);
-
-        responseCode = this.transferFrom(token, address(this), spender, amount);
+        SpenderContract(_spender).spendFungible(token, amount, address(this), receiver);
         handleResponseCode(responseCode, "Failed to transfer Fungible token.");
 
-        uint256 allowanceAfter = IERC20(token).allowance(address(this), spender);
-        uint256 balanceAfter = IERC20(token).balanceOf(spender);
+        uint256 allowanceAfter = IERC20(token).allowance(address(this), _spender);
+        uint256 balanceAfter = IERC20(token).balanceOf(receiver);
 
-        return (allowanceBefore, balanceBefore, allowanceAfter, balanceAfter);
+        return (allowanceBeforeApprove, balanceBefore, allowanceBeforeTransfer, allowanceAfter, balanceAfter);
     }
 
     function approveNftAndTransfer(address token, address spender, uint256 serialNumber) external
-    returns(address, address, address){
+    returns (address, address, address){
         int responseCode = HederaTokenService.approveNFT(token, spender, serialNumber);
         handleResponseCode(responseCode, "Failed to approve NFT.");
 
@@ -460,13 +463,13 @@ contract PrecompileTestContract is HederaTokenService {
         handleResponseCode(responseCode, "Failed to transfer NFT.");
 
         address ownerAfter = IERC721(token).ownerOf(serialNumber);
-        address allowedAfter =  IERC721(token).getApproved(serialNumber);
+        address allowedAfter = IERC721(token).getApproved(serialNumber);
 
-        return(approvalBefore, ownerAfter, allowedAfter);
+        return (approvalBefore, ownerAfter, allowedAfter);
     }
 
     function associateTokenDissociateFailTransfer(address token, address from, address to, uint256 amount, uint256 serialNumber) external
-    returns(int, int){
+    returns (int, int){
         address[] memory tokens = new address[](1);
         int transferStatusAfterAssociate;
         int transferTokenStatusAfterDissociate;
@@ -475,15 +478,15 @@ contract PrecompileTestContract is HederaTokenService {
         int responseCode = HederaTokenService.associateToken(to, token);
         handleResponseCode(responseCode, "Failed to associate tokens.");
 
-        if(amount > 0 && serialNumber == 0) {
-            transferStatusAfterAssociate = HederaTokenService.transferToken(token, from, to,  int64(uint64(amount)));
+        if (amount > 0 && serialNumber == 0) {
+            transferStatusAfterAssociate = HederaTokenService.transferToken(token, from, to, int64(uint64(amount)));
         } else {
             transferStatusAfterAssociate = HederaTokenService.transferNFT(token, from, to, int64(uint64(serialNumber)));
         }
 
         //transfer the tokens back in order to be able to dissociate the account
-        if(amount > 0 && serialNumber == 0) {
-            responseCode = HederaTokenService.transferToken(token, to, address(this),  int64(uint64(amount)));
+        if (amount > 0 && serialNumber == 0) {
+            responseCode = HederaTokenService.transferToken(token, to, address(this), int64(uint64(amount)));
             handleResponseCode(responseCode, "Failed to transfer Fungible token.");
         } else {
             responseCode = HederaTokenService.transferNFT(token, to, address(this), int64(uint64(serialNumber)));
@@ -493,7 +496,7 @@ contract PrecompileTestContract is HederaTokenService {
         responseCode = HederaTokenService.dissociateToken(to, token);
         handleResponseCode(responseCode, "Failed to dissociate token.");
 
-        if(amount > 0 && serialNumber == 0) {
+        if (amount > 0 && serialNumber == 0) {
             transferTokenStatusAfterDissociate = HederaTokenService.transferToken(token, from, to, int64(uint64(amount)));
         } else {
             transferTokenStatusAfterDissociate = HederaTokenService.transferNFT(token, from, to, int64(uint64(serialNumber)));
@@ -502,8 +505,8 @@ contract PrecompileTestContract is HederaTokenService {
         return (transferStatusAfterAssociate, transferTokenStatusAfterDissociate);
     }
 
-    function grantKycRevokeKyc(address token,address from, address account, uint256 amount) external
-    returns(bool, int256, bool, int256, int){
+    function grantKycRevokeKyc(address token, address from, address account, uint256 amount) external
+    returns (bool, int256, bool, int256, int){
         bool isKycAfterGrant;
         bool isKycAfterRevoke;
         int256 kycGrantStatus;
@@ -514,17 +517,39 @@ contract PrecompileTestContract is HederaTokenService {
 
         (kycGrantStatus, isKycAfterGrant) = HederaTokenService.isKyc(token, account);
         if (kycGrantStatus != HederaResponseCodes.SUCCESS) revert("Is kyc operation failed");
-        if(!isKycAfterGrant) revert("Kyc status mismatch");
+        if (!isKycAfterGrant) revert("Kyc status mismatch");
 
         responseCode = HederaTokenService.revokeTokenKyc(token, account);
         handleResponseCode(responseCode, "Revoke kyc failed.");
 
-        transferStatusAfterRevoke = HederaTokenService.transferToken(token, from, account,  int64(uint64(amount)));
+        transferStatusAfterRevoke = HederaTokenService.transferToken(token, from, account, int64(uint64(amount)));
 
 
         (kycRevokeStatus, isKycAfterRevoke) = HederaTokenService.isKyc(token, account);
 
-        return(isKycAfterGrant, kycGrantStatus, isKycAfterRevoke, kycRevokeStatus, transferStatusAfterRevoke);
+        return (isKycAfterGrant, kycGrantStatus, isKycAfterRevoke, kycRevokeStatus, transferStatusAfterRevoke);
+    }
+
+    function intToString(int _i) internal pure returns (string memory) {
+        if (_i == 0) {
+            return "0";
+        }
+        bool negative = _i < 0;
+        uint absValue = uint(negative ? - _i : _i);
+        bytes memory buffer = new bytes(10);
+        uint i = 0;
+        while (absValue > 0) {
+            buffer[i++] = bytes1(uint8(absValue % 10 + 48));
+            absValue /= 10;
+        }
+        bytes memory result = new bytes(negative ? ++i : i);
+        if (negative) {
+            result[0] = '-';
+        }
+        for (uint j = 0; j < i; j++) {
+            result[result.length - j - 1] = buffer[j];
+        }
+        return string(result);
     }
 
     // Helper function to handle the common logic
@@ -532,5 +557,15 @@ contract PrecompileTestContract is HederaTokenService {
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert(message);
         }
+    }
+}
+
+contract SpenderContract {
+    function spendFungible(address token, uint256 amount, address from, address to) public {
+        IERC20(token).transferFrom(from, to, amount);
+    }
+
+    function spendNFT(address token, uint256 serialNumber, address from, address to) public {
+        IERC721(token).transferFrom(from, to, serialNumber);
     }
 }
