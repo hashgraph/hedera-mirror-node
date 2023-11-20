@@ -18,6 +18,11 @@
     "balances": [
       {
         "timestamp": 1566560001000000000,
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": 1566560001000000000,
         "id": 4,
         "balance": 40,
         "tokens": [
@@ -36,6 +41,11 @@
         "timestamp": 1566560001000000000,
         "id": 6,
         "balance": 60
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 2,
+        "balance": 2
       },
       {
         "timestamp": 1566560003000000000,
@@ -62,6 +72,11 @@
         "timestamp": 1566560003000000000,
         "id": 7,
         "balance": 777
+      },
+      {
+        "timestamp": 1566560007000000000,
+        "id": 2,
+        "balance": 2
       },
       {
         "timestamp": 1566560007000000000,
@@ -110,6 +125,11 @@
             "balance": 1000
           }
         ]
+      },
+      {
+        "account": "0.0.2",
+        "balance": 2,
+        "tokens": []
       }
     ],
     "links": {

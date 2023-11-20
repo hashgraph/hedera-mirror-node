@@ -913,12 +913,25 @@ const nsToSecNsWithHyphen = (ns) => {
 };
 
 /**
- * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
- * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
- * @return {String} ns Nanoseconds since epoch
+ * Given a timestamp, returns the timestamp of the first day of that month
+ * @param {BigInt} secNs nanoseconds since epoch
+ * @returns {BigInt} ns at first day of month
  */
-const secNsToNs = (secNs) => {
-  return math.multiply(math.bignumber(secNs), math.bignumber(1e9)).toString();
+const getFirstDayOfMonth = (secNs) => {
+  if (_.isNil(secNs)) {
+    return null;
+  }
+
+  if (typeof secNs !== 'BigInt') {
+    secNs = BigInt(secNs);
+  }
+
+  // Convert nanoseconds to milliseconds for Date object
+  const timestampMs = secNs / constants.NANOSECONDS_PER_MILLISECOND;
+  const timestampDate = new Date(Number(timestampMs));
+  const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
+  // Convert milliseconds to nanoseconds
+  return BigInt(firstDayMs) * constants.NANOSECONDS_PER_MILLISECOND;
 };
 
 const secNsToSeconds = (secNs) => {
@@ -1686,6 +1699,7 @@ export {
   formatComparator,
   formatFilters,
   formatSlot,
+  getFirstDayOfMonth,
   getLimitParamValue,
   getNextParamQueries,
   getNullableNumber,
@@ -1728,7 +1742,6 @@ export {
   parseTransactionTypeParam,
   randomString,
   resultSuccess,
-  secNsToNs,
   secNsToSeconds,
   toHexString,
   toHexStringNonQuantity,
