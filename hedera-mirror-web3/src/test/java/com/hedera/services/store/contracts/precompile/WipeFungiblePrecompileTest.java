@@ -180,7 +180,6 @@ class WipeFungiblePrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -232,6 +231,7 @@ class WipeFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))

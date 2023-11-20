@@ -178,7 +178,6 @@ class DissociatePrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 pricingUtils);
 
@@ -230,6 +229,7 @@ class DissociatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
         givenPricingUtilsContext();
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -254,6 +254,7 @@ class DissociatePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -280,6 +281,7 @@ class DissociatePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

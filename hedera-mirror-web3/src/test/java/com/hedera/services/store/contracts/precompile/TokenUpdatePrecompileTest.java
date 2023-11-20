@@ -173,7 +173,6 @@ class TokenUpdatePrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 pricingUtils);
 
@@ -267,6 +266,7 @@ class TokenUpdatePrecompileTest {
     @Test
     void failsWithWrongValidityForUpdateFungibleToken() {
         // given
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenFrameContext();
@@ -292,6 +292,7 @@ class TokenUpdatePrecompileTest {
         // given
         givenFrameContext();
         givenMinimalContextForSuccessfulCall();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(updateLogic.validate(any())).willReturn(FAIL_INVALID);

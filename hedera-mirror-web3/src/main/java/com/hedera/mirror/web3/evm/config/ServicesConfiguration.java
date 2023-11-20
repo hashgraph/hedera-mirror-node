@@ -21,7 +21,6 @@ import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
@@ -718,7 +717,6 @@ public class ServicesConfiguration {
             final PrecompileMapper precompileMapper,
             final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
             final Store store,
-            final HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater,
             final TokenAccessorImpl tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
         return new HTSPrecompiledContract(
@@ -727,7 +725,6 @@ public class ServicesConfiguration {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                hederaEvmStackedWorldStateUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
     }

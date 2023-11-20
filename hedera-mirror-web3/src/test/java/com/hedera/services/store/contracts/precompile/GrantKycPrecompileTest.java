@@ -162,7 +162,6 @@ public class GrantKycPrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -200,6 +199,7 @@ public class GrantKycPrecompileTest {
         // given
         givenMinimalFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

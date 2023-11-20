@@ -137,7 +137,6 @@ class MirrorHTSPrecompiledContractTest {
                         precompileMapper,
                         new EvmHTSPrecompiledContract(evmInfrastructureFactory),
                         store,
-                        worldUpdater,
                         tokenAccessor,
                         precompilePricingUtils));
 
@@ -201,6 +200,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var precompileResult =
@@ -338,6 +338,7 @@ class MirrorHTSPrecompiledContractTest {
         given(messageFrame.getValue()).willReturn(Wei.ZERO);
         given(messageFrame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(10L);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var precompileResult =

@@ -148,7 +148,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 

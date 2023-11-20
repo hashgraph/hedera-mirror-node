@@ -96,7 +96,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final PrecompileMapper precompileMapper;
     private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private final Store store;
-    private final HederaEvmStackedWorldStateUpdater updater;
     private final TokenAccessor tokenAccessor;
     private final PrecompilePricingUtils precompilePricingUtils;
 
@@ -107,7 +106,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final PrecompileMapper precompileMapper,
             final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
             final Store store,
-            final HederaEvmStackedWorldStateUpdater updater,
             final TokenAccessor tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
         this.infrastructureFactory = infrastructureFactory;
@@ -115,7 +113,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         this.precompileMapper = precompileMapper;
         this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
         this.store = store;
-        this.updater = updater;
         this.tokenAccessor = tokenAccessor;
         this.precompilePricingUtils = precompilePricingUtils;
     }
@@ -169,7 +166,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
         prepareFields(frame);
         try {
-            prepareComputation(input, updater::unaliased);
+            prepareComputation(input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased);
         } catch (final NoSuchElementException e) {
             final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
@@ -418,8 +415,8 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     void prepareFields(final MessageFrame frame) {
-        final var unaliasedSenderAddress =
-                updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+        final var unaliasedSenderAddress = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())
+                .permissivelyUnaliased(frame.getSenderAddress().toArray());
         ContractCallContext.get().setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
     }
 

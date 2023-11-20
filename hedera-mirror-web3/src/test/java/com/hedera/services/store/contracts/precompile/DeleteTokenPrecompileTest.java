@@ -156,7 +156,6 @@ class DeleteTokenPrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -183,6 +182,7 @@ class DeleteTokenPrecompileTest {
     void gasRequirementReturnsCorrectValueForDeleteToken() {
         // given
         givenMinimalFrameContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();

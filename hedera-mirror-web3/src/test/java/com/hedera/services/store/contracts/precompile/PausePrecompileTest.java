@@ -170,7 +170,6 @@ class PausePrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -207,6 +206,7 @@ class PausePrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForPauseFungibleToken() {
         // given
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenMinFrameContext();

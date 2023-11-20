@@ -172,7 +172,6 @@ class UnpausePrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -210,6 +209,7 @@ class UnpausePrecompileTest {
     @Test
     void gasRequirementReturnsCorrectValueForUnpauseFungibleToken() {
         // given
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenMinFrameContext();

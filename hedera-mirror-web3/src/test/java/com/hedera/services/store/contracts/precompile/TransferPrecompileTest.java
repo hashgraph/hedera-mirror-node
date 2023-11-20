@@ -255,7 +255,6 @@ class TransferPrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 pricingUtils);
 

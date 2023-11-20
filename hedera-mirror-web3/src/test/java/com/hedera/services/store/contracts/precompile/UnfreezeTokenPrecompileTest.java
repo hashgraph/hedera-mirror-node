@@ -155,7 +155,6 @@ class UnfreezeTokenPrecompileTest {
                 precompileMapper,
                 evmHTSPrecompiledContract,
                 store,
-                worldUpdater,
                 tokenAccessor,
                 precompilePricingUtils);
 
@@ -190,6 +189,7 @@ class UnfreezeTokenPrecompileTest {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UNFREEZE));
         givenMinimalFrameContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();

@@ -120,7 +120,6 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         // default no-op
     }
 
-    @Named
     public static class Updater extends AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account>
             implements HederaEvmWorldUpdater {
         private final HederaEvmEntityAccess hederaEvmEntityAccess;
