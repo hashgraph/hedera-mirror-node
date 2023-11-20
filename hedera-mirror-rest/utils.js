@@ -748,10 +748,11 @@ const computeTimestampBounds = (parsedQueryParams) => {
   let lowerBoundNs;
   let upperBoundNs;
 
-  // Derive and add query timestamp param upper and lower bounds based on what
+  // Derive and add query timestamp param upper or lower bounds based on what
   // is already present.
   if (lowerBoundOpAndValue === undefined) {
     if (upperBoundOpAndValue === undefined) {
+      // TODO Edwin defined a constant for this in his PR
       upperBoundNs = BigInt(Date.now()) * 1000000n;
       const upperBoundQueryValue = `${constants.queryParamOperators.lte}:${nsToSecNs(upperBoundNs)}`;
       queryTsValues.push(upperBoundQueryValue);
@@ -1702,6 +1703,7 @@ const boundToOp = {
   ')': opsMap.lt,
   ']': opsMap.lte,
 };
+
 const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
   const conditions = [];
   const params = [];

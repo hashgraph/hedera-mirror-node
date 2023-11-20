@@ -59,7 +59,7 @@ hedera:
         swaggerUIPath: "docs"
       port: 5551
       query:
-        # v1: bind: false, range: 7d
+        # TODO: Set for v1 in PR: bind: false, range: 7d
         bindTimestampRange: true
         maxRepeatedQueryParameters: 100
         maxTimestampRange: 30d
