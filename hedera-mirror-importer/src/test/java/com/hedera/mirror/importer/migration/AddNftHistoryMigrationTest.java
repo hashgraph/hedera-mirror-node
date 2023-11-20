@@ -107,7 +107,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         var nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft1Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         long nextTimestamp = nftTransfer.getConsensusTimestamp() + 10L;
@@ -152,7 +152,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft2Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         nextTimestamp = nftTransfer.getConsensusTimestamp() + 15L;
@@ -185,7 +185,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft3Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         var expectedNft3 = Nft.builder()

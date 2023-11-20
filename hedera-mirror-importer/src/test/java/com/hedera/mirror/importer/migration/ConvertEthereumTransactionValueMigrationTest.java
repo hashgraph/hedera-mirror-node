@@ -93,7 +93,7 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
                 .gasLimit(20_000_000L)
                 .hash(domainBuilder.bytes(32))
                 .maxGasAllowance(20_000_000L)
-                .nonce(domainBuilder.id())
+                .nonce(domainBuilder.number())
                 .payerAccountId(domainBuilder.id())
                 .signatureR(domainBuilder.bytes(32))
                 .signatureS(domainBuilder.bytes(32))

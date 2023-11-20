@@ -123,10 +123,10 @@ class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
     void migrate() {
         // given
         var treasury = EntityId.of(TREASURY);
-        var account2 = EntityId.of(domainBuilder.id() + TREASURY);
-        var account3 = EntityId.of(domainBuilder.id() + TREASURY);
-        var account4 = EntityId.of(domainBuilder.id() + TREASURY);
-        var token = EntityId.of(domainBuilder.id() + TREASURY);
+        var account2 = domainBuilder.entityId();
+        var account3 = domainBuilder.entityId();
+        var account4 = domainBuilder.entityId();
+        var token = domainBuilder.entityId();
 
         var startDate = LocalDate.now(ZoneOffset.UTC).minusMonths(2);
         // Last snapshot timestamp is 10 minutes after the start of the month, so the 6 hours of full snapshots
