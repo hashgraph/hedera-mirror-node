@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 contract EquivalenceContract {
+    address constant HTS_PRECOMPILE_ADDRESS = address(0x167);
+    address constant EXCHANGE_RATE_PRECOMPILE_ADDRESS = address(0x168);
     address constant PRNG_PRECOMPILE_ADDRESS = address(0x169);
 
     function makeCallWithoutAmount(address _to, bytes memory _data) external returns (bool success, bytes memory returnData) {
@@ -100,5 +102,19 @@ contract EquivalenceContract {
             abi.encodeWithSignature("getPseudorandomSeed()"));
         require(success);
         randomBytes = abi.decode(result, (bytes32));
+    }
+
+    function exchangeRateWithoutAmount(uint256 tinycents) external returns (uint256 tinybars) {
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
+        require(success);
+        tinybars = abi.decode(result, (uint256));
+    }
+
+    function exchangeRateWithAmount(uint256 tinycents) external payable returns (uint256 tinybars) {
+        (bool success, bytes memory result) = EXCHANGE_RATE_PRECOMPILE_ADDRESS.call{value: msg.value}(
+            abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
+        require(success);
+        tinybars = abi.decode(result, (uint256));
     }
 }

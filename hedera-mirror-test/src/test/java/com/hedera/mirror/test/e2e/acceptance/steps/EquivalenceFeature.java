@@ -18,25 +18,34 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EquivalenceFeature extends AbstractFeature {
+    private final TokenClient tokenClient;
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
@@ -111,7 +120,7 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I verify extcodesize opcode against a system account {string} address returns 0")
     public void extCodeSizeAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeSize", parameters);
         assertEquals(new BigInteger("0"), functionResult.getInt256(0));
     }
@@ -119,7 +128,7 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
     public void extCodeCopyAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "copyCode", parameters);
         assertArrayEquals(new byte[0], functionResult.getBytes(0));
     }
@@ -127,9 +136,47 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
     public void extCodeHashAgainstSystemAccount(String address) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeHash", parameters);
         assertArrayEquals(new byte[0], functionResult.getBytes(0));
+    }
+
+    @And("I associate {token} to contract")
+    public void associateTokenToContract(TokenNameEnum tokenName) throws InvalidProtocolBufferException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        tokenClient.associate(deployedEquivalenceCall.contractId(), tokenId);
+    }
+
+    @Then("I execute internal call against HTS precompile with approve function for {token} without amount")
+    public void executeInternalCallForHTSApprove(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var data = encodeDataToByteArray(
+                HTS_APPROVE,
+                asAddress(tokenId),
+                asAddress(equivalenceCallContractSolidityAddress),
+                new BigInteger("10"));
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000167")
+                .addBytes(data);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute internal call against HTS precompile with approve function for {token} with amount")
+    public void executeInternalCallForHTSApproveWithAmount(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var data = encodeDataToByteArray(
+                HTS_APPROVE,
+                asAddress(tokenId),
+                asAddress(equivalenceCallContractSolidityAddress),
+                new BigInteger("10"));
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000167")
+                .addBytes(data);
+        var functionResult = executeContractCallTransaction(
+                deployedEquivalenceCall, "makeCallWithoutAmount", parameters, Hbar.fromTinybars(10L));
+        // POTENTIAL BUG
+        // THIS RETURNS CONTRACT REVERT EXECUTED - > WE EXPECT INVALID_FEE_SUBMITTED
     }
 
     @Then("I execute internal call against PRNG precompile address without amount")
@@ -141,9 +188,25 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute internal call against PRNG precompile address with amount")
     public void executeInternalCallForPRNGWithAmount() {
         var functionResult = executeContractCallTransaction(
-                deployedEquivalenceCall, "getPseudorandomSeedWithAmount", null, Hbar.fromTinybars(2222222L));
-        //POTENTIAL BUG
-        //THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+                deployedEquivalenceCall, "getPseudorandomSeedWithAmount", null, Hbar.fromTinybars(10L));
+        // POTENTIAL BUG
+        // THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+    }
+
+    @Then("I execute internal call against exchange rate precompile address without amount")
+    public void executeInternalCallForExchangeRateWithoutAmount() {
+        var parameters = new ContractFunctionParameters().addUint256(new BigInteger("100"));
+        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "exchangeRateWithoutAmount", parameters);
+        assertTrue(functionResult.getUint256(0).longValue() > 1);
+    }
+
+    @Then("I execute internal call against exchange rate precompile address with amount")
+    public void executeInternalCallForExchangeRateWithAmount() {
+        var parameters = new ContractFunctionParameters().addUint256(new BigInteger("100"));
+        var functionResult = executeContractCallTransaction(
+                deployedEquivalenceCall, "exchangeRateWithAmount", parameters, Hbar.fromTinybars(10L));
+        // POTENTIAL BUG
+        // THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
     }
 
     @Then("I make internal call to system account {string} with amount")
@@ -259,5 +322,13 @@ public class EquivalenceFeature extends AbstractFeature {
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 null);
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    enum Selectors implements SelectorInterface {
+        HTS_APPROVE("approve(address,address,uint256)");
+
+        private final String selector;
     }
 }
