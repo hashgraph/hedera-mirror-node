@@ -44,7 +44,7 @@ Feature: eth_call Contract Base Coverage Feature
     Then I freeze "NFT" token, unfreeze and get status
     And I associate precompile contract with the tokens
     Then the mirror node should return status 200 for the HAPI transaction
-    And I approve and transfer FUNGIBLE token to the precompile contract
+    And I transfer FUNGIBLE token to the precompile contract
     Then the mirror node should return status 200 for the HAPI transaction
     Given I mint a NFT
     Then the mirror node should return status 200 for the HAPI transaction
@@ -54,9 +54,9 @@ Feature: eth_call Contract Base Coverage Feature
     Then I approve a NFT token and get allowance
     Then I dissociate a FUNGIBLE token and fail transfer
     Then I dissociate a NFT and fail transfer
-    Then I approve a FUNGIBLE token and transfer it
     Then I approve a NFT token and transfer it
     And I associate FUNGIBLE_KYC_UNFROZEN token to receiver account
     Then the mirror node should return status 200 for the HAPI transaction
     Then I grant and revoke KYC
     Then I successfully update the balance of an account and get the updated balance
+    Then I approve a FUNGIBLE token and transfer it

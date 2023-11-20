@@ -433,7 +433,7 @@ contract PrecompileTestContract is HederaTokenService {
     }
 
     function approveFungibleTokenTransferFromGetAllowanceGetBalance(address token, address receiver, uint256 amount) external
-    returns (uint256, uint256, uint256, uint256, uint256){
+    returns (uint256, uint256, uint256, uint256){
 
         address _spender = address(new SpenderContract());
         uint256 allowanceBeforeApprove = IERC20(token).allowance(address(this), _spender);
@@ -442,6 +442,9 @@ contract PrecompileTestContract is HederaTokenService {
         int responseCode = HederaTokenService.approve(token, _spender, amount);
         handleResponseCode(responseCode, "Failed to approve Fungible token.");
         uint256 allowanceBeforeTransfer = IERC20(token).allowance(address(this), _spender);
+        if (allowanceBeforeTransfer != amount) {
+            revert("Allowance mismatch!");
+        }
 
         SpenderContract(_spender).spendFungible(token, amount, address(this), receiver);
         handleResponseCode(responseCode, "Failed to transfer Fungible token.");
@@ -449,23 +452,24 @@ contract PrecompileTestContract is HederaTokenService {
         uint256 allowanceAfter = IERC20(token).allowance(address(this), _spender);
         uint256 balanceAfter = IERC20(token).balanceOf(receiver);
 
-        return (allowanceBeforeApprove, balanceBefore, allowanceBeforeTransfer, allowanceAfter, balanceAfter);
+        return (allowanceBeforeApprove, balanceBefore, allowanceAfter, balanceAfter);
     }
 
-    function approveNftAndTransfer(address token, address spender, uint256 serialNumber) external
-    returns (address, address, address){
-        int responseCode = HederaTokenService.approveNFT(token, spender, serialNumber);
+    function approveNftAndTransfer(address token, address receiver, uint256 serialNumber) external
+    returns (address, address, address, address){
+        address _spender = address(new SpenderContract());
+
+        int responseCode = HederaTokenService.approveNFT(token, _spender, serialNumber);
         handleResponseCode(responseCode, "Failed to approve NFT.");
 
-        address approvalBefore = IERC721(token).getApproved(serialNumber);
+        address approvedAddress = IERC721(token).getApproved(serialNumber);
 
-        responseCode = this.transferFromNFT(token, address(this), spender, serialNumber);
-        handleResponseCode(responseCode, "Failed to transfer NFT.");
+        SpenderContract(_spender).spendNFT(token, serialNumber, address(this), receiver);
 
-        address ownerAfter = IERC721(token).ownerOf(serialNumber);
-        address allowedAfter = IERC721(token).getApproved(serialNumber);
+        address ownerAfterTransfer = IERC721(token).ownerOf(serialNumber);
+        address allowedAfterTransfer = IERC721(token).getApproved(serialNumber);
 
-        return (approvalBefore, ownerAfter, allowedAfter);
+        return (approvedAddress, ownerAfterTransfer, allowedAfterTransfer, _spender);
     }
 
     function associateTokenDissociateFailTransfer(address token, address from, address to, uint256 amount, uint256 serialNumber) external

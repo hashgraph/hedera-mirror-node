@@ -38,13 +38,13 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then the mirror node REST API should return status 200 for the HAPI transaction
     And I approve the contract to use fungible token
     Then the mirror node REST API should return status 200 for the HAPI transaction
-    Then I call estimateGas with ERC transferFrom function
     Then I call estimateGas with transferFrom function with more than the approved allowance
     Then I call estimateGas with ERC transferFrom function with more than the approved allowance
     Then I call estimateGas with transferFromNFT with invalid serial number
     Then I call estimateGas with transferNFT function
     And I approve the receiver account to use fungible token and transfer fungible token to the erc contract
     Then the mirror node REST API should return status 200 for the HAPI transaction
+    Then I call estimateGas with ERC transferFrom function
     Then I call estimateGas with ERC transfer function
     Then I call estimateGas with associateTokens function for fungible tokens
     Then I call estimateGas with associateTokens function for NFTs

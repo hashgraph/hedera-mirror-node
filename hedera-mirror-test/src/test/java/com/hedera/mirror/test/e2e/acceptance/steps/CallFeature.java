@@ -115,7 +115,7 @@ public class CallFeature extends AbstractFeature {
         address1 = new BigInteger(address1, 16).toString(16);
         address2 = new BigInteger(address2, 16).toString(16);
 
-        return new String[] {address1, address2};
+        return new String[]{address1, address2};
     }
 
     @RetryAsserts
@@ -166,7 +166,7 @@ public class CallFeature extends AbstractFeature {
                 1L);
     }
 
-    @And("I approve and transfer FUNGIBLE token to the precompile contract")
+    @And("I transfer FUNGIBLE token to the precompile contract")
     public void approveAndTransferFungibleTokenToPrecompile() {
         networkTransactionResponse = tokenClient.transferFungibleToken(
                 fungibleTokenId,
@@ -621,18 +621,21 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I approve a FUNGIBLE token and transfer it")
     public void ethCallApproveFungibleTokenAndTransfer() {
+        networkTransactionResponse = tokenClient.associate(thirdReceiver, fungibleTokenId);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+
         var data = encodeData(
                 PRECOMPILE,
                 APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER,
                 asAddress(fungibleTokenId),
-                asAddress(receiverAccountId),
+                asAddress(thirdReceiver),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         // allowance before transfer should equal the amount
-        assertThat(intValue(results.get(0))).isEqualTo(1);
+        assertThat(intValue(results.get(0))).isZero();
         // balance before + amount should equal the balance after
         assertThat(intValue(results.get(1)) + 1).isEqualTo(intValue(results.get(3)));
         // allowance after transfer should be 0
@@ -650,14 +653,14 @@ public class CallFeature extends AbstractFeature {
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListAddress();
 
-        assertThat(results).isNotNull().hasSize(3);
+        assertThat(results).isNotNull().hasSize(4);
 
         // allowed address before transfer should be the receiverAccount
-        assertThat(results.get(0)).isEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
-        // balance before + amount should equal the balance after
-        assertThat(results.get(1)).isEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
-        // allowance after transfer should be != 0
-        assertThat(results.get(2)).isNotEqualTo(to32BytesString(receiverAccountId.getAccountId().toSolidityAddress()));
+        assertThat(results.get(0)).isEqualTo(results.get(3));
+        // owner after transfer should be the Precompile
+        assertThat(results.get(1)).isEqualTo(to32BytesString(results.get(1)));
+        // allowance after transfer should be 0
+        assertThat(results.get(2)).isEqualTo("0000000000000000000000000000000000000000000000000000000000000000");
     }
 
     @Then("I grant and revoke KYC")

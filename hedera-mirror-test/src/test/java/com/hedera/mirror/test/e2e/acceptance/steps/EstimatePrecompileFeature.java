@@ -456,7 +456,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ERC,
                 TRANSFER_FROM_ERC,
-                asAddress(fungibleKycUnfrozenTokenId),
+                asAddress(fungibleTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias),
                 new BigInteger("10"));
