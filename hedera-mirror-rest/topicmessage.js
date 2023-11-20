@@ -232,7 +232,7 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
     lowerLimit = upperLimit - Number(limit);
   }
 
-  pgSqlQuery += ` and  sequence_number_range && '[${lowerLimit},${upperLimit})'::int8range`;
+  pgSqlQuery += ` and  sequence_number_range && '[${lowerLimit},${upperLimit}]'::int8range`;
   pgSqlQuery += ` order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE} ${order}`;
 
   pgSqlQuery += ` limit ${limit}`;
