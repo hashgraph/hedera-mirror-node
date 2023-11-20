@@ -20,6 +20,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,8 +53,11 @@ public class EquivalenceFeature extends AbstractFeature {
 
     private DeployedContract deployedEquivalenceDestruct;
     private DeployedContract deployedEquivalenceCall;
+    private DeployedContract deployedPrecompileContract;
+
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
+    private String precompileContractSolidityAddress;
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() throws IOException {
@@ -66,6 +70,13 @@ public class EquivalenceFeature extends AbstractFeature {
     public void createNewEquivalenceCallContract() throws IOException {
         deployedEquivalenceCall = getContract(EQUIVALENCE_CALL);
         equivalenceCallContractSolidityAddress =
+                deployedEquivalenceCall.contractId().toSolidityAddress();
+    }
+
+    @Given("I successfully create estimate precompile contract")
+    public void createNewEstimatePrecompileContract() throws IOException {
+        deployedPrecompileContract = getContract(ESTIMATE_PRECOMPILE);
+        precompileContractSolidityAddress =
                 deployedEquivalenceCall.contractId().toSolidityAddress();
     }
 
