@@ -20,6 +20,7 @@ import {assertSqlQueryEqual} from './testutils';
 import topicmessage from '../topicmessage';
 import config from '../config.js';
 import {InvalidArgumentError} from '../errors/index.js';
+import sinon from 'sinon';
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
@@ -288,6 +289,121 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(() => {
       topicmessage.extractSqlForTopicMessagesLookup(EntityId.parse('7'), filters);
     }).toThrowError(InvalidArgumentError);
+  });
+});
+
+describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
+  test('extractSqlFromTopicMessagesRequest V2 with seq number parameter', async () => {
+    config.query.v2.topicMessageLookups = true;
+    const expectedRangeStartConsensusNs1 = '1234567890000000006';
+    const expectedRangeEndConsensusNs1 = '1234567891000000006';
+    const expectedRangeStartConsensusNs2 = '1234577890000000006';
+    const expectedRangeEndConsensusNs2 = '1234577891000000006';
+    const validQueryResult = {
+      rows: [
+        {timestamp_start: expectedRangeStartConsensusNs1, timestamp_end: expectedRangeEndConsensusNs1},
+        {timestamp_start: expectedRangeStartConsensusNs2, timestamp_end: expectedRangeEndConsensusNs2},
+      ],
+    };
+    const fakeQuery = sinon.fake.resolves(validQueryResult);
+    global.pool = {queryQuietly: fakeQuery};
+
+    const filters = [
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+    ];
+
+    const {query, params, order, limit} = await topicmessage.extractSqlFromTopicMessagesRequest(
+      EntityId.parse('7'),
+      filters
+    );
+
+    const expectedQuery = `select * from topic_message 
+    where topic_id = $1 
+    and consensus_timestamp <= $2 
+    and ((consensus_timestamp >= 1234567890000000006 and consensus_timestamp < 1234567891000000006)
+     or (consensus_timestamp >= 1234577890000000006 and consensus_timestamp < 1234577891000000006)) 
+     order by consensus_timestamp desc limit $3;`;
+    assertSqlQueryEqual(query, expectedQuery);
+    expect(params).toStrictEqual([7, '1234567890.000000006', '3']);
+    expect(order).toStrictEqual(constants.orderFilterValues.DESC);
+    expect(limit).toStrictEqual(3);
+  });
+  test('extractSqlFromTopicMessagesRequest V2 without seq number parameter order asc', async () => {
+    config.query.v2.topicMessageLookups = true;
+    const expectedRangeStartConsensusNs1 = '1234567890000000006';
+    const expectedRangeEndConsensusNs1 = '1234567891000000006';
+    const expectedRangeStartConsensusNs2 = '1234577890000000006';
+    const expectedRangeEndConsensusNs2 = '1234577891000000006';
+    const validQueryResult = {
+      rows: [
+        {timestamp_start: expectedRangeStartConsensusNs1, timestamp_end: expectedRangeEndConsensusNs1},
+        {timestamp_start: expectedRangeStartConsensusNs2, timestamp_end: expectedRangeEndConsensusNs2},
+      ],
+    };
+    const fakeQuery = sinon.fake.resolves(validQueryResult);
+    global.pool = {queryQuietly: fakeQuery};
+
+    const filters = [
+      {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.ASC},
+    ];
+
+    const {query, params, order, limit} = await topicmessage.extractSqlFromTopicMessagesRequest(
+      EntityId.parse('7'),
+      filters
+    );
+
+    const expectedQuery = `select * from topic_message 
+    where topic_id = $1 
+    and consensus_timestamp <= $2 
+    and sequence_number = (select MIN(lower(sequence_number_range))
+                           from topic_message_lookup where topic_id = $1) 
+     order by consensus_timestamp asc limit $3;`;
+    assertSqlQueryEqual(query, expectedQuery);
+    expect(params).toStrictEqual([7, '1234567890.000000006', '3']);
+    expect(order).toStrictEqual(constants.orderFilterValues.ASC);
+    expect(limit).toStrictEqual(3);
+  });
+  test('extractSqlFromTopicMessagesRequest V2 without seq number parameter order desc', async () => {
+    config.query.v2.topicMessageLookups = true;
+    const expectedRangeStartConsensusNs1 = '1234567890000000006';
+    const expectedRangeEndConsensusNs1 = '1234567891000000006';
+    const expectedRangeStartConsensusNs2 = '1234577890000000006';
+    const expectedRangeEndConsensusNs2 = '1234577891000000006';
+    const validQueryResult = {
+      rows: [
+        {timestamp_start: expectedRangeStartConsensusNs1, timestamp_end: expectedRangeEndConsensusNs1},
+        {timestamp_start: expectedRangeStartConsensusNs2, timestamp_end: expectedRangeEndConsensusNs2},
+      ],
+    };
+    const fakeQuery = sinon.fake.resolves(validQueryResult);
+    global.pool = {queryQuietly: fakeQuery};
+
+    const filters = [
+      {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+    ];
+
+    const {query, params, order, limit} = await topicmessage.extractSqlFromTopicMessagesRequest(
+      EntityId.parse('7'),
+      filters
+    );
+
+    const expectedQuery = `select * from topic_message 
+    where topic_id = $1 
+    and consensus_timestamp <= $2 
+    and sequence_number = (select MAX(upper(sequence_number_range))
+                           from topic_message_lookup where topic_id = $1) 
+     order by consensus_timestamp desc limit $3;`;
+    assertSqlQueryEqual(query, expectedQuery);
+    expect(params).toStrictEqual([7, '1234567890.000000006', '3']);
+    expect(order).toStrictEqual(constants.orderFilterValues.DESC);
+    expect(limit).toStrictEqual(3);
   });
 });
 
