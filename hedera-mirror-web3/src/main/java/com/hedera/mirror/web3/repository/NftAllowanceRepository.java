@@ -36,14 +36,13 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 
     /**
-     * Retrieves the most recent state of a nft allowance by its owner up to a given block timestamp.
+     * Retrieves the most recent state of nft allowances by its owner up to a given block timestamp.
      * The method considers both the current state of the nft allowance and its historical states
      * and returns the latest valid just before or equal to the provided block timestamp.
      *
      * @param owner the ID of the owner
      * @param blockTimestamp  the block timestamp used to filter the results.
-     * @return an Optional containing the nft allowance's state at the specified timestamp.
-     *         If there is no record found for the given criteria, an empty Optional is returned.
+     * @return List containing the nft allowances at the specified timestamp.
      */
     @Query(
             value =
