@@ -20,19 +20,28 @@ import * as utils from '../utils.js';
 import request from 'supertest';
 import server from '../server.js';
 import * as constants from '../constants.js';
-import {nsToSecNsWithHyphen} from '../utils.js';
 
 setupIntegrationTest();
 
-describe('Accounts deduplicate tests', () => {
-  const fifteenDaysInNs = 1_296_000_000_000_000n;
-  const tenDaysInNs = 864_000_000_000_000n;
-  const nanoSecondsPerSecond = 1_000_000_000n;
+describe('Accounts deduplicate timestamp lte tests', () => {
+  const nanoSecondsPerSecond = 10n ** 9n;
+  const fifteenDaysInNs = constants.ONE_DAY_IN_NS * 15n;
+  const tenDaysInNs = constants.ONE_DAY_IN_NS * 10n;
   const currentNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
   const beginningOfCurrentMonth = utils.getFirstDayOfMonth(currentNs);
   const beginningOfPreviousMonth = utils.getFirstDayOfMonth(beginningOfCurrentMonth - 1n);
   const tenDaysInToPreviousMonth = beginningOfPreviousMonth + tenDaysInNs;
   const middleOfPreviousMonth = beginningOfPreviousMonth + fifteenDaysInNs;
+
+  const balanceTimestamp1 = middleOfPreviousMonth + nanoSecondsPerSecond * 7n;
+  const balanceTimestamp2 = tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n;
+  const balanceTimestamp3 = balanceTimestamp2 - nanoSecondsPerSecond;
+  const createdTimestamp1 = balanceTimestamp1 - 1n;
+  const consensusTimestamp1 = middleOfPreviousMonth + nanoSecondsPerSecond * 5n;
+  const consensusTimestamp2 = middleOfPreviousMonth + nanoSecondsPerSecond * 15n;
+  const consensusTimestamp3 = middleOfPreviousMonth + nanoSecondsPerSecond * 4n;
+  const consensusTimestamp4 = middleOfPreviousMonth + nanoSecondsPerSecond;
+  const timestampRange2 = balanceTimestamp1 - nanoSecondsPerSecond;
 
   beforeEach(async () => {
     await integrationDomainOps.loadAccounts([
@@ -44,23 +53,21 @@ describe('Accounts deduplicate tests', () => {
       },
       {
         balance: 80,
-        balance_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n,
+        balance_timestamp: balanceTimestamp1,
         num: 8,
         alias: 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ',
         public_key: '519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9',
-        timestamp_range: `[${middleOfPreviousMonth + nanoSecondsPerSecond * 7n},)`,
+        timestamp_range: `[${balanceTimestamp1},)`,
         staked_node_id: 1,
         staked_account_id: 1,
       },
       {
         balance: 30,
-        balance_timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
+        balance_timestamp: balanceTimestamp2,
         num: 8,
         alias: 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ',
         public_key: '519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9',
-        timestamp_range: `[${middleOfPreviousMonth + nanoSecondsPerSecond * 7n - nanoSecondsPerSecond}, ${
-          middleOfPreviousMonth + nanoSecondsPerSecond * 7n
-        })`,
+        timestamp_range: `[${timestampRange2}, ${balanceTimestamp1})`,
         staked_node_id: 2,
         staked_account_id: 2,
       },
@@ -73,12 +80,12 @@ describe('Accounts deduplicate tests', () => {
     ]);
     await integrationDomainOps.loadBalances([
       {
-        timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
+        timestamp: balanceTimestamp2,
         id: 2,
         balance: 2,
       },
       {
-        timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
+        timestamp: balanceTimestamp2,
         id: 8,
         balance: 555,
         tokens: [
@@ -93,7 +100,7 @@ describe('Accounts deduplicate tests', () => {
         ],
       },
       {
-        timestamp: beginningOfPreviousMonth + nanoSecondsPerSecond * 4n - nanoSecondsPerSecond,
+        timestamp: balanceTimestamp3,
         id: 8,
         balance: 444,
         tokens: [
@@ -114,7 +121,7 @@ describe('Accounts deduplicate tests', () => {
         token_id: '0.0.99998',
         account_id: '0.0.7',
         balance: 7,
-        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
+        created_timestamp: createdTimestamp1,
       },
       {
         token_id: '0.0.99999',
@@ -126,13 +133,13 @@ describe('Accounts deduplicate tests', () => {
         token_id: '0.0.99998',
         account_id: '0.0.8',
         balance: 8,
-        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n,
+        created_timestamp: balanceTimestamp1,
       },
       {
         token_id: '0.0.99999',
         account_id: '0.0.8',
         balance: 88,
-        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
+        created_timestamp: createdTimestamp1,
       },
     ]);
 
@@ -140,7 +147,7 @@ describe('Accounts deduplicate tests', () => {
       {
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
+        consensus_timestamp: createdTimestamp1,
         name: 'TOKENCREATION',
         type: '29',
         entity_id: '0.0.90000',
@@ -148,7 +155,7 @@ describe('Accounts deduplicate tests', () => {
       {
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 5n,
+        consensus_timestamp: consensusTimestamp1,
         name: 'CRYPTODELETE',
         type: '12',
         entity_id: '0.0.7',
@@ -157,7 +164,7 @@ describe('Accounts deduplicate tests', () => {
         charged_tx_fee: 0,
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 15n,
+        consensus_timestamp: consensusTimestamp2,
         name: 'CRYPTOUPDATEACCOUNT',
         type: '15',
         entity_id: '0.0.8',
@@ -166,7 +173,7 @@ describe('Accounts deduplicate tests', () => {
 
     await integrationDomainOps.loadCryptoTransfers([
       {
-        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 4n,
+        consensus_timestamp: consensusTimestamp3,
         payerAccountId: '0.0.8',
         nodeAccountId: '0.0.3',
         treasuryAccountId: '0.0.98',
@@ -186,7 +193,7 @@ describe('Accounts deduplicate tests', () => {
         ],
       },
       {
-        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond,
+        consensus_timestamp: consensusTimestamp4,
         payerAccountId: '0.0.8',
         nodeAccountId: '0.0.3',
         treasuryAccountId: '0.0.98',
@@ -210,11 +217,15 @@ describe('Accounts deduplicate tests', () => {
 
   const testSpecs = [
     {
-      name: 'Account with timestamp lte',
+      name: 'Account with timestamp lt and lte',
       urls: [
-        `/api/v1/accounts/0.0.8?timestamp=lte:${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 6n)}`,
+        `/api/v1/accounts/0.0.8?timestamp=lt:${utils.nsToSecNs(balanceTimestamp1)}`,
+        `/api/v1/accounts/0.0.8?timestamp=lte:${utils.nsToSecNs(balanceTimestamp1 - 1n)}`,
+        `/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lt:${utils.nsToSecNs(
+          balanceTimestamp1
+        )}`,
         `/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:${utils.nsToSecNs(
-          middleOfPreviousMonth + nanoSecondsPerSecond * 6n
+          balanceTimestamp1 - 1n
         )}`,
       ],
       expected: {
@@ -222,7 +233,7 @@ describe('Accounts deduplicate tests', () => {
           {
             bytes: 'Ynl0ZXM=',
             charged_tx_fee: 7,
-            consensus_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 4n)}`,
+            consensus_timestamp: `${utils.nsToSecNs(consensusTimestamp3)}`,
             entity_id: null,
             max_fee: '33',
             memo_base64: null,
@@ -235,9 +246,7 @@ describe('Accounts deduplicate tests', () => {
             scheduled: false,
             staking_reward_transfers: [],
             transaction_hash: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w',
-            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(
-              (middleOfPreviousMonth + nanoSecondsPerSecond * 4n - 1n).toString()
-            )}`,
+            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen((consensusTimestamp3 - 1n).toString())}`,
             transfers: [
               {
                 account: '0.0.3',
@@ -270,12 +279,12 @@ describe('Accounts deduplicate tests', () => {
               },
             ],
             valid_duration_seconds: '11',
-            valid_start_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 4n - 1n)}`,
+            valid_start_timestamp: `${utils.nsToSecNs(consensusTimestamp3 - 1n)}`,
           },
           {
             bytes: 'Ynl0ZXM=',
             charged_tx_fee: 7,
-            consensus_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond)}`,
+            consensus_timestamp: `${utils.nsToSecNs(consensusTimestamp4)}`,
             entity_id: null,
             max_fee: '33',
             memo_base64: null,
@@ -302,9 +311,7 @@ describe('Accounts deduplicate tests', () => {
               },
             ],
             transaction_hash: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w',
-            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(
-              (middleOfPreviousMonth + nanoSecondsPerSecond - 1n).toString()
-            )}`,
+            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen((consensusTimestamp4 - 1n).toString())}`,
             transfers: [
               {
                 account: '0.0.3',
@@ -323,11 +330,11 @@ describe('Accounts deduplicate tests', () => {
               },
             ],
             valid_duration_seconds: '11',
-            valid_start_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond - 1n)}`,
+            valid_start_timestamp: `${utils.nsToSecNs(consensusTimestamp4 - 1n)}`,
           },
         ],
         balance: {
-          timestamp: `${utils.nsToSecNs(tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n)}`,
+          timestamp: `${utils.nsToSecNs(balanceTimestamp2)}`,
           balance: 555,
           tokens: [
             {

@@ -24,9 +24,9 @@ import * as constants from '../constants.js';
 setupIntegrationTest();
 
 describe('Balances deduplicate tests', () => {
-  const fifteenDaysInNs = 1_296_000_000_000_000n;
-  const tenDaysInNs = 864_000_000_000_000n;
-  const nanoSecondsPerSecond = 1_000_000_000n;
+  const nanoSecondsPerSecond = 10n ** 9n;
+  const fifteenDaysInNs = constants.ONE_DAY_IN_NS * 15n;
+  const tenDaysInNs = constants.ONE_DAY_IN_NS * 10n;
   const currentNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
 
   const beginningOfCurrentMonth = utils.getFirstDayOfMonth(currentNs);
