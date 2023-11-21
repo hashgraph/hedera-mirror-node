@@ -23,6 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
@@ -47,24 +48,27 @@ import lombok.RequiredArgsConstructor;
 public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private final TokenRepository tokenRepository;
-
     private final EntityDatabaseAccessor entityDatabaseAccessor;
-
     private final EntityRepository entityRepository;
-
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Object address, @NonNull final long timestamp) {
-        return entityDatabaseAccessor.get(address, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
+    public @NonNull Optional<Token> get(@NonNull Object address) {
+        return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
     }
 
-    private Token tokenFromEntity(Entity entity, long timestamp) {
+    private Token tokenFromEntity(Entity entity) {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
 
-        final var databaseToken = tokenRepository.findById(entity.getId()).orElse(null);
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var databaseToken = (timestamp != -1)
+                ? tokenRepository
+                        .findByTokenIdAndTimestamp(entity.getId(), timestamp)
+                        .orElse(null)
+                : tokenRepository.findById(entity.getId()).orElse(null);
 
         if (databaseToken == null) {
             return null;
@@ -109,7 +113,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
                 0L,
-                getCustomFees(entity.getId(), timestamp));
+                getCustomFees(entity.getId()));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -143,7 +147,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId, long timestamp) {
-        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
+    private List<CustomFee> getCustomFees(Long tokenId) {
+        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
     }
 }

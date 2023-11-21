@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -117,7 +118,13 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         if (entityId == 0L) {
             return Bytes.EMPTY;
         }
-        final var storage = contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
+
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+
+        final var storage = (timestamp != -1)
+                ? contractStateRepository.findStorageByBlockTimestamp(entityId, key.toArrayUnsafe(), timestamp)
+                : contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
 
         return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }

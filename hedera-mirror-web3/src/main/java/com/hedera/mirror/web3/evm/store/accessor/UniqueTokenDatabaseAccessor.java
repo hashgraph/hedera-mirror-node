@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
@@ -36,11 +37,14 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey, @NonNull final long timestamp) {
+    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey) {
         final var nftId = (NftId) nftKey;
-        return nftRepository
-                .findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo())
-                .map(this::mapNftToUniqueToken);
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var uniqueToken = (timestamp != -1)
+                ? nftRepository.findActiveByIdAndTimestamp(nftId.tokenId().getTokenNum(), nftId.serialNo(), timestamp)
+                : nftRepository.findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo());
+        return uniqueToken.map(this::mapNftToUniqueToken);
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {

@@ -34,4 +34,10 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
     Optional<TokenAllowance> findById(Id id);
 
     List<TokenAllowance> findByOwner(long owner);
+
+    // TODO
+    Optional<TokenAllowance> findByIdAndTimestamp(long spender, long tokenId, long timestamp);
+
+    // TODO
+    List<TokenAllowance> findByOwnerAndTimestmap(Long ownerId, long timestamp);
 }

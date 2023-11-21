@@ -23,10 +23,10 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,23 +38,29 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address, @NonNull final long timestamp) {
+    public @NotNull Optional<Entity> get(@NotNull Object address) {
         final var castedAddress = (Address) address;
-        final var addressBytes = (castedAddress).toArrayUnsafe();
+        final var addressBytes = castedAddress.toArrayUnsafe();
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
         if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress((Address) address);
-            if (timestamp != -1) {
-                return entityRepository.findActiveByIdAndTimestamp(entityId, timestamp);
-            } else {
-                return entityRepository.findByIdAndDeletedIsFalse(entityId);
-            }
+            return getEntityByMirrorAddress(castedAddress, timestamp);
         } else {
-            if (timestamp != -1) {
-                return entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp);
-            } else {
-                return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
-            }
+            return getEntityByNonMirrorAddress(addressBytes, timestamp);
         }
+    }
+
+    private Optional<Entity> getEntityByMirrorAddress(Address address, long timestamp) {
+        final var entityId = entityIdNumFromEvmAddress(address);
+        return (timestamp != -1)
+                ? entityRepository.findActiveByIdAndTimestamp(entityId, timestamp)
+                : entityRepository.findByIdAndDeletedIsFalse(entityId);
+    }
+
+    private Optional<Entity> getEntityByNonMirrorAddress(byte[] addressBytes, long timestamp) {
+        return (timestamp != -1)
+                ? entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp)
+                : entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
     }
 
     public Address evmAddressFromId(EntityId entityId) {

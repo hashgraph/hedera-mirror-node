@@ -40,12 +40,17 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
             nativeQuery = true)
     List<TokenAccountAssociationsCount> countByAccountIdAndAssociatedGroupedByBalanceIsPositive(long accountId);
 
+    // TODO
+    List<TokenAccountAssociationsCount> countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+            long accountId, long timestamp);
+
     /**
      * Retrieves the most recent state of a token account by its ID up to a given block timestamp.
      * The method considers both the current state of the token account and its historical states
      * and returns the one that was valid just before or equal to the provided block timestamp.
      *
-     * @param id              the ID of the token account to be retrieved.
+     * @param accountId the ID of the account
+     * @param tokenId the ID of the token to be retrieved.
      * @param blockTimestamp  the block timestamp used to filter the results.
      * @return an Optional containing the token account's state at the specified timestamp.
      *         If there is no record found for the given criteria, an empty Optional is returned.

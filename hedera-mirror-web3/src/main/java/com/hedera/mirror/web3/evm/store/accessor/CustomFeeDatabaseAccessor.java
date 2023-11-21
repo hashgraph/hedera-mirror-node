@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static java.util.Objects.requireNonNullElse;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
@@ -43,9 +44,15 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId, @NonNull final long timestamp) {
-        final var customFeeOptional = customFeeRepository.findById((Long) tokenId);
-        return customFeeOptional.isEmpty() ? Optional.empty() : Optional.of(mapCustomFee(customFeeOptional.get()));
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId) {
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+
+        Optional<com.hedera.mirror.common.domain.token.CustomFee> customFeeOptional = (timestamp != -1)
+                ? customFeeRepository.findByIdAndTimestamp((Long) tokenId, timestamp)
+                : customFeeRepository.findById((Long) tokenId);
+
+        return customFeeOptional.map(this::mapCustomFee);
     }
 
     private List<CustomFee> mapCustomFee(com.hedera.mirror.common.domain.token.CustomFee customFee) {

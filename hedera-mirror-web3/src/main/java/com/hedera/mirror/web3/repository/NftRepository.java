@@ -89,4 +89,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     + "where n.account_id=:accountId and n.deleted is false and e.deleted is not true",
             nativeQuery = true)
     long countByAccountIdNotDeleted(Long accountId);
+
+    // TODO
+    long countByAccountIdAndTimestampNotDeleted(Long accountId, long timestamp);
 }

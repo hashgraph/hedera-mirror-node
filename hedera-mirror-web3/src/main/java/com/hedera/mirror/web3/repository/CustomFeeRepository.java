@@ -17,6 +17,23 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.token.CustomFee;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {}
+public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {
+    @Query(
+            value =
+                    """
+            select * from (
+                select * from custom_fee where token_id = ?1
+                union all
+                select * from custom_fee_history where token_id = ?1
+            ) as cf
+            where timestamp_range < int8_range(?2, null)
+            order by timestamp_range desc
+            limit 1;
+            """,
+            nativeQuery = true)
+    Optional<CustomFee> findByIdAndTimestamp(long id, long timestamp);
+}

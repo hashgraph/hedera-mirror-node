@@ -46,9 +46,7 @@ public class ContractCallContext implements AutoCloseable {
     private final Set<Address> pendingRemovals = new HashSet<>();
 
     /**
-     * Long value which stores the block timestamp used for filtering of historical data.
-     * A value of UNSET_TIMESTAMP indicates that the timestamp is unset or disabled for filtering.
-     * Any value other than UNSET_TIMESTAMP that is a valid timestamp should be considered for filtering operations.
+     * Record file which stores the block timestamp and other historical block details used for filtering of historical data.
      */
     @Setter
     private RecordFile recordFile;
