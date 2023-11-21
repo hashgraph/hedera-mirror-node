@@ -24,7 +24,6 @@ import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -34,6 +33,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -47,6 +47,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -110,12 +111,17 @@ class FreezeTokenPrecompileTest {
     @Mock
     private Store store;
 
-    private HTSPrecompiledContract subject;
-    private MockedStatic<FreezeTokenPrecompile> staticFreezeTokenPrecompile;
-    private MockedStatic<ContractCallContext> staticMock;
+    @Mock
+    private MessageFrame lastFrame;
 
     @Mock
-    private ContractCallContext contractCallContext;
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
+    private HTSPrecompiledContract subject;
+    private MockedStatic<FreezeTokenPrecompile> staticFreezeTokenPrecompile;
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -132,13 +138,11 @@ class FreezeTokenPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenFreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
 
         FreezeTokenPrecompile freezeTokenPrecompile =
                 new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
@@ -146,13 +150,20 @@ class FreezeTokenPrecompileTest {
         staticFreezeTokenPrecompile = Mockito.mockStatic(FreezeTokenPrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
     void closeMocks() {
         staticFreezeTokenPrecompile.close();
-        staticMock.close();
     }
 
     @Test
@@ -162,6 +173,7 @@ class FreezeTokenPrecompileTest {
         givenFrameContext();
         givenMinimalContextForSuccessfulCall();
         givenFreezeUnfreezeContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         // when
         subject.prepareFields(frame);
@@ -183,12 +195,12 @@ class FreezeTokenPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -205,7 +217,6 @@ class FreezeTokenPrecompileTest {
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenFrameContext() {

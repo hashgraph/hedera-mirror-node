@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.common.ContractCallContext.get;
+
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
@@ -32,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
@@ -45,6 +48,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+@Named
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
@@ -64,9 +68,16 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
             final Store store) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(
+                worldState,
+                pricesAndFeesProvider,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                blockMetaSource,
+                operationTracer);
 
-        super.setOperationTracer(operationTracer);
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.store = store;
@@ -74,8 +85,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
     public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
-        // in cases where the receiver is the zero address, we know it's a contract create scenario
-        super.setupFields(params.getReceiver().equals(Address.ZERO));
+
         final var contractCallContext = ContractCallContext.get();
         contractCallContext.setCreate(Address.ZERO.equals(params.getReceiver()));
         contractCallContext.setEstimate(params.isEstimate());
@@ -94,7 +104,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getValue(),
                 params.getCallData(),
                 params.isStatic(),
-                aliasManager.resolveForEvm(params.getReceiver()));
+                aliasManager.resolveForEvm(params.getReceiver()),
+                params.getReceiver().equals(Address.ZERO));
     }
 
     @SuppressWarnings("java:S5411")
@@ -108,7 +119,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        if (ContractCallContext.get().isCreate()) {
+        if (get().isCreate()) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)

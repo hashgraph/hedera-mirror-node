@@ -49,10 +49,8 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -351,11 +349,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getGasRequirement(
-            long blockTimestamp,
-            Builder transactionBody,
-            Store store,
-            HederaEvmContractAliases mirrorEvmContractAliases) {
+    public long getGasRequirement(long blockTimestamp, Builder transactionBody) {
         return getMinimumFeeInTinybars(
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build());
     }

@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.common.ContractCallContext;
@@ -37,6 +36,7 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdat
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -48,9 +48,6 @@ import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -64,6 +61,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -73,12 +71,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -99,10 +95,6 @@ class DissociatePrecompileTest {
 
     private DissociatePrecompile dissociatePrecompile;
     private MultiDissociatePrecompile multiDissociatePrecompile;
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
 
     @Mock
     private HrcParams hrcParams;
@@ -153,16 +145,13 @@ class DissociatePrecompileTest {
     private FeeObject mockFeeObject;
 
     @Mock
-    private Account account;
+    private MessageFrame lastFrame;
 
     @Mock
-    private Token token;
+    private Deque<MessageFrame> stack;
 
     @Mock
-    private Id id;
-
-    @Mock
-    private Account updatedAccount;
+    private TokenAccessor tokenAccessor;
 
     private SyntheticTxnFactory syntheticTxnFactory;
     private PrecompileMapper precompileMapper;
@@ -173,25 +162,26 @@ class DissociatePrecompileTest {
 
     @BeforeEach
     void setup() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         syntheticTxnFactory = new SyntheticTxnFactory();
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils pricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils pricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         dissociatePrecompile = new DissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
         multiDissociatePrecompile = new MultiDissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
         precompileMapper = new PrecompileMapper(Set.of(dissociatePrecompile, multiDissociatePrecompile));
         subject = new HTSPrecompiledContract(
-                evmInfrastructureFactory, mirrorNodeEvmProperties, precompileMapper, evmHTSPrecompiledContract);
-    }
+                evmInfrastructureFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                pricingUtils);
 
-    @AfterEach
-    void clean() {
-        staticMock.close();
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -226,8 +216,7 @@ class DissociatePrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -240,6 +229,7 @@ class DissociatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
         givenPricingUtilsContext();
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -252,8 +242,7 @@ class DissociatePrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -265,6 +254,7 @@ class DissociatePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -279,8 +269,8 @@ class DissociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(MULTIPLE_DISSOCIATE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -291,6 +281,7 @@ class DissociatePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -305,8 +296,8 @@ class DissociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(DISSOCIATE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -342,7 +333,6 @@ class DissociatePrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenPricingUtilsContext() {

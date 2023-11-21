@@ -98,17 +98,23 @@ public class PrecompilePricingUtils {
     private final FeeCalculator feeCalculator;
     private final UsagePricesProvider resourceCosts;
     private final AccessorFactory accessorFactory;
+    private final Store store;
+    private final HederaEvmContractAliases hederaEvmContractAliases;
 
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
             final HbarCentExchange exchange,
             final FeeCalculator feeCalculator,
             final UsagePricesProvider resourceCosts,
-            final AccessorFactory accessorFactory) {
+            final AccessorFactory accessorFactory,
+            final Store store,
+            final HederaEvmContractAliases hederaEvmContractAliases) {
         this.exchange = exchange;
         this.feeCalculator = feeCalculator;
         this.resourceCosts = resourceCosts;
         this.accessorFactory = accessorFactory;
+        this.store = store;
+        this.hederaEvmContractAliases = hederaEvmContractAliases;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
@@ -157,7 +163,7 @@ public class PrecompilePricingUtils {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost, final Store store) {
+    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
         final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, store, now, ANSWER_ONLY);
 
@@ -173,11 +179,7 @@ public class PrecompilePricingUtils {
     }
 
     public long computeGasRequirement(
-            final long blockTimestamp,
-            final Precompile precompile,
-            final TransactionBody.Builder transactionBody,
-            final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+            final long blockTimestamp, final Precompile precompile, final TransactionBody.Builder transactionBody) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -188,7 +190,7 @@ public class PrecompilePricingUtils {
                         .build()),
                 timestamp,
                 store,
-                mirrorEvmContractAliases);
+                hederaEvmContractAliases);
 
         final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);

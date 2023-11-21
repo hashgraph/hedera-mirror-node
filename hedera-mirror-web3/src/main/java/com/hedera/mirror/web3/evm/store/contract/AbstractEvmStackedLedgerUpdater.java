@@ -31,7 +31,7 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
         extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     protected final Store store;
-    protected MirrorEvmContractAliases mirrorEvmContractAliases;
+    protected final MirrorEvmContractAliases mirrorEvmContractAliases;
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
@@ -42,7 +42,6 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             final Store store) {
         super(world, accountAccessor, tokenAccessor, entityAccess, store);
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
-        this.mirrorEvmContractAliases.resetPendingChanges();
         this.store = store;
     }
 
