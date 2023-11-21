@@ -409,7 +409,7 @@ const getOneAccount = async (req, res) => {
     const [balanceFileTsQuery, balanceFileTsParams] = utils.buildTimestampQuery(
       tsRange,
       'consensus_timestamp',
-      [],
+      neValues,
       eqValues,
       false
     );
@@ -430,14 +430,7 @@ const getOneAccount = async (req, res) => {
         (_) => `$${tokenBalanceQuery.params.length}`
       );
     } else {
-      tokenBalanceQuery.params.push(undefined);
-      tokenBalanceQuery.params.push(undefined);
-    }
-
-    // Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
-    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
-    if (timestampExcluded) {
-      throw new NotFoundError('Not found');
+      tokenBalanceQuery.params.push(undefined, undefined);
     }
 
     accountBalanceQuery.query = tsQueryResult.consensusTsQuery

@@ -106,8 +106,6 @@ describe('Accounts deduplicate tests', () => {
       name: 'Accounts not found',
       urls: [
         `/api/v1/accounts/0.0.8?timestamp=lte:1234567880.000000006`,
-        //`/api/v1/accounts/0.0.8?timestamp=ne:1234567890.000000004`,
-        //`api/v1/accounts/0.0.9?timestamp=ne:5.000&order=asc`,
         `/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567880.000000006`,
       ],
       expected: {

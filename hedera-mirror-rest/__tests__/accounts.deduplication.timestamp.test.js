@@ -233,6 +233,7 @@ describe('Accounts deduplicate tests', () => {
         `/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=gt:${utils.nsToSecNs(
           tenDaysMinusSecondMinusNs
         )}`,
+        `/api/v1/accounts/0.0.8?timestamp=ne:${utils.nsToSecNs(tenDaysMinusSecondMinusNs)}`,
       ],
       expected: {
         transactions: [
