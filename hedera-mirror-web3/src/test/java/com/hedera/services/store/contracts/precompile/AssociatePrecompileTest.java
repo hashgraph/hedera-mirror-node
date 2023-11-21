@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -32,6 +33,7 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdat
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -51,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -146,6 +149,15 @@ class AssociatePrecompileTest {
     @Mock
     private Token token;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private HTSPrecompiledContract subject;
     private AssociatePrecompile associatePrecompile;
     private AssociateLogic associateLogic;
@@ -157,8 +169,8 @@ class AssociatePrecompileTest {
         canonicalPrices.put(TokenAssociateToAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         associateLogic = new AssociateLogic(evmProperties);
@@ -166,7 +178,15 @@ class AssociatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(associatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -190,8 +210,7 @@ class AssociatePrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -220,8 +239,7 @@ class AssociatePrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -250,8 +268,7 @@ class AssociatePrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -271,13 +288,14 @@ class AssociatePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -297,13 +315,14 @@ class AssociatePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -335,7 +354,6 @@ class AssociatePrecompileTest {
 
     private void givenFrameContext() {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenTokenAssociate() {

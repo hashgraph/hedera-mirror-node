@@ -24,12 +24,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -47,6 +49,7 @@ import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +63,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RevokeKycPrecompileTest {
+class RevokeKycPrecompileTest {
 
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
@@ -120,6 +123,15 @@ public class RevokeKycPrecompileTest {
     @Mock
     private UsagePricesProvider resourceCosts;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private HTSPrecompiledContract subject;
     private PrecompileMapper precompileMapper;
     private RevokeKycLogic revokeKycLogic;
@@ -132,8 +144,8 @@ public class RevokeKycPrecompileTest {
         canonicalPrices.put(
                 HederaFunctionality.TokenRevokeKycFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         revokeKycLogic = new RevokeKycLogic();
@@ -141,7 +153,15 @@ public class RevokeKycPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(revokeKycPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -157,12 +177,11 @@ public class RevokeKycPrecompileTest {
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -174,6 +193,7 @@ public class RevokeKycPrecompileTest {
         // given
         givenMinimalFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
@@ -182,8 +202,7 @@ public class RevokeKycPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(REVOKE_TOKEN_KYC_INPUT, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -197,7 +216,6 @@ public class RevokeKycPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
     }
 

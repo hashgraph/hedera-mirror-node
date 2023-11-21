@@ -21,16 +21,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.time.Instant;
 import java.util.Collections;
@@ -83,6 +86,12 @@ class MirrorEvmMessageCallProcessorTest {
     @Mock
     private OperationTracer operationTracer;
 
+    @Mock
+    private GasCalculatorHederaV22 gasCalculatorHederaV22;
+
+    @Mock
+    private PrecompilesHolder precompilesHolder;
+
     @SuppressWarnings("unchecked")
     private final Map<String, PrecompiledContract> hederaPrecompileList = Collections.EMPTY_MAP;
 
@@ -90,13 +99,15 @@ class MirrorEvmMessageCallProcessorTest {
 
     @BeforeEach
     void setUp() {
+        given(precompilesHolder.getHederaPrecompiles()).willReturn(hederaPrecompileList);
         subject = new MirrorEvmMessageCallProcessor(
                 autoCreationLogic,
                 entityAddressSequencer,
                 mirrorEvmContractAliases,
                 evm,
                 precompiles,
-                hederaPrecompileList);
+                precompilesHolder,
+                gasCalculatorHederaV22);
 
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
         when(updater.getStore()).thenReturn(store);

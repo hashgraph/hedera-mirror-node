@@ -28,8 +28,6 @@ import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
@@ -67,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +97,8 @@ public class TokenFeature extends AbstractFeature {
             this.networkTransactionResponse = tokenAndResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
+        var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
+        log.info("Get token info for token {}: {}", tokenId, tokenInfo);
     }
 
     @Given("I associate account {account} with token {token}")
@@ -216,27 +215,25 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I successfully create a new token with custom fees schedule")
     public void createNewToken(List<CustomFee> customFees) {
-        createNewToken(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                customFees);
+        final var result = tokenClient.getToken(TokenNameEnum.FUNGIBLE_WITH_CUSTOM_FEES, customFees);
+        this.tokenId = result.tokenId();
+        this.networkTransactionResponse = result.response();
+        this.customFees = customFees;
     }
 
-    @Given("I successfully create a new token with freeze status {int} and kyc status {int}")
-    public void createNewToken(int freezeStatus, int kycStatus) {
-        createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
+    @Given("I successfully create a new unfrozen and granted kyc token")
+    public void createNewToken() {
+        final var response = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2);
+        this.tokenId = response.tokenId();
+        this.networkTransactionResponse = response.response();
     }
 
-    @Given("I successfully create a new nft with supplyType {string}")
-    public void createNewNft(String tokenSupplyType) {
-        createNewNft(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenSupplyType.valueOf(tokenSupplyType));
+    @Given("I successfully create a new nft with infinite supplyType")
+    public void createNewNft() {
+        final var result = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE);
+        this.networkTransactionResponse = result.response();
+        this.tokenId = result.tokenId();
+        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
     @Given("I associate {account} with token")
@@ -293,6 +290,18 @@ public class TokenFeature extends AbstractFeature {
         networkTransactionResponse = tokenClient.unpause(tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Given("I update the treasury of token to operator")
+    public void updateTokenTreasuryToOperator() {
+        try {
+            var accountId = accountClient.getAccount(AccountNameEnum.OPERATOR);
+            networkTransactionResponse = tokenClient.updateTokenTreasury(tokenId, accountId);
+        } catch (Exception exception) {
+            assertThat(exception).isInstanceOf(ReceiptStatusException.class);
+            ReceiptStatusException actualException = (ReceiptStatusException) exception;
+            assertThat(actualException.receipt.status).isEqualTo(CURRENT_TREASURY_STILL_OWNS_NFTS);
+        }
     }
 
     @Given("I update the treasury of token to {account}")
@@ -502,55 +511,6 @@ public class TokenFeature extends AbstractFeature {
 
     public ExpandedAccountId getRecipientAccountId() {
         return accountClient.getAccount(AccountNameEnum.ALICE);
-    }
-
-    private TokenId createNewToken(
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
-            TokenType tokenType,
-            TokenSupplyType tokenSupplyType,
-            List<CustomFee> customFees) {
-        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.createToken(
-                admin,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                admin,
-                INITIAL_SUPPLY,
-                tokenSupplyType,
-                MAX_SUPPLY,
-                tokenType,
-                customFees);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        this.tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-        this.customFees = customFees;
-
-        return tokenId;
-    }
-
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(
-                symbol,
-                freezeStatus,
-                kycStatus,
-                TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE,
-                Collections.emptyList());
-    }
-
-    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
-        TokenId tokenId = createNewToken(
-                symbol,
-                freezeStatus,
-                kycStatus,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                tokenSupplyType,
-                Collections.emptyList());
-        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {

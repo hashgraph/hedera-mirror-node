@@ -84,15 +84,4 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .isEqualTo(file1);
     }
-
-    @Test
-    void prune() {
-        domainBuilder.accountBalanceFile().persist();
-        var accountBalanceFile2 = domainBuilder.accountBalanceFile().persist();
-        var accountBalanceFile3 = domainBuilder.accountBalanceFile().persist();
-
-        accountBalanceFileRepository.prune(accountBalanceFile2.getConsensusTimestamp());
-
-        assertThat(accountBalanceFileRepository.findAll()).containsExactly(accountBalanceFile3);
-    }
 }

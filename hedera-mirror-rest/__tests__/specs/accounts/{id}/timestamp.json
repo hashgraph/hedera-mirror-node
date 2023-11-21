@@ -37,6 +37,11 @@
     "balances": [
       {
         "timestamp": "1234567890300000010",
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": "1234567890300000010",
         "id": 7,
         "balance": 80,
         "tokens": [
@@ -64,6 +69,11 @@
             "balance": 88
           }
         ]
+      },
+      {
+        "timestamp": 2200,
+        "id": 2,
+        "balance": 2
       },
       {
         "timestamp": 2200,

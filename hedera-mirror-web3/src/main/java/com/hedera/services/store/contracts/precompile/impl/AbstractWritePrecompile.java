@@ -16,9 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -45,13 +43,8 @@ public abstract class AbstractWritePrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(
-            long blockTimestamp,
-            final TransactionBody.Builder transactionBody,
-            final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
-        return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, mirrorEvmContractAliases);
+    public long getGasRequirement(long blockTimestamp, final TransactionBody.Builder transactionBody) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
     protected Address unalias(Address addressOrAlias, HederaEvmStackedWorldStateUpdater updater) {

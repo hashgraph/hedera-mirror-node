@@ -62,7 +62,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";
-    private static DeployedContract deployedContract;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
@@ -88,19 +87,19 @@ public class CallFeature extends AbstractFeature {
 
     @Given("I successfully create ERC contract")
     public void createNewERCtestContract() throws IOException {
-        deployedContract = getContract(ERC);
+        var deployedContract = getContract(ERC);
         ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
     public void createNewPrecompileTestContract() throws IOException {
-        deployedContract = getContract(PRECOMPILE);
+        var deployedContract = getContract(PRECOMPILE);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        deployedContract = getContract(ESTIMATE_GAS);
+        var deployedContract = getContract(ESTIMATE_GAS);
         estimateContractAddress = deployedContract.contractId().toSolidityAddress();
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
@@ -166,6 +165,14 @@ public class CallFeature extends AbstractFeature {
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
+    }
+
+    @RetryAsserts
+    @Given("I verify the precompile contract bytecode is deployed")
+    public void contractDeployed() {
+        var response = mirrorClient.getContractInfo(precompileContractAddress);
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     // ETHCALL-025
@@ -274,8 +281,10 @@ public class CallFeature extends AbstractFeature {
         validateAddresses(addresses);
     }
 
-    @Then("I successfully update the balance of an account and get the updated balance")
-    public void getBalance() {
+    @SuppressWarnings("java:S2925")
+    @RetryAsserts
+    @Then("I successfully update the balance of an account and get the updated balance after 2 seconds")
+    public void getBalance() throws InterruptedException {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
         var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
         var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
@@ -284,6 +293,8 @@ public class CallFeature extends AbstractFeature {
                 Hbar.fromTinybars(initialBalance.longValue()),
                 receiverAccountId.getPrivateKey());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
+        // wait for token cache to expire
+        Thread.sleep(2000);
         var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
     }

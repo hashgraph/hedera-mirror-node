@@ -842,7 +842,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         var balanceChange = Entity.builder()
-                .balance(domainBuilder.id())
+                .balance(domainBuilder.number())
                 .balanceTimestamp(domainBuilder.timestamp())
                 .id(entity.getId())
                 .build();
@@ -866,7 +866,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         var balanceChange = Entity.builder()
-                .balance(domainBuilder.id())
+                .balance(domainBuilder.number())
                 .balanceTimestamp(domainBuilder.timestamp())
                 .id(entity.getId())
                 .build();
@@ -1081,7 +1081,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setReceiverSigRequired(true);
         entityUpdate.setStakedAccountId(domainBuilder.id());
         entityUpdate.setStakedNodeId(-1L);
-        entityUpdate.setStakePeriodStart(domainBuilder.id());
+        entityUpdate.setStakePeriodStart(domainBuilder.number());
         entityUpdate.setSubmitKey(domainBuilder.key());
         entityUpdate.setType(ACCOUNT);
 

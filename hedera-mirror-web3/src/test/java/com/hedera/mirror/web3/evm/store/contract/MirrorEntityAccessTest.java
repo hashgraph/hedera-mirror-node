@@ -262,9 +262,9 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void fetchCodeIfPresentReturnsEmpty() {
+    void fetchCodeIfPresentReturnsNull() {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
-        assertThat(result).isEqualTo(Bytes.EMPTY);
+        assertThat(result).isNull();
     }
 }

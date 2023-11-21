@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -40,6 +41,7 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdat
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -68,6 +70,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,6 +201,15 @@ class MintPrecompileTest {
     @Mock
     private OptionValidator optionValidator;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private MintLogic mintLogic;
     private HTSPrecompiledContract subject;
     private MintPrecompile mintPrecompile;
@@ -209,8 +221,8 @@ class MintPrecompileTest {
         canonicalPrices.put(
                 HederaFunctionality.TokenMint, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         syntheticTxnFactory = new SyntheticTxnFactory();
         optionValidator = new ContextOptionValidator(evmProperties);
@@ -220,7 +232,15 @@ class MintPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(mintPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -241,8 +261,7 @@ class MintPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -265,8 +284,7 @@ class MintPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWith10Supply, result);
@@ -289,8 +307,7 @@ class MintPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
         // then:
         assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
@@ -301,6 +318,7 @@ class MintPrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var transactionBody = TransactionBody.newBuilder().setTokenMint(TokenMintTransactionBody.newBuilder());
@@ -313,8 +331,7 @@ class MintPrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_MINT_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -455,6 +472,5 @@ class MintPrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 }

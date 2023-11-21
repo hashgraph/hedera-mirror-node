@@ -31,12 +31,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -59,6 +61,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -143,6 +146,15 @@ class WipeFungiblePrecompileTest {
     @Mock
     private TokenModificationResult tokenModificationResult;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
 
@@ -154,8 +166,8 @@ class WipeFungiblePrecompileTest {
         canonicalPrices.put(
                 HederaFunctionality.TokenAccountWipe, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils =
-                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
+                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
         WipeLogic wipeLogic = new WipeLogic(evmProperties);
@@ -163,7 +175,15 @@ class WipeFungiblePrecompileTest {
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
+
+        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -180,8 +200,7 @@ class WipeFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -201,8 +220,7 @@ class WipeFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -213,6 +231,7 @@ class WipeFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
@@ -223,8 +242,7 @@ class WipeFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -280,6 +298,5 @@ class WipeFungiblePrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 }

@@ -124,7 +124,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
                         .consensusStart(timestamp - 1)
                         .count(2L)
                         .index(NUMBER)
-                        .hapiVersionMinor((int) domainBuilder.id()))
+                        .hapiVersionMinor((int) domainBuilder.number()))
                 .persist();
     }
 

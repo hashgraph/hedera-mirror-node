@@ -2,6 +2,7 @@
 apiVersion: tests.testkube.io/v1
 kind: TestTrigger
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: test-trigger-rest
   namespace: {{ .Values.testkube.namespace }}
 spec:
@@ -14,7 +15,7 @@ spec:
   event: deleted
   action: run
   execution: testsuite
-  delay: 60s
+  delay: 10s
   testSelector:
     name: test-suite-rest
     namespace: {{ .Values.testkube.namespace }}
