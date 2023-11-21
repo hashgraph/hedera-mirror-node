@@ -61,8 +61,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object address, @NonNull final long timestamp) {
+        return entityDatabaseAccessor.get(address, timestamp).map(this::accountFromEntity);
     }
 
     private Account accountFromEntity(Entity entity) {

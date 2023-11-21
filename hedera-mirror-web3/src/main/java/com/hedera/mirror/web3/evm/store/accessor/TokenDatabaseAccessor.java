@@ -55,11 +55,11 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
+    public @NonNull Optional<Token> get(@NonNull Object address, @NonNull final long timestamp) {
+        return entityDatabaseAccessor.get(address, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
     }
 
-    private Token tokenFromEntity(Entity entity) {
+    private Token tokenFromEntity(Entity entity, long timestamp) {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
@@ -109,7 +109,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
                 0L,
-                getCustomFees(entity.getId()));
+                getCustomFees(entity.getId(), timestamp));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -143,7 +143,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId) {
-        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
+    private List<CustomFee> getCustomFees(Long tokenId, long timestamp) {
+        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
     }
 }

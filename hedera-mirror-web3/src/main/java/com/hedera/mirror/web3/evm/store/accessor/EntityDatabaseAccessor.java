@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -37,14 +38,22 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address) {
+    public @NotNull Optional<Entity> get(@NotNull Object address, @NonNull final long timestamp) {
         final var castedAddress = (Address) address;
         final var addressBytes = (castedAddress).toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdNumFromEvmAddress((Address) address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
+            if (timestamp != -1) {
+                return entityRepository.findActiveByIdAndTimestamp(entityId, timestamp);
+            } else {
+                return entityRepository.findByIdAndDeletedIsFalse(entityId);
+            }
         } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+            if (timestamp != -1) {
+                return entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp);
+            } else {
+                return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+            }
         }
     }
 

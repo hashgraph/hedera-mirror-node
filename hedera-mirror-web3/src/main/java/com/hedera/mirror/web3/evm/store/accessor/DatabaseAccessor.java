@@ -40,7 +40,7 @@ public abstract class DatabaseAccessor<K, V> {
 
     // Given address return an account record from the DB
     @NonNull
-    public abstract Optional<V> get(@NonNull final K key);
+    public abstract Optional<V> get(@NonNull final K key, @NonNull final long timestamp);
 
     @NonNull
     public Class<K> getKeyClass() {

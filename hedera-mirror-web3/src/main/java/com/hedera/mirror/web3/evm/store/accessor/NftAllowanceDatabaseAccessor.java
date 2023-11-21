@@ -31,7 +31,7 @@ public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAl
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Override
-    public @NonNull Optional<NftAllowance> get(@NonNull Object key) {
+    public @NonNull Optional<NftAllowance> get(@NonNull Object key, @NonNull final long timestamp) {
         return nftAllowanceRepository.findById((Id) key);
     }
 }

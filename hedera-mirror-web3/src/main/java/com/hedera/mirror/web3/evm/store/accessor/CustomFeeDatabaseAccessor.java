@@ -43,7 +43,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId) {
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId, @NonNull final long timestamp) {
         final var customFeeOptional = customFeeRepository.findById((Long) tokenId);
         return customFeeOptional.isEmpty() ? Optional.empty() : Optional.of(mapCustomFee(customFeeOptional.get()));
     }
