@@ -406,9 +406,9 @@ public class CallFeature extends AbstractFeature {
         assertThat(results).isNotNull().hasSize(4);
 
         // BalanceBefore + amount = balanceAfter
-        assertThat(intValue(intValue(results.get(0)) + 1)).isEqualTo(intValue(results.get(1)));
+        assertThat(intValue(results.get(0)) + 1).isEqualTo(intValue(results.get(1)));
         // totalSupplyBefore + amount = totalSupplyAfter
-        assertThat(intValue(intValue(results.get(2)) + 1L)).isEqualTo(intValue(results.get(3)));
+        assertThat(intValue(results.get(2)) + 1L).isEqualTo(intValue(results.get(3)));
     }
 
     @Then("I mint NFT token and get the total supply and balance")
