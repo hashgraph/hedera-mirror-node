@@ -30,21 +30,8 @@ describe('Accounts deduplicate tests', () => {
   const nanoSecondsPerSecond = 1_000_000_000n;
   const currentNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
   const beginningOfCurrentMonth = utils.getFirstDayOfMonth(currentNs);
-
   const beginningOfPreviousMonth = utils.getFirstDayOfMonth(beginningOfCurrentMonth - 1n);
-
   const tenDaysInToPreviousMonth = beginningOfPreviousMonth + tenDaysInNs;
-  const tenDaysMinusNs = tenDaysInToPreviousMonth - 1n;
-  const tenDaysMinusSecondMinusNs = tenDaysMinusNs - nanoSecondsPerSecond;
-
-  const tenDaysMinusOneSecond = tenDaysInToPreviousMonth - nanoSecondsPerSecond;
-  const tenDaysMinusTwoSecondsOneNano = utils.nsToSecNs(tenDaysInToPreviousMonth - nanoSecondsPerSecond - 1n);
-
-  const oneSecondAfterTenDays = tenDaysInToPreviousMonth + nanoSecondsPerSecond;
-
-  const tenDaysInToPreviousMonthAndSeven = tenDaysInToPreviousMonth + 7n;
-  const tenDaysInToPreviousMonthAndSevenMinusOne = tenDaysInToPreviousMonthAndSeven - nanoSecondsPerSecond;
-
   const middleOfPreviousMonth = beginningOfPreviousMonth + fifteenDaysInNs;
 
   beforeEach(async () => {
@@ -57,21 +44,23 @@ describe('Accounts deduplicate tests', () => {
       },
       {
         balance: 80,
-        balance_timestamp: middleOfPreviousMonth,
+        balance_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n,
         num: 8,
         alias: 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ',
         public_key: '519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9',
-        timestamp_range: `[${tenDaysInToPreviousMonthAndSeven},)`,
+        timestamp_range: `[${middleOfPreviousMonth + nanoSecondsPerSecond * 7n},)`,
         staked_node_id: 1,
         staked_account_id: 1,
       },
       {
         balance: 30,
-        balance_timestamp: tenDaysInToPreviousMonth - 3n,
+        balance_timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
         num: 8,
         alias: 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ',
         public_key: '519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9',
-        timestamp_range: `[${tenDaysInToPreviousMonthAndSevenMinusOne}, ${tenDaysInToPreviousMonthAndSeven})`,
+        timestamp_range: `[${middleOfPreviousMonth + nanoSecondsPerSecond * 7n - nanoSecondsPerSecond}, ${
+          middleOfPreviousMonth + nanoSecondsPerSecond * 7n
+        })`,
         staked_node_id: 2,
         staked_account_id: 2,
       },
@@ -84,12 +73,12 @@ describe('Accounts deduplicate tests', () => {
     ]);
     await integrationDomainOps.loadBalances([
       {
-        timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond,
+        timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
         id: 2,
         balance: 2,
       },
       {
-        timestamp: beginningOfPreviousMonth + nanoSecondsPerSecond,
+        timestamp: tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n,
         id: 8,
         balance: 555,
         tokens: [
@@ -104,12 +93,7 @@ describe('Accounts deduplicate tests', () => {
         ],
       },
       {
-        timestamp: tenDaysInToPreviousMonth,
-        id: 2,
-        balance: 2,
-      },
-      {
-        timestamp: beginningOfPreviousMonth,
+        timestamp: beginningOfPreviousMonth + nanoSecondsPerSecond * 4n - nanoSecondsPerSecond,
         id: 8,
         balance: 444,
         tokens: [
@@ -130,7 +114,7 @@ describe('Accounts deduplicate tests', () => {
         token_id: '0.0.99998',
         account_id: '0.0.7',
         balance: 7,
-        created_timestamp: tenDaysMinusOneSecond - 1n,
+        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
       },
       {
         token_id: '0.0.99999',
@@ -142,13 +126,13 @@ describe('Accounts deduplicate tests', () => {
         token_id: '0.0.99998',
         account_id: '0.0.8',
         balance: 8,
-        created_timestamp: tenDaysMinusOneSecond,
+        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n,
       },
       {
         token_id: '0.0.99999',
         account_id: '0.0.8',
         balance: 88,
-        created_timestamp: tenDaysMinusOneSecond,
+        created_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
       },
     ]);
 
@@ -156,7 +140,7 @@ describe('Accounts deduplicate tests', () => {
       {
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: beginningOfPreviousMonth,
+        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 7n - 1n,
         name: 'TOKENCREATION',
         type: '29',
         entity_id: '0.0.90000',
@@ -164,7 +148,7 @@ describe('Accounts deduplicate tests', () => {
       {
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: tenDaysMinusSecondMinusNs,
+        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 5n,
         name: 'CRYPTODELETE',
         type: '12',
         entity_id: '0.0.7',
@@ -173,7 +157,7 @@ describe('Accounts deduplicate tests', () => {
         charged_tx_fee: 0,
         payerAccountId: '0.0.9',
         nodeAccountId: '0.0.3',
-        consensus_timestamp: oneSecondAfterTenDays,
+        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 15n,
         name: 'CRYPTOUPDATEACCOUNT',
         type: '15',
         entity_id: '0.0.8',
@@ -182,7 +166,7 @@ describe('Accounts deduplicate tests', () => {
 
     await integrationDomainOps.loadCryptoTransfers([
       {
-        consensus_timestamp: tenDaysMinusOneSecond,
+        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond * 4n,
         payerAccountId: '0.0.8',
         nodeAccountId: '0.0.3',
         treasuryAccountId: '0.0.98',
@@ -202,7 +186,7 @@ describe('Accounts deduplicate tests', () => {
         ],
       },
       {
-        consensus_timestamp: tenDaysInToPreviousMonth,
+        consensus_timestamp: middleOfPreviousMonth + nanoSecondsPerSecond,
         payerAccountId: '0.0.8',
         nodeAccountId: '0.0.3',
         treasuryAccountId: '0.0.98',
@@ -228,66 +212,17 @@ describe('Accounts deduplicate tests', () => {
     {
       name: 'Account with timestamp lte',
       urls: [
-        `/api/v1/accounts/0.0.8?timestamp=lte:${utils.nsToSecNs(beginningOfCurrentMonth - 1n)}`,
-        //`/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:${utils.nsToSecNs(tenDaysMinusSecondMinusNs)}`
+        `/api/v1/accounts/0.0.8?timestamp=lte:${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 6n)}`,
+        `/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:${utils.nsToSecNs(
+          middleOfPreviousMonth + nanoSecondsPerSecond * 6n
+        )}`,
       ],
       expected: {
         transactions: [
           {
             bytes: 'Ynl0ZXM=',
             charged_tx_fee: 7,
-            consensus_timestamp: `${utils.nsToSecNs(tenDaysInToPreviousMonth)}`,
-            entity_id: null,
-            max_fee: '33',
-            memo_base64: null,
-            name: 'CRYPTOTRANSFER',
-            nft_transfers: [],
-            node: '0.0.3',
-            nonce: 0,
-            parent_consensus_timestamp: null,
-            result: 'SUCCESS',
-            scheduled: false,
-            staking_reward_transfers: [],
-            token_transfers: [
-              {
-                account: '0.0.8',
-                amount: -200,
-                token_id: '0.0.90000',
-                is_approval: true,
-              },
-              {
-                account: '0.0.1679',
-                amount: 200,
-                token_id: '0.0.90000',
-                is_approval: true,
-              },
-            ],
-            transaction_hash: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w',
-            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(tenDaysMinusNs.toString())}`,
-            transfers: [
-              {
-                account: '0.0.3',
-                amount: 2,
-                is_approval: false,
-              },
-              {
-                account: '0.0.8',
-                amount: -3,
-                is_approval: false,
-              },
-              {
-                account: '0.0.98',
-                amount: 1,
-                is_approval: false,
-              },
-            ],
-            valid_duration_seconds: '11',
-            valid_start_timestamp: `${utils.nsToSecNs(tenDaysMinusNs)}`,
-          },
-          {
-            bytes: 'Ynl0ZXM=',
-            charged_tx_fee: 7,
-            consensus_timestamp: `${utils.nsToSecNs(tenDaysMinusOneSecond)}`,
+            consensus_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 4n)}`,
             entity_id: null,
             max_fee: '33',
             memo_base64: null,
@@ -300,7 +235,9 @@ describe('Accounts deduplicate tests', () => {
             scheduled: false,
             staking_reward_transfers: [],
             transaction_hash: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w',
-            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(tenDaysMinusSecondMinusNs.toString())}`,
+            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(
+              (middleOfPreviousMonth + nanoSecondsPerSecond * 4n - 1n).toString()
+            )}`,
             transfers: [
               {
                 account: '0.0.3',
@@ -333,20 +270,73 @@ describe('Accounts deduplicate tests', () => {
               },
             ],
             valid_duration_seconds: '11',
-            valid_start_timestamp: `${tenDaysMinusTwoSecondsOneNano}`,
+            valid_start_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond * 4n - 1n)}`,
+          },
+          {
+            bytes: 'Ynl0ZXM=',
+            charged_tx_fee: 7,
+            consensus_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond)}`,
+            entity_id: null,
+            max_fee: '33',
+            memo_base64: null,
+            name: 'CRYPTOTRANSFER',
+            nft_transfers: [],
+            node: '0.0.3',
+            nonce: 0,
+            parent_consensus_timestamp: null,
+            result: 'SUCCESS',
+            scheduled: false,
+            staking_reward_transfers: [],
+            token_transfers: [
+              {
+                account: '0.0.8',
+                amount: -200,
+                token_id: '0.0.90000',
+                is_approval: true,
+              },
+              {
+                account: '0.0.1679',
+                amount: 200,
+                token_id: '0.0.90000',
+                is_approval: true,
+              },
+            ],
+            transaction_hash: 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w',
+            transaction_id: `0.0.8-${utils.nsToSecNsWithHyphen(
+              (middleOfPreviousMonth + nanoSecondsPerSecond - 1n).toString()
+            )}`,
+            transfers: [
+              {
+                account: '0.0.3',
+                amount: 2,
+                is_approval: false,
+              },
+              {
+                account: '0.0.8',
+                amount: -3,
+                is_approval: false,
+              },
+              {
+                account: '0.0.98',
+                amount: 1,
+                is_approval: false,
+              },
+            ],
+            valid_duration_seconds: '11',
+            valid_start_timestamp: `${utils.nsToSecNs(middleOfPreviousMonth + nanoSecondsPerSecond - 1n)}`,
           },
         ],
         balance: {
-          timestamp: `${utils.nsToSecNs(tenDaysInToPreviousMonth)}`,
-          balance: 80,
+          timestamp: `${utils.nsToSecNs(tenDaysInToPreviousMonth + nanoSecondsPerSecond * 4n)}`,
+          balance: 555,
           tokens: [
             {
               token_id: '0.0.99998',
-              balance: 98,
+              balance: 71,
             },
             {
               token_id: '0.0.99999',
-              balance: 88,
+              balance: 72,
             },
           ],
         },
@@ -364,8 +354,8 @@ describe('Accounts deduplicate tests', () => {
         memo: 'entity memo',
         pending_reward: 0,
         receiver_sig_required: false,
-        staked_account_id: '0.0.1',
-        staked_node_id: 1,
+        staked_account_id: '0.0.2',
+        staked_node_id: 2,
         stake_period_start: null,
         links: {
           next: null,

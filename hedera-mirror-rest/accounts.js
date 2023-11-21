@@ -135,7 +135,6 @@ const getEntityBalanceQuery = (
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
   const whereCondition = [entityStakeQuery.query].filter((x) => !!x).join(' and ');
-  const orderBy = ` order by ab.consensus_timestamp desc limit 1`;
   const entityWhereCondition = [
     `e.type in ('ACCOUNT', 'CONTRACT')`,
     entityBalanceQuery.query,
@@ -156,28 +155,33 @@ const getEntityBalanceQuery = (
 
   // If timestamp parameter is present then get values from token_balance
   const queries = [];
+  let selectTokenBalance = ``;
   if (accountBalanceQuery.query) {
     queries.push(
       `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
                                        from token_balance)`
     );
+    selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+                        from (select distinct on (token_id) token_id, balance
+                              from latest_token_balance
+                              where ${tokenBalanceQuery.query}
+                              order by token_id ${order}, consensus_timestamp desc
+        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`;
   } else {
     queries.push(
       `with latest_token_balance as (select account_id, balance, token_id
                                      from token_account
                                      where associated is true)`
     );
-  }
-
-  const selectFields = [
-    entityFields,
-    `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+    selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
                         from (select token_id, balance
                               from latest_token_balance
                               where ${tokenBalanceQuery.query}
                               order by token_id ${order}
-        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`,
-  ];
+        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`;
+  }
+
+  const selectFields = [entityFields, selectTokenBalance];
 
   if (accountBalanceQuery.query) {
     const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
@@ -195,9 +199,9 @@ const getEntityBalanceQuery = (
                       where ${entityWhereCondition}
                       order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
                          left join entity_stake es on es.id = e.id
-                         left join account_balance ab on ${accountBalanceQuery.query} ${
-        whereCondition ? 'where' : ''
-      } ${whereCondition} ${orderBy}
+                         left join account_balance ab on ${accountBalanceQuery.query}
+                      ${whereCondition ? 'where' : ''} ${whereCondition}
+                      order by ab.consensus_timestamp desc limit 1
             `
     );
   } else {
@@ -414,13 +418,6 @@ const getOneAccount = async (req, res) => {
       balanceFileTsParams,
       balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte)
     );
-    // TODO remove
-    const balanceFileTs = await balances.getAccountBalanceTimestamp(
-      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
-      balanceFileTsParams,
-      order
-    );
-    // //Setting the timestamp to be the account balance timestamp
     if (tsQueryResult.consensusTsQuery) {
       tokenBalanceQuery.params.push(tsQueryResult.tsParams[0]);
       tsQueryResult.consensusTsQuery = tsQueryResult.consensusTsQuery.replace(
@@ -437,13 +434,11 @@ const getOneAccount = async (req, res) => {
       tokenBalanceQuery.params.push(undefined);
     }
 
-    // TODO Fix
     // Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
-    // const timestampExcluded = neValues.some((value) => value == balanceFileTs);
-    //
-    // if (timestampExcluded) {
-    //   throw new NotFoundError('Not found');
-    // }
+    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
+    if (timestampExcluded) {
+      throw new NotFoundError('Not found');
+    }
 
     accountBalanceQuery.query = tsQueryResult.consensusTsQuery
       ? `ab.account_id = e.id and `.concat(tsQueryResult.consensusTsQuery)
@@ -512,8 +507,7 @@ const getOneAccount = async (req, res) => {
   }
 
   if (entityResults.rows.length !== 1) {
-    // TODO FIx here
-    //throw new NotFoundError('Error: Could not get entity information');
+    throw new NotFoundError('Error: Could not get entity information');
   }
 
   const ret = processRow(entityResults.rows[0]);
