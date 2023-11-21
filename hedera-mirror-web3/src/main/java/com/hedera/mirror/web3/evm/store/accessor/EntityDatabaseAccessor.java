@@ -63,9 +63,12 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
                 : entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
     }
 
-    public Address evmAddressFromId(EntityId entityId) {
-        Entity entity =
-                entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
+    public Address evmAddressFromId(EntityId entityId, long timestamp) {
+        Entity entity = (timestamp != -1)
+                ? entityRepository
+                        .findActiveByIdAndTimestamp(entityId.getId(), timestamp)
+                        .orElse(null)
+                : entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
 
         if (entity == null) {
             return Address.ZERO;

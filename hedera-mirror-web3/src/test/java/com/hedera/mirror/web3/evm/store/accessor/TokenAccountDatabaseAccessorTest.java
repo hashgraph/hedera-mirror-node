@@ -19,20 +19,62 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final TokenAccountDatabaseAccessor tokenAccountDatabaseAccessor;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
+    @BeforeEach
+    void setup() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
+    }
 
     @Test
     void testGet() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
+                .persist();
+
+        assertThat(tokenAccountDatabaseAccessor.get(tokenAccount.getId()).get())
+                .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
+                .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
+                .returns(tokenAccount.getBalance(), TokenAccount::getBalance);
+    }
+
+    @Test
+    void testGetHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         final var tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))

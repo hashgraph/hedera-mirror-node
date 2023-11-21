@@ -19,7 +19,8 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -28,15 +29,19 @@ import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +55,11 @@ class CustomFeeDatabaseAccessorTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     private final long tokenId = 123L;
 
     private final EntityId collectorId = EntityId.of(1L, 2L, 3L);
@@ -62,7 +72,14 @@ class CustomFeeDatabaseAccessorTest {
 
     @BeforeEach
     void setup() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         customFee = new CustomFee();
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -80,8 +97,53 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee, royaltyFee2);
         customFee.setRoyaltyFees(royaltyFees);
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : royaltyFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFixedFee()).isNull();
+                assertThat(fee.getFractionalFee()).isNull();
+                var resultRoyaltyFee = fee.getRoyaltyFee();
+                assertThat(resultRoyaltyFee.getDenominator()).isEqualTo(domainFee.getDenominator());
+                assertThat(resultRoyaltyFee.getNumerator()).isEqualTo(domainFee.getNumerator());
+                assertThat(resultRoyaltyFee.getAmount())
+                        .isEqualTo(domainFee.getFallbackFee().getAmount());
+                assertThat(resultRoyaltyFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
+                assertThat(resultRoyaltyFee.isUseHbarsForPayment()).isFalse();
+                assertThat(resultRoyaltyFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
+    }
+
+    @Test
+    void royaltyFeeHistorical() {
+        var fallbackFeeBuilder = FallbackFee.builder().denominatingTokenId(denominatingTokenId);
+        var fallbackFee = fallbackFeeBuilder.amount(20L).build();
+
+        var royaltyFeeBuilder = RoyaltyFee.builder().collectorAccountId(collectorId);
+        var royaltyFee = royaltyFeeBuilder
+                .numerator(15L)
+                .denominator(10L)
+                .fallbackFee(fallbackFee)
+                .build();
+        var royaltyFee2 = royaltyFeeBuilder.numerator(16L).denominator(11L).build();
+        var royaltyFees = List.of(royaltyFee, royaltyFee2);
+        customFee.setRoyaltyFees(royaltyFees);
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var listAssert = assertThat(results).hasSize(2);
@@ -112,8 +174,40 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee);
         customFee.setRoyaltyFees(royaltyFees);
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var resultFee = results.get(0).getRoyaltyFee();
+        assertEquals(royaltyFee.getNumerator(), resultFee.getNumerator());
+        assertEquals(royaltyFee.getDenominator(), resultFee.getDenominator());
+        assertEquals(0L, resultFee.getAmount());
+        assertEquals(collectorAddress, resultFee.getFeeCollector());
+        assertEquals(EMPTY_EVM_ADDRESS, resultFee.getDenominatingTokenId());
+    }
+
+    @Test
+    void royaltyFeeNoFallbackHistorical() {
+        var royaltyFee = RoyaltyFee.builder()
+                .numerator(15L)
+                .denominator(10L)
+                .fallbackFee(null)
+                .collectorAccountId(collectorId)
+                .build();
+        var royaltyFees = List.of(royaltyFee);
+        customFee.setRoyaltyFees(royaltyFees);
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var resultFee = results.get(0).getRoyaltyFee();
@@ -144,8 +238,57 @@ class CustomFeeDatabaseAccessorTest {
         var fractionalFees = List.of(fractionalFee, fractionalFee2);
         customFee.setFractionalFees(fractionalFees);
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : fractionalFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFixedFee()).isNull();
+                assertThat(fee.getRoyaltyFee()).isNull();
+                var resultFractionalFee = fee.getFractionalFee();
+                assertThat(resultFractionalFee.getNumerator()).isEqualTo(domainFee.getNumerator());
+                assertThat(resultFractionalFee.getDenominator()).isEqualTo(domainFee.getDenominator());
+                assertThat(resultFractionalFee.getMaximumAmount()).isEqualTo(domainFee.getMaximumAmount());
+                assertThat(resultFractionalFee.getMinimumAmount()).isEqualTo(domainFee.getMinimumAmount());
+                assertThat(resultFractionalFee.getNetOfTransfers()).isEqualTo(domainFee.isNetOfTransfers());
+                assertThat(resultFractionalFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
+    }
+
+    @Test
+    void fractionFeeHistorical() {
+        var fractionalFeeBuilder = FractionalFee.builder().collectorAccountId(collectorId);
+        var fractionalFee = fractionalFeeBuilder
+                .numerator(20L)
+                .denominator(2L)
+                .maximumAmount(100L)
+                .minimumAmount(5L)
+                .netOfTransfers(true)
+                .build();
+        var fractionalFee2 = fractionalFeeBuilder
+                .numerator(21L)
+                .denominator(3L)
+                .maximumAmount(101L)
+                .minimumAmount(6L)
+                .netOfTransfers(false)
+                .build();
+        var fractionalFees = List.of(fractionalFee, fractionalFee2);
+        customFee.setFractionalFees(fractionalFees);
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var listAssert = assertThat(results).hasSize(2);
@@ -173,8 +316,45 @@ class CustomFeeDatabaseAccessorTest {
         var fixedFees = List.of(fixedFee, fixedFee2);
         customFee.setFixedFees(fixedFees);
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId)).thenReturn(collectorAddress);
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
+
+        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var listAssert = assertThat(results).hasSize(2);
+        for (var domainFee : fixedFees) {
+            listAssert.anySatisfy(fee -> {
+                assertThat(fee.getFractionalFee()).isNull();
+                assertThat(fee.getRoyaltyFee()).isNull();
+                var resultFixedFee = fee.getFixedFee();
+                assertThat(resultFixedFee.getAmount()).isEqualTo(domainFee.getAmount());
+                assertThat(resultFixedFee.isUseCurrentTokenForPayment()).isFalse();
+                assertThat(resultFixedFee.getDenominatingTokenId()).isEqualTo(toAddress(denominatingTokenId));
+                assertThat(resultFixedFee.isUseHbarsForPayment()).isFalse();
+                assertThat(resultFixedFee.getFeeCollector()).isEqualTo(collectorAddress);
+            });
+        }
+    }
+
+    @Test
+    void fixedFeeHistorical() {
+        var fixedFeeBuilder =
+                FixedFee.builder().collectorAccountId(collectorId).denominatingTokenId(denominatingTokenId);
+        var fixedFee = fixedFeeBuilder.amount(20L).build();
+        var fixedFee2 = fixedFeeBuilder.amount(21L).build();
+        var fixedFees = List.of(fixedFee, fixedFee2);
+        customFee.setFixedFees(fixedFees);
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+                .thenReturn(collectorAddress);
 
         var results = customFeeDatabaseAccessor.get(tokenId).get();
         var listAssert = assertThat(results).hasSize(2);
@@ -195,7 +375,22 @@ class CustomFeeDatabaseAccessorTest {
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
         final var noCollectorCustomFee = new CustomFee();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
+        assertThat(customFeeDatabaseAccessor.get(tokenId))
+                .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
+    }
+
+    @Test
+    void mapOnlyFeesWithCollectorAccountIdHistorical() {
+        final var noCollectorCustomFee = new CustomFee();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(noCollectorCustomFee));
         assertThat(customFeeDatabaseAccessor.get(tokenId))
                 .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
     }

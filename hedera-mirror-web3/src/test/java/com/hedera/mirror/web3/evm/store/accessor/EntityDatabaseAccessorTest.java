@@ -21,17 +21,23 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,9 +55,37 @@ class EntityDatabaseAccessorTest {
     @Mock
     private EntityRepository entityRepository;
 
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
+    @BeforeEach
+    void setup() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
+    }
+
     @Test
     void getEntityByAddress() {
         when(entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS)))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(entityDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByAddressHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(entityRepository.findActiveByIdAndTimestamp(entityIdNumFromEvmAddress(ADDRESS), 123L))
                 .thenReturn(Optional.of(mockEntity));
 
         assertThat(entityDatabaseAccessor.get(ADDRESS))
@@ -68,10 +102,30 @@ class EntityDatabaseAccessorTest {
     }
 
     @Test
+    void getEntityByAliasHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(entityRepository.findActiveByEvmAddressAndTimestamp(ALIAS_ADDRESS.toArrayUnsafe(), 123L))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
     void evmAddressFromIdReturnZeroWhenNoEntityFound() {
         when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.empty());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), -1L))
+                .isEqualTo(Address.ZERO);
+    }
+
+    @Test
+    void evmAddressFromIdReturnZeroWhenNoEntityFoundHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(0L, 123L)).thenReturn(Optional.empty());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), 123L))
                 .isEqualTo(Address.ZERO);
     }
 
@@ -80,7 +134,16 @@ class EntityDatabaseAccessorTest {
         when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
         when(mockEntity.getEvmAddress()).thenReturn(ADDRESS.toArray());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), -1L))
+                .isEqualTo(ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAddressFromEntityEvmAddressWhenPresentHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(0L, 123L)).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), 123L))
                 .isEqualTo(ADDRESS);
     }
 
@@ -90,7 +153,17 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getEvmAddress()).thenReturn(null);
         when(mockEntity.getAlias()).thenReturn(ALIAS_ADDRESS.toArray());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), -1L))
+                .isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAliasFromEntityWhenPresentAndNoEvmAddressHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(0L, 123L)).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(ALIAS_ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), 123L))
                 .isEqualTo(ALIAS_ADDRESS);
     }
 
@@ -101,6 +174,17 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getAlias()).thenReturn(null);
 
         final var entityId = EntityId.of(1L, 2L, 3L);
-        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId)).isEqualTo(toAddress(entityId));
+        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId, -1L)).isEqualTo(toAddress(entityId));
+    }
+
+    @Test
+    void evmAddressFromIdReturnToAddressByDefaultHistorical() {
+        final var entityId = EntityId.of(1L, 2L, 3L);
+        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), 123L))
+                .thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(null);
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId, 123L)).isEqualTo(toAddress(entityId));
     }
 }
