@@ -87,7 +87,6 @@ const processRow = (row) => {
 const entityFields = [
   'e.alias',
   'e.auto_renew_period',
-  'e.balance_timestamp',
   'e.created_timestamp',
   'e.decline_reward',
   'e.deleted',
@@ -145,9 +144,9 @@ const getEntityBalanceQuery = (
     .join(' and ');
   const params = utils.mergeParams(
     [],
-    tokenBalanceQuery.params,
     entityBalanceQuery.params,
     entityAccountQuery.params,
+    tokenBalanceQuery.params,
     pubKeyQuery.params,
     accountBalanceQuery.params,
     entityStakeQuery.params
@@ -157,62 +156,67 @@ const getEntityBalanceQuery = (
   const queries = [];
   let selectTokenBalance = ``;
   if (accountBalanceQuery.query) {
-    queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
-                                       from token_balance)`
-    );
     selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
-                        from (select distinct on (token_id) token_id, balance
-                              from latest_token_balance
-                              where ${tokenBalanceQuery.query}
-                              order by token_id ${order}, consensus_timestamp desc
-        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`;
+          from (
+            select distinct on (token_id) token_id, balance
+            from token_balance
+            where ${tokenBalanceQuery.query}
+            order by token_id ${order}, consensus_timestamp desc
+            limit ${tokenBalanceQuery.limit}
+          ) as account_token_balance
+        ) as token_balances`;
   } else {
-    queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id
-                                     from token_account
-                                     where associated is true)`
-    );
+    queries.push(`with latest_token_balance as (
+       select account_id, balance, token_id
+       from token_account
+       where associated is true)`);
     selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
-                        from (select token_id, balance
-                              from latest_token_balance
-                              where ${tokenBalanceQuery.query}
-                              order by token_id ${order}
-        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`;
+          from (
+            select token_id, balance
+            from latest_token_balance
+            where ${tokenBalanceQuery.query}
+            order by token_id ${order}
+            limit ${tokenBalanceQuery.limit}
+          ) as account_token_balance)
+        as token_balances`;
   }
 
   const selectFields = [entityFields, selectTokenBalance];
 
   if (accountBalanceQuery.query) {
-    const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
+    // Only happens when timestamp query parameter is present in the request, the entity balance timestamp should then
+    // be the balance snapshot timestamp
+    const balanceSelect = `${accountBalanceQuery.query} as balance`;
+    const balanceTimestampSelect = `$${accountBalanceQuery.timestampParamIndex} as balance_timestamp`;
     selectFields.push(balanceSelect);
+    selectFields.push(balanceTimestampSelect);
 
     queries.push(
       `
                 select ${selectFields.join(',\n')}
-                from (SELECT *
+                from (select *
                       from ${Entity.tableName} e
                       where ${entityWhereCondition}
-                      UNION ALL
-                      SELECT *
+                      union all
+                      select *
                       from ${Entity.historyTableName} e
                       where ${entityWhereCondition}
                       order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
                          left join entity_stake es on es.id = e.id
-                         left join account_balance ab on ${accountBalanceQuery.query}
                       ${whereCondition ? 'where' : ''} ${whereCondition}
-                      order by ab.consensus_timestamp desc limit 1
             `
     );
   } else {
     const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
     selectFields.push('e.balance as balance');
+    selectFields.push('e.balance_timestamp as balance_timestamp');
 
     queries.push(` select ${selectFields.join(',\n')}
                        from entity e
-                                left join entity_stake es on es.id = e.id
+                         left join entity_stake es on es.id = e.id
                        where ${conditions}
-                       order by e.id ${order} ${limitQuery}`);
+                       order by e.id ${order}
+                       ${limitQuery}`);
     utils.mergeParams(params, limitParams);
   }
 
@@ -252,7 +256,7 @@ const getAccountQuery = (
     const entityOnlyQuery = `
             select ${entityFields}
             from entity e
-                     left join entity_stake es on es.id = e.id
+              left join entity_stake es on es.id = e.id
             where ${entityCondition}
             order by id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`;
     return {
@@ -384,19 +388,17 @@ const getOneAccount = async (req, res) => {
   let paramCount = 0;
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const accountIdParams = [encodedId];
+  const accountIdParamIndex = ++paramCount;
   const tokenBalanceQuery = {
-    query: `account_id = $${++paramCount}`,
-    params: accountIdParams,
+    query: `account_id = $${accountIdParamIndex}`,
+    params: [],
     limit: tokenBalanceResponseLimit.singleAccount,
   };
-  const entityAccountQuery = {query: `e.id = $${paramCount}`, params: []};
-  const entityStakeQuery = {query: `(es.id = $${paramCount} OR es.id IS NULL)`, params: []};
+  const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
+  const entityStakeQuery = {query: `(es.id = $${accountIdParamIndex} OR es.id IS NULL)`, params: []};
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    tokenBalanceQuery.query += ` and consensus_timestamp >= $${++paramCount} and consensus_timestamp <= $${++paramCount}`;
-
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
@@ -406,7 +408,7 @@ const getOneAccount = async (req, res) => {
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
-    const [balanceFileTsQuery, balanceFileTsParams] = utils.buildTimestampQuery(
+    const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
       tsRange,
       'consensus_timestamp',
       neValues,
@@ -414,28 +416,31 @@ const getOneAccount = async (req, res) => {
       false
     );
 
-    const tsQueryResult = await balances.getTsQuery(
-      balanceFileTsParams,
-      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte)
+    const {lower, upper} = await balances.getAccountBalanceTimestampRange(
+      balanceSnapshotTsQuery.replaceAll(opsMap.eq, opsMap.lte),
+      balanceSnapshotTsParams
     );
-    if (tsQueryResult.consensusTsQuery) {
-      tokenBalanceQuery.params.push(tsQueryResult.tsParams[0]);
-      tsQueryResult.consensusTsQuery = tsQueryResult.consensusTsQuery.replace(
-        '?',
-        (_) => `$${tokenBalanceQuery.params.length}`
-      );
-      tokenBalanceQuery.params.push(tsQueryResult.tsParams[1]);
-      tsQueryResult.consensusTsQuery = tsQueryResult?.consensusTsQuery.replace(
-        '?',
-        (_) => `$${tokenBalanceQuery.params.length}`
-      );
-    } else {
-      tokenBalanceQuery.params.push(undefined, undefined);
-    }
+    if (upper !== undefined) {
+      // Note when a balance snapshot timestamp is not found, it falls back to return balance info from entity table
+      const lowerTimestampParamIndex = ++paramCount;
+      const upperTimestampParamIndex = ++paramCount;
+      // Note if no balance info for the specific account in the timestamp range is found, the balance should be 0.
+      // It can happen when the account is just created and the very first snapshot is after the range.
+      accountBalanceQuery.query = `coalesce((
+        select balance
+        from account_balance
+        where account_id = $${accountIdParamIndex} and
+          consensus_timestamp >= $${lowerTimestampParamIndex} and
+          consensus_timestamp <= $${upperTimestampParamIndex}
+        order by consensus_timestamp desc
+        limit 1
+      ), 0)`;
+      accountBalanceQuery.timestampParamIndex = upperTimestampParamIndex;
 
-    accountBalanceQuery.query = tsQueryResult.consensusTsQuery
-      ? `ab.account_id = e.id and `.concat(tsQueryResult.consensusTsQuery)
-      : `ab.account_id = e.id`;
+      tokenBalanceQuery.params.push(lower, upper);
+      tokenBalanceQuery.query += ` and consensus_timestamp >= $${lowerTimestampParamIndex} and
+        consensus_timestamp <= $${upperTimestampParamIndex}`;
+    }
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(
@@ -451,7 +456,6 @@ const getOneAccount = async (req, res) => {
     logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${utils.JSONStringify(entityParams)}`);
   }
 
-  let test = await pool.queryQuietly(pgEntityQuery, entityParams);
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
@@ -484,7 +488,6 @@ const getOneAccount = async (req, res) => {
       logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
     }
 
-    let test = await pool.queryQuietly(pgTransactionsQuery, innerParams);
     // Execute query & get a promise
     transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
   } else {
