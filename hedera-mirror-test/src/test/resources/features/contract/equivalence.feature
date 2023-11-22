@@ -1,7 +1,7 @@
 @contractbase @fullsuite @equivalence
 Feature: in-equivalence tests
 
-  Scenario Outline: Validate in-equivalence system accounts negative tests
+  Scenario Outline: Validate in-equivalence system accounts for balance, extcodesize, extcodecopy, extcodehash
     Given I successfully create selfdestruct contract
     Given I successfully create equivalence call contract
     Given I successfully create estimate precompile contract
@@ -45,11 +45,17 @@ Feature: in-equivalence tests
     Then I verify extcodecopy opcode against a system account "0.0.999" address returns empty bytes
     Then I verify extcodehash opcode against a system account "0.0.999" address returns empty bytes
 
-  Scenario Outline: Validate in-equivalence tests for internal calls
+  Scenario Outline: Validate in-equivalence tests for different calls
     Given I successfully create equivalence call contract
     Given I ensure token "FUNGIBLE" has been created
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
+    Then I execute directCall to "0.0.0" address without amount
+    Then I execute directCall to "0.0.0" address with amount 10000
+    Then I make internal call to ethereum precompile "0.0.1" address with amount
+    Then I make internal call to ethereum precompile "0.0.9" address with amount
+    Then I make internal call to system account "0.0.357" without amount
+    Then I make internal call to system account "0.0.357" with amount
     Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" without amount
     Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" with amount
     Then I execute internal call against PRNG precompile address without amount

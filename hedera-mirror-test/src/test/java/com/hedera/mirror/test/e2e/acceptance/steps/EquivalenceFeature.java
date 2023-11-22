@@ -18,9 +18,10 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,6 +30,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
@@ -49,6 +51,7 @@ public class EquivalenceFeature extends AbstractFeature {
     private final TokenClient tokenClient;
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
+    private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
     private DeployedContract deployedEquivalenceDestruct;
@@ -76,13 +79,14 @@ public class EquivalenceFeature extends AbstractFeature {
     @Given("I successfully create estimate precompile contract")
     public void createNewEstimatePrecompileContract() throws IOException {
         deployedPrecompileContract = getContract(ESTIMATE_PRECOMPILE);
-        precompileContractSolidityAddress =
-                deployedEquivalenceCall.contractId().toSolidityAddress();
+        precompileContractSolidityAddress = deployedEquivalenceCall.contractId().toSolidityAddress();
     }
 
     @Then("the mirror node REST API should return status {int} for the contracts creation")
     public void verifyMirrorAPIResponse(int status) {
-        verifyMirrorTransactionsResponse(mirrorClient, status);
+        if (networkTransactionResponse != null) {
+            verifyMirrorTransactionsResponse(mirrorClient, status);
+        }
     }
 
     @Then("I execute selfdestruct and set beneficiary to invalid {string} address")
@@ -158,6 +162,24 @@ public class EquivalenceFeature extends AbstractFeature {
         tokenClient.associate(deployedEquivalenceCall.contractId(), tokenId);
     }
 
+    @Then("I execute directCall to {string} address without amount")
+    public void directCallToZeroAddressWithoutAmount(String address) {
+        var contractId = new ContractId(extractAccountNumber(address));
+        var message = makeDirectCall(contractId, "destroyContract", null, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_CONTRACT_ID", extractedStatus);
+    }
+
+    @Then("I execute directCall to {string} address with amount {int}")
+    public void directCallToZeroAddressWithAmount(String address, int amount) {
+        var contractId = new ContractId(extractAccountNumber(address));
+        var message = makeDirectCall(contractId, "destroyContract", null, Hbar.fromTinybars(amount));
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_CONTRACT_ID", extractedStatus);
+    }
+
     @Then("I execute internal call against HTS precompile with approve function for {token} without amount")
     public void executeInternalCallForHTSApprove(TokenNameEnum tokenName) {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
@@ -218,6 +240,7 @@ public class EquivalenceFeature extends AbstractFeature {
                 deployedEquivalenceCall, "exchangeRateWithAmount", parameters, Hbar.fromTinybars(10L));
         // POTENTIAL BUG
         // THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+        // AMOUNT REACHES ONLY THE CONTRACT(deployedEquivalenceCall)
     }
 
     @Then("I make internal call to system account {string} with amount")
@@ -228,6 +251,7 @@ public class EquivalenceFeature extends AbstractFeature {
                 deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(100L));
         // POTENTIAL BUG
         // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_FEE_SUBMITTED
+        // TOP LEVEL TRANSACTION IS SUCCESS
         // WAITING TO BE CLARIFIED
     }
 
@@ -239,7 +263,18 @@ public class EquivalenceFeature extends AbstractFeature {
                 executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
         // POTENTIAL BUG
         // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_SOLIDITY_ADDRESS
+        // TOP LEVEL TRANSACTION IS SUCCESS
         // WAITING TO BE CLARIFIED
+    }
+
+    @Then("I make internal call to ethereum precompile {string} address with amount")
+    public void internalCallToEthPrecompileWithAmount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(10L));
+        var message = extractInternalCallErrorMessage(transactionId);
+        assertEquals(INVALID_FEE_SUBMITTED, message);
     }
 
     private static long extractAccountNumber(String account) {
@@ -259,6 +294,16 @@ public class EquivalenceFeature extends AbstractFeature {
         }
 
         return "Status not found";
+    }
+
+    public String extractInternalCallErrorMessage(String transactionId) throws IllegalArgumentException {
+        var actions = mirrorClient.getContractActions(transactionId).getActions();
+        if (actions == null || actions.size() < 2) {
+            throw new IllegalArgumentException("The actions list must contain at least two elements.");
+        }
+
+        String hexString = actions.get(1).getResultData();
+        return hexToAscii(hexString.replace("0x", ""));
     }
 
     private String executeContractCallTransaction(
@@ -308,6 +353,50 @@ public class EquivalenceFeature extends AbstractFeature {
             // Return the exception message
             return e.getMessage();
         }
+    }
+
+    private String makeDirectCall(
+            ContractId contractId, String functionName, ContractFunctionParameters parameters, Hbar payableAmount) {
+        try {
+            ExecuteContractResult executeContractResult = contractClient.executeContract(
+                    contractId,
+                    contractClient
+                            .getSdkClient()
+                            .getAcceptanceTestProperties()
+                            .getFeatureProperties()
+                            .getMaxContractFunctionGas(),
+                    functionName,
+                    parameters,
+                    payableAmount);
+
+            networkTransactionResponse = executeContractResult.networkTransactionResponse();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            return "Transaction successful";
+        } catch (Exception e) {
+            // Return the exception message
+            return e.getMessage();
+        }
+    }
+
+    private String executeContractCallTransactionAndReturnId(
+            DeployedContract deployedContract,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount) {
+        ExecuteContractResult executeContractResult = contractClient.executeContract(
+                deployedContract.contractId(),
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                functionName,
+                parameters,
+                payableAmount);
+
+        networkTransactionResponse = executeContractResult.networkTransactionResponse();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        return networkTransactionResponse.getTransactionIdStringNoCheckSum();
     }
 
     private ContractFunctionResult executeContractCallQuery(
