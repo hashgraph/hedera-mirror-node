@@ -32,7 +32,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class ParserContext {
 
-    private final Map<Class<?>, DomainContext<?>> state = new ConcurrentSkipListMap<>(DomainClassComparator.INSTANCE);
+    private final Map<Class<?>, DomainContext<?>> state = new ConcurrentSkipListMap<>(new DomainClassComparator());
 
     public <T> void add(@NonNull T object) {
         var domainContext = getDomainContext(object);
@@ -47,7 +47,7 @@ public class ParserContext {
         }
     }
 
-    public <T> void drainTo(@NonNull Consumer<Collection<?>> sink) {
+    public void drainTo(@NonNull Consumer<Collection<?>> sink) {
         state.forEach((c, v) -> sink.accept(v.getInserts()));
         state.clear();
     }

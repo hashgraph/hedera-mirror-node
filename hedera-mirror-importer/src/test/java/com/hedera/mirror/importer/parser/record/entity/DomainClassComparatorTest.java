@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import static com.hedera.mirror.importer.parser.record.entity.DomainClassComparator.INSTANCE;
 import static com.hedera.mirror.importer.parser.record.entity.DomainClassComparator.ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,16 +33,19 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 class DomainClassComparatorTest {
+
+    private static final DomainClassComparator COMPARATOR = new DomainClassComparator();
+
     @Test
     void compare() {
-        assertThat(INSTANCE.compare(Entity.class, TokenAccount.class)).isNegative();
-        assertThat(INSTANCE.compare(TransactionSignature.class, TokenAccount.class))
+        assertThat(COMPARATOR.compare(Entity.class, TokenAccount.class)).isNegative();
+        assertThat(COMPARATOR.compare(TransactionSignature.class, TokenAccount.class))
                 .isNegative();
-        assertThat(INSTANCE.compare(Token.class, TokenAccount.class)).isNegative();
-        assertThat(INSTANCE.compare(TokenAccount.class, Token.class)).isPositive();
-        assertThat(INSTANCE.compare(Token.class, Token.class)).isZero();
-        assertThat(INSTANCE.compare(TokenAccount.class, TokenAccount.class)).isZero();
-        assertThat(INSTANCE.compare(TokenAccount.class, DissociateTokenTransfer.class))
+        assertThat(COMPARATOR.compare(Token.class, TokenAccount.class)).isNegative();
+        assertThat(COMPARATOR.compare(TokenAccount.class, Token.class)).isPositive();
+        assertThat(COMPARATOR.compare(Token.class, Token.class)).isZero();
+        assertThat(COMPARATOR.compare(TokenAccount.class, TokenAccount.class)).isZero();
+        assertThat(COMPARATOR.compare(TokenAccount.class, DissociateTokenTransfer.class))
                 .isNegative();
     }
 
@@ -51,14 +53,14 @@ class DomainClassComparatorTest {
     void compareOrdered() {
         var randomOrder = new ArrayList<>(ORDER);
         Collections.shuffle(randomOrder);
-        var sortedOrder = new TreeSet<>(INSTANCE);
+        var sortedOrder = new TreeSet<>(COMPARATOR);
         sortedOrder.addAll(randomOrder);
         assertThat(sortedOrder).containsExactlyElementsOf(ORDER);
     }
 
     @Test
     void sortedMap() {
-        var map = new TreeMap<Class<?>, Integer>(INSTANCE);
+        var map = new TreeMap<Class<?>, Integer>(COMPARATOR);
         map.put(TokenAccount.class, 0);
         map.put(Entity.class, 1);
         map.put(CryptoTransfer.class, 2);

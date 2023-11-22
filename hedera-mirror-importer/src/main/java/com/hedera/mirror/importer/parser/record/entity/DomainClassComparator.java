@@ -39,8 +39,6 @@ import java.util.stream.IntStream;
  */
 class DomainClassComparator implements Comparator<Class<?>> {
 
-    static final DomainClassComparator INSTANCE = new DomainClassComparator();
-
     // Potentially we could add a dependsOn parameter to @Upsertable and inject the EntityMetadataRegistry for this
     static final List<Class<?>> ORDER = List.of(
             Token.class, // Token should persist before TokenAccount
