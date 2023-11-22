@@ -1,6 +1,13 @@
 {
   "description": "Get messages with non existing topic id but valid messages (partial mirror node)",
   "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
     "accounts": [],
     "balances": [],
     "transactions": [],
@@ -9,6 +16,14 @@
       {
         "consensus_timestamp": "1234567890000000001",
         "sequence_number": 1,
+        "topic_id": 7
+      }
+    ],
+    "topicmessagelookups": [
+      {
+        "partition": "topic_message_p2020_07",
+        "timestamp_range": "[1234567890000000001,1234567890000000004)",
+        "sequence_number_range": "[1,4)",
         "topic_id": 7
       }
     ]

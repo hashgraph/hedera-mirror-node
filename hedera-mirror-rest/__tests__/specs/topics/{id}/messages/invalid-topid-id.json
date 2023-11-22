@@ -1,6 +1,13 @@
 {
   "description": "Get messages with invalid topic num",
   "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
     "accounts": [],
     "balances": [],
     "transactions": [],

@@ -66,6 +66,7 @@ const setup = async (testDataJson) => {
   await loadSchedules(testDataJson.schedules);
   await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
+  await loadTopicMessageLookups(testDataJson.topicmessagelookups);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
   await loadTokenAllowances(testDataJson.tokenAllowances);
@@ -435,6 +436,16 @@ const loadTopicMessages = async (messages) => {
 
   for (const message of messages) {
     await addTopicMessage(message);
+  }
+};
+
+const loadTopicMessageLookups = async (messages) => {
+  if (messages == null) {
+    return;
+  }
+
+  for (const message of messages) {
+    await addTopicMessageLookup(message);
   }
 };
 
@@ -1194,6 +1205,20 @@ const addTopicMessage = async (message) => {
   await insertDomainObject(table, insertFields, message);
 };
 
+const addTopicMessageLookup = async (message) => {
+  const insertFields = ['partition', 'timestamp_range', 'sequence_number_range', 'topic_id'];
+
+  const table = 'topic_message_lookup';
+
+  message = {
+    partition: null,
+    timestamp_range: null,
+    sequence_number_range: null,
+    ...message,
+  };
+
+  await insertDomainObject(table, insertFields, message);
+};
 const addSchedule = async (schedule) => {
   schedule = {
     creator_account_id: '0.0.1024',

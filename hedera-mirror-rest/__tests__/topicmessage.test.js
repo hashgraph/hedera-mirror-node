@@ -155,7 +155,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                          lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                          from topic_message_lookup
                          where topic_id = $1
-                           and sequence_number_range && '[2,5]'::int8range
+                           and sequence_number_range && '[2,2]'::int8range
                          order by sequence_number_range desc
                          limit 3`;
     assertSqlQueryEqual(query, expectedQuery);
@@ -412,7 +412,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     const expectedQuery = `select * from topic_message 
     where topic_id = $1 
     and consensus_timestamp <= $2 
-    and sequence_number = (select MIN(lower(sequence_number_range))
+    and sequence_number >= (select MIN(lower(sequence_number_range))
                            from topic_message_lookup where topic_id = $1) 
      order by consensus_timestamp asc limit $3;`;
     assertSqlQueryEqual(query, expectedQuery);
@@ -449,7 +449,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     const expectedQuery = `select * from topic_message 
     where topic_id = $1 
     and consensus_timestamp <= $2 
-    and sequence_number = (select MAX(upper(sequence_number_range))
+    and sequence_number <= (select MAX(upper(sequence_number_range))
                            from topic_message_lookup where topic_id = $1) 
      order by consensus_timestamp desc limit $3;`;
     assertSqlQueryEqual(query, expectedQuery);

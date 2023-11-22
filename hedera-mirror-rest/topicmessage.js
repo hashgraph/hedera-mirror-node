@@ -192,6 +192,8 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
         }
         equal = filter;
         lowerLimit = Number(filter.value);
+        upperLimit = Number(filter.value);
+        continue;
       }
       if (filter.operator === utils.opsMap.ne) {
         throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${filter.key}`);
@@ -218,9 +220,9 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
       }
     }
   }
-  // check for null
+  // If the range built is empty shortcut with an empty response
   if (lowerLimit !== undefined && upperLimit !== undefined) {
-    if (lowerLimit === upperLimit) {
+    if (lowerLimit > upperLimit) {
       // need to return an empty response
       return null;
     }
@@ -277,13 +279,16 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
     pgSqlParams.push(filter.value);
   }
 
+  // Query the topic_message_lookup table only for V2
   if (config.query.v2.topicMessageLookups) {
+    // If there is no sequence number in the request URL,
+    // query the topic_message_lookup table for either the min or max sequence number depending on order.
     if (!hasSequenceNumberForV2) {
       if (order === constants.orderFilterValues.ASC) {
-        pgSqlQuery += ` and sequence_number = (select MIN(lower(sequence_number_range)) 
+        pgSqlQuery += ` and sequence_number >= (select MIN(lower(sequence_number_range)) 
       from topic_message_lookup where ${TopicMessageLookup.TOPIC_ID} = $1)`;
       } else {
-        pgSqlQuery += ` and sequence_number = (select MAX(upper(sequence_number_range)) 
+        pgSqlQuery += ` and sequence_number <= (select MAX(upper(sequence_number_range)) 
       from topic_message_lookup where ${TopicMessageLookup.TOPIC_ID} = $1)`;
       }
     } else {

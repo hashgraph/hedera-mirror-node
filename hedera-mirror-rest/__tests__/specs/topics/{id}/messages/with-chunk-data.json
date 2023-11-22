@@ -1,6 +1,13 @@
 {
   "description": "Get topic messages with no arguments where one message has a saved protobuf initial_transaction_id",
   "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
     "accounts": [
       {
         "num": 7,
@@ -34,6 +41,14 @@
         "sequence_number": 3,
         "topic_id": 7,
         "valid_start_timestamp": "1234567890000000000"
+      }
+    ],
+    "topicmessagelookups": [
+      {
+        "partition": "topic_message_p2020_07",
+        "timestamp_range": "[1234567890000000001,1234567890000000004)",
+        "sequence_number_range": "[1,4)",
+        "topic_id": 7
       }
     ]
   },
