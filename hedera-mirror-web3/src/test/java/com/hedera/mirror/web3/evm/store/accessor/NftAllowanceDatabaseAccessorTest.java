@@ -63,11 +63,10 @@ class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
 
     @Test
     void testGetHistorical() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-
         final var allowance = domainBuilder.nftAllowance().persist();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(allowance.getTimestampLower());
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
 
         assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId())).contains(allowance);
     }

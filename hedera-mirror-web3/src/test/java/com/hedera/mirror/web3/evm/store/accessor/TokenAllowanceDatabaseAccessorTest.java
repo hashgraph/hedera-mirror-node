@@ -65,11 +65,11 @@ class TokenAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
     }
 
     @Test
-    void testGetHisotrical() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+    void testGetHistorical() {
         final var tokenAllowance = domainBuilder.tokenAllowance().persist();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(tokenAllowance.getTimestampLower());
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
 
         assertThat(tokenAllowanceDatabaseAccessor.get(tokenAllowance.getId()))
                 .get()

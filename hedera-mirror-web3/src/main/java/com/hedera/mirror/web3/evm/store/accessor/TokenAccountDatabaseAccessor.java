@@ -36,7 +36,7 @@ public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Object, Token
         final var historicalRecordFile = ContractCallContext.get().getRecordFile();
         final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
         final var tokenAccountId = (AbstractTokenAccount.Id) key;
-        return (timestamp != 1)
+        return (timestamp != -1)
                 ? tokenAccountRepository.findByIdAndTimestamp(
                         tokenAccountId.getAccountId(), tokenAccountId.getTokenId(), timestamp)
                 : tokenAccountRepository.findById(tokenAccountId);

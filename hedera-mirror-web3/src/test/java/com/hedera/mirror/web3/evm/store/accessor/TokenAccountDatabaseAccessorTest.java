@@ -56,13 +56,13 @@ class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
 
     @Test
     void testGet() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         final var tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
                 .persist();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(tokenAccount.getTimestampLower());
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
 
         assertThat(tokenAccountDatabaseAccessor.get(tokenAccount.getId()).get())
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
@@ -72,13 +72,13 @@ class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
 
     @Test
     void testGetHistorical() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         final var tokenAccount = domainBuilder
                 .tokenAccount()
                 .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
                 .persist();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(tokenAccount.getTimestampLower());
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
 
         assertThat(tokenAccountDatabaseAccessor.get(tokenAccount.getId()).get())
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)

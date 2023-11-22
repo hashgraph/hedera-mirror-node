@@ -121,7 +121,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
 
     private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(Long ownerId, long timestamp) {
         final var tokenAllowances = (timestamp != -1)
-                ? tokenAllowanceRepository.findByOwnerAndTimestmap(ownerId, timestamp)
+                ? tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp)
                 : tokenAllowanceRepository.findByOwner(ownerId);
         return tokenAllowances.stream()
                 .collect(Collectors.toMap(

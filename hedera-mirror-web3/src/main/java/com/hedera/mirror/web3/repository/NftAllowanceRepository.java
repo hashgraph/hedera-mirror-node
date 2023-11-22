@@ -34,7 +34,23 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     Optional<NftAllowance> findById(Id id);
 
     // TODO
-    Optional<NftAllowance> findByIdAndTimestamp(Id key, long timestamp);
+    @Query(
+            value =
+                    """
+                    select * from (
+                        select * from nft_allowance
+                        where token_id = :tokenId
+                        and lower(timestamp_range) <= :blockTimestamp
+                        union all
+                            select * from nft_allowance_history
+                            where token_id = :tokenId
+                            and lower(timestamp_range) <= :blockTimestamp
+                    ) as na
+                    order by timestamp_range desc
+                    limit 1;
+                    """,
+            nativeQuery = true)
+    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long blockTimestamp);
 
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 

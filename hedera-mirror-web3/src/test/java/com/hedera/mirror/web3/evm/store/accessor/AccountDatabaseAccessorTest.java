@@ -329,7 +329,7 @@ class AccountDatabaseAccessorTest {
         final var recordFile = new RecordFile();
         recordFile.setConsensusEnd(123L);
         when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(tokenAllowanceRepository.findByOwnerAndTimestmap(entity.getId(), recordFile.getConsensusEnd()))
+        when(tokenAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), recordFile.getConsensusEnd()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedMap<FcTokenAllowanceId, Long> allowancesMap = new TreeMap<>();

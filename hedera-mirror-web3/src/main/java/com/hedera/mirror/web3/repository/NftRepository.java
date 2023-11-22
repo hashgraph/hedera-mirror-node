@@ -91,5 +91,16 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
     long countByAccountIdNotDeleted(Long accountId);
 
     // TODO
-    long countByAccountIdAndTimestampNotDeleted(Long accountId, long timestamp);
+    @Query(
+            value =
+                    """
+                    select count(*) from Nft n
+                    join Entity e on e.id = n.token_id
+                    where n.account_id=:accountId
+                    and n.deleted is false
+                    and e.deleted is not true
+                    n.timestamp_range < int8_range(:blockTimestamp, null)
+                    """,
+            nativeQuery = true)
+    long countByAccountIdAndTimestampNotDeleted(long accountId, long blockTimestamp);
 }

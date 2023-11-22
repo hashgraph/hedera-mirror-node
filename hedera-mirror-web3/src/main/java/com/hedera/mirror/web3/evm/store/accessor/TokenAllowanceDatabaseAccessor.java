@@ -36,9 +36,10 @@ public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, Tok
         final var historicalRecordFile = ContractCallContext.get().getRecordFile();
         final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
         final var tokenAllowanceId = (AbstractTokenAllowance.Id) key;
-        return (timestamp != 1)
-                ? tokenAllowanceRepository.findByIdAndTimestamp(
-                        tokenAllowanceId.getSpender(), tokenAllowanceId.getTokenId(), timestamp)
+        return (timestamp != -1)
+                ? Optional.ofNullable(tokenAllowanceRepository
+                        .findByOwnerAndTimestamp(tokenAllowanceId.getOwner(), timestamp)
+                        .get(0))
                 : tokenAllowanceRepository.findById(tokenAllowanceId);
     }
 }

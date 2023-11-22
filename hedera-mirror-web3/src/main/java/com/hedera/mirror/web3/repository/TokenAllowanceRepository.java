@@ -34,10 +34,10 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
     @Cacheable(cacheNames = CACHE_NAME_TOKEN_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<TokenAllowance> findById(Id id);
 
-    List<TokenAllowance> findByOwner(long owner);
+    // TODO might need this
+    //    Optional<TokenAllowance> findByIdAndTimestamp(long tokenId, long blockTimestamp);
 
-    // TODO
-    Optional<TokenAllowance> findByIdAndTimestamp(long spender, long tokenId, long timestamp);
+    List<TokenAllowance> findByOwner(long owner);
     /**
      * Retrieves the most recent state of the token allowances by their owner id up to a given block timestamp.
      * It takes into account the token transfers that happened up to the given block timestamp, sums them up

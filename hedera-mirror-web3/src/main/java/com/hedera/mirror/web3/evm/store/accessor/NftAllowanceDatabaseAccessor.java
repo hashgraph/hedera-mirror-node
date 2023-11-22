@@ -36,7 +36,7 @@ public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAl
         final var historicalRecordFile = ContractCallContext.get().getRecordFile();
         final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
         return (timestamp != -1)
-                ? nftAllowanceRepository.findByIdAndTimestamp((Id) key, timestamp)
+                ? nftAllowanceRepository.findByIdAndTimestamp(((Id) key).getTokenId(), timestamp)
                 : nftAllowanceRepository.findById((Id) key);
     }
 }
