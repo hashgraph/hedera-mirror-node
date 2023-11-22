@@ -152,11 +152,18 @@ const getEntityBalanceQuery = (
     entityStakeQuery.params
   );
 
-  // If timestamp parameter is present then get values from token_balance
+  // Need historical balance info if the generated query for account balance is not empty or forced to use balance info
+  // from entity / entity_history union. The latter happens when given the timestamp query params in the request, no
+  // valid balance timestamp snapshot is found.
+  const needHistoricalBalanceInfo = accountBalanceQuery.query || accountBalanceQuery.forceUnionEntityHistory;
   const queries = [];
-  let selectTokenBalance = ``;
-  if (accountBalanceQuery.query) {
-    selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+  let selectTokenBalance;
+  if (needHistoricalBalanceInfo) {
+    // Return empty array if forceUnionEntityHistory is true, because there is no token balance info wrt the entity
+    // balance timestamp
+    selectTokenBalance = accountBalanceQuery.query
+      ? `(
+          select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
           from (
             select distinct on (token_id) token_id, balance
             from token_balance
@@ -164,7 +171,8 @@ const getEntityBalanceQuery = (
             order by token_id ${order}, consensus_timestamp desc
             limit ${tokenBalanceQuery.limit}
           ) as account_token_balance
-        ) as token_balances`;
+        ) as token_balances`
+      : "'[]'::jsonb as token_balances";
   } else {
     queries.push(`with latest_token_balance as (
        select account_id, balance, token_id
@@ -181,45 +189,40 @@ const getEntityBalanceQuery = (
         as token_balances`;
   }
 
-  const selectFields = [entityFields, selectTokenBalance];
+  let balanceField = 'e.balance as balance';
+  let balanceTimestampField = 'e.balance_timestamp as balance_timestamp';
+  let entityTable;
+  let orderClause;
+  let whereClause;
 
-  if (accountBalanceQuery.query) {
-    // Only happens when timestamp query parameter is present in the request, the entity balance timestamp should then
-    // be the balance snapshot timestamp
-    const balanceSelect = `${accountBalanceQuery.query} as balance`;
-    const balanceTimestampSelect = `$${accountBalanceQuery.timestampParamIndex} as balance_timestamp`;
-    selectFields.push(balanceSelect);
-    selectFields.push(balanceTimestampSelect);
+  if (needHistoricalBalanceInfo) {
+    if (accountBalanceQuery.query) {
+      balanceField = `${accountBalanceQuery.query} as balance`;
+      balanceTimestampField = `$${accountBalanceQuery.timestampParamIndex} as balance_timestamp`;
+    }
 
-    queries.push(
-      `
-                select ${selectFields.join(',\n')}
-                from (select *
-                      from ${Entity.tableName} e
-                      where ${entityWhereCondition}
-                      union all
-                      select *
-                      from ${Entity.historyTableName} e
-                      where ${entityWhereCondition}
-                      order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
-                         left join entity_stake es on es.id = e.id
-                      ${whereCondition ? 'where' : ''} ${whereCondition}
-            `
-    );
+    entityTable = `(
+        select *
+        from ${Entity.tableName} as e
+        where ${entityWhereCondition}
+        union all
+        select *
+        from ${Entity.historyTableName} as e
+        where ${entityWhereCondition}
+        order by ${Entity.TIMESTAMP_RANGE} desc limit 1
+      )`;
   } else {
-    const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
-    selectFields.push('e.balance as balance');
-    selectFields.push('e.balance_timestamp as balance_timestamp');
-
-    queries.push(` select ${selectFields.join(',\n')}
-                       from entity e
-                         left join entity_stake es on es.id = e.id
-                       where ${conditions}
-                       order by e.id ${order}
-                       ${limitQuery}`);
+    entityTable = 'entity';
+    whereClause = `where ${[entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ')}`;
+    orderClause = `order by e.id ${order}`;
     utils.mergeParams(params, limitParams);
   }
 
+  const selectFields = [entityFields, selectTokenBalance, balanceField, balanceTimestampField];
+  queries.push(`select ${selectFields.join(',\n')}
+    from ${entityTable} as e
+      left join entity_stake as es on es.id = e.id
+    ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
   return {query, params};
@@ -385,10 +388,10 @@ const getOneAccount = async (req, res) => {
     eqValues
   );
 
-  let paramCount = 0;
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const accountIdParamIndex = ++paramCount;
+  const accountIdParamIndex = 1;
+  let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
     query: `account_id = $${accountIdParamIndex}`,
     params: [],
@@ -420,6 +423,7 @@ const getOneAccount = async (req, res) => {
       balanceSnapshotTsQuery.replaceAll(opsMap.eq, opsMap.lte),
       balanceSnapshotTsParams
     );
+
     if (upper !== undefined) {
       // Note when a balance snapshot timestamp is not found, it falls back to return balance info from entity table
       const lowerTimestampParamIndex = ++paramCount;
@@ -440,6 +444,11 @@ const getOneAccount = async (req, res) => {
       tokenBalanceQuery.params.push(lower, upper);
       tokenBalanceQuery.query += ` and consensus_timestamp >= $${lowerTimestampParamIndex} and
         consensus_timestamp <= $${upperTimestampParamIndex}`;
+    } else {
+      // force the query to union entity and entity history in case a valid balance snapshot is not found, so the balance
+      // and its timestamp can be returned from the union
+      accountBalanceQuery.forceUnionEntityHistory = true;
+      tokenBalanceQuery.query = '';
     }
   }
 

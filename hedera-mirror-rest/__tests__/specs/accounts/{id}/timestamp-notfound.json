@@ -1,0 +1,53 @@
+{
+  "description": "Account api calls for specific account using path and transaction timestamp lte filter",
+  "setup": {
+    "accounts": [
+      {
+        "balance": 80,
+        "balance_timestamp": "1234567890000000004",
+        "num": 8,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+        "timestamp_range": "[1234567890000000007,)",
+        "staked_node_id": 1,
+        "staked_account_id": 1
+      },
+      {
+        "balance": 30,
+        "balance_timestamp": "1234567890000000004",
+        "num": 8,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+        "timestamp_range": "[1234567880000000007, 1234567890000000007)",
+        "staked_node_id": 2,
+        "staked_account_id": 2
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": "1234567890000000004",
+        "id": 2,
+        "balance": 2
+      },
+      {
+        "timestamp": "1234567890000000004",
+        "id": 8,
+        "balance": 555
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/accounts/0.0.8?timestamp=lte:1234567880.000000006",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567880.000000006"
+  ],
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}
