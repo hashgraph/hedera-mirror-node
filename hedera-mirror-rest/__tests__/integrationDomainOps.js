@@ -825,8 +825,8 @@ const addTransaction = async (transaction) => {
 
   if (transaction.valid_start_ns === undefined) {
     // set valid_start_ns to consensus_timestamp - 1 if not set
-    const consensusTimestamp = math.bignumber(transaction.consensus_timestamp);
-    transaction.valid_start_ns = consensusTimestamp.minus(1).toString();
+    const consensusTimestamp = BigInt(transaction.consensus_timestamp);
+    transaction.valid_start_ns = consensusTimestamp - 1n;
   }
 
   const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
@@ -1567,6 +1567,7 @@ export default {
   addNft,
   addStakingRewardTransfer,
   addToken,
+  loadAccounts,
   loadAddressBookEntries,
   loadAddressBookServiceEndpoints,
   loadAddressBooks,
@@ -1579,6 +1580,7 @@ export default {
   loadContracts,
   loadContractTransactions,
   loadCryptoAllowances,
+  loadCryptoTransfers,
   loadEntities,
   loadEthereumTransactions,
   loadFileData,
@@ -1586,6 +1588,7 @@ export default {
   loadNodeStakes,
   loadRecordFiles,
   loadStakingRewardTransfers,
+  loadTokenAccounts,
   loadTransactions,
   setAccountBalance,
   setup,
