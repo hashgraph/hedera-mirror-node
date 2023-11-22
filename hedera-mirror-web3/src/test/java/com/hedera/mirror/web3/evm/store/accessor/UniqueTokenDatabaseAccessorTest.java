@@ -19,20 +19,26 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +51,22 @@ class UniqueTokenDatabaseAccessorTest {
     @Mock
     private NftRepository nftRepository;
 
+    @Mock
+    private ContractCallContext contractCallContext;
+
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @BeforeEach
+    void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
+    }
+
     @Test
     void get() {
         int createdTimestampNanos = 13;
@@ -55,7 +77,36 @@ class UniqueTokenDatabaseAccessorTest {
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(nftRepository.findActiveById(nft.getTokenId(), nft.getSerialNumber()))
+                .thenReturn(Optional.of(nft));
+
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
+                        uniqueToken)
+                .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
+                .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
+                .returns(new RichInstant(createdTimestampSecs, createdTimestampNanos), UniqueToken::getCreationTime)
+                .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
+                .returns(idFromEntityId(nft.getSpender()), UniqueToken::getSpender)
+                .returns(nft.getMetadata(), UniqueToken::getMetadata));
+    }
+
+    @Test
+    void getHistorical() {
+        int createdTimestampNanos = 13;
+        long createdTimestampSecs = 12;
+
+        Nft nft = domainBuilder
+                .nft()
+                .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
+                .get();
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(nftRepository.findActiveByIdAndTimestamp(nft.getTokenId(), nft.getSerialNumber(), 123L))
                 .thenReturn(Optional.of(nft));
 
         assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
@@ -72,7 +123,25 @@ class UniqueTokenDatabaseAccessorTest {
     void missingRichInstantWhenNoCreatedTimestamp() {
         Nft nft = domainBuilder.nft().customize(n -> n.createdTimestamp(null)).get();
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
+
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft)))
+                .hasValueSatisfying(uniqueToken ->
+                        assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
+    }
+
+    @Test
+    void missingRichInstantWhenNoCreatedTimestampHistorical() {
+        Nft nft = domainBuilder.nft().customize(n -> n.createdTimestamp(null)).get();
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(nftRepository.findActiveByIdAndTimestamp(nft.getTokenId(), nft.getSerialNumber(), 123L))
+                .thenReturn(Optional.of(nft));
 
         assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft)))
                 .hasValueSatisfying(uniqueToken ->

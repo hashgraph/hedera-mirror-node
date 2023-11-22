@@ -23,6 +23,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -30,6 +31,8 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -45,11 +48,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,10 +84,17 @@ class TokenDatabaseAccessorTest {
     @Mock
     private Entity defaultEntity;
 
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     private Entity entity;
 
     @BeforeEach
     void setup() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         domainBuilder = new DomainBuilder();
         entity = domainBuilder
                 .entity()
@@ -91,9 +103,43 @@ class TokenDatabaseAccessorTest {
                 .get();
     }
 
+    @AfterEach
+    void clean() {
+        staticMock.close();
+    }
+
     @Test
     void getTokenMappedValues() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
+                .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
+                .returns(TokenSupplyType.valueOf(databaseToken.getSupplyType().name()), Token::getSupplyType)
+                .returns(databaseToken.getTotalSupply(), Token::getTotalSupply)
+                .returns(databaseToken.getMaxSupply(), Token::getMaxSupply)
+                .returns(databaseToken.getFreezeDefault(), Token::isFrozenByDefault)
+                .returns(false, Token::isDeleted)
+                .returns(false, Token::isPaused)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Token::getExpiry)
+                .returns(entity.getMemo(), Token::getMemo)
+                .returns(databaseToken.getName(), Token::getName)
+                .returns(databaseToken.getSymbol(), Token::getSymbol)
+                .returns(databaseToken.getDecimals(), Token::getDecimals)
+                .returns(entity.getAutoRenewPeriod(), Token::getAutoRenewPeriod));
+    }
+
+    @Test
+    void getTokenMappedValuesHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
@@ -116,7 +162,24 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getCustomFees() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+        List<CustomFee> customFees = singletonList(new CustomFee());
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(customFeeDatabaseAccessor.get(entity.getId())).thenReturn(Optional.of(customFees));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(token -> assertThat(token.getCustomFees()).isEqualTo(customFees));
+    }
+
+    @Test
+    void getCustomFeesHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
         List<CustomFee> customFees = singletonList(new CustomFee());
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         when(customFeeDatabaseAccessor.get(entity.getId())).thenReturn(Optional.of(customFees));
@@ -127,7 +190,32 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getPartialTreasuryAccount() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity treasuryEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(treasuryEntity.getShard()).thenReturn(11L);
+        when(treasuryEntity.getRealm()).thenReturn(12L);
+        when(treasuryEntity.getNum()).thenReturn(13L);
+        when(treasuryEntity.getBalance()).thenReturn(14L);
+        when(entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
+                .returns(new Id(11, 12, 13), Account::getId)
+                .returns(14L, Account::getBalance));
+    }
+
+    @Test
+    void getPartialTreasuryAccountHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
         final var treasuryId = mock(EntityId.class);
         databaseToken.setTreasuryAccountId(treasuryId);
 
@@ -146,7 +234,10 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenDefaultValues() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
         databaseToken.setTreasuryAccountId(null);
         when(entityDatabaseAccessor.get(ADDRESS_ZERO)).thenReturn(Optional.ofNullable(defaultEntity));
         when(defaultEntity.getShard()).thenReturn(0L);
@@ -168,8 +259,56 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
+    void getTokenDefaultValuesHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+        databaseToken.setTreasuryAccountId(null);
+        when(entityDatabaseAccessor.get(ADDRESS_ZERO)).thenReturn(Optional.ofNullable(defaultEntity));
+        when(defaultEntity.getId()).thenReturn(entity.getId());
+        when(defaultEntity.getShard()).thenReturn(0L);
+        when(defaultEntity.getRealm()).thenReturn(0L);
+        when(defaultEntity.getNum()).thenReturn(0L);
+        when(defaultEntity.getType()).thenReturn(EntityType.TOKEN);
+        assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO)).hasValueSatisfying(token -> assertThat(token)
+                .returns(emptyList(), Token::mintedUniqueTokens)
+                .returns(emptyList(), Token::removedUniqueTokens)
+                .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
+                .returns(false, Token::hasChangedSupply)
+                .returns(null, Token::getTreasury)
+                .returns(null, Token::getAutoRenewAccount)
+                .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
+                .returns(false, Token::isNew)
+                .returns(null, Token::getTreasury)
+                .returns(0L, Token::getLastUsedSerialNumber)
+                .returns(emptyList(), Token::getCustomFees));
+    }
+
+    @Test
     void getTokenKeysValues() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+                .returns(parseJkey(entity.getKey()), Token::getAdminKey)
+                .returns(parseJkey(databaseToken.getKycKey()), Token::getKycKey)
+                .returns(parseJkey(databaseToken.getPauseKey()), Token::getPauseKey)
+                .returns(parseJkey(databaseToken.getFreezeKey()), Token::getFreezeKey)
+                .returns(parseJkey(databaseToken.getWipeKey()), Token::getWipeKey)
+                .returns(parseJkey(databaseToken.getSupplyKey()), Token::getSupplyKey)
+                .returns(parseJkey(databaseToken.getFeeScheduleKey()), Token::getFeeScheduleKey));
+    }
+
+    @Test
+    void getTokenKeysValuesHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
@@ -192,6 +331,9 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenEmptyWhenDatabaseTokenNotFound() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -199,8 +341,23 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
+    void getTokenEmptyWhenDatabaseTokenNotFoundHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), recordFile.getConsensusEnd()))
+                .thenReturn(Optional.empty());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
+    }
+
+    @Test
     void keyIsNullIfNotParsable() {
-        setupToken();
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
 
         when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
         databaseToken.setKycKey("wrOng".getBytes());
@@ -209,9 +366,28 @@ class TokenDatabaseAccessorTest {
                 .hasValueSatisfying(token -> assertThat(token.getKycKey()).isNull());
     }
 
-    private void setupToken() {
+    @Test
+    void keyIsNullIfNotParsableHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        setupToken(recordFile.getConsensusEnd());
+
+        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        databaseToken.setKycKey("wrOng".getBytes());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+                .hasValueSatisfying(token -> assertThat(token.getKycKey()).isNull());
+    }
+
+    private void setupToken(long timestamp) {
         databaseToken =
                 domainBuilder.token().customize(t -> t.tokenId(entity.getId())).get();
-        when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
+        if (timestamp != -1) {
+            when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), timestamp))
+                    .thenReturn(Optional.ofNullable(databaseToken));
+        } else {
+            when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
+        }
     }
 }

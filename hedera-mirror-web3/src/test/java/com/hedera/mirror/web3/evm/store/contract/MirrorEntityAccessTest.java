@@ -20,11 +20,14 @@ import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.mirror.common.domain.entity.AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -36,11 +39,13 @@ import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -70,11 +75,23 @@ class MirrorEntityAccessTest {
     @Mock
     private Store store;
 
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
+
     private MirrorEntityAccess mirrorEntityAccess;
 
     @BeforeEach
     void setUp() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         mirrorEntityAccess = new MirrorEntityAccess(contractStateRepository, contractRepository, store);
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -224,7 +241,21 @@ class MirrorEntityAccessTest {
 
     @Test
     void getStorage() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(contractStateRepository.findStorage(ENTITY_ID, BYTES.toArrayUnsafe()))
+                .thenReturn(Optional.of(DATA));
+        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
+        assertThat(result).isEqualTo(UInt256.fromHexString(HEX));
+    }
+
+    @Test
+    void getStorageHistorical() {
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(123L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(contractStateRepository.findStorageByBlockTimestamp(ENTITY_ID, BYTES.toArrayUnsafe(), 123L))
                 .thenReturn(Optional.of(DATA));
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(HEX));
