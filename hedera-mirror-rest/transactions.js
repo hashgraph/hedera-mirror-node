@@ -19,7 +19,7 @@ import _ from 'lodash';
 import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
-import {NotFoundError} from './errors';
+import {InvalidArgumentError, NotFoundError} from './errors';
 import TransactionId from './transactionId';
 import * as utils from './utils';
 
@@ -382,14 +382,7 @@ const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(T
   ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
 
 /**
- * TODO: Update...
  *
- * Transactions queries are organized as follows: First there's an inner query that selects the
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
- * extract all relevant information for those transactions.
- * This function forms the inner query base based on all the query criteria specified in the REST URL
- * It selects a list of unique transactions (consensus_timestamps).
- * Also see: getTransactionsOuterQuery function
  *
  * @param {String} accountQuery SQL query that filters based on the account ids
  * @param {String} tsQuery SQL query that filters based on the timestamps for transaction table
@@ -398,7 +391,8 @@ const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(T
  * @param {String} creditDebitQuery SQL query that filters for credit/debit transactions
  * @param {String} transactionTypeQuery SQL query that filters by transaction type
  * @param {String} order Sorting order
- * @return {String} innerQuery SQL query that filters transactions based on various types of queries
+ * @return {{Object}[]} the results of the relevant timestamps query, which is rows consisting of
+ * consensus_timestamp and payer_account_id attributes.
  */
 const getTransactionTimestampsQuery = function (
   accountQuery,
@@ -500,21 +494,23 @@ const getTransactionTimestampsQuery = function (
 };
 
 /**
- * Transactions queries are organized as follows: First there's an inner query that selects the
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
- * extract all relevant information for those transactions.
- * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
- * Also see: getTransactionsInnerQuery function
+ * Transactions queries are organized as follows: First there's a query that selects the timestamps and payer IDs
+ * for the required number of unique transactions. And then queries other tables to extract all relevant
+ * information for those transactions.
+ * This function returns the second query based on the consensus_timestamps list returned by the first query.
+ * Also see: getTransactionTimestampsQuery function
  *
- * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
+ * @param {{Object}[]} timestampQueryRows the results of the relevant timestamps query, which is rows
+ * consisting of consensus_timestamp and payer_account_id attributes. At least one row is required.
  * @param {String} order Sorting order
  * @param {Number} limit Max number of rows
  * @return {Array} Fully formed parameterized SQL query and query parameter values
  */
 const getTransactionsQueryAndParams = (timestampQueryRows, order, limit) => {
-  if (timestampQueryRows.length === 0) {
-    // TODO No point making this query, but what to return?
-    // Or leave it to caller to ensure this does not happen?
+  // Nothing to make a query with
+  // TODO does this go to client as 4xx or 5xx?. This is a fail-fast indication of a coding error (5xx)
+  if (timestampQueryRows === undefined || timestampQueryRows.length === 0) {
+    throw new InvalidArgumentError('No transaction timestamps query results provided');
   }
 
   const minTimestamp =
@@ -535,7 +531,7 @@ const getTransactionsQueryAndParams = (timestampQueryRows, order, limit) => {
   });
 
   /*
-   * There can be a performance penalty when = ANY is used with a single value. If there is only
+   * There can be a performance penalty when = ANY() is used with a single value. If there is only
    * a single value, then use plain =.
    *
    * https://www.postgresql.org/message-id/flat/17922-1e2e0aeedd294424%40postgresql.org
@@ -720,8 +716,21 @@ const getTransactionsInnerQuery = function (
 
 /**
  * Handler function for /transactions API.
+ *
+ * Transactions queries are organized around two queries as follows: First there's a query that selects the
+ * required number of unique transactions (identified by consensus_timestamp), based on all the query criteria
+ * provided by the client and/or extrapolated via the utils.computeTimestampBounds function so that timestamp
+ * bounds are defined for V2/Citus to limit the number of partitions accessed.
+ *
+ * In addition to consensus_timestamp, the first query also returns the transaction account_payer_id, which
+ * is the distribution column for the transaction, crypto_transfer and token_transfer tables, and this
+ * column is specified, along with the consensus_timestamp, in the second query to also limit the number of shards
+ * accessed in V2/Citus.
+ *
+ * Also see: getTransactionTimestampsQuery and getTransactionsQueryAndParams functions
+ *
  * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
+ * @return {Response} the HTTP response object
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
@@ -766,17 +775,21 @@ const getTransactions = async (req, res) => {
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransaction timestamps query: ${pgTimestampQuery} ${utils.JSONStringify(sqlParams)}`);
   }
-
   const {rows: timestampsRows} = await pool.queryQuietly(pgTimestampQuery, sqlParams);
-  const [transactionsQuery, transactionQueryParams] = getTransactionsQueryAndParams(timestampsRows, order, limit);
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactions query: ${transactionsQuery} ${utils.JSONStringify(transactionQueryParams)}`);
+  let transactionsRows;
+  if (timestampsRows.length > 0) {
+    const [transactionsQuery, transactionQueryParams] = getTransactionsQueryAndParams(timestampsRows, order, limit);
+
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getTransactions query: ${transactionsQuery} ${utils.JSONStringify(transactionQueryParams)}`);
+    }
+    ({rows: transactionsRows} = await pool.queryQuietly(transactionsQuery, transactionQueryParams));
+  } else {
+    transactionsRows = [];
   }
 
-  // Execute query
-  const {rows: transactionsRows, sqlQuery} = await pool.queryQuietly(transactionsQuery, transactionQueryParams);
-  const transferList = await createTransferLists(timestampsRows);
+  const transferList = await createTransferLists(transactionsRows);
   const ret = {
     transactions: transferList.transactions,
   };
@@ -784,7 +797,7 @@ const getTransactions = async (req, res) => {
   ret.links = {
     next: utils.getPaginationLink(
       req,
-      ret.transactions.length !== query.limit,
+      ret.transactions.length !== limit,
       {
         [constants.filterKeys.TIMESTAMP]: transferList.anchorSecNs,
       },
@@ -793,7 +806,7 @@ const getTransactions = async (req, res) => {
   };
 
   if (utils.isTestEnv()) {
-    ret.sqlQuery = sqlQuery;
+    ret.sqlQuery = transactionsQuery;
   }
 
   logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
