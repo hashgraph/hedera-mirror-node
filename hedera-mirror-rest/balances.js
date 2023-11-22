@@ -175,6 +175,10 @@ const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
     limit 1`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getAccountBalanceTimestampRange query: ${pgSqlQuery} ${utils.JSONStringify(tsParams)}`);
+  }
+
   const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
   if (rows.length === 0) {
     return {};
