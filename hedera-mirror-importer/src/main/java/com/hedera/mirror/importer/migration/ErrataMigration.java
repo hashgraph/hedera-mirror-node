@@ -285,7 +285,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                     tokenTransfer.setId(id);
                     tokenTransfer.setIsApproval(false);
                     tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                    tokenTransfer.setDeletedTokenDissociate(false);
                     tokenTransferRepository.save(tokenTransfer);
                     count.incrementAndGet();
                 }
