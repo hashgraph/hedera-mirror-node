@@ -734,8 +734,7 @@ const computeTimestampBounds = (parsedQueryParams) => {
   // is already present.
   if (lowerBoundOpAndValue === undefined) {
     if (upperBoundOpAndValue === undefined) {
-      // TODO Edwin defined a constant for this in his PR
-      upperBoundNs = BigInt(Date.now()) * 1000000n;
+      upperBoundNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
       const upperBoundQueryValue = `${constants.queryParamOperators.lte}:${nsToSecNs(upperBoundNs)}`;
       queryTsValues.push(upperBoundQueryValue);
     } else {
