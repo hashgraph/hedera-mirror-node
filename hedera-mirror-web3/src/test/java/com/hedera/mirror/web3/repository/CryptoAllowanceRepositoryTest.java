@@ -134,7 +134,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoAllowance()
                 .customize(a -> a.spender(spender)
                         .owner(ownerId)
-                        .amount(3)
+                        .amountGranted(3L)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
@@ -142,25 +142,32 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoAllowanceHistory()
                 .customize(a -> a.spender(spender + 1)
                         .owner(ownerId)
-                        .amount(3)
+                        .amountGranted(3L)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
         final var cryptoTransfer = domainBuilder
                 .cryptoTransfer()
-                .customize(
-                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender))
+                        .amount(1)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
         final var cryptoTransfer1 = domainBuilder
                 .cryptoTransfer()
-                .customize(c ->
-                        c.entityId(spender + 1).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender + 1))
+                        .amount(1)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
         var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(2L, CryptoAllowance::getAmount);
+        assertThat(result.get(1)).returns(2L, CryptoAllowance::getAmount);
     }
 
     @Test
@@ -175,7 +182,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoAllowance()
                 .customize(a -> a.spender(spender)
                         .owner(ownerId)
-                        .amount(3)
+                        .amountGranted(3L)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
@@ -183,26 +190,35 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoAllowanceHistory()
                 .customize(a -> a.spender(spender + 1)
                         .owner(ownerId)
-                        .amount(3)
+                        .amountGranted(3L)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
         final var cryptoTransfer = domainBuilder
                 .cryptoTransfer()
-                .customize(
-                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender))
+                        .amount(1)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
         final var cryptoTransfer1 = domainBuilder
                 .cryptoTransfer()
-                .customize(
-                        c -> c.entityId(spender).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender))
+                        .amount(1)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
         final var cryptoTransfer2 = domainBuilder
                 .cryptoTransfer()
-                .customize(c ->
-                        c.entityId(spender + 1).amount(1).isApproval(true).consensusTimestamp(cryptoTransferTimestamp))
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender + 1))
+                        .amount(1)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
         var result = cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
@@ -213,22 +229,25 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByOwnerAndTimestampWithTransferAfterBlockTimestamp() {
-        long payerAccountId = 1L;
+        long spender = 1L;
+        long owner = 2L;
         long cryptoAllowanceTimestamp = System.currentTimeMillis();
         long blockTimestamp = cryptoAllowanceTimestamp + 1;
         long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 2;
 
         final var allowance = domainBuilder
                 .cryptoAllowance()
-                .customize(a -> a.payerAccountId(EntityId.of(payerAccountId))
-                        .amount(3)
+                .customize(a -> a.owner(owner)
+                        .spender(spender)
+                        .amountGranted(3L)
                         .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
                 .persist();
 
         // This transfer should not be selected and the amount should not be subtracted from the allowance.
         final var cryptoTransfer = domainBuilder
                 .cryptoTransfer()
-                .customize(c -> c.payerAccountId(EntityId.of(payerAccountId))
+                .customize(c -> c.entityId(owner)
+                        .payerAccountId(EntityId.of(spender))
                         .amount(1)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -237,5 +256,51 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                         .findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp)
                         .get(0))
                 .returns(3L, CryptoAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithAmountGrantedZeroReturnsEmpty() {
+        long owner = 1L;
+        long cryptoAllowanceTimestamp = System.currentTimeMillis();
+        long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 1;
+        long blockTimestamp = cryptoAllowanceTimestamp + 2;
+
+        final var allowance = domainBuilder
+                .cryptoAllowance()
+                .customize(
+                        a -> a.owner(owner).amountGranted(0L).timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp))
+                .isEmpty();
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithFullTransferReturnsEmpty() {
+        long spender = 1L;
+        long ownerId = 2L;
+        long cryptoAllowanceTimestamp = System.currentTimeMillis();
+        long cryptoTransferTimestamp = cryptoAllowanceTimestamp + 1;
+        long blockTimestamp = cryptoAllowanceTimestamp + 2;
+
+        final var allowance = domainBuilder
+                .cryptoAllowance()
+                .customize(a -> a.spender(spender)
+                        .owner(ownerId)
+                        .amountGranted(3L)
+                        .timestampRange(Range.atLeast(cryptoAllowanceTimestamp)))
+                .persist();
+
+        final var cryptoTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(c -> c.entityId(ownerId)
+                        .payerAccountId(EntityId.of(spender))
+                        .amount(3)
+                        .isApproval(true)
+                        .consensusTimestamp(cryptoTransferTimestamp))
+                .persist();
+
+        assertThat(cryptoAllowanceRepository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp))
+                .isEmpty();
     }
 }
