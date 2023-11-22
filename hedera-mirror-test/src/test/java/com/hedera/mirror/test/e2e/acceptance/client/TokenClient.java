@@ -50,12 +50,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -66,9 +64,8 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Collection<TokenAccount> tokenAccounts = new CopyOnWriteArrayList<>();
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
-    private final Map<TokenNameEnum, TokenId> tokenMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TokenAccountPair, NetworkTransactionResponse> associations =
-            new ConcurrentHashMap<>();
+
+    private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -88,14 +85,16 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public TokenResponse getToken(TokenNameEnum tokenNameEnum) {
-        AtomicReference<NetworkTransactionResponse> responseRef = new AtomicReference<>();
+        return getToken(tokenNameEnum, List.of());
+    }
+
+    public TokenResponse getToken(TokenNameEnum tokenNameEnum, List<CustomFee> customFees) {
         // Create token only if it does not currently exist
         var tokenId = tokenMap.computeIfAbsent(tokenNameEnum, x -> {
             var operator = sdkClient.getExpandedOperatorAccountId();
             try {
-                var networkTransactionResponse = createToken(tokenNameEnum, operator);
-                responseRef.set(networkTransactionResponse);
-                return networkTransactionResponse.getReceipt().tokenId;
+                var networkTransactionResponse = createToken(tokenNameEnum, operator, customFees);
+                return new TokenResponse(networkTransactionResponse.getReceipt().tokenId, networkTransactionResponse);
             } catch (Exception e) {
                 log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
                 return null;
@@ -107,10 +106,11 @@ public class TokenClient extends AbstractNetworkClient {
         }
 
         log.debug("Retrieved token: {} with ID: {}", tokenNameEnum, tokenId);
-        return new TokenResponse(tokenId, responseRef.get());
+        return tokenMap.get(tokenNameEnum);
     }
 
-    private NetworkTransactionResponse createToken(TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId) {
+    private NetworkTransactionResponse createToken(
+            TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId, List<CustomFee> customFees) {
         return createToken(
                 expandedAccountId,
                 tokenNameEnum.symbol,
@@ -121,7 +121,7 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenSupplyType.INFINITE,
                 1,
                 tokenNameEnum.tokenType,
-                Collections.emptyList());
+                customFees);
     }
 
     public NetworkTransactionResponse createToken(
@@ -615,8 +615,25 @@ public class TokenClient extends AbstractNetworkClient {
     @RequiredArgsConstructor
     @Getter
     public enum TokenNameEnum {
+        // also used in call.feature
         FUNGIBLE(
                 "fungible",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        FUNGIBLE_DELETABLE(
+                "fungible_deletable",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        // used in tokenAllowance.feature and not using snake_case because cucumber cannot detect the enum
+        ALLOWANCEFUNGIBLE(
+                "allowance_fungible",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        FUNGIBLE_WITH_CUSTOM_FEES(
+                "fungible_custom_fees",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
@@ -627,11 +644,28 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenFreezeStatus.FreezeNotApplicable),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
+        NFT_DELETABLE(
+                "non_fungible_deletable",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
         FUNGIBLE_KYC_UNFROZEN(
                 "fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+        FUNGIBLE_KYC_UNFROZEN_2(
+                "fungible_kyc_unfrozen_2",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.Granted,
+                TokenFreezeStatus.Unfrozen),
+        FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN(
+                "fungible_kyc_not_applicable_unfrozen",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.Unfrozen),
+        NFT_KYC_NOT_APPLICABLE_UNFROZEN(
+                "nft_kyc_not_applicable_unfrozen",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.Unfrozen),
         NFT_KYC_UNFROZEN(
                 "nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
 

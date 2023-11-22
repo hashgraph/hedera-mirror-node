@@ -18,7 +18,9 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +30,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
-    private final TokenBalanceRepository tokenBalanceRepository;
+    private static final long TRANSFER_AMOUNT = 10L;
+    private static final long TRANSFER_INCREMENT = 1L;
+    private static final EntityId TREASURY_ENTITY_ID = EntityId.of(2);
 
-    static final long TRANSFER_AMOUNT = 10L;
-    static final long TRANSFER_INCREMENT = 1L;
+    private final TokenBalanceRepository tokenBalanceRepository;
 
     @Test
     void findHistoricalByIdAndTimestampLessThanBlockTimestamp() {
@@ -70,11 +73,14 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void shouldNotIncludeBalanceBeforeConsensusTimestamp() {
-        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance = domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID)))
+                .persist();
         var tokenBalance1 = domainBuilder
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
-                        accountBalanceFile.getConsensusTimestamp(),
+                        accountBalance.getId().getConsensusTimestamp(),
                         domainBuilder.entityId(),
                         domainBuilder.entityId())))
                 .persist();
@@ -92,11 +98,14 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void shouldIncludeBalanceDuringValidTimestampRange() {
-        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance = domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID)))
+                .persist();
         var tokenBalance1 = domainBuilder
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
-                        accountBalanceFile.getConsensusTimestamp(),
+                        accountBalance.getId().getConsensusTimestamp(),
                         domainBuilder.entityId(),
                         domainBuilder.entityId())))
                 .persist();
@@ -117,11 +126,14 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void shouldNotIncludeBalanceAfterTimestampFilter() {
-        var accountBalanceFile = domainBuilder.accountBalanceFile().persist();
+        var accountBalance = domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID)))
+                .persist();
         var tokenBalance1 = domainBuilder
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
-                        accountBalanceFile.getConsensusTimestamp(),
+                        accountBalance.getId().getConsensusTimestamp(),
                         domainBuilder.entityId(),
                         domainBuilder.entityId())))
                 .persist();

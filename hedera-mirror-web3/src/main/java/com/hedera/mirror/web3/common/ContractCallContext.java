@@ -19,6 +19,8 @@ package com.hedera.mirror.web3.common;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.EmptyStackException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +33,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Getter
 public class ContractCallContext implements AutoCloseable {
 
+    public static final String CONTEXT_NAME = "ContractCallContext";
     private static final ThreadLocal<ContractCallContext> THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
 
     /** Map of account aliases that were committed */
@@ -58,15 +61,27 @@ public class ContractCallContext implements AutoCloseable {
     @Setter
     private boolean estimate = false;
 
-    /** Sender of the transaction */
-    @Setter
-    private Address senderAddress = null;
-
     /** Current top of stack (which is all linked together) */
     private CachingStateFrame<Object> stack;
 
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     private CachingStateFrame<Object> stackBase;
+
+    /** HTS Precompile field keeping the precompile which is going to be executed at a given point in time */
+    @Setter
+    private Precompile precompile;
+
+    /** HTS Precompile field keeping the gas amount, which is going to be charged for a given precompile execution */
+    @Setter
+    private long gasRequirement = 0L;
+
+    /** HTS Precompile field keeping the transactionBody needed for a given precompile execution */
+    @Setter
+    private TransactionBody.Builder transactionBody;
+
+    /** HTS Precompile field keeping the sender address of the account that initiated a given precompile execution */
+    @Setter
+    private Address senderAddress;
 
     private ContractCallContext() {}
 
@@ -106,6 +121,9 @@ public class ContractCallContext implements AutoCloseable {
         recordFile = null;
         senderAddress = null;
         stack = stackBase;
+        precompile = null;
+        gasRequirement = 0L;
+        transactionBody = TransactionBody.getDefaultInstance().toBuilder();
     }
 
     @Override
@@ -115,10 +133,6 @@ public class ContractCallContext implements AutoCloseable {
 
     public int getStackHeight() {
         return stack.height() - stackBase.height();
-    }
-
-    public CachingStateFrame<Object> getStack() {
-        return stack;
     }
 
     public void setStack(CachingStateFrame<Object> stack) {

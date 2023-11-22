@@ -269,7 +269,7 @@ public class CallFeature extends AbstractFeature {
     }
 
     @RetryAsserts
-    @Then("I verify the precompile contract bytecode is deployed")
+    @Given("I verify the precompile contract bytecode is deployed")
     public void contractDeployed() {
         var response = mirrorClient.getContractInfo(precompileContractAddress);
         assertThat(response.getBytecode()).isNotBlank();
@@ -364,8 +364,10 @@ public class CallFeature extends AbstractFeature {
         validateAddresses(addresses);
     }
 
-    @Then("I successfully update the balance of an account and get the updated balance")
-    public void getBalance() {
+    @SuppressWarnings("java:S2925")
+    @RetryAsserts
+    @Then("I successfully update the balance of an account and get the updated balance after 2 seconds")
+    public void getBalance() throws InterruptedException {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
         var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
         var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
@@ -374,6 +376,8 @@ public class CallFeature extends AbstractFeature {
                 Hbar.fromTinybars(initialBalance.longValue()),
                 receiverAccountId.getPrivateKey());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
+        // wait for token cache to expire
+        Thread.sleep(2000);
         var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
     }
