@@ -62,6 +62,7 @@ import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.TransferWrapper;
@@ -98,6 +99,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -244,7 +246,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransferV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<Address> exists) {
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
         List<HbarTransfer> hbarTransfers = new ArrayList<>();
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
@@ -281,7 +283,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransfer(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<Address> exists) {
         final List<HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 
@@ -298,7 +300,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final UnaryOperator<byte[]> aliasResolver,
             final List<TokenTransferWrapper> tokenTransferWrappers,
             final Tuple[] tokenTransferTuples,
-            final Predicate<AccountID> exists) {
+            final Predicate<Address> exists) {
         for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 

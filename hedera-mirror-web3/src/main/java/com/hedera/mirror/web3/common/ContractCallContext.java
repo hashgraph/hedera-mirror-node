@@ -22,10 +22,6 @@ import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.EmptyStackException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,15 +31,6 @@ public class ContractCallContext implements AutoCloseable {
 
     public static final String CONTEXT_NAME = "ContractCallContext";
     private static final ThreadLocal<ContractCallContext> THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
-
-    /** Map of account aliases that were committed */
-    private final Map<Address, Address> aliases = new HashMap<>();
-
-    /** Map of account aliases that are added by the current frame and are not yet committed */
-    private final Map<Address, Address> pendingAliases = new HashMap<>();
-
-    /** Set of account aliases that are deleted by the current frame and are not yet committed */
-    private final Set<Address> pendingRemovals = new HashSet<>();
 
     /**
      * Long value which stores the block timestamp used for filtering of historical data.
@@ -107,17 +94,9 @@ public class ContractCallContext implements AutoCloseable {
         return context;
     }
 
-    public boolean containsAlias(final Address address) {
-        return aliases.containsKey(address) && !pendingRemovals.contains(address)
-                || pendingAliases.containsKey(address);
-    }
-
     public void reset() {
-        aliases.clear();
         create = false;
         estimate = false;
-        pendingAliases.clear();
-        pendingRemovals.clear();
         recordFile = null;
         senderAddress = null;
         stack = stackBase;

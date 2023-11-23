@@ -1127,7 +1127,7 @@ class TransferPrecompileTest {
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
     }
 
-    private boolean existsMock(AccountID accountID) {
+    private boolean existsMock(Address address) {
         return true;
     }
 }
