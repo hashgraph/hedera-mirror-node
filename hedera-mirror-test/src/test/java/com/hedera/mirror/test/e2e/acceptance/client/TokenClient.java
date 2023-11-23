@@ -66,6 +66,8 @@ public class TokenClient extends AbstractNetworkClient {
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TokenAccountPair, NetworkTransactionResponse> associations =
+            new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -222,15 +224,15 @@ public class TokenClient extends AbstractNetworkClient {
             long maxSupply,
             List<CustomFee> customFees) {
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
-                        expandedAccountId,
-                        symbol,
-                        freezeStatus,
-                        kycStatus,
-                        treasuryAccount,
-                        TokenType.FUNGIBLE_COMMON,
-                        tokenSupplyType,
-                        maxSupply,
-                        customFees)
+                expandedAccountId,
+                symbol,
+                freezeStatus,
+                kycStatus,
+                treasuryAccount,
+                TokenType.FUNGIBLE_COMMON,
+                tokenSupplyType,
+                maxSupply,
+                customFees)
                 .setDecimals(10)
                 .setInitialSupply(initialSupply);
 
@@ -644,6 +646,9 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenFreezeStatus.FreezeNotApplicable),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
         NFT_DELETABLE(
                 "non_fungible_deletable",
                 TokenType.NON_FUNGIBLE_UNIQUE,
@@ -680,11 +685,15 @@ public class TokenClient extends AbstractNetworkClient {
         }
     }
 
-    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {}
+    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {
+    }
 
-    private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
+    private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {
+    }
 
-    protected record TokenAccountPair(TokenId tokenId, EntityId entityId) {}
+    protected record TokenAccountPair(TokenId tokenId, EntityId entityId) {
+    }
 
-    protected record EntityId(Object id) {}
+    protected record EntityId(Object id) {
+    }
 }

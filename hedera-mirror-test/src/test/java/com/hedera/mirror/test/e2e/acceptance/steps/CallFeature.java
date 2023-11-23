@@ -214,7 +214,8 @@ public class CallFeature extends AbstractFeature {
     public void approveAndTransferNftToPrecompileContract() throws InvalidProtocolBufferException {
         accountClient.approveNftAllSerials(nonFungibleTokenId, deployedPrecompileContract.contractId());
         networkTransactionResponse = tokenClient.transferNonFungibleToken(
-                nonFungibleTokenId, admin, AccountId.fromString(precompileContractAddress), List.of(2L), null);
+                nonFungibleTokenId, receiverAccountId, AccountId.fromString(precompileContractAddress), List.of(1L),
+                null);
     }
 
     // ETHCALL-017
@@ -575,7 +576,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(nonFungibleTokenId),
                 asAddress(receiverAccountId),
                 new BigInteger("0"),
-                new BigInteger("2"));
+                new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var approvedAddress = response.getResult().substring(66);
 
@@ -653,7 +654,7 @@ public class CallFeature extends AbstractFeature {
                 APPROVE_NFT_TOKEN_AND_TRANSFER,
                 asAddress(nonFungibleTokenId),
                 asAddress(receiverAccountId),
-                new BigInteger("2"));
+                new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
         var results = response.getResultAsListAddress();
 
