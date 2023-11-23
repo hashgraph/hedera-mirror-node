@@ -52,15 +52,21 @@ Feature: in-equivalence tests
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I execute directCall to "0.0.0" address without amount
     Then I execute directCall to "0.0.0" address with amount 10000
+    Then I make internal "call" to system account "0.0.0" "without" amount
+    Then I make internal "call" to system account "0.0.0" "with" amount
     Then I make internal call to ethereum precompile "0.0.1" address with amount
     Then I make internal call to ethereum precompile "0.0.9" address with amount
-    Then I make internal call to system account "0.0.357" without amount
-    Then I make internal call to system account "0.0.357" with amount
+    Then I make internal "call" to system account "0.0.357" "without" amount
+    Then I make internal "call" to system account "0.0.357" "with" amount
     Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" without amount
     Then I execute internal call against HTS precompile with approve function for "FUNGIBLE" with amount
     Then I execute internal call against PRNG precompile address without amount
     Then I execute internal call against PRNG precompile address with amount
     Then I execute internal call against exchange rate precompile address without amount
     Then I execute internal call against exchange rate precompile address with amount
-    Then I make internal call to system account "0.0.741" without amount
-    Then I make internal call to system account "0.0.741" with amount
+    Then I make internal "call" to system account "0.0.741" "without" amount
+    Then I make internal "call" to system account "0.0.741" "with" amount
+    Then I make internal "call" to system account "0.0.800" "without" amount
+    Then I make internal "call" to system account "0.0.800" "with" amount
+
+
