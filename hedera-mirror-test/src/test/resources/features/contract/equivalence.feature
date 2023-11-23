@@ -4,7 +4,6 @@ Feature: in-equivalence tests
   Scenario Outline: Validate in-equivalence system accounts for balance, extcodesize, extcodecopy, extcodehash
     Given I successfully create selfdestruct contract
     Given I successfully create equivalence call contract
-    Given I successfully create estimate precompile contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I execute selfdestruct and set beneficiary to invalid <account> address
     Then I execute balance opcode to system account <account> address would return 0
@@ -69,4 +68,36 @@ Feature: in-equivalence tests
     Then I make internal "call" to system account "0.0.800" "without" amount
     Then I make internal "call" to system account "0.0.800" "with" amount
 
+  Scenario Outline: Validate in-equivalence tests for HTS Transfers
+    Given I successfully create estimate precompile contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Given I successfully create tokens
+    And I update the account and token key
+    Then the mirror node REST API should return status 200 for the HAPI transactions
+    Then I call precompile with transfer FUNGIBLE token to a <account> address
+    Then I call precompile with transfer NFT token to a <account> address
+
+    Examples:
+      | account   |
+#      | "0.0.0" |  INVALID_ALIAS_KEY
+      | "0.0.1"   |
+      | "0.0.2"   |
+      | "0.0.3"   |
+      | "0.0.4"   |
+      | "0.0.5"   |
+      | "0.0.6"   |
+      | "0.0.7"   |
+      | "0.0.8"   |
+      | "0.0.9"   |
+      | "0.0.10"  |
+      | "0.0.11"  |
+#      | "0.0.350" |  INVALID_ALIAS_KEY
+#      | "0.0.356" |  INVALID_ALIAS_KEY
+#      | "0.0.357" |  INVALID_ALIAS_KEY
+#      | "0.0.358" |  INVALID_ALIAS_KEY
+#      | "0.0.359" |  INVALID_ALIAS_KEY
+#      | "0.0.360" |  INVALID_ALIAS_KEY
+#      | "0.0.361" |  INVALID_ALIAS_KEY
+      | "0.0.750" |
+      | "0.0.800" |
 

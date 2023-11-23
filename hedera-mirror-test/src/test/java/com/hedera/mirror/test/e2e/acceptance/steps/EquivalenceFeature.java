@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
@@ -28,18 +30,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +67,9 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
+    private static final String INVALID_TRANSFER_EXCEPTION = "INVALID_RECEIVING_NODE_ACCOUNT";
+    private static final String TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT";
+
 
     private DeployedContract deployedEquivalenceDestruct;
     private DeployedContract deployedEquivalenceCall;
@@ -61,6 +78,10 @@ public class EquivalenceFeature extends AbstractFeature {
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
     private String precompileContractSolidityAddress;
+    private final AccountClient accountClient;
+    private ExpandedAccountId admin;
+    private TokenId fungibleTokenId;
+    private TokenId nonFungibleTokenId;
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() throws IOException {
@@ -79,7 +100,48 @@ public class EquivalenceFeature extends AbstractFeature {
     @Given("I successfully create estimate precompile contract")
     public void createNewEstimatePrecompileContract() throws IOException {
         deployedPrecompileContract = getContract(ESTIMATE_PRECOMPILE);
-        precompileContractSolidityAddress = deployedEquivalenceCall.contractId().toSolidityAddress();
+        precompileContractSolidityAddress = deployedPrecompileContract.contractId().toSolidityAddress();
+        admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+    }
+
+    @Given("I successfully create tokens")
+    public void createTokens() {
+        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+    }
+
+    @And("I update the account and token key")
+    public void updateAccountAndTokensKeys()
+            throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+        var keyList = KeyList.of(admin.getPublicKey(), deployedPrecompileContract.contractId())
+                .setThreshold(1);
+        new AccountUpdateTransaction()
+                .setAccountId(admin.getAccountId())
+                .setKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(admin.getPrivateKey())
+                .execute(accountClient.getClient());
+        new TokenUpdateTransaction()
+                .setTokenId(fungibleTokenId)
+                .setSupplyKey(keyList)
+                .setAdminKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(admin.getPrivateKey())
+                .execute(accountClient.getClient());
+        var tokenUpdate = new TokenUpdateTransaction()
+                .setTokenId(nonFungibleTokenId)
+                .setSupplyKey(keyList)
+                .setAdminKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(admin.getPrivateKey())
+                .execute(accountClient.getClient());
+        networkTransactionResponse = new NetworkTransactionResponse(
+                tokenUpdate.transactionId, tokenUpdate.getReceipt(accountClient.getClient()));
+    }
+
+    @Then("the mirror node REST API should return status {int} for the HAPI transactions")
+    public void verifyMirrorNodeAPIResponses(int status) {
+        verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
     @Then("the mirror node REST API should return status {int} for the contracts creation")
@@ -276,6 +338,36 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(INVALID_FEE_SUBMITTED, message);
     }
 
+    @Then("I call precompile with transfer FUNGIBLE token to a {string} address")
+    public void transferFungibleTokens(String address) {
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters()
+                .addAddress(fungibleTokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(receiverAccountId)
+                .addInt64(1L);
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, "transferTokenExternal", parameters, null);
+        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var expectedMessage = getExpectedResponseMessage(address);
+        assertEquals(expectedMessage, message);
+    }
+
+    @Then("I call precompile with transfer NFT token to a {string} address")
+    public void transferNftTokens(String address) {
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters()
+                .addAddress(nonFungibleTokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(receiverAccountId)
+                .addInt64(1L);
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, "transferNFTExternal", parameters, null);
+        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var expectedMessage = getExpectedResponseMessage(address);
+        assertEquals(expectedMessage, message);
+    }
+
     public String getMethodName(String typeOfCall, String amountValue) {
         String combinedKey = typeOfCall + "_" + amountValue;
 
@@ -392,20 +484,24 @@ public class EquivalenceFeature extends AbstractFeature {
             String functionName,
             ContractFunctionParameters parameters,
             Hbar payableAmount) {
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedContract.contractId(),
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                functionName,
-                parameters,
-                payableAmount);
+        try {
+            ExecuteContractResult executeContractResult = contractClient.executeContract(
+                    deployedContract.contractId(),
+                    contractClient
+                            .getSdkClient()
+                            .getAcceptanceTestProperties()
+                            .getFeatureProperties()
+                            .getMaxContractFunctionGas(),
+                    functionName,
+                    parameters,
+                    payableAmount);
 
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-        return networkTransactionResponse.getTransactionIdStringNoCheckSum();
+            networkTransactionResponse = executeContractResult.networkTransactionResponse();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            return networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        } catch (Exception e) {
+            return extractTransactionId(e.getMessage());
+        }
     }
 
     private ContractFunctionResult executeContractCallQuery(
@@ -431,6 +527,24 @@ public class EquivalenceFeature extends AbstractFeature {
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 null);
+    }
+
+    public static String extractTransactionId(String message) {
+        Pattern pattern = Pattern.compile("transactionId=(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
+    }
+
+    private static String getExpectedResponseMessage(String address) {
+        var expectedMessage = INVALID_TRANSFER_EXCEPTION;
+        if (extractAccountNumber(address) > 751) {
+            expectedMessage = TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+        }
+        return expectedMessage;
     }
 
     @Getter
