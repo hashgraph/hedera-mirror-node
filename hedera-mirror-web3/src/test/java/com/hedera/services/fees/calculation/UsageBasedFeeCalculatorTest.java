@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.token.txns.TokenDissociateResourceUsage;
@@ -219,9 +220,7 @@ class UsageBasedFeeCalculatorTest {
 
         // when:
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases));
+        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, at));
     }
 
     @Test
@@ -230,12 +229,11 @@ class UsageBasedFeeCalculatorTest {
         final FeeObject expectedFees = getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate);
 
         given(correctQueryEstimator.applicableTo(query)).willReturn(true);
-        given(correctQueryEstimator.usageGivenType(query, store)).willReturn(resourceUsage);
+        given(correctQueryEstimator.usageGivenType(query)).willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
 
         // when:
-        final FeeObject fees =
-                subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), store, at, ANSWER_ONLY);
+        final FeeObject fees = subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), at, ANSWER_ONLY);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -253,12 +251,12 @@ class UsageBasedFeeCalculatorTest {
 
         given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
         given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
-        given(correctOpEstimator.usageGiven(any(), any(), any())).willReturn(resourceUsage);
+        given(correctOpEstimator.usageGiven(any(), any())).willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
 
         // when:
-        final FeeObject fees = subject.computeFee(accessor, payerKey, store, at, hederaEvmContractAliases);
+        final FeeObject fees = subject.computeFee(accessor, payerKey, at);
 
         // then:
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
@@ -269,13 +267,11 @@ class UsageBasedFeeCalculatorTest {
     @Test
     void defaultFeeIfAccountMissing() throws Exception {
         // setup:
-        correctOpEstimator = new TokenDissociateResourceUsage(mock(EstimatorFactory.class));
+        correctOpEstimator = new TokenDissociateResourceUsage(mock(EstimatorFactory.class), mock(StoreImpl.class));
         final FeeData expectedFeeData = FeeData.getDefaultInstance();
-        given(store.getAccount(any(), any())).willReturn(null);
 
         // when:
-        final var feeData =
-                correctOpEstimator.usageGiven(accessor.getTxn(), subject.getSigUsage(accessor, payerKey), store);
+        final var feeData = correctOpEstimator.usageGiven(accessor.getTxn(), subject.getSigUsage(accessor, payerKey));
 
         // then:
         assertEquals(expectedFeeData, feeData);

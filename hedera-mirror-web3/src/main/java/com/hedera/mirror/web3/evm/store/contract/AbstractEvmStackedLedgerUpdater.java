@@ -28,8 +28,6 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected final Store store;
-
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
@@ -37,7 +35,6 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             final HederaEvmEntityAccess entityAccess,
             final Store store) {
         super(world, accountAccessor, tokenAccessor, entityAccess, store);
-        this.store = store;
     }
 
     @Override

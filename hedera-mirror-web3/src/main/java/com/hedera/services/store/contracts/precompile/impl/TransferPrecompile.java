@@ -50,7 +50,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -194,8 +193,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var store = updater.getStore();
-        final var mirrorEvmContractAliases =
-                (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var hederaTokenStore = initializeHederaTokenStore(store);
         final var impliedValidity = extrapolateValidityDetailsFromSyntheticTxn(transactionBody);
         if (impliedValidity != OK) {
@@ -209,12 +206,11 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             if (change.hasAlias()) {
-                replaceAliasWithId(
-                        change, completedLazyCreates, store, entityAddressSequencer, mirrorEvmContractAliases);
+                replaceAliasWithId(change, completedLazyCreates, store, entityAddressSequencer);
             }
         }
 
-        transferLogic.doZeroSum(changes, store, entityAddressSequencer, mirrorEvmContractAliases, hederaTokenStore);
+        transferLogic.doZeroSum(changes, store, entityAddressSequencer, hederaTokenStore);
         return new EmptyRunResult();
     }
 
@@ -470,8 +466,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final BalanceChange change,
             final Map<ByteString, EntityNum> completedLazyCreates,
             Store store,
-            EntityAddressSequencer entityAddressSequencer,
-            MirrorEvmContractAliases mirrorEvmContractAliases) {
+            EntityAddressSequencer entityAddressSequencer) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
@@ -482,8 +477,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             .setSeconds(Instant.now().getEpochSecond())
                             .build(),
                     store,
-                    entityAddressSequencer,
-                    mirrorEvmContractAliases);
+                    entityAddressSequencer);
             validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
             completedLazyCreates.put(
                     receiverAlias,
