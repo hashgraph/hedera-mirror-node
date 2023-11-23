@@ -23,7 +23,6 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -41,8 +40,7 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     public @NotNull Optional<Entity> get(@NotNull Object address) {
         final var castedAddress = (Address) address;
         final var addressBytes = castedAddress.toArrayUnsafe();
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var timestamp = getTimestamp();
         if (isMirror(addressBytes)) {
             return getEntityByMirrorAddress(castedAddress, timestamp);
         } else {
@@ -52,19 +50,19 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
 
     private Optional<Entity> getEntityByMirrorAddress(Address address, long timestamp) {
         final var entityId = entityIdNumFromEvmAddress(address);
-        return (timestamp != -1)
+        return useHistorical(timestamp)
                 ? entityRepository.findActiveByIdAndTimestamp(entityId, timestamp)
                 : entityRepository.findByIdAndDeletedIsFalse(entityId);
     }
 
     private Optional<Entity> getEntityByNonMirrorAddress(byte[] addressBytes, long timestamp) {
-        return (timestamp != -1)
+        return useHistorical(timestamp)
                 ? entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp)
                 : entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
     }
 
     public Address evmAddressFromId(EntityId entityId, long timestamp) {
-        Entity entity = (timestamp != -1)
+        Entity entity = useHistorical(timestamp)
                 ? entityRepository
                         .findActiveByIdAndTimestamp(entityId.getId(), timestamp)
                         .orElse(null)

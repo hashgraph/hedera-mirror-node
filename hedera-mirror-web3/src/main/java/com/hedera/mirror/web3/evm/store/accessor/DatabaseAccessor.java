@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.core.ResolvableType;
@@ -26,6 +27,11 @@ import org.springframework.core.ResolvableType;
  * it can figure out the generic parameters via `ResolvableType`.
  **/
 public abstract class DatabaseAccessor<K, V> {
+    /**
+     * Default value for the historical eth_call timestamp.
+     * When the call is for latest block timestamp is -1.
+     */
+    protected static final long UNSET_TIMESTAMP = -1L;
 
     @SuppressWarnings("unchecked")
     protected DatabaseAccessor() {
@@ -50,6 +56,15 @@ public abstract class DatabaseAccessor<K, V> {
     @NonNull
     public Class<V> getValueClass() {
         return klassValue;
+    }
+
+    protected long getTimestamp() {
+        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
+        return (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : UNSET_TIMESTAMP;
+    }
+
+    protected boolean useHistorical(long timestamp) {
+        return timestamp != UNSET_TIMESTAMP;
     }
 
     private final Class<K> klassKey;

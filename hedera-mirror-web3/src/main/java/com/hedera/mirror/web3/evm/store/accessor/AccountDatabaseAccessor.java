@@ -26,7 +26,6 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
@@ -69,9 +68,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         if (!ACCOUNT.equals(entity.getType()) && !CONTRACT.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map an account/contract from a different type");
         }
-
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var timestamp = getTimestamp();
         final var tokenAssociationsCounts =
                 getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
         return new Account(
@@ -102,13 +99,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private long getOwnedNfts(Long accountId, long timestamp) {
-        return (timestamp != -1)
+        return useHistorical(timestamp)
                 ? nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, timestamp)
                 : nftRepository.countByAccountIdNotDeleted(accountId);
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId, long timestamp) {
-        final var cryptoAllowances = (timestamp != -1)
+        final var cryptoAllowances = useHistorical(timestamp)
                 ? cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp)
                 : cryptoAllowanceRepository.findByOwner(ownerId);
         return cryptoAllowances.stream()
@@ -120,7 +117,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(Long ownerId, long timestamp) {
-        final var tokenAllowances = (timestamp != -1)
+        final var tokenAllowances = useHistorical(timestamp)
                 ? tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, timestamp)
                 : tokenAllowanceRepository.findByOwner(ownerId);
         return tokenAllowances.stream()
@@ -134,7 +131,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId, long timestamp) {
-        final var nftAllowances = (timestamp != -1)
+        final var nftAllowances = useHistorical(timestamp)
                 ? nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, timestamp)
                 : nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId);
         return nftAllowances.stream()
@@ -149,7 +146,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId, long timestamp) {
-        final var counts = (timestamp != -1)
+        final var counts = useHistorical(timestamp)
                 ? tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
                         accountId, timestamp)
                 : tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId);

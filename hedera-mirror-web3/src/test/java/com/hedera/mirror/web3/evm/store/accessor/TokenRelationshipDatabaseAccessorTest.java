@@ -19,24 +19,30 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +59,11 @@ class TokenRelationshipDatabaseAccessorTest {
     @Mock
     private TokenAccountRepository tokenAccountRepository;
 
+    @Mock
+    private ContractCallContext contractCallContext;
+
+    private MockedStatic<ContractCallContext> staticMock;
+
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
     private Account account;
@@ -60,6 +71,8 @@ class TokenRelationshipDatabaseAccessorTest {
 
     @BeforeEach
     void setup() {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         account = mock(Account.class);
         when(account.getId()).thenReturn(new Id(1, 2, 3));
         token = mock(Token.class);
@@ -67,6 +80,11 @@ class TokenRelationshipDatabaseAccessorTest {
 
         when(accountDatabaseAccessor.get(any())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(any())).thenReturn(Optional.of(token));
+    }
+
+    @AfterEach
+    void clean() {
+        staticMock.close();
     }
 
     @Test
@@ -79,7 +97,42 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(-1L);
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
+                        .returns(account, TokenRelationship::getAccount)
+                        .returns(token, TokenRelationship::getToken)
+                        .returns(true, TokenRelationship::isFrozen)
+                        .returns(true, TokenRelationship::isKycGranted)
+                        .returns(false, TokenRelationship::isDestroyed)
+                        .returns(false, TokenRelationship::isNotYetPersisted)
+                        .returns(true, TokenRelationship::isAutomaticAssociation)
+                        .returns(0L, TokenRelationship::getBalanceChange));
+    }
+
+    @Test
+    void getHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(true)
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .automaticAssociation(true))
+                .get();
+
+        final var recordFile = new RecordFile();
+        recordFile.setConsensusEnd(tokenAccount.getTimestampLower());
+        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(tokenAccountRepository.findByIdAndTimestamp(
+                        EntityIdUtils.entityIdFromId(account.getId()).getId(),
+                        EntityIdUtils.entityIdFromId(token.getId()).getId(),
+                        recordFile.getConsensusEnd()))
+                .thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))

@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -33,10 +32,9 @@ public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Object, Token
 
     @Override
     public @NonNull Optional<TokenAccount> get(@NonNull Object key) {
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var timestamp = getTimestamp();
         final var tokenAccountId = (AbstractTokenAccount.Id) key;
-        return (timestamp != -1)
+        return useHistorical(timestamp)
                 ? tokenAccountRepository.findByIdAndTimestamp(
                         tokenAccountId.getAccountId(), tokenAccountId.getTokenId(), timestamp)
                 : tokenAccountRepository.findById(tokenAccountId);

@@ -42,10 +42,11 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
 
     @Override
     public @NonNull Optional<TokenRelationship> get(@NonNull Object key) {
+        final var timestamp = getTimestamp();
         final var tokenRelationshipKey = (TokenRelationshipKey) key;
         return findAccount(tokenRelationshipKey.accountAddress())
                 .flatMap(account -> findToken(tokenRelationshipKey.tokenAddress())
-                        .flatMap(token -> findTokenAccount(token, account)
+                        .flatMap(token -> findTokenAccount(token, account, timestamp)
                                 .filter(AbstractTokenAccount::getAssociated)
                                 .map(tokenAccount -> new TokenRelationship(
                                         token,
@@ -67,10 +68,12 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
         return tokenDatabaseAccessor.get(address);
     }
 
-    private Optional<TokenAccount> findTokenAccount(Token token, Account account) {
+    private Optional<TokenAccount> findTokenAccount(Token token, Account account, long timestamp) {
         AbstractTokenAccount.Id id = new AbstractTokenAccount.Id();
         id.setTokenId(EntityIdUtils.entityIdFromId(token.getId()).getId());
         id.setAccountId(EntityIdUtils.entityIdFromId(account.getId()).getId());
-        return tokenAccountRepository.findById(id);
+        return useHistorical(timestamp)
+                ? tokenAccountRepository.findByIdAndTimestamp(id.getAccountId(), id.getTokenId(), timestamp)
+                : tokenAccountRepository.findById(id);
     }
 }

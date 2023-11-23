@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -33,10 +32,9 @@ public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, Tok
 
     @Override
     public @NonNull Optional<TokenAllowance> get(@NonNull Object key) {
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
+        final var timestamp = getTimestamp();
         final var tokenAllowanceId = (AbstractTokenAllowance.Id) key;
-        return (timestamp != -1)
+        return useHistorical(timestamp)
                 ? Optional.ofNullable(tokenAllowanceRepository
                         .findByOwnerAndTimestamp(tokenAllowanceId.getOwner(), timestamp)
                         .get(0))

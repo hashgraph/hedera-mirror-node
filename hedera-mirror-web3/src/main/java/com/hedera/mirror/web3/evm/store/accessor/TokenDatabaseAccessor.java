@@ -23,7 +23,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
@@ -61,10 +60,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
-
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
-        final var databaseToken = (timestamp != -1)
+        final var timestamp = getTimestamp();
+        final var databaseToken = useHistorical(timestamp)
                 ? tokenRepository
                         .findByTokenIdAndTimestamp(entity.getId(), timestamp)
                         .orElse(null)

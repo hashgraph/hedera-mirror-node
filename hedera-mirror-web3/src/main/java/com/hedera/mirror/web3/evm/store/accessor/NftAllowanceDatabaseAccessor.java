@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -33,9 +32,8 @@ public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAl
 
     @Override
     public @NonNull Optional<NftAllowance> get(@NonNull Object key) {
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        final var timestamp = (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : -1;
-        return (timestamp != -1)
+        final var timestamp = getTimestamp();
+        return useHistorical(timestamp)
                 ? nftAllowanceRepository.findByIdAndTimestamp(((Id) key).getTokenId(), timestamp)
                 : nftAllowanceRepository.findById((Id) key);
     }
