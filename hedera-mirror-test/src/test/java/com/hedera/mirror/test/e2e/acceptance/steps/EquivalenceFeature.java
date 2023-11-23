@@ -223,7 +223,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var functionResult = executeContractCallTransaction(
                 deployedEquivalenceCall, "getPseudorandomSeedWithAmount", null, Hbar.fromTinybars(10L));
         // POTENTIAL BUG
-        // THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+        // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
     }
 
     @Then("I execute internal call against exchange rate precompile address without amount")
@@ -239,30 +239,29 @@ public class EquivalenceFeature extends AbstractFeature {
         var functionResult = executeContractCallTransaction(
                 deployedEquivalenceCall, "exchangeRateWithAmount", parameters, Hbar.fromTinybars(10L));
         // POTENTIAL BUG
-        // THIS RETURNS SUCCESS FOR THE CHILD RECORD - > WE EXPECT INVALID_FEE_SUBMITTED
+        // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
         // AMOUNT REACHES ONLY THE CONTRACT(deployedEquivalenceCall)
     }
 
-    @Then("I make internal call to system account {string} with amount")
-    public void internalCallToSystemAddressWithAmount(String address) {
+    @Then("I make internal {string} to system account {string} {string} amount")
+    public void callToSystemAddress(String typeOfCall, String address, String amountType) {
+        String functionResult;
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
-        var functionResult = executeContractCallTransaction(
-                deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(100L));
-        // POTENTIAL BUG
-        // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_FEE_SUBMITTED
-        // TOP LEVEL TRANSACTION IS SUCCESS
-        // WAITING TO BE CLARIFIED
-    }
+        var callType = getMethodName(typeOfCall, amountType);
+        if (amountType.equals("with")) {
+            functionResult = executeContractCallTransaction(
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(100L));
+        } else {
+            functionResult = executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+        }
 
-    @Then("I make internal call to system account {string} without amount")
-    public void internalCallToSystemAddressWithoutAmount(String address) {
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
-        var functionResult =
-                executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
+        if (extractAccountNumber(address) > 751) {
+            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, functionResult);
+        }
         // POTENTIAL BUG
-        // THIS RETURNS FAILURE FOR CHILD RECORD WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_SOLIDITY_ADDRESS
+        // CALL WITH AMOUNT RETURNS FAILURE FOR THE 2ND CALL WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_FEE_SUBMITTED
+        // CALL WITHOUT RETURNS FAILURE FOR THE 2ND CALL WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_SOLIDITY_ADDRESS
         // TOP LEVEL TRANSACTION IS SUCCESS
         // WAITING TO BE CLARIFIED
     }
@@ -275,6 +274,16 @@ public class EquivalenceFeature extends AbstractFeature {
                 deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(10L));
         var message = extractInternalCallErrorMessage(transactionId);
         assertEquals(INVALID_FEE_SUBMITTED, message);
+    }
+
+    public String getMethodName(String typeOfCall, String amountValue) {
+        String combinedKey = typeOfCall + "_" + amountValue;
+
+        return switch (combinedKey) {
+            case "call_without" -> "makeCallWithoutAmount";
+            case "call_with" -> "makeCallWithAmount";
+            default -> "Unknown";
+        };
     }
 
     private static long extractAccountNumber(String account) {
