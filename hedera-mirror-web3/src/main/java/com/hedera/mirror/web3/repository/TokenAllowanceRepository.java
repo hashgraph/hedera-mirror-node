@@ -81,7 +81,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             join token_allowances ta on tt.account_id = ta.owner
                                 and tt.payer_account_id = ta.spender
                                 and tt.token_id = ta.token_id
-                        where is_approval = true
+                        where is_approval is true
                             and consensus_timestamp <= :blockTimestamp
                             and consensus_timestamp > lower(ta.timestamp_range)
                         group by tt.token_id, tt.payer_account_id
@@ -92,7 +92,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             join token_allowances ta on tt.account_id = ta.owner
                                 and cr.sender_id = ta.spender
                                 and tt.token_id = ta.token_id
-                        where tt.is_approval = true
+                        where tt.is_approval is true
                             and tt.consensus_timestamp <= :blockTimestamp
                             and tt.consensus_timestamp > lower(ta.timestamp_range)
                         group by cr.sender_id, tt.token_id
