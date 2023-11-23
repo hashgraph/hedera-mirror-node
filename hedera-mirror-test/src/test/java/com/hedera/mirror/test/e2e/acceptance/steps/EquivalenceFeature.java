@@ -57,6 +57,7 @@ import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -69,6 +70,7 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
     private static final String INVALID_TRANSFER_EXCEPTION = "INVALID_RECEIVING_NODE_ACCOUNT";
     private static final String TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT";
+    private static final String SPENDER_DOES_NOT_HAVE_ALLOWANCE = "SPENDER_DOES_NOT_HAVE_ALLOWANCE";
 
 
     private DeployedContract deployedEquivalenceDestruct;
@@ -108,6 +110,11 @@ public class EquivalenceFeature extends AbstractFeature {
     public void createTokens() {
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
         nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+    }
+
+    @Given("I mint a new nft")
+    public void mintNft() {
+        networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
     }
 
     @And("I update the account and token key")
@@ -353,6 +360,21 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(expectedMessage, message);
     }
 
+    @Then("I call precompile with transferFrom FUNGIBLE token to a {string} address")
+    public void transferFromFungibleTokens(String address) {
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters()
+                .addAddress(fungibleTokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(receiverAccountId)
+                .addUint256(new BigInteger("1"));
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, "transferFromExternal", parameters, null);
+        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var expectedMessage = getExpectedResponseMessage(address);
+        assertEquals(expectedMessage, message);
+    }
+
     @Then("I call precompile with transfer NFT token to a {string} address")
     public void transferNftTokens(String address) {
         var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
@@ -365,6 +387,24 @@ public class EquivalenceFeature extends AbstractFeature {
                 deployedPrecompileContract, "transferNFTExternal", parameters, null);
         var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
         var expectedMessage = getExpectedResponseMessage(address);
+        assertEquals(expectedMessage, message);
+    }
+
+    @Then("I call precompile with transferFromNFT to a {string} address")
+    public void transferFromNftTokens(String address) {
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters()
+                .addAddress(nonFungibleTokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(receiverAccountId)
+                .addUint256(new BigInteger("1"));
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, "transferFromNFTExternal", parameters, null);
+        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var expectedMessage = INVALID_TRANSFER_EXCEPTION;
+        if (extractAccountNumber(address) > 751) {
+            expectedMessage = SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+        }
         assertEquals(expectedMessage, message);
     }
 
