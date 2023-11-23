@@ -63,6 +63,11 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         this.entityAddressSequencer = entityAddressSequencer;
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
 
+        // This is a singleton bean, we will need more version of it depending on the evm version and precompile
+        // figure out what do with this field
+        // final EVM evm, PrecompilesHolder precompilesHolder
+
+
         MainnetPrecompiledContracts.populateForIstanbul(precompiles, gasCalculator);
     }
 

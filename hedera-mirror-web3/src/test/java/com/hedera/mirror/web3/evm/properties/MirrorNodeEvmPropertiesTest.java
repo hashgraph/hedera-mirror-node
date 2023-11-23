@@ -19,10 +19,21 @@ package com.hedera.mirror.web3.evm.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -34,6 +45,13 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final Bytes32 CHAIN_ID = Bytes32.fromHexString("0x0128");
 
     private final MirrorNodeEvmProperties properties;
+
+    @BeforeEach
+    void setup() {
+        properties.getEvmPrecompiles().clear();
+        properties.getSystemPrecompiles().clear();
+        properties.getEvmVersions().clear();
+    }
 
     @Test
     void correctPropertiesEvaluation() {
@@ -50,5 +68,76 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.shouldAutoRenewContracts()).isFalse();
         assertThat(properties.shouldAutoRenewSomeEntityType()).isFalse();
         assertThat(properties.maxCustomFeesAllowed()).isEqualTo(MAX_CUSTOM_FEES_ALLOWED);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberToEvmVersionProvider")
+    void getEvmVersionForBlock(Long blockNumber, String expectedEvmVersion) {
+
+        //given
+        TreeMap<String, Long> evmVersions = new TreeMap<>();
+        evmVersions.put("0.30.0", 1000L);
+        evmVersions.put("0.34.0", 2000L);
+        evmVersions.put("0.38.0", 3000L);
+        properties.setEvmVersions(evmVersions);
+
+        String result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualTo(expectedEvmVersion);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberAndPrecompilesProvider")
+    void getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion, List<String> expectedPrecompiles) {
+
+        //given
+        TreeMap<String, Long> systemPrecompiles = new TreeMap<>();
+        systemPrecompiles.put("HTS", 800L);
+        systemPrecompiles.put("ERC", 2100L);
+        systemPrecompiles.put("exchangeRate", 3100L);
+        systemPrecompiles.put("PRNG", 4100L);
+
+        Map<String, List<String>> evmPrecompiles = new HashMap<>();
+
+        evmPrecompiles.put("0.30.0", List.of("HTS"));
+        evmPrecompiles.put("0.34.0", Arrays.asList("HTS", "ERC"));
+        evmPrecompiles.put("0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG"));
+
+        properties.setSystemPrecompiles(systemPrecompiles);
+        properties.setEvmPrecompiles(evmPrecompiles);
+
+        List<String> precompilesAvailableResult = properties.getPrecompilesAvailableAtBlock(blockNumber,
+                evmVersion);
+
+        assertThat(precompilesAvailableResult).containsExactlyInAnyOrderElementsOf(expectedPrecompiles);
+    }
+
+    private static Stream<Arguments> blockNumberToEvmVersionProvider() {
+        return Stream.of(
+                Arguments.of(1L, "0.30.0"),
+                Arguments.of(800L, "0.30.0"),
+                Arguments.of(999L, "0.30.0"),
+                Arguments.of(1000L, "0.30.0"),
+                Arguments.of(1999L, "0.30.0"),
+                Arguments.of(2000L, "0.34.0"),
+                Arguments.of(2999L, "0.34.0"),
+                Arguments.of(3000L, "0.38.0"),
+                Arguments.of(5000L, "0.38.0")
+        );
+    }
+
+    private static Stream<Arguments> blockNumberAndPrecompilesProvider() {
+        return Stream.of(
+                Arguments.of(1L, "0.30.0", Collections.EMPTY_LIST),
+                Arguments.of(500L, "0.30.0", Collections.EMPTY_LIST),
+                Arguments.of(800L, "0.30.0", List.of("HTS")),
+                Arguments.of(1099L, "0.30.0", List.of("HTS")),
+                Arguments.of(1100L, "0.30.0", List.of("HTS")),
+                Arguments.of(2000L, "0.34.0", List.of("HTS")),
+                Arguments.of(3000L, "0.38.0", Arrays.asList("HTS", "ERC")),
+                Arguments.of(3100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
+                Arguments.of(4000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
+                Arguments.of(4100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG")),
+                Arguments.of(5000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG"))
+        );
     }
 }

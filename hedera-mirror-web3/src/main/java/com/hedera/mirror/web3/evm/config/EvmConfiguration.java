@@ -159,6 +159,7 @@ public class EvmConfiguration {
     @Bean
     MessageCallProcessor messageCallProcessor(final EVM evm, final PrecompileContractRegistry precompiles) {
         return new MessageCallProcessor(evm, precompiles);
+        // we will need more changes here
     }
 
     @Bean
@@ -166,6 +167,8 @@ public class EvmConfiguration {
             final ContractCreationProcessor contractCreationProcessor) {
         return Map.of(
                 EVM_VERSION_0_30, () -> contractCreationProcessor, EVM_VERSION_0_34, () -> contractCreationProcessor);
+
+        // we will need modifications here
     }
 
     @Bean
@@ -173,7 +176,23 @@ public class EvmConfiguration {
             final MessageCallProcessor messageCallProcessor,
             final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
         return Map.of(
-                EVM_VERSION_0_30, () -> messageCallProcessor, EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
+                EVM_VERSION_0_30, () -> messageCallProcessor,
+                EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor
+                );
+
+        // based on the new methods in MirrorNodeEvmProperties ->
+        // get block number -> get evm version and supported precompiles based on block
+        // based on evm version and precompiles load the proper bean that we will define
+        // we need different combinations of messageCallProcessor
+        // EVM_VERSION_0_30_HTS -> messageCallProcessor1 bean 1
+        // EVM_VERSION_0_30_HTS_ERC - > messageCallProcessor2 bean 2
+        // EVM_VERSION_0_34 - > messageCallProcessor3 bean 3
+        // EVM_VERSION_0_34_EXHANGE_RATE - > messageCallProcessor4 bean 4
+        // EVM_VERSION_0_34_EXHANGE_RATE_PRNG - > messageCallProcessor4 bean 5
+
+        // precompile holder for 30, 34,38, 4
+        // evm 1, 2 ,3
+
     }
 
     @Bean
@@ -225,6 +244,9 @@ public class EvmConfiguration {
                 org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
                 mirrorNodeEvmProperties.getEvmSpecVersion());
     }
+
+    // we will need more evm beans
+
 
     @Bean
     HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {

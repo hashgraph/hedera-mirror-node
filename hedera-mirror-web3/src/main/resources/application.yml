@@ -9,6 +9,16 @@ hedera:
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_web3
+      evm:
+        system_precompiles:
+          HTS: 800
+          ERC: 2100
+          exchangeRate: 3100
+          PRNG: 4100
+        evm_versions:
+          0.30.0: 1000
+          0.34.0: 2000
+          0.38.0: 3000
 logging:
   level:
     root: warn
