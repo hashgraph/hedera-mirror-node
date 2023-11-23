@@ -38,6 +38,8 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
 
     /**
      * Retrieves the most recent state of the token allowances by their owner id up to a given block timestamp.
+     * It takes into account the token transfers that happened up to the given block timestamp, sums them up
+     * and decreases the token allowances' amounts with the transfers that occurred.
      *
      * @param owner the owner ID of the token allowance to be retrieved.
      * @param blockTimestamp the block timestamp used to filter the results.
@@ -47,33 +49,74 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
     @Query(
             value =
                     """
-                    select *
-                    from
-                    (
-                        select *, row_number() over (
-                            partition by token_id, spender
-                            order by lower(timestamp_range) desc
-                        ) as row_number
+                    with token_allowances as (
+                        select *
                         from
                         (
+                            select *, row_number() over (
+                                partition by token_id, spender
+                                order by lower(timestamp_range) desc
+                            ) as row_number
+                            from
                             (
-                                select *
-                                from token_allowance
-                                where owner = :owner
-                                    and lower(timestamp_range) <= :blockTimestamp
-                            )
-                            union all
+                                (
+                                    select *
+                                    from token_allowance
+                                    where owner = :owner
+                                        and lower(timestamp_range) <= :blockTimestamp
+                                )
+                                union all
+                                (
+                                    select *
+                                    from token_allowance_history
+                                    where owner = :owner
+                                        and lower(timestamp_range) <= :blockTimestamp
+                                )
+                            ) as all_token_allowances
+                        ) as grouped_token_allowances
+                        where row_number = 1 and amount_granted > 0
+                    ), transfers as (
+                        select tt.token_id, tt.payer_account_id, sum(tt.amount) as amount
+                        from token_transfer tt
+                            join token_allowances ta on tt.account_id = ta.owner
+                                and tt.payer_account_id = ta.spender
+                                and tt.token_id = ta.token_id
+                        where is_approval = true
+                            and consensus_timestamp <= :blockTimestamp
+                            and consensus_timestamp > lower(ta.timestamp_range)
+                        group by tt.token_id, tt.payer_account_id
+                    ), contract_call_transfers as (
+                        select cr.sender_id, tt.token_id, sum(tt.amount) as amount
+                        from token_transfer tt
+                            join contract_result cr on tt.consensus_timestamp = cr.consensus_timestamp
+                            join token_allowances ta on tt.account_id = ta.owner
+                                and cr.sender_id = ta.spender
+                                and tt.token_id = ta.token_id
+                        where tt.is_approval = true
+                            and tt.consensus_timestamp <= :blockTimestamp
+                            and tt.consensus_timestamp > lower(ta.timestamp_range)
+                        group by cr.sender_id, tt.token_id
+                    )
+                    select *
+                    from (
+                        select amount_granted, owner, payer_account_id, spender, timestamp_range, token_id, amount_granted + coalesce(
                             (
-                                select *
-                                from token_allowance_history
-                                where owner = :owner
-                                    and lower(timestamp_range) <= :blockTimestamp
-                            )
-                        ) as all_token_allowances
-                    ) as grouped_token_allowances
-                    where row_number = 1
-                        and amount_granted > 0
-                        and amount > 0
+                                select amount
+                                from contract_call_transfers cct
+                                where cct.token_id = ta.token_id
+                                    and cct.sender_id = ta.spender
+                            ),
+                            (
+                                select amount
+                                from transfers tr
+                                where tr.token_id = ta.token_id
+                                    and tr.payer_account_id = ta.spender
+                            ),
+                            0
+                        ) as amount
+                        from token_allowances ta
+                    ) result
+                    where amount > 0
                     """,
             nativeQuery = true)
     List<TokenAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);

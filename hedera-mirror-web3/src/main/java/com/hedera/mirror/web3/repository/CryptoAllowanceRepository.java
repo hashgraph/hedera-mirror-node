@@ -77,7 +77,7 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
                         )
                     select *
                     from (
-                        select amount_granted, owner, payer_account_id, spender, timestamp_range, amount_granted - coalesce((select amount from transfers tr where tr.spender = ca.spender), 0) as amount
+                        select amount_granted, owner, payer_account_id, spender, timestamp_range, amount_granted + coalesce((select amount from transfers tr where tr.spender = ca.spender), 0) as amount
                         from crypto_allowances ca
                     ) result
                     where amount > 0

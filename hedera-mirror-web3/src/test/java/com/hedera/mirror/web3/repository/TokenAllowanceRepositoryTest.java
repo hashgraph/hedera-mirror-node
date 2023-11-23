@@ -18,7 +18,10 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -129,5 +132,314 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .findByOwnerAndTimestamp(allowanceHistory1.getOwner(), latestTimestamp + 1)
                         .get(0))
                 .returns(latestTimestamp, TokenAllowance::getTimestampLower);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithTransferHappyPath() {
+        long ownerId = 1L;
+        long tokenId = 2L;
+        long spenderId = 3L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
+        long blockTimestamp = tokenAllowanceTimestamp + 2;
+        final long initialAmount = 3;
+        final long amountForTransfer = -1;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var allowanceHistory = domainBuilder
+                .tokenAllowanceHistory()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId + 1)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        final var tokenTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).returns(initialAmount + 2 * amountForTransfer, TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount, TokenAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithTransferMultipleEntries() {
+        long ownerId = 1L;
+        long tokenId = 2L;
+        long spenderId = 3L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
+        long blockTimestamp = tokenAllowanceTimestamp + 2;
+        final long initialAmount = 3;
+        final long amountForTransfer = -1;
+        final long amountForTransfer1 = -2;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var allowanceHistory = domainBuilder
+                .tokenAllowanceHistory()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId + 1)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        final var tokenTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer1)
+                        .payerAccountId(EntityId.of(spenderId + 1))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount + amountForTransfer1, TokenAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithTransferAfterBlockTimestamp() {
+        long ownerId = 1L;
+        long tokenId = 2L;
+        long spenderId = 3L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long blockTimestamp = tokenAllowanceTimestamp + 1;
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 2;
+        final long initialAmount = 3;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .spender(spenderId)
+                        .tokenId(tokenId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        // This transfer should not be selected and the amount should not be subtracted from the allowance.
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(-1)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .accountId(EntityId.of(ownerId))
+                                .build()))
+                .persist();
+
+        assertThat(repository
+                        .findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp)
+                        .get(0))
+                .returns(initialAmount, TokenAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithContractTransfer() {
+        long ownerId = 100L;
+        long tokenId = 200L;
+        long spenderId = 300L;
+        long senderId = 400L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
+        long blockTimestamp = tokenAllowanceTimestamp + 2;
+        final long initialAmount = 3;
+        final long amountForTransfer = -1;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(senderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        final var contractResult = domainBuilder
+                .contractResult()
+                .customize(c -> c.consensusTimestamp(tokenTransferTimestamp).senderId(EntityId.of(senderId)))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithContractTransferAfterBlockTimestamp() {
+        long ownerId = 100L;
+        long tokenId = 200L;
+        long spenderId = 300L;
+        long senderId = 400L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long blockTimestamp = tokenAllowanceTimestamp + 1;
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 2;
+        final long initialAmount = 3;
+        final long amountForTransfer = -1;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(senderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        final var contractResult = domainBuilder
+                .contractResult()
+                .customize(c -> c.consensusTimestamp(tokenTransferTimestamp).senderId(EntityId.of(senderId)))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).returns(initialAmount, TokenAllowance::getAmount);
+    }
+
+    @Test
+    void findByOwnerAndTimestampWithContractTransferPriorityOverRegularTokenTransfer() {
+        long ownerId = 100L;
+        long tokenId = 200L;
+        long spenderId = 300L;
+        long senderId = 400L;
+        long tokenAllowanceTimestamp = System.currentTimeMillis();
+        long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
+        long tokenTransfer1Timestamp = tokenAllowanceTimestamp + 2;
+        long blockTimestamp = tokenAllowanceTimestamp + 3;
+        final long initialAmount = 3;
+        final long amountForTransfer = -1;
+
+        final var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(senderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        final var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        // This transfer should not be selected as it was not initiated by a contract (does not match
+        // a contract result by timestamp)
+        final var tokenTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransfer1Timestamp)
+                                .build()))
+                .persist();
+
+        final var contractResult = domainBuilder
+                .contractResult()
+                .customize(c -> c.consensusTimestamp(tokenTransferTimestamp).senderId(EntityId.of(senderId)))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
     }
 }

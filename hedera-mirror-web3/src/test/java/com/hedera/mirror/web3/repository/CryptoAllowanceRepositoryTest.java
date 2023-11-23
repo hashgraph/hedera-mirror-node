@@ -150,7 +150,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender))
-                        .amount(1)
+                        .amount(-1)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -159,7 +159,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender + 1))
-                        .amount(1)
+                        .amount(-1)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -198,7 +198,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender))
-                        .amount(1)
+                        .amount(-1)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -207,7 +207,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender))
-                        .amount(1)
+                        .amount(-1)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -216,7 +216,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender + 1))
-                        .amount(1)
+                        .amount(-1)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
@@ -248,7 +248,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(owner)
                         .payerAccountId(EntityId.of(spender))
-                        .amount(1)
+                        .amount(-1)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
 
@@ -295,7 +295,7 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
                 .cryptoTransfer()
                 .customize(c -> c.entityId(ownerId)
                         .payerAccountId(EntityId.of(spender))
-                        .amount(3)
+                        .amount(-3)
                         .isApproval(true)
                         .consensusTimestamp(cryptoTransferTimestamp))
                 .persist();
