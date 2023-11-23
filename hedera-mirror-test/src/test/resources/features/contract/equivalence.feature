@@ -76,6 +76,7 @@ Feature: in-equivalence tests
     Then the mirror node REST API should return status 200 for the HAPI transactions
     Then I call precompile with transfer FUNGIBLE token to a <account> address
     Then I call precompile with transfer NFT token to a <account> address
+    Then I call precompile with transferFrom FUNGIBLE token to a <account> address
 
     Examples:
       | account   |
@@ -101,3 +102,20 @@ Feature: in-equivalence tests
       | "0.0.750" |
       | "0.0.800" |
 
+  Scenario: Validate in-equivalence tests for HTS Transfers with state modification
+    Given I successfully create estimate precompile contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Given I successfully create tokens
+    Given I mint a new nft
+    Then I call precompile with transferFromNFT to a "0.0.1" address
+    Then I call precompile with transferFromNFT to a "0.0.9" address
+    Then I call precompile with transferFromNFT to a "0.0.10" address
+    Then I call precompile with transferFromNFT to a "0.0.11" address
+    #Then I call precompile with transferFromNFT to a "0.0.350" address
+    #Then I call precompile with transferFromNFT to a "0.0.357" address
+#    Then I call precompile with transferFromNFT to a "0.0.358" address
+#    Then I call precompile with transferFromNFT to a "0.0.359" address
+#    Then I call precompile with transferFromNFT to a "0.0.360" address
+#    Then I call precompile with transferFromNFT to a "0.0.361" address
+    Then I call precompile with transferFromNFT to a "0.0.750" address
+    Then I call precompile with transferFromNFT to a "0.0.800" address
