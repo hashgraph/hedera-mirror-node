@@ -57,7 +57,7 @@ management:
     pubsub:
       # Just importing pubsub deps enables its health checker and it requires auth credentials.
       # Setting spring.cloud.gcp.pubsub.enabled=false is not enough to disable the pubsub health check.
-      enabled: ${spring.cloud.gcp.pubsub.enabled}
+      enabled: false
   metrics:
     tags:
       application: ${spring.application.name}
@@ -117,7 +117,6 @@ spring:
       shardCount: 16
     user: ${hedera.mirror.importer.db.owner}
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         hbm2ddl:
