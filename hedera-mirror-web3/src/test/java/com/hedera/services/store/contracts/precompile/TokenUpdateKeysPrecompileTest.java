@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -205,7 +206,7 @@ class TokenUpdateKeysPrecompileTest {
                 tokenAccessor,
                 precompilePricingUtils);
 
-        ContractCallContext.init(store.getStackedStateFrames());
+        ContractCallContext.init(store.getStackedStateFrames(), DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     @Test

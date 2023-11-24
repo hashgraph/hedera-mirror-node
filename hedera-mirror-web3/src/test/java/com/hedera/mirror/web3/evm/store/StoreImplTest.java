@@ -171,7 +171,8 @@ class StoreImplTest {
 
     @Test
     void getAccountWithoutThrow() {
-        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
@@ -197,7 +198,8 @@ class StoreImplTest {
 
     @Test
     void getTokenWithoutThrow() {
-        when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
+        when(entityDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
@@ -222,12 +224,14 @@ class StoreImplTest {
 
     @Test
     void getTokenRelationshipWithoutThrow() {
-        when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
+        when(entityDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
@@ -351,7 +355,8 @@ class StoreImplTest {
 
     @Test
     void hasApprovedForAll() {
-        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
@@ -365,12 +370,14 @@ class StoreImplTest {
     }
 
     private void setupTokenAndAccount() {
-        when(entityDatabaseAccessor.get(TOKEN_ADDRESS)).thenReturn(Optional.of(tokenModel));
+        when(entityDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);
         when(tokenModel.getType()).thenReturn(EntityType.TOKEN);
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS)).thenReturn(Optional.of(accountModel));
+        when(entityDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.of(accountModel));
         when(accountModel.getId()).thenReturn(19L);
         when(accountModel.getNum()).thenReturn(19L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);

@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -29,19 +28,15 @@ import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,12 +50,8 @@ class CustomFeeDatabaseAccessorTest {
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
-
     private final long tokenId = 123L;
+    private static final long TIMESTAMP = 1234L;
 
     private final EntityId collectorId = EntityId.of(1L, 2L, 3L);
 
@@ -72,14 +63,7 @@ class CustomFeeDatabaseAccessorTest {
 
     @BeforeEach
     void setup() {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         customFee = new CustomFee();
-    }
-
-    @AfterEach
-    void clean() {
-        staticMock.close();
     }
 
     @Test
@@ -97,14 +81,13 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee, royaltyFee2);
         customFee.setRoyaltyFees(royaltyFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, DatabaseAccessor.UNSET_TIMESTAMP))
                 .thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor
+                .get(tokenId, DatabaseAccessor.UNSET_TIMESTAMP)
+                .get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : royaltyFees) {
             listAssert.anySatisfy(fee -> {
@@ -137,15 +120,10 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee, royaltyFee2);
         customFee.setRoyaltyFees(royaltyFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
-                .thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
-                .thenReturn(collectorAddress);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, TIMESTAMP)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, TIMESTAMP)).thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor.get(tokenId, TIMESTAMP).get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : royaltyFees) {
             listAssert.anySatisfy(fee -> {
@@ -174,14 +152,13 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee);
         customFee.setRoyaltyFees(royaltyFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, DatabaseAccessor.UNSET_TIMESTAMP))
                 .thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor
+                .get(tokenId, DatabaseAccessor.UNSET_TIMESTAMP)
+                .get();
         var resultFee = results.get(0).getRoyaltyFee();
         assertEquals(royaltyFee.getNumerator(), resultFee.getNumerator());
         assertEquals(royaltyFee.getDenominator(), resultFee.getDenominator());
@@ -201,15 +178,10 @@ class CustomFeeDatabaseAccessorTest {
         var royaltyFees = List.of(royaltyFee);
         customFee.setRoyaltyFees(royaltyFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
-                .thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
-                .thenReturn(collectorAddress);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, TIMESTAMP)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, TIMESTAMP)).thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor.get(tokenId, TIMESTAMP).get();
         var resultFee = results.get(0).getRoyaltyFee();
         assertEquals(royaltyFee.getNumerator(), resultFee.getNumerator());
         assertEquals(royaltyFee.getDenominator(), resultFee.getDenominator());
@@ -238,14 +210,13 @@ class CustomFeeDatabaseAccessorTest {
         var fractionalFees = List.of(fractionalFee, fractionalFee2);
         customFee.setFractionalFees(fractionalFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, DatabaseAccessor.UNSET_TIMESTAMP))
                 .thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor
+                .get(tokenId, DatabaseAccessor.UNSET_TIMESTAMP)
+                .get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : fractionalFees) {
             listAssert.anySatisfy(fee -> {
@@ -282,15 +253,10 @@ class CustomFeeDatabaseAccessorTest {
         var fractionalFees = List.of(fractionalFee, fractionalFee2);
         customFee.setFractionalFees(fractionalFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
-                .thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
-                .thenReturn(collectorAddress);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, TIMESTAMP)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, TIMESTAMP)).thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor.get(tokenId, TIMESTAMP).get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : fractionalFees) {
             listAssert.anySatisfy(fee -> {
@@ -316,14 +282,13 @@ class CustomFeeDatabaseAccessorTest {
         var fixedFees = List.of(fixedFee, fixedFee2);
         customFee.setFixedFees(fixedFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, DatabaseAccessor.UNSET_TIMESTAMP))
                 .thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor
+                .get(tokenId, DatabaseAccessor.UNSET_TIMESTAMP)
+                .get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : fixedFees) {
             listAssert.anySatisfy(fee -> {
@@ -348,15 +313,10 @@ class CustomFeeDatabaseAccessorTest {
         var fixedFees = List.of(fixedFee, fixedFee2);
         customFee.setFixedFees(fixedFees);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
-                .thenReturn(Optional.of(customFee));
-        when(entityDatabaseAccessor.evmAddressFromId(collectorId, recordFile.getConsensusEnd()))
-                .thenReturn(collectorAddress);
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, TIMESTAMP)).thenReturn(Optional.of(customFee));
+        when(entityDatabaseAccessor.evmAddressFromId(collectorId, TIMESTAMP)).thenReturn(collectorAddress);
 
-        var results = customFeeDatabaseAccessor.get(tokenId).get();
+        var results = customFeeDatabaseAccessor.get(tokenId, TIMESTAMP).get();
         var listAssert = assertThat(results).hasSize(2);
         for (var domainFee : fixedFees) {
             listAssert.anySatisfy(fee -> {
@@ -375,23 +335,17 @@ class CustomFeeDatabaseAccessorTest {
     @Test
     void mapOnlyFeesWithCollectorAccountId() {
         final var noCollectorCustomFee = new CustomFee();
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(customFeeRepository.findById(tokenId)).thenReturn(Optional.of(noCollectorCustomFee));
-        assertThat(customFeeDatabaseAccessor.get(tokenId))
+        assertThat(customFeeDatabaseAccessor.get(tokenId, DatabaseAccessor.UNSET_TIMESTAMP))
                 .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
     }
 
     @Test
     void mapOnlyFeesWithCollectorAccountIdHistorical() {
         final var noCollectorCustomFee = new CustomFee();
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(customFeeRepository.findByIdAndTimestamp(tokenId, recordFile.getConsensusEnd()))
+        when(customFeeRepository.findByIdAndTimestamp(tokenId, TIMESTAMP))
                 .thenReturn(Optional.of(noCollectorCustomFee));
-        assertThat(customFeeDatabaseAccessor.get(tokenId))
+        assertThat(customFeeDatabaseAccessor.get(tokenId, TIMESTAMP))
                 .hasValueSatisfying(customFees -> assertThat(customFees).isEmpty());
     }
 }

@@ -37,14 +37,13 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address) {
+    public @NotNull Optional<Entity> get(@NotNull Object address, final long timestamp) {
         final var castedAddress = (Address) address;
         final var addressBytes = castedAddress.toArrayUnsafe();
-        final var timestamp = getTimestamp();
         if (isMirror(addressBytes)) {
             return getEntityByMirrorAddress(castedAddress, timestamp);
         } else {
-            return getEntityByNonMirrorAddress(addressBytes, timestamp);
+            return getEntityByEvmAddress(addressBytes, timestamp);
         }
     }
 
@@ -55,7 +54,7 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
                 : entityRepository.findByIdAndDeletedIsFalse(entityId);
     }
 
-    private Optional<Entity> getEntityByNonMirrorAddress(byte[] addressBytes, long timestamp) {
+    private Optional<Entity> getEntityByEvmAddress(byte[] addressBytes, long timestamp) {
         return useHistorical(timestamp)
                 ? entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp)
                 : entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);

@@ -31,8 +31,7 @@ public class TokenAccountDatabaseAccessor extends DatabaseAccessor<Object, Token
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<TokenAccount> get(@NonNull Object key) {
-        final var timestamp = getTimestamp();
+    public @NonNull Optional<TokenAccount> get(@NonNull Object key, final long timestamp) {
         final var tokenAccountId = (AbstractTokenAccount.Id) key;
         return useHistorical(timestamp)
                 ? tokenAccountRepository.findByIdAndTimestamp(

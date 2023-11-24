@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
@@ -65,22 +66,26 @@ public class ContractCallService {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
-        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
+        BlockType block = params.getBlock();
+        boolean isHistoricalCall = block != BlockType.LATEST;
+        long timestamp = DatabaseAccessor.UNSET_TIMESTAMP;
+        Optional<RecordFile> recordFileOptional = Optional.empty();
+        if (isHistoricalCall) {
+            recordFileOptional = findRecordFileByBlock(block);
+            if (recordFileOptional.isPresent()) {
+                timestamp = recordFileOptional.get().getConsensusEnd();
+            } else {
+                // return default empty result when the block passed is valid but not found in DB
+                return Bytes.EMPTY.toHexString();
+            }
+        }
+        try (ContractCallContext ctx = init(store.getStackedStateFrames(), timestamp)) {
             Bytes result;
             if (params.isEstimate()) {
                 result = estimateGas(params);
             } else {
-                BlockType block = params.getBlock();
                 // if we have historical call then set corresponding file record
-                if (block != BlockType.LATEST) {
-                    Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
-                    if (recordFileOptional.isPresent()) {
-                        ctx.setRecordFile(recordFileOptional.get());
-                    } else {
-                        // return default empty result when the block passed is valid but not found in DB
-                        return Bytes.EMPTY.toHexString();
-                    }
-                }
+                recordFileOptional.ifPresent(ctx::setRecordFile);
 
                 final var ethCallTxnResult = doProcessCall(params, params.getGas());
 

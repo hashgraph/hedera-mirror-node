@@ -36,6 +36,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -240,7 +241,7 @@ class MintPrecompileTest {
                 tokenAccessor,
                 precompilePricingUtils);
 
-        ContractCallContext.init(store.getStackedStateFrames());
+        ContractCallContext.init(store.getStackedStateFrames(), DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     @Test

@@ -96,10 +96,10 @@ public class ContractCallContext implements AutoCloseable {
      * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
      * using this method.)
      */
-    public static ContractCallContext init(final StackedStateFrames stackedStateFrames) {
+    public static ContractCallContext init(final StackedStateFrames stackedStateFrames, final long timestamp) {
         var context = new ContractCallContext();
         if (stackedStateFrames != null) {
-            context.stackBase = context.stack = stackedStateFrames.getInitializedStackBase();
+            context.stackBase = context.stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
         THREAD_LOCAL.set(context);
         return context;

@@ -43,8 +43,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId) {
-        final var timestamp = getTimestamp();
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId, final long timestamp) {
         Optional<com.hedera.mirror.common.domain.token.CustomFee> customFeeOptional = useHistorical(timestamp)
                 ? customFeeRepository.findByIdAndTimestamp((Long) tokenId, timestamp)
                 : customFeeRepository.findById((Long) tokenId);

@@ -36,9 +36,8 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey) {
+    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey, final long timestamp) {
         final var nftId = (NftId) nftKey;
-        final var timestamp = getTimestamp();
         final var uniqueToken = useHistorical(timestamp)
                 ? nftRepository.findActiveByIdAndTimestamp(nftId.tokenId().getTokenNum(), nftId.serialNo(), timestamp)
                 : nftRepository.findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo());

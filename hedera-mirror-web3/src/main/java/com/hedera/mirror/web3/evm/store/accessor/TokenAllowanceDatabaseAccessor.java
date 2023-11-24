@@ -31,8 +31,7 @@ public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, Tok
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
     @Override
-    public @NonNull Optional<TokenAllowance> get(@NonNull Object key) {
-        final var timestamp = getTimestamp();
+    public @NonNull Optional<TokenAllowance> get(@NonNull Object key, final long timestamp) {
         final var tokenAllowanceId = (AbstractTokenAllowance.Id) key;
         return useHistorical(timestamp)
                 ? Optional.ofNullable(tokenAllowanceRepository

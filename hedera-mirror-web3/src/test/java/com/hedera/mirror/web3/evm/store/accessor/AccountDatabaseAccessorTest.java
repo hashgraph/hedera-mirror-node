@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -30,8 +29,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -51,13 +48,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,6 +66,7 @@ class AccountDatabaseAccessorTest {
     private static final long AUTO_RENEW_PERIOD = 4_000_000_000L;
     private static final EntityId PROXY_ACCOUNT_ID = EntityId.of(SHARD, REALM, 5L);
     private static final int MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 6;
+    private static final long TIMESTAMP = 1234L;
     private static final int POSITIVE_BALANCES = 7;
     private static final int NEGATIVE_BALANCES = 8;
     private static final List<TokenAccountAssociationsCount> associationsCount = Arrays.asList(
@@ -119,11 +115,6 @@ class AccountDatabaseAccessorTest {
     @Mock
     private TokenAccountRepository tokenAccountRepository;
 
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
-
     @BeforeEach
     void setup() {
         final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
@@ -139,47 +130,46 @@ class AccountDatabaseAccessorTest {
         entity.setProxyAccountId(PROXY_ACCOUNT_ID);
         entity.setMaxAutomaticTokenAssociations(MAX_AUTOMATIC_TOKEN_ASSOCIATIONS);
         entity.setType(EntityType.ACCOUNT);
-        when(entityDatabaseAccessor.get(any())).thenReturn(Optional.ofNullable(entity));
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
-    }
-
-    @AfterEach
-    void clean() {
-        staticMock.close();
     }
 
     @Test
     void accountFieldsMatchEntityFields() {
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Account::getId)
-                .returns(
-                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
-                        Account::getExpiry)
-                .returns(entity.getBalance(), Account::getBalance)
-                .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
-                .returns(
-                        new Id(
-                                entity.getProxyAccountId().getShard(),
-                                entity.getProxyAccountId().getRealm(),
-                                entity.getProxyAccountId().getNum()),
-                        Account::getProxy)
-                .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(account -> assertThat(account)
+                        .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Account::getId)
+                        .returns(
+                                TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                                Account::getExpiry)
+                        .returns(entity.getBalance(), Account::getBalance)
+                        .returns(entity.getAutoRenewPeriod(), Account::getAutoRenewSecs)
+                        .returns(
+                                new Id(
+                                        entity.getProxyAccountId().getShard(),
+                                        entity.getProxyAccountId().getRealm(),
+                                        entity.getProxyAccountId().getNum()),
+                                Account::getProxy)
+                        .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
     }
 
     @Test
     void whenExpirationTimestampIsNullThenExpiryIsBasedOnCreatedAndRenewTimestamps() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(987_000_000L);
         long expectedExpiry = TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
                 + entity.getAutoRenewPeriod();
 
-        assertThat(accountAccessor.get(ADDRESS))
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
                 .hasValueSatisfying(account -> assertThat(account).returns(expectedExpiry, Account::getExpiry));
     }
 
     @Test
     void useDefaultValuesWhenFieldsAreNull() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         entity.setExpirationTimestamp(null);
         entity.setCreatedTimestamp(null);
         entity.setAutoRenewPeriod(null);
@@ -188,44 +178,44 @@ class AccountDatabaseAccessorTest {
         entity.setDeleted(null);
         entity.setProxyAccountId(null);
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(
-                        TimeUnit.SECONDS.convert(AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP, TimeUnit.NANOSECONDS),
-                        Account::getExpiry)
-                .returns(0L, Account::getBalance)
-                .returns(false, Account::isDeleted)
-                .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)
-                .returns(0, Account::getMaxAutomaticAssociations)
-                .returns(null, Account::getProxy));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(account -> assertThat(account)
+                        .returns(
+                                TimeUnit.SECONDS.convert(AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP, TimeUnit.NANOSECONDS),
+                                Account::getExpiry)
+                        .returns(0L, Account::getBalance)
+                        .returns(false, Account::isDeleted)
+                        .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)
+                        .returns(0, Account::getMaxAutomaticAssociations)
+                        .returns(null, Account::getProxy));
     }
 
     @Test
     void accountOwnedNftsMatchesValueFromRepository() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         long ownedNfts = 20;
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(nftRepository.countByAccountIdNotDeleted(any())).thenReturn(ownedNfts);
 
-        assertThat(accountAccessor.get(ADDRESS))
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
     }
 
     @Test
     void accountOwnedNftsMatchesValueFromRepositoryHistorical() {
-        long ownedNfts = 21;
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(nftRepository.countByAccountIdAndTimestampNotDeleted(entity.getId(), recordFile.getConsensusEnd()))
+        when(entityDatabaseAccessor.get(ADDRESS, TIMESTAMP)).thenReturn(Optional.ofNullable(entity));
+        long ownedNfts = 20;
+        when(nftRepository.countByAccountIdAndTimestampNotDeleted(entity.getId(), TIMESTAMP))
                 .thenReturn(ownedNfts);
 
-        assertThat(accountAccessor.get(ADDRESS))
+        assertThat(accountAccessor.get(ADDRESS, TIMESTAMP))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
     }
 
     @Test
     void cryptoAllowancesMatchValuesFromRepository() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
         firstAllowance.setOwner(entity.getId());
@@ -236,9 +226,6 @@ class AccountDatabaseAccessorTest {
         secondAllowance.setOwner(entity.getId());
         secondAllowance.setAmount(60L);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(cryptoAllowanceRepository.findByOwner(anyLong()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
@@ -246,12 +233,14 @@ class AccountDatabaseAccessorTest {
         allowancesMap.put(EntityNum.fromLong(firstAllowance.getSpender()), firstAllowance.getAmount());
         allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesMap, Account::getCryptoAllowances));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(
+                        account -> assertThat(account).returns(allowancesMap, Account::getCryptoAllowances));
     }
 
     @Test
     void cryptoAllowancesMatchValuesFromRepositoryHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, TIMESTAMP)).thenReturn(Optional.ofNullable(entity));
         CryptoAllowance firstAllowance = new CryptoAllowance();
         firstAllowance.setSpender(123L);
         firstAllowance.setOwner(entity.getId());
@@ -262,22 +251,21 @@ class AccountDatabaseAccessorTest {
         secondAllowance.setOwner(entity.getId());
         secondAllowance.setAmount(60L);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(cryptoAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), recordFile.getConsensusEnd()))
+        when(cryptoAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), TIMESTAMP))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedMap<EntityNum, Long> allowancesMap = new TreeMap<>();
         allowancesMap.put(EntityNum.fromLong(firstAllowance.getSpender()), firstAllowance.getAmount());
         allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+        assertThat(accountAccessor.get(ADDRESS, TIMESTAMP)).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getCryptoAllowances));
     }
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepository() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -290,9 +278,6 @@ class AccountDatabaseAccessorTest {
         secondAllowance.setSpender(234L);
         secondAllowance.setAmount(60L);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(tokenAllowanceRepository.findByOwner(entity.getId()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
@@ -308,12 +293,14 @@ class AccountDatabaseAccessorTest {
                         EntityNum.fromLong(secondAllowance.getSpender())),
                 secondAllowance.getAmount());
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesMap, Account::getFungibleTokenAllowances));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(
+                        account -> assertThat(account).returns(allowancesMap, Account::getFungibleTokenAllowances));
     }
 
     @Test
     void fungibleTokenAllowancesMatchValuesFromRepositoryHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, TIMESTAMP)).thenReturn(Optional.ofNullable(entity));
         TokenAllowance firstAllowance = new TokenAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -326,10 +313,7 @@ class AccountDatabaseAccessorTest {
         secondAllowance.setSpender(234L);
         secondAllowance.setAmount(60L);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(tokenAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), recordFile.getConsensusEnd()))
+        when(tokenAllowanceRepository.findByOwnerAndTimestamp(entity.getId(), TIMESTAMP))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
         SortedMap<FcTokenAllowanceId, Long> allowancesMap = new TreeMap<>();
@@ -344,12 +328,14 @@ class AccountDatabaseAccessorTest {
                         EntityNum.fromLong(secondAllowance.getSpender())),
                 secondAllowance.getAmount());
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
+        assertThat(accountAccessor.get(ADDRESS, TIMESTAMP)).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getFungibleTokenAllowances));
     }
 
     @Test
     void approveForAllNftsMatchValuesFromRepository() {
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         NftAllowance firstAllowance = new NftAllowance();
         firstAllowance.setOwner(entity.getId());
         firstAllowance.setTokenId(15L);
@@ -360,9 +346,6 @@ class AccountDatabaseAccessorTest {
         secondAllowance.setTokenId(16L);
         secondAllowance.setSpender(234L);
 
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
         when(nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(entity.getId()))
                 .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
 
@@ -372,63 +355,21 @@ class AccountDatabaseAccessorTest {
         allowancesSet.add(new FcTokenAllowanceId(
                 EntityNum.fromLong(secondAllowance.getTokenId()), EntityNum.fromLong(secondAllowance.getSpender())));
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesSet, Account::getApproveForAllNfts));
-    }
-
-    @Test
-    void approveForAllNftsMatchValuesFromRepositoryHistorical() {
-        NftAllowance firstAllowance = new NftAllowance();
-        firstAllowance.setOwner(entity.getId());
-        firstAllowance.setTokenId(15L);
-        firstAllowance.setSpender(123L);
-
-        NftAllowance secondAllowance = new NftAllowance();
-        secondAllowance.setOwner(entity.getId());
-        secondAllowance.setTokenId(16L);
-        secondAllowance.setSpender(234L);
-
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(
-                        entity.getId(), recordFile.getConsensusEnd()))
-                .thenReturn(Arrays.asList(firstAllowance, secondAllowance));
-
-        SortedSet<FcTokenAllowanceId> allowancesSet = new TreeSet<>();
-        allowancesSet.add(new FcTokenAllowanceId(
-                EntityNum.fromLong(firstAllowance.getTokenId()), EntityNum.fromLong(firstAllowance.getSpender())));
-        allowancesSet.add(new FcTokenAllowanceId(
-                EntityNum.fromLong(secondAllowance.getTokenId()), EntityNum.fromLong(secondAllowance.getSpender())));
-
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(allowancesSet, Account::getApproveForAllNfts));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(
+                        account -> assertThat(account).returns(allowancesSet, Account::getApproveForAllNfts));
     }
 
     @Test
     void numTokenAssociationsAndNumPositiveBalancesMatchValuesFromRepository() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(-1L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
+        when(entityDatabaseAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .thenReturn(Optional.ofNullable(entity));
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(anyLong()))
                 .thenReturn(associationsCount);
 
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
-                .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
-    }
-
-    @Test
-    void numTokenAssociationsAndNumPositiveBalancesMatchValuesFromRepositoryHistorical() {
-        final var recordFile = new RecordFile();
-        recordFile.setConsensusEnd(123L);
-        when(contractCallContext.getRecordFile()).thenReturn(recordFile);
-        when(tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
-                        entity.getId(), recordFile.getConsensusEnd()))
-                .thenReturn(associationsCount);
-
-        assertThat(accountAccessor.get(ADDRESS)).hasValueSatisfying(account -> assertThat(account)
-                .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
-                .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
+        assertThat(accountAccessor.get(ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
+                .hasValueSatisfying(account -> assertThat(account)
+                        .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
+                        .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
     }
 }

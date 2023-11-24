@@ -30,13 +30,17 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
     @NonNull
     final Map<Class<?>, DatabaseAccessor<K, ?>> databaseAccessors;
 
+    final long timestamp;
+
     public DatabaseBackedStateFrame(
-            @NonNull final List<DatabaseAccessor<K, ?>> accessors, @NonNull final Class<?>[] valueClasses) {
+            @NonNull final List<DatabaseAccessor<K, ?>> accessors,
+            @NonNull final Class<?>[] valueClasses,
+            final long timestamp) {
         super(
                 Optional.empty(),
                 valueClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
-
         databaseAccessors = accessors.stream().collect(Collectors.toMap(DatabaseAccessor::getValueClass, a -> a));
+        this.timestamp = timestamp;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
         if (databaseAccessor == null) {
             throw new NullPointerException("no available accessor for given klass");
         }
-        return databaseAccessor.get(key).flatMap(o -> Optional.of(klass.cast(o)));
+        return databaseAccessor.get(key, timestamp).flatMap(o -> Optional.of(klass.cast(o)));
     }
 
     @Override

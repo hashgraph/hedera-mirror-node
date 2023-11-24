@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.common;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -28,14 +29,14 @@ class ContractCallContextTest {
 
     @Test
     void testGet() {
-        ContractCallContext context = ContractCallContext.init(null);
+        ContractCallContext context = ContractCallContext.init(null, DatabaseAccessor.UNSET_TIMESTAMP);
         assertThat(ContractCallContext.get()).isEqualTo(context);
         context.close();
     }
 
     @Test
     void testReset() {
-        ContractCallContext context = ContractCallContext.init(null);
+        ContractCallContext context = ContractCallContext.init(null, DatabaseAccessor.UNSET_TIMESTAMP);
         ContractCallContext.get().setEstimate(true);
         ContractCallContext.get().setCreate(true);
 
@@ -48,7 +49,7 @@ class ContractCallContextTest {
 
     @Test
     void testClose() {
-        ContractCallContext context = ContractCallContext.init(null);
+        ContractCallContext context = ContractCallContext.init(null, DatabaseAccessor.UNSET_TIMESTAMP);
 
         context.close();
 
@@ -57,7 +58,7 @@ class ContractCallContextTest {
 
     @Test
     void testRecordFileIsClearedOnReset() {
-        ContractCallContext context = ContractCallContext.init(null);
+        ContractCallContext context = ContractCallContext.init(null, DatabaseAccessor.UNSET_TIMESTAMP);
         final var recordFile = domainBuilder.recordFile().get();
         context.setRecordFile(recordFile);
         assertThat(context.getRecordFile()).isEqualTo(recordFile);
@@ -70,7 +71,7 @@ class ContractCallContextTest {
 
     @Test
     void testSenderIsClearedOnReset() {
-        ContractCallContext context = ContractCallContext.init(null);
+        ContractCallContext context = ContractCallContext.init(null, DatabaseAccessor.UNSET_TIMESTAMP);
         context.setSenderAddress(Address.ALTBN128_ADD);
         assertThat(context.getSenderAddress()).isEqualTo(Address.ALTBN128_ADD);
 

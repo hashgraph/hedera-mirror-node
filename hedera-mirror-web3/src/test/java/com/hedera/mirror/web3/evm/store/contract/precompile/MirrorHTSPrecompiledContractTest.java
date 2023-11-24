@@ -140,7 +140,7 @@ class MirrorHTSPrecompiledContractTest {
                         tokenAccessor,
                         precompilePricingUtils));
 
-        ContractCallContext.init(store.getStackedStateFrames());
+        ContractCallContext.init(store.getStackedStateFrames(), DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     @Test
@@ -373,7 +373,7 @@ class MirrorHTSPrecompiledContractTest {
     static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override
-        public Optional<V> get(@NonNull final K key) {
+        public Optional<V> get(@NonNull final K key, final long timestamp) {
             throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
         }
     }

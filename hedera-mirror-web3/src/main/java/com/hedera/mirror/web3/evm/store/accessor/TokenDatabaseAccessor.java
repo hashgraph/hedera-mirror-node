@@ -52,15 +52,14 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
+    public @NonNull Optional<Token> get(@NonNull Object address, final long timestamp) {
+        return entityDatabaseAccessor.get(address, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
     }
 
-    private Token tokenFromEntity(Entity entity) {
+    private Token tokenFromEntity(Entity entity, final long timestamp) {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
-        final var timestamp = getTimestamp();
         final var databaseToken = useHistorical(timestamp)
                 ? tokenRepository
                         .findByTokenIdAndTimestamp(entity.getId(), timestamp)
@@ -94,7 +93,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 parseJkey(databaseToken.getFeeScheduleKey()),
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
-                getTreasury(databaseToken.getTreasuryAccountId()),
+                getTreasury(databaseToken.getTreasuryAccountId(), timestamp),
                 getAutoRenewAccount(entity),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
@@ -110,7 +109,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
                 0L,
-                getCustomFees(entity.getId()));
+                getCustomFees(entity.getId(), timestamp));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -131,20 +130,22 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private Account getTreasury(EntityId treasuryId) {
+    private Account getTreasury(EntityId treasuryId, final long timestamp) {
         if (treasuryId == null) {
             return null;
         }
-        return entityRepository
-                .findByIdAndDeletedIsFalse(treasuryId.getId())
-                .map(entity -> new Account(
+
+        final var treasury = useHistorical(timestamp)
+                ? entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), timestamp)
+                : entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId());
+        return treasury.map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId) {
-        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
+    private List<CustomFee> getCustomFees(Long tokenId, final long timestamp) {
+        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
     }
 }

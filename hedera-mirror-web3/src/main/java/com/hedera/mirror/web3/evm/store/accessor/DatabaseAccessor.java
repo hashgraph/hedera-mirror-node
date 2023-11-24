@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.core.ResolvableType;
@@ -31,7 +30,7 @@ public abstract class DatabaseAccessor<K, V> {
      * Default value for the historical eth_call timestamp.
      * When the call is for latest block timestamp is -1.
      */
-    protected static final long UNSET_TIMESTAMP = -1L;
+    public static final long UNSET_TIMESTAMP = -1L;
 
     @SuppressWarnings("unchecked")
     protected DatabaseAccessor() {
@@ -46,7 +45,7 @@ public abstract class DatabaseAccessor<K, V> {
 
     // Given address return an account record from the DB
     @NonNull
-    public abstract Optional<V> get(@NonNull final K key);
+    public abstract Optional<V> get(@NonNull final K key, final long timestamp);
 
     @NonNull
     public Class<K> getKeyClass() {
@@ -58,12 +57,7 @@ public abstract class DatabaseAccessor<K, V> {
         return klassValue;
     }
 
-    protected long getTimestamp() {
-        final var historicalRecordFile = ContractCallContext.get().getRecordFile();
-        return (historicalRecordFile != null) ? historicalRecordFile.getConsensusEnd() : UNSET_TIMESTAMP;
-    }
-
-    protected boolean useHistorical(long timestamp) {
+    public static boolean useHistorical(long timestamp) {
         return timestamp != UNSET_TIMESTAMP;
     }
 

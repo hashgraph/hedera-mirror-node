@@ -60,15 +60,14 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object address, final long timestamp) {
+        return entityDatabaseAccessor.get(address, timestamp).map(entity -> accountFromEntity(entity, timestamp));
     }
 
-    private Account accountFromEntity(Entity entity) {
+    private Account accountFromEntity(Entity entity, final long timestamp) {
         if (!ACCOUNT.equals(entity.getType()) && !CONTRACT.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map an account/contract from a different type");
         }
-        final var timestamp = getTimestamp();
         final var tokenAssociationsCounts =
                 getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
         return new Account(

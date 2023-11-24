@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
@@ -249,6 +250,24 @@ public class StoreImpl implements Store {
         final var address = EntityIdUtils.asTypedEvmAddress(accountID);
         final var account = accountAccessor.get(address);
         return account.isPresent();
+    }
+
+    @Override
+    public long getHistoricalTimestamp() {
+        // Get the top frame from stackedStateFrames
+        return stackedStateFrames
+                .top()
+                .upstreamFrame
+                // flatten the nested Optional<UpstreamFrame>
+                .flatMap(CachingStateFrame::getUpstream)
+                // filter out non-DatabaseBackedStateFrame instances
+                .filter(DatabaseBackedStateFrame.class::isInstance)
+                // cast the filtered object to DatabaseBackedStateFrame
+                .map(DatabaseBackedStateFrame.class::cast)
+                // map to the timestamp value
+                .map(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp)
+                // return unset timestamp as default
+                .orElse(DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     /**

@@ -91,6 +91,8 @@ public interface Store {
 
     boolean exists(AccountID accountID);
 
+    long getHistoricalTimestamp();
+
     enum OnMissing {
         THROW,
         DONT_THROW

@@ -31,8 +31,7 @@ public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAl
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Override
-    public @NonNull Optional<NftAllowance> get(@NonNull Object key) {
-        final var timestamp = getTimestamp();
+    public @NonNull Optional<NftAllowance> get(@NonNull Object key, final long timestamp) {
         return useHistorical(timestamp)
                 ? nftAllowanceRepository.findByIdAndTimestamp(((Id) key).getTokenId(), timestamp)
                 : nftAllowanceRepository.findById((Id) key);
