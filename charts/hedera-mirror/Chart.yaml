@@ -44,7 +44,7 @@ dependencies:
     condition: rest-java.enabled
     name: hedera-mirror-rest-java
     repository: file://../hedera-mirror-rest-java
-    tags: [ api, java ]
+    tags: [api, java]
     version: ">=0.18.0-0"
   - alias: rosetta
     condition: rosetta.enabled

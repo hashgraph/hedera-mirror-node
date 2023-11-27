@@ -229,7 +229,7 @@ prometheusRules:
   RestJavaRequestLatency:
     annotations:
       description: "High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Mirror Rest-Java API request latency exceeds 2s"
+      summary: "Mirror Rest Java API request latency exceeds 2s"
     enabled: true
     expr: sum(rate(http_server_requests_seconds_sum{application="hedera-mirror-rest-java"}[5m])) by (namespace, pod) / sum(rate(http_server_requests_seconds_count{application="hedera-mirror-rest-java"}[5m])) by (namespace, pod) > 2
     for: 1m
