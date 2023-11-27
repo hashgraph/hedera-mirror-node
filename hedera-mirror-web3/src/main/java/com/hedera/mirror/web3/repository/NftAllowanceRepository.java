@@ -33,6 +33,46 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
     @Cacheable(cacheNames = CACHE_NAME_NFT_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<NftAllowance> findById(Id id);
 
+    /**
+     * Retrieves  nft allowance by its id up to a given block timestamp.
+     * The method considers both the current state of the nft allowance and its historical states
+     * and returns the latest valid just before or equal to the provided block timestamp.
+     *
+     * @param tokenId
+     * @param owner
+     * @param spender
+     * @param blockTimestamp
+     * @return an Optional containing the nft allowance state at the specified timestamp.
+     * If there is no record found for the given criteria, an empty Optional is returned.
+     */
+    @Query(
+            value =
+                    """
+                    (
+                        select *
+                        from nft_allowance
+                        where token_id = :tokenId
+                            and owner = :owner
+                            and spender = :spender
+                            and lower(timestamp_range) <= :blockTimestamp
+                    )
+                    union all
+                    (
+                        select *
+                        from nft_allowance_history
+                        where token_id = :tokenId
+                            and owner = :owner
+                            and spender = :spender
+                            and lower(timestamp_range) <= :blockTimestamp
+                        order by lower(timestamp_range) desc
+                        limit 1
+                    )
+                    order by timestamp_range desc
+                    limit 1
+                    """,
+            nativeQuery = true)
+    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long owner, long spender, long blockTimestamp);
+
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 
     /**
