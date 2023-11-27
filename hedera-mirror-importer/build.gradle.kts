@@ -28,7 +28,6 @@ dependencies {
     implementation("com.google.cloud:spring-cloud-gcp-starter-pubsub")
     implementation("commons-io:commons-io")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("net.java.dev.jna:jna")
