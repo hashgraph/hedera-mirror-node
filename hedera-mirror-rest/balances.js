@@ -107,7 +107,7 @@ const getBalances = async (req, res) => {
 
   let sqlQuery;
   if (tsQuery) {
-    const tsQueryResult = await getTsQuery(tsParams, tsQuery);
+    const tsQueryResult = await getTsQuery(tsQuery, tsParams);
     if (!tsQueryResult.consensusTsQuery) {
       return;
     }
@@ -152,21 +152,41 @@ const getBalances = async (req, res) => {
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
-const getAccountBalanceTimestamp = async (tsQuery, tsParams, order = 'desc') => {
-  // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the primary key of the table thus it will speed up queries on v2
+/**
+ * Gets the balance snapshot timestamp range given tsQuery and tsParams. If a balance snapshot timestamp satisfying the
+ * conditions is found, a range with lower bound equal to the beginning of the month of the balance snapshot timestamp,
+ * and upper bound equal to the balance snapshot timestamp is returned. Otherwise, an empty object is returned.
+ *
+ * @param tsQuery - the timestamp query built by parsing the timestamp filter from the request url
+ * @param tsParams - the timestamp parameters for the timestamp query
+ * @returns {Promise<{lower: BigInt|Number, upper: BigInt|Number}|{}>}
+ */
+const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
+  // Add the treasury account to the query as it will always be in the balance snapshot and account_id is the first
+  // column of the primary key
   tsQuery = tsQuery ? tsQuery.concat(' and account_id = ?') : ' account_id = ?';
-  tsParams.push('2');
+  tsParams.push(2);
 
   const query = `
     select consensus_timestamp
     from account_balance
     where ${tsQuery}
-    order by consensus_timestamp ${order}
+    order by consensus_timestamp desc
     limit 1`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(query);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getAccountBalanceTimestampRange query: ${pgSqlQuery} ${utils.JSONStringify(tsParams)}`);
+  }
+
   const {rows} = await pool.queryQuietly(pgSqlQuery, tsParams);
-  return rows[0]?.consensus_timestamp;
+  if (rows.length === 0) {
+    return {};
+  }
+
+  const upper = rows[0].consensus_timestamp;
+  const lower = utils.getFirstDayOfMonth(upper);
+  return {lower, upper};
 };
 
 const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
@@ -185,7 +205,7 @@ const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, p
   return [sqlQuery, tsParams];
 };
 
-const getTsQuery = async (tsParams, tsQuery) => {
+const getTsQuery = async (tsQuery, tsParams) => {
   let upperBound = constants.MAX_LONG;
   let gteParam = 0n;
   const neParams = [];
@@ -247,23 +267,22 @@ const getTsQuery = async (tsParams, tsQuery) => {
 };
 
 const getPartitionedTsQuery = async (lowerBound, upperBound, neParams) => {
-  let accountBalanceQuery = `consensus_timestamp >= ? and consensus_timestamp <= ?`;
-  let accountBalanceParams = [lowerBound, upperBound];
+  let query = `consensus_timestamp >= ? and consensus_timestamp <= ?`;
+  const params = [lowerBound, upperBound];
   const neQuery = Array.from(neParams, (v) => '?').join(', ');
   if (neQuery) {
-    accountBalanceQuery = accountBalanceQuery.concat(` and consensus_timestamp not in (${neQuery})`);
-    accountBalanceParams.push(...neParams);
+    query = query.concat(` and consensus_timestamp not in (${neQuery})`);
+    params.push(...neParams);
   }
-  const accountBalanceTimestamp = await getAccountBalanceTimestamp(accountBalanceQuery, accountBalanceParams);
 
-  if (!accountBalanceTimestamp) {
+  const {lower, upper} = await getAccountBalanceTimestampRange(query, params);
+  if (upper === undefined) {
     return {};
   }
 
-  const beginningOfMonth = utils.getFirstDayOfMonth(accountBalanceTimestamp);
   const consensusTsQuery = `ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?`;
   // Double the params to account for the query values for account_balance and token_balance together
-  const tsParams = [beginningOfMonth, accountBalanceTimestamp, beginningOfMonth, accountBalanceTimestamp];
+  const tsParams = [lower, upper, lower, upper];
   return {consensusTsQuery, tsParams};
 };
 
@@ -348,6 +367,6 @@ const acceptedBalancesParameters = new Set([
 ]);
 
 export default {
+  getAccountBalanceTimestampRange,
   getBalances,
-  getAccountBalanceTimestamp,
 };
