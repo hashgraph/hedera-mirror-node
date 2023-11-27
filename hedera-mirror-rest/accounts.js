@@ -87,7 +87,6 @@ const processRow = (row) => {
 const entityFields = [
   'e.alias',
   'e.auto_renew_period',
-  'e.balance_timestamp',
   'e.created_timestamp',
   'e.decline_reward',
   'e.deleted',
@@ -145,72 +144,85 @@ const getEntityBalanceQuery = (
     .join(' and ');
   const params = utils.mergeParams(
     [],
-    tokenBalanceQuery.params,
     entityBalanceQuery.params,
     entityAccountQuery.params,
+    tokenBalanceQuery.params,
     pubKeyQuery.params,
     accountBalanceQuery.params,
     entityStakeQuery.params
   );
 
-  // If timestamp parameter is present then get values from token_balance
+  // Need historical balance info if the generated query for account balance is not empty or forced to use balance info
+  // from entity / entity_history union. The latter happens when given the timestamp query params in the request, no
+  // valid balance timestamp snapshot is found.
+  const needHistoricalBalanceInfo = accountBalanceQuery.query || accountBalanceQuery.forceUnionEntityHistory;
   const queries = [];
-  if (accountBalanceQuery.query) {
-    queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id, consensus_timestamp
-                                       from token_balance)`
-    );
+  let selectTokenBalance;
+  if (needHistoricalBalanceInfo) {
+    // Return empty array if forceUnionEntityHistory is true, because there is no token balance info wrt the entity
+    // balance timestamp
+    selectTokenBalance = accountBalanceQuery.query
+      ? `(
+          select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+          from (
+            select distinct on (token_id) token_id, balance
+            from token_balance
+            where ${tokenBalanceQuery.query}
+            order by token_id ${order}, consensus_timestamp desc
+            limit ${tokenBalanceQuery.limit}
+          ) as account_token_balance
+        ) as token_balances`
+      : "'[]'::jsonb as token_balances";
   } else {
-    queries.push(
-      `with latest_token_balance as (select account_id, balance, token_id
-                                     from token_account
-                                     where associated is true)`
-    );
+    queries.push(`with latest_token_balance as (
+       select account_id, balance, token_id
+       from token_account
+       where associated is true)`);
+    selectTokenBalance = `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
+          from (
+            select token_id, balance
+            from latest_token_balance
+            where ${tokenBalanceQuery.query}
+            order by token_id ${order}
+            limit ${tokenBalanceQuery.limit}
+          ) as account_token_balance)
+        as token_balances`;
   }
 
-  const selectFields = [
-    entityFields,
-    `(select json_agg(jsonb_build_object('token_id', token_id, 'balance', balance)) ::jsonb
-                        from (select token_id, balance
-                              from latest_token_balance
-                              where ${tokenBalanceQuery.query}
-                              order by token_id ${order}
-        limit ${tokenBalanceQuery.limit}) as account_token_balance) as token_balances`,
-  ];
+  let balanceField = 'e.balance as balance';
+  let balanceTimestampField = 'e.balance_timestamp as balance_timestamp';
+  let entityTable;
+  let orderClause;
+  let whereClause;
 
-  if (accountBalanceQuery.query) {
-    const balanceSelect = 'COALESCE(ab.balance, e.balance) as balance';
-    selectFields.push(balanceSelect);
+  if (needHistoricalBalanceInfo) {
+    if (accountBalanceQuery.query) {
+      balanceField = `${accountBalanceQuery.query} as balance`;
+      balanceTimestampField = `$${accountBalanceQuery.timestampParamIndex} as balance_timestamp`;
+    }
 
-    queries.push(
-      `
-                select ${selectFields.join(',\n')}
-                from (SELECT *
-                      from ${Entity.tableName} e
-                      where ${entityWhereCondition}
-                      UNION ALL
-                      SELECT *
-                      from ${Entity.historyTableName} e
-                      where ${entityWhereCondition}
-                      order by ${Entity.TIMESTAMP_RANGE} desc limit 1) e
-                         left join entity_stake es on es.id = e.id
-                         left join account_balance ab on ${accountBalanceQuery.query} ${
-        whereCondition ? 'where' : ''
-      } ${whereCondition}
-            `
-    );
+    entityTable = `(
+        select *
+        from ${Entity.tableName} as e
+        where ${entityWhereCondition}
+        union all
+        select *
+        from ${Entity.historyTableName} as e
+        where ${entityWhereCondition}
+        order by ${Entity.TIMESTAMP_RANGE} desc limit 1
+      )`;
   } else {
-    const conditions = [entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ');
-    selectFields.push('e.balance as balance');
-
-    queries.push(` select ${selectFields.join(',\n')}
-                       from entity e
-                                left join entity_stake es on es.id = e.id
-                       where ${conditions}
-                       order by e.id ${order} ${limitQuery}`);
+    entityTable = 'entity';
+    whereClause = `where ${[entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ')}`;
+    orderClause = `order by e.id ${order}`;
     utils.mergeParams(params, limitParams);
   }
 
+  const selectFields = [entityFields, selectTokenBalance, balanceField, balanceTimestampField];
+  queries.push(`select ${selectFields.join(',\n')}
+    from ${entityTable} as e
+      left join entity_stake as es on es.id = e.id
+    ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
   return {query, params};
@@ -247,7 +259,7 @@ const getAccountQuery = (
     const entityOnlyQuery = `
             select ${entityFields}
             from entity e
-                     left join entity_stake es on es.id = e.id
+              left join entity_stake es on es.id = e.id
             where ${entityCondition}
             order by id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`;
     return {
@@ -376,23 +388,20 @@ const getOneAccount = async (req, res) => {
     eqValues
   );
 
-  let paramCount = 0;
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  const accountIdParams = [encodedId];
+  const accountIdParamIndex = 1;
+  let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
-    query: `account_id = $${++paramCount}`,
-    params: accountIdParams,
+    query: `account_id = $${accountIdParamIndex}`,
+    params: [],
     limit: tokenBalanceResponseLimit.singleAccount,
   };
-  const entityAccountQuery = {query: `e.id = $${paramCount}`, params: []};
-  const entityStakeQuery = {query: `(es.id = $${paramCount} OR es.id IS NULL)`, params: []};
+  const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
+  const entityStakeQuery = {query: `(es.id = $${accountIdParamIndex} OR es.id IS NULL)`, params: []};
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
-    let tokenBalanceTsQuery = `consensus_timestamp ${opsMap.eq} $${++paramCount}`;
-    tokenBalanceQuery.query += ` and ${tokenBalanceTsQuery} `;
-
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
@@ -402,30 +411,45 @@ const getOneAccount = async (req, res) => {
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
-    const [balanceFileTsQuery, balanceFileTsParams] = utils.buildTimestampQuery(
+    const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
       tsRange,
       'consensus_timestamp',
-      [],
+      neValues,
       eqValues,
       false
     );
-    const balanceFileTs = await balances.getAccountBalanceTimestamp(
-      balanceFileTsQuery.replaceAll(opsMap.eq, opsMap.lte),
-      balanceFileTsParams,
-      order
+
+    const {lower, upper} = await balances.getAccountBalanceTimestampRange(
+      balanceSnapshotTsQuery.replaceAll(opsMap.eq, opsMap.lte),
+      balanceSnapshotTsParams
     );
-    //Setting the timestamp to be the account balance timestamp
-    tokenBalanceQuery.params = tokenBalanceQuery.params.concat(balanceFileTs);
 
-    //Allow type coercion as the neValues will always be bigint and balanceFileTs may be a number
-    const timestampExcluded = neValues.some((value) => value == balanceFileTs);
+    if (upper !== undefined) {
+      // Note when a balance snapshot timestamp is not found, it falls back to return balance info from entity table
+      const lowerTimestampParamIndex = ++paramCount;
+      const upperTimestampParamIndex = ++paramCount;
+      // Note if no balance info for the specific account in the timestamp range is found, the balance should be 0.
+      // It can happen when the account is just created and the very first snapshot is after the range.
+      accountBalanceQuery.query = `coalesce((
+        select balance
+        from account_balance
+        where account_id = $${accountIdParamIndex} and
+          consensus_timestamp >= $${lowerTimestampParamIndex} and
+          consensus_timestamp <= $${upperTimestampParamIndex}
+        order by consensus_timestamp desc
+        limit 1
+      ), 0)`;
+      accountBalanceQuery.timestampParamIndex = upperTimestampParamIndex;
 
-    if (timestampExcluded) {
-      throw new NotFoundError('Not found');
+      tokenBalanceQuery.params.push(lower, upper);
+      tokenBalanceQuery.query += ` and consensus_timestamp >= $${lowerTimestampParamIndex} and
+        consensus_timestamp <= $${upperTimestampParamIndex}`;
+    } else {
+      // force the query to union entity and entity history in case a valid balance snapshot is not found, so the balance
+      // and its timestamp can be returned from the union
+      accountBalanceQuery.forceUnionEntityHistory = true;
+      tokenBalanceQuery.query = '';
     }
-
-    accountBalanceQuery.query = `ab.account_id = e.id and ab.consensus_timestamp = $${++paramCount}`;
-    accountBalanceQuery.params = [balanceFileTs ?? null];
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(
