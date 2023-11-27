@@ -6,13 +6,13 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=16.13.0 < 21"
+    "node": ">=16.13.0 < 20"
   },
   "scripts": {
-    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import=extensionless/register server.js",
+    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --experimental-specifier-resolution=node server.js",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
-    "start": "node --import=extensionless/register server.js",
-    "pretest": "node --import=extensionless/register __tests__/integration/generator.js",
+    "start": "node --experimental-specifier-resolution=node server.js",
+    "pretest": "node --experimental-specifier-resolution=node __tests__/integration/generator.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "Hedera Mirror Node Team",
@@ -31,7 +31,6 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^5.1.1",
     "extend": "^3.0.2",
-    "extensionless": "^1.7.3",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
