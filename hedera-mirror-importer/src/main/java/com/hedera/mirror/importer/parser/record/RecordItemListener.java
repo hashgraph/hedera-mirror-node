@@ -18,5 +18,19 @@ package com.hedera.mirror.importer.parser.record;
 
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.StreamItemListener;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
-public interface RecordItemListener extends StreamItemListener<RecordItem> {}
+public interface RecordItemListener extends StreamItemListener<RecordItem> {
+
+    default boolean receiptStatusContainsInvalidId(ResponseCodeEnum receiptStatus) {
+        return switch (receiptStatus) {
+            case INVALID_ACCOUNT_ID,
+                    INVALID_CONTRACT_ID,
+                    INVALID_FILE_ID,
+                    INVALID_TOPIC_ID,
+                    INVALID_TOKEN_ID,
+                    INVALID_SCHEDULE_ID -> true;
+            default -> false;
+        };
+    }
+}

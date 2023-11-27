@@ -22,7 +22,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +36,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
@@ -69,8 +72,11 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -352,6 +358,43 @@ class PubSubRecordItemListenerTest {
         FileData fileData = new FileData(
                 100L, fileContents, EntityId.of(ADDRESS_BOOK_FILE_ID), TransactionType.FILEUPDATE.getProtoId());
         verify(addressBookService).update(fileData);
+    }
+
+    @CsvSource({
+        "SUCCESS, true",
+        "INVALID_ACCOUNT_ID, false",
+        "INVALID_CONTRACT_ID, false",
+        "INVALID_FILE_ID, false",
+        "INVALID_TOPIC_ID, false",
+        "INVALID_TOKEN_ID, false",
+        "INVALID_SCHEDULE_ID, false",
+    })
+    @ParameterizedTest
+    void testRecoverableErrorWithInvalidEntityId(ResponseCodeEnum receiptStatus, boolean expected) {
+        // given
+        int expectedRecoverableErrorCount = expected ? 1 : 0;
+        ConsensusSubmitMessageTransactionBody submitMessage =
+                ConsensusSubmitMessageTransactionBody.newBuilder().build();
+        Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0L, CONSENSUS_TIMESTAMP)))
+                .setReceipt(
+                        TransactionReceipt.newBuilder().setStatus(receiptStatus).build())
+                .build();
+        var recordItem = RecordItem.builder()
+                .transactionRecord(transactionRecord)
+                .transaction(transaction)
+                .build();
+
+        doThrow(InvalidEntityException.class).when(transactionHandler).getEntity(any());
+
+        try (MockedStatic<Utility> mockUtility = mockStatic(Utility.class)) {
+            // when
+            pubSubRecordItemListener.onItem(recordItem);
+            // then
+            mockUtility.verify(
+                    () -> Utility.handleRecoverableError(any(), any(), any()), times(expectedRecoverableErrorCount));
+        }
     }
 
     @SuppressWarnings("unchecked")
