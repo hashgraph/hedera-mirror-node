@@ -73,7 +73,6 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT";
     private static final String SPENDER_DOES_NOT_HAVE_ALLOWANCE = "SPENDER_DOES_NOT_HAVE_ALLOWANCE";
 
-
     private DeployedContract deployedEquivalenceDestruct;
     private DeployedContract deployedEquivalenceCall;
     private DeployedContract deployedPrecompileContract;
@@ -103,7 +102,8 @@ public class EquivalenceFeature extends AbstractFeature {
     @Given("I successfully create estimate precompile contract")
     public void createNewEstimatePrecompileContract() throws IOException {
         deployedPrecompileContract = getContract(ESTIMATE_PRECOMPILE);
-        precompileContractSolidityAddress = deployedPrecompileContract.contractId().toSolidityAddress();
+        precompileContractSolidityAddress =
+                deployedPrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
     }
 
@@ -119,8 +119,7 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     @And("I update the account and token key")
-    public void updateAccountAndTokensKeys()
-            throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+    public void updateAccountAndTokensKeys() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
         var keyList = KeyList.of(admin.getPublicKey(), deployedPrecompileContract.contractId())
                 .setThreshold(1);
         new AccountUpdateTransaction()
@@ -250,8 +249,9 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals("INVALID_CONTRACT_ID", extractedStatus);
     }
 
-    @Then("I execute internal call against HTS precompile with approve function for {token} without amount")
-    public void executeInternalCallForHTSApprove(TokenNameEnum tokenName) {
+    @Then("I execute internal {string} against HTS precompile with approve function for {token} {string} amount")
+    public void executeInternalCallForHTSApproveWithAmount(String call, TokenNameEnum tokenName, String amountType) {
+        var callType = getMethodName(call, amountType);
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeDataToByteArray(
                 HTS_APPROVE,
@@ -261,21 +261,38 @@ public class EquivalenceFeature extends AbstractFeature {
         var parameters = new ContractFunctionParameters()
                 .addAddress("0x0000000000000000000000000000000000000167")
                 .addBytes(data);
-        var message = executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
-        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+
+        if (amountType.equals("with")) {
+            var transactionId = executeContractCallTransactionAndReturnId(
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(100L));
+            var message = mirrorClient
+                    .getTransactions(transactionId)
+                    .getTransactions()
+                    .get(1)
+                    .getResult();
+            assertEquals(INVALID_FEE_SUBMITTED, message);
+
+        } else {
+            var message = executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+        }
     }
 
     @Then("I execute internal call against Ecrecover")
     public void executeInternalCallForEcrecover() {
         var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
-        var hashedMessage = "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
+        var hashedMessage =
+                "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
         var parameters = new ContractFunctionParameters()
                 .addAddress("0x0000000000000000000000000000000000000001")
                 .addBytes(Bytes.fromHexString(hashedMessage).toArrayUnsafe());
-        executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount",
-                parameters);
+        executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        var resultMessageSigner = mirrorClient.getContractActions(transactionId).getActions().get(1).getResultData();
+        var resultMessageSigner = mirrorClient
+                .getContractActions(transactionId)
+                .getActions()
+                .get(1)
+                .getResultData();
         assertEquals(messageSignerAddress, asAddress(resultMessageSigner).toString());
     }
 
@@ -328,14 +345,14 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     @Then("I make internal {string} to system account {string} {string} amount")
-    public void callToSystemAddress(String typeOfCall, String address, String amountType) {
+    public void callToSystemAddress(String call, String address, String amountType) {
         String functionResult;
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress(); // {0x41, 0x74, 0x49, 0x24}
         var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
-        var callType = getMethodName(typeOfCall, amountType);
+        var callType = getMethodName(call, amountType);
         if (amountType.equals("with")) {
             functionResult = executeContractCallTransaction(
-                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(100L));
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10));
         } else {
             functionResult = executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
         }
@@ -370,7 +387,11 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addInt64(1L);
         var transactionId = executeContractCallTransactionAndReturnId(
                 deployedPrecompileContract, "transferTokenExternal", parameters, null);
-        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
         var expectedMessage = getExpectedResponseMessage(address);
         assertEquals(expectedMessage, message);
     }
@@ -385,7 +406,11 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addUint256(new BigInteger("1"));
         var transactionId = executeContractCallTransactionAndReturnId(
                 deployedPrecompileContract, "transferFromExternal", parameters, null);
-        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
         var expectedMessage = getExpectedResponseMessage(address);
         assertEquals(expectedMessage, message);
     }
@@ -400,7 +425,11 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addInt64(1L);
         var transactionId = executeContractCallTransactionAndReturnId(
                 deployedPrecompileContract, "transferNFTExternal", parameters, null);
-        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
         var expectedMessage = getExpectedResponseMessage(address);
         assertEquals(expectedMessage, message);
     }
@@ -415,7 +444,11 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addUint256(new BigInteger("1"));
         var transactionId = executeContractCallTransactionAndReturnId(
                 deployedPrecompileContract, "transferFromNFTExternal", parameters, null);
-        var message = mirrorClient.getTransactions(transactionId).getTransactions().get(1).getResult();
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
         var expectedMessage = INVALID_TRANSFER_EXCEPTION;
         if (extractAccountNumber(address) > 751) {
             expectedMessage = SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -429,6 +462,10 @@ public class EquivalenceFeature extends AbstractFeature {
         return switch (combinedKey) {
             case "call_without" -> "makeCallWithoutAmount";
             case "call_with" -> "makeCallWithAmount";
+            case "staticcall_without" -> "makeStaticCall";
+            case "delegatecall_without" -> "makeDelegateCall";
+            case "callcode_without" -> "callCodeToContractWithoutAmount";
+            case "callcode_with" -> "callCodeToContractWithAmount";
             default -> "Unknown";
         };
     }
