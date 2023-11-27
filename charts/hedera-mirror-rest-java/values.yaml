@@ -133,7 +133,7 @@ prometheusRules:
       application: hedera-mirror-rest-java
       severity: critical
 
- RestJavaHighCPU:
+  RestJavaHighCPU:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror Java REST API CPU usage exceeds 80%"
