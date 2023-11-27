@@ -56,23 +56,22 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                     select count(*) as tokenCount, balance>0 as isPositiveBalance
                     from (
                         (
-                            select account_id
+                            select *
                             from token_account
                             where account_id = :accountId
                                 and associated is true
                                 and lower(timestamp_range) <= :blockTimestamp
-                            group by balance>0
                         )
                         union all
                         (
-                            select account_id
+                            select *
                             from token_account_history
                             where account_id = :accountId
                                 and associated is true
                                 and lower(timestamp_range) <= :blockTimestamp
-                            group by balance>0
                         )
-                    )
+                    ) as ta
+                    group by balance>0
                     """,
             nativeQuery = true)
     List<TokenAccountAssociationsCount> countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(

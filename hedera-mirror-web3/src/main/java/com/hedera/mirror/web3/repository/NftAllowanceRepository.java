@@ -71,7 +71,7 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
                     limit 1
                     """,
             nativeQuery = true)
-    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long owner, long spender, long blockTimestamp);
+    Optional<NftAllowance> findByIdAndTimestamp(long owner, long spender, long tokenId, long blockTimestamp);
 
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 

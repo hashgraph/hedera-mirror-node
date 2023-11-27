@@ -107,7 +107,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     select count(*)
                     from (
                         (
-                            select account_id
+                            select token_id
                             from nft
                             where account_id = :accountId
                                 and lower(timestamp_range) <= :blockTimestamp
@@ -115,7 +115,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                         )
                         union all
                         (
-                            select account_id
+                            select token_id
                             from nft_history
                             where account_id = :accountId
                                 and lower(timestamp_range) <= :blockTimestamp

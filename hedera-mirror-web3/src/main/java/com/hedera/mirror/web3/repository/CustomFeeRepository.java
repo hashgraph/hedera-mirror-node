@@ -55,5 +55,5 @@ public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {
             limit 1
             """,
             nativeQuery = true)
-    Optional<CustomFee> findByIdAndTimestamp(long tokenId, long blockTimestamp);
+    Optional<CustomFee> findByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }
