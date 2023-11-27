@@ -40,6 +40,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.BurnLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -95,7 +96,8 @@ public class BurnPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         final var isNftBurn = transactionBody.getTokenBurn().getSerialNumbersCount() > 0;
         return pricingUtils.getMinimumPriceInTinybars(isNftBurn ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }

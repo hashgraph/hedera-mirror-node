@@ -96,8 +96,9 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(final long blockTimestamp, final TransactionBody.Builder transactionBody) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    public long getGasRequirement(
+            final long blockTimestamp, final TransactionBody.Builder transactionBody, final AccountID sender) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, sender);
     }
 
     @Override
