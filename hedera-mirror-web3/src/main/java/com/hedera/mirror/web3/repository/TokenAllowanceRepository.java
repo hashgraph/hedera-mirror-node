@@ -132,6 +132,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         from token_allowances ta
                     ) result
                     where amount > 0
+                    limit 1
                     """,
             nativeQuery = true)
     Optional<TokenAllowance> findByIdAndTimestamp(long owner, long spender, long tokenId, long blockTimestamp);

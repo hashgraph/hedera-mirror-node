@@ -123,8 +123,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
                         allowanceHistory.getTimestampLower() - 1))
-                .isEmpty()
-                .usingRecursiveComparison();
+                .isEmpty();
     }
 
     @Test

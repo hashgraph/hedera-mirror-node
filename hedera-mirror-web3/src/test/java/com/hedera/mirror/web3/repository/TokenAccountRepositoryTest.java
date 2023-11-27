@@ -203,11 +203,9 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .customize(ta -> ta.accountId(accountId))
                 .persist();
 
-        assertThat(repository
-                        .countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
-                                tokenAccount.getId().getAccountId(), tokenAccount.getTimestampLower() + 1)
-                        .size())
-                .isEqualTo(2);
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccount.getId().getAccountId(), tokenAccount.getTimestampLower() + 1))
+                .hasSize(2);
     }
 
     @Test
