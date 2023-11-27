@@ -63,6 +63,7 @@ Feature: in-equivalence tests
     Then I execute internal call against PRNG precompile address with amount
     Then I execute internal call against exchange rate precompile address without amount
     Then I execute internal call against exchange rate precompile address with amount
+    Then I execute internal call against Ecrecover
     Then I make internal "call" to system account "0.0.741" "without" amount
     Then I make internal "call" to system account "0.0.741" "with" amount
     Then I make internal "call" to system account "0.0.800" "without" amount

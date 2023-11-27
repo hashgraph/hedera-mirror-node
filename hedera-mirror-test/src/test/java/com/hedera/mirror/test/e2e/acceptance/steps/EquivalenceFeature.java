@@ -58,6 +58,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -262,6 +263,20 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addBytes(data);
         var message = executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
         assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute internal call against Ecrecover")
+    public void executeInternalCallForEcrecover() {
+        var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
+        var hashedMessage = "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000001")
+                .addBytes(Bytes.fromHexString(hashedMessage).toArrayUnsafe());
+        executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount",
+                parameters);
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var resultMessageSigner = mirrorClient.getContractActions(transactionId).getActions().get(1).getResultData();
+        assertEquals(messageSignerAddress, asAddress(resultMessageSigner).toString());
     }
 
     @Then("I execute internal call against HTS precompile with approve function for {token} with amount")
