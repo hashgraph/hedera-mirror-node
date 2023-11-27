@@ -30,7 +30,7 @@ contract EquivalenceContract {
             let x := mload(0x40)
             mstore(x, _sig)
 
-            success := callcode(50000, _address, 0, x, 0x4, x, 0x20)
+            success := callcode(600000, _address, 0, x, 0x4, x, 0x20)
 
             mstore(0x40, add(x, 0x20))
             mstore(result, x)
@@ -48,7 +48,7 @@ contract EquivalenceContract {
             mstore(x, _sig)
 
             let callValue := callvalue()
-            success := callcode(50000, _address, callValue, x, 0x4, x, 0x20)
+            success := callcode(600000, _address, callValue, x, 0x4, x, 0x20)
 
             mstore(0x40, add(x, 0x20))
             mstore(result, x)
