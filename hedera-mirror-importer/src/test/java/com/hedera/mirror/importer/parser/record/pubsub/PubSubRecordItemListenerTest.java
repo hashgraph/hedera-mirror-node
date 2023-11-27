@@ -365,9 +365,9 @@ class PubSubRecordItemListenerTest {
         "INVALID_ACCOUNT_ID, false",
         "INVALID_CONTRACT_ID, false",
         "INVALID_FILE_ID, false",
-        "INVALID_TOPIC_ID, false",
-        "INVALID_TOKEN_ID, false",
         "INVALID_SCHEDULE_ID, false",
+        "INVALID_TOKEN_ID, false",
+        "INVALID_TOPIC_ID, false",
     })
     @ParameterizedTest
     void testRecoverableErrorWithInvalidEntityId(ResponseCodeEnum receiptStatus, boolean expected) {

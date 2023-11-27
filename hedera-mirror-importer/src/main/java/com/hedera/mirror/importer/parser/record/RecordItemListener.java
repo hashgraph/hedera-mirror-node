@@ -27,9 +27,9 @@ public interface RecordItemListener extends StreamItemListener<RecordItem> {
             case INVALID_ACCOUNT_ID,
                     INVALID_CONTRACT_ID,
                     INVALID_FILE_ID,
-                    INVALID_TOPIC_ID,
+                    INVALID_SCHEDULE_ID,
                     INVALID_TOKEN_ID,
-                    INVALID_SCHEDULE_ID -> true;
+                    INVALID_TOPIC_ID -> true;
             default -> false;
         };
     }
