@@ -490,10 +490,10 @@ contract PrecompileTestContract is HederaTokenService {
 
         //transfer the tokens back in order to be able to dissociate the account
         if (amount > 0 && serialNumber == 0) {
-            responseCode = HederaTokenService.transferToken(token, to, address(this), int64(uint64(amount)));
+            responseCode = HederaTokenService.transferToken(token, to, from, int64(uint64(amount)));
             handleResponseCode(responseCode, "Failed to transfer Fungible token.");
         } else {
-            responseCode = HederaTokenService.transferNFT(token, to, address(this), int64(uint64(serialNumber)));
+            responseCode = HederaTokenService.transferNFT(token, to, from, int64(uint64(serialNumber)));
             handleResponseCode(responseCode, "Failed to transfer NFT token.");
         }
 

@@ -7,10 +7,10 @@ Feature: eth_call Contract Base Coverage Feature
     Given I verify the precompile contract bytecode is deployed
     Given I successfully create EstimateGas contract
     Given I successfully create EstimateGas contract
-    Given I ensure token <fungible> has been created
-    Given I ensure token <nft> has been created
-    Then I call function with IERC721Metadata token <nft> name
-    Then I call function with IERC721Metadata token <nft> symbol
+    Given I ensure token "FUNGIBLE" has been created
+    Given I ensure token "NFT" has been created
+    Then I call function with IERC721Metadata token "NFT" name
+    Then I call function with IERC721Metadata token "NFT" symbol
     Then I call function with IERC721Metadata token NFT totalSupply
     Then I call function with IERC721 token NFT balanceOf owner
     Then I call function with HederaTokenService isToken token FUNGIBLE
@@ -27,8 +27,8 @@ Feature: eth_call Contract Base Coverage Feature
     Given I mint a NFT
     Then the mirror node should return status 200 for the HAPI transaction
     Then I burn NFT and get the total supply and balance
-    Then I pause <fungible> token, unpause and get the status of the token
-    Then I pause <nft> token, unpause and get the status of the token
+    Then I pause "FUNGIBLE" token, unpause and get the status of the token
+    Then I pause "NFT" token, unpause and get the status of the token
     And I associate FUNGIBLE token to receiver account
     Then the mirror node should return status 200 for the HAPI transaction
     And I associate NFT token to receiver account
@@ -41,8 +41,8 @@ Feature: eth_call Contract Base Coverage Feature
     Then I mint NFT token and get the total supply and balance
     Then I wipe FUNGIBLE token and get the total supply and balance
     Then I wipe NFT and get the total supply and balance
-    Then I freeze <fungible> token, unfreeze and get status
-    Then I freeze <nft> token, unfreeze and get status
+    Then I freeze "FUNGIBLE" token, unfreeze and get status
+    Then I freeze "NFT" token, unfreeze and get status
     And I associate precompile contract with the tokens
     Then the mirror node should return status 200 for the HAPI transaction
     And I transfer FUNGIBLE token to the precompile contract
@@ -59,7 +59,3 @@ Feature: eth_call Contract Base Coverage Feature
     Then I grant and revoke KYC
     Then I approve a FUNGIBLE token and transfer it
     Then I successfully update the balance of an account and get the updated balance after 2 seconds
-
-    Examples:
-      | fungible   | nft   |
-      | "FUNGIBLE" | "NFT" |

@@ -405,12 +405,24 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I associate contracts with the tokens and approve all nft serials")
     public void associateTokensWithContract() throws InvalidProtocolBufferException {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
-        tokenClient.associate(deployedErcTestContract.contractId(), fungibleTokenId);
-        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), fungibleTokenId);
-        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
-        tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
-        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
-        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedErcTestContract.contractId().toString())),
+                fungibleTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedEstimatePrecompileContract.contractId().toString())),
+                fungibleTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedEstimatePrecompileContract.contractId().toString())),
+                nonFungibleKycUnfrozenTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
+                fungibleTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
+                nonFungibleTokenId);
+        tokenClient.associate(
+                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
+                nonFungibleKycUnfrozenTokenId);
 
         // approve is also needed for the approveNFT function
         accountClient.approveNftAllSerials(nonFungibleKycUnfrozenTokenId, deployedPrecompileContract.contractId());
@@ -1844,7 +1856,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 PRECOMPILE,
                 DISSOCIATE_NFT_AND_TRANSFER,
-                asAddress(fungibleTokenId),
+                asAddress(nonFungibleTokenId),
                 asAddress(admin),
                 asAddress(receiverAccountAlias),
                 new BigInteger("0"),
@@ -2044,8 +2056,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         FREEZE_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
         APPROVE_FUNGIBLE_GET_ALLOWANCE("approveTokenGetAllowance", 733080),
         APPROVE_NFT_GET_ALLOWANCE("approveTokenGetAllowance", 733127),
-        DISSOCIATE_FUNGIBLE_TOKEN_AND_TRANSFER("associateTokenDissociateFailTransfer", 21000),
-        DISSOCIATE_NFT_AND_TRANSFER("associateTokenDissociateFailTransfer", 21000),
+        DISSOCIATE_FUNGIBLE_TOKEN_AND_TRANSFER("associateTokenDissociateFailTransfer", 1481983),
+        DISSOCIATE_NFT_AND_TRANSFER("associateTokenDissociateFailTransfer", 1481983),
         APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance", 752505),
         APPROVE_NFT_TOKEN_AND_TRANSFER_FROM("approveNftAndTransfer", 765896);
 

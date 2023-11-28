@@ -16,9 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -62,11 +60,10 @@ import org.springframework.retry.support.RetryTemplate;
 @Named
 public class TokenClient extends AbstractNetworkClient {
 
-    private final Collection<TokenAccount> tokenAccounts = new CopyOnWriteArrayList<>();
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TokenAccountPair, NetworkTransactionResponse> associations =
+    private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations =
             new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
@@ -76,9 +73,10 @@ public class TokenClient extends AbstractNetworkClient {
     @Override
     public void clean() {
         var admin = sdkClient.getExpandedOperatorAccountId();
-        log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), tokenAccounts.size());
+        log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), associations.size());
         deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
-        deleteAll(tokenAccounts, tokenAccount -> dissociate(tokenAccount.accountId, tokenAccount.tokenId));
+        deleteAll(associations.keySet(), association -> dissociate(association.accountId, association.tokenId));
+        associations.clear();
     }
 
     @Override
@@ -241,7 +239,7 @@ public class TokenClient extends AbstractNetworkClient {
         var tokenId = response.getReceipt().tokenId;
         log.info("Created new fungible token {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
         tokenIds.add(tokenId);
-        tokenAccounts.add(new TokenAccount(tokenId, treasuryAccount));
+        associations.put(new TokenAccount(tokenId, treasuryAccount), response);
         return response;
     }
 
@@ -271,61 +269,27 @@ public class TokenClient extends AbstractNetworkClient {
         var tokenId = response.getReceipt().tokenId;
         log.info("Created new NFT {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
         tokenIds.add(tokenId);
-        tokenAccounts.add(new TokenAccount(tokenId, treasuryAccount));
+        associations.put(new TokenAccount(tokenId, treasuryAccount), response);
         return response;
     }
 
     public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
-        var account = new EntityId(accountId);
-        TokenAccountPair key = new TokenAccountPair(token, account);
+        var key = new TokenAccount(token, accountId);
 
-        synchronized (associations) {
-            associations.computeIfAbsent(key, k -> {
-                TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
-                        .setAccountId(accountId.getAccountId())
-                        .setTokenIds((List.of(token)))
-                        .setTransactionMemo(getMemo("Associate w token"));
+        return associations.computeIfAbsent(key, k -> {
+            TokenAssociateTransaction tokenAssociateTransaction = new TokenAssociateTransaction()
+                    .setAccountId(accountId.getAccountId())
+                    .setTokenIds((List.of(token)))
+                    .setTransactionMemo(getMemo("Associate w token"));
 
-                var keyList = KeyList.of(accountId.getPrivateKey());
-                var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
-                log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
-                tokenAccounts.add(new TokenAccount(token, accountId));
+            KeyList keyList = (accountId.getPrivateKey() != null) ? KeyList.of(accountId.getPrivateKey()) : null;
+            NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
+                    keyList);
 
-                return response;
-            });
-        }
-        log.info("Token {} already associated to account {}", token, accountId);
-        return associations.get(key);
-    }
+            log.debug("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
 
-    public NetworkTransactionResponse associate(ContractId contractId, TokenId token)
-            throws InvalidProtocolBufferException {
-        var contract = new EntityId(contractId);
-        TokenAccountPair key = new TokenAccountPair(token, contract);
-
-        synchronized (associations) {
-            associations.computeIfAbsent(key, k -> {
-                TokenAssociateTransaction tokenAssociateTransaction = null;
-                try {
-                    tokenAssociateTransaction = new TokenAssociateTransaction()
-                            .setAccountId(AccountId.fromBytes(contractId.toBytes()))
-                            .setTokenIds((List.of(token)))
-                            .setTransactionMemo(getMemo("Associate w token"));
-                } catch (InvalidProtocolBufferException e) {
-                    throw new RuntimeException(e);
-                }
-                var response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction);
-                log.info("Associated contract {} with token {} via {}", contractId, token, response.getTransactionId());
-                tokenAccounts.add(new TokenAccount(
-                        token,
-                        new ExpandedAccountId(
-                                AccountId.fromString(contractId.toString()),
-                                sdkClient.getExpandedOperatorAccountId().getPrivateKey())));
-                return response;
-            });
-        }
-        log.info("Token {} already associated to contract {}", token, contractId);
-        return associations.get(key);
+            return response;
+        });
     }
 
     public NetworkTransactionResponse mint(TokenId tokenId, long amount) {
@@ -587,7 +551,7 @@ public class TokenClient extends AbstractNetworkClient {
         var keyList = KeyList.of(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
         log.info("Dissociated account {} from token {} via {}", accountId, token, response.getTransactionId());
-        tokenAccounts.remove(new TokenAccount(token, accountId));
+        associations.remove(new TokenAccount(token, accountId));
         return response;
     }
 
@@ -689,11 +653,5 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {
-    }
-
-    protected record TokenAccountPair(TokenId tokenId, EntityId entityId) {
-    }
-
-    protected record EntityId(Object id) {
     }
 }

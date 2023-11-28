@@ -17,6 +17,8 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with dissociate token function without association for NFT
     Then I call estimateGas with nested associate function that executes it twice for fungible token
     Then I call estimateGas with nested associate function that executes it twice for NFT
+    Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer
+    Then I call estimate gas that associates NFT token dissociates and fails token transfer
     And I associate the receiver account with the fungible token
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with dissociate token function for fungible token
@@ -156,8 +158,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with redirect setApprovalForAll function
     Then I call estimateGas with exchange rate tinycents to tinybars
     Then I call estimateGas with exchange rate tinybars to tinycents
-    #Then I call estimateGas with pseudo random seed
-    #Then I call estimateGas with pseudo random number
     Then I call estimate gas that mints FUNGIBLE token and gets the total supply and balance
     Then I call estimate gas that mints NFT token and gets the total supply and balance
     Then I call estimate gas that burns FUNGIBLE token and gets the total supply and balance
@@ -169,8 +169,6 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimate gas that freezes NFT token, unfreezes and gets freeze status
     Then I call estimate gas that approves FUNGIBLE token and gets allowance
     Then I call estimate gas that approves NFT token and gets allowance
-    #Then I call estimate gas that associates FUNGIBLE token dissociates and fails token transfer
-    #Then I call estimate gas that associates NFT token dissociates and fails token transfer
     Then I call estimateGas with pseudo random seed
     Then I call estimateGas with pseudo random number
     #### These tests below are recommended to be kept at the end as they change the state #####
