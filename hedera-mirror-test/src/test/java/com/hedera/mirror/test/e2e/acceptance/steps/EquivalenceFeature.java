@@ -279,15 +279,22 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute internal call against Ecrecover")
-    public void executeInternalCallForEcrecover() {
+    @Then("I execute {string} call against Ecrecover")
+    public void executeInternalCallForEcrecover(String calltype) {
         var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
         var hashedMessage =
                 "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
         var parameters = new ContractFunctionParameters()
                 .addAddress("0x0000000000000000000000000000000000000001")
                 .addBytes(Bytes.fromHexString(hashedMessage).toArrayUnsafe());
-        executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
+
+        if (calltype.equals("internal")) {
+            executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
+        } else if (calltype.equals("static")) {
+            executeContractCallTransaction(deployedEquivalenceCall, "makeStaticCall", parameters);
+        } else {
+            executeContractCallTransaction(deployedEquivalenceCall, "makeDelegateCall", parameters);
+        }
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         var resultMessageSigner = mirrorClient
                 .getContractActions(transactionId)
