@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
-import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -32,7 +31,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Data
 @MappedSuperclass
@@ -71,7 +71,7 @@ public class AbstractToken implements History {
     private byte[] pauseKey;
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TokenPauseStatusEnum pauseStatus;
 
     @ToString.Exclude
@@ -79,7 +79,7 @@ public class AbstractToken implements History {
 
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TokenSupplyTypeEnum supplyType;
 
     private String symbol;
@@ -96,7 +96,7 @@ public class AbstractToken implements History {
 
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TokenTypeEnum type;
 
     @ToString.Exclude
