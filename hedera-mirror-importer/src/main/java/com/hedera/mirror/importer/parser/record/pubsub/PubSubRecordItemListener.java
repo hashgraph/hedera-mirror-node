@@ -68,8 +68,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            if (!receiptStatusContainsInvalidId(
-                    recordItem.getTransactionRecord().getReceipt().getStatus())) {
+            if (!recordItem.isInvalidIdError()) {
                 Utility.handleRecoverableError(
                         "Invalid entity encountered for consensusTimestamp {} : {}",
                         consensusTimestamp,
