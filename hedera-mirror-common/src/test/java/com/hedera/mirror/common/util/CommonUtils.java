@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-import {SharedArray} from 'k6/data';
-import {ContractCallTestScenarioBuilder} from './common.js';
+package com.hedera.mirror.common.util;
 
-function ContractCallEstimateTestTemplate(key) {
-  const data = new SharedArray(key, () => {
-    return JSON.parse(open('./resources/estimate.json'))[key];
-  });
+import java.security.SecureRandom;
+import lombok.experimental.UtilityClass;
 
-  const {options, run} = new ContractCallTestScenarioBuilder().name(key).estimate(true).vuData(data).build();
+@UtilityClass
+public class CommonUtils {
 
-  return {options, run};
+    private static final SecureRandom RANDOM = new SecureRandom();
+
+    public static byte[] nextBytes(int length) {
+        var bytes = new byte[length];
+        RANDOM.nextBytes(bytes);
+        return bytes;
+    }
 }
-
-export {ContractCallEstimateTestTemplate};

@@ -100,7 +100,7 @@ The following parameters can be used to configure a rosetta test:
 The following parameters can be used to configure a web3 test:
 
 - ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
-- DEFAULT_ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- DEFAULT_ACCOUNT_ADDRESS - 40 character hex encoded account address without `0x` prefix
 - DEFAULT_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (Parent contract should be deployed)
 - ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/ErcTestContract.sol should be deployed)
 - HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (PrecompileTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/PrecompileTestContract.sol should be deployed)

@@ -28,7 +28,6 @@ dependencies {
     implementation("io.grpc:grpc-core")
     implementation("io.grpc:grpc-netty-shaded")
     implementation("io.grpc:grpc-services")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.projectreactor.addons:reactor-extra")
     implementation("io.projectreactor:reactor-core-micrometer")
