@@ -50,6 +50,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.CallFeature.ContractMe
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.aspectj.runtime.internal.Conversions.intValue;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -152,7 +153,7 @@ public class CallFeature extends AbstractFeature {
 
     @Given("I mint a NFT")
     public void mintNft() {
-        networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
+        networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, nextBytes(4));
     }
 
     @And("I approve and transfer FUNGIBLE token to receiver account")
