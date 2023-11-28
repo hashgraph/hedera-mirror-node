@@ -20,6 +20,9 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErc;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErcHts;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErcHtsExchangeRate;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
@@ -36,6 +39,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.txns.util.PrngLogic;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,6 +86,18 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
     public static final String EVM_VERSION_0_30 = "v0.30";
     public static final String EVM_VERSION_0_34 = "v0.34";
+    public static final String EVM_VERSION_0_38 = "v0.38";
+    public static final String EVM_VERSION_0_45 = "v0.45";
+    public static final String HTS = "HTS";
+    public static final String ERC = "ERC";
+    public static final String PRNG = "PRNG";
+    public static final String EXCHANGE_RATE = "exchangeRate";
+    public static final String ERC_HTS = ERC + "," + HTS;
+    public static final String HTS_ERC_EXCHANGE_RATE = ERC_HTS + "," + EXCHANGE_RATE;
+    public static final String EVM_VERSION_0_30_ERC = EVM_VERSION_0_30 + "-" + ERC;
+    public static final String EVM_VERSION_0_30_ERC_HTS= EVM_VERSION_0_30 + "-" + ERC_HTS;
+    public static final String EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE = EVM_VERSION_0_30 + "-" + HTS_ERC_EXCHANGE_RATE;
+
     public static final String EVM_VERSION = EVM_VERSION_0_34;
     private final CacheProperties cacheProperties;
 
@@ -165,34 +181,36 @@ public class EvmConfiguration {
     @Bean
     Map<String, Provider<ContractCreationProcessor>> contractCreationProcessors(
             final ContractCreationProcessor contractCreationProcessor) {
-        return Map.of(
-                EVM_VERSION_0_30, () -> contractCreationProcessor, EVM_VERSION_0_34, () -> contractCreationProcessor);
 
-        // we will need modifications here
+        Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
+        processorsMap.put(EVM_VERSION_0_30_ERC, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_30_ERC_HTS, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_45, () -> contractCreationProcessor);
+        return processorsMap;
     }
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
             final MessageCallProcessor messageCallProcessor,
-            final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
-        return Map.of(
-                EVM_VERSION_0_30, () -> messageCallProcessor,
-                EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor
-                );
+            final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor,
+            final MirrorEvmMessageCallProcessorErc mirrorEvmMessageCallProcessorErc,
+            final MirrorEvmMessageCallProcessorErcHts mirrorEvmMessageCallProcessorErcHts,
+            final MirrorEvmMessageCallProcessorErcHtsExchangeRate mirrorEvmMessageCallProcessorErcHtsExchangeRate) {
 
-        // based on the new methods in MirrorNodeEvmProperties ->
-        // get block number -> get evm version and supported precompiles based on block
-        // based on evm version and precompiles load the proper bean that we will define
-        // we need different combinations of messageCallProcessor
-        // EVM_VERSION_0_30_HTS -> messageCallProcessor1 bean 1
-        // EVM_VERSION_0_30_HTS_ERC - > messageCallProcessor2 bean 2
-        // EVM_VERSION_0_34 - > messageCallProcessor3 bean 3
-        // EVM_VERSION_0_34_EXHANGE_RATE - > messageCallProcessor4 bean 4
-        // EVM_VERSION_0_34_EXHANGE_RATE_PRNG - > messageCallProcessor4 bean 5
+        Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
+        processorsMap.put(EVM_VERSION_0_30_ERC, () -> mirrorEvmMessageCallProcessorErc);
+        processorsMap.put(EVM_VERSION_0_30_ERC_HTS, () -> mirrorEvmMessageCallProcessorErcHts);
+        processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorErcHtsExchangeRate);
+        processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_45, () -> mirrorEvmMessageCallProcessor);
 
-        // precompile holder for 30, 34,38, 4
-        // evm 1, 2 ,3
-
+        return processorsMap;
     }
 
     @Bean
@@ -245,8 +263,38 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties.getEvmSpecVersion());
     }
 
-    // we will need more evm beans
-
+    // @Bean
+    // EVM evmHTS(
+    //        final GasCalculatorHederaV22 gasCalculator,
+    //        final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+    //        final HederaBlockHashOperation hederaBlockHashOperation) {
+    //    final var operationRegistry = new OperationRegistry();
+    //    final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
+    //
+    //    registerShanghaiOperations(
+    //            operationRegistry,
+    //            gasCalculator,
+    //            mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
+    //    Set.of(
+    //                    new HederaBalanceOperation(gasCalculator, validator),
+    //                    new HederaDelegateCallOperation(gasCalculator, validator),
+    //                    new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
+    //                    new HederaEvmCreate2Operation(
+    //                            gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
+    //                    new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
+    //                    new HederaEvmSLoadOperation(gasCalculator),
+    //                    new HederaExtCodeCopyOperation(gasCalculator, validator),
+    //                    new HederaExtCodeHashOperation(gasCalculator, validator),
+    //                    new HederaExtCodeSizeOperation(gasCalculator, validator),
+    //                    hederaBlockHashOperation)
+    //            .forEach(operationRegistry::put);
+    //
+    //    return new EVM(
+    //            operationRegistry,
+    //            gasCalculator,
+    //            org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
+    //            mirrorNodeEvmProperties.getEvmSpecVersion());
+    // }
 
     @Bean
     HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {

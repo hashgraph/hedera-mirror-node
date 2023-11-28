@@ -22,7 +22,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolderErcHts;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
@@ -45,27 +45,24 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Named
-public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
+public class MirrorEvmMessageCallProcessorErcHts extends HederaEvmMessageCallProcessor {
+
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
 
-    public MirrorEvmMessageCallProcessor(
+    public MirrorEvmMessageCallProcessorErcHts(
             final AbstractAutoCreationLogic autoCreationLogic,
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final PrecompilesHolder precompilesHolder,
+            final PrecompilesHolderErcHts precompilesHolderErcHts,
             final GasCalculatorHederaV22 gasCalculator) {
-        super(evm, precompiles, precompilesHolder.getHederaPrecompiles());
+        super(evm, precompiles, precompilesHolderErcHts.getHederaPrecompiles());
         this.autoCreationLogic = autoCreationLogic;
         this.entityAddressSequencer = entityAddressSequencer;
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
-
-        // This is a singleton bean, we will need more version of it depending on the evm version and precompile
-        // figure out what do with this field
-        // final EVM evm, PrecompilesHolder precompilesHolder
 
         MainnetPrecompiledContracts.populateForIstanbul(precompiles, gasCalculator);
     }

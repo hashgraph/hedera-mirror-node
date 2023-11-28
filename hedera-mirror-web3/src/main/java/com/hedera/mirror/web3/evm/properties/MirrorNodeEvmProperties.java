@@ -16,10 +16,15 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.ERC;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EXCHANGE_RATE;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.HTS;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.PRNG;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -27,13 +32,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -154,7 +158,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private TreeMap<String, Long> evmVersions = new TreeMap<>();
 
     @Getter
-    private Map<String, List<String>> evmPrecompiles;
+    private Map<String, Set<String>> evmPrecompiles;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -195,6 +199,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public String evmVersion() {
+        if (ContractCallContext.get().useHistorical()) {
+            return getEvmVersionForBlock(
+                    ContractCallContext.get().getRecordFile().getIndex());
+        }
         return evmVersion;
     }
 
@@ -236,6 +244,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @return The key of the suitable EVM version for the given block number, or null if none found.
      */
     public String getEvmVersionForBlock(Long blockNumber) {
+        if (CollectionUtils.isEmpty(evmVersions)) {
+            // In case we don't have any specified evm versions in yml configuration point to default version
+            return EVM_VERSION;
+        }
         String closestVersion = evmVersions.firstEntry().getKey(); // Default to the lowest version
 
         for (Map.Entry<String, Long> entry : evmVersions.entrySet()) {
@@ -259,13 +271,30 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @param evmVersion The evm version that will be used
      * @return List of precompiles available at the specified block number
      */
-    public List<String> getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion) {
+    public Set<String> getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion) {
         if (CollectionUtils.isEmpty(evmPrecompiles)) {
-            return new ArrayList<>();
+            return new HashSet<>();
         }
-        List<String> precompilesForEvm = evmPrecompiles.get(evmVersion);
+        Set<String> precompilesForEvm = evmPrecompiles.get(evmVersion);
         return precompilesForEvm.stream()
                 .filter(p -> (systemPrecompiles.get(p) <= blockNumber))
-                .toList();
+                .collect(Collectors.toSet());
+    }
+
+    public static String getEvmWithPrecompiles(String evmVersion, Set<String> precompiles) {
+        Set<String> precompileSet = new HashSet<>(precompiles);
+
+        if (precompileSet.equals(Set.of(ERC))) {
+            return evmVersion + "-" + ERC;
+        } else if (precompileSet.equals(Set.of(ERC, HTS))) {
+            return evmVersion + "-" + ERC + "," + HTS;
+        } else if (precompileSet.equals(Set.of(ERC, HTS, EXCHANGE_RATE))) {
+            return evmVersion + "-" + ERC + "," + HTS + "," + EXCHANGE_RATE;
+        } else if (precompileSet.equals(Set.of(ERC, HTS, EXCHANGE_RATE, PRNG))) {
+            return evmVersion;
+        }
+
+        // point to default version if we don't find anything
+        return EVM_VERSION;
     }
 }

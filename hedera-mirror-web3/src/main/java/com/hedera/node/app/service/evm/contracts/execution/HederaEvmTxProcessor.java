@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -77,8 +80,7 @@ public class HederaEvmTxProcessor {
     }
 
     /**
-     * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a
-     * field.
+     * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a field.
      *
      * @param sender The origin {@link MutableAccount} that initiates the transaction
      * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
@@ -194,7 +196,15 @@ public class HederaEvmTxProcessor {
         executor.process(frame, operationTracer);
     }
 
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, final String evmVersion) {
+    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, String evmVersion) {
+
+        if (ContractCallContext.get().useHistorical()) {
+            MirrorNodeEvmProperties evmProperties = ((MirrorNodeEvmProperties) dynamicProperties);
+            Set<String> precompilesAvailable = evmProperties.getPrecompilesAvailableAtBlock(
+                    ContractCallContext.get().getRecordFile().getIndex(), evmVersion);
+            evmVersion = MirrorNodeEvmProperties.getEvmWithPrecompiles(evmVersion, precompilesAvailable);
+        }
+
         return switch (type) {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
             case CONTRACT_CREATION -> ccps.get(evmVersion).get();

@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.web3.startup;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -7,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,18 +47,19 @@ public class EvmPropertiesInitializerTest {
     void testCreateEvmVersionToPrecompilesMapHappyPath() {
         // given
         Map<String, Long> systemPrecompiles = Map.of(
-                "HTS", 800L,    // Released before the lowest EVM block number
-                "ERC", 2100L,   // Released at block 2100
+                "HTS", 800L, // Released before the lowest EVM block number
+                "ERC", 2100L, // Released at block 2100
                 "exchangeRate", 3100L, // Released at block 3100
-                "PRNG", 4100L   // Released after all EVM blocks
-        );
+                "PRNG", 4100L // Released after all EVM blocks
+                );
         Map<String, Long> evmVersions = Map.of(
                 "0.30.0", 1000L, // EVM version released at block 1000
                 "0.34.0", 2000L, // EVM version released at block 2000
-                "0.38.0", 3000L  // EVM version released at block 3000
-        );
+                "0.38.0", 3000L // EVM version released at block 3000
+                );
 
-        Map<String, List<String>> resultMap = evmPropertiesInitializer.createEvmVersionToPrecompilesMap(systemPrecompiles, evmVersions);
+        Map<String, Set<String>> resultMap =
+                evmPropertiesInitializer.createEvmVersionToPrecompilesMap(systemPrecompiles, evmVersions);
 
         assertNotNull(resultMap);
         assertEquals(3, resultMap.size());
@@ -52,8 +70,7 @@ public class EvmPropertiesInitializerTest {
 
     @Test
     void testCreateEvmVersionToPrecompilesMapNoEvmVersions() {
-        Map<String, List<String>> resultMap =
-                evmPropertiesInitializer.createEvmVersionToPrecompilesMap(null, null);
+        Map<String, Set<String>> resultMap = evmPropertiesInitializer.createEvmVersionToPrecompilesMap(null, null);
 
         assertEquals(0, resultMap.size());
     }

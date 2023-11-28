@@ -16,9 +16,10 @@ hedera:
           exchangeRate: 3100
           PRNG: 4100
         evm_versions:
-          0.30.0: 1000
-          0.34.0: 2000
-          0.38.0: 3000
+          v0.30: 1000
+          v0.34: 2000
+          v0.38: 3000
+          v0.45: 4000
 logging:
   level:
     root: warn

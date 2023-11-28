@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +75,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     @MethodSource("blockNumberToEvmVersionProvider")
     void getEvmVersionForBlock(Long blockNumber, String expectedEvmVersion) {
 
-        //given
+        // given
         TreeMap<String, Long> evmVersions = new TreeMap<>();
         evmVersions.put("0.30.0", 1000L);
         evmVersions.put("0.34.0", 2000L);
@@ -89,24 +90,23 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     @MethodSource("blockNumberAndPrecompilesProvider")
     void getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion, List<String> expectedPrecompiles) {
 
-        //given
+        // given
         TreeMap<String, Long> systemPrecompiles = new TreeMap<>();
         systemPrecompiles.put("HTS", 800L);
         systemPrecompiles.put("ERC", 2100L);
         systemPrecompiles.put("exchangeRate", 3100L);
         systemPrecompiles.put("PRNG", 4100L);
 
-        Map<String, List<String>> evmPrecompiles = new HashMap<>();
+        Map<String, Set<String>> evmPrecompiles = new HashMap<>();
 
-        evmPrecompiles.put("0.30.0", List.of("HTS"));
-        evmPrecompiles.put("0.34.0", Arrays.asList("HTS", "ERC"));
-        evmPrecompiles.put("0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG"));
+        evmPrecompiles.put("0.30.0", Set.of("HTS"));
+        evmPrecompiles.put("0.34.0", Set.of("HTS", "ERC"));
+        evmPrecompiles.put("0.38.0", Set.of("HTS", "ERC", "exchangeRate", "PRNG"));
 
         properties.setSystemPrecompiles(systemPrecompiles);
         properties.setEvmPrecompiles(evmPrecompiles);
 
-        List<String> precompilesAvailableResult = properties.getPrecompilesAvailableAtBlock(blockNumber,
-                evmVersion);
+        Set<String> precompilesAvailableResult = properties.getPrecompilesAvailableAtBlock(blockNumber, evmVersion);
 
         assertThat(precompilesAvailableResult).containsExactlyInAnyOrderElementsOf(expectedPrecompiles);
     }
@@ -121,8 +121,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
                 Arguments.of(2000L, "0.34.0"),
                 Arguments.of(2999L, "0.34.0"),
                 Arguments.of(3000L, "0.38.0"),
-                Arguments.of(5000L, "0.38.0")
-        );
+                Arguments.of(5000L, "0.38.0"));
     }
 
     private static Stream<Arguments> blockNumberAndPrecompilesProvider() {
@@ -137,7 +136,6 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
                 Arguments.of(3100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
                 Arguments.of(4000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
                 Arguments.of(4100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG")),
-                Arguments.of(5000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG"))
-        );
+                Arguments.of(5000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG")));
     }
 }
