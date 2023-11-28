@@ -49,6 +49,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import jakarta.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.concurrent.TimeoutException;
@@ -344,12 +345,24 @@ public class EquivalenceFeature extends AbstractFeature {
         // AMOUNT REACHES ONLY THE CONTRACT(deployedEquivalenceCall)
     }
 
+    public static byte[] toByteArray(String s) {
+        return DatatypeConverter.parseHexBinary(s);
+    }
+
     @Then("I make internal {string} to system account {string} {string} amount")
     public void callToSystemAddress(String call, String address, String amountType) {
         String functionResult;
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress(); // {0x41, 0x74, 0x49, 0x24}
-        var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
+        ContractFunctionParameters parameters;
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+
+        if (call.equals("callcode")) {
+            parameters = new ContractFunctionParameters().addAddress(accountId).addBytes32(new byte[32]);
+        } else {
+            parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
+        }
+
         var callType = getMethodName(call, amountType);
+
         if (amountType.equals("with")) {
             functionResult = executeContractCallTransaction(
                     deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10));
