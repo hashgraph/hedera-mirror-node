@@ -36,6 +36,7 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -64,7 +65,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -94,7 +94,6 @@ class RecordItemTest {
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
             .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
             .build();
-    private static final byte[] DEFAULT_TRANSACTION_BYTES = DEFAULT_TRANSACTION.toByteArray();
     private static final Version DEFAULT_HAPI_VERSION = new Version(0, 22, 0);
     private static final byte[] DEFAULT_RECORD_BYTES =
             TransactionRecord.getDefaultInstance().toByteArray();
@@ -102,7 +101,7 @@ class RecordItemTest {
     private static final TransactionRecord TRANSACTION_RECORD = TransactionRecord.newBuilder()
             .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
             .setMemo("memo")
-            .setTransactionHash(ByteString.copyFrom(RandomUtils.nextBytes(32)))
+            .setTransactionHash(ByteString.copyFrom(nextBytes(32)))
             .build();
 
     @CsvSource({

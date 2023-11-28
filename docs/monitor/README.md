@@ -337,7 +337,7 @@ Example response:
 
 The monitor includes a Grafana [dashboard](/charts/hedera-mirror-common/dashboards/hedera-mirror-monitor.json) that
 displays the various metrics collected by the application visually. The monitor uses [Micrometer](http://micrometer.io)
-to export the metrics to either [Elasticsearch](https://www.elastic.io) or [Prometheus](https://prometheus.io),
-depending upon configuration. The Prometheus metrics can be scraped at `http://localhost:8082/actuator/prometheus`.
+to export the metrics to [Prometheus](https://prometheus.io). The Prometheus metrics can be scraped
+at `http://localhost:8082/actuator/prometheus`.
 
 ![Grafana Dashboard](https://user-images.githubusercontent.com/17552371/101863000-e4eee180-3b38-11eb-88b8-7841718db2f7.png)

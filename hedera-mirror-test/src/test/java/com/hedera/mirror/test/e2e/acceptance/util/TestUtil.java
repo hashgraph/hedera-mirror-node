@@ -28,6 +28,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.json.JSONObject;
 @UtilityClass
 public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
+    private static final SecureRandom RANDOM = new SecureRandom();
     public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
@@ -70,7 +72,7 @@ public class TestUtil {
     }
 
     public static String hexToAscii(String hexStr) {
-        StringBuilder output = new StringBuilder("");
+        StringBuilder output = new StringBuilder();
         for (int i = 0; i < hexStr.length(); i += 2) {
             String str = hexStr.substring(i, i + 2);
             output.append((char) Integer.parseInt(str, 16));
@@ -156,6 +158,12 @@ public class TestUtil {
 
     public static BigInteger hexToDecimal(String hex) {
         return Bytes32.fromHexString(hex).toBigInteger();
+    }
+    
+    public static byte[] nextBytes(int length) {
+        var bytes = new byte[length];
+        RANDOM.nextBytes(bytes);
+        return bytes;
     }
 
     public static class TokenTransferListBuilder {

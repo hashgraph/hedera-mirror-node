@@ -158,4 +158,4 @@ build
 snyk
 **/secret.*
 
-hedera-mirror-rest/report.html*
+hedera-mirror-rest/report.*
