@@ -45,44 +45,46 @@ Feature: in-equivalence tests
     Then I verify extcodehash opcode against a system account "0.0.999" address returns empty bytes
 
   Scenario Outline: Validate in-equivalence tests for system accounts with call, staticcall, delegatecall
-    and callcode
+  and callcode
     Given I successfully create equivalence call contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I make internal <callType> to system account <account> <amountType> amount
 
     Examples:
-      | callType          | account   | amountType |
-      | "call"            | "0.0.0"   | "without"  |
-      | "call"            | "0.0.0"   | "with"     |
-      | "call"            | "0.0.357" | "without"  |
-      | "call"            | "0.0.357" | "with"     |
-      | "call"            | "0.0.741" | "without"  |
-      | "call"            | "0.0.741" | "with"     |
-      | "call"            | "0.0.800" | "without"  |
-      | "call"            | "0.0.800" | "with"     |
-      | "staticcall"      | "0.0.0"   | "without"  |
-      | "staticcall"      | "0.0.357" | "without"  |
-      | "staticcall"      | "0.0.741" | "without"  |
-      | "staticcall"      | "0.0.800" | "without"  |
-      | "delegatecall"    | "0.0.0"   | "without"  |
-      | "delegatecall"    | "0.0.357" | "without"  |
-      | "delegatecall"    | "0.0.741" | "without"  |
-      | "delegatecall"    | "0.0.800" | "without"  |
-      | "callcode"        | "0.0.0"   | "without"  |
-      | "callcode"        | "0.0.0"   | "with"     |
-      | "callcode"        | "0.0.357" | "without"  |
-      | "callcode"        | "0.0.357" | "with"     |
-      | "callcode"        | "0.0.741" | "without"  |
-      | "callcode"        | "0.0.741" | "with"     |
-      | "callcode"        | "0.0.800" | "without"  |
-      | "callcode"        | "0.0.800" | "with"     |
+      | callType       | account   | amountType |
+      | "call"         | "0.0.0"   | "without"  |
+      | "call"         | "0.0.0"   | "with"     |
+      | "call"         | "0.0.357" | "without"  |
+      | "call"         | "0.0.357" | "with"     |
+      | "call"         | "0.0.741" | "without"  |
+      | "call"         | "0.0.741" | "with"     |
+      | "call"         | "0.0.800" | "without"  |
+      | "call"         | "0.0.800" | "with"     |
+      | "staticcall"   | "0.0.0"   | "without"  |
+      | "staticcall"   | "0.0.357" | "without"  |
+      | "staticcall"   | "0.0.741" | "without"  |
+      | "staticcall"   | "0.0.800" | "without"  |
+      | "delegatecall" | "0.0.0"   | "without"  |
+      | "delegatecall" | "0.0.357" | "without"  |
+      | "delegatecall" | "0.0.741" | "without"  |
+      | "delegatecall" | "0.0.800" | "without"  |
+      | "callcode"     | "0.0.0"   | "without"  |
+      | "callcode"     | "0.0.0"   | "with"     |
+      | "callcode"     | "0.0.357" | "without"  |
+      | "callcode"     | "0.0.357" | "with"     |
+      | "callcode"     | "0.0.741" | "without"  |
+      | "callcode"     | "0.0.741" | "with"     |
+      | "callcode"     | "0.0.800" | "without"  |
+      | "callcode"     | "0.0.800" | "with"     |
 
   Scenario Outline: Validate in-equivalence tests for internal calls - precompiles
     Given I successfully create equivalence call contract
     Given I ensure token "FUNGIBLE" has been created
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
-    Then I execute internal call against Ecrecover
+    Then I execute "internal" call against Ecrecover
+    Then I execute "static" call against Ecrecover
+    Then I execute "delegate" call against Ecrecover
     Then I execute directCall to "0.0.0" address without amount
     Then I execute directCall to "0.0.0" address with amount 10000
     Then I make internal call to ethereum precompile "0.0.1" address with amount
