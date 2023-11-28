@@ -28,7 +28,6 @@ dependencies {
     implementation("com.google.cloud:spring-cloud-gcp-starter-pubsub")
     implementation("commons-io:commons-io")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
-    implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("net.java.dev.jna:jna")
@@ -62,6 +61,7 @@ dependencies {
     testImplementation("commons-beanutils:commons-beanutils")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.awaitility:awaitility")
+    testImplementation("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api") // Used by s3proxy
     testImplementation("org.gaul:s3proxy")
     testImplementation("org.testcontainers:junit-jupiter")
 }

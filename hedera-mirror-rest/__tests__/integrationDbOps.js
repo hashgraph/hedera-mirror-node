@@ -125,7 +125,7 @@ const flywayMigrate = async () => {
       "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
       "user": "${dbConnectionParams.user}"
     },
-    "version": "9.16.3",
+    "version": "9.22.3",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }

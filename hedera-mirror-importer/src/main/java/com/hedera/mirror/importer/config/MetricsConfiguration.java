@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.config;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 import com.hedera.mirror.importer.db.DBProperties;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
@@ -25,10 +27,11 @@ import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.function.ToDoubleFunction;
+import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -67,46 +70,55 @@ class MetricsConfiguration {
             havingValue = "true",
             matchIfMissing = true)
     MeterBinder tableMetrics() {
-        return registry -> getTablesNames().forEach(t -> registerTableMetrics(registry, t));
+        return registry -> getTablesNames().asMap().forEach((k, v) -> registerTableMetrics(registry, k, v));
     }
 
-    private void registerTableMetrics(MeterRegistry registry, String tableName) {
+    private void registerTableMetrics(MeterRegistry registry, String parentTableName, Collection<String> tableNames) {
         for (TableMetric tableMetric : TableMetric.values()) {
-            ToDoubleFunction<DataSource> func = ds ->
-                    jdbcOperations.queryForObject(tableMetric.query, Long.class, dbProperties.getSchema(), tableName);
+            ToDoubleFunction<DataSource> func = ds -> tableNames.stream()
+                    .map(tableName -> jdbcOperations.queryForObject(
+                            tableMetric.query, Long.class, dbProperties.getSchema(), tableName))
+                    .filter(n -> n != null && n > 0)
+                    .reduce(0L, Math::addExact);
             Gauge.builder(tableMetric.metricName, dataSource, func)
                     .tag("database", dbProperties.getName())
                     .tag("schema", dbProperties.getSchema())
-                    .tag("table", tableName)
+                    .tag("table", parentTableName)
                     .description(tableMetric.description)
                     .baseUnit(tableMetric.baseUnits)
                     .register(registry);
         }
     }
 
-    private Collection<String> getTablesNames() {
-        Collection<String> tableNames = new LinkedHashSet<>();
+    // Get a map of parent tables mapped to their children tables. If it's not partitioned then there will be one child.
+    private Multimap<String, String> getTablesNames() {
+        Multimap<String, String> tableNames = TreeMultimap.create();
         var types = new String[] {"TABLE"};
 
         try (var connection = dataSource.getConnection();
                 var rs = connection.getMetaData().getTables(null, dbProperties.getSchema(), null, types)) {
+            var partitionedPattern = Pattern.compile("^(.+?)(_p\\d+|_p\\d+_\\d+|_\\d+|_default)$");
 
             while (rs.next()) {
                 var tableName = rs.getString("TABLE_NAME");
-                if (!tableName.endsWith("_default") && !tableName.matches(".*\\d+$")) {
-                    tableNames.add(tableName);
+                var parentTable = tableName;
+                var matcher = partitionedPattern.matcher(tableName);
+                if (matcher.matches()) {
+                    parentTable = matcher.group(1);
                 }
+                tableNames.put(parentTable, tableName);
             }
         } catch (Exception e) {
             log.warn("Unable to list table names. No table metrics will be available", e);
         }
 
-        log.info("Collecting {} table metrics: {}", tableNames.size(), tableNames);
+        log.info("Collecting {} table metrics: {}", tableNames.size(), tableNames.keySet());
         return tableNames;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    private enum TableMetric {
+    enum TableMetric {
         INDEX_BYTES(
                 BaseUnits.BYTES,
                 "db.index.bytes",
