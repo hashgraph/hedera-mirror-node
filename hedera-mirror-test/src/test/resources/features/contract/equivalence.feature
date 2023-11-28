@@ -68,14 +68,14 @@ Feature: in-equivalence tests
       | "delegatecall"    | "0.0.357" | "without"  |
       | "delegatecall"    | "0.0.741" | "without"  |
       | "delegatecall"    | "0.0.800" | "without"  |
-#      | "callcode"        | "0.0.0"   | "without"  |
-#      | "callcode"        | "0.0.0"   | "with"     |
-#      | "callcode"        | "0.0.357" | "without"  |
-#      | "callcode"        | "0.0.357" | "with"     |
-#      | "callcode"        | "0.0.741" | "without"  |
-#      | "callcode"        | "0.0.741" | "with"     |
-#      | "callcode"        | "0.0.800" | "without"  |
-#      | "callcode"        | "0.0.800" | "with"     |
+      | "callcode"        | "0.0.0"   | "without"  |
+      | "callcode"        | "0.0.0"   | "with"     |
+      | "callcode"        | "0.0.357" | "without"  |
+      | "callcode"        | "0.0.357" | "with"     |
+      | "callcode"        | "0.0.741" | "without"  |
+      | "callcode"        | "0.0.741" | "with"     |
+      | "callcode"        | "0.0.800" | "without"  |
+      | "callcode"        | "0.0.800" | "with"     |
 
   Scenario Outline: Validate in-equivalence tests for internal calls - precompiles
     Given I successfully create equivalence call contract
