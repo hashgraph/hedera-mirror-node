@@ -20,7 +20,6 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -43,7 +42,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Differences from the original:
  *  1. Added record types for input arguments and return types, so that the Precompile implementation could achieve statless behaviour
  *  2. Added senderAccount to the getMinimumFeeInTinybars and getGasRequirement methods, so that the Precompile implementation could achieve statless behaviour
- *  3. Added dependency to a {@link Store} interface that will hide the details of the state used for read/write operations
  */
 public interface Precompile {
 

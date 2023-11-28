@@ -24,27 +24,23 @@ import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
 
 @Getter
+@Setter
 @AllArgsConstructor
 public class PrecompileContext {
     public static final String PRECOMPILE_CONTEXT = "PrecompileContext";
 
     /** Boolean flag which determines whether the transaction is estimate gas or not */
-    @Setter
-    private boolean estimate = false;
+    private boolean estimate;
 
     /** HTS Precompile field keeping the precompile which is going to be executed at a given point in time */
-    @Setter
     private Precompile precompile;
 
     /** HTS Precompile field keeping the gas amount, which is going to be charged for a given precompile execution */
-    @Setter
-    private long gasRequirement = 0L;
+    private long gasRequirement;
 
     /** HTS Precompile field keeping the transactionBody needed for a given precompile execution */
-    @Setter
     private TransactionBody.Builder transactionBody;
 
     /** HTS Precompile field keeping the sender address of the account that initiated a given precompile execution */
-    @Setter
     private Address senderAddress;
 }
