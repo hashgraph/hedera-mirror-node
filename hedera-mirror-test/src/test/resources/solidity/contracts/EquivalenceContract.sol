@@ -22,7 +22,7 @@ contract EquivalenceContract {
         (success, returnData) = _to.delegatecall(_data);
     }
 
-    function callCodeToContractWithoutAmount(address _address, bytes4 _sig) external returns (address) {
+    function callCodeToContractWithoutAmount(address _address, bytes32 _sig) external returns (address) {
         bytes memory result;
         bool success;
 
@@ -39,10 +39,9 @@ contract EquivalenceContract {
         return abi.decode(result, (address));
     }
 
-    function callCodeToContractWithAmount(address _address, bytes4 _sig) external payable returns (address) {
+    function callCodeToContractWithAmount(address _address, bytes32 _sig) external payable returns (address) {
         bytes memory result;
         bool success;
-
         assembly {
             let x := mload(0x40)
             mstore(x, _sig)
@@ -116,5 +115,9 @@ contract EquivalenceContract {
             abi.encodeWithSignature("tinycentsToTinybars(uint256)", tinycents));
         require(success);
         tinybars = abi.decode(result, (uint256));
+    }
+
+    function getCurrentAddress() external returns(address){
+        return address(this);
     }
 }
