@@ -115,7 +115,8 @@ public class HederaEvmTxProcessor {
         final var updater = worldState.updater();
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
-        final var precompileContext = new PrecompileContext(isEstimate, null, 0L, null, Address.ZERO);
+        final var precompileContext = new PrecompileContext();
+        precompileContext.setEstimate(isEstimate);
 
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)

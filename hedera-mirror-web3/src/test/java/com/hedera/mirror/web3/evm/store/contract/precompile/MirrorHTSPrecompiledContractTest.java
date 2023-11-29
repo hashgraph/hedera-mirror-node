@@ -25,6 +25,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
 import static org.hyperledger.besu.datatypes.Address.ALTBN128_MUL;
 import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -38,6 +39,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -417,6 +419,25 @@ class MirrorHTSPrecompiledContractTest {
 
         final var expectedResult = Pair.of(0L, SUCCESS_RESULT);
         assertThat(expectedResult).isEqualTo(precompileResult);
+    }
+
+    @Test
+    void missingPrecompileContextThrowsError() {
+        given(messageFrame.isStatic()).willReturn(false);
+        given(messageFrame.getMessageFrameStack()).willReturn(messageFrameStack);
+        given(messageFrame.getContractAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getRecipientAddress()).willReturn(ALTBN128_ADD);
+        given(messageFrame.getSenderAddress()).willReturn(ALTBN128_MUL);
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(messageFrame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(null);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.computeCosted(MOCK_PRECOMPILE_FUNCTION_HASH, messageFrame, gasCalculator, tokenAccessor));
     }
 
     Bytes prerequisitesForRedirect(final int descriptor, final Address tokenAddress) {

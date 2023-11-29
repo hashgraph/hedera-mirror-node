@@ -149,7 +149,12 @@ class UnfreezeTokenPrecompileTest {
                 new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unfreezeTokenPrecompile));
         staticUnfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
-        precompileContext = new PrecompileContext(false, unfreezeTokenPrecompile, 0L, transactionBody, senderAddress);
+        precompileContext = new PrecompileContext();
+        precompileContext.setEstimate(false);
+        precompileContext.setPrecompile(unfreezeTokenPrecompile);
+        precompileContext.setGasRequirement(0L);
+        precompileContext.setSenderAddress(senderAddress);
+        precompileContext.setTransactionBody(transactionBody);
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory,

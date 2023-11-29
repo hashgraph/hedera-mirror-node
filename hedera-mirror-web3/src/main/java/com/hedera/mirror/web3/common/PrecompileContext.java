@@ -17,15 +17,17 @@
 package com.hedera.mirror.web3.common;
 
 import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
 
 @Getter
 @Setter
-@AllArgsConstructor
+@Data
 public class PrecompileContext {
     public static final String PRECOMPILE_CONTEXT = "PrecompileContext";
 
@@ -42,5 +44,9 @@ public class PrecompileContext {
     private TransactionBody.Builder transactionBody;
 
     /** HTS Precompile field keeping the sender address of the account that initiated a given precompile execution */
-    private Address senderAddress;
+    private Address senderAddress = Address.ZERO;
+
+    public AccountID getSenderAddressAsProto() {
+        return EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+    }
 }

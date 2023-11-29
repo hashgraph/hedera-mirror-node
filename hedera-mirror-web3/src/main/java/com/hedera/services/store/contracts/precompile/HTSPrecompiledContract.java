@@ -60,6 +60,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -157,8 +158,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var result = computePrecompile(input, frame);
-        final var precompileContext =
-                (PrecompileContext) frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT);
+        final var precompileContext = precompileContext(frame);
         return Pair.of(precompileContext.getGasRequirement(), result.getOutput());
     }
 
@@ -169,8 +169,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             return INVALID_DELEGATE;
         }
         prepareFields(frame);
-        final var precompileContext =
-                (PrecompileContext) frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT);
+        final var precompileContext = precompileContext(frame);
         try {
             prepareComputation(
                     input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased, precompileContext);
@@ -185,9 +184,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         precompileContext.setGasRequirement(precompileContext
                 .getPrecompile()
                 .getGasRequirement(
-                        now,
-                        precompileContext.getTransactionBody(),
-                        EntityIdUtils.accountIdFromEvmAddress(precompileContext.getSenderAddress())));
+                        now, precompileContext.getTransactionBody(), precompileContext.getSenderAddressAsProto()));
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -222,8 +219,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     protected Bytes computeInternal(final MessageFrame frame) {
-        final var precompileContext =
-                (PrecompileContext) frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT);
+        final var precompileContext = precompileContext(frame);
         Bytes result;
         final var precompile = precompileContext.getPrecompile();
         try {
@@ -275,6 +271,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
         var senderAddress = precompileContext.getSenderAddress();
         Precompile precompile;
+        TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
         switch (functionId) {
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                 final var target = getRedirectTarget(input);
@@ -315,40 +312,40 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         }
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        precompileContext.setTransactionBody(precompile.body(
+                        transactionBodyBuilder = precompile.body(
                                 input,
                                 aliasResolver,
-                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken)));
+                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
                     }
                     case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        precompileContext.setTransactionBody(
-                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress)));
+                        transactionBodyBuilder =
+                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
                     }
                     case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        precompileContext.setTransactionBody(precompile.body(
+                        transactionBodyBuilder = precompile.body(
                                 input.slice(24),
                                 aliasResolver,
-                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId)));
+                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
                     }
                     default -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                            precompileContext.setTransactionBody(
-                                    precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress)));
+                            transactionBodyBuilder =
+                                    precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                         }
                     }
                 }
             }
             case AbiConstants.ABI_ID_APPROVE -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
             }
             case AbiConstants.ABI_ID_APPROVE_NFT -> {
                 final var approveDecodedNftInfo =
@@ -364,13 +361,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 OnMissing.THROW)
                         .getOwner();
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
             }
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress)));
+                transactionBodyBuilder =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
             }
             case AbiConstants.ABI_ID_TRANSFER_TOKENS,
                     AbiConstants.ABI_ID_TRANSFER_TOKEN,
@@ -379,13 +376,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists)));
+                transactionBodyBuilder =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
             }
             case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
                     AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
@@ -400,17 +397,17 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(precompile.body(
+                transactionBodyBuilder = precompile.body(
                         input,
                         aliasResolver,
-                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW))));
+                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW)));
             }
             default -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                precompileContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new FunctionParam(functionId)));
+                transactionBodyBuilder = precompile.body(input, aliasResolver, new FunctionParam(functionId));
             }
         }
+        precompileContext.setTransactionBody(transactionBodyBuilder);
         precompileContext.setPrecompile(precompile);
         precompileContext.setGasRequirement(defaultGas());
     }
@@ -418,8 +415,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     void prepareFields(final MessageFrame frame) {
         final var unaliasedSenderAddress = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())
                 .permissivelyUnaliased(frame.getSenderAddress().toArray());
-        ((PrecompileContext) frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT))
-                .setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
+        precompileContext(frame).setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
     }
 
     private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
@@ -495,9 +491,22 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return evmProperties.getHtsDefaultGasCost();
     }
 
+    private static PrecompileContext precompileContext(@NonNull final MessageFrame frame) {
+        final var precompileContext = initialFrameOf(frame).getContextVariable(PRECOMPILE_CONTEXT);
+        if (precompileContext == null) {
+            throw new InvalidTransactionException("Frame is missing precompile context", FAIL_INVALID);
+        } else {
+            return (PrecompileContext) precompileContext;
+        }
+    }
+
+    private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
+        final var stack = frame.getMessageFrameStack();
+        return stack.isEmpty() ? frame : stack.getLast();
+    }
+
     @VisibleForTesting
     Precompile getPrecompile(final MessageFrame frame) {
-        return ((PrecompileContext) frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT))
-                .getPrecompile();
+        return precompileContext(frame).getPrecompile();
     }
 }
