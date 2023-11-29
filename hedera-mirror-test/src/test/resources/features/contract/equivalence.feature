@@ -95,12 +95,21 @@ Feature: in-equivalence tests
     Then I execute directCall to "0.0.0" address with amount 10000
     Then I make internal call to ethereum precompile "0.0.1" address with amount
     Then I make internal call to ethereum precompile "0.0.9" address with amount
-    Then I execute internal call against PRNG precompile address without amount
-    Then I execute internal call against PRNG precompile address with amount
+    Then I execute internal "call" against PRNG precompile address "without" amount
+    Then I execute internal "call" against PRNG precompile address "with" amount
+    Then I execute internal "staticcall" against PRNG precompile address "without" amount
+    Then I execute internal "delegatecall" against PRNG precompile address "without" amount
+    Then I execute internal "callcode" against PRNG precompile address "without" amount
+    Then I execute internal "callcode" against PRNG precompile address "with" amount
     Then I execute internal call against exchange rate precompile address without amount
     Then I execute internal call against exchange rate precompile address with amount
     Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "without" amount
     Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "with" amount
+    Then I execute internal "staticcall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
+    Then I execute internal "delegatecall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
+    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "without" amount
+    #Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "with" amount
+
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers
     Given I successfully create estimate precompile contract

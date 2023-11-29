@@ -22,16 +22,31 @@ contract EquivalenceContract {
         (success, returnData) = _to.delegatecall(_data);
     }
 
-    function callCodeToContractWithoutAmount(address _address, bytes32 _sig) external returns (address) {
+    function callCodeToContractWithoutAmount(address _address, bytes memory _data) external returns (address) {
+        require(_data.length >= 4, "Data too short");
+
         bytes memory result;
         bool success;
 
         assembly {
             let x := mload(0x40)
-            mstore(x, _sig)
 
-            success := callcode(600000, _address, 0, x, 0x4, x, 0x20)
+        // Find the starting index of non-zero bytes
+            let startIndex := 0
+            for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
+                if gt(mload(add(_data, i)), 0) {
+                    startIndex := i
+                    break
+                }
+            }
 
+        // Copy only the non-zero part of _data to memory starting at 'x'
+            mstore(x, mload(add(_data, startIndex)))
+
+        // Call the contract using callcode
+            success := callcode(600000, _address, 0, x, sub(mload(_data), startIndex), x, 0x20)
+
+        // Adjust the free memory pointer
             mstore(0x40, add(x, 0x20))
             mstore(result, x)
         }
@@ -39,22 +54,42 @@ contract EquivalenceContract {
         return abi.decode(result, (address));
     }
 
-    function callCodeToContractWithAmount(address _address, bytes32 _sig) external payable returns (address) {
+
+    function callCodeToContractWithAmount(address _address, bytes memory _data) external payable returns (address) {
+        require(_data.length >= 4, "Data too short");
+
         bytes memory result;
         bool success;
+
         assembly {
             let x := mload(0x40)
-            mstore(x, _sig)
 
+        // Find the starting index of non-zero bytes
+            let startIndex := 0
+            for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
+                if gt(mload(add(_data, i)), 0) {
+                    startIndex := i
+                    break
+                }
+            }
+
+        // Copy only the non-zero part of _data to memory starting at 'x'
+            mstore(x, mload(add(_data, startIndex)))
+
+        // Retrieve the call value
             let callValue := callvalue()
-            success := callcode(600000, _address, callValue, x, 0x4, x, 0x20)
 
+        // Call the contract using callcode with the call value
+            success := callcode(900000, _address, callValue, x, sub(mload(_data), startIndex), x, 0x20)
+
+        // Adjust the free memory pointer
             mstore(0x40, add(x, 0x20))
             mstore(result, x)
         }
 
         return abi.decode(result, (address));
     }
+
 
     function getBalance(address _address) external view returns (uint256) {
         return _address.balance;
