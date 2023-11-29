@@ -5,15 +5,6 @@
       {
         "num": 4,
         "public_key": "6ceecd8bb224da4914d53f292e5624f6f4cf8c134c920e1cac8d06f879df5819"
-      },
-      {
-        "num": 5
-      },
-      {
-        "num": 6
-      },
-      {
-        "num": 7
       }
     ],
     "tokens": [
@@ -49,6 +40,16 @@
       }
     ],
     "balances": [
+      {
+        "timestamp": 1566560001000000000,
+        "id": 2,
+        "balance": 20
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 2,
+        "balance": 21
+      },
       {
         "timestamp": 1566560001000000000,
         "id": 4,
