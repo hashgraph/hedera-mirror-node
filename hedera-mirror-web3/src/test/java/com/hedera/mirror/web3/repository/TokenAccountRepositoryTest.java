@@ -299,11 +299,8 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .customize(ta -> ta.accountId(accountId))
                 .persist();
 
-        final var latestTimestamp =
-                Math.max(tokenAccountHistory.getTimestampLower(), tokenAccountHistory.getTimestampLower());
-
         assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
-                        accountId, latestTimestamp + 1))
+                        accountId, tokenAccountHistory.getTimestampLower() + 1))
                 .hasSize(2)
                 .extracting(
                         TokenAccountAssociationsCount::getIsPositiveBalance,

@@ -52,7 +52,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampGreaterThanBlockTimestamp() {
         final var allowance = domainBuilder.tokenAllowance().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -64,7 +64,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampEqualToBlockTimestamp() {
         final var allowance = domainBuilder.tokenAllowance().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -77,7 +77,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampLessThanBlockTimestamp() {
         final var allowance = domainBuilder.tokenAllowance().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -90,7 +90,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampHistoricalLessThanBlockTimestamp() {
         final var allowanceHistory = domainBuilder.tokenAllowanceHistory().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -104,7 +104,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampHistoricalEqualToBlockTimestamp() {
         final var allowanceHistory = domainBuilder.tokenAllowanceHistory().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -118,7 +118,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampHistoricalGreaterThanBlockTimestamp() {
         final var allowanceHistory = domainBuilder.tokenAllowanceHistory().persist();
 
-        assertThat(repository.findByIdAndTimestamp(
+        assertThat(repository.findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -145,7 +145,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
 
         TokenAllowance actualAllowance = repository
-                .findByIdAndTimestamp(
+                .findByIdAndTimestampFindByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory1.getOwner(),
                         allowanceHistory1.getId().getSpender(),
                         allowanceHistory1.getTokenId(),
