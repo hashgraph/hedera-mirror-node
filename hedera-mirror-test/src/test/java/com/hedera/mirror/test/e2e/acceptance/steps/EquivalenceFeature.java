@@ -24,6 +24,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,6 +53,7 @@ import io.cucumber.java.en.Then;
 import jakarta.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -279,8 +281,8 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute {string} call against Ecrecover")
-    public void executeInternalCallForEcrecover(String calltype) {
+    @Then("I execute {string} call against Ecrecover precompile")
+    public void executeAllCallsForEcrecover(String calltype) {
         var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
         var hashedMessage =
                 "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
@@ -288,13 +290,9 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addAddress("0x0000000000000000000000000000000000000001")
                 .addBytes(Bytes.fromHexString(hashedMessage).toArrayUnsafe());
 
-        if (calltype.equals("internal")) {
-            executeContractCallTransaction(deployedEquivalenceCall, "makeCallWithoutAmount", parameters);
-        } else if (calltype.equals("static")) {
-            executeContractCallTransaction(deployedEquivalenceCall, "makeStaticCall", parameters);
-        } else {
-            executeContractCallTransaction(deployedEquivalenceCall, "makeDelegateCall", parameters);
-        }
+        var callType = getMethodName(calltype, "without");
+        executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+
         var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         var resultMessageSigner = mirrorClient
                 .getContractActions(transactionId)
@@ -302,6 +300,47 @@ public class EquivalenceFeature extends AbstractFeature {
                 .get(1)
                 .getResultData();
         assertEquals(messageSignerAddress, asAddress(resultMessageSigner).toString());
+    }
+
+    @Then("I execute {string} call against SHA-256 precompile")
+    public void executeAllCallsForSha256(String calltype) {
+        var message = "Encode me!";
+        var hashedMessage = "68907fbd785a694c3617d35a6ce49477ac5704d75f0e727e353da7bc664aacc2";
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000002")
+                .addBytes(message.getBytes(StandardCharsets.UTF_8));
+
+        var callType = getMethodName(calltype, "without");
+        executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var resultMessage = mirrorClient
+                .getContractActions(transactionId)
+                .getActions()
+                .get(1)
+                .getResultData();
+        assertEquals(hashedMessage, to32BytesString(resultMessage));
+    }
+
+    @Then("I execute {string} call against Ripemd-160 precompile")
+    public void executeAllCallsForRipemd160(String calltype) {
+        var message = "Encode me!";
+        var hashedMessage = "4f0c39893f4c1c805aea87a95b5d359a218920d6";
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000003")
+                .addBytes(message.getBytes(StandardCharsets.UTF_8));
+
+        var callType = getMethodName(calltype, "without");
+        executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var resultMessage = mirrorClient
+                .getContractActions(transactionId)
+                .getActions()
+                .get(1)
+                .getResultData();
+        var result = Bytes.fromHexString(resultMessage).trimLeadingZeros().toUnprefixedHexString();
+        assertEquals(hashedMessage, result);
     }
 
     @Then("I execute internal call against HTS precompile with approve function for {token} with amount")
@@ -486,6 +525,7 @@ public class EquivalenceFeature extends AbstractFeature {
             case "delegatecall_without" -> "makeDelegateCall";
             case "callcode_without" -> "callCodeToContractWithoutAmount";
             case "callcode_with" -> "callCodeToContractWithAmount";
+            case "internal_without" -> "makeCallWithoutAmount";
             default -> "Unknown";
         };
     }
