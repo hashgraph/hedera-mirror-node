@@ -297,14 +297,10 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
       if (rows === null) {
         return {};
       }
-      pgSqlQuery += ` and ((${TopicMessage.CONSENSUS_TIMESTAMP} >= ${_.first(rows).timestamp_start} and ${
-        TopicMessage.CONSENSUS_TIMESTAMP
-      } < ${_.first(rows).timestamp_end})`;
-      rows.shift();
-      rows.map((row) => {
-        pgSqlQuery += ` or (${TopicMessage.CONSENSUS_TIMESTAMP} >= ${row.timestamp_start} and ${TopicMessage.CONSENSUS_TIMESTAMP} < ${row.timestamp_end})`;
-      });
-      pgSqlQuery += `)`;
+  if (rows.length) {
+     const condition = rows.map((row) => `(consensus_timestamp >= ${...} and consensus_timestamp < ${...})`).join(' or ');
+     pgSqlQuery += ` and (${condition})`;
+   }
     }
   }
 
