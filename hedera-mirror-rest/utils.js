@@ -922,7 +922,7 @@ const getFirstDayOfMonth = (secNs) => {
     return null;
   }
 
-  if (typeof secNs !== 'BigInt') {
+  if (typeof secNs !== 'bigint') {
     secNs = BigInt(secNs);
   }
 
@@ -932,10 +932,6 @@ const getFirstDayOfMonth = (secNs) => {
   const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
   // Convert milliseconds to nanoseconds
   return BigInt(firstDayMs) * constants.NANOSECONDS_PER_MILLISECOND;
-};
-
-const secNsToSeconds = (secNs) => {
-  return math.floor(Number(secNs));
 };
 
 /**
@@ -1742,7 +1738,6 @@ export {
   parseTransactionTypeParam,
   randomString,
   resultSuccess,
-  secNsToSeconds,
   toHexString,
   toHexStringNonQuantity,
   toHexStringQuantity,
