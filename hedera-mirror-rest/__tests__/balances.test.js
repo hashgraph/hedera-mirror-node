@@ -404,16 +404,15 @@ describe('getOptimizedTimestampRange', () => {
       params: ['2022-01-05Z', '2022-02-10Z', '2022-10-02Z', '2022-09-20Z'],
       expected: {lowerBound: '2022-02-10Z', upperBound: '2022-09-20Z', neParams: []},
     },
-  ].map((s) => {
-    s.expected = {
+  ].map((s) => ({
+    query: s.operators.map((op) => `consensus_timestamp ${op} ?`).join(' and '),
+    params: s.params.map(toNs),
+    expected: {
       lowerBound: convertBound(s.expected.lowerBound),
       upperBound: convertBound(s.expected.upperBound),
       neParams: s.expected.neParams?.map(toNs),
-    };
-    s.query = s.operators.map((op) => `consensus_timestamp ${op} ?`).join(' and ');
-    s.params = s.params.map(toNs);
-    return s;
-  });
+    },
+  }));
 
   test.each(spec)('$query', ({query, params, expected}) => {
     const actual = balances.getOptimizedTimestampRange(query, params);
