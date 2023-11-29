@@ -22,6 +22,7 @@ import * as constants from '../constants';
 import {InvalidArgumentError, InvalidClauseError} from '../errors';
 import {Entity} from '../model/index.js';
 import {Range} from 'pg-range';
+import sinon from 'sinon';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
@@ -1350,6 +1351,53 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
         [constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION', 'TOKENASSOCIATE', 'TOKENCREATION'],
       })
     ).toBe('type in (40,29)');
+  });
+});
+
+describe('Utils test - utils.bindTimestampRange', () => {
+  let clock;
+  // Set now, so Date.now() returns the expected epoch millis
+  const now = Date.parse('2022-10-15T08:10:15.333Z');
+  const nowNs = BigInt(now) * constants.NANOSECONDS_PER_MILLISECOND;
+
+  beforeAll(() => {
+    clock = sinon.useFakeTimers({now});
+  });
+
+  afterAll(() => {
+    clock.restore();
+  });
+
+  test('Verify already bound range', () => {
+    const inputRange = Range(1000000000n, 2000000000n);
+    config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+    config.query.bindTimestampRange = true;
+    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+  });
+  test('Verify end only range', () => {
+    const inputRange = Range(null, 2000000000n);
+    config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+    config.query.bindTimestampRange = true;
+    const outputRange = Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end);
+    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
+  });
+  test('Verify begin only range', () => {
+    const inputRange = Range(1000000000n, null);
+    config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+    config.query.bindTimestampRange = true;
+    const outputRange = Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs);
+    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
+  });
+  test('Verify empty range', () => {
+    const inputRange = Range();
+    config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+    config.query.bindTimestampRange = true;
+    const outputRange = Range(nowNs - config.query.maxTimestampRangeNs, nowNs);
+    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
   });
 });
 
