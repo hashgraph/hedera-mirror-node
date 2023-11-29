@@ -212,7 +212,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampGreaterThanBlockTimestamp() {
         final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -227,7 +227,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                 .customize(e -> e.approvedForAll(true))
                 .persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -240,7 +240,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampLessThanBlockTimestamp() {
         final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowance.getOwner(),
                         allowance.getId().getSpender(),
                         allowance.getTokenId(),
@@ -253,7 +253,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampHistoricalLessThanBlockTimestamp() {
         final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -267,7 +267,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void findByIdAndTimestampHistoricalEqualToBlockTimestamp() {
         final var allowanceHistory = domainBuilder.nftAllowanceHistory().persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -284,7 +284,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                 .customize(a -> a.approvedForAll(true))
                 .persist();
 
-        assertThat(allowanceRepository.findByIdAndTimestamp(
+        assertThat(allowanceRepository.findByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory.getOwner(),
                         allowanceHistory.getId().getSpender(),
                         allowanceHistory.getTokenId(),
@@ -311,7 +311,7 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
                 Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
 
         NftAllowance actualAllowance = allowanceRepository
-                .findByIdAndTimestamp(
+                .findByOwnerSpenderTokenAndTimestamp(
                         allowanceHistory1.getOwner(),
                         allowanceHistory1.getId().getSpender(),
                         allowanceHistory1.getTokenId(),
