@@ -101,13 +101,7 @@ class MirrorEvmMessageCallProcessorTest {
     void setUp() {
         given(precompilesHolder.getHederaPrecompiles()).willReturn(hederaPrecompileList);
         subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic,
-                entityAddressSequencer,
-                mirrorEvmContractAliases,
-                evm,
-                precompiles,
-                precompilesHolder,
-                gasCalculatorHederaV22);
+                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22);
 
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
         when(updater.getStore()).thenReturn(store);
@@ -118,7 +112,7 @@ class MirrorEvmMessageCallProcessorTest {
 
     @Test
     void executeLazyCreateFailsWithHaltReason() {
-        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(NOT_SUPPORTED, 0L));
+        when(autoCreationLogic.create(any(), any(), any(), any())).thenReturn(Pair.of(NOT_SUPPORTED, 0L));
 
         subject.executeLazyCreate(messageFrame, operationTracer);
 
@@ -130,7 +124,7 @@ class MirrorEvmMessageCallProcessorTest {
 
     @Test
     void executeLazyCreateFailsWithInsuffiientGas() {
-        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, 1000L));
+        when(autoCreationLogic.create(any(), any(), any(), any())).thenReturn(Pair.of(OK, 1000L));
         when(messageFrame.getRemainingGas()).thenReturn(0L);
         when(messageFrame.getGasPrice()).thenReturn(Wei.ONE);
         subject.executeLazyCreate(messageFrame, operationTracer);

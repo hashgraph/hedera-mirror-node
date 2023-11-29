@@ -21,7 +21,6 @@ import static com.hedera.services.hapi.utils.fees.FeeBuilder.getFeeObject;
 import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
@@ -105,8 +104,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject estimatePayment(Query query, FeeData usagePrices, Store store, Timestamp at, ResponseType type) {
-        return compute(query, usagePrices, at, estimator -> estimator.usageGivenType(query, store));
+    public FeeObject estimatePayment(Query query, FeeData usagePrices, Timestamp at, ResponseType type) {
+        return compute(query, usagePrices, at, estimator -> estimator.usageGivenType(query));
     }
 
     @Override
@@ -117,20 +116,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     }
 
     @Override
-    public FeeObject computeFee(
-            TxnAccessor accessor,
-            JKey payerKey,
-            Store store,
-            Timestamp at,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
-        return feeGiven(
-                accessor,
-                payerKey,
-                store,
-                usagePrices.activePrices(accessor),
-                exchange.rate(at),
-                true,
-                mirrorEvmContractAliases);
+    public FeeObject computeFee(TxnAccessor accessor, JKey payerKey, Timestamp at) {
+        return feeGiven(accessor, payerKey, usagePrices.activePrices(accessor), exchange.rate(at), true);
     }
 
     private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
@@ -142,24 +129,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
     private FeeObject feeGiven(
             final TxnAccessor accessor,
             final JKey payerKey,
-            final Store store,
             final Map<SubType, FeeData> prices,
             final ExchangeRate rate,
-            final boolean inHandle,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+            final boolean inHandle) {
         final var function = accessor.getFunction();
         if (pricedUsageCalculator.supports(function)) {
             final var applicablePrices = prices.get(accessor.getSubType());
             return inHandle
-                    ? pricedUsageCalculator.inHandleFees(
-                            accessor, applicablePrices, rate, payerKey, store, mirrorEvmContractAliases)
-                    : pricedUsageCalculator.extraHandleFees(
-                            accessor, applicablePrices, rate, payerKey, store, mirrorEvmContractAliases);
+                    ? pricedUsageCalculator.inHandleFees(accessor, applicablePrices, rate, payerKey)
+                    : pricedUsageCalculator.extraHandleFees(accessor, applicablePrices, rate, payerKey);
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
-                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, store);
+                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage);
                 final var applicablePrices = prices.get(usage.getSubType());
                 return getFeeObject(usage, applicablePrices, rate);
             } catch (Exception e) {

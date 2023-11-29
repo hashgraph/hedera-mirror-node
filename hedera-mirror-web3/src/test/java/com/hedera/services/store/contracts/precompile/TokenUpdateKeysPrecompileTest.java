@@ -188,8 +188,8 @@ class TokenUpdateKeysPrecompileTest {
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
         final var tokenUpdateKeysPrecompile = new TokenUpdateKeysPrecompile(

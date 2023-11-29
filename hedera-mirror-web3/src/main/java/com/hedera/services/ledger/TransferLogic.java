@@ -51,22 +51,24 @@ import org.hyperledger.besu.datatypes.Address;
  * */
 public class TransferLogic {
     private final AutoCreationLogic autoCreationLogic;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
-    public TransferLogic(final AutoCreationLogic autoCreationLogic) {
+    public TransferLogic(
+            final AutoCreationLogic autoCreationLogic, final MirrorEvmContractAliases mirrorEvmContractAliases) {
         this.autoCreationLogic = autoCreationLogic;
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     public void doZeroSum(
             final List<BalanceChange> changes,
             Store store,
             EntityAddressSequencer ids,
-            MirrorEvmContractAliases mirrorEvmContractAliases,
             HederaTokenStore hederaTokenStore) {
         var validity = OK;
         for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
-            replaceAliasWithIdIfExisting(change, mirrorEvmContractAliases);
+            replaceAliasWithIdIfExisting(change);
 
             // create a new account for alias when the no account is already created using the alias
             if (change.hasAlias()) {
@@ -80,8 +82,7 @@ public class TransferLogic {
                                 .setSeconds(Instant.now().getEpochSecond())
                                 .build(),
                         store,
-                        ids,
-                        mirrorEvmContractAliases);
+                        ids);
                 validity = result.getKey();
                 if (validity == OK && (change.isForToken())) {
                     validity = hederaTokenStore.tryTokenChange(change);
@@ -174,10 +175,8 @@ public class TransferLogic {
      * led to account creation
      *
      * @param change                   change that contains alias
-     * @param mirrorEvmContractAliases resolve aliases
      */
-    private void replaceAliasWithIdIfExisting(
-            final BalanceChange change, MirrorEvmContractAliases mirrorEvmContractAliases) {
+    private void replaceAliasWithIdIfExisting(final BalanceChange change) {
         final var alias = change.getNonEmptyAliasIfPresent();
 
         if (alias != null) {
