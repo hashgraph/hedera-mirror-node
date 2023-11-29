@@ -344,23 +344,6 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(hashedMessage, result);
     }
 
-//    @Then("I execute internal call against HTS precompile with approve function for {token} with amount")
-//    public void executeInternalCallForHTSApproveWithAmount(TokenNameEnum tokenName) {
-//        var tokenId = tokenClient.getToken(tokenName).tokenId();
-//        var data = encodeDataToByteArray(
-//                HTS_APPROVE,
-//                asAddress(tokenId),
-//                asAddress(equivalenceCallContractSolidityAddress),
-//                new BigInteger("10"));
-//        var parameters = new ContractFunctionParameters()
-//                .addAddress("0x0000000000000000000000000000000000000167")
-//                .addBytes(data);
-//        var functionResult = executeContractCallTransaction(
-//                deployedEquivalenceCall, "makeCallWithoutAmount", parameters, Hbar.fromTinybars(10L));
-//        // POTENTIAL BUG
-//        // THIS RETURNS CONTRACT REVERT EXECUTED - > WE EXPECT INVALID_FEE_SUBMITTED
-//    }
-
     @Then("I execute internal {string} against PRNG precompile address {string} amount")
     public void executeInternalCallForPRNGWithoutAmount(String call, String amountType) {
         var callType = getMethodName(call, amountType);
@@ -382,14 +365,6 @@ public class EquivalenceFeature extends AbstractFeature {
         }
 
     }
-
-//    @Then("I execute internal call against PRNG precompile address with amount")
-//    public void executeInternalCallForPRNGWithAmount() {
-//        var functionResult = executeContractCallTransaction(
-//                deployedEquivalenceCall, "getPseudorandomSeedWithAmount", null, Hbar.fromTinybars(10L));
-//        // POTENTIAL BUG
-//        // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
-//    }
 
     @Then("I execute internal call against exchange rate precompile address without amount")
     public void executeInternalCallForExchangeRateWithoutAmount() {
