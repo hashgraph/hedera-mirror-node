@@ -82,9 +82,15 @@ Feature: in-equivalence tests
     Given I ensure token "FUNGIBLE" has been created
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
-    Then I execute "internal" call against Ecrecover
-    Then I execute "static" call against Ecrecover
-    Then I execute "delegate" call against Ecrecover
+    Then I execute "internal" call against Ecrecover precompile
+    Then I execute "static" call against Ecrecover precompile
+    Then I execute "delegate" call against Ecrecover precompile
+    Then I execute "internal" call against SHA-256 precompile
+    Then I execute "static" call against SHA-256 precompile
+    Then I execute "delegate" call against SHA-256 precompile
+    Then I execute "internal" call against Ripemd-160 precompile
+    Then I execute "static" call against Ripemd-160 precompile
+    Then I execute "delegate" call against Ripemd-160 precompile
     Then I execute directCall to "0.0.0" address without amount
     Then I execute directCall to "0.0.0" address with amount 10000
     Then I make internal call to ethereum precompile "0.0.1" address with amount
