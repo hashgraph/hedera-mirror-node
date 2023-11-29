@@ -347,23 +347,19 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute internal {string} against PRNG precompile address {string} amount")
     public void executeInternalCallForPRNGWithoutAmount(String call, String amountType) {
         var callType = getMethodName(call, amountType);
-        var data = encodeDataToByteArray(
-                GET_PRNG);
+        var data = encodeDataToByteArray(GET_PRNG);
         var parameters = new ContractFunctionParameters()
                 .addAddress("0x0000000000000000000000000000000000000169")
                 .addBytes(data);
-        if (amountType.equals("with")){
+        if (amountType.equals("with")) {
             var functionResult = executeContractCallTransaction(
                     deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10L));
             // POTENTIAL BUG
             // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
-        }
-        else{
-            var functionResult = executeContractCallQuery(
-                    deployedEquivalenceCall, callType, parameters);
+        } else {
+            var functionResult = executeContractCallQuery(deployedEquivalenceCall, callType, parameters);
             assertEquals(32, functionResult.getBytes32(0).length);
         }
-
     }
 
     @Then("I execute internal call against exchange rate precompile address without amount")
