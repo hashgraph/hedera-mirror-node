@@ -103,8 +103,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            Utility.handleRecoverableError(
-                    "Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+            if (!recordItem.isInvalidIdError()) {
+                Utility.handleRecoverableError(
+                        "Invalid entity encountered for consensusTimestamp {} : {}",
+                        consensusTimestamp,
+                        e.getMessage());
+            }
             entityId = EntityId.EMPTY;
         }
 
