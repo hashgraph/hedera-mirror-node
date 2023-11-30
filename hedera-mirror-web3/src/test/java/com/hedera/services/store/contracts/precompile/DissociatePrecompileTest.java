@@ -166,8 +166,8 @@ class DissociatePrecompileTest {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDissociateFromAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils pricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils pricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         dissociatePrecompile = new DissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
         multiDissociatePrecompile = new MultiDissociatePrecompile(pricingUtils, syntheticTxnFactory, dissociateLogic);
@@ -210,7 +210,7 @@ class DissociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
         // when:
@@ -236,7 +236,7 @@ class DissociatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(dissociateLogic.validateSyntax(any())).willReturn(ResponseCodeEnum.OK);
         // when:
@@ -261,7 +261,7 @@ class DissociatePrecompileTest {
         final var builder = TokenDissociateTransactionBody.newBuilder();
         builder.setAccount(HTSTestsUtil.multiDissociateOp.accountId());
         builder.addAllTokens(HTSTestsUtil.multiDissociateOp.tokenIds());
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -288,7 +288,7 @@ class DissociatePrecompileTest {
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(HTSTestsUtil.dissociateOp.accountId());
         builder.addAllTokens(HTSTestsUtil.dissociateOp.tokenIds());
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))

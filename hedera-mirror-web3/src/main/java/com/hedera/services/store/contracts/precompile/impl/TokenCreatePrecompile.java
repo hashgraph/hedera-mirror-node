@@ -48,7 +48,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -322,8 +321,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var store = updater.getStore();
         final var senderAddress = unalias(frame.getSenderAddress(), updater);
-        final var aliases =
-                (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
         final var timestampSeconds = frame.getBlockValues().getTimestamp();
         final var timestamp =
                 Timestamp.newBuilder().setSeconds(timestampSeconds).build();
@@ -332,9 +329,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 transactionBody.setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(timestamp)
                         .build()),
-                timestamp,
-                store,
-                aliases);
+                timestamp);
 
         final var tinybarsRequirement = calculatedFeeInTinybars
                 + (calculatedFeeInTinybars / 5)

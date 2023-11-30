@@ -9,7 +9,7 @@
         "num": 7
       },
       {
-        "balance": 80,
+        "balance": 88,
         "balance_timestamp": "1234567890300123456",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
@@ -285,18 +285,9 @@
       }
     ],
     "balance": {
-      "timestamp": "1234567890.300000010",
-      "balance": 80,
-      "tokens": [
-        {
-          "token_id": "0.0.99998",
-          "balance": 98
-        },
-        {
-          "token_id": "0.0.99999",
-          "balance": 88
-        }
-      ]
+      "timestamp": "1234567890.300123456",
+      "balance": 88,
+      "tokens": []
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",

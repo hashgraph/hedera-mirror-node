@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -156,8 +157,9 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TokenAssociateResourceUsage tokenAssociateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenAssociateResourceUsage(estimatorFactory);
+    TokenAssociateResourceUsage tokenAssociateResourceUsage(
+            final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenAssociateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
@@ -166,13 +168,14 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TokenDissociateResourceUsage tokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenDissociateResourceUsage(estimatorFactory);
+    TokenDissociateResourceUsage tokenDissociateResourceUsage(
+            final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenDissociateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
-    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenUpdateResourceUsage(estimatorFactory);
+    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenUpdateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
@@ -235,11 +238,8 @@ public class ServicesConfiguration {
             final BasicHbarCentExchange exchange,
             final FeeCalculator feeCalculator,
             final BasicFcfsUsagePrices resourceCosts,
-            final AccessorFactory accessorFactory,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
-        return new PrecompilePricingUtils(
-                assetsLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+            final AccessorFactory accessorFactory) {
+        return new PrecompilePricingUtils(assetsLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
     }
 
     @Bean
@@ -343,8 +343,9 @@ public class ServicesConfiguration {
     AutoCreationLogic autocreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
-            final SyntheticTxnFactory syntheticTxnFactory) {
-        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, mirrorEvmContractAliases);
     }
 
     @Bean
@@ -372,8 +373,9 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TransferLogic transferLogic(final AutoCreationLogic autoCreationLogic) {
-        return new TransferLogic(autoCreationLogic);
+    TransferLogic transferLogic(
+            final AutoCreationLogic autoCreationLogic, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new TransferLogic(autoCreationLogic, mirrorEvmContractAliases);
     }
 
     @Bean
@@ -500,8 +502,8 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    OpUsageCtxHelper opUsageCtxHelper() {
-        return new OpUsageCtxHelper();
+    OpUsageCtxHelper opUsageCtxHelper(final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
+        return new OpUsageCtxHelper(store, hederaEvmContractAliases);
     }
 
     @Bean

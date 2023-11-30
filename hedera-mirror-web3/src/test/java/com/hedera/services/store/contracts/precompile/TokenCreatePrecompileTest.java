@@ -233,8 +233,8 @@ class TokenCreatePrecompileTest {
         canonicalPrices.put(TokenCreate, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var syntheticTxnFactory = new SyntheticTxnFactory();
         tokenCreatePrecompile = new TokenCreatePrecompile(
                 precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic, feeCalculator);
@@ -1097,7 +1097,7 @@ class TokenCreatePrecompileTest {
         givenValidGasCalculation();
         given(store.getAccount(senderAddress, OnMissing.THROW)).willReturn(senderAccount);
         given(senderAccount.getBalance()).willReturn(1000L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         // when:
         given(frame.getRemainingGas()).willReturn(100_000L);

@@ -157,8 +157,8 @@ class TokenUpdatePrecompileTest {
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils pricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils pricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         tokenUpdatePrecompileStatic = Mockito.mockStatic(TokenUpdatePrecompile.class);
 

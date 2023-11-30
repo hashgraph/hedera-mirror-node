@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -46,14 +45,12 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Named
 public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
-    private final MirrorEvmContractAliases mirrorEvmContractAliases;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
 
     public MirrorEvmMessageCallProcessor(
             final AbstractAutoCreationLogic autoCreationLogic,
             final EntityAddressSequencer entityAddressSequencer,
-            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final PrecompilesHolder precompilesHolder,
@@ -61,7 +58,6 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         super(evm, precompiles, precompilesHolder.getHederaPrecompiles());
         this.autoCreationLogic = autoCreationLogic;
         this.entityAddressSequencer = entityAddressSequencer;
-        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
 
         // This is a singleton bean, we will need more version of it depending on the evm version and precompile
         // figure out what do with this field
@@ -82,12 +78,8 @@ public class MirrorEvmMessageCallProcessor extends HederaEvmMessageCallProcessor
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final var lazyCreateResult = autoCreationLogic.create(
-                syntheticBalanceChange,
-                timestamp,
-                updater.getStore(),
-                entityAddressSequencer,
-                mirrorEvmContractAliases);
+        final var lazyCreateResult =
+                autoCreationLogic.create(syntheticBalanceChange, timestamp, updater.getStore(), entityAddressSequencer);
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
             haltFrameAndTraceCreationResult(frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
