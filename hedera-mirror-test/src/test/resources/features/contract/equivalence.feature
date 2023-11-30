@@ -101,14 +101,16 @@ Feature: in-equivalence tests
     Then I execute internal "delegatecall" against PRNG precompile address "without" amount
     Then I execute internal "callcode" against PRNG precompile address "without" amount
     Then I execute internal "callcode" against PRNG precompile address "with" amount
-    Then I execute internal call against exchange rate precompile address without amount
-    Then I execute internal call against exchange rate precompile address with amount
+    Then I execute internal "call" against exchange rate precompile address "without" amount
+    Then I execute internal "call" against exchange rate precompile address "with" amount
+    Then I execute internal "staticcall" against exchange rate precompile address "without" amount
+    Then I execute internal "delegatecall" against exchange rate precompile address "without" amount
     Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "without" amount
     Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "with" amount
     Then I execute internal "staticcall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
     Then I execute internal "delegatecall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
     Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "without" amount
-    #Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "with" amount
+    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "with" amount
 
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers
