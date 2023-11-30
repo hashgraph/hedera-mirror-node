@@ -46,11 +46,6 @@ class GrpcConfiguration {
     }
 
     @Bean
-    TransactionOperations transactionOperations(PlatformTransactionManager transactionManager) {
-        return new TransactionTemplate(transactionManager);
-    }
-
-    @Bean
     GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
         return serverBuilder -> customizeServerBuilder(serverBuilder, nettyProperties);

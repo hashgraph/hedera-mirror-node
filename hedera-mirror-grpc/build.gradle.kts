@@ -48,8 +48,9 @@ dependencies {
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("com.playtika.testcontainers:embedded-postgresql")
-    testImplementation("com.playtika.testcontainers:embedded-redis")
+    testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
 }
