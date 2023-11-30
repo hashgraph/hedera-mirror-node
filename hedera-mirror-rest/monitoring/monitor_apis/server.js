@@ -62,10 +62,14 @@ app.get('/health/readiness', (req, res) => {
   }
 });
 
+const shouldIncludeAllTestDetails = (req) => (req.query.all ?? 'false').toLowerCase() === 'true';
+
 app.get(`${apiPrefix}/status`, (req, res) => {
-  const status = common.getStatus();
+  const status = common.getStatus(shouldIncludeAllTestDetails(req));
   const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);
-  const total = status.results.map((r) => r.results.testResults.length).reduce((r, i) => r + i);
+  const total = status.results
+    .map(({results}) => results.numFailedTests + results.numPassedTests)
+    .reduce((r, i) => r + i);
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );
@@ -73,9 +77,10 @@ app.get(`${apiPrefix}/status`, (req, res) => {
 });
 
 app.get(`${apiPrefix}/status/:name`, (req, res) => {
-  const status = common.getStatusByName(req.params.name);
-  const passed = status.results.numPassedTests;
-  const total = status.results.testResults.length;
+  const status = common.getStatusByName(req.params.name, shouldIncludeAllTestDetails(req));
+  const {results} = status;
+  const passed = results.numPassedTests;
+  const total = results.numFailedTests + results.numPassedTests;
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );

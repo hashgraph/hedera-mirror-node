@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import config from './config';
 
 const currentResults = {}; // Results of current tests are stored here
@@ -58,17 +59,27 @@ const getServerCurrentResults = (name) => {
   return currentResults[name]?.results?.testResults || [];
 };
 
+const filterPassedTests = (result) => {
+  const copy = _.cloneDeep(result);
+  copy.results.testResults = copy.results.testResults.filter((r) => r.result !== 'passed');
+  return copy;
+};
+
 /**
  * Getter for a snapshot of results
- * @param {} None
+ * @param {Boolean} all if true, show all test result details. Otherwise, only show failed ones
  * @return {Object} Snapshot of results from the latest completed round of tests
  */
-const getStatus = () => {
-  const results = Object.values(currentResults);
+const getStatus = (all) => {
+  let results = Object.values(currentResults);
   const httpErrorCodes = results
     .map((result) => result.httpCode)
     .filter((httpCode) => httpCode < 200 || httpCode > 299);
   const httpCode = httpErrorCodes.length === 0 ? 200 : 409;
+  if (!all) {
+    results = results.map(filterPassedTests);
+  }
+
   return {
     results,
     httpCode,
@@ -78,10 +89,10 @@ const getStatus = () => {
 /**
  * Getter for a snapshot of results for a server specified in the HTTP request
  * @param {String} name server name
- * @return {Object} Snapshot of results from the latest completed round of tests for
- *      the specified server
+ * @param {Boolean} all if true, show all test result details. Otherwise, only show failed ones
+ * @return {Object} Snapshot of results from the latest completed round of tests for the specified server
  */
-const getStatusByName = (name) => {
+const getStatusByName = (name, all) => {
   let ret = {
     httpCode: 400,
     results: {
@@ -108,8 +119,7 @@ const getStatusByName = (name) => {
     return ret;
   }
 
-  // Return the results saved in the currentResults object
-  ret = currentResult;
+  ret = all ? currentResult : filterPassedTests(currentResult);
   ret.httpCode = currentResult.results.success ? 200 : 409;
   return ret;
 };

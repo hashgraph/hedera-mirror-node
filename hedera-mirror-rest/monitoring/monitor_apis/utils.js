@@ -131,7 +131,7 @@ const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) =>
 
     return key ? json[key] : json;
   } catch (error) {
-    return Error(`${error}`);
+    return error;
   } finally {
     clearTimeout(timeout);
   }
@@ -210,7 +210,7 @@ const checkAPIResponseError = (resp, option) => {
   if (resp instanceof Error) {
     return {
       passed: false,
-      message: resp.message,
+      message: `${resp.message}. Cause: ${resp.cause}`,
     };
   }
 
