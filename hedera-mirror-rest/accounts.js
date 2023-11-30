@@ -18,15 +18,15 @@ import _ from 'lodash';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
+import {filterKeys} from './constants';
 import EntityId from './entityId';
 import * as utils from './utils';
+import {opsMap} from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
 import {Entity} from './model';
 import balances from './balances';
-import {opsMap} from './utils';
-import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -359,7 +359,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:idOrAliasOrEvmAddress API.
+ * Handler function for /accounts/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {Promise}
@@ -372,16 +372,16 @@ const getOneAccount = async (req, res) => {
   const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
   const parsedQueryParams = req.query;
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
-  const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
+  const [tsRange, tsEqValues, tsNeValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     tsRange,
     't.consensus_timestamp',
-    neValues,
-    eqValues
+    tsNeValues,
+    tsEqValues
   );
 
   const resultTypeQuery = utils.parseResultParams(req);
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
+  const {query: limitQuery, params: limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
@@ -396,8 +396,8 @@ const getOneAccount = async (req, res) => {
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      neValues,
-      eqValues
+      tsNeValues,
+      tsEqValues
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
@@ -405,8 +405,8 @@ const getOneAccount = async (req, res) => {
     const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
       tsRange,
       'consensus_timestamp',
-      neValues,
-      eqValues,
+      tsNeValues,
+      tsEqValues,
       false
     );
 
@@ -458,42 +458,51 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  const creditDebitQuery = ''; // type=credit|debit is not supported
-  const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [encodedId];
-
   let transactionsPromise;
 
   // when not specified or set as true
   const includeTransactions = !transactionsFilter || transactionsFilter.value;
   if (includeTransactions) {
+    const creditDebitQuery = ''; // type=credit|debit is not supported
+    const accountQuery = 'ctl.entity_id = $1';
+    const accountParams = [encodedId];
+    const pgLimitQuery = utils.convertMySqlStyleQueryToPostgres(limitQuery, 2);
+    // TODO this is not parameterized. It contains the actual values.
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
-    const innerQuery = transactions.getTransactionsInnerQuery(
+    const transactionsParams = utils.mergeParams(accountParams, limitParams);
+
+    const [transactionsQuery, transactionQueryParams] = await transactions.getTransactionsQuery(
+      {tsRange, tsEqValues, tsNeValues},
       accountQuery,
-      transactionTsQuery,
       resultTypeQuery,
-      query,
+      pgLimitQuery,
       creditDebitQuery,
       transactionTypeQuery,
-      order
+      limit,
+      order,
+      transactionsParams
     );
 
-    const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
-    const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-    const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
+    if (transactionsQuery === undefined) {
+      // No transactions to process
+      transactionsPromise = Promise.resolve({rows: []});
+    } else {
+      if (logger.isTraceEnabled()) {
+        logger.trace(
+          `getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionQueryParams)}`
+        );
+      }
 
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
+      // Execute query & get a promise
+      transactionsPromise = pool.queryQuietly(transactionsQuery, transactionQueryParams);
     }
-
-    // Execute query & get a promise
-    transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
   } else {
     // Promise that returns empty result
     transactionsPromise = Promise.resolve({rows: []});
   }
 
+  // TODO should these queries be done serially? transactionsResults is not used if issue with entityResults.
   // After all promises (for all of the above queries) have been resolved...
   const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
   // Process the results of entities query

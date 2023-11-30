@@ -673,6 +673,10 @@ const bindTimestampRange = function (tsRange) {
     return tsRange;
   }
 
+  if (_.isNil(tsRange)) {
+    tsRange = Range();
+  }
+
   if (tsRange.begin && tsRange.end) {
     return tsRange;
   }
