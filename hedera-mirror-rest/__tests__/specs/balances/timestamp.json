@@ -96,44 +96,65 @@
       }
     ]
   },
-  "url": "/api/v1/balances?timestamp=1566560004.000000000",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "1566560003.000000000",
-    "balances": [
-      {
-        "account": "0.0.7",
-        "balance": 770,
-        "tokens": []
-      },
-      {
-        "account": "0.0.6",
-        "balance": 666,
-        "tokens": []
-      },
-      {
-        "account": "0.0.5",
-        "balance": 555,
-        "tokens": []
-      },
-      {
-        "account": "0.0.4",
-        "balance": 444,
-        "tokens": [
+  "tests": [
+    {
+      "url": "/api/v1/balances?timestamp=1566560004.000000000",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1566560003.000000000",
+        "balances": [
           {
-            "token_id": "0.0.90000",
-            "balance": 1000
+            "account": "0.0.7",
+            "balance": 770,
+            "tokens": []
+          },
+          {
+            "account": "0.0.6",
+            "balance": 666,
+            "tokens": []
+          },
+          {
+            "account": "0.0.5",
+            "balance": 555,
+            "tokens": []
+          },
+          {
+            "account": "0.0.4",
+            "balance": 444,
+            "tokens": [
+              {
+                "token_id": "0.0.90000",
+                "balance": 1000
+              }
+            ]
+          },
+          {
+            "account": "0.0.2",
+            "balance": 2,
+            "tokens": []
           }
-        ]
-      },
-      {
-        "account": "0.0.2",
-        "balance": 2,
-        "tokens": []
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "url": "/api/v1/balances?timestamp=1566560004.000000000&limit=1",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1566560003.000000000",
+        "balances": [
+          {
+            "account": "0.0.7",
+            "balance": 770,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": "/api/v1/balances?timestamp=1566560004.000000000&limit=1&account.id=lt:0.0.7"
+        }
+      }
     }
-  }
+  ]
 }
