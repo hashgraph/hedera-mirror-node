@@ -1391,13 +1391,18 @@ describe('Utils test - utils.bindTimestampRange', () => {
     const outputRange = Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs);
     expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
   });
-  test('Verify empty range', () => {
-    const inputRange = Range();
+  test('Verify undefined, null and empty range', () => {
     config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(undefined)).toBe(undefined);
+    expect(utils.bindTimestampRange(null)).toBe(null);
+    const inputRange = Range();
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+
     config.query.bindTimestampRange = true;
     const outputRange = Range(nowNs - config.query.maxTimestampRangeNs, nowNs);
     expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
+    expect(utils.bindTimestampRange(undefined)).toEqual(outputRange);
+    expect(utils.bindTimestampRange(null)).toEqual(outputRange);
   });
 });
 

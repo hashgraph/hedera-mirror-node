@@ -472,7 +472,7 @@ const getOneAccount = async (req, res) => {
 
     const transactionsParams = utils.mergeParams(accountParams, limitParams);
 
-    const [transactionsQuery, transactionQueryParams] = await transactions.getTransactionsQuery(
+    const [transactionsQuery, transactionsQueryParams] = await transactions.getTransactionsQuery(
       {tsRange, tsEqValues, tsNeValues},
       accountQuery,
       resultTypeQuery,
@@ -490,12 +490,12 @@ const getOneAccount = async (req, res) => {
     } else {
       if (logger.isTraceEnabled()) {
         logger.trace(
-          `getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionQueryParams)}`
+          `getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsQueryParams)}`
         );
       }
 
       // Execute query & get a promise
-      transactionsPromise = pool.queryQuietly(transactionsQuery, transactionQueryParams);
+      transactionsPromise = pool.queryQuietly(transactionsQuery, transactionsQueryParams);
     }
   } else {
     // Promise that returns empty result
