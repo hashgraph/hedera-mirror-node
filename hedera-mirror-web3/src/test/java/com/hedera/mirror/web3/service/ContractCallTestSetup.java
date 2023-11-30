@@ -52,7 +52,6 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
@@ -795,10 +794,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @SuppressWarnings("try")
-    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters, final long timestamp) {
+    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         long result;
-        try (ContractCallContext ctx = init(store.getStackedStateFrames(), timestamp)) {
-
+        try (ContractCallContext ctx = init()) {
+            ctx.initializeStackFrames(store.getStackedStateFrames());
             result = processor
                     .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
@@ -807,10 +806,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         }
 
         return result;
-    }
-
-    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        return gasUsedAfterExecution(serviceParameters, DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     protected void persistEntities() {

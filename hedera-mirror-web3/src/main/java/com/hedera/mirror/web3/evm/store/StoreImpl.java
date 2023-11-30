@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
@@ -40,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -252,8 +252,9 @@ public class StoreImpl implements Store {
         return account.isPresent();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public long getHistoricalTimestamp() {
+    public Optional<Long> getHistoricalTimestamp() {
         // Get the top frame from stackedStateFrames
         return stackedStateFrames
                 .top()
@@ -264,10 +265,7 @@ public class StoreImpl implements Store {
                 .filter(DatabaseBackedStateFrame.class::isInstance)
                 // cast the filtered object to DatabaseBackedStateFrame
                 .map(DatabaseBackedStateFrame.class::cast)
-                // map to the timestamp value
-                .map(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp)
-                // return unset timestamp as default
-                .orElse(DatabaseAccessor.UNSET_TIMESTAMP);
+                .flatMap(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp);
     }
 
     /**

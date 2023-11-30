@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
@@ -36,12 +37,17 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     private final NftRepository nftRepository;
 
     @Override
-    public @NonNull Optional<UniqueToken> get(@NonNull Object nftKey, final long timestamp) {
-        final var nftId = (NftId) nftKey;
-        final var uniqueToken = useHistorical(timestamp)
-                ? nftRepository.findActiveByIdAndTimestamp(nftId.tokenId().getTokenNum(), nftId.serialNo(), timestamp)
-                : nftRepository.findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo());
-        return uniqueToken.map(this::mapNftToUniqueToken);
+    public @NonNull Optional<UniqueToken> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof NftId nftId) {
+            return timestamp
+                    .map(t -> nftRepository.findActiveByIdAndTimestamp(
+                            nftId.tokenId().getTokenNum(), nftId.serialNo(), t))
+                    .orElseGet(
+                            () -> nftRepository.findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo()))
+                    .map(this::mapNftToUniqueToken);
+        }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(UniqueToken.class.getTypeName(), key.getClass().getTypeName()));
     }
 
     private UniqueToken mapNftToUniqueToken(Nft nft) {

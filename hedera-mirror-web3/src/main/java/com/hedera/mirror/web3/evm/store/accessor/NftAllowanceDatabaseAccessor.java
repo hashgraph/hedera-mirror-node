@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -31,9 +32,15 @@ public class NftAllowanceDatabaseAccessor extends DatabaseAccessor<Object, NftAl
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Override
-    public @NonNull Optional<NftAllowance> get(@NonNull Object key, final long timestamp) {
-        return useHistorical(timestamp)
-                ? nftAllowanceRepository.findByIdAndTimestamp(((Id) key).getTokenId(), timestamp)
-                : nftAllowanceRepository.findById((Id) key);
+    public @NonNull Optional<NftAllowance> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof Id id) {
+            return timestamp
+                    .map(t -> nftAllowanceRepository.findByIdAndTimestamp(id.getTokenId(), t))
+                    .orElseGet(() -> nftAllowanceRepository.findById(id));
+        }
+        throwDatabaseAccessException(
+                NftAllowance.class.getTypeName(), key.getClass().getTypeName());
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(NftAllowance.class.getTypeName(), key.getClass().getTypeName()));
     }
 }

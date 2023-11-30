@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class DatabaseBackedStateFrameTest {
 
-    private static final long TIMESTAMP = 1234L;
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     final DatabaseAccessorStub<Integer, Long> dbAccessorForLong = new DatabaseAccessorStub<>() {};
     final List<DatabaseAccessor<Integer, ?>> someAccessors = List.of(
             dbAccessorForLong,
@@ -41,7 +41,7 @@ class DatabaseBackedStateFrameTest {
     void getValueWorks() {
         final Integer aKey = 5;
         final UpdatableReferenceCache<Integer> aCache = new UpdatableReferenceCache<>();
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         dbAccessorForLong.setCannedKV(aKey, null);
         assertThat(sut.getValue(Long.class, aCache, aKey)).isEmpty();
@@ -56,7 +56,7 @@ class DatabaseBackedStateFrameTest {
         final Integer aKey = 5;
         final var anInvalidClass = Double.class;
         final UpdatableReferenceCache<Integer> aCache = new UpdatableReferenceCache<>();
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         assertThatNullPointerException().isThrownBy(() -> sut.getValue(anInvalidClass, aCache, aKey));
     }
@@ -66,7 +66,7 @@ class DatabaseBackedStateFrameTest {
         final Integer aKey = 5;
         final Long aValue = 7L;
         final UpdatableReferenceCache<Integer> aCache = new UpdatableReferenceCache<>();
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> sut.setValue(Long.class, aCache, aKey, aValue));
@@ -76,7 +76,7 @@ class DatabaseBackedStateFrameTest {
     void deleteValueIsUnsupported() {
         final Integer aKey = 5;
         final UpdatableReferenceCache<Integer> aCache = new UpdatableReferenceCache<>();
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> sut.deleteValue(Long.class, aCache, aKey));
@@ -86,7 +86,7 @@ class DatabaseBackedStateFrameTest {
     void updateIsUnsupported() {
         final var someClasses = new Class<?>[] {Long.class, String.class, Math.class};
         final var upstream = new BottomCachingStateFrame<Integer>(Optional.empty(), someClasses);
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         assertThatExceptionOfType(UnsupportedOperationException.class)
                 .isThrownBy(() -> sut.updatesFromDownstream(upstream));
@@ -94,7 +94,7 @@ class DatabaseBackedStateFrameTest {
 
     @Test
     void commitIsUnsupported() {
-        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, TIMESTAMP);
+        final var sut = new DatabaseBackedStateFrame<>(someAccessors, thoseValueClasses, timestamp);
 
         assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(sut::commit);
     }
@@ -104,7 +104,7 @@ class DatabaseBackedStateFrameTest {
         public Optional<V> cannedValue = Optional.empty();
 
         @Override
-        public @NonNull Optional<V> get(@NonNull final K key, final long timestamp) {
+        public @NonNull Optional<V> get(@NonNull final K key, final Optional<Long> timestamp) {
             return key == cannedKey ? cannedValue : Optional.empty();
         }
 

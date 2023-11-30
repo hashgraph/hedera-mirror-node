@@ -19,7 +19,6 @@ package com.hedera.mirror.web3;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import lombok.CustomLog;
@@ -62,22 +61,17 @@ public class ContextExtension implements InvocationInterceptor {
         intercept(invocation, invocationContext);
     }
 
-    private <T> T intercept(
-            Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext, final long timestamp)
+    private <T> T intercept(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext)
             throws Throwable {
 
         var stackedStateFrames =
                 getStackedStateFrames(invocationContext.getTarget().get());
 
-        try (var context = ContractCallContext.init(stackedStateFrames, timestamp)) {
+        try (var context = ContractCallContext.init()) {
+            context.initializeStackFrames(stackedStateFrames);
             log.debug("Creating new context {}", context);
             return invocation.proceed();
         }
-    }
-
-    private <T> T intercept(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext)
-            throws Throwable {
-        return intercept(invocation, invocationContext, DatabaseAccessor.UNSET_TIMESTAMP);
     }
 
     // If there's a Store field on the test use it to initialize the context

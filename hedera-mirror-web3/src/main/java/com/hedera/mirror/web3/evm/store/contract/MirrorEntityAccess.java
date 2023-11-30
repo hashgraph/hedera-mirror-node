@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor.useHistorical;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
@@ -119,13 +118,11 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return Bytes.EMPTY;
         }
 
-        final var timestamp = store.getHistoricalTimestamp();
-
-        final var storage = useHistorical(timestamp)
-                ? contractStateRepository.findStorageByBlockTimestamp(entityId, key.toArrayUnsafe(), timestamp)
-                : contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
-
-        return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
+        return store.getHistoricalTimestamp()
+                .map(t -> contractStateRepository.findStorageByBlockTimestamp(entityId, key.toArrayUnsafe(), t))
+                .orElseGet(() -> contractStateRepository.findStorage(entityId, key.toArrayUnsafe()))
+                .map(Bytes::wrap)
+                .orElse(Bytes.EMPTY);
     }
 
     @Override

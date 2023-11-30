@@ -45,7 +45,7 @@ class UniqueTokenDatabaseAccessorTest {
     @Mock
     private NftRepository nftRepository;
 
-    private static final long TIMESTAMP = 1234L;
+    private static final Optional<Long> timestamp = Optional.of(1234L);
 
     @Test
     void get() {
@@ -60,7 +60,7 @@ class UniqueTokenDatabaseAccessorTest {
         when(nftRepository.findActiveById(nft.getTokenId(), nft.getSerialNumber()))
                 .thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), DatabaseAccessor.UNSET_TIMESTAMP))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), Optional.empty()))
                 .hasValueSatisfying(uniqueToken -> assertThat(uniqueToken)
                         .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
                         .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
@@ -82,10 +82,10 @@ class UniqueTokenDatabaseAccessorTest {
                 .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
                 .get();
 
-        when(nftRepository.findActiveByIdAndTimestamp(nft.getTokenId(), nft.getSerialNumber(), TIMESTAMP))
+        when(nftRepository.findActiveByIdAndTimestamp(nft.getTokenId(), nft.getSerialNumber(), timestamp.get()))
                 .thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), TIMESTAMP))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), timestamp))
                 .hasValueSatisfying(uniqueToken -> assertThat(uniqueToken)
                         .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
                         .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
@@ -103,7 +103,7 @@ class UniqueTokenDatabaseAccessorTest {
 
         when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), DatabaseAccessor.UNSET_TIMESTAMP))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), Optional.empty()))
                 .hasValueSatisfying(uniqueToken ->
                         assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
     }

@@ -25,6 +25,7 @@ import java.util.EmptyStackException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,7 +49,6 @@ public class ContractCallContext implements AutoCloseable {
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical data.
      */
-    @Setter
     private RecordFile recordFile;
 
     /** Boolean flag which determines whether we should make a contract call or contract init transaction simulation */
@@ -87,20 +87,8 @@ public class ContractCallContext implements AutoCloseable {
         return THREAD_LOCAL.get();
     }
 
-    /**
-     * Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
-     * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
-     * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
-     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that
-     * actually hits the database (via the database accessors), all subsequent executions will fetch the same values
-     * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
-     * using this method.)
-     */
-    public static ContractCallContext init(final StackedStateFrames stackedStateFrames, final long timestamp) {
+    public static ContractCallContext init() {
         var context = new ContractCallContext();
-        if (stackedStateFrames != null) {
-            context.stackBase = context.stack = stackedStateFrames.getInitializedStackBase(timestamp);
-        }
         THREAD_LOCAL.set(context);
         return context;
     }
@@ -137,6 +125,27 @@ public class ContractCallContext implements AutoCloseable {
         this.stack = stack;
         if (stackBase == null) {
             stackBase = stack;
+        }
+    }
+
+    public void setRecordFile(final RecordFile recordFile) {
+        this.recordFile = recordFile;
+    }
+
+    /**
+     * Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
+     * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
+     * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
+     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that
+     * actually hits the database (via the database accessors), all subsequent executions will fetch the same values
+     * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
+     * using this method.)
+     */
+    public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
+        final Optional<Long> timestamp =
+                recordFile == null ? Optional.empty() : Optional.of(recordFile.getConsensusEnd());
+        if (stackedStateFrames != null) {
+            stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
     }
 

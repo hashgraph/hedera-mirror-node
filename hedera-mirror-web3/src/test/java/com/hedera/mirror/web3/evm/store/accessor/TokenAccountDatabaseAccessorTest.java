@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenAccountDatabaseAccessor
-                        .get(tokenAccount.getId(), DatabaseAccessor.UNSET_TIMESTAMP)
+                        .get(tokenAccount.getId(), Optional.empty())
                         .get())
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
                 .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
@@ -54,7 +55,7 @@ class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenAccountDatabaseAccessor
-                        .get(tokenAccount.getId(), tokenAccount.getTimestampLower())
+                        .get(tokenAccount.getId(), Optional.of(tokenAccount.getTimestampLower()))
                         .get())
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
                 .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)

@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import com.hedera.mirror.web3.evm.exception.EvmException;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import java.io.Serial;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,12 +32,12 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
     @NonNull
     final Map<Class<?>, DatabaseAccessor<K, ?>> databaseAccessors;
 
-    final long timestamp;
+    final Optional<Long> timestamp;
 
     public DatabaseBackedStateFrame(
             @NonNull final List<DatabaseAccessor<K, ?>> accessors,
             @NonNull final Class<?>[] valueClasses,
-            final long timestamp) {
+            final Optional<Long> timestamp) {
         super(
                 Optional.empty(),
                 valueClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
@@ -77,5 +79,17 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
     @Override
     public void commit() {
         throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
+    }
+
+    /** Signals that a type error occurred with the _value_ type */
+    @SuppressWarnings("java:S110")
+    public static class DatabaseAccessIncorrectKeyTypeException extends EvmException {
+
+        @Serial
+        private static final long serialVersionUID = 1163169205069277931L;
+
+        public DatabaseAccessIncorrectKeyTypeException(@NonNull final String message) {
+            super(message);
+        }
     }
 }

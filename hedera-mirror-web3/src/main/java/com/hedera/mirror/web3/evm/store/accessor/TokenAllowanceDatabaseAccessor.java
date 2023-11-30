@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -31,12 +32,13 @@ public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, Tok
     private final TokenAllowanceRepository tokenAllowanceRepository;
 
     @Override
-    public @NonNull Optional<TokenAllowance> get(@NonNull Object key, final long timestamp) {
-        final var tokenAllowanceId = (AbstractTokenAllowance.Id) key;
-        return useHistorical(timestamp)
-                ? Optional.ofNullable(tokenAllowanceRepository
-                        .findByOwnerAndTimestamp(tokenAllowanceId.getOwner(), timestamp)
-                        .get(0))
-                : tokenAllowanceRepository.findById(tokenAllowanceId);
+    public @NonNull Optional<TokenAllowance> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof AbstractTokenAllowance.Id id) {
+            return timestamp
+                    .map(t -> tokenAllowanceRepository.findByIdAndTimestamp(id.getOwner(), t))
+                    .orElseGet(() -> tokenAllowanceRepository.findById(id));
+        }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(TokenAllowance.class.getTypeName(), key.getClass().getTypeName()));
     }
 }

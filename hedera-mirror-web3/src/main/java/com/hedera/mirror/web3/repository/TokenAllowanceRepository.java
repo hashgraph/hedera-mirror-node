@@ -34,8 +34,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
     @Cacheable(cacheNames = CACHE_NAME_TOKEN_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     Optional<TokenAllowance> findById(Id id);
 
-    // TODO might need this
-    //    Optional<TokenAllowance> findByIdAndTimestamp(long tokenId, long blockTimestamp);
+    Optional<TokenAllowance> findByIdAndTimestamp(long tokenId, long blockTimestamp);
 
     List<TokenAllowance> findByOwner(long owner);
     /**

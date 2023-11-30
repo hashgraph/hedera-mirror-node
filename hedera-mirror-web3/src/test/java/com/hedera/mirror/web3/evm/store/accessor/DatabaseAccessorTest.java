@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import java.nio.file.AccessDeniedException;
 import java.util.Optional;
 import java.util.stream.LongStream;
@@ -27,8 +25,6 @@ import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(SoftAssertionsExtension.class)
 class DatabaseAccessorTest {
@@ -38,7 +34,7 @@ class DatabaseAccessorTest {
 
     static class DBAccessorTestImpl extends DatabaseAccessor<AccessDeniedException, LongStream> {
         @NonNull
-        public Optional<LongStream> get(@NonNull final AccessDeniedException ignored, final long timestamp) {
+        public Optional<LongStream> get(@NonNull final AccessDeniedException ignored, final Optional<Long> timestamp) {
             return Optional.empty();
         }
     }
@@ -48,16 +44,5 @@ class DatabaseAccessorTest {
         final var sut = new DBAccessorTestImpl();
         softly.assertThat(sut.getKeyClass()).isEqualTo(AccessDeniedException.class);
         softly.assertThat(sut.getValueClass()).isEqualTo(LongStream.class);
-    }
-
-    @ParameterizedTest
-    @ValueSource(longs = {123L, 456L, 789L})
-    void useHistoricalTrueTest(long timestamp) {
-        assertThat(DatabaseAccessor.useHistorical(timestamp)).isTrue();
-    }
-
-    @Test
-    void useHistoricalFalseTest() {
-        assertThat(DatabaseAccessor.useHistorical(-1)).isFalse();
     }
 }

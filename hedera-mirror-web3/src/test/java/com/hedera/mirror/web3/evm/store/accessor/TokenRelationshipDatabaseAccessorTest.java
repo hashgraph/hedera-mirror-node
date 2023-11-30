@@ -56,7 +56,7 @@ class TokenRelationshipDatabaseAccessorTest {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
-    private static final long TIMESTAMP = 1234L;
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     private Account account;
     private Token token;
     private static final Address TOKEN_ADDRESS = Address.ALTBN128_ADD;
@@ -80,14 +80,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
-        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(token));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), DatabaseAccessor.UNSET_TIMESTAMP))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -110,13 +108,11 @@ class TokenRelationshipDatabaseAccessorTest {
                 .get();
 
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
-        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(token));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), DatabaseAccessor.UNSET_TIMESTAMP))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -140,14 +136,14 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
-        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, TIMESTAMP)).thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, TIMESTAMP)).thenReturn(Optional.of(token));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findByIdAndTimestamp(
-                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), TIMESTAMP))
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
                 .thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), TIMESTAMP))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -169,14 +165,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
-        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(token));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), DatabaseAccessor.UNSET_TIMESTAMP))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -198,14 +192,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(false))
                 .get();
 
-        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, DatabaseAccessor.UNSET_TIMESTAMP))
-                .thenReturn(Optional.of(token));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), DatabaseAccessor.UNSET_TIMESTAMP))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(false, TokenRelationship::isFrozen)
                         .returns(false, TokenRelationship::isKycGranted)

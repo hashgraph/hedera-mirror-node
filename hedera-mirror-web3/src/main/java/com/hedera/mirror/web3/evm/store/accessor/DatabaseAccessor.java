@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.core.ResolvableType;
@@ -26,12 +27,6 @@ import org.springframework.core.ResolvableType;
  * it can figure out the generic parameters via `ResolvableType`.
  **/
 public abstract class DatabaseAccessor<K, V> {
-    /**
-     * Default value for the historical eth_call timestamp.
-     * When the call is for latest block timestamp is -1.
-     */
-    public static final long UNSET_TIMESTAMP = -1L;
-
     @SuppressWarnings("unchecked")
     protected DatabaseAccessor() {
 
@@ -45,7 +40,7 @@ public abstract class DatabaseAccessor<K, V> {
 
     // Given address return an account record from the DB
     @NonNull
-    public abstract Optional<V> get(@NonNull final K key, final long timestamp);
+    public abstract Optional<V> get(@NonNull final K key, final Optional<Long> timestamp);
 
     @NonNull
     public Class<K> getKeyClass() {
@@ -57,8 +52,10 @@ public abstract class DatabaseAccessor<K, V> {
         return klassValue;
     }
 
-    public static boolean useHistorical(long timestamp) {
-        return timestamp != UNSET_TIMESTAMP;
+    public void throwDatabaseAccessException(String className, Object key)
+            throws DatabaseAccessIncorrectKeyTypeException {
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(className, key.getClass().getTypeName()));
     }
 
     private final Class<K> klassKey;

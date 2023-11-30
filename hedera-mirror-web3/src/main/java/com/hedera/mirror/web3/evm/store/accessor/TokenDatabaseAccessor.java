@@ -52,19 +52,17 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Object address, final long timestamp) {
-        return entityDatabaseAccessor.get(address, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
+    public @NonNull Optional<Token> get(@NonNull Object key, final Optional<Long> timestamp) {
+        return entityDatabaseAccessor.get(key, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
     }
 
-    private Token tokenFromEntity(Entity entity, final long timestamp) {
+    private Token tokenFromEntity(Entity entity, final Optional<Long> timestamp) {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
-        final var databaseToken = useHistorical(timestamp)
-                ? tokenRepository
-                        .findByTokenIdAndTimestamp(entity.getId(), timestamp)
-                        .orElse(null)
-                : tokenRepository.findById(entity.getId()).orElse(null);
+        final var databaseToken = timestamp
+                .flatMap(t -> tokenRepository.findByTokenIdAndTimestamp(entity.getId(), t))
+                .orElseGet(() -> tokenRepository.findById(entity.getId()).orElse(null));
 
         if (databaseToken == null) {
             return null;
@@ -130,22 +128,21 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private Account getTreasury(EntityId treasuryId, final long timestamp) {
+    private Account getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
         if (treasuryId == null) {
             return null;
         }
-
-        final var treasury = useHistorical(timestamp)
-                ? entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), timestamp)
-                : entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId());
-        return treasury.map(entity -> new Account(
+        return timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
+                .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId, final long timestamp) {
+    private List<CustomFee> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
         return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
     }
 }

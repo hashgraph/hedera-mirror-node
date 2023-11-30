@@ -37,7 +37,7 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address, final long timestamp) {
+    public @NotNull Optional<Entity> get(@NotNull Object address, final Optional<Long> timestamp) {
         final var castedAddress = (Address) address;
         final var addressBytes = castedAddress.toArrayUnsafe();
         if (isMirror(addressBytes)) {
@@ -47,26 +47,27 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
         }
     }
 
-    private Optional<Entity> getEntityByMirrorAddress(Address address, long timestamp) {
+    private Optional<Entity> getEntityByMirrorAddress(Address address, final Optional<Long> timestamp) {
         final var entityId = entityIdNumFromEvmAddress(address);
-        return useHistorical(timestamp)
-                ? entityRepository.findActiveByIdAndTimestamp(entityId, timestamp)
-                : entityRepository.findByIdAndDeletedIsFalse(entityId);
+        return timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId, t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId));
     }
 
-    private Optional<Entity> getEntityByEvmAddress(byte[] addressBytes, long timestamp) {
-        return useHistorical(timestamp)
-                ? entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, timestamp)
-                : entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+    private Optional<Entity> getEntityByEvmAddress(byte[] addressBytes, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
+                .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
     }
 
-    public Address evmAddressFromId(EntityId entityId, long timestamp) {
-        Entity entity = useHistorical(timestamp)
-                ? entityRepository
-                        .findActiveByIdAndTimestamp(entityId.getId(), timestamp)
-                        .orElse(null)
-                : entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
-
+    public Address evmAddressFromId(EntityId entityId, final Optional<Long> timestamp) {
+        Entity entity = timestamp
+                .map(t -> entityRepository
+                        .findActiveByIdAndTimestamp(entityId.getId(), t)
+                        .orElse(null))
+                .orElseGet(() -> entityRepository
+                        .findByIdAndDeletedIsFalse(entityId.getId())
+                        .orElse(null));
         if (entity == null) {
             return Address.ZERO;
         }

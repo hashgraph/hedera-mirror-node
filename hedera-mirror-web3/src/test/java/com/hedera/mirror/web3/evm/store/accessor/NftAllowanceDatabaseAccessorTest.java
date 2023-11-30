@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,7 @@ class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
     void testGet() {
         final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId(), DatabaseAccessor.UNSET_TIMESTAMP))
+        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId(), Optional.empty()))
                 .contains(allowance);
     }
 
@@ -40,7 +41,7 @@ class NftAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
     void testGetHistorical() {
         final var allowance = domainBuilder.nftAllowance().persist();
 
-        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId(), allowance.getTimestampLower()))
+        assertThat(nftAllowanceDatabaseAccessor.get(allowance.getId(), Optional.of(allowance.getTimestampLower())))
                 .contains(allowance);
     }
 }
