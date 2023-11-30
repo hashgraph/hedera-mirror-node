@@ -133,7 +133,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0) {
+            if (code == null && value <= 0 && !payload.isEmpty()) {
                 throw new MirrorEvmTransactionException(
                         ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }
