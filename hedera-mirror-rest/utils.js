@@ -673,16 +673,17 @@ const bindTimestampRange = function (tsRange) {
     return tsRange;
   }
 
-  if (_.isNil(tsRange)) {
-    tsRange = Range();
+  let queryTsRange;
+  if (tsRange) {
+    if (tsRange.begin && tsRange.end) {
+      return tsRange; // Already fully bound
+    }
+    // Copy, as original may be used elsewhere
+    queryTsRange = Range(tsRange.begin, tsRange.end, '[]');
+  } else {
+    queryTsRange = Range();
   }
 
-  if (tsRange.begin && tsRange.end) {
-    return tsRange;
-  }
-
-  // Copy, as original may be used elsewhere
-  const queryTsRange = Range(tsRange.begin, tsRange.end, '[]');
   if (queryTsRange.end) {
     queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
   } else if (queryTsRange.begin) {

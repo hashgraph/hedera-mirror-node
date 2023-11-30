@@ -664,6 +664,7 @@ const getTransactions = async (req, res) => {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const filters = utils.buildAndValidateFilters(req.query, acceptedTransactionParameters);
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
+  // TODO are the settings below okay for transactions, regarding eq and ne?
   const [tsRange, tsEqValues, tsNeValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
 
   const parsedQueryParams = req.query;
