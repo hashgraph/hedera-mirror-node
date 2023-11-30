@@ -2,7 +2,6 @@
 
 This code runs on an external server outside of the Hedera mirror node deployment, and periodically polls the REST APIs
 exposed by the Hedera mirror node to ensure that the deployed APIs are working.
-It also provides a simple dashboard to monitor the status.
 
 ## Monitoring APIs:
 
@@ -15,10 +14,6 @@ The results of these checks are exposed as a set of REST APIs by this monitoring
 | /api/v1/status      | 200 (OK)         | Provides a list of results of all tests run on all servers                                                                                           |
 | /api/v1/status/{id} | 200 (OK)         | If all tests pass for a server, then it returns the results                                                                                          |
 |                     | 4xx              | If any tests fail for a server, or if the server is not running, then it returns a 4xx error code to make it easy to integrate with alerting systems |
-
-## Monitoring Dashboard:
-
-A dashboard polls the above-mentioned APIs and displays the results.
 
 ---
 
@@ -41,7 +36,6 @@ cd hedera-mirror-node/hedera-mirror-rest/monitoring
 To install the dependencies and configure monitor_apis:
 
 ```
-cd monitor_apis
 npm install
 vi config/serverlist.json // Insert the mirror node deployments you want to monitor
 ```
@@ -61,7 +55,7 @@ To customize per-resource configuration:
   e.g., `tokenBalancesLimit` for the token. If not set, the tests will use the first token from the
   token discovery API response
 
-See [default.serverlist.json](/hedera-mirror-rest/monitoring/monitor_apis/config/default.serverlist.json) for a full
+See [default.serverlist.json](/hedera-mirror-rest/monitoring/config/default.serverlist.json) for a full
 list of configuration properties.
 
 To run the monitor_apis backend:
@@ -70,24 +64,15 @@ To run the monitor_apis backend:
 PORT=3000 pm2 start server.js --node-args="--import=extensionless/register"
 ```
 
-The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
-The default interval to populate the data is 60 seconds. You can verify the output
-using `curl http://<host>:<port>/api/v1/status` command.
-
-To run the dashboard (from `hedera-mirror-rest/monitoring` directory):
-
-```
-cd monitor_dashboard
-echo '{"monitorAddress": "localhost:3000"}' > config.json
-pm2 serve . 3001 // Serve the dashboard html pages on another port
-```
-
-Using your browser, connect to `http://<host>:<port>/index.html`
+The server will start polling Hedera mirror nodes specified in the config/serverlist.json file. The default interval to
+populate the data is 60 seconds. You can verify the output using `curl http://<host>:<port>/api/v1/status` command. By
+default, the response only includes the details of failed tests. To see the details of all tests, use
+`curl http://<host>:<port>/api/v1/status?all=true`.
 
 ## Docker
 
 Create a custom `serverlist.json` in the current working directory. Then execute:
 
 ```shell
-docker run -it --rm -e CONFIG_PATH=/config -v "${PWD}/serverlist.json:/config/serverlist.json" -p 8080:8080 -p 3000:3000 gcr.io/mirrornode/hedera-mirror-rest-monitor
+docker run -it --rm -e CONFIG_PATH=/config -v "${PWD}/serverlist.json:/config/serverlist.json" -p 3000:3000 gcr.io/mirrornode/hedera-mirror-rest-monitor
 ```
