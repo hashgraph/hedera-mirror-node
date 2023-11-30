@@ -79,7 +79,7 @@ app.get(`${apiPrefix}/status`, (req, res) => {
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );
-  res.status(status.httpCode).send(status.results);
+  res.status(status.httpCode).json(status.results);
 });
 
 app.get(`${apiPrefix}/status/:name`, (req, res) => {
