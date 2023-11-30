@@ -66,8 +66,9 @@ PORT=3000 pm2 start server.js --node-args="--import=extensionless/register"
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file. The default interval to
 populate the data is 60 seconds. You can verify the output using `curl http://<host>:<port>/api/v1/status` command. By
-default, the response only includes the details of failed tests. To see the details of all tests, use
-`curl http://<host>:<port>/api/v1/status?all=true`.
+default, the response only includes the details of failed tests. You can pass `result=` query parameter to filter test
+result details by the result type, the accepted values are `all`, `failed`, and `passed`. For example, to show the
+details of the passed test results, use `curl http://<host>:<port>/api/v1/status?result=passed`.
 
 ## Docker
 
