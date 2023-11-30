@@ -116,11 +116,6 @@ public class PrecompileMapper {
 
     public Optional<Precompile> lookup(final int functionSelector) {
         final var precompile = abiConstantToPrecompile.get(functionSelector);
-        // Possible solution here - set evm version in ContractCallContext
-        // we already have record file in contract call context
-        // if only hts is supported in the specified block
-        // we need to return Optional.empty();
-        // if both are supported we use the mapper as it is currently working
         if (precompile != null) {
             return Optional.of(precompile);
         }

@@ -385,8 +385,6 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
                         new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW))));
             }
             default -> {
-                // ERC AND HTS are both handled by precompileMapper
-                // we need to add a check in precompile mapper lookup to be based on block number
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new FunctionParam(functionId)));
