@@ -112,7 +112,7 @@ class TransferLogicTest {
         autoCreationLogic = mock(AutoCreationLogic.class);
         mirrorEvmContractAliases = mock(MirrorEvmContractAliases.class);
         hederaTokenStore = mock(HederaTokenStore.class);
-        subject = new TransferLogic(autoCreationLogic);
+        subject = new TransferLogic(autoCreationLogic, mirrorEvmContractAliases);
         store = mock(StoreImpl.class);
     }
 
@@ -122,12 +122,10 @@ class TransferLogicTest {
         final var firstAlias = ByteString.copyFromUtf8("fakeAccountAliasTest");
         final var inappropriateTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
 
-        subject = new TransferLogic(null);
+        subject = new TransferLogic(null, mirrorEvmContractAliases);
 
         final var triggerList = List.of(inappropriateTrigger);
-        assertThrows(
-                IllegalStateException.class,
-                () -> subject.doZeroSum(triggerList, store, ids, mirrorEvmContractAliases, hederaTokenStore));
+        assertThrows(IllegalStateException.class, () -> subject.doZeroSum(triggerList, store, ids, hederaTokenStore));
     }
 
     @Test
@@ -137,12 +135,10 @@ class TransferLogicTest {
         final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
 
-        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids)))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
 
-        assertFailsWith(
-                () -> subject.doZeroSum(changes, store, ids, mirrorEvmContractAliases, hederaTokenStore),
-                INSUFFICIENT_ACCOUNT_BALANCE);
+        assertFailsWith(() -> subject.doZeroSum(changes, store, ids, hederaTokenStore), INSUFFICIENT_ACCOUNT_BALANCE);
     }
 
     @Test
@@ -163,13 +159,13 @@ class TransferLogicTest {
                 .willReturn(account);
         var nft = getEmptyUniqueToken();
         given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
-        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
-        subject.doZeroSum(changes, store, ids, mirrorEvmContractAliases, hederaTokenStore);
+        subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids));
     }
 
     @Test
@@ -183,18 +179,16 @@ class TransferLogicTest {
         final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
 
         given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
-        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids)))
                 .willReturn(Pair.of(OK, 100L));
-        given(autoCreationLogic.create(
-                        eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases)))
+        given(autoCreationLogic.create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
-        subject.doZeroSum(changes, store, ids, mirrorEvmContractAliases, hederaTokenStore);
+        subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
-        verify(autoCreationLogic)
-                .create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids));
+        verify(autoCreationLogic).create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids));
     }
 
     @Test
@@ -222,12 +216,10 @@ class TransferLogicTest {
                     .willReturn(Address.wrap(Bytes.wrap(firstAlias.toByteArray())));
             given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
-            subject.doZeroSum(changes, store, ids, mirrorEvmContractAliases, hederaTokenStore);
+            subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-            verify(autoCreationLogic, never())
-                    .create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
-            verify(autoCreationLogic, never())
-                    .create(eq(nftTransfer), any(), eq(store), eq(ids), eq(mirrorEvmContractAliases));
+            verify(autoCreationLogic, never()).create(eq(fungibleTransfer), any(), eq(store), eq(ids));
+            verify(autoCreationLogic, never()).create(eq(nftTransfer), any(), eq(store), eq(ids));
         }
     }
 
@@ -239,7 +231,7 @@ class TransferLogicTest {
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
                 .willReturn(spyAccount);
 
-        subject.doZeroSum(List.of(change), store, ids, mirrorEvmContractAliases, hederaTokenStore);
+        subject.doZeroSum(List.of(change), store, ids, hederaTokenStore);
 
         verify(spyAccount).setCryptoAllowance(resultCryptoAllowances);
     }
@@ -254,8 +246,7 @@ class TransferLogicTest {
         given(store.getAccount(asTypedEvmAddress(change.accountId()), OnMissing.THROW))
                 .willReturn(spyAccount);
 
-        assertDoesNotThrow(
-                () -> subject.doZeroSum(List.of(change), store, ids, mirrorEvmContractAliases, hederaTokenStore));
+        assertDoesNotThrow(() -> subject.doZeroSum(List.of(change), store, ids, hederaTokenStore));
         verify(spyAccount).setFungibleTokenAllowances(resultFungibleAllowances);
     }
 
@@ -290,8 +281,7 @@ class TransferLogicTest {
                         NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 123L), OnMissing.THROW))
                 .willReturn(spyNft);
 
-        assertDoesNotThrow(() -> subject.doZeroSum(
-                List.of(change1, change2, change3), store, ids, mirrorEvmContractAliases, hederaTokenStore));
+        assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2, change3), store, ids, hederaTokenStore));
         verify(spyNft, times(3)).setSpender(Id.DEFAULT);
     }
 

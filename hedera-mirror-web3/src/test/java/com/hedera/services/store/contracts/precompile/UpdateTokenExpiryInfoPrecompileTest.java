@@ -131,8 +131,8 @@ class UpdateTokenExpiryInfoPrecompileTest {
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         staticUpdateTokenExpiryInfoPrecompile = mockStatic(UpdateTokenExpiryInfoPrecompile.class);
 

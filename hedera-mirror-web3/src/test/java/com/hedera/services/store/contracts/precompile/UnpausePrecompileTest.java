@@ -159,8 +159,8 @@ class UnpausePrecompileTest {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenUnpause, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         unpausePrecompile = new UnpausePrecompile(precompilePricingUtils, syntheticTxnFactory, unpauseLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unpausePrecompile));
@@ -192,7 +192,7 @@ class UnpausePrecompileTest {
         given(worldUpdater.getStore()).willReturn(store);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(unpauseLogic.validateSyntax(any())).willReturn(OK);
         given(unpausePrecompile.body(pretendArguments, aliasResolver, bodyParams))
                 .willReturn(transactionBody);
@@ -216,7 +216,7 @@ class UnpausePrecompileTest {
         givenPricingUtilsContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         staticUnpausePrecompile.when(() -> decodeUnpause(pretendArguments)).thenReturn(fungibleUnpause);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))

@@ -18,8 +18,6 @@ package com.hedera.services.fees.calculation.utils;
 
 import static com.hedera.services.fees.calculation.UsageBasedFeeCalculator.numSimpleKeys;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.hapi.utils.fees.FeeObject;
@@ -45,23 +43,13 @@ public class PricedUsageCalculator {
     }
 
     public FeeObject inHandleFees(
-            final TxnAccessor accessor,
-            final FeeData resourcePrices,
-            final ExchangeRate rate,
-            final JKey payerKey,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
-        return fees(accessor, resourcePrices, rate, payerKey, handleScopedAccumulator, store, hederaEvmContractAliases);
+            final TxnAccessor accessor, final FeeData resourcePrices, final ExchangeRate rate, final JKey payerKey) {
+        return fees(accessor, resourcePrices, rate, payerKey, handleScopedAccumulator);
     }
 
     public FeeObject extraHandleFees(
-            final TxnAccessor accessor,
-            final FeeData resourcePrices,
-            final ExchangeRate rate,
-            final JKey payerKey,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
-        return fees(accessor, resourcePrices, rate, payerKey, new UsageAccumulator(), store, hederaEvmContractAliases);
+            final TxnAccessor accessor, final FeeData resourcePrices, final ExchangeRate rate, final JKey payerKey) {
+        return fees(accessor, resourcePrices, rate, payerKey, new UsageAccumulator());
     }
 
     private FeeObject fees(
@@ -69,12 +57,10 @@ public class PricedUsageCalculator {
             final FeeData resourcePrices,
             final ExchangeRate rate,
             final JKey payerKey,
-            final UsageAccumulator accumulator,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            final UsageAccumulator accumulator) {
 
         final var sigUsage = accessor.usageGiven(numSimpleKeys(payerKey));
-        accessorBasedUsages.assess(sigUsage, accessor, accumulator, store, hederaEvmContractAliases);
+        accessorBasedUsages.assess(sigUsage, accessor, accumulator);
         // We won't take into account congestion pricing that is used in consensus nodes,
         // since we would only simulate transactions and can't replicate the current load of the consensus network,
         // thus we can't calculate a proper multiplier.
