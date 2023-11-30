@@ -47,7 +47,8 @@ class SubscriberController {
 
     @GetMapping
     public <T extends ScenarioProperties> Flux<Scenario<T, Object>> subscriptions(
-            @RequestParam Optional<ScenarioProtocol> protocol, @RequestParam Optional<List<ScenarioStatus>> status) {
+            @RequestParam("protocol") Optional<ScenarioProtocol> protocol,
+            @RequestParam("status") Optional<List<ScenarioStatus>> status) {
         return mirrorSubscriber
                 .<Scenario<T, Object>>getSubscriptions()
                 .filter(s -> !protocol.isPresent() || protocol.get() == s.getProtocol())
