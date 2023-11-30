@@ -43,6 +43,11 @@
         "balance": 60
       },
       {
+        "timestamp": 1566560001000000000,
+        "id": 7,
+        "balance": 770
+      },
+      {
         "timestamp": 1566560003000000000,
         "id": 2,
         "balance": 2
@@ -67,11 +72,6 @@
         "timestamp": 1566560003000000000,
         "id": 6,
         "balance": 666
-      },
-      {
-        "timestamp": 1566560003000000000,
-        "id": 7,
-        "balance": 777
       },
       {
         "timestamp": 1566560007000000000,
@@ -103,7 +103,7 @@
     "balances": [
       {
         "account": "0.0.7",
-        "balance": 777,
+        "balance": 770,
         "tokens": []
       },
       {
