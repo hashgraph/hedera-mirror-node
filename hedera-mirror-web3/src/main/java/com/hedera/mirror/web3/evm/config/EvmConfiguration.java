@@ -95,7 +95,7 @@ public class EvmConfiguration {
     public static final String ERC_HTS = ERC + "," + HTS;
     public static final String HTS_ERC_EXCHANGE_RATE = ERC_HTS + "," + EXCHANGE_RATE;
     public static final String EVM_VERSION_0_30_ERC = EVM_VERSION_0_30 + "-" + ERC;
-    public static final String EVM_VERSION_0_30_ERC_HTS= EVM_VERSION_0_30 + "-" + ERC_HTS;
+    public static final String EVM_VERSION_0_30_ERC_HTS = EVM_VERSION_0_30 + "-" + ERC_HTS;
     public static final String EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE = EVM_VERSION_0_30 + "-" + HTS_ERC_EXCHANGE_RATE;
 
     public static final String EVM_VERSION = EVM_VERSION_0_34;
@@ -204,7 +204,8 @@ public class EvmConfiguration {
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30_ERC, () -> mirrorEvmMessageCallProcessorErc);
         processorsMap.put(EVM_VERSION_0_30_ERC_HTS, () -> mirrorEvmMessageCallProcessorErcHts);
-        processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorErcHtsExchangeRate);
+        processorsMap.put(
+                EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorErcHtsExchangeRate);
         processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
         processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
         processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor);

@@ -18,14 +18,12 @@ package com.hedera.mirror.web3.evm.config;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
-import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract;
-import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.HashMap;
@@ -43,9 +41,9 @@ public class PrecompilesHolderErcHtsExchangeRate {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final GasCalculatorHederaV22 gasCalculator,
             final BasicHbarCentExchange basicHbarCentExchange,
-            final MirrorHTSPrecompiledContract mirrorHTSPrecompiledContract) {
+            final HTSPrecompiledContract htsPrecompiledContract) {
         hederaPrecompiles = new HashMap<>();
-        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, mirrorHTSPrecompiledContract);
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, htsPrecompiledContract);
         hederaPrecompiles.put(
                 EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS,
                 new ExchangeRatePrecompiledContract(

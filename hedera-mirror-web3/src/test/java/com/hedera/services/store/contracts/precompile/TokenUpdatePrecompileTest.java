@@ -35,7 +35,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
@@ -99,9 +98,6 @@ class TokenUpdatePrecompileTest {
 
     @Mock
     private EvmInfrastructureFactory infrastructureFactory;
-
-    @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Mock
     private AssetsLoader assetLoader;
@@ -168,13 +164,7 @@ class TokenUpdatePrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                evmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                pricingUtils);
+                infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, pricingUtils);
 
         ContractCallContext.init(store.getStackedStateFrames());
     }

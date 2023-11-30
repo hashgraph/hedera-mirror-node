@@ -34,7 +34,6 @@ import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.node.app.service.evm.store.contracts.precompile.proxy.ViewExecutor;
@@ -66,7 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
-class MirrorHTSPrecompiledContractTest {
+class HTSPrecompiledContractTest {
 
     // mock precompile signature
     private static final Bytes MOCK_PRECOMPILE_FUNCTION_HASH = Bytes.fromHexString("0x00000000");
@@ -105,7 +104,7 @@ class MirrorHTSPrecompiledContractTest {
     @Mock
     private PrecompilePricingUtils precompilePricingUtils;
 
-    private MirrorHTSPrecompiledContract subject;
+    private HTSPrecompiledContract subject;
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
 
@@ -129,16 +128,13 @@ class MirrorHTSPrecompiledContractTest {
         messageFrameStack.push(messageFrame);
 
         precompileMapper = new PrecompileMapper(Set.of(mockPrecompile));
-        subject = new MirrorHTSPrecompiledContract(
+        subject = new HTSPrecompiledContract(
                 evmInfrastructureFactory,
-                new HTSPrecompiledContract(
-                        evmInfrastructureFactory,
-                        mirrorNodeEvmProperties,
-                        precompileMapper,
-                        new EvmHTSPrecompiledContract(evmInfrastructureFactory),
-                        store,
-                        tokenAccessor,
-                        precompilePricingUtils));
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
 
         ContractCallContext.init(store.getStackedStateFrames());
     }

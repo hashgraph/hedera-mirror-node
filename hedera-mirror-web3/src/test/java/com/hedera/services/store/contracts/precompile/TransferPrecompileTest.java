@@ -74,7 +74,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.hapi.utils.ByteStringUtils;
@@ -199,9 +198,6 @@ class TransferPrecompileTest {
     private EvmInfrastructureFactory infrastructureFactory;
 
     @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-
-    @Mock
     private CryptoTransferTransactionBody cryptoTransferTransactionBody;
 
     @Mock
@@ -250,13 +246,7 @@ class TransferPrecompileTest {
                 entityAddressSequencer);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                mirrorNodeEvmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                pricingUtils);
+                infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, store, tokenAccessor, pricingUtils);
 
         staticTransferPrecompile = mockStatic(TransferPrecompile.class);
 
