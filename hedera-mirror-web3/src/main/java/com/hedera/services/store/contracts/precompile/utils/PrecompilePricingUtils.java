@@ -53,6 +53,7 @@ import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -168,7 +169,10 @@ public class PrecompilePricingUtils {
     }
 
     public long computeGasRequirement(
-            final long blockTimestamp, final Precompile precompile, final TransactionBody.Builder transactionBody) {
+            final long blockTimestamp,
+            final Precompile precompile,
+            final TransactionBody.Builder transactionBody,
+            final AccountID sender) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -179,7 +183,8 @@ public class PrecompilePricingUtils {
                         .build()),
                 timestamp);
 
-        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final long minimumFeeInTinybars =
+                precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
         // convert to gas cost

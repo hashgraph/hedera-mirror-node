@@ -16,6 +16,11 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.secondSender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenAddress;
 import static com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile.decodeAssociation;
 import static com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile.decodeMultipleAssociations;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
@@ -25,12 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -89,8 +93,10 @@ class AssociatePrecompileTest {
             "0x49146bde00000000000000000000000000000000000000000000000000000000000004820000000000000000000000000000000000000000000000000000000000000480");
     private static final Bytes MULTIPLE_ASSOCIATE_INPUT = Bytes.fromHexString(
             "0x2e63879b00000000000000000000000000000000000000000000000000000000000004880000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004860000000000000000000000000000000000000000000000000000000000000486");
-    private final TransactionBody.Builder transactionBody =
-            TransactionBody.newBuilder().setTokenAssociate(TokenAssociateTransactionBody.newBuilder());
+    private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+            .setTokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                    .setAccount(secondSender)
+                    .addTokens(HTSTestsUtil.token));
 
     @Mock
     private MirrorNodeEvmProperties evmProperties;
@@ -112,9 +118,6 @@ class AssociatePrecompileTest {
 
     @Mock
     private Store store;
-
-    @Mock
-    private HederaEvmContractAliases hederaEvmContractAliases;
 
     @Mock
     private EvmInfrastructureFactory infrastructureFactory;
@@ -156,6 +159,9 @@ class AssociatePrecompileTest {
     private Deque<MessageFrame> stack;
 
     @Mock
+    private PrecompileContext precompileContext;
+
+    @Mock
     private TokenAccessor tokenAccessor;
 
     private HTSPrecompiledContract subject;
@@ -185,8 +191,6 @@ class AssociatePrecompileTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -207,10 +211,17 @@ class AssociatePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(associatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(ASSOCIATE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -235,11 +246,17 @@ class AssociatePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(associatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(ASSOCIATE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -264,11 +281,17 @@ class AssociatePrecompileTest {
                 .willReturn(1L);
         given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(associatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(ASSOCIATE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -291,11 +314,16 @@ class AssociatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(associatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(ASSOCIATE_INPUT, a -> a, precompileContext);
+        final long result = subject.getPrecompile(frame)
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -319,10 +347,16 @@ class AssociatePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(associatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(ASSOCIATE_INPUT, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(ASSOCIATE_INPUT, a -> a, precompileContext);
+        final long result = subject.getPrecompile(frame)
+                .getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -359,7 +393,7 @@ class AssociatePrecompileTest {
     private void givenTokenAssociate() {
         given(store.getAccount(Address.fromHexString("0x0000000000000000000000000000000000000482"), OnMissing.THROW))
                 .willReturn(account);
-        given(store.getToken(Address.fromHexString("0x0000000000000000000000000000000000000480"), OnMissing.THROW))
+        given(store.getToken(Address.fromHexString(tokenAddress.toHexString()), OnMissing.THROW))
                 .willReturn(token);
         given(account.getAccountAddress())
                 .willReturn(Address.fromHexString("0x0000000000000000000000000000000000000482"));

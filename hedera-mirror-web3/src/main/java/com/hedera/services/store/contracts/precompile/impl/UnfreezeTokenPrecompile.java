@@ -74,7 +74,8 @@ public class UnfreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(UNFREEZE, consensusTime);
     }

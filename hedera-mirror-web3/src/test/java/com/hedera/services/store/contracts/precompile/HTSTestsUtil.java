@@ -63,6 +63,7 @@ public class HTSTestsUtil {
     public static final long DEFAULT_GAS_PRICE = 10_000L;
     public static final long TEST_CONSENSUS_TIME = 1_640_000_000L; // Monday, December 20, 2021 11:33:20 AM UTC
     public static final TokenID token = asToken("0.0.1");
+    public static final TokenID token2 = asToken("0.0.1176");
     public static final AccountID payer = asAccount("0.0.12345");
     public static final AccountID sender = asAccount("0.0.2");
     public static final AccountID receiver = asAccount("0.0.3");
@@ -73,6 +74,8 @@ public class HTSTestsUtil {
             .build();
     public static final AccountID feeCollector = asAccount("0.0.4");
     public static final AccountID account = asAccount("0.0.3");
+    public static final AccountID contract = asAccount("0.0.7");
+    public static final AccountID secondSender = asAccount("0.0.1154");
     public static final AccountID accountMerkleId = asAccount("0.0.999");
     public static final ContractID precompiledContract = asContract(asAccount("0.0.359"));
     public static final TokenID nonFungible = asToken("0.0.777");
