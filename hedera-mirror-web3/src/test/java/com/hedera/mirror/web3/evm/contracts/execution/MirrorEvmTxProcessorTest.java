@@ -145,6 +145,7 @@ class MirrorEvmTxProcessorTest {
 
     private String mcpVersion;
     private String ccpVersion;
+    private static final String FUNCTION_HASH = "0x8070450f";
 
     @BeforeEach
     void setup() {
@@ -236,7 +237,8 @@ class MirrorEvmTxProcessorTest {
                 .blockHashLookup(hash -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
-                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 0L));
+                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
+                        protoFrame, receiverAddress, Bytes.fromHexString(FUNCTION_HASH), 0L));
     }
 
     @Test
