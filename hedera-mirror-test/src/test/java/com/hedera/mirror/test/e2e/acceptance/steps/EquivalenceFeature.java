@@ -21,6 +21,8 @@ import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenName
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.CALL_CODE_WITHOUT_AMOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_EXCHANGE_RATE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_PRNG;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
@@ -43,11 +45,13 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -362,21 +366,26 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute internal call against exchange rate precompile address without amount")
-    public void executeInternalCallForExchangeRateWithoutAmount() {
-        var parameters = new ContractFunctionParameters().addUint256(new BigInteger("100"));
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "exchangeRateWithoutAmount", parameters);
-        assertTrue(functionResult.getUint256(0).longValue() > 1);
-    }
+    @Then("I execute internal {string} against exchange rate precompile address {string} amount")
+    public void executeInternalCallForExchangeRateWithoutAmount(String call, String amountType) {
+        var exchangeRateAddress = "0x0000000000000000000000000000000000000168";
+        var callType = getMethodName(call, amountType);
+        var data = encodeDataToByteArray(GET_EXCHANGE_RATE, new BigInteger("100"));
+        var callCodeData = encodeDataToByteArray(CALL_CODE_WITHOUT_AMOUNT, asAddress(exchangeRateAddress));
+        var parameters = new ContractFunctionParameters()
+                .addAddress(exchangeRateAddress)
+                .addBytes(data);
 
-    @Then("I execute internal call against exchange rate precompile address with amount")
-    public void executeInternalCallForExchangeRateWithAmount() {
-        var parameters = new ContractFunctionParameters().addUint256(new BigInteger("100"));
-        var functionResult = executeContractCallTransaction(
-                deployedEquivalenceCall, "exchangeRateWithAmount", parameters, Hbar.fromTinybars(10L));
-        // POTENTIAL BUG
-        // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
-        // AMOUNT REACHES ONLY THE CONTRACT(deployedEquivalenceCall)
+        if (amountType.equals("with")) {
+            var functionResult = executeContractCallTransaction(
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10L));
+            // POTENTIAL BUG
+            // THIS RETURNS SUCCESS FOR THE 2ND CALL - > WE EXPECT INVALID_FEE_SUBMITTED
+            // AMOUNT REACHES ONLY THE CONTRACT(deployedEquivalenceCall)
+        } else {
+            var functionResult = executeContractCallQuery(deployedEquivalenceCall, callType, parameters);
+            assertTrue(functionResult.getUint256(3).longValue() > 1);
+        }
     }
 
     public static byte[] toByteArray(String s) {
@@ -390,7 +399,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
 
         if (call.equals("callcode")) {
-            parameters = new ContractFunctionParameters().addAddress(accountId).addBytes32(new byte[32]);
+            parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[]{0x21, 0x21, 0x12, 0x12});
         } else {
             parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
         }
@@ -657,6 +666,16 @@ public class EquivalenceFeature extends AbstractFeature {
                 parameters);
     }
 
+    private void executeContractTransaction(
+            DeployedContract deployedContract, int gas, ContractMethods contractMethods, byte[] parameters) {
+
+        ExecuteContractResult executeContractResult = contractClient.executeContract(
+                deployedContract.contractId(), gas, contractMethods.getSelector(), parameters, null);
+
+        networkTransactionResponse = executeContractResult.networkTransactionResponse();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
     private ContractFunctionResult executeContractCallQuery(DeployedContract deployedContract, String functionName) {
         return contractClient.executeContractQuery(
                 deployedContract.contractId(),
@@ -691,7 +710,9 @@ public class EquivalenceFeature extends AbstractFeature {
     @RequiredArgsConstructor
     enum Selectors implements SelectorInterface {
         HTS_APPROVE("approve(address,address,uint256)"),
-        GET_PRNG("getPseudorandomSeed()");
+        GET_PRNG("getPseudorandomSeed()"),
+        GET_EXCHANGE_RATE("tinycentsToTinybars(uint256)"),
+        CALL_CODE_WITHOUT_AMOUNT("");
 
         private final String selector;
     }
