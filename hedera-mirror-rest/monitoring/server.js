@@ -18,10 +18,11 @@ import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
+
+import config from './config';
 import common from './common';
 import logger from './logger';
 import {runEverything} from './monitor';
-import config from './config';
 
 const app = express();
 
@@ -62,10 +63,15 @@ app.get('/health/readiness', (req, res) => {
   }
 });
 
-const shouldIncludeAllTestDetails = (req) => (req.query.all ?? 'false').toLowerCase() === 'true';
+const allTestResultTypes = Object.values(common.TEST_RESULT_TYPES);
+
+const parseResultQueryParam = (req) => {
+  const value = (req.query.result ?? common.TEST_RESULT_TYPES.FAILED).toLowerCase();
+  return allTestResultTypes.includes(value) ? value : common.TEST_RESULT_TYPES.FAILED;
+};
 
 app.get(`${apiPrefix}/status`, (req, res) => {
-  const status = common.getStatus(shouldIncludeAllTestDetails(req));
+  const status = common.getStatus(parseResultQueryParam(req));
   const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);
   const total = status.results
     .map(({results}) => results.numFailedTests + results.numPassedTests)
@@ -77,7 +83,7 @@ app.get(`${apiPrefix}/status`, (req, res) => {
 });
 
 app.get(`${apiPrefix}/status/:name`, (req, res) => {
-  const status = common.getStatusByName(req.params.name, shouldIncludeAllTestDetails(req));
+  const status = common.getStatusByName(req.params.name, parseResultQueryParam(req));
   const {results} = status;
   const passed = results.numPassedTests;
   const total = results.numFailedTests + results.numPassedTests;
