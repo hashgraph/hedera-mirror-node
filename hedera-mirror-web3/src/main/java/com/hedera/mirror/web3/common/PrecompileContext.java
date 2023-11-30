@@ -21,12 +21,8 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
 
-@Getter
-@Setter
 @Data
 public class PrecompileContext {
     public static final String PRECOMPILE_CONTEXT = "PrecompileContext";
