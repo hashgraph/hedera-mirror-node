@@ -573,6 +573,7 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
         log.info("Deleted token {} via {}", token, response.getTransactionId());
         tokenIds.remove(token);
+        tokenMap.values().removeIf(tokenResponse -> token.equals(tokenResponse.tokenId));
         return response;
     }
 
