@@ -21,7 +21,6 @@ import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenName
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.CALL_CODE_WITHOUT_AMOUNT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_EXCHANGE_RATE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_PRNG;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
@@ -45,7 +44,6 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
@@ -65,6 +63,7 @@ import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -371,10 +370,8 @@ public class EquivalenceFeature extends AbstractFeature {
         var exchangeRateAddress = "0x0000000000000000000000000000000000000168";
         var callType = getMethodName(call, amountType);
         var data = encodeDataToByteArray(GET_EXCHANGE_RATE, new BigInteger("100"));
-        var callCodeData = encodeDataToByteArray(CALL_CODE_WITHOUT_AMOUNT, asAddress(exchangeRateAddress));
-        var parameters = new ContractFunctionParameters()
-                .addAddress(exchangeRateAddress)
-                .addBytes(data);
+        var parameters =
+                new ContractFunctionParameters().addAddress(exchangeRateAddress).addBytes(data);
 
         if (amountType.equals("with")) {
             var functionResult = executeContractCallTransaction(
@@ -399,7 +396,9 @@ public class EquivalenceFeature extends AbstractFeature {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
 
         if (call.equals("callcode")) {
-            parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[]{0x21, 0x21, 0x12, 0x12});
+            parameters = new ContractFunctionParameters()
+                    .addAddress(accountId)
+                    .addBytes(new byte[] {0x21, 0x21, 0x12, 0x12});
         } else {
             parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
         }
@@ -510,6 +509,26 @@ public class EquivalenceFeature extends AbstractFeature {
             expectedMessage = SPENDER_DOES_NOT_HAVE_ALLOWANCE;
         }
         assertEquals(expectedMessage, message);
+    }
+
+    @Then("I execute {string} call against Identity precompile")
+    public void executeAllCallsForIdentity(String calltype) {
+        var message = "Encode me!";
+        var messageBytes = message.getBytes(StandardCharsets.UTF_8);
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000004")
+                .addBytes(messageBytes);
+
+        var callType = getMethodName(calltype, "without");
+        executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var resultMessage = mirrorClient
+                .getContractActions(transactionId)
+                .getActions()
+                .get(1)
+                .getResultData();
+        assertEquals(resultMessage.replace("0x", ""), Hex.encodeHexString(messageBytes));
     }
 
     public String getMethodName(String typeOfCall, String amountValue) {
@@ -711,8 +730,7 @@ public class EquivalenceFeature extends AbstractFeature {
     enum Selectors implements SelectorInterface {
         HTS_APPROVE("approve(address,address,uint256)"),
         GET_PRNG("getPseudorandomSeed()"),
-        GET_EXCHANGE_RATE("tinycentsToTinybars(uint256)"),
-        CALL_CODE_WITHOUT_AMOUNT("");
+        GET_EXCHANGE_RATE("tinycentsToTinybars(uint256)");
 
         private final String selector;
     }

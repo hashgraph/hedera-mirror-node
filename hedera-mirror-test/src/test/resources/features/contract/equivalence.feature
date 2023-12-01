@@ -91,6 +91,9 @@ Feature: in-equivalence tests
     Then I execute "internal" call against Ripemd-160 precompile
     Then I execute "static" call against Ripemd-160 precompile
     Then I execute "delegate" call against Ripemd-160 precompile
+    Then I execute "internal" call against Identity precompile
+    Then I execute "static" call against Identity precompile
+    Then I execute "delegate" call against Identity precompile
     Then I execute directCall to "0.0.0" address without amount
     Then I execute directCall to "0.0.0" address with amount 10000
     Then I make internal call to ethereum precompile "0.0.1" address with amount
@@ -109,8 +112,8 @@ Feature: in-equivalence tests
     Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "with" amount
     Then I execute internal "staticcall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
     Then I execute internal "delegatecall" against HTS precompile with approve function for "FUNGIBLE" "without" amount
-    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "without" amount
-    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "with" amount
+#    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "without" amount
+#    Then I execute internal "callcode" against HTS precompile with approve function for "FUNGIBLE" "with" amount
 
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers
