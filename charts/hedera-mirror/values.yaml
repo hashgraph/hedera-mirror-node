@@ -252,7 +252,7 @@ rest:
     - secretRef:
         name: mirror-passwords
 
-restJava:
+restj/ava:
   db:
     password: ""  # Randomly generated if left blank
     username: mirror_rest_java

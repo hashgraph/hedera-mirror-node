@@ -40,8 +40,8 @@ dependencies:
     repository: file://../hedera-mirror-rest
     tags: [api, javascript]
     version: ">=0.18.0-0"
-  - alias: rest-java
-    condition: rest-java.enabled
+  - alias: restjava
+    condition: restjava.enabled
     name: hedera-mirror-rest-java
     repository: file://../hedera-mirror-rest-java
     tags: [api, java]
