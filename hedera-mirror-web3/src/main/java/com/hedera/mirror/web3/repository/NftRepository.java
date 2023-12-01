@@ -118,7 +118,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                             select token_id
                             from nft_history
                             where account_id = :accountId
-                                and lower(timestamp_range) <= :blockTimestamp
+                                and timestamp_range @> :blockTimestamp
                                 and deleted is not true
                         )
                     ) as n

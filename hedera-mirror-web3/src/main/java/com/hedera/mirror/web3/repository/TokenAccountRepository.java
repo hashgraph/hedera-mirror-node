@@ -68,7 +68,7 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                             from token_account_history
                             where account_id = :accountId
                                 and associated is true
-                                and lower(timestamp_range) <= :blockTimestamp
+                                and timestamp_range @> :blockTimestamp
                         )
                     ) as ta
                     group by balance>0

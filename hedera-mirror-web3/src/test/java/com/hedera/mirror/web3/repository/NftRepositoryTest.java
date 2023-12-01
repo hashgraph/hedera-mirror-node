@@ -516,7 +516,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
         assertThat(nftRepository.countByAccountIdAndTimestampNotDeleted(
                         nftHistory2.getAccountId().getId(), nftHistory2.getTimestampLower() + 1))
                 .usingRecursiveComparison()
-                .isEqualTo(2L);
+                .isEqualTo(1L);
     }
 
     @Test
@@ -535,7 +535,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
         assertThat(nftRepository.countByAccountIdAndTimestampNotDeleted(
                         nftHistory2.getAccountId().getId(), nftHistory2.getTimestampLower()))
                 .usingRecursiveComparison()
-                .isEqualTo(2L);
+                .isEqualTo(1L);
     }
 
     @Test

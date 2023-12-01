@@ -76,6 +76,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByIdAndTimestampLessThanBlock() {
+        domainBuilder.tokenAccount().persist();
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
         assertThat(repository.findByIdAndTimestamp(
@@ -88,6 +89,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByIdAndTimestampEqualToBlock() {
+        domainBuilder.tokenAccount().persist();
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
         assertThat(repository.findByIdAndTimestamp(
