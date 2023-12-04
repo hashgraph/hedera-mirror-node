@@ -72,7 +72,7 @@
   },
   "tests": [
     {
-      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=2",
+      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=2",
       "responseStatus": 200,
       "responseJson": {
         "messages": [
@@ -98,12 +98,12 @@
           }
         ],
         "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000004&limit=2"
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=2"
         }
       }
     },
     {
-      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=5",
+      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=5",
       "responseStatus": 200,
       "responseJson": {
         "messages": [
@@ -149,7 +149,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000006&limit=5"
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=5"
         }
       }
     }

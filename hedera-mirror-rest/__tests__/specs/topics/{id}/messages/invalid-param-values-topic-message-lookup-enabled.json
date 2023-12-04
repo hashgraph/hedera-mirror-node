@@ -36,9 +36,9 @@
     ]
   },
   "urls": [
-    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=2_2&timestamp=18:34&limit=-1",
-    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=-1&timestamp=18:34&limit=-1",
-    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=9223372036854775808&timestamp=18:34&limit=-1"
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=2_2&limit=-1",
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=-1&limit=-1",
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=9223372036854775808&limit=-1"
   ],
   "responseStatus": 400,
   "responseJson": {
@@ -46,9 +46,6 @@
       "messages": [
         {
           "message": "Invalid parameter: sequencenumber"
-        },
-        {
-          "message": "Invalid parameter: timestamp"
         },
         {
           "message": "Invalid parameter: limit"

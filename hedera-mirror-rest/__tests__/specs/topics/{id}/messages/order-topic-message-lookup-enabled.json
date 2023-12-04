@@ -64,7 +64,7 @@
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=3&order=desc",
+  "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc",
   "responseStatus": 200,
   "responseJson": {
     "messages": [
@@ -100,7 +100,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc&timestamp=lt:1234567890.000000004"
+      "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc"
     }
   }
 }
