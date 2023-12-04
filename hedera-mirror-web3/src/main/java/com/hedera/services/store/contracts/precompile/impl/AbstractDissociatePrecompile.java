@@ -28,6 +28,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUti
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.DissociateLogic;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -46,7 +47,8 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            Timestamp consensusTime, TransactionBody transactionBody, final AccountID sender) {
         return pricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
     }
 

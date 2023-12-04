@@ -42,10 +42,6 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
-import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
-import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -128,23 +124,12 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private StoreImpl store;
 
-    @Mock
-    private PrngSystemPrecompiledContract prngSystemPrecompiledContract;
-
-    @Mock
-    private HederaPrngSeedOperation prngSeedOperation;
-
-    @Mock
-    private AbstractCodeCache codeCache;
-
-    @Mock
-    private AbstractAutoCreationLogic autoCreationLogic;
-
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
     private String mcpVersion;
     private String ccpVersion;
+    private static final String FUNCTION_HASH = "0x8070450f";
 
     @BeforeEach
     void setup() {
@@ -236,12 +221,8 @@ class MirrorEvmTxProcessorTest {
                 .blockHashLookup(hash -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
-                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 0L));
-    }
-
-    @Test
-    void assertIsContractCallFunctionality() {
-        assertThat(mirrorEvmTxProcessor.getFunctionType()).isEqualTo(HederaFunctionality.ContractCall);
+                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
+                        protoFrame, receiverAddress, Bytes.fromHexString(FUNCTION_HASH), 0L));
     }
 
     @Test

@@ -20,11 +20,11 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,7 +41,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *
  * Differences from the original:
  *  1. Added record types for input arguments and return types, so that the Precompile implementation could achieve statless behaviour
- *  2. Added dependency to a {@link Store} interface that will hide the details of the state used for read/write operations
+ *  2. Added senderAccount to the getMinimumFeeInTinybars and getGasRequirement methods, so that the Precompile implementation could achieve statless behaviour
  */
 public interface Precompile {
 
@@ -49,12 +49,12 @@ public interface Precompile {
     TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver, BodyParams bodyParams);
 
     // Customize fee charging
-    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody);
+    long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody, AccountID senderAccount);
 
     // Change the world state through the given frame
     RunResult run(MessageFrame frame, TransactionBody transactionBody);
 
-    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody);
+    long getGasRequirement(long blockTimestamp, TransactionBody.Builder transactionBody, AccountID senderAccount);
 
     Set<Integer> getFunctionSelectors();
 

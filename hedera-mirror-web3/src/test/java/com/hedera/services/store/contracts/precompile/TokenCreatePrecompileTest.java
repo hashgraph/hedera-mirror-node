@@ -16,9 +16,12 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
@@ -50,7 +53,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -173,8 +176,8 @@ class TokenCreatePrecompileTest {
     @Mock
     private CreateLogic createLogic;
 
-    @Mock
-    private TransactionBody transactionBody;
+    private TransactionBody.Builder transactionBody =
+            TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
 
     @Mock
     private MessageFrame frame;
@@ -218,6 +221,9 @@ class TokenCreatePrecompileTest {
     @Mock
     private TokenAccessor tokenAccessor;
 
+    @Mock
+    private PrecompileContext precompileContext;
+
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
 
@@ -248,8 +254,6 @@ class TokenCreatePrecompileTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
@@ -262,7 +266,8 @@ class TokenCreatePrecompileTest {
     @Test
     void testMinimumFeeInTinyBars() {
         final var expectedFee = 100_000L;
-        final var minimumFee = tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody);
+        final var minimumFee =
+                tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody.build(), sender);
         assertEquals(expectedFee, minimumFee);
     }
 
@@ -645,13 +650,21 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a, precompileContext);
+        final long result =
+                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
-        assertEquals(subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
+        assertEquals(
+                subject.getPrecompile(frame).getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender),
+                result);
     }
 
     @Test
@@ -717,6 +730,13 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -1103,7 +1123,7 @@ class TokenCreatePrecompileTest {
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.of(90_000_000_000L));
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -1121,5 +1141,11 @@ class TokenCreatePrecompileTest {
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.getStore()).willReturn(store);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
     }
 }

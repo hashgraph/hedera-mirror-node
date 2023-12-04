@@ -118,8 +118,7 @@ const getBalances = async (req, res) => {
       limitQuery,
       order,
       pubKeyQuery,
-      tsQueryResult.params,
-      tsQueryResult.query
+      tsQueryResult
     );
   } else {
     // use current balance from entity table when there's no timestamp query filter
@@ -196,14 +195,22 @@ const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
   return {lower, upper};
 };
 
-const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
+const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsQueryResult) => {
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQuery);
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQueryResult.query);
   const whereClause = `
-      where ${[tsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+      where ${[tsQueryResult.query, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+  const {lower, upper} = tsQueryResult.timestampRange;
+  // The first upper is for the consensus_timestamp in the select fields, also double the lower and the upper since
+  // they are used twice, in the token balance subquery and in the where clause of the main query
+  const tsParams = [upper, lower, upper, lower, upper];
   const sqlQuery = `
-      select distinct on (account_id) ab.*, (${tokenBalanceSubQuery}) as token_balances
+      select distinct on (account_id)
+        ab.account_id,
+        ab.balance,
+        ?::bigint as consensus_timestamp,
+        (${tokenBalanceSubQuery}) as token_balances
       from account_balance ab
       ${joinEntityClause}
       ${whereClause}
@@ -291,9 +298,13 @@ const getTsQuery = async (tsQuery, tsParams) => {
   }
 
   const query = 'ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?';
-  // Double the params to account for the query values for account_balance and token_balance together
-  const params = [lower, upper, lower, upper];
-  return {query, params};
+  return {
+    query,
+    timestampRange: {
+      lower,
+      upper,
+    },
+  };
 };
 
 const getTokenBalanceSubQuery = (order, consensusTsQuery) => {

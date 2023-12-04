@@ -18,10 +18,11 @@ import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
+
+import config from './config';
 import common from './common';
 import logger from './logger';
 import {runEverything} from './monitor';
-import config from './config';
 
 const app = express();
 
@@ -62,20 +63,30 @@ app.get('/health/readiness', (req, res) => {
   }
 });
 
+const allTestResultTypes = Object.values(common.TEST_RESULT_TYPES);
+
+const parseResultQueryParam = (req) => {
+  const value = (req.query.result ?? common.TEST_RESULT_TYPES.FAILED).toLowerCase();
+  return allTestResultTypes.includes(value) ? value : common.TEST_RESULT_TYPES.FAILED;
+};
+
 app.get(`${apiPrefix}/status`, (req, res) => {
-  const status = common.getStatus();
+  const status = common.getStatus(parseResultQueryParam(req));
   const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);
-  const total = status.results.map((r) => r.results.testResults.length).reduce((r, i) => r + i);
+  const total = status.results
+    .map(({results}) => results.numFailedTests + results.numPassedTests)
+    .reduce((r, i) => r + i);
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );
-  res.status(status.httpCode).send(status.results);
+  res.status(status.httpCode).json(status.results);
 });
 
 app.get(`${apiPrefix}/status/:name`, (req, res) => {
-  const status = common.getStatusByName(req.params.name);
-  const passed = status.results.numPassedTests;
-  const total = status.results.testResults.length;
+  const status = common.getStatusByName(req.params.name, parseResultQueryParam(req));
+  const {results} = status;
+  const passed = results.numPassedTests;
+  const total = results.numFailedTests + results.numPassedTests;
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );
