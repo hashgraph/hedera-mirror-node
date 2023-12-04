@@ -98,7 +98,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=2"
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=2&timestamp=gt:1234567890.000000004"
         }
       }
     },
@@ -149,7 +149,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=5"
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=5&timestamp=gt:1234567890.000000006"
         }
       }
     }

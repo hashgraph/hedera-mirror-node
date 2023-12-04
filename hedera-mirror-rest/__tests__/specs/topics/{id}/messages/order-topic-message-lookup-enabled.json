@@ -100,7 +100,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc"
+      "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc&timestamp=lt:1234567890.000000004"
     }
   }
 }

@@ -43,7 +43,10 @@
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=2&sequencenumber=gte:3",
+  "urls": [
+    "/api/v1/topics/7/messages?sequencenumber=2&sequencenumber=gte:3",
+    "/api/v1/topics/7/messages?sequencenumber=lte:4&sequencenumber=gte:3"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "messages": [],
