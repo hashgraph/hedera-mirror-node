@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.ERC;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EXCHANGE_RATE;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.HTS;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.PRNG;
@@ -281,8 +282,37 @@ public class MirrorNodeEvmProperties implements EvmProperties {
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Returns a string key representing the EVM version with specified precompiles.
+     *
+     * <p>The method matches the provided set of precompiles against known combinations,
+     * appending the relevant precompile names to the EVM version. If the set of precompiles
+     * matches a known combination, a specific version string key is returned. If the set does not match
+     * any predefined combination, a default version string is returned.
+     *
+     * <p>The method considers the following precompile combinations:
+     * <ul>
+     *   <li>Set containing only ERC</li>
+     *   <li>Set containing ERC and HTS</li>
+     *   <li>Set containing ERC, HTS, and EXCHANGE_RATE</li>
+     *   <li>Set containing ERC, HTS, EXCHANGE_RATE, and PRNG</li>
+     * </ul>
+     *
+     * @param evmVersion The base EVM version to be used for constructing the version string.
+     * @param precompiles A set of strings representing the precompiles to be included.
+     *                   Each string in the set should be a recognized precompile name.
+     * @return A string key representing the EVM version appended with a comma-separated list of precompiles
+     *         if the set of precompiles matches known combinations. Returns a default version string
+     *         (defined by EVM_VERSION) if the set does not match any predefined combinations.
+     */
     public static String getEvmWithPrecompiles(String evmVersion, Set<String> precompiles) {
         Set<String> precompileSet = new HashSet<>(precompiles);
+
+        // we have different combinations for ERC, HTS, EXCHANGE_RATE AND PRNG only for v0.30 evm
+        // the higher evm version support them all
+        if (!evmVersion.equals(EVM_VERSION_0_30)) {
+            return evmVersion;
+        }
 
         if (precompileSet.equals(Set.of(ERC))) {
             return evmVersion + "-" + ERC;

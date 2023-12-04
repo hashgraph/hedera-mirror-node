@@ -175,7 +175,6 @@ public class EvmConfiguration {
     @Bean
     MessageCallProcessor messageCallProcessor(final EVM evm, final PrecompileContractRegistry precompiles) {
         return new MessageCallProcessor(evm, precompiles);
-        // we will need more changes here
     }
 
     @Bean
@@ -263,39 +262,6 @@ public class EvmConfiguration {
                 org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
                 mirrorNodeEvmProperties.getEvmSpecVersion());
     }
-
-    // @Bean
-    // EVM evmHTS(
-    //        final GasCalculatorHederaV22 gasCalculator,
-    //        final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-    //        final HederaBlockHashOperation hederaBlockHashOperation) {
-    //    final var operationRegistry = new OperationRegistry();
-    //    final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
-    //
-    //    registerShanghaiOperations(
-    //            operationRegistry,
-    //            gasCalculator,
-    //            mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
-    //    Set.of(
-    //                    new HederaBalanceOperation(gasCalculator, validator),
-    //                    new HederaDelegateCallOperation(gasCalculator, validator),
-    //                    new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
-    //                    new HederaEvmCreate2Operation(
-    //                            gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
-    //                    new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
-    //                    new HederaEvmSLoadOperation(gasCalculator),
-    //                    new HederaExtCodeCopyOperation(gasCalculator, validator),
-    //                    new HederaExtCodeHashOperation(gasCalculator, validator),
-    //                    new HederaExtCodeSizeOperation(gasCalculator, validator),
-    //                    hederaBlockHashOperation)
-    //            .forEach(operationRegistry::put);
-    //
-    //    return new EVM(
-    //            operationRegistry,
-    //            gasCalculator,
-    //            org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-    //            mirrorNodeEvmProperties.getEvmSpecVersion());
-    // }
 
     @Bean
     HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {

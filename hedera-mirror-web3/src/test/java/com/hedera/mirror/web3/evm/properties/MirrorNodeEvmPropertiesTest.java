@@ -40,6 +40,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
+    private static final String EVM_VERSION_34 = EVM_VERSION;
+    private static final String EVM_VERSION_30 = "v0.30";
+    private static final String EVM_VERSION_38 = "v0.38";
+    private static final String ERC = "ERC";
+    private static final String HTS = "HTS";
+    private static final String EXCHANGE_RATE = "exchangeRate";
+    private static final String PRNG = "PRNG";
     private static final int MAX_REFUND_PERCENT = 100;
     private static final int MAX_CUSTOM_FEES_ALLOWED = 10;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
@@ -77,9 +84,9 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
         // given
         TreeMap<String, Long> evmVersions = new TreeMap<>();
-        evmVersions.put("0.30.0", 1000L);
-        evmVersions.put("0.34.0", 2000L);
-        evmVersions.put("0.38.0", 3000L);
+        evmVersions.put(EVM_VERSION_30, 1000L);
+        evmVersions.put(EVM_VERSION_34, 2000L);
+        evmVersions.put(EVM_VERSION_38, 3000L);
         properties.setEvmVersions(evmVersions);
 
         String result = properties.getEvmVersionForBlock(blockNumber);
@@ -92,16 +99,16 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
         // given
         TreeMap<String, Long> systemPrecompiles = new TreeMap<>();
-        systemPrecompiles.put("HTS", 800L);
-        systemPrecompiles.put("ERC", 2100L);
-        systemPrecompiles.put("exchangeRate", 3100L);
-        systemPrecompiles.put("PRNG", 4100L);
+        systemPrecompiles.put(ERC, 800L);
+        systemPrecompiles.put(HTS, 2100L);
+        systemPrecompiles.put(EXCHANGE_RATE, 3100L);
+        systemPrecompiles.put(PRNG, 4100L);
 
         Map<String, Set<String>> evmPrecompiles = new HashMap<>();
 
-        evmPrecompiles.put("0.30.0", Set.of("HTS"));
-        evmPrecompiles.put("0.34.0", Set.of("HTS", "ERC"));
-        evmPrecompiles.put("0.38.0", Set.of("HTS", "ERC", "exchangeRate", "PRNG"));
+        evmPrecompiles.put(EVM_VERSION_30, Set.of(ERC));
+        evmPrecompiles.put(EVM_VERSION_34, Set.of(ERC, HTS));
+        evmPrecompiles.put(EVM_VERSION_38, Set.of(ERC, HTS, EXCHANGE_RATE, PRNG));
 
         properties.setSystemPrecompiles(systemPrecompiles);
         properties.setEvmPrecompiles(evmPrecompiles);
@@ -111,31 +118,52 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(precompilesAvailableResult).containsExactlyInAnyOrderElementsOf(expectedPrecompiles);
     }
 
+    @ParameterizedTest
+    @MethodSource("evmWithPrecompilesProvider")
+    void testGetEvmWithPrecompiles(String evmVersion, Set<String> precompiles, String expected) {
+        String result = MirrorNodeEvmProperties.getEvmWithPrecompiles(evmVersion, precompiles);
+        assertThat(result).isEqualTo(expected);
+    }
+
     private static Stream<Arguments> blockNumberToEvmVersionProvider() {
         return Stream.of(
-                Arguments.of(1L, "0.30.0"),
-                Arguments.of(800L, "0.30.0"),
-                Arguments.of(999L, "0.30.0"),
-                Arguments.of(1000L, "0.30.0"),
-                Arguments.of(1999L, "0.30.0"),
-                Arguments.of(2000L, "0.34.0"),
-                Arguments.of(2999L, "0.34.0"),
-                Arguments.of(3000L, "0.38.0"),
-                Arguments.of(5000L, "0.38.0"));
+                Arguments.of(1L, EVM_VERSION_30),
+                Arguments.of(800L, EVM_VERSION_30),
+                Arguments.of(999L, EVM_VERSION_30),
+                Arguments.of(1000L, EVM_VERSION_30),
+                Arguments.of(1999L, EVM_VERSION_30),
+                Arguments.of(2000L, EVM_VERSION_34),
+                Arguments.of(2999L, EVM_VERSION_34),
+                Arguments.of(3000L, EVM_VERSION_38),
+                Arguments.of(5000L, EVM_VERSION_38));
     }
 
     private static Stream<Arguments> blockNumberAndPrecompilesProvider() {
         return Stream.of(
-                Arguments.of(1L, "0.30.0", Collections.EMPTY_LIST),
-                Arguments.of(500L, "0.30.0", Collections.EMPTY_LIST),
-                Arguments.of(800L, "0.30.0", List.of("HTS")),
-                Arguments.of(1099L, "0.30.0", List.of("HTS")),
-                Arguments.of(1100L, "0.30.0", List.of("HTS")),
-                Arguments.of(2000L, "0.34.0", List.of("HTS")),
-                Arguments.of(3000L, "0.38.0", Arrays.asList("HTS", "ERC")),
-                Arguments.of(3100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
-                Arguments.of(4000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate")),
-                Arguments.of(4100L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG")),
-                Arguments.of(5000L, "0.38.0", Arrays.asList("HTS", "ERC", "exchangeRate", "PRNG")));
+                Arguments.of(1L, EVM_VERSION_30, Collections.EMPTY_LIST),
+                Arguments.of(500L, EVM_VERSION_30, Collections.EMPTY_LIST),
+                Arguments.of(800L, EVM_VERSION_30, List.of(ERC)),
+                Arguments.of(1099L, EVM_VERSION_30, List.of(ERC)),
+                Arguments.of(1100L, EVM_VERSION_30, List.of(ERC)),
+                Arguments.of(2000L, EVM_VERSION_34, List.of(ERC)),
+                Arguments.of(3000L, EVM_VERSION_38, Arrays.asList(ERC, HTS)),
+                Arguments.of(3100L, EVM_VERSION_38, Arrays.asList(ERC, HTS, EXCHANGE_RATE)),
+                Arguments.of(4000L, EVM_VERSION_38, Arrays.asList(ERC, HTS, EXCHANGE_RATE)),
+                Arguments.of(4100L, EVM_VERSION_38, Arrays.asList(ERC, HTS, EXCHANGE_RATE, PRNG)),
+                Arguments.of(5000L, EVM_VERSION_38, Arrays.asList(ERC, HTS, EXCHANGE_RATE, PRNG)));
+    }
+
+    private static Stream<Arguments> evmWithPrecompilesProvider() {
+        return Stream.of(
+                Arguments.of(EVM_VERSION_30, Set.of(ERC), EVM_VERSION_30 + "-" + ERC),
+                Arguments.of(EVM_VERSION_30, Set.of(ERC, HTS), EVM_VERSION_30 + "-" + ERC + "," + HTS),
+                Arguments.of(
+                        EVM_VERSION_30,
+                        Set.of(ERC, HTS, EXCHANGE_RATE),
+                        EVM_VERSION_30 + "-" + ERC + "," + HTS + "," + EXCHANGE_RATE),
+                Arguments.of(EVM_VERSION_30, Set.of(ERC, HTS, EXCHANGE_RATE, PRNG), EVM_VERSION_30),
+                Arguments.of(EVM_VERSION_34, Set.of(ERC), EVM_VERSION_34),
+                Arguments.of(EVM_VERSION_34, Set.of(ERC, HTS), EVM_VERSION_34),
+                Arguments.of(EVM_VERSION_38, Set.of(ERC, HTS, EXCHANGE_RATE), EVM_VERSION_38));
     }
 }

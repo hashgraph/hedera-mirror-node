@@ -26,7 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolderErcHtsExchangeRate;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import java.time.Instant;
 import java.util.Optional;
@@ -38,18 +38,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBaseTest {
+public class MirrorEvmMessageCallProcessorErcHtsExchangeRateTest extends MirrorEvmMessageCallProcessorBaseTest {
 
     @Mock
-    private PrecompilesHolder precompilesHolder;
+    private PrecompilesHolderErcHtsExchangeRate precompilesHolderErcHtsExchangeRate;
 
-    private MirrorEvmMessageCallProcessor subject;
+    private MirrorEvmMessageCallProcessorErcHtsExchangeRate subject;
 
     @BeforeEach
     void setUp() {
-        given(precompilesHolder.getHederaPrecompiles()).willReturn(hederaPrecompileList);
-        subject = new MirrorEvmMessageCallProcessor(
-                autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22);
+        given(precompilesHolderErcHtsExchangeRate.getHederaPrecompiles()).willReturn(hederaPrecompileList);
+        subject = new MirrorEvmMessageCallProcessorErcHtsExchangeRate(
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolderErcHtsExchangeRate,
+                gasCalculatorHederaV22);
 
         when(messageFrame.getWorldUpdater()).thenReturn(updater);
         when(updater.getStore()).thenReturn(store);

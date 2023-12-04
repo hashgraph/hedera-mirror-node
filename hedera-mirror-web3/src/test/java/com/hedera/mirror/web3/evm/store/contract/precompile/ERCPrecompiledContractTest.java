@@ -27,8 +27,8 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
-import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import com.hedera.services.store.contracts.precompile.ERCPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.PrecompileMapperErc;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayDeque;
@@ -41,11 +41,10 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class HTSPrecompiledContractTest extends PrecompiledContractBaseTest {
+public class ERCPrecompiledContractTest extends PrecompiledContractBaseTest {
 
-    private HTSPrecompiledContract subject;
-
-    private PrecompileMapper precompileMapper;
+    private ERCPrecompiledContract subject;
+    private PrecompileMapperErc precompileMapperErc;
 
     @BeforeEach
     void setUp() {
@@ -58,11 +57,11 @@ class HTSPrecompiledContractTest extends PrecompiledContractBaseTest {
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(messageFrame);
 
-        precompileMapper = new PrecompileMapper(Set.of(mockPrecompile));
-        subject = new HTSPrecompiledContract(
+        precompileMapperErc = new PrecompileMapperErc(Set.of(mockPrecompile));
+        subject = new ERCPrecompiledContract(
                 evmInfrastructureFactory,
                 mirrorNodeEvmProperties,
-                precompileMapper,
+                precompileMapperErc,
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
