@@ -319,4 +319,3 @@ volumes:
     secret:
       defaultMode: 420
       secretName: '{{ include "hedera-mirror-rest-java.fullname" . }}'
-
