@@ -126,6 +126,9 @@ const getTopicMessages = async (req, res) => {
 
   // build sql query validated param and filters
   const {query, params, order, limit} = await extractSqlFromTopicMessagesRequest(topicId, filters);
+  if (!query) {
+    return;
+  }
 
   const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
@@ -185,32 +188,22 @@ async function getSequenceNumberFromTopicMessageLookup(topicId, order, limit) {
   return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
 }
 
-const extractSqlForTopicMessagesLookup = (topicId, filters) => {
+const extractSqlForTopicMessagesLookup = (topicId, filters, limit, order) => {
   let pgSqlQuery = `select lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                     from topic_message_lookup
                     where ${TopicMessageLookup.TOPIC_ID} = $1 `;
   const pgSqlParams = [topicId.getEncodedId()];
 
   // add filters
-  let limit = defaultLimit;
-  let order = constants.orderFilterValues.ASC;
+  // let limit = defaultLimit;
+  //let order = constants.orderFilterValues.ASC;
   let equal = null;
-  let lowerLimit = undefined;
-  let upperLimit = undefined;
+  let lowerLimit = 1n;
+  let upperLimit = constants.MAX_LONG;
 
   const bigIntMax = (...args) => args.reduce((m, e) => (e > m ? e : m));
   const bigIntMin = (...args) => args.reduce((m, e) => (e < m ? e : m));
   for (const filter of filters) {
-    if (filter.key === constants.filterKeys.LIMIT) {
-      limit = filter.value;
-      continue;
-    }
-
-    if (filter.key === constants.filterKeys.ORDER) {
-      order = filter.value;
-      continue;
-    }
-
     if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
       // validating seq number to have only one eq and no ne operators.
       switch (filter.operator) {
@@ -226,19 +219,15 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
         case utils.opsMap.ne:
           throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${filter.key}`);
         case utils.opsMap.gt: // The lower limit is max of all lower limits
-          lowerLimit = lowerLimit === undefined ? 0 : lowerLimit;
           lowerLimit = bigIntMax(lowerLimit, BigInt(filter.value) + 1n);
           break;
-        case utils.opsMap.gte:
-          lowerLimit = lowerLimit === undefined ? 0 : lowerLimit;
+        case utils.opsMap.gte: // The lower limit is max of all lower limits
           lowerLimit = bigIntMax(lowerLimit, BigInt(filter.value));
           break;
         case utils.opsMap.lt: // The upper limit is max of all upper limits
-          upperLimit = upperLimit === undefined ? constants.MAX_LONG : upperLimit;
           upperLimit = bigIntMin(upperLimit, BigInt(filter.value) - 1n);
           break;
-        case utils.opsMap.lte:
-          upperLimit = upperLimit === undefined ? constants.MAX_LONG : upperLimit;
+        case utils.opsMap.lte: // The upper limit is max of all upper limits
           upperLimit = bigIntMin(upperLimit, BigInt(filter.value));
           break;
         default:
@@ -247,17 +236,20 @@ const extractSqlForTopicMessagesLookup = (topicId, filters) => {
     }
   }
   // If the range built is empty shortcut with an empty response
-  if (lowerLimit !== undefined && upperLimit !== undefined) {
-    if (lowerLimit > upperLimit) {
-      // need to return an empty response
-      return null;
-    }
+  if (lowerLimit > upperLimit) {
+    // need to return an empty response
+    return null;
   }
-  // we add or subtract the limit depending on the order to obtain the range.
-  if (upperLimit === undefined) {
+
+  // we add or subtract the limit depending on the order to obtain the range. This scenario is yet to be tested
+  if (upperLimit !== constants.MAX_LONG) {
+    if (lowerLimit === 1n) {
+      // There is an upper bound but no lowerBound
+      lowerLimit = upperLimit - BigInt(limit);
+    }
+  } else {
+    // There is only a lower bound, no upper bound
     upperLimit = lowerLimit + BigInt(limit);
-  } else if (lowerLimit === undefined) {
-    lowerLimit = upperLimit - BigInt(limit);
   }
 
   pgSqlQuery += ` and  sequence_number_range && $2::int8range`;
@@ -339,7 +331,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
 
 const getTopicMessageTimestamps = async (topicId, filters, hasSequenceNumberForV2, limit, order) => {
   const pgObject = hasSequenceNumberForV2
-    ? extractSqlForTopicMessagesLookup(topicId, filters, hasSequenceNumberForV2, limit, order)
+    ? extractSqlForTopicMessagesLookup(topicId, filters, limit, order)
     : await getSequenceNumberFromTopicMessageLookup(topicId, order, limit);
 
   if (pgObject === null) {

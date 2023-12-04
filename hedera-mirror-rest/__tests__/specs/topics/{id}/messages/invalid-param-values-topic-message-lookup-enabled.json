@@ -1,6 +1,13 @@
 {
   "description": "Get messages with invalid params",
   "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
     "accounts": [
       {
         "num": 7,

@@ -1,13 +1,6 @@
 {
   "description": "Get single message by valid topic and sequence",
   "setup": {
-    "config": {
-      "query": {
-        "v2": {
-          "topicMessageLookups": true
-        }
-      }
-    },
     "accounts": [
       {
         "num": 7,
@@ -31,14 +24,6 @@
       {
         "consensus_timestamp": "1234567890000000003",
         "sequence_number": 3,
-        "topic_id": 7
-      }
-    ],
-    "topicmessagelookups": [
-      {
-        "partition": "topic_message_p2020_07",
-        "timestamp_range": "[1234567890000000001,1234567890000000004)",
-        "sequence_number_range": "[1,4)",
         "topic_id": 7
       }
     ]

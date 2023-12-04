@@ -221,6 +221,7 @@ export {
   DECIMALS_IN_HBARS,
   EVM_ADDRESS_LENGTH,
   MAX_INT32,
+  MAX_LONG,
   ONE_DAY_IN_NS,
   ZERO_UINT256,
   characterEncoding,

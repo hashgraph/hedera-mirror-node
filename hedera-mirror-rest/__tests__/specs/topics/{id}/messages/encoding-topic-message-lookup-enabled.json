@@ -1,6 +1,13 @@
 {
-  "description": "Get messages by with order param",
+  "description": "Get messages with format param set to text",
   "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
     "accounts": [
       {
         "num": 7,
@@ -13,73 +20,68 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
+        "message": "swirlds",
         "sequence_number": 1,
         "topic_id": 7
       },
       {
         "consensus_timestamp": "1234567890000000002",
+        "message": "hedera hashgraph",
         "sequence_number": 2,
         "topic_id": 7
       },
       {
         "consensus_timestamp": "1234567890000000003",
-        "sequence_number": 3,
-        "topic_id": 7
-      },
+        "topic_id": 7,
+        "sequence_number": 3
+      }
+    ],
+    "topicmessagelookups": [
       {
-        "consensus_timestamp": "1234567890000000004",
-        "sequence_number": 4,
-        "topic_id": 7
-      },
-      {
-        "consensus_timestamp": "1234567890000000005",
-        "sequence_number": 5,
-        "topic_id": 7
-      },
-      {
-        "consensus_timestamp": "1234567890000000006",
-        "sequence_number": 6,
+        "partition": "topic_message_p2020_07",
+        "timestamp_range": "[1234567890000000001,1234567890000000004)",
+        "sequence_number_range": "[1,4)",
         "topic_id": 7
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=3&order=desc",
+  "url": "/api/v1/topics/7/messages?encoding=utf-8",
   "responseStatus": 200,
   "responseJson": {
     "messages": [
       {
         "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000006",
-        "message": "bWVzc2FnZQ==",
+        "consensus_timestamp": "1234567890.000000001",
+        "message": "swirlds",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 6,
+        "sequence_number": 1,
         "topic_id": "0.0.7"
       },
       {
         "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000005",
-        "message": "bWVzc2FnZQ==",
+        "consensus_timestamp": "1234567890.000000002",
+        "message": "hedera hashgraph",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 5,
+        "sequence_number": 2,
         "topic_id": "0.0.7"
       },
       {
         "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000004",
-        "message": "bWVzc2FnZQ==",
+        "consensus_timestamp": "1234567890.000000003",
+        "message": "message",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 4,
+        "sequence_number": 3,
         "topic_id": "0.0.7"
       }
     ],
     "links": {
-      "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&limit=3&order=desc&timestamp=lt:1234567890.000000004"
+      "next": null
     }
   }
 }

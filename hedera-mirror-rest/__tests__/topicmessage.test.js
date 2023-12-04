@@ -148,7 +148,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select 
@@ -172,7 +174,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select
@@ -197,7 +201,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select
@@ -222,7 +228,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select
@@ -246,7 +254,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select
@@ -271,7 +281,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select 
@@ -296,7 +308,9 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
     const {query, params, order, limit} = await topicmessage.extractSqlForTopicMessagesLookup(
       EntityId.parse('7'),
-      filters
+      filters,
+      3,
+      constants.orderFilterValues.DESC
     );
 
     const expectedQuery = `select 
@@ -320,7 +334,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     ];
 
     expect(() => {
-      topicmessage.extractSqlForTopicMessagesLookup(EntityId.parse('7'), filters);
+      topicmessage.extractSqlForTopicMessagesLookup(EntityId.parse('7'), filters, 3, constants.orderFilterValues.DESC);
     }).toThrowError(InvalidArgumentError);
   });
   test('extractSqlFromTopicMessagesLookup for multiple ne operator for sequence_number parameter', async () => {
