@@ -367,12 +367,13 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
 
     const expectedQuery = `select * from topic_message 
     where topic_id = $1 
-    and consensus_timestamp <= $2 
+    and sequence_number > $2
+      and consensus_timestamp <= $3 
     and ((consensus_timestamp >= 1234567890000000006 and consensus_timestamp < 1234567891000000006)
      or (consensus_timestamp >= 1234577890000000006 and consensus_timestamp < 1234577891000000006)) 
-     order by consensus_timestamp desc limit $3;`;
+     order by consensus_timestamp desc limit $4;`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7, '1234567890.000000006', '3']);
+    expect(params).toStrictEqual([7, '2', '1234567890.000000006', '3']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
