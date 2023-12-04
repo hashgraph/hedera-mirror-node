@@ -30,7 +30,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("logback.version", "1.4.13") // Temporary until next Spring Boot version
+    set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
