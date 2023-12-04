@@ -126,9 +126,6 @@ const getTopicMessages = async (req, res) => {
 
   // build sql query validated param and filters
   const {query, params, order, limit} = await extractSqlFromTopicMessagesRequest(topicId, filters);
-  if (!query) {
-    return;
-  }
 
   const messageEncoding = req.query[constants.filterKeys.ENCODING];
 
@@ -137,6 +134,12 @@ const getTopicMessages = async (req, res) => {
       next: null,
     },
   };
+
+  if (!query) {
+    topicMessagesResponse.messages = [];
+    res.locals[constants.responseDataLabel] = topicMessagesResponse;
+    return;
+  }
 
   // get results and return formatted response
   // if limit is not 1, set random_page_cost to 0 to make the cost estimation of using the index on
