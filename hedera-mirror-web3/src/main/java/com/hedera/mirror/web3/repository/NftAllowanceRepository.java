@@ -16,13 +16,19 @@
 
 package com.hedera.mirror.web3.repository;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_NFT_ALLOWANCE;
+
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import java.util.List;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
+
+    @Cacheable(cacheNames = CACHE_NAME_NFT_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 
     /**
