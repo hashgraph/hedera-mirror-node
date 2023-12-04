@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -30,8 +29,8 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
@@ -39,11 +38,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeFactory;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+@Named
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
@@ -63,21 +64,23 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
             final Store store) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
+        super(
+                worldState,
+                pricesAndFeesProvider,
+                dynamicProperties,
+                gasCalculator,
+                mcps,
+                ccps,
+                blockMetaSource,
+                operationTracer);
 
-        super.setOperationTracer(operationTracer);
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.store = store;
     }
 
     public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
-        final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
-        // in cases where the receiver is the zero address, we know it's a contract create scenario
-        super.setupFields(params.getReceiver().equals(Address.ZERO));
-        final var contractCallContext = ContractCallContext.get();
-        contractCallContext.setCreate(Address.ZERO.equals(params.getReceiver()));
-        contractCallContext.setEstimate(params.isEstimate());
+        final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
         if (params.isEstimate()) {
@@ -89,46 +92,44 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getSender(),
                 params.getReceiver(),
                 gasPrice,
+                params.isEstimate(),
                 params.isEstimate() ? estimatedGas : params.getGas(),
                 params.getValue(),
                 params.getCallData(),
                 params.isStatic(),
-                aliasManager.resolveForEvm(params.getReceiver()));
+                aliasManager.resolveForEvm(params.getReceiver()),
+                params.getReceiver().equals(Address.ZERO));
     }
 
-    @SuppressWarnings("java:S5411")
-    @Override
-    protected HederaFunctionality getFunctionType() {
-        return ContractCallContext.get().isCreate()
-                ? HederaFunctionality.ContractCreate
-                : HederaFunctionality.ContractCall;
-    }
-
-    @SuppressWarnings("java:S5411")
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        if (Address.ZERO.equals(to)) {
+            return baseInitialFrame
+                    .type(MessageFrame.Type.CONTRACT_CREATION)
+                    .address(to)
+                    .contract(to)
+                    .inputData(Bytes.EMPTY)
+                    .code(CodeFactory.createCode(payload, 0, false))
+                    .build();
+        } else {
+            final var resolvedForEvm = aliasManager.resolveForEvm(to);
+            final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
 
-        if (code == null) {
-            throw new MirrorEvmTransactionException(
-                    ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            // If there is no bytecode, it means we have a non-token and non-contract account,
+            // hence the code should be null and there must be a value transfer.
+            if (code == null && value <= 0 && !payload.isEmpty()) {
+                throw new MirrorEvmTransactionException(
+                        ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            }
+
+            return baseInitialFrame
+                    .type(MessageFrame.Type.MESSAGE_CALL)
+                    .address(to)
+                    .contract(to)
+                    .inputData(payload)
+                    .code(code == null ? CodeV0.EMPTY_CODE : code)
+                    .build();
         }
-
-        return ContractCallContext.get().isCreate()
-                ? baseInitialFrame
-                        .type(MessageFrame.Type.CONTRACT_CREATION)
-                        .address(to)
-                        .contract(to)
-                        .inputData(Bytes.EMPTY)
-                        .code(CodeFactory.createCode(payload, 0, false))
-                        .build()
-                : baseInitialFrame
-                        .type(MessageFrame.Type.MESSAGE_CALL)
-                        .address(to)
-                        .contract(to)
-                        .inputData(payload)
-                        .code(code)
-                        .build();
     }
 }

@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.batch;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -30,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.DissociateTokenTransfer;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
@@ -66,7 +66,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -90,9 +89,6 @@ class BatchUpserterTest extends IntegrationTest {
     private final TopicMessageLookupRepository topicMessageLookupRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionOperations transactionOperations;
-
-    @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
-    private final BatchPersister tokenDissociateTransferBatchUpserter;
 
     @Test
     void cryptoAllowance() {
@@ -602,30 +598,21 @@ class BatchUpserterTest extends IntegrationTest {
                 .persist();
 
         long dissociateTimestamp = domainBuilder.timestamp();
-        var fungibleTokenTransfer = domainBuilder
-                .tokenTransfer()
-                .customize(t -> t.amount(-10)
-                        .id(new TokenTransfer.Id(dissociateTimestamp, fungibleToken, accountId1))
-                        .isApproval(false)
-                        .payerAccountId(accountId1)
-                        .deletedTokenDissociate(true))
-                .get();
-        var nonFungibleTokenTransfer1 = domainBuilder
-                .tokenTransfer()
-                .customize(t -> t.amount(-2)
-                        .id(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken1, accountId1))
-                        .isApproval(false)
-                        .payerAccountId(accountId1)
-                        .deletedTokenDissociate(true))
-                .get();
-        var nonFungibleTokenTransfer2 = domainBuilder
-                .tokenTransfer()
-                .customize(t -> t.amount(-1)
-                        .id(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken2, accountId1))
-                        .isApproval(false)
-                        .payerAccountId(accountId1)
-                        .deletedTokenDissociate(true))
-                .get();
+        var fungibleTokenTransfer = new DissociateTokenTransfer();
+        fungibleTokenTransfer.setAmount(-10);
+        fungibleTokenTransfer.setId(new TokenTransfer.Id(dissociateTimestamp, fungibleToken, accountId1));
+        fungibleTokenTransfer.setIsApproval(false);
+        fungibleTokenTransfer.setPayerAccountId(accountId1);
+        var nonFungibleTokenTransfer1 = new DissociateTokenTransfer();
+        nonFungibleTokenTransfer1.setAmount(-2);
+        nonFungibleTokenTransfer1.setId(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken1, accountId1));
+        nonFungibleTokenTransfer1.setIsApproval(false);
+        nonFungibleTokenTransfer1.setPayerAccountId(accountId1);
+        var nonFungibleTokenTransfer2 = new DissociateTokenTransfer();
+        nonFungibleTokenTransfer2.setAmount(-1);
+        nonFungibleTokenTransfer2.setId(new TokenTransfer.Id(dissociateTimestamp, nonFungibleToken2, accountId1));
+        nonFungibleTokenTransfer2.setIsApproval(false);
+        nonFungibleTokenTransfer2.setPayerAccountId(accountId1);
         var transaction = domainBuilder
                 .transaction()
                 .customize(t ->
@@ -634,7 +621,7 @@ class BatchUpserterTest extends IntegrationTest {
         var tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer1, nonFungibleTokenTransfer2);
 
         // when
-        persist(tokenDissociateTransferBatchUpserter, tokenTransfers);
+        persist(batchPersister, tokenTransfers);
 
         // then
         // history nft rows just have timetamp range closed
@@ -652,8 +639,11 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4, nft5);
         assertThat(findHistory(Nft.class)).containsExactlyInAnyOrderElementsOf(expectedNftHistory);
 
-        fungibleTokenTransfer.setDeletedTokenDissociate(false);
-        assertThat(tokenTransferRepository.findAll()).containsExactly(fungibleTokenTransfer);
+        assertThat(tokenTransferRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .isEqualTo(fungibleTokenTransfer);
 
         // Negative number in nft transfer is the number of NFTs burned
         transaction.setNftTransfer(List.of(

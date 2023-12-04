@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
@@ -49,7 +50,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -61,6 +62,7 @@ import com.hedera.services.store.contracts.precompile.CryptoTransferWrapper;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;
 import com.hedera.services.store.contracts.precompile.TransferWrapper;
@@ -190,28 +192,30 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     @Override
     public RunResult run(final MessageFrame frame, final TransactionBody transactionBody) {
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
-        final var mirrorEvmContractAliases =
-                (MirrorEvmContractAliases) ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).aliases();
+        final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var store = updater.getStore();
         final var hederaTokenStore = initializeHederaTokenStore(store);
         final var impliedValidity = extrapolateValidityDetailsFromSyntheticTxn(transactionBody);
         if (impliedValidity != OK) {
             throw new InvalidTransactionException(impliedValidity, true);
         }
 
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(
+                transactionBody,
+                EntityIdUtils.accountIdFromEvmAddress(((PrecompileContext)
+                                frame.getMessageFrameStack().getLast().getContextVariable(PRECOMPILE_CONTEXT))
+                        .getSenderAddress()));
         final var changes = impliedTransfers.getAllBalanceChanges();
 
         final Map<ByteString, EntityNum> completedLazyCreates = new HashMap<>();
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             if (change.hasAlias()) {
-                replaceAliasWithId(
-                        change, completedLazyCreates, store, entityAddressSequencer, mirrorEvmContractAliases);
+                replaceAliasWithId(change, completedLazyCreates, store, entityAddressSequencer);
             }
         }
 
-        transferLogic.doZeroSum(changes, store, entityAddressSequencer, mirrorEvmContractAliases, hederaTokenStore);
+        transferLogic.doZeroSum(changes, store, entityAddressSequencer, hederaTokenStore);
         return new EmptyRunResult();
     }
 
@@ -243,7 +247,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransferV2(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<Address> exists) {
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
         List<HbarTransfer> hbarTransfers = new ArrayList<>();
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
@@ -280,7 +284,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
      * @return CryptoTransferWrapper codec
      */
     public static CryptoTransferWrapper decodeCryptoTransfer(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<AccountID> exists) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver, Predicate<Address> exists) {
         final List<HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples = decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 
@@ -297,7 +301,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final UnaryOperator<byte[]> aliasResolver,
             final List<TokenTransferWrapper> tokenTransferWrappers,
             final Tuple[] tokenTransferTuples,
-            final Predicate<AccountID> exists) {
+            final Predicate<Address> exists) {
         for (final var tupleNested : tokenTransferTuples) {
             final var tokenType = convertAddressBytesToTokenID(tupleNested.get(0));
 
@@ -429,9 +433,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         long accumulatedCost = 0;
-        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody);
+        final var impliedTransfers = extrapolateImpliedTransferDetailsFromSyntheticTxn(transactionBody, sender);
         final boolean customFees = !impliedTransfers.getAllBalanceChanges().isEmpty();
         // For fungible there are always at least two operations, so only charge half for each
         // operation
@@ -467,8 +472,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final BalanceChange change,
             final Map<ByteString, EntityNum> completedLazyCreates,
             Store store,
-            EntityAddressSequencer entityAddressSequencer,
-            MirrorEvmContractAliases mirrorEvmContractAliases) {
+            EntityAddressSequencer entityAddressSequencer) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
@@ -479,8 +483,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             .setSeconds(Instant.now().getEpochSecond())
                             .build(),
                     store,
-                    entityAddressSequencer,
-                    mirrorEvmContractAliases);
+                    entityAddressSequencer);
             validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
             completedLazyCreates.put(
                     receiverAlias,
@@ -492,10 +495,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     protected ImpliedTransfers extrapolateImpliedTransferDetailsFromSyntheticTxn(
-            final TransactionBody transactionBody) {
-        final var senderAccount = getSenderAccountId(transactionBody);
-        final var senderAddress = EntityIdUtils.asTypedEvmAddress(senderAccount);
-        final var explicitChanges = constructBalanceChanges(transactionBody, senderAddress);
+            final TransactionBody transactionBody, final AccountID sender) {
+        final var explicitChanges = constructBalanceChanges(transactionBody, sender);
         return new ImpliedTransfers(explicitChanges);
     }
 
@@ -605,9 +606,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     }
 
     private List<BalanceChange> constructBalanceChanges(
-            final TransactionBody transactionBody, final Address senderAddress) {
+            final TransactionBody transactionBody, final AccountID accountId) {
         final List<BalanceChange> allChanges = new ArrayList<>();
-        final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
         final var transferOp = transactionBody.getCryptoTransfer();
         for (final TokenTransferList tokenTransferList : transferOp.getTokenTransfersList()) {
             final var token = tokenTransferList.getToken();
@@ -626,16 +626,5 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         return allChanges;
-    }
-
-    private AccountID getSenderAccountId(final TransactionBody transactionBody) {
-        final var transferOp = transactionBody.getCryptoTransfer();
-        if (transferOp.getTransfers().getAccountAmountsCount() > 0) {
-            return transferOp.getTransfers().getAccountAmounts(0).getAccountID();
-        } else if (transferOp.getTokenTransfers(0).getTransfersCount() > 0) {
-            return transferOp.getTokenTransfers(0).getTransfers(0).getAccountID();
-        } else {
-            return transferOp.getTokenTransfers(0).getNftTransfers(0).getSenderAccountID();
-        }
     }
 }

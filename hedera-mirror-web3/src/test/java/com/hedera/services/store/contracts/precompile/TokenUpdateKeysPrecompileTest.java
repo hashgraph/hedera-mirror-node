@@ -16,9 +16,12 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdateKeysPrecompile.decodeUpdateTokenKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -30,11 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -49,7 +55,9 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -105,8 +113,25 @@ class TokenUpdateKeysPrecompileTest {
     @Mock
     private OptionValidator optionValidator;
 
+    private TransactionBody.Builder transactionBodyBuilder =
+            TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder());
+
     @Mock
-    private TransactionBody.Builder transactionBodyBuilder;
+    private Store store;
+
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
+    @Mock
+    private PrecompileContext precompileContext;
+
+    private TokenUpdateKeysPrecompile tokenUpdateKeysPrecompile;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -176,12 +201,18 @@ class TokenUpdateKeysPrecompileTest {
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
-        final var tokenUpdateKeysPrecompile = new TokenUpdateKeysPrecompile(
+        tokenUpdateKeysPrecompile = new TokenUpdateKeysPrecompile(
                 syntheticTxnFactory, precompilePricingUtils, updateLogic, optionValidator, evmProperties);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(tokenUpdateKeysPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 
     @Test
@@ -192,10 +223,19 @@ class TokenUpdateKeysPrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenPricingUtilsContext();
         given(updateLogic.validate(any())).willReturn(OK);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenUpdateKeysPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBodyBuilder);
+
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build());
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a, precompileContext);
+        subject.getPrecompile(frame)
+                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBodyBuilder.build(), sender);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -206,13 +246,19 @@ class TokenUpdateKeysPrecompileTest {
         // given
         givenFrameContext();
         givenMinimalContextForSuccessfulCall();
-        given(worldUpdater.aliases()).willReturn(hederaEvmContractAliases);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(updateLogic.validate(any())).willReturn(FAIL_INVALID);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenUpdateKeysPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBodyBuilder);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_KEYS, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -229,13 +275,11 @@ class TokenUpdateKeysPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
     }
 
     private void givenMinimalContextForSuccessfulCall() {
-        given(worldUpdater.aliases()).willReturn(hederaEvmContractAliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
@@ -244,7 +288,6 @@ class TokenUpdateKeysPrecompileTest {
         given(exchange.rate(any())).willReturn(exchangeRate);
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
-        given(worldUpdater.aliases()).willReturn(hederaEvmContractAliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }

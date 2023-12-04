@@ -34,9 +34,11 @@ import java.util.function.BiFunction;
 public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage implements TxnResourceUsageEstimator {
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenDissociateUsage> factory =
             TokenDissociateUsage::newEstimate;
+    private final Store store;
 
-    public TokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
+    public TokenDissociateResourceUsage(final EstimatorFactory estimatorFactory, final Store store) {
         super(estimatorFactory);
+        this.store = store;
     }
 
     @Override
@@ -45,7 +47,7 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage imp
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, final Store store) throws Exception {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo) throws Exception {
         final var op = txn.getTokenDissociate();
         final var account = store.getAccount(EntityIdUtils.asTypedEvmAddress(op.getAccount()), OnMissing.DONT_THROW);
         if (account == null) {

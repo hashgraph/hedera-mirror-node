@@ -19,29 +19,28 @@ package com.hedera.mirror.web3.common;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import com.hedera.mirror.web3.evm.store.StackedStateFramesTest.BareDatabaseAccessor;
+import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ContractCallContextTest {
 
+    private final StackedStateFrames stackedStateFrames;
+
     private final DomainBuilder domainBuilder = new DomainBuilder();
+
+    public ContractCallContextTest() {
+        stackedStateFrames = new StackedStateFrames(List.<DatabaseAccessor<Object, ?>>of(
+                new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {}));
+    }
 
     @Test
     void testGet() {
         ContractCallContext context = ContractCallContext.init(null);
         assertThat(ContractCallContext.get()).isEqualTo(context);
-        context.close();
-    }
-
-    @Test
-    void testReset() {
-        ContractCallContext context = ContractCallContext.init(null);
-        ContractCallContext.get().setEstimate(true);
-        ContractCallContext.get().setCreate(true);
-
-        context.reset();
-
-        assertThat(context.isEstimate()).isFalse();
-        assertThat(context.isCreate()).isFalse();
         context.close();
     }
 
@@ -63,6 +62,20 @@ class ContractCallContextTest {
 
         context.reset();
         assertThat(context.getRecordFile()).isNull();
+
+        context.close();
+    }
+
+    @Test
+    void testReset() {
+        ContractCallContext context = ContractCallContext.init(stackedStateFrames);
+        context.setRecordFile(new RecordFile());
+        stackedStateFrames.push();
+        context.setStack(stackedStateFrames.top());
+
+        context.reset();
+        assertThat(context.getRecordFile()).isNull();
+        assertThat(context.getStack()).isEqualTo(context.getStackBase());
 
         context.close();
     }

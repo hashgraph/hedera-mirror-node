@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNFREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile.decodeUnfreeze;
@@ -26,12 +27,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -45,6 +47,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -103,13 +106,24 @@ class UnfreezeTokenPrecompileTest {
     private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
 
     @Mock
-    private MirrorEvmContractAliases contractAliases;
+    private Store store;
 
     @Mock
-    private Store store;
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
+    private PrecompileContext precompileContext;
+
+    private UnfreezeTokenPrecompile unfreezeTokenPrecompile;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnfreezeTokenPrecompile> staticUnfreezeTokenPrecompile;
+
     private static final long TEST_SERVICE_FEE = 5_000_000;
     private static final long TEST_NETWORK_FEE = 400_000;
     private static final long TEST_NODE_FEE = 300_000;
@@ -131,13 +145,25 @@ class UnfreezeTokenPrecompileTest {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
-        UnfreezeTokenPrecompile unfreezeTokenPrecompile =
+        unfreezeTokenPrecompile =
                 new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unfreezeTokenPrecompile));
         staticUnfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
+        precompileContext = new PrecompileContext();
+        precompileContext.setEstimate(false);
+        precompileContext.setPrecompile(unfreezeTokenPrecompile);
+        precompileContext.setGasRequirement(0L);
+        precompileContext.setSenderAddress(senderAddress);
+        precompileContext.setTransactionBody(transactionBody);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 
     @AfterEach
@@ -152,10 +178,14 @@ class UnfreezeTokenPrecompileTest {
         givenFrameContext();
         givenMinimalContextForSuccessfulCall();
         givenFreezeUnfreezeContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
+        subject.prepareComputation(input, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -167,18 +197,21 @@ class UnfreezeTokenPrecompileTest {
         // given
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UNFREEZE));
         givenMinimalFrameContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, contractAliases);
+        subject.prepareComputation(input, a -> a, precompileContext);
+        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -195,7 +228,6 @@ class UnfreezeTokenPrecompileTest {
 
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenFrameContext() {

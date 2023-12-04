@@ -143,8 +143,8 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> invalidTxnError(final MirrorEvmTransactionException e) {
-        log.warn("Transaction error: {}", e.getMessage());
+    private Mono<GenericErrorResponse> mirrorEvmTransactionException(final MirrorEvmTransactionException e) {
+        log.warn("Mirror EVM transaction error: {}", e.getMessage());
         return errorResponse(e.getMessage(), e.getDetail(), e.getData());
     }
 

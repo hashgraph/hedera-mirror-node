@@ -1,25 +1,25 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.93.0-SNAPSHOT",
+  "version": "0.94.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=16.13.0 < 21"
+    "node": ">=16.13.0 < 20"
   },
   "scripts": {
-    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --import=extensionless/register server.js",
+    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --experimental-specifier-resolution=node server.js",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
-    "start": "node --import=extensionless/register server.js",
-    "pretest": "node --import=extensionless/register __tests__/integration/generator.js",
+    "start": "node --experimental-specifier-resolution=node server.js",
+    "pretest": "node --experimental-specifier-resolution=node __tests__/integration/generator.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.449.0",
+    "@aws-sdk/client-s3": "^3.456.0",
     "@godaddy/terminus": "^4.12.1",
     "@hashgraph/proto": "^2.13.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -29,8 +29,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-http-context": "^1.2.4",
-    "express-openapi-validator": "^5.1.0",
-    "extensionless": "^1.7.3",
+    "express-openapi-validator": "^5.1.1",
     "extend": "^3.0.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
@@ -38,8 +37,8 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "long": "^5.2.3",
-    "mathjs": "^12.0.0",
-    "mem": "^9.0.2",
+    "mathjs": "^12.1.0",
+    "memoize": "^10.0.0",
     "parse-duration": "^1.1.0",
     "pg": "~8.11.3",
     "pg-range": "^1.1.2",
@@ -51,42 +50,8 @@
     "swagger-ui-express": "^5.0.0",
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
-  "bundledDependencies": [
-    "@awaitjs/express",
-    "@aws-sdk/client-s3",
-    "@godaddy/terminus",
-    "@hashgraph/proto",
-    "@trufflesuite/bigint-buffer",
-    "asn1js",
-    "body-parser",
-    "compression",
-    "cors",
-    "express",
-    "express-http-context",
-    "express-openapi-validator",
-    "extend",
-    "extensionless",
-    "ip-anonymize",
-    "js-yaml",
-    "json-bigint",
-    "lodash",
-    "log4js",
-    "long",
-    "mathjs",
-    "mem",
-    "parse-duration",
-    "pg",
-    "pg-range",
-    "prom-client",
-    "qs",
-    "quick-lru",
-    "rfc4648",
-    "swagger-stats",
-    "swagger-ui-express",
-    "word-wrap"
-  ],
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.2.2",
+    "@testcontainers/postgresql": "^10.3.2",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.0.0",
@@ -112,5 +77,6 @@
   "baseUrlPath": "/api/v1",
   "overrides": {
     "protobufjs": "^7.2.4"
-  }
+  },
+  "bundleDependencies": true
 }

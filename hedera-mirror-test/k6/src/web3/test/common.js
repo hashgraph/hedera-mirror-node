@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+import {check, sleep} from 'k6';
+import {vu} from 'k6/execution';
 import http from 'k6/http';
-import {check} from 'k6';
 import * as utils from '../../lib/common.js';
-import {sleep} from 'k6';
 
 const resultField = 'result';
 
@@ -44,20 +44,20 @@ const jsonPost = (url, payload) =>
   });
 
 function ContractCallTestScenarioBuilder() {
+  this._args = null;
   this._name = null;
   this._selector = null;
-  this._args = null;
-  this._to = null;
   this._scenario = null;
   this._tags = {};
-  this._sleep = 0;
+  this._to = null;
+  this._vuData = null;
 
-  this._block = null;
+  this._block = 'latest';
   this._data = null;
-  this._gas = null;
-  this._from = null;
-  this._value = null;
   this._estimate = null;
+  this._from = null;
+  this._gas = 15000000;
+  this._value = null;
 
   this._url = `${__ENV.BASE_URL_PREFIX}/contracts/call`;
 
@@ -66,6 +66,7 @@ function ContractCallTestScenarioBuilder() {
     return {
       options: utils.getOptionsWithScenario(that._name, that._scenario, that._tags),
       run: function (testParameters) {
+        let sleepSecs = 0;
         const payload = {
           to: that._to,
           estimate: that._estimate || false, // Set default to false
@@ -74,18 +75,26 @@ function ContractCallTestScenarioBuilder() {
         if (that._selector && that._args) {
           payload.data = that._selector + that._args;
         } else {
-          Object.assign(payload, {
-            block: that._block,
-            data: that._data,
-            gas: that._gas,
-            from: that._from,
-            value: that._value,
-          });
+          const {_vuData: vuData} = that;
+          const data = vuData
+            ? Object.assign({}, vuData[vu.idInTest % vuData.length])
+            : {
+                block: that._block,
+                data: that._data,
+                gas: that._gas,
+                from: that._from,
+                value: that._value,
+              };
+          sleepSecs = data.sleep;
+          delete data.sleep;
+
+          Object.assign(payload, data);
         }
+
         const response = jsonPost(that._url, JSON.stringify(payload));
         check(response, {[`${that._name}`]: (r) => isNonErrorResponse(r)});
-        if (that._sleep > 0) {
-          sleep(that._sleep);
+        if (sleepSecs > 0) {
+          sleep(sleepSecs);
         }
       },
     };
@@ -154,8 +163,8 @@ function ContractCallTestScenarioBuilder() {
     return this;
   };
 
-  this.sleep = function (sleep) {
-    this._sleep = sleep;
+  this.vuData = function (vuData) {
+    this._vuData = vuData;
     return this;
   };
 

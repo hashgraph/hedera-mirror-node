@@ -52,3 +52,6 @@ gradleEnterprise {
         tag("CI")
     }
 }
+
+// Temporarily workaround sonarqube depends on compile task warning
+System.setProperty("sonar.gradle.skipCompile", "true")

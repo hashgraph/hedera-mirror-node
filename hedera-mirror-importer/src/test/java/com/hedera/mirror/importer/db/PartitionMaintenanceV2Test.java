@@ -37,7 +37,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV2
-class PartitionMaintenanceTest extends IntegrationTest {
+class PartitionMaintenanceV2Test extends IntegrationTest {
     private static final String GET_LATEST_PARTITIONS =
             """
             select distinct on (tp.parent_table) tp.parent_table,

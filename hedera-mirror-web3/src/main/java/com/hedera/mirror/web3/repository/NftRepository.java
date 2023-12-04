@@ -40,6 +40,49 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
             nativeQuery = true)
     Optional<Nft> findActiveById(long tokenId, long serialNumber);
 
+    /**
+     * Retrieves the most recent state of an nft by its ID up to a given block timestamp.
+     * The method considers both the current state of the nft and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param tokenId the token id of the nft to be retrieved.
+     * @param serialNumber the serial number of the nft to be retrieved.
+     * @param blockTimestamp the block timestamp used to filter the results.
+     * @return an Optional containing the nft's state at the specified timestamp.
+     *         If there is no record found for the given criteria, an empty Optional is returned.
+     */
+    @Query(
+            value =
+                    """
+            select n.*
+            from (
+                (
+                    select *
+                    from nft
+                    where token_id = :tokenId
+                        and serial_number = :serialNumber
+                        and lower(timestamp_range) <= :blockTimestamp
+                        and deleted is not true
+                )
+                union all
+                (
+                    select *
+                    from nft_history
+                    where token_id = :tokenId
+                        and serial_number = :serialNumber
+                        and lower(timestamp_range) <= :blockTimestamp
+                        and deleted is not true
+                    order by lower(timestamp_range) desc
+                    limit 1
+                )
+            ) as n
+            join entity e on e.id = n.token_id
+            where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+            order by n.timestamp_range desc
+            limit 1""",
+            nativeQuery = true)
+    Optional<Nft> findActiveByIdAndTimestamp(long tokenId, long serialNumber, long blockTimestamp);
+
     @Query(
             value = "select count(*) from Nft n "
                     + "join Entity e on e.id = n.token_id "

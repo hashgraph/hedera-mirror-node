@@ -19,4 +19,4 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*    # install OS updates
 USER 1000:1000
 
-ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

@@ -1737,6 +1737,96 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
+    void twoStakingRewardPayoutsInSameBlockAcrossDayBoundary() {
+        // given
+        // an account started to staked to node 1 5 days ago
+        long currentDay = Utility.getEpochDay(domainBuilder.timestamp());
+        long stakePeriodStart = currentDay - 5; // started to stake to a node 5 days ago
+        long createdTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(stakePeriodStart));
+        var account = domainBuilder
+                .entity()
+                .customize(e -> e.createdTimestamp(createdTimestamp)
+                        .stakedNodeId(1L)
+                        .stakePeriodStart(stakePeriodStart)
+                        .timestampRange(Range.atLeast(createdTimestamp)))
+                .persist();
+
+        // when
+        // 5 ns before the next UTC midnight
+        var beforeNextMidnight = TestUtils.asStartOfEpochDay(currentDay + 1).minusNanos(5);
+        // for simplicity, use a ConsensusSubmitMessage transaction to trigger the staking reward payout
+        var consensusSubmitMessage1 = recordItemBuilder
+                .consensusSubmitMessage()
+                .record(r -> r.setConsensusTimestamp(Utility.instantToTimestamp(beforeNextMidnight))
+                        .addPaidStakingRewards(accountAmount(account.getNum(), 200))
+                        .setTransferList(TransferList.newBuilder()
+                                .addAccountAmounts(accountAmount(account.getNum(), 100))
+                                .addAccountAmounts(accountAmount(2, 20))
+                                .addAccountAmounts(accountAmount(TREASURY, 80))
+                                .addAccountAmounts(accountAmount(STAKING_REWARD_ACCOUNT, -200))))
+                .build();
+        var afterNextMidnight = TestUtils.asStartOfEpochDay(currentDay + 1).plusNanos(5);
+        var consensusSubmitMessage2 = recordItemBuilder
+                .consensusSubmitMessage()
+                .record(r -> r.setConsensusTimestamp(Utility.instantToTimestamp(afterNextMidnight))
+                        .addPaidStakingRewards(accountAmount(account.getNum(), 60))
+                        .setTransferList(TransferList.newBuilder()
+                                .addAccountAmounts(accountAmount(account.getNum(), -40))
+                                .addAccountAmounts(accountAmount(2, 20))
+                                .addAccountAmounts(accountAmount(TREASURY, 80))
+                                .addAccountAmounts(accountAmount(STAKING_REWARD_ACCOUNT, -60))))
+                .build();
+        parseRecordItemsAndCommit(List.of(consensusSubmitMessage1, consensusSubmitMessage2));
+
+        // then
+        // expect two account history rows: the first has the original stake period start, the second has the stake
+        // period start set to currentDay - 1 as a result of the staking reward transfer before midnight
+        // the current account row should have stake period start set to currentDay, i.e., nextDay - 1, as a result of
+        // the stake reward transfer after midnight
+        var expectedAccountHistory1 = account.toBuilder()
+                .timestampRange(Range.closedOpen(
+                        account.getCreatedTimestamp(), consensusSubmitMessage1.getConsensusTimestamp()))
+                .build();
+        var expectedAccountHistory2 = account.toBuilder()
+                .balance(account.getBalance() + 100 - 40)
+                .balanceTimestamp(consensusSubmitMessage2.getConsensusTimestamp())
+                .stakePeriodStart(currentDay - 1)
+                .timestampRange(Range.closedOpen(
+                        consensusSubmitMessage1.getConsensusTimestamp(),
+                        consensusSubmitMessage2.getConsensusTimestamp()))
+                .build();
+        var expectedAccount = account.toBuilder()
+                .balance(account.getBalance() + 100 - 40)
+                .balanceTimestamp(consensusSubmitMessage2.getConsensusTimestamp())
+                .stakePeriodStart(currentDay)
+                .timestampRange(Range.atLeast(consensusSubmitMessage2.getConsensusTimestamp()))
+                .build();
+        var expectedStakingRewardTransfers = List.of(
+                StakingRewardTransfer.builder()
+                        .accountId(account.getId())
+                        .consensusTimestamp(consensusSubmitMessage1.getConsensusTimestamp())
+                        .amount(200)
+                        .payerAccountId(consensusSubmitMessage1.getPayerAccountId())
+                        .build(),
+                StakingRewardTransfer.builder()
+                        .accountId(account.getId())
+                        .consensusTimestamp(consensusSubmitMessage2.getConsensusTimestamp())
+                        .amount(60)
+                        .payerAccountId(consensusSubmitMessage2.getPayerAccountId())
+                        .build());
+        assertAll(
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
+                () -> assertThat(entityRepository.findAll()).containsExactly(expectedAccount),
+                () -> assertThat(findHistory(Entity.class))
+                        .containsExactlyInAnyOrder(expectedAccountHistory1, expectedAccountHistory2),
+                () -> assertThat(stakingRewardTransferRepository.findAll())
+                        .containsExactlyInAnyOrderElementsOf(expectedStakingRewardTransfers),
+                () -> assertEquals(2, topicMessageRepository.count()),
+                () -> assertEquals(2, transactionRepository.count()));
+    }
+
+    @Test
     void unknownTransactionResult() {
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();

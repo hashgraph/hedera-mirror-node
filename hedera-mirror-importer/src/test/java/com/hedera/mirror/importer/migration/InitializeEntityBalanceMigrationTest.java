@@ -55,6 +55,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Tag("migration")
 class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
+    private static final String DELETE_ACCOUNT_BALANCE_SQL =
+            "delete from account_balance where consensus_timestamp <= ?";
+    private static final String DELETE_ACCOUNT_BALANCE_FILE_SQL =
+            "delete from account_balance_file where consensus_timestamp <= ?";
+
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
@@ -155,8 +160,8 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     void migrateWhenNoAccountBalanceAtOrBeforeLastRecordFile() {
         // given
         setup();
-        accountBalanceFileRepository.prune(recordFile2.getConsensusEnd());
-        accountBalanceRepository.prune(recordFile2.getConsensusEnd());
+        jdbcTemplate.update(DELETE_ACCOUNT_BALANCE_SQL, recordFile2.getConsensusEnd());
+        jdbcTemplate.update(DELETE_ACCOUNT_BALANCE_FILE_SQL, recordFile2.getConsensusEnd());
 
         // when
         migration.doMigrate();

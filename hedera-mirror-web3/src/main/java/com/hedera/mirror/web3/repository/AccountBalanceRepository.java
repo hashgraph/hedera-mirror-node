@@ -63,9 +63,9 @@ public interface AccountBalanceRepository extends CrudRepository<AccountBalance,
                     """
                     with balance_snapshot as (
                         select balance, consensus_timestamp
-                        from account_balance as ab
+                        from account_balance
                         where
-                            ab.account_id = ?1 and
+                            account_id = ?1 and
                             consensus_timestamp <= ?2
                         order by consensus_timestamp desc
                         limit 1

@@ -4,7 +4,7 @@ Feature: ERC Contract Base Coverage Feature
   Scenario Outline: Validate ERC Contract
     Given I successfully create an erc contract from contract bytes with balance 0
     Then I create a new token with freeze status 2 and kyc status 1
-    Then I create a new nft with supplyType <supplyType>
+    Then I create a new nft with infinite supplyType
     Then I mint a serial number
     Then the mirror node REST API should return status 200 for the erc contract transaction
     And I call the erc contract via the mirror node REST API for token name
@@ -31,5 +31,5 @@ Feature: ERC Contract Base Coverage Feature
     Then I call the erc contract via the mirror node REST API for token balance with alias account
 
     Examples:
-      | supplyType | spenderName | approvedForAllSpenderName | tokenAllowanceSpender | allowances |
-      | "INFINITE" | "BOB"       | "ALICE"                   | "ALICE"               | 2          |
+      | spenderName | approvedForAllSpenderName | tokenAllowanceSpender | allowances |
+      | "BOB"       | "ALICE"                   | "ALICE"               | 2          |

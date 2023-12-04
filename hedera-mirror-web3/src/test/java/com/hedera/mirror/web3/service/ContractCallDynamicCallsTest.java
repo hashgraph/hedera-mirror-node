@@ -169,12 +169,24 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "approveTokenGetAllowance",
                 new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
-        APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
                 "approveTokenTransferFromGetAllowanceGetBalance",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
                 null),
-        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_2(
                 "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
+                null),
+        APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
+                "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_NFT_TOKEN_TRANSFER_FROM_GET_ALLOWANCE_2(
+                "approveTokenTransferFromGetAllowanceGetBalance",
+                new Object[] {NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY, SENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
+                null),
+        APPROVE_FUNGIBLE_TOKEN_TRANSFER_GET_ALLOWANCE(
+                "approveTokenTransferGetAllowanceGetBalance",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},
                 null),
         APPROVE_NFT_TRANSFER_GET_ALLOWANCE(

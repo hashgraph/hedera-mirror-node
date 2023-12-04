@@ -2,6 +2,7 @@
 apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: test-rest
   namespace: {{ .Values.testkube.namespace }}
 spec:
@@ -18,5 +19,15 @@ spec:
     artifactRequest:
       storageClassName: standard
       volumeMountPath: /share
+    envConfigMaps:
+      - mapToVariables: true
+        mount: false
+        reference:
+          name: {{ include "hedera-mirror-common.fullname" . }}-test-rest
+    variables:
+      BASE_URL:
+        name: BASE_URL
+        type: basic
+        value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
   type: k6-custom/script
 {{- end }}

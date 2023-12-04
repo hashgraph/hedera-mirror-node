@@ -16,10 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -30,20 +28,13 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
-    protected final Store store;
-    protected MirrorEvmContractAliases mirrorEvmContractAliases;
-
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
             final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess,
-            final MirrorEvmContractAliases mirrorEvmContractAliases,
             final Store store) {
         super(world, accountAccessor, tokenAccessor, entityAccess, store);
-        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
-        this.mirrorEvmContractAliases.resetPendingChanges();
-        this.store = store;
     }
 
     @Override
@@ -55,8 +46,6 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
 
     @Override
     public void commit() {
-        mirrorEvmContractAliases.commit();
-
         // partially copied from services
         final var wrapped = wrappedWorldView();
         getDeletedAccounts().forEach(wrapped.getUpdatedAccounts()::remove);
@@ -83,14 +72,5 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
             updatedAccount.getUpdatedStorage().forEach(mutable::setStorageValue);
         }
         store.commit();
-    }
-
-    public HederaEvmContractAliases aliases() {
-        return mirrorEvmContractAliases;
-    }
-
-    @Override
-    public void revert() {
-        mirrorEvmContractAliases.resetPendingChanges();
     }
 }

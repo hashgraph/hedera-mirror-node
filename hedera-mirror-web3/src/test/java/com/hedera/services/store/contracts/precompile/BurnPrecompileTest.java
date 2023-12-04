@@ -16,9 +16,11 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.BurnPrecompile.getBurnWrapper;
@@ -31,7 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -39,6 +41,7 @@ import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -67,6 +70,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,8 +158,8 @@ class BurnPrecompileTest {
     private static final Bytes RETURN_NON_FUNGIBLE_BURN =
             Bytes.fromHexString("0x" + SUCCESS_RESPONSE_CODE + convertToPaddedHex(EMPTY_ARGUMENT));
 
-    private final TransactionBody.Builder transactionBody =
-            TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
+    private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+            .setTokenBurn(TokenBurnTransactionBody.newBuilder().setToken(HTSTestsUtil.token2));
 
     @Mock
     private com.hedera.services.store.models.Account account;
@@ -177,6 +181,15 @@ class BurnPrecompileTest {
 
     @Mock
     private MessageFrame frame;
+
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private PrecompileContext precompileContext;
 
     @Mock
     private EncodingFacade encoder;
@@ -218,10 +231,10 @@ class BurnPrecompileTest {
     private Store store;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
+    private ContextOptionValidator contextOptionValidator;
 
     @Mock
-    private ContextOptionValidator contextOptionValidator;
+    private TokenAccessor tokenAccessor;
 
     private HTSPrecompiledContract subject;
     private BurnPrecompile burnPrecompile;
@@ -245,7 +258,13 @@ class BurnPrecompileTest {
         precompileMapper = new PrecompileMapper(Set.of(burnPrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 
     @Test
@@ -259,14 +278,19 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(burnPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -277,21 +301,36 @@ class BurnPrecompileTest {
     void fungibleBurnHappyPathWorks() {
         // given:
         final Bytes pretendArguments = givenFungibleFrameContext();
-        prepareStoreForFungibleBurn(67);
+        final var tokenID = TokenID.newBuilder()
+                .setShardNum(0)
+                .setRealmNum(0)
+                .setTokenNum(TOKEN_ID_TO_BURN)
+                .build();
+        prepareStoreForFungibleBurn(tokenID);
         givenPricingUtilsContext();
 
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(burnPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
+        final var transactionBody = TransactionBody.newBuilder()
+                .setTokenBurn(
+                        TokenBurnTransactionBody.newBuilder().setToken(tokenID).setAmount(33L));
+
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -307,16 +346,22 @@ class BurnPrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var transactionBody = TransactionBody.newBuilder().setTokenBurn(TokenBurnTransactionBody.newBuilder());
 
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(burnPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, mirrorEvmContractAliases);
+        subject.prepareComputation(FUNGIBLE_BURN_INPUT_V1, a -> a, precompileContext);
+        final long result =
+                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -419,12 +464,7 @@ class BurnPrecompileTest {
         when(token.burn(tokenRelationship, EMPTY_ARGUMENT)).thenReturn(tokenModificationResult);
     }
 
-    private void prepareStoreForFungibleBurn(final long newTotalSupply) {
-        final var tokenID = TokenID.newBuilder()
-                .setShardNum(0)
-                .setRealmNum(0)
-                .setTokenNum(TOKEN_ID_TO_BURN)
-                .build();
+    private void prepareStoreForFungibleBurn(final TokenID tokenID) {
         final var tokenAddress = Id.fromGrpcToken(tokenID).asEvmAddress();
         final var treasuryAddress = senderAddress;
         when(token.getTreasury()).thenReturn(account);
@@ -446,7 +486,6 @@ class BurnPrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private static String convertToPaddedHex(int number) {
