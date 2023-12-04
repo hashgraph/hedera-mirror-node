@@ -16,8 +16,6 @@ spec:
         - /test/postman.json
         - --env-var
         - baseUrl=http://{{ include "hedera-mirror-rest-java.fullname" . }}:{{ .Values.service.port }}
-        - --env-var
-        - default_account=""
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:

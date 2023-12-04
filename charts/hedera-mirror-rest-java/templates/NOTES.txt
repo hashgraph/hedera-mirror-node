@@ -15,6 +15,6 @@ Get the Java REST API service endpoint by running these commands:
 
   export POD_NAME=$(kubectl get pods -n {{ include "hedera-mirror-rest-java.namespace" . }} -l "app.kubernetes.io/name={{ include "hedera-mirror-rest-java.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   echo 127.0.0.1:{{ .Values.service.port }}
-  kubectl -n {{ include "hedera-mirror-rest-java.namespace" . }} port-forward $POD_NAME {{ .Values.service.port }}:8545
+  kubectl -n {{ include "hedera-mirror-rest-java.namespace" . }} port-forward $POD_NAME {{ .Values.service.port }}:8084
 
 {{- end }}

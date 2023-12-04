@@ -40,7 +40,7 @@ spec:
           imagePullPolicy: {{ $image.pullPolicy }}
           livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}
           ports:
-            - containerPort: 8545
+            - containerPort: 8084
               name: http
               protocol: TCP
           readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}

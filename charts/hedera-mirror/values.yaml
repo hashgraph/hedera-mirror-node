@@ -256,7 +256,7 @@ restjava:
   db:
     password: ""  # Randomly generated if left blank
     username: mirror_rest_java
-  enabled: true
+  enabled: false
   envFrom:
     - secretRef:
         name: mirror-passwords

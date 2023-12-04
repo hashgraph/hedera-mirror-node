@@ -97,11 +97,6 @@ livenessProbe:
 middleware:
   - circuitBreaker:
       expression: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-  - inFlightReq:
-      amount: 5
-      sourceCriterion:
-        ipStrategy:
-          depth: 1
   - retry:
       attempts: 3
       initialInterval: 100ms
@@ -312,6 +307,8 @@ updateStrategy:
 volumeMounts:
   config:
     mountPath: /usr/etc/hedera
+  temp:
+    mountPath: /tmp
 
 # Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
@@ -319,3 +316,7 @@ volumes:
     secret:
       defaultMode: 420
       secretName: '{{ include "hedera-mirror-rest-java.fullname" . }}'
+  temp:
+    emptyDir:
+      medium: Memory
+      sizeLimit: 500Mi
