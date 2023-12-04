@@ -1205,19 +1205,19 @@ const addTopicMessage = async (message) => {
   await insertDomainObject(table, insertFields, message);
 };
 
-const addTopicMessageLookup = async (message) => {
+const addTopicMessageLookup = async (topicMessageLookups) => {
   const insertFields = ['partition', 'timestamp_range', 'sequence_number_range', 'topic_id'];
 
   const table = 'topic_message_lookup';
 
-  message = {
-    partition: null,
-    timestamp_range: null,
-    sequence_number_range: null,
-    ...message,
+  topicMessageLookups = {
+    partition: 'topic_message_p2020_07',
+    timestamp_range: `(1234567890000000001,1234567890000000004)`,
+    sequence_number_range: `(1,4)`,
+    ...topicMessageLookups,
   };
 
-  await insertDomainObject(table, insertFields, message);
+  await insertDomainObject(table, insertFields, topicMessageLookups);
 };
 const addSchedule = async (schedule) => {
   schedule = {

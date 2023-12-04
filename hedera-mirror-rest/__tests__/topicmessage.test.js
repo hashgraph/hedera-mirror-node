@@ -155,11 +155,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                          lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                          from topic_message_lookup
                          where topic_id = $1
-                           and sequence_number_range && '[2,2]'::int8range
-                         order by sequence_number_range desc
-                         limit 3`;
+                           and sequence_number_range && $2::int8range
+                         order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, `[2,2]`]);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -180,11 +179,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                                lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                            from topic_message_lookup
                            where topic_id = $1
-                             and sequence_number_range && '[2,5]'::int8range
-                           order by sequence_number_range desc
-                               limit 3`;
+                             and sequence_number_range && $2::int8range
+                           order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, `[2,5]`]);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -206,11 +204,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                                lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                            from topic_message_lookup
                            where topic_id = $1
-                             and sequence_number_range && '[21,24]'::int8range
-                           order by sequence_number_range desc
-                               limit 3`;
+                             and sequence_number_range && $2::int8range
+                           order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, '[21,24]']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -232,11 +229,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                                lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                            from topic_message_lookup
                            where topic_id = $1
-                             and sequence_number_range && '[146,149]'::int8range
-                           order by sequence_number_range desc
-                               limit 3`;
+                             and sequence_number_range && $2::int8range
+                           order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, '[146,149]']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -257,11 +253,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                                lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                            from topic_message_lookup
                            where topic_id = $1
-                             and sequence_number_range && '[197,200]'::int8range
-                           order by sequence_number_range desc
-                               limit 3`;
+                             and sequence_number_range && $2::int8range
+                           order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, '[197,200]']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -283,11 +278,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                          lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                          from topic_message_lookup
                          where topic_id = $1
-                           and sequence_number_range && '[2,199]'::int8range
-                         order by sequence_number_range desc
-                         limit 3`;
+                           and sequence_number_range && $2::int8range
+                         order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, '[2,199]']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -309,11 +303,10 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
                          lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
                          from topic_message_lookup
                          where topic_id = $1
-                           and sequence_number_range && '[3,200]'::int8range
-                         order by sequence_number_range desc
-                         limit 3`;
+                           and sequence_number_range && $2::int8range
+                         order by sequence_number_range desc`;
     assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual([7]);
+    expect(params).toStrictEqual([7, '[3,200]']);
     expect(order).toStrictEqual(constants.orderFilterValues.DESC);
     expect(limit).toStrictEqual(3);
   });
@@ -412,8 +405,8 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     const expectedQuery = `select * from topic_message 
     where topic_id = $1 
     and consensus_timestamp <= $2 
-    and sequence_number >= (select MIN(lower(sequence_number_range))
-                           from topic_message_lookup where topic_id = $1) 
+    and ((consensus_timestamp >= 1234567890000000006 and consensus_timestamp < 1234567891000000006)
+             or (consensus_timestamp >= 1234577890000000006 and consensus_timestamp < 1234577891000000006)) 
      order by consensus_timestamp asc limit $3;`;
     assertSqlQueryEqual(query, expectedQuery);
     expect(params).toStrictEqual([7, '1234567890.000000006', '3']);
@@ -449,8 +442,8 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     const expectedQuery = `select * from topic_message 
     where topic_id = $1 
     and consensus_timestamp <= $2 
-    and sequence_number <= (select MAX(upper(sequence_number_range))
-                           from topic_message_lookup where topic_id = $1) 
+    and ((consensus_timestamp >= 1234567890000000006 and consensus_timestamp < 1234567891000000006) 
+             or (consensus_timestamp >= 1234577890000000006 and consensus_timestamp < 1234577891000000006)) 
      order by consensus_timestamp desc limit $3;`;
     assertSqlQueryEqual(query, expectedQuery);
     expect(params).toStrictEqual([7, '1234567890.000000006', '3']);

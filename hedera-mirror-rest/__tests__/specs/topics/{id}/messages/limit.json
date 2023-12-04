@@ -78,57 +78,6 @@
         "messages": [
           {
             "chunk_info": null,
-            "consensus_timestamp": "1234567890.000000001",
-            "message": "bWVzc2FnZQ==",
-            "payer_account_id": "0.0.3",
-            "running_hash": "cnVubmluZ19oYXNo",
-            "running_hash_version": 2,
-            "sequence_number": 1,
-            "topic_id": "0.0.7"
-          },
-          {
-            "chunk_info": null,
-            "consensus_timestamp": "1234567890.000000002",
-            "message": "bWVzc2FnZQ==",
-            "payer_account_id": "0.0.3",
-            "running_hash": "cnVubmluZ19oYXNo",
-            "running_hash_version": 2,
-            "sequence_number": 2,
-            "topic_id": "0.0.7"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000002&limit=2"
-        }
-      }
-    },
-    {
-      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=5",
-      "responseStatus": 200,
-      "responseJson": {
-        "messages": [
-          {
-            "chunk_info": null,
-            "consensus_timestamp": "1234567890.000000001",
-            "message": "bWVzc2FnZQ==",
-            "payer_account_id": "0.0.3",
-            "running_hash": "cnVubmluZ19oYXNo",
-            "running_hash_version": 2,
-            "sequence_number": 1,
-            "topic_id": "0.0.7"
-          },
-          {
-            "chunk_info": null,
-            "consensus_timestamp": "1234567890.000000002",
-            "message": "bWVzc2FnZQ==",
-            "payer_account_id": "0.0.3",
-            "running_hash": "cnVubmluZ19oYXNo",
-            "running_hash_version": 2,
-            "sequence_number": 2,
-            "topic_id": "0.0.7"
-          },
-          {
-            "chunk_info": null,
             "consensus_timestamp": "1234567890.000000003",
             "message": "bWVzc2FnZQ==",
             "payer_account_id": "0.0.3",
@@ -149,7 +98,58 @@
           }
         ],
         "links": {
-          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000004&limit=5"
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000004&limit=2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=5",
+      "responseStatus": 200,
+      "responseJson": {
+        "messages": [
+          {
+            "chunk_info": null,
+            "consensus_timestamp": "1234567890.000000003",
+            "message": "bWVzc2FnZQ==",
+            "payer_account_id": "0.0.3",
+            "running_hash": "cnVubmluZ19oYXNo",
+            "running_hash_version": 2,
+            "sequence_number": 3,
+            "topic_id": "0.0.7"
+          },
+          {
+            "chunk_info": null,
+            "consensus_timestamp": "1234567890.000000004",
+            "message": "bWVzc2FnZQ==",
+            "payer_account_id": "0.0.3",
+            "running_hash": "cnVubmluZ19oYXNo",
+            "running_hash_version": 2,
+            "sequence_number": 4,
+            "topic_id": "0.0.7"
+          },
+          {
+            "chunk_info": null,
+            "consensus_timestamp": "1234567890.000000005",
+            "message": "bWVzc2FnZQ==",
+            "payer_account_id": "0.0.3",
+            "running_hash": "cnVubmluZ19oYXNo",
+            "running_hash_version": 2,
+            "sequence_number": 5,
+            "topic_id": "0.0.7"
+          },
+          {
+            "chunk_info": null,
+            "consensus_timestamp": "1234567890.000000006",
+            "message": "bWVzc2FnZQ==",
+            "payer_account_id": "0.0.3",
+            "running_hash": "cnVubmluZ19oYXNo",
+            "running_hash_version": 2,
+            "sequence_number": 6,
+            "topic_id": "0.0.7"
+          }
+        ],
+        "links": {
+          "next": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&timestamp=gt:1234567890.000000006&limit=5"
         }
       }
     }
