@@ -1,4 +1,4 @@
-FROM node:18-bookworm-slim
+FROM node:18.18.2-bookworm-slim
 LABEL maintainer="mirrornode@hedera.com"
 
 # Setup
@@ -10,17 +10,15 @@ WORKDIR /home/node/app/
 
 # Install dependencies
 COPY package*.json ./
-RUN apt-get update && \
-    apt-get install -y wget && \
-    npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npm cache clean --force --loglevel=error && \
-    chown -R node:node . && \
-    rm -rf /var/lib/apt/lists/*
+    chown -R node:node .
 COPY --chown=node:node . ./
 
 # Install OS updates
 RUN apt-get update && \
     apt-get upgrade -y --no-install-recommends && \
+    apt-get install -y wget && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 USER node
