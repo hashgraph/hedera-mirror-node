@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [ main, release/** ]
+    branches: [ main, release/**, 6886-citus-12.1-pg-16 ]
     tags: [ v* ]
 
 jobs:
