@@ -31,8 +31,8 @@ data:
       --set "ownerPassword=${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD}" \
       --set "restPassword=${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}" \
       --set "restUsername=${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME}" \
-      --set "restJavaPassword=${HEDERA_MIRROR_IMPORTER_DB_RESTJAVAPASSWORD}" \
-      --set "restJavaUsername=${HEDERA_MIRROR_IMPORTER_DB_RESTJAVAUSERNAME}" \
+      --set "restJavaPassword=${HEDERA_MIRROR_RESTJAVA_DB_PASSWORD}" \
+      --set "restJavaUsername=${HEDERA_MIRROR_RESTJAVA_DB_USERNAME}" \
       --set "rosettaPassword=${HEDERA_MIRROR_ROSETTA_DB_PASSWORD}" \
       --set "rosettaUsername=${HEDERA_MIRROR_ROSETTA_DB_USERNAME}" \
       --set "web3Password=${HEDERA_MIRROR_WEB3_DB_PASSWORD}" \
