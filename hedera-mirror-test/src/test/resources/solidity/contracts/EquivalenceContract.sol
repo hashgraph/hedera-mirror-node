@@ -22,74 +22,42 @@ contract EquivalenceContract {
         (success, returnData) = _to.delegatecall(_data);
     }
 
-    function callCodeToContractWithoutAmount(address _address, bytes memory _data) external returns (address) {
-        require(_data.length >= 4, "Data too short");
-
-        bytes memory result;
-        bool success;
-
+    function callCodeToContractWithoutAmount(address _addr, bytes calldata _customData) external returns (bytes32 output) {
         assembly {
             let x := mload(0x40)
+            calldatacopy(x, _customData.offset, calldatasize())
 
-        // Find the starting index of non-zero bytes
-            let startIndex := 0
-            for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
-                if gt(mload(add(_data, i)), 0) {
-                    startIndex := i
-                    break
-                }
-            }
+            let success := callcode(
+                900000, // gas
+                _addr, // target address
+                0, // value
+                x, // extracted and loaded calldata for the internal call
+                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
+                x, // memory overlapping to save some space
+                0x20 // output is 32 bytes long
+            )
 
-        // Copy only the non-zero part of _data to memory starting at 'x'
-            mstore(x, mload(add(_data, startIndex)))
-
-        // Call the contract using callcode
-            success := callcode(600000, _address, 0, x, sub(mload(_data), startIndex), x, 0x20)
-
-        // Adjust the free memory pointer
-            mstore(0x40, add(x, 0x20))
-            mstore(result, x)
+            output := mload(x) // assign output value to the var
         }
-
-        return abi.decode(result, (address));
     }
 
-
-    function callCodeToContractWithAmount(address _address, bytes memory _data) external payable returns (address) {
-        require(_data.length >= 4, "Data too short");
-
-        bytes memory result;
-        bool success;
-
+    function callCodeToContractWithAmount(address _addr, bytes calldata _customData) external payable returns (bytes32 output) {
         assembly {
             let x := mload(0x40)
+            calldatacopy(x, _customData.offset, calldatasize())
+            let success := callcode(
+                900000, // gas
+                _addr, // target address
+                callvalue(), // value
+                x, // extracted and loaded calldata for the internal call
+                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
+                x, // memory overlapping to save some space
+                0x20 // output is 32 bytes long
+            )
 
-        // Find the starting index of non-zero bytes
-            let startIndex := 0
-            for { let i := 0 } lt(i, 32) { i := add(i, 1) } {
-                if gt(mload(add(_data, i)), 0) {
-                    startIndex := i
-                    break
-                }
-            }
-
-        // Copy only the non-zero part of _data to memory starting at 'x'
-            mstore(x, mload(add(_data, startIndex)))
-
-        // Retrieve the call value
-            let callValue := callvalue()
-
-        // Call the contract using callcode with the call value
-            success := callcode(900000, _address, callValue, x, sub(mload(_data), startIndex), x, 0x20)
-
-        // Adjust the free memory pointer
-            mstore(0x40, add(x, 0x20))
-            mstore(result, x)
+            output := mload(x) // assign output value to the var
         }
-
-        return abi.decode(result, (address));
     }
-
 
     function getBalance(address _address) external view returns (uint256) {
         return _address.balance;

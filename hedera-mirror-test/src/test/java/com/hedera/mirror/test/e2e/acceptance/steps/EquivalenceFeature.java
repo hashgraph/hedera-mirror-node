@@ -23,7 +23,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_EXCHANGE_RATE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.GET_PRNG;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.HTS_APPROVE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Selectors.IS_TOKEN;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
@@ -49,7 +49,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -241,7 +240,7 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute directCall to {string} address without amount")
     public void directCallToZeroAddressWithoutAmount(String address) {
         var contractId = new ContractId(extractAccountNumber(address));
-        var message = makeDirectCall(contractId, "destroyContract", null, null);
+        var message = executeContractCallTransaction(contractId, "destroyContract", null, null);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
         assertEquals("INVALID_CONTRACT_ID", extractedStatus);
@@ -250,21 +249,17 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute directCall to {string} address with amount {int}")
     public void directCallToZeroAddressWithAmount(String address, int amount) {
         var contractId = new ContractId(extractAccountNumber(address));
-        var message = makeDirectCall(contractId, "destroyContract", null, Hbar.fromTinybars(amount));
+        var message = executeContractCallTransaction(contractId, "destroyContract", null, Hbar.fromTinybars(amount));
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
         assertEquals("INVALID_CONTRACT_ID", extractedStatus);
     }
 
-    @Then("I execute internal {string} against HTS precompile with approve function for {token} {string} amount")
+    @Then("I execute internal {string} against HTS precompile with isToken function for {token} {string} amount")
     public void executeInternalCallForHTSApproveWithAmount(String call, TokenNameEnum tokenName, String amountType) {
         var callType = getMethodName(call, amountType);
         var tokenId = tokenClient.getToken(tokenName).tokenId();
-        var data = encodeDataToByteArray(
-                HTS_APPROVE,
-                asAddress(tokenId),
-                asAddress(equivalenceCallContractSolidityAddress),
-                new BigInteger("10"));
+        var data = encodeDataToByteArray(IS_TOKEN, asAddress(tokenId));
         var parameters = new ContractFunctionParameters()
                 .addAddress("0x0000000000000000000000000000000000000167")
                 .addBytes(data);
@@ -394,6 +389,7 @@ public class EquivalenceFeature extends AbstractFeature {
         String functionResult;
         ContractFunctionParameters parameters;
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var callType = getMethodName(call, amountType);
 
         if (call.equals("callcode")) {
             parameters = new ContractFunctionParameters()
@@ -402,8 +398,6 @@ public class EquivalenceFeature extends AbstractFeature {
         } else {
             parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
         }
-
-        var callType = getMethodName(call, amountType);
 
         if (amountType.equals("with")) {
             functionResult = executeContractCallTransaction(
@@ -422,12 +416,13 @@ public class EquivalenceFeature extends AbstractFeature {
         // WAITING TO BE CLARIFIED
     }
 
-    @Then("I make internal call to ethereum precompile {string} address with amount")
-    public void internalCallToEthPrecompileWithAmount(String address) {
+    @Then("I make internal {string} to ethereum precompile {string} address with amount")
+    public void internalCallToEthPrecompileWithAmount(String call, String address) {
+        var callType = getMethodName(call, "with");
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId).addBytes(new byte[0]);
         var transactionId = executeContractCallTransactionAndReturnId(
-                deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(10L));
+                deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10L));
         var message = extractInternalCallErrorMessage(transactionId);
         assertEquals(INVALID_FEE_SUBMITTED, message);
     }
@@ -624,7 +619,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private String makeDirectCall(
+    private String executeContractCallTransaction(
             ContractId contractId, String functionName, ContractFunctionParameters parameters, Hbar payableAmount) {
         try {
             ExecuteContractResult executeContractResult = contractClient.executeContract(
@@ -685,28 +680,6 @@ public class EquivalenceFeature extends AbstractFeature {
                 parameters);
     }
 
-    private void executeContractTransaction(
-            DeployedContract deployedContract, int gas, ContractMethods contractMethods, byte[] parameters) {
-
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedContract.contractId(), gas, contractMethods.getSelector(), parameters, null);
-
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-    }
-
-    private ContractFunctionResult executeContractCallQuery(DeployedContract deployedContract, String functionName) {
-        return contractClient.executeContractQuery(
-                deployedContract.contractId(),
-                functionName,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                null);
-    }
-
     public static String extractTransactionId(String message) {
         Pattern pattern = Pattern.compile("transactionId=(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
         Matcher matcher = pattern.matcher(message);
@@ -728,7 +701,7 @@ public class EquivalenceFeature extends AbstractFeature {
     @Getter
     @RequiredArgsConstructor
     enum Selectors implements SelectorInterface {
-        HTS_APPROVE("approve(address,address,uint256)"),
+        IS_TOKEN("isToken(address)"),
         GET_PRNG("getPseudorandomSeed()"),
         GET_EXCHANGE_RATE("tinycentsToTinybars(uint256)");
 
