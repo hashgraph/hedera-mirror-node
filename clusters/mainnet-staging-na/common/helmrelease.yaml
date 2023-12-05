@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.93.0-rc2'
+      version: '0.93.1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -66,4 +66,4 @@ spec:
     traefik:
       service:
         annotations:
-          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-staging-na"} } }'
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mainnet-staging-na"} } }'
