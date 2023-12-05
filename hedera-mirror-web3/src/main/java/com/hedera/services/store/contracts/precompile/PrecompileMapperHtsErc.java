@@ -22,13 +22,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public class PrecompileMapperErc {
+public class PrecompileMapperHtsErc {
 
     public static final String UNSUPPORTED_ERROR = "Precompile not supported for non-static frames";
     private static final Map<Integer, Precompile> abiConstantToPrecompile = new HashMap<>();
-    private static final Set<Integer> precompileSelectors = PrecompileMapperUtils.ERC_PRECOMPILE_SELECTORS;
+    private static final Set<Integer> precompileSelectors = PrecompileMapperUtils.HTS_ERC_PRECOMPILE_SELECTORS;
 
-    public PrecompileMapperErc(final Set<Precompile> precompiles) {
+    public PrecompileMapperHtsErc(final Set<Precompile> precompiles) {
         for (final Precompile precompile : precompiles) {
             for (final Integer selector : precompile.getFunctionSelectors()) {
                 abiConstantToPrecompile.put(selector, precompile);

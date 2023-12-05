@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.precompile.codec.ApproveParams;
 import com.hedera.services.store.contracts.precompile.codec.CreateParams;
 import com.hedera.services.store.contracts.precompile.codec.ERCTransferParams;
 import com.hedera.services.store.contracts.precompile.codec.FunctionParam;
+import com.hedera.services.store.contracts.precompile.codec.HrcParams;
 import com.hedera.services.store.contracts.precompile.codec.TransferParams;
 import com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -40,20 +41,20 @@ import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
+public class HtsOnlyPrecompiledContract extends PrecompiledContractBase {
 
-    private final PrecompileMapperErcHts precompileMapperErcHts;
+    private final PrecompileMapperHts precompileMapperHts;
 
     @SuppressWarnings("java:S107")
-    public ErcHtsPrecompiledContract(
+    public HtsOnlyPrecompiledContract(
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
-            final PrecompileMapperErcHts precompileMapperErcHts,
+            final PrecompileMapperHts precompileMapperHts,
             final Store store,
             final TokenAccessor tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
         super(infrastructureFactory, evmProperties, store, tokenAccessor, precompilePricingUtils);
-        this.precompileMapperErcHts = precompileMapperErcHts;
+        this.precompileMapperHts = precompileMapperHts;
     }
 
     void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -63,76 +64,8 @@ public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
         var senderAddress = contractCallContext.getSenderAddress();
         Precompile precompile;
         switch (functionId) {
-            case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
-                final var target = getRedirectTarget(input);
-                final var isExplicitRedirectCall = target.massagedInput() != null;
-                if (isExplicitRedirectCall) {
-                    input = target.massagedInput();
-                }
-                final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(target.token());
-                final var nestedFunctionSelector = target.descriptor();
-                switch (nestedFunctionSelector) {
-                        // cases will be added with the addition of precompiles using redirect operations
-                    case AbiConstants.ABI_ID_ERC_APPROVE -> {
-                        final var isFungibleToken =
-                                /* For implicit redirect call scenarios, at this point in the logic it has already been
-                                 * verified that the token exists, so comfortably call ledgers.typeOf() without worrying about INVALID_TOKEN_ID.
-                                 *
-                                 * Explicit redirect calls, however, verify the existence of the token in RedirectPrecompile.run(), so only
-                                 * call ledgers.typeOf() if the token exists.
-                                 *  */
-                                (!isExplicitRedirectCall
-                                                || !store.getToken(target.token(), OnMissing.DONT_THROW)
-                                                        .isEmptyToken())
-                                        && store.getToken(target.token(), OnMissing.THROW)
-                                                .isFungibleCommon();
-                        Id ownerId = null;
-                        if (!isFungibleToken) {
-                            final var approveDecodedNftInfo =
-                                    ApprovePrecompile.decodeTokenIdAndSerialNum(input.slice(24), tokenId);
-                            final var serialNumber = approveDecodedNftInfo.serialNumber();
-                            ownerId = store.getUniqueToken(
-                                            new NftId(
-                                                    tokenId.getShardNum(),
-                                                    tokenId.getRealmNum(),
-                                                    tokenId.getTokenNum(),
-                                                    serialNumber.longValue()),
-                                            OnMissing.THROW)
-                                    .getOwner();
-                        }
-                        precompile = precompileMapperErcHts
-                                .lookup(nestedFunctionSelector)
-                                .orElseThrow();
-                        contractCallContext.setTransactionBody(precompile.body(
-                                input,
-                                aliasResolver,
-                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken)));
-                    }
-                    case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
-                        precompile = precompileMapperErcHts
-                                .lookup(nestedFunctionSelector)
-                                .orElseThrow();
-                        contractCallContext.setTransactionBody(
-                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress)));
-                    }
-                    case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
-                        precompile = precompileMapperErcHts
-                                .lookup(nestedFunctionSelector)
-                                .orElseThrow();
-                        contractCallContext.setTransactionBody(precompile.body(
-                                input.slice(24),
-                                aliasResolver,
-                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId)));
-                    }
-                    default -> {
-                        precompile = precompileMapperErcHts
-                                .lookup(nestedFunctionSelector)
-                                .orElseThrow();
-                    }
-                }
-            }
             case AbiConstants.ABI_ID_APPROVE -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true)));
             }
@@ -149,12 +82,12 @@ public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
                                         serialNumber.longValue()),
                                 OnMissing.THROW)
                         .getOwner();
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false)));
             }
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress)));
             }
@@ -164,12 +97,12 @@ public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
                     AbiConstants.ABI_ID_TRANSFER_NFT,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists)));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(precompile.body(
                         input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null)));
             }
@@ -185,14 +118,14 @@ public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(precompile.body(
                         input,
                         aliasResolver,
                         new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW))));
             }
             default -> {
-                precompile = precompileMapperErcHts.lookup(functionId).orElseThrow();
+                precompile = precompileMapperHts.lookup(functionId).orElseThrow();
                 contractCallContext.setTransactionBody(
                         precompile.body(input, aliasResolver, new FunctionParam(functionId)));
             }
@@ -202,19 +135,6 @@ public class ErcHtsPrecompiledContract extends PrecompiledContractBase {
     }
 
     boolean isNestedFunctionSelectorForWrite(final Bytes input) {
-        final RedirectTarget target;
-        try {
-            target = DescriptorUtils.getRedirectTarget(input);
-        } catch (final Exception e) {
-            return false;
-        }
-        final var nestedFunctionSelector = target.descriptor();
-        return switch (nestedFunctionSelector) {
-            case AbiConstants.ABI_ID_ERC_APPROVE,
-                    AbiConstants.ABI_ID_ERC_TRANSFER,
-                    AbiConstants.ABI_ID_ERC_TRANSFER_FROM,
-                    AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> true;
-            default -> false;
-        };
+        return false;
     }
 }

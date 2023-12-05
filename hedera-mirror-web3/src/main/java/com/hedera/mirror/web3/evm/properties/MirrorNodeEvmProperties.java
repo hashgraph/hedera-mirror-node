@@ -292,10 +292,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      *
      * <p>The method considers the following precompile combinations:
      * <ul>
-     *   <li>Set containing only ERC</li>
-     *   <li>Set containing ERC and HTS</li>
-     *   <li>Set containing ERC, HTS, and EXCHANGE_RATE</li>
-     *   <li>Set containing ERC, HTS, EXCHANGE_RATE, and PRNG</li>
+     *   <li>Set containing only HTS</li>
+     *   <li>Set containing HTS and ERC</li>
+     *   <li>Set containing HTS, ERC, and EXCHANGE_RATE</li>
+     *   <li>Set containing HTS, ERC, EXCHANGE_RATE, and PRNG</li>
      * </ul>
      *
      * @param evmVersion The base EVM version to be used for constructing the version string.
@@ -314,13 +314,13 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             return evmVersion;
         }
 
-        if (precompileSet.equals(Set.of(ERC))) {
-            return evmVersion + "-" + ERC;
-        } else if (precompileSet.equals(Set.of(ERC, HTS))) {
-            return evmVersion + "-" + ERC + "," + HTS;
-        } else if (precompileSet.equals(Set.of(ERC, HTS, EXCHANGE_RATE))) {
-            return evmVersion + "-" + ERC + "," + HTS + "," + EXCHANGE_RATE;
-        } else if (precompileSet.equals(Set.of(ERC, HTS, EXCHANGE_RATE, PRNG))) {
+        if (precompileSet.equals(Set.of(HTS))) {
+            return evmVersion + "-" + HTS;
+        } else if (precompileSet.equals(Set.of(HTS, ERC))) {
+            return evmVersion + "-" + HTS + "," + ERC;
+        } else if (precompileSet.equals(Set.of(HTS, ERC, EXCHANGE_RATE))) {
+            return evmVersion + "-" + HTS + "," + ERC + "," + EXCHANGE_RATE;
+        } else if (precompileSet.equals(Set.of(HTS, ERC, EXCHANGE_RATE, PRNG))) {
             return evmVersion;
         }
 

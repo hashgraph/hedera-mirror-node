@@ -20,9 +20,9 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErc;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErcHts;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorErcHtsExchangeRate;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorHts;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorHtsErc;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorHtsErcExchangeRate;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
@@ -92,10 +92,10 @@ public class EvmConfiguration {
     public static final String ERC = "ERC";
     public static final String PRNG = "PRNG";
     public static final String EXCHANGE_RATE = "exchangeRate";
-    public static final String ERC_HTS = ERC + "," + HTS;
-    public static final String HTS_ERC_EXCHANGE_RATE = ERC_HTS + "," + EXCHANGE_RATE;
-    public static final String EVM_VERSION_0_30_ERC = EVM_VERSION_0_30 + "-" + ERC;
-    public static final String EVM_VERSION_0_30_ERC_HTS = EVM_VERSION_0_30 + "-" + ERC_HTS;
+    public static final String HTS_ERC = HTS + "," + ERC;
+    public static final String HTS_ERC_EXCHANGE_RATE = HTS_ERC + "," + EXCHANGE_RATE;
+    public static final String EVM_VERSION_0_30_HTS = EVM_VERSION_0_30 + "-" + HTS;
+    public static final String EVM_VERSION_0_30_HTS_ERC = EVM_VERSION_0_30 + "-" + HTS_ERC;
     public static final String EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE = EVM_VERSION_0_30 + "-" + HTS_ERC_EXCHANGE_RATE;
 
     public static final String EVM_VERSION = EVM_VERSION_0_34;
@@ -182,8 +182,8 @@ public class EvmConfiguration {
             final ContractCreationProcessor contractCreationProcessor) {
 
         Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30_ERC, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_30_ERC_HTS, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_30_HTS, () -> contractCreationProcessor);
+        processorsMap.put(EVM_VERSION_0_30_HTS_ERC, () -> contractCreationProcessor);
         processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> contractCreationProcessor);
         processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor);
         processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor);
@@ -196,13 +196,13 @@ public class EvmConfiguration {
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
             final MessageCallProcessor messageCallProcessor,
             final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor,
-            final MirrorEvmMessageCallProcessorErc mirrorEvmMessageCallProcessorErc,
-            final MirrorEvmMessageCallProcessorErcHts mirrorEvmMessageCallProcessorErcHts,
-            final MirrorEvmMessageCallProcessorErcHtsExchangeRate mirrorEvmMessageCallProcessorErcHtsExchangeRate) {
+            final MirrorEvmMessageCallProcessorHts mirrorEvmMessageCallProcessorHts,
+            final MirrorEvmMessageCallProcessorHtsErc mirrorEvmMessageCallProcessorHtsErc,
+            final MirrorEvmMessageCallProcessorHtsErcExchangeRate mirrorEvmMessageCallProcessorErcHtsExchangeRate) {
 
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30_ERC, () -> mirrorEvmMessageCallProcessorErc);
-        processorsMap.put(EVM_VERSION_0_30_ERC_HTS, () -> mirrorEvmMessageCallProcessorErcHts);
+        processorsMap.put(EVM_VERSION_0_30_HTS, () -> mirrorEvmMessageCallProcessorHts);
+        processorsMap.put(EVM_VERSION_0_30_HTS_ERC, () -> mirrorEvmMessageCallProcessorHtsErc);
         processorsMap.put(
                 EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorErcHtsExchangeRate);
         processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);

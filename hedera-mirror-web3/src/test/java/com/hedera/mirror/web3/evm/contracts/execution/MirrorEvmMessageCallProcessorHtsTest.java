@@ -26,7 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.config.PrecompilesHolderErcHts;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolderHts;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import java.time.Instant;
 import java.util.Optional;
@@ -38,22 +38,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class MirrorEvmMessageCallProcessorErcHtsTest extends MirrorEvmMessageCallProcessorBaseTest {
+public class MirrorEvmMessageCallProcessorHtsTest extends MirrorEvmMessageCallProcessorBaseTest {
 
     @Mock
-    private PrecompilesHolderErcHts precompilesHolderErcHts;
+    private PrecompilesHolderHts precompilesHolderHts;
 
-    private MirrorEvmMessageCallProcessorErcHts subject;
+    private MirrorEvmMessageCallProcessorHts subject;
 
     @BeforeEach
     void setUp() {
-        given(precompilesHolderErcHts.getHederaPrecompiles()).willReturn(hederaPrecompileList);
-        subject = new MirrorEvmMessageCallProcessorErcHts(
+        given(precompilesHolderHts.getHederaPrecompiles()).willReturn(hederaPrecompileList);
+        subject = new MirrorEvmMessageCallProcessorHts(
                 autoCreationLogic,
                 entityAddressSequencer,
                 evm,
                 precompiles,
-                precompilesHolderErcHts,
+                precompilesHolderHts,
                 gasCalculatorHederaV22);
 
         when(messageFrame.getWorldUpdater()).thenReturn(updater);

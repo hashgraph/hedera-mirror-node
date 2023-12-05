@@ -105,7 +105,7 @@ public class PrecompileMapperUtils {
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO,
             AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2);
 
-    public static final Set<Integer> ERC_HTS_PRECOMPILE_SELECTORS = Stream.of(
+    public static final Set<Integer> HTS_ERC_PRECOMPILE_SELECTORS = Stream.of(
                     ERC_PRECOMPILE_SELECTORS, HTS_PRECOMPILE_SELECTORS)
             .flatMap(Set::stream)
             .collect(Collectors.toUnmodifiableSet());
@@ -114,7 +114,7 @@ public class PrecompileMapperUtils {
             Set.of(AbiConstants.ABI_ID_HRC_ASSOCIATE, AbiConstants.ABI_ID_HRC_DISSOCIATE);
 
     public static final Set<Integer> PRECOMPILE_SELECTORS_ALL = Stream.of(
-                    ERC_PRECOMPILE_SELECTORS, HTS_PRECOMPILE_SELECTORS, HRC_PRECOMPILE_SELECTORS)
+                    HTS_PRECOMPILE_SELECTORS, ERC_PRECOMPILE_SELECTORS, HRC_PRECOMPILE_SELECTORS)
             .flatMap(Set::stream)
             .collect(Collectors.toUnmodifiableSet());
 }

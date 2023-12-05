@@ -11,16 +11,16 @@ hedera:
         username: mirror_web3
       evm:
         system_precompiles:
-          ERC: 
-          HTS: 
-          exchangeRate: 
-          PRNG: 
-          HRC: 
+          HTS: 100
+          ERC: 200
+          exchangeRate: 300
+          PRNG: 400
+          HRC: 500
         evm_versions:
-          v0.30: 
-          v0.34: 
-          v0.38:
-          v0.45:
+          v0.30: 500
+          v0.34: 550
+          v0.38: 600
+          v0.45: 5000
 logging:
   level:
     root: warn

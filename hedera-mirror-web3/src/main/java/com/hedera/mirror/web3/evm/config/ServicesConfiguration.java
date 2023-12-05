@@ -57,13 +57,13 @@ import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.store.contracts.precompile.ERCPrecompiledContract;
-import com.hedera.services.store.contracts.precompile.ErcHtsPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.HtsOnlyPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.HtsErcPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
-import com.hedera.services.store.contracts.precompile.PrecompileMapperErc;
-import com.hedera.services.store.contracts.precompile.PrecompileMapperErcHts;
+import com.hedera.services.store.contracts.precompile.PrecompileMapperHts;
+import com.hedera.services.store.contracts.precompile.PrecompileMapperHtsErc;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.TokenUpdateLogic;
@@ -314,13 +314,13 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    PrecompileMapperErc precompileMapperErc(final Set<Precompile> precompiles) {
-        return new PrecompileMapperErc(precompiles);
+    PrecompileMapperHts precompileMapperHts(final Set<Precompile> precompiles) {
+        return new PrecompileMapperHts(precompiles);
     }
 
     @Bean
-    PrecompileMapperErcHts precompileMapperErcHts(final Set<Precompile> precompiles) {
-        return new PrecompileMapperErcHts(precompiles);
+    PrecompileMapperHtsErc precompileMapperHtsErc(final Set<Precompile> precompiles) {
+        return new PrecompileMapperHtsErc(precompiles);
     }
 
     @Bean
@@ -744,34 +744,34 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    ERCPrecompiledContract ercPrecompiledContract(
+    HtsOnlyPrecompiledContract htsOnlyPrecompiledContract(
             final EvmInfrastructureFactory evmInfrastructureFactory,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final PrecompileMapperErc precompileMapperErc,
+            final PrecompileMapperHts precompileMapperHts,
             final Store store,
             final TokenAccessorImpl tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
-        return new ERCPrecompiledContract(
+        return new HtsOnlyPrecompiledContract(
                 evmInfrastructureFactory,
                 mirrorNodeEvmProperties,
-                precompileMapperErc,
+                precompileMapperHts,
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
     }
 
     @Bean
-    ErcHtsPrecompiledContract ercHtsPrecompiledContract(
+    HtsErcPrecompiledContract htsErcPrecompiledContract(
             final EvmInfrastructureFactory evmInfrastructureFactory,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final PrecompileMapperErcHts precompileMapperErcHts,
+            final PrecompileMapperHtsErc precompileMapperHtsErc,
             final Store store,
             final TokenAccessorImpl tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
-        return new ErcHtsPrecompiledContract(
+        return new HtsErcPrecompiledContract(
                 evmInfrastructureFactory,
                 mirrorNodeEvmProperties,
-                precompileMapperErcHts,
+                precompileMapperHtsErc,
                 store,
                 tokenAccessor,
                 precompilePricingUtils);

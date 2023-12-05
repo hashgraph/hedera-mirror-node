@@ -18,7 +18,7 @@ package com.hedera.mirror.web3.evm.config;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 
-import com.hedera.services.store.contracts.precompile.ErcHtsPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.HtsOnlyPrecompiledContract;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,12 +27,12 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Named
 @Getter
-public class PrecompilesHolderErcHts implements PrecompiledContractProvider {
+public class PrecompilesHolderHts implements PrecompiledContractProvider {
 
     public final Map<String, PrecompiledContract> hederaPrecompiles;
 
-    PrecompilesHolderErcHts(final ErcHtsPrecompiledContract ercHtsPrecompiledContract) {
+    PrecompilesHolderHts(final HtsOnlyPrecompiledContract htsOnlyPrecompiledContract) {
         hederaPrecompiles = new HashMap<>();
-        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, ercHtsPrecompiledContract);
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS, htsOnlyPrecompiledContract);
     }
 }

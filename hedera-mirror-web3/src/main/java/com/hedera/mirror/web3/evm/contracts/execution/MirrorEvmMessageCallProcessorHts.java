@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.evm.config.PrecompilesHolderErc;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolderHts;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
@@ -25,15 +25,15 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 @Named
-public class MirrorEvmMessageCallProcessorErc extends MirrorEvmMessageCallProcessor {
+public class MirrorEvmMessageCallProcessorHts extends MirrorEvmMessageCallProcessor {
 
-    public MirrorEvmMessageCallProcessorErc(
+    public MirrorEvmMessageCallProcessorHts(
             final AbstractAutoCreationLogic autoCreationLogic,
             final EntityAddressSequencer entityAddressSequencer,
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final PrecompilesHolderErc precompilesHolderErc,
+            final PrecompilesHolderHts precompilesHolderHts,
             final GasCalculatorHederaV22 gasCalculator) {
-        super(autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolderErc, gasCalculator);
+        super(autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolderHts, gasCalculator);
     }
 }
