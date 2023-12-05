@@ -52,8 +52,8 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
         int lowerBound = actualUsedGas + lowerDeviation;
         int upperBound = actualUsedGas + upperDeviation;
 
-        assertThat(estimatedGas).as("Estimated gas is below lower bound").isGreaterThanOrEqualTo(lowerBound);
-        assertThat(estimatedGas).as("Estimated gas is above upper bound").isLessThanOrEqualTo(upperBound);
+        assertThat(estimatedGas).as("Estimated gas is above lower bound").isGreaterThanOrEqualTo(lowerBound);
+        assertThat(estimatedGas).as("Estimated gas is below upper bound").isLessThanOrEqualTo(upperBound);
     }
 
     /**
