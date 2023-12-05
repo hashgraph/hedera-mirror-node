@@ -458,53 +458,49 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  let transactionsPromise;
-
   // when not specified or set as true
   const includeTransactions = !transactionsFilter || transactionsFilter.value;
+  let transactionTimestampsPromise;
   if (includeTransactions) {
     const creditDebitQuery = ''; // type=credit|debit is not supported
     const accountQuery = 'ctl.entity_id = $1';
     const accountParams = [encodedId];
     const pgLimitQuery = utils.convertMySqlStyleQueryToPostgres(limitQuery, 2);
-    // TODO this is not parameterized. It contains the actual values.
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
     const transactionsParams = utils.mergeParams(accountParams, limitParams);
 
-    const [transactionsQuery, transactionsQueryParams] = await transactions.getTransactionsQuery(
-      {tsRange, tsEqValues, tsNeValues},
-      accountQuery,
-      resultTypeQuery,
-      pgLimitQuery,
-      creditDebitQuery,
-      transactionTypeQuery,
-      limit,
-      order,
-      transactionsParams
-    );
+    const [transactionTimestampsQuery, transactionTimestampsParams] =
+      transactions.getTransactionTimestampsQueryAndParams(
+        {tsRange, tsEqValues, tsNeValues},
+        accountQuery,
+        resultTypeQuery,
+        pgLimitQuery,
+        creditDebitQuery,
+        transactionTypeQuery,
+        limit,
+        order,
+        transactionsParams
+      );
 
-    if (transactionsQuery === undefined) {
-      // No transactions to process
-      transactionsPromise = Promise.resolve({rows: []});
-    } else {
-      if (logger.isTraceEnabled()) {
-        logger.trace(
-          `getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsQueryParams)}`
-        );
-      }
-
-      // Execute query & get a promise
-      transactionsPromise = pool.queryQuietly(transactionsQuery, transactionsQueryParams);
+    if (logger.isTraceEnabled()) {
+      logger.trace(
+        `getOneAccount transaction timestamps query: ${transactionTimestampsQuery} ${utils.JSONStringify(
+          transactionTimestampsParams
+        )}`
+      );
     }
+    transactionTimestampsPromise = pool.queryQuietly(transactionTimestampsQuery, transactionTimestampsParams);
   } else {
     // Promise that returns empty result
-    transactionsPromise = Promise.resolve({rows: []});
+    transactionTimestampsPromise = Promise.resolve({rows: []});
   }
 
-  // TODO should these queries be done serially? transactionsResults is not used if issue with entityResults.
   // After all promises (for all of the above queries) have been resolved...
-  const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
+  const [entityResults, transactionTimestampsResults] = await Promise.all([
+    entityPromise,
+    transactionTimestampsPromise,
+  ]);
   // Process the results of entities query
   if (entityResults.rows.length === 0) {
     throw new NotFoundError();
@@ -518,16 +514,35 @@ const getOneAccount = async (req, res) => {
 
   if (utils.isTestEnv()) {
     ret.entitySqlQuery = entityResults.sqlQuery;
+    ret.transactionTimestampsSqlQuery = transactionTimestampsResults.sqlQuery;
   }
 
-  // Process the results of transaction query
-  const transferList = await transactions.createTransferLists(transactionsResults.rows);
+  // Process the results of transactions/timestamps queries
+  let transactionsRows, transactionsSqlQuery;
+  if (transactionTimestampsResults.rows.length == 0) {
+    transactionsRows = [];
+  } else {
+    const [transactionsQuery, transactionsParams] = transactions.getTransactionsQueryAndParams(
+      transactionTimestampsResults.rows,
+      order,
+      limit
+    );
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsParams)}`);
+    }
+    ({rows: transactionsRows, sqlQuery: transactionsSqlQuery} = await pool.queryQuietly(
+      transactionsQuery,
+      transactionsParams
+    ));
+
+    if (utils.isTestEnv()) {
+      ret.transactionsSqlQuery = transactionsSqlQuery;
+    }
+  }
+
+  const transferList = await transactions.createTransferLists(transactionsRows);
   ret.transactions = transferList.transactions;
   const {anchorSecNs} = transferList;
-
-  if (utils.isTestEnv()) {
-    ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-  }
 
   // Pagination links
   ret.links = {
