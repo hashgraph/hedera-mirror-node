@@ -29,6 +29,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
+    set("grpcVersion", "1.59.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
@@ -42,6 +43,7 @@ extra.apply {
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
 dependencies {
     constraints {
+        val grpcVersion: String by rootProject.extra
         val mapStructVersion: String by rootProject.extra
         val protobufVersion: String by rootProject.extra
         val reactorGrpcVersion: String by rootProject.extra
@@ -70,7 +72,7 @@ dependencies {
         api("commons-io:commons-io:2.15.1")
         api("io.cucumber:cucumber-bom:7.14.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.59.1")
+        api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
         api("io.projectreactor:reactor-core-micrometer:1.1.0")
         api("io.swagger:swagger-annotations:1.6.12")
