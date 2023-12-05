@@ -108,7 +108,7 @@ public class HederaEvmTxProcessor {
             final Address mirrorReceiver,
             final boolean contractCreation) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
 
         final var valueAsWei = Wei.of(value);
