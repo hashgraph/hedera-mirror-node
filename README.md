@@ -16,7 +16,7 @@ Create a standard GKE cluster with at least Kubernetes 1.21.
 brew install kubeseal ksd yq
 helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 kubectl create namespace flux-system
-helm upgrade -i --wait -n flux-system sealed-secrets sealed-secrets/sealed-secrets
+helm upgrade -i --wait -n flux-system sealed-secrets sealed-secrets/sealed-secrets --set keyrenewperiod=0
 ```
 
 ### Flux v2
