@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.DissociateTokenTransfer;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -386,9 +387,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             AccountAmount accountAmount = tokenTransfers.get(i);
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
-            TokenTransfer tokenTransfer = new TokenTransfer();
+            var tokenTransfer = isDeletedTokenDissociate ? new DissociateTokenTransfer() : new TokenTransfer();
             tokenTransfer.setAmount(amount);
-            tokenTransfer.setDeletedTokenDissociate(isDeletedTokenDissociate);
             tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);

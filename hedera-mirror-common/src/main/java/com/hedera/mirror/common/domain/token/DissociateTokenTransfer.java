@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.record.entity.sql;
+package com.hedera.mirror.common.domain.token;
 
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.hedera.mirror.common.domain.Upsertable;
 
-@Data
-@ConditionOnEntityRecordParser
-@ConfigurationProperties("hedera.mirror.importer.parser.record.entity.sql")
-public class SqlProperties {
-
-    private boolean enabled = true;
-}
+@Upsertable
+public class DissociateTokenTransfer extends TokenTransfer {}

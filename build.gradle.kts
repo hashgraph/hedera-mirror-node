@@ -30,7 +30,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("logback.version", "1.4.13") // Temporary until next Spring Boot version
+    set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
@@ -67,10 +67,10 @@ dependencies {
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.15.0")
+        api("commons-io:commons-io:2.15.1")
         api("io.cucumber:cucumber-bom:7.14.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.59.0")
+        api("io.grpc:grpc-bom:1.59.1")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
         api("io.projectreactor:reactor-core-micrometer:1.1.0")
         api("io.swagger:swagger-annotations:1.6.12")
@@ -95,7 +95,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0-RC1")
         api("org.testcontainers:junit-jupiter:1.19.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.21.30")
+        api("software.amazon.awssdk:bom:2.21.37")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }

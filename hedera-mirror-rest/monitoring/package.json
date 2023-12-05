@@ -6,7 +6,7 @@
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=18.12.0 < 21"
+    "node": ">=20 < 21"
   },
   "scripts": {
     "dev": "nodemon --import=extensionless/register server.js",

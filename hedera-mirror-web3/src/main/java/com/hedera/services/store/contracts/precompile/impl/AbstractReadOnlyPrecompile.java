@@ -23,6 +23,7 @@ import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -52,7 +53,8 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            Timestamp consensusTime, TransactionBody transactionBody, final AccountID sender) {
         return MINIMUM_GAS_COST;
     }
 
@@ -62,7 +64,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp, Builder transactionBody) {
+    public long getGasRequirement(long blockTimestamp, Builder transactionBody, final AccountID sender) {
         final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         return pricingUtils.computeViewFunctionGas(now, MINIMUM_GAS_COST);
     }

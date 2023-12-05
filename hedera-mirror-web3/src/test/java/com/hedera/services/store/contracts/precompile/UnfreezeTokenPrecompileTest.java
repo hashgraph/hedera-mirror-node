@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_UNFREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.UnfreezeTokenPrecompile.decodeUnfreeze;
@@ -26,8 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -102,9 +102,6 @@ class UnfreezeTokenPrecompileTest {
     private AssetsLoader assetLoader;
 
     @Mock
-    private MirrorEvmContractAliases contractAliases;
-
-    @Mock
     private Store store;
 
     @Mock
@@ -115,6 +112,10 @@ class UnfreezeTokenPrecompileTest {
 
     @Mock
     private TokenAccessor tokenAccessor;
+
+    private PrecompileContext precompileContext;
+
+    private UnfreezeTokenPrecompile unfreezeTokenPrecompile;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<UnfreezeTokenPrecompile> staticUnfreezeTokenPrecompile;
@@ -140,15 +141,19 @@ class UnfreezeTokenPrecompileTest {
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
-        UnfreezeTokenPrecompile unfreezeTokenPrecompile =
+        unfreezeTokenPrecompile =
                 new UnfreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, unfreezeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(unfreezeTokenPrecompile));
         staticUnfreezeTokenPrecompile = Mockito.mockStatic(UnfreezeTokenPrecompile.class);
+        precompileContext = new PrecompileContext();
+        precompileContext.setEstimate(false);
+        precompileContext.setPrecompile(unfreezeTokenPrecompile);
+        precompileContext.setGasRequirement(0L);
+        precompileContext.setSenderAddress(senderAddress);
+        precompileContext.setTransactionBody(transactionBody);
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
@@ -164,10 +169,13 @@ class UnfreezeTokenPrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenFreezeUnfreezeContext();
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
+        subject.prepareComputation(input, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -180,6 +188,9 @@ class UnfreezeTokenPrecompileTest {
         final var input = Bytes.of(Integers.toBytes(ABI_ID_UNFREEZE));
         givenMinimalFrameContext();
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();
@@ -189,8 +200,8 @@ class UnfreezeTokenPrecompileTest {
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(input, a -> a, precompileContext);
+        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

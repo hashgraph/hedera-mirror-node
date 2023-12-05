@@ -16,10 +16,13 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile.getWipeWrapper;
@@ -31,11 +34,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -89,7 +91,9 @@ class WipeFungiblePrecompileTest {
     private static final Bytes FUNGIBLE_WIPE_INPUT_V2 = Bytes.fromHexString(
             "0xefef57f900000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
-            .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(fungible));
+            .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                    .setToken(fungible)
+                    .setAccount(HTSTestsUtil.contract));
 
     @Mock
     private MessageFrame frame;
@@ -125,9 +129,6 @@ class WipeFungiblePrecompileTest {
     private Store store;
 
     @Mock
-    private HederaEvmContractAliases hederaEvmContractAliases;
-
-    @Mock
     private Token token;
 
     @Mock
@@ -151,10 +152,14 @@ class WipeFungiblePrecompileTest {
     @Mock
     private TokenAccessor tokenAccessor;
 
+    @Mock
+    private PrecompileContext precompileContext;
+
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
 
     private HTSPrecompiledContract subject;
+    private WipeFungiblePrecompile wipeFungiblePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -167,13 +172,11 @@ class WipeFungiblePrecompileTest {
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
         WipeLogic wipeLogic = new WipeLogic(evmProperties);
-        final var wipePrecompile = new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
-        PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
+        wipeFungiblePrecompile = new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+        PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipeFungiblePrecompile));
 
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -188,9 +191,16 @@ class WipeFungiblePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -208,9 +218,16 @@ class WipeFungiblePrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -230,9 +247,16 @@ class WipeFungiblePrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        final long result =
+                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

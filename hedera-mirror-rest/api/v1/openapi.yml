@@ -1373,6 +1373,8 @@ components:
       properties:
         logs:
           $ref: "#/components/schemas/ContractLogs"
+        links:
+          $ref: "#/components/schemas/Links"
     CryptoAllowancesResponse:
       type: object
       properties:
