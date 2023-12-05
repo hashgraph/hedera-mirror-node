@@ -91,7 +91,7 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.86.0");
+        return MigrationVersion.fromVersion("1.87.2"); // The version entity.balance_timestamp is added
     }
 
     @Override
