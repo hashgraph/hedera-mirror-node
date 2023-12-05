@@ -97,7 +97,7 @@ spotless {
     })
     java {
         addStep(StripOldLicenseFormatterStep.create())
-        palantirJavaFormat()
+        palantirJavaFormat("2.39.0")
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
         targetExclude("build/**")
