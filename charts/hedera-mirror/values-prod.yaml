@@ -96,6 +96,21 @@ rest:
   serviceMonitor:
     enabled: true
 
+restjava:
+  alertmanager:
+    inhibitRules:
+      enabled: true
+  hpa:
+    enabled: true
+    minReplicas: 2
+  podDisruptionBudget:
+    enabled: true
+  priorityClassName: medium
+  prometheusRules:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+
 rosetta:
   alertmanager:
     inhibitRules:
