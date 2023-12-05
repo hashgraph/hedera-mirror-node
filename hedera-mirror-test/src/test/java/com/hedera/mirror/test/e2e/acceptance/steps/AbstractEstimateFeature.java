@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
@@ -37,15 +37,14 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * Checks if the estimatedGas is within the specified range of the actualGas.
      * <p>
      * The method calculates the lower and upper bounds as percentages of the actualUsedGas, then checks if the
-     * estimatedGas is within the range (inclusive) and returns true if it is, otherwise returns false.
+     * estimatedGas is within the range (inclusive).
      *
      * @param actualUsedGas     the integer value that represents the actualGas used value
      * @param estimatedGas      the integer value to be checked
      * @param lowerBoundPercent the integer percentage value for the lower bound of the acceptable range
      * @param upperBoundPercent the integer percentage value for the upper bound of the acceptable range
-     * @return true if the actualUsedGas is within the specified range, false otherwise
      */
-    protected static boolean isWithinDeviation(
+    protected static void assertWithinDeviation(
             int actualUsedGas, int estimatedGas, int lowerBoundPercent, int upperBoundPercent) {
         int lowerDeviation = actualUsedGas * lowerBoundPercent / 100;
         int upperDeviation = actualUsedGas * upperBoundPercent / 100;
@@ -53,7 +52,8 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
         int lowerBound = actualUsedGas + lowerDeviation;
         int upperBound = actualUsedGas + upperDeviation;
 
-        return (estimatedGas >= lowerBound) && (estimatedGas <= upperBound);
+        assertThat(estimatedGas).as("Estimated gas is below lower bound").isGreaterThanOrEqualTo(lowerBound);
+        assertThat(estimatedGas).as("Estimated gas is above upper bound").isLessThanOrEqualTo(upperBound);
     }
 
     /**
@@ -77,7 +77,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
-        assertTrue(isWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
+        assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
 
     /**
