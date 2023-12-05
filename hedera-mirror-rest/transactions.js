@@ -376,10 +376,9 @@ const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(T
  * @param {Number} limit Max number of rows
  * @param {String} order Sorting order
  * @param {Array} sqlParams query parameter values
- * @return {String} the query to use to obtain the transactions information.
- * consensus_timestamp and payer_account_id attributes.
+ * @return {Array} the query and params to use to obtain the transactions timestamp and payer ID information.
  */
-const getTransactionsQuery = async (
+const getTransactionTimestampsQueryAndParams = function (
   tsConfig,
   accountQuery,
   resultTypeQuery,
@@ -389,10 +388,8 @@ const getTransactionsQuery = async (
   limit,
   order,
   sqlParams
-) => {
-  // TODO What about # parameter warning above? Made tsConfig and object. Could aggregate queries as well...
+) {
   const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange);
-
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     queryTsRange,
     't.consensus_timestamp',
@@ -412,24 +409,7 @@ const getTransactionsQuery = async (
     order
   );
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(
-      `getTransactionsQuery timestamps query: ${transactionTimestampQuery} ${utils.JSONStringify(
-        transactionTimestampParams
-      )}`
-    );
-  }
-
-  // TODO  this function is async so I can use await below. Tried Promise.all() approach used in
-  // accounts.js, but it is still pending and rows is not defined.
-  const {rows} = await pool.queryQuietly(transactionTimestampQuery, transactionTimestampParams);
-  // No timestamps match, there is no query to return.
-  if (rows.length === 0) {
-    // TODO seems kind of ugly
-    return [undefined, undefined];
-  }
-
-  return getTransactionsQueryAndParams(rows, order, limit);
+  return [transactionTimestampQuery, transactionTimestampParams];
 };
 
 /**
@@ -442,8 +422,7 @@ const getTransactionsQuery = async (
  * @param {String} creditDebitQuery SQL query that filters for credit/debit transactions
  * @param {String} transactionTypeQuery SQL query that filters by transaction type
  * @param {String} order Sorting order
- * @return {{Object}[]} the results of the relevant timestamps query, which is rows consisting of
- * consensus_timestamp and payer_account_id attributes.
+ * @return {String} query to retrieve relevant timestamp and payer ID information
  */
 const getTransactionTimestampsQuery = function (
   accountQuery,
@@ -557,10 +536,9 @@ const getTransactionTimestampsQuery = function (
  * @param {Number} limit Max number of rows
  * @return {Array} Fully formed parameterized SQL query and query parameter values
  */
-const getTransactionsQueryAndParams = (timestampQueryRows, order, limit) => {
-  // Nothing to make a query with
-  // TODO does this go to client as 4xx or 5xx?. This is a fail-fast indication of a coding error (5xx)
-  if (timestampQueryRows === undefined || timestampQueryRows.length === 0) {
+const getTransactionsQueryAndParams = function (timestampQueryRows, order, limit) {
+  // Nothing with which to query
+  if (_.isNil(timestampQueryRows) || timestampQueryRows.length === 0) {
     throw new InvalidArgumentError('No transaction timestamps query results provided');
   }
 
@@ -664,7 +642,6 @@ const getTransactions = async (req, res) => {
   // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
   const filters = utils.buildAndValidateFilters(req.query, acceptedTransactionParameters);
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
-  // TODO are the settings below okay for transactions, regarding eq and ne?
   const [tsRange, tsEqValues, tsNeValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
 
   const parsedQueryParams = req.query;
@@ -684,8 +661,7 @@ const getTransactions = async (req, res) => {
   const limitQuery = utils.convertMySqlStyleQueryToPostgres(query, sqlParams.length + 1);
   sqlParams.push(...params);
 
-  // TODO breaks if remove await (not iterablo)
-  const [transactionsQuery, transactionQueryParams] = await getTransactionsQuery(
+  const [transactionTimestampsQuery, transactionTimestampsParams] = getTransactionTimestampsQueryAndParams(
     {tsRange, tsEqValues, tsNeValues},
     accountQuery,
     resultTypeQuery,
@@ -697,22 +673,41 @@ const getTransactions = async (req, res) => {
     sqlParams
   );
 
-  let transactionsRows;
-  if (transactionsQuery !== undefined) {
+  if (logger.isTraceEnabled()) {
+    logger.trace(
+      `getTransactions timestamps query: ${transactionTimestampsQuery} ${utils.JSONStringify(
+        transactionTimestampsParams
+      )}`
+    );
+  }
+
+  const ret = {};
+  let transactionsRows, transactionsSqlQuery;
+
+  const {rows: timestampsRows, sqlQuery: transactionTimestampsSqlQuery} = await pool.queryQuietly(
+    transactionTimestampsQuery,
+    transactionTimestampsParams
+  );
+  if (timestampsRows.length === 0) {
+    transactionsRows = [];
+  } else {
+    const [transactionsQuery, transactionsParams] = getTransactionsQueryAndParams(timestampsRows, order, limit);
     if (logger.isTraceEnabled()) {
       logger.trace(
-        `getTransactions transactionsQuery: ${transactionsQuery} ${utils.JSONStringify(transactionQueryParams)}`
+        `getTransactions transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsParams)}`
       );
     }
-    ({rows: transactionsRows} = await pool.queryQuietly(transactionsQuery, transactionQueryParams));
-  } else {
-    transactionsRows = [];
+    ({rows: transactionsRows, sqlQuery: transactionsSqlQuery} = await pool.queryQuietly(
+      transactionsQuery,
+      transactionsParams
+    ));
+    if (utils.isTestEnv()) {
+      ret.transactionsSqlQuery = transactionsSqlQuery;
+    }
   }
 
   const transferList = await createTransferLists(transactionsRows);
-  const ret = {
-    transactions: transferList.transactions,
-  };
+  ret.transactions = transferList.transactions;
 
   ret.links = {
     next: utils.getPaginationLink(
@@ -726,7 +721,7 @@ const getTransactions = async (req, res) => {
   };
 
   if (utils.isTestEnv()) {
-    ret.sqlQuery = transactionsQuery;
+    ret.transactionTimestampsSqlQuery = transactionTimestampsSqlQuery;
   }
 
   logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
@@ -914,12 +909,12 @@ const getTransactionsByIdOrHash = async (req, res) => {
   };
 };
 
-// TODO remove old stuff
 const transactions = {
   createTransferLists,
   getTransactions,
   getTransactionsByIdOrHash,
-  getTransactionsQuery,
+  getTransactionsQueryAndParams,
+  getTransactionTimestampsQueryAndParams,
 };
 
 const acceptedTransactionParameters = new Set([
