@@ -33,7 +33,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Named
 @Getter
-public class PrecompilesHolderErcHtsExchangeRate {
+public class PrecompilesHolderErcHtsExchangeRate implements PrecompiledContractProvider {
 
     public final Map<String, PrecompiledContract> hederaPrecompiles;
 
