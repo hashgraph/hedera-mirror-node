@@ -46,7 +46,8 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("io.grpc:grpc-bom:1.59.0")
+        val grpcVersion: String by rootProject.extra
+        mavenBom("io.grpc:grpc-bom:${grpcVersion}")
         mavenBom(SpringBootPlugin.BOM_COORDINATES)
     }
 }
