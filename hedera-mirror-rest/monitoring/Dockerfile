@@ -10,10 +10,10 @@ WORKDIR /home/node/app/
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev && \
+RUN npm config set update-notifier false && \
+    npm ci --omit=dev && \
     npm cache clean --force --loglevel=error && \
-    chown -R node:node . && \
-    rm -rf /var/lib/apt/lists/*
+    chown -R node:node .
 COPY --chown=node:node . ./
 
 # Install OS updates
