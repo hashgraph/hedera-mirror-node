@@ -79,7 +79,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
     @Test
     void json() {
-        TopicMessage topicMessage = TopicMessage.builder()
+        var topicMessage = TopicMessage.builder()
                 .chunkNum(1)
                 .chunkTotal(2)
                 .consensusTimestamp(1594401417000000000L)
@@ -92,15 +92,15 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .validStartTimestamp(1594401416000000000L)
                 .build();
 
-        TopicMessageFilter filter = TopicMessageFilter.builder()
+        var filter = TopicMessageFilter.builder()
                 .startTime(0)
                 .topicId(EntityId.of(1001L))
                 .build();
 
-        StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
-                .thenAwait(WAIT)
+        StepVerifier.create(topicListener.listen(filter))
+                .thenAwait(Duration.ofMillis(200L))
                 .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
-                .thenAwait(WAIT)
+                .thenAwait(Duration.ofMillis(200L))
                 .expectNext(topicMessage)
                 .thenCancel()
                 .verify(WAIT);
@@ -111,10 +111,10 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         TopicMessageFilter filter = TopicMessageFilter.builder().startTime(0).build();
 
         // Parsing errors will be logged and ignored and the message will be lost
-        StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
-                .thenAwait(WAIT)
+        StepVerifier.create(topicListener.listen(filter))
+                .thenAwait(Duration.ofMillis(200L))
                 .then(() -> jdbcTemplate.execute("notify topic_message, 'invalid'"))
-                .thenAwait(WAIT)
+                .thenAwait(Duration.ofMillis(500L))
                 .expectNoEvent(Duration.ofMillis(500L))
                 .thenCancel()
                 .verify(WAIT);
