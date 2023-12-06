@@ -281,7 +281,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
       continue;
     }
 
-    if (config.query.topicMessageLookups && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
+    if (config.query.topicMessageLookup && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
       sequenceNumber = true;
       // add sequence number range
     }
@@ -296,7 +296,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
   }
 
   // Query the topic_message_lookup table only for V2
-  if (config.query.topicMessageLookups) {
+  if (config.query.topicMessageLookup) {
     // If there is no sequence number in the request URL,
     // query the topic_message_lookup table for either the min or max sequence number depending on order.
 
