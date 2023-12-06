@@ -110,7 +110,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                     from (
                         select amount_granted, owner, payer_account_id, spender, timestamp_range, token_id, amount_granted + coalesce(
                             (
-                                select amount
+                                select sum(amount)
                                 from contract_call_transfers cct
                                 where cct.token_id = ta.token_id
                                     and cct.sender_id = ta.spender
@@ -118,7 +118,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             0)
                             +  coalesce(
                             (
-                                select amount
+                                select sum(amount)
                                 from transfers tr
                                 where tr.token_id = ta.token_id
                                     and tr.payer_account_id = ta.spender

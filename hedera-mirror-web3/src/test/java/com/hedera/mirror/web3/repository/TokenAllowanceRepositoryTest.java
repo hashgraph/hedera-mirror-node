@@ -141,7 +141,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
         long spenderId = 3L;
         long tokenAllowanceTimestamp = System.currentTimeMillis();
         long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
-        long blockTimestamp = tokenAllowanceTimestamp + 2;
+        long tokenTransferTimestamp1 = tokenAllowanceTimestamp + 2;
+        long blockTimestamp = tokenAllowanceTimestamp + 3;
         final long initialAmount = 3;
         final long amountForTransfer = -1;
 
@@ -185,7 +186,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .id(TokenTransfer.Id.builder()
                                 .tokenId(EntityId.of(tokenId))
                                 .accountId(EntityId.of(ownerId))
-                                .consensusTimestamp(tokenTransferTimestamp)
+                                .consensusTimestamp(tokenTransferTimestamp1)
                                 .build()))
                 .persist();
 
@@ -202,7 +203,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
         long spenderId = 3L;
         long tokenAllowanceTimestamp = System.currentTimeMillis();
         long tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
-        long blockTimestamp = tokenAllowanceTimestamp + 2;
+        long tokenTransferTimestamp1 = tokenAllowanceTimestamp + 2;
+        long blockTimestamp = tokenAllowanceTimestamp + 3;
         final long initialAmount = 3;
         final long amountForTransfer = -1;
         final long amountForTransfer1 = -2;
@@ -247,7 +249,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .id(TokenTransfer.Id.builder()
                                 .tokenId(EntityId.of(tokenId))
                                 .accountId(EntityId.of(ownerId))
-                                .consensusTimestamp(tokenTransferTimestamp)
+                                .consensusTimestamp(tokenTransferTimestamp1)
                                 .build()))
                 .persist();
 
