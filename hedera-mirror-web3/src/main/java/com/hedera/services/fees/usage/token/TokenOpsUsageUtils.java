@@ -190,7 +190,7 @@ public enum TokenOpsUsageUtils {
         return baseSize;
     }
 
-    public static <T> long keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
-        return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0L;
+    public static <T> int keySizeIfPresent(final T op, final Predicate<T> check, final Function<T, Key> getter) {
+        return check.test(op) ? getAccountKeyStorageSize(getter.apply(op)) : 0;
     }
 }
