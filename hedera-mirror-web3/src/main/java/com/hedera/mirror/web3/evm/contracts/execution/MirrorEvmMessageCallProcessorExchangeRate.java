@@ -25,9 +25,9 @@ import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 @Named
-public class MirrorEvmMessageCallProcessorHtsErcExchangeRate extends MirrorEvmMessageCallProcessor {
+public class MirrorEvmMessageCallProcessorExchangeRate extends MirrorEvmMessageCallProcessor {
 
-    public MirrorEvmMessageCallProcessorHtsErcExchangeRate(
+    public MirrorEvmMessageCallProcessorExchangeRate(
             final AbstractAutoCreationLogic autoCreationLogic,
             final EntityAddressSequencer entityAddressSequencer,
             final EVM evm,

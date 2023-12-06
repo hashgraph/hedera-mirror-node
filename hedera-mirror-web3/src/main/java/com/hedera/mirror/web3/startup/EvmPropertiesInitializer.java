@@ -47,25 +47,42 @@ public class EvmPropertiesInitializer implements ApplicationRunner {
 
     /**
      * Creates a mapping between EVM block numbers and lists of system precompiles release blocks. This method
-     * determines the compatibility of system precompiles with each EVM based on their release block numbers. Each
-     * system precompile is added to the list of precompiles for the EVM version with which it is compatible.
+     * determines the compatibility of system precompiles with each EVM version based on their release block numbers.
+     * Each system precompile is added to the list of precompiles for the EVM version with which it is compatible.
+     *
+     * <p>Example usage based on the provided data:</p>
+     * <pre>
+     * {@code
+     * Map<String, Long> systemPrecompiles = Map.of(
+     *     "exchangeRate", 1200L, // Released at block 1200, goes to EVM released at block 1000 ("0.30.0")
+     *     "PRNG", 1800L   // Released at block 1800, goes to EVM released at block 1000 ("0.30.0")
+     * );
+     * Map<String, Long> evmVersions = Map.of(
+     *     "0.30.0", 1000L, // EVM version released at block 1000
+     *     "0.34.0", 2000L, // EVM version released at block 2000
+     *     "0.38.0", 3000L  // EVM version released at block 3000
+     * );
+     * Map<String, List<String>> evmPrecompilesMap = createEvmVersionToPrecompilesMap(systemPrecompiles, evmVersions);
+     * }
+     * </pre>
+     *
+     * <p>The resulting {@code evmPrecompilesMap} will be:</p>
+     * <pre>
+     * {@code
+     * {
+     *     "0.30.0" -> ["exchangeRate", "PRNG"],
+     *     "0.34.0" -> ["exchangeRate", "PRNG"],
+     *     "0.38.0" -> ["exchangeRate", "PRNG"]
+     * }
+     * }
+     * </pre>
      *
      * @param systemPrecompiles A map where keys are names of system precompiles and values are the block numbers at
      *                          which they were released.
      * @param evmVersions       A map where keys are EVM block numbers and values are the block numbers at which these
      *                          versions were released.
      * @return A map with keys as EVM block numbers and values as lists of system precompiles available up to those
-     * blocks. Example usage based on the provided data:
-     * {@code Map<String, Long> systemPrecompiles = Map.of( "ERC", 800L,    // Released before the lowest EVM block
-     * number, so it goes to the lowest EVM block "HTS", 2100L,   // Released at block 2100, goes to EVM released at
-     * block 2000 ("0.34.0") "exchangeRate", 3100L, // Released at block 3100, goes to EVM released at block 3000
-     * ("0.38.0") "PRNG", 4100L   // Released after all EVM blocks, so it goes to the highest EVM block ("0.38.0") );
-     * Map<String, Long> evmVersions = Map.of( "0.30.0", 1000L, // EVM version released at block 1000 "0.34.0", 2000L,
-     * // EVM version released at block 2000 "0.38.0", 3000L  // EVM version released at block 3000 ); Map<String,
-     * List<String>> evmPrecompilesMap = createEvmVersionToPrecompilesMap(systemPrecompiles, evmVersions); }
-     * <p>
-     * The resulting evmPrecompilesMap will be: { "0.30.0" -> ["HTS"], "0.34.0" -> ["HTS","ERC"], "0.38.0" ->
-     * ["HTS","ERC","exchangeRate", "PRNG"] }
+     *         blocks.
      */
     public Map<String, Set<String>> createEvmVersionToPrecompilesMap(
             Map<String, Long> systemPrecompiles, Map<String, Long> evmVersions) {

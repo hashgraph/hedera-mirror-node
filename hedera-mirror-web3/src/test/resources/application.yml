@@ -9,11 +9,8 @@ hedera:
         password: ${embedded.postgresql.password}
       evm:
         system_precompiles:
-          HTS: 500
-          ERC: 600
-          exchangeRate: 700
-          PRNG: 800
-          HRC: 3000
+          exchangeRate: 1100
+          PRNG: 1200
         evm_versions:
           v0.30: 1000
           v0.34: 2000

@@ -43,12 +43,12 @@ public class MirrorEvmMessageCallProcessorHtsHtsExchangeRateTest extends MirrorE
     @Mock
     private PrecompilesHolderHtsErcExchangeRate precompilesHolderHtsErcExchangeRate;
 
-    private MirrorEvmMessageCallProcessorHtsErcExchangeRate subject;
+    private MirrorEvmMessageCallProcessorExchangeRate subject;
 
     @BeforeEach
     void setUp() {
         given(precompilesHolderHtsErcExchangeRate.getHederaPrecompiles()).willReturn(hederaPrecompileList);
-        subject = new MirrorEvmMessageCallProcessorHtsErcExchangeRate(
+        subject = new MirrorEvmMessageCallProcessorExchangeRate(
                 autoCreationLogic,
                 entityAddressSequencer,
                 evm,

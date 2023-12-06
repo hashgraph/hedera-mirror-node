@@ -83,6 +83,7 @@ class HTSPrecompiledContractTest {
 
     @Mock
     private MessageFrame messageFrame;
+
     @Mock
     private MessageFrame parentMessageFrame;
 
@@ -127,6 +128,7 @@ class HTSPrecompiledContractTest {
 
     @InjectMocks
     private MockPrecompile mockPrecompile;
+
     private HTSPrecompiledContract subject;
 
     private PrecompileMapper precompileMapper;
