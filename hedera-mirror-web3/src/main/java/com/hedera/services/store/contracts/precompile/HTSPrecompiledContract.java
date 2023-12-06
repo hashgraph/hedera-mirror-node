@@ -87,6 +87,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
@@ -111,7 +112,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         this.precompilePricingUtils = precompilePricingUtils;
     }
 
-    protected static boolean isDelegateCall(final MessageFrame frame) {
+    private static boolean isDelegateCall(final MessageFrame frame) {
         final var contract = frame.getContractAddress();
         final var recipient = frame.getRecipientAddress();
         return !contract.equals(recipient);
@@ -449,7 +450,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return result;
     }
 
-    boolean isNestedFunctionSelectorForWrite(final Bytes input) {
+    private boolean isNestedFunctionSelectorForWrite(final Bytes input) {
         final RedirectTarget target;
         try {
             target = DescriptorUtils.getRedirectTarget(input);
@@ -468,7 +469,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         };
     }
 
-    protected static RedirectTarget getRedirectTarget(final Bytes input) {
+    private static RedirectTarget getRedirectTarget(final Bytes input) {
         try {
             return DescriptorUtils.getRedirectTarget(input);
         } catch (final Exception e) {
@@ -476,7 +477,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         }
     }
 
-    protected long defaultGas() {
+    private long defaultGas() {
         return evmProperties.getHtsDefaultGasCost();
     }
 

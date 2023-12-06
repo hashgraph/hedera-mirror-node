@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class MirrorEvmMessageCallProcessorHtsHtsExchangeRateTest extends MirrorEvmMessageCallProcessorBaseTest {
+public class MirrorEvmMessageCallProcessorExchangeRateTest extends MirrorEvmMessageCallProcessorBaseTest {
 
     @Mock
     private PrecompilesHolderHtsErcExchangeRate precompilesHolderHtsErcExchangeRate;

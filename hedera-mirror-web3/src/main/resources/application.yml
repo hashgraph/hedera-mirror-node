@@ -17,7 +17,7 @@ hedera:
           v0.30:
           v0.34:
           v0.38:
-          v0.45: 
+          v0.45:
 logging:
   level:
     root: warn
