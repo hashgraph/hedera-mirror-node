@@ -63,6 +63,7 @@ hedera:
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m
         strictTimestampParam: true
+        topicMessageLookups: false
       response:
         compression: true
         headers:

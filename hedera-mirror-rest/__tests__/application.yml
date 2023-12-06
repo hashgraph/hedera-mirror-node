@@ -4,5 +4,4 @@ hedera:
       metrics:
         enabled: false
       query:
-        v2:
-          topicMessageLookups: false
+        topicMessageLookups: false

@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import * as math from 'mathjs';
 import pgformat from 'pg-format';
 
 import base32 from '../base32';
@@ -439,13 +438,13 @@ const loadTopicMessages = async (messages) => {
   }
 };
 
-const loadTopicMessageLookups = async (messages) => {
-  if (messages == null) {
+const loadTopicMessageLookups = async (topicMessageLookups) => {
+  if (topicMessageLookups == null) {
     return;
   }
 
-  for (const message of messages) {
-    await addTopicMessageLookup(message);
+  for (const topicMessageLookup of topicMessageLookups) {
+    await addTopicMessageLookup(topicMessageLookup);
   }
 };
 
@@ -1209,13 +1208,6 @@ const addTopicMessageLookup = async (topicMessageLookups) => {
   const insertFields = ['partition', 'timestamp_range', 'sequence_number_range', 'topic_id'];
 
   const table = 'topic_message_lookup';
-
-  topicMessageLookups = {
-    partition: 'topic_message_p2020_07',
-    timestamp_range: `(1234567890000000001,1234567890000000004)`,
-    sequence_number_range: `(1,4)`,
-    ...topicMessageLookups,
-  };
 
   await insertDomainObject(table, insertFields, topicMessageLookups);
 };

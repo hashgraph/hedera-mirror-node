@@ -110,7 +110,7 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   test('extractSqlFromTopicMessagesRequest', async () => {
-    config.query.v2.topicMessageLookups = false;
+    config.query.topicMessageLookups = false;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
       {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
@@ -139,7 +139,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
 
 describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
   test('extractSqlFromTopicMessagesLookup for single eq sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '2'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
@@ -165,7 +165,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range >= sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' >= ', value: '2'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
@@ -191,7 +191,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range >= and > sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' >= ', value: '2'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '20'},
@@ -218,7 +218,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range <= and < sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' <= ', value: '200'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' < ', value: '150'},
@@ -245,7 +245,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range <= sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' <= ', value: '200'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
@@ -271,7 +271,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range >= and < sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' >= ', value: '2'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' < ', value: '200'},
@@ -298,7 +298,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for range > and <= sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' <= ', value: '200'},
@@ -325,7 +325,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesLookup for closed range with sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' < ', value: '2'},
@@ -343,7 +343,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     expect(response).toEqual(null);
   });
   test('extractSqlFromTopicMessagesLookup for multiple eq operator for sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '2'},
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' = ', value: '4'},
@@ -356,7 +356,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
     }).toThrowError(InvalidArgumentError);
   });
   test('extractSqlFromTopicMessagesLookup for multiple ne operator for sequence_number parameter', () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' != ', value: '2'},
       {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
@@ -371,7 +371,7 @@ describe('topicmessage extractSqlFromTopicMessagesLookup tests for V2', () => {
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
   test('extractSqlFromTopicMessagesRequest V2 with seq number parameter', async () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const expectedRangeStartConsensusNs1 = '1234567890000000006';
     const expectedRangeEndConsensusNs1 = '1234567891000000006';
     const expectedRangeStartConsensusNs2 = '1234577890000000006';
@@ -410,7 +410,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesRequest V2 without seq number parameter order asc', async () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const expectedRangeStartConsensusNs1 = '1234567890000000006';
     const expectedRangeEndConsensusNs1 = '1234567891000000006';
     const expectedRangeStartConsensusNs2 = '1234577890000000006';
@@ -447,7 +447,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests for V2', () => {
     expect(limit).toStrictEqual(3);
   });
   test('extractSqlFromTopicMessagesRequest V2 without seq number parameter order desc', async () => {
-    config.query.v2.topicMessageLookups = true;
+    config.query.topicMessageLookups = true;
     const expectedRangeStartConsensusNs1 = '1234567890000000006';
     const expectedRangeEndConsensusNs1 = '1234567891000000006';
     const expectedRangeStartConsensusNs2 = '1234577890000000006';

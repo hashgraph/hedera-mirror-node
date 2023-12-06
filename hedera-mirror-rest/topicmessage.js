@@ -135,11 +135,8 @@ const getTopicMessages = async (req, res) => {
     },
   };
 
-  if (!query) {
-    topicMessagesResponse.messages = [];
-    res.locals[constants.responseDataLabel] = topicMessagesResponse;
-    return;
-  }
+  topicMessagesResponse.messages = [];
+  res.locals[constants.responseDataLabel] = topicMessagesResponse;
 
   // get results and return formatted response
   // if limit is not 1, set random_page_cost to 0 to make the cost estimation of using the index on
@@ -163,11 +160,9 @@ const getTopicMessages = async (req, res) => {
     },
     order
   );
-
-  res.locals[constants.responseDataLabel] = topicMessagesResponse;
 };
 
-async function getSequenceNumberFromTopicMessageLookup(topicId, order, limit) {
+const getSequenceNumberFromTopicMessageLookup = async (topicId, order, limit) => {
   const sequenceNumber = await getSequenceNumber(topicId, order);
   let lowerLimit;
   let upperLimit;
@@ -189,7 +184,7 @@ async function getSequenceNumberFromTopicMessageLookup(topicId, order, limit) {
   const pgSqlParams = [topicId.getEncodedId(), `[${lowerLimit},${upperLimit}]`];
 
   return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
-}
+};
 
 const extractSqlForTopicMessagesLookup = (topicId, filters, limit, order) => {
   let pgSqlQuery = `select lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
@@ -268,7 +263,7 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
                     where ${TopicMessage.TOPIC_ID} = $1`;
   let nextParamCount = 2;
   const pgSqlParams = [topicId.getEncodedId()];
-  let hasSequenceNumberForV2 = false;
+  let sequenceNumber = false;
 
   // add filters
   let limit = defaultLimit;
@@ -286,8 +281,8 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
       continue;
     }
 
-    if (config.query.v2.topicMessageLookups && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
-      hasSequenceNumberForV2 = true;
+    if (config.query.topicMessageLookups && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
+      sequenceNumber = true;
       // add sequence number range
     }
 
@@ -301,12 +296,12 @@ const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
   }
 
   // Query the topic_message_lookup table only for V2
-  if (config.query.v2.topicMessageLookups) {
+  if (config.query.topicMessageLookups) {
     // If there is no sequence number in the request URL,
     // query the topic_message_lookup table for either the min or max sequence number depending on order.
 
     // this needs to be fixed and gotten values
-    const rows = await getTopicMessageTimestamps(topicId, filters, hasSequenceNumberForV2, limit, order);
+    const rows = await getTopicMessageTimestamps(topicId, filters, sequenceNumber, limit, order);
     if (rows === null) {
       return {};
     }
@@ -349,7 +344,7 @@ const getTopicMessageTimestamps = async (topicId, filters, hasSequenceNumberForV
     throw new NotFoundError();
   }
 
-  return _.isNil(rows) ? null : rows;
+  return rows;
 };
 
 const getSequenceNumber = async (topicId, order) => {
@@ -367,12 +362,12 @@ const getSequenceNumber = async (topicId, order) => {
       break;
   }
 
-  const rows = await pool.queryQuietly(query, params);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {
     throw new NotFoundError();
   }
 
-  return _.isNil(rows) ? null : rows.rows[0].sequence_number;
+  return rows[0].sequence_number;
 };
 
 /**
