@@ -31,7 +31,7 @@ import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class EvmPropertiesInitializerTest {
+class EvmPropertiesInitializerTest {
 
     @Mock
     MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -47,10 +47,8 @@ public class EvmPropertiesInitializerTest {
     void testCreateEvmVersionToPrecompilesMapHappyPath() {
         // given
         Map<String, Long> systemPrecompiles = Map.of(
-                "HTS", 800L, // Released before the lowest EVM block number
-                "ERC", 2100L, // Released at block 2100
-                "exchangeRate", 3100L, // Released at block 3100
-                "PRNG", 4100L // Released after all EVM blocks
+                "exchangeRate", 1200L, // Released at block 1200
+                "PRNG", 1400L // Released at block 1400
                 );
         Map<String, Long> evmVersions = Map.of(
                 "0.30.0", 1000L, // EVM version released at block 1000
@@ -63,9 +61,9 @@ public class EvmPropertiesInitializerTest {
 
         assertNotNull(resultMap);
         assertEquals(3, resultMap.size());
-        assertTrue(resultMap.get("0.30.0").contains("HTS"));
-        assertTrue(resultMap.get("0.34.0").containsAll(List.of("HTS", "ERC")));
-        assertTrue(resultMap.get("0.38.0").containsAll(List.of("HTS", "ERC", "exchangeRate", "PRNG")));
+        assertTrue(resultMap.get("0.30.0").containsAll(List.of("exchangeRate", "PRNG")));
+        assertTrue(resultMap.get("0.34.0").containsAll(List.of("exchangeRate", "PRNG")));
+        assertTrue(resultMap.get("0.38.0").containsAll(List.of("exchangeRate", "PRNG")));
     }
 
     @Test

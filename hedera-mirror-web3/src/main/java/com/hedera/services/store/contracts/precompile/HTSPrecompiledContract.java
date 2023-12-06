@@ -126,6 +126,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return false;
     }
 
+    @Override
     public Pair<Long, Bytes> computeCosted(
             final Bytes input,
             final MessageFrame frame,
@@ -152,6 +153,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         return Pair.of(precompileContext.getGasRequirement(), result.getOutput());
     }
 
+    @Override
     @NonNull
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
         if (unqualifiedDelegateDetected(frame)) {
