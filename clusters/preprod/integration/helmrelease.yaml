@@ -36,6 +36,8 @@ spec:
         pullPolicy: Always
       podAnnotations:
         git.commit: d4927c155d1bc96b8331a2b99fe832244ab08a90
+    graphql:
+      enabled: true
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
@@ -55,6 +57,10 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    restjava:
+      enabled: true
+    rosetta:
+      enabled: true
     test:
       config:
         hedera:
