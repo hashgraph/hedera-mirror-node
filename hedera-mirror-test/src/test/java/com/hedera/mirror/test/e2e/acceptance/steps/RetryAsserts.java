@@ -31,8 +31,9 @@ import org.springframework.retry.annotation.Retryable;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Retryable(
-        value = {AssertionError.class},
+        retryFor = {AssertionError.class},
         backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
         maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
 @Target({ElementType.METHOD, ElementType.TYPE})
-public @interface RetryAsserts {}
+public @interface RetryAsserts {
+}
