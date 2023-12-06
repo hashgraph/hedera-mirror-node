@@ -150,8 +150,8 @@ Feature: in-equivalence tests
     Then I execute internal "call" against HTS precompile with isToken function for "FUNGIBLE" "with" amount
     Then I execute internal "staticcall" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
     Then I execute internal "delegatecall" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
-#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
-#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "with" amount
+#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "without" amount -> throws precompile_error needs to be invesitgated
+#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "with" amount -> throws precompile_error needs to be invesitgated
 
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers
