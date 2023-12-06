@@ -58,7 +58,7 @@ create role readwrite in role readonly;
 -- Create users
 create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
 create user :grpcUsername with login password :'grpcPassword' in role readonly;
-create user :importerUsername with login password :'importerPassword' in role readwrite;
+create user :importerUsername with login password :'importerPassword' in role readwrite admin :ownerUsername;
 create user :restJavaUsername with login password :'restJavaPassword' in role readonly;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 create user :web3Username with login password :'web3Password' in role readonly;
