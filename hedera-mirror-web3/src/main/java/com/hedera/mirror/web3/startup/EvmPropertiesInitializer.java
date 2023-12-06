@@ -42,7 +42,7 @@ public class EvmPropertiesInitializer implements ApplicationRunner {
         Map<String, Long> evmVersions = mirrorNodeEvmProperties.getEvmVersions();
 
         Map<String, Set<String>> evmPrecompilesMap = createEvmVersionToPrecompilesMap(systemPrecompiles, evmVersions);
-        mirrorNodeEvmProperties.setEvmPrecompiles(evmPrecompilesMap);
+        mirrorNodeEvmProperties.setEvmVersionToPrecompiles(evmPrecompilesMap);
     }
 
     /**

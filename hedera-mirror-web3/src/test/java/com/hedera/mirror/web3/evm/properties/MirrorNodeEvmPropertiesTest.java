@@ -55,7 +55,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        properties.getEvmPrecompiles().clear();
+        properties.getEvmVersionToPrecompiles().clear();
         properties.getSystemPrecompiles().clear();
         properties.getEvmVersions().clear();
     }
@@ -108,7 +108,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         evmPrecompiles.put(EVM_VERSION_38, Set.of(EXCHANGE_RATE, PRNG));
 
         properties.setSystemPrecompiles(systemPrecompiles);
-        properties.setEvmPrecompiles(evmPrecompiles);
+        properties.setEvmVersionToPrecompiles(evmPrecompiles);
 
         Set<String> precompilesAvailableResult = properties.getPrecompilesAvailableAtBlock(blockNumber, evmVersion);
 

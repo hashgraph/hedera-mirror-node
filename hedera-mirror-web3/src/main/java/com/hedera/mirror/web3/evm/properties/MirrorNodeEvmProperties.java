@@ -158,7 +158,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private TreeMap<String, Long> evmVersions = new TreeMap<>();
 
     @Getter
-    private Map<String, Set<String>> evmPrecompiles;
+    private Map<String, Set<String>> evmVersionToPrecompiles;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -271,10 +271,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @return List of precompiles available at the specified block number
      */
     public Set<String> getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion) {
-        if (CollectionUtils.isEmpty(evmPrecompiles)) {
+        if (CollectionUtils.isEmpty(evmVersionToPrecompiles)) {
             return new HashSet<>();
         }
-        Set<String> precompilesForEvm = evmPrecompiles.get(evmVersion);
+        Set<String> precompilesForEvm = evmVersionToPrecompiles.get(evmVersion);
         return precompilesForEvm.stream()
                 .filter(p -> (systemPrecompiles.get(p) <= blockNumber))
                 .collect(Collectors.toSet());
