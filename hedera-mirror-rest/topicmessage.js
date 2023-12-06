@@ -22,8 +22,8 @@ import {TopicMessage} from './model';
 import * as utils from './utils';
 import {TopicMessageViewModel} from './viewmodel';
 import _ from 'lodash';
-import config from './config.js';
-import TopicMessageLookup from './model/topicMessageLookup.js';
+import config from './config';
+import {TopicMessageLookup} from './model';
 
 const {default: defaultLimit} = getResponseLimit();
 

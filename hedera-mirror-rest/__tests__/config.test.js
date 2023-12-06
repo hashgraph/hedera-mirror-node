@@ -205,6 +205,7 @@ describe('Override query config', () => {
       maxTransactionConsensusTimestampRange: '10m',
       maxTransactionConsensusTimestampRangeNs: 600000000000n,
       strictTimestampParam: true,
+      topicMessageLookups: false,
     };
     const config = await loadCustomConfig(customConfig(queryConfig));
     expect(config.query).toEqual(expected);
