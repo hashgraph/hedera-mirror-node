@@ -29,11 +29,12 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
+    set("grpcVersion", "1.59.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
+    set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
-    set("reactor-bom.version", "2022.0.13")
     set("snakeyaml.version", "2.0")
     set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.5.0")
@@ -42,6 +43,7 @@ extra.apply {
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
 dependencies {
     constraints {
+        val grpcVersion: String by rootProject.extra
         val mapStructVersion: String by rootProject.extra
         val protobufVersion: String by rootProject.extra
         val reactorGrpcVersion: String by rootProject.extra
@@ -51,14 +53,14 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
-        api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:4.3.1")
+        api("com.bucket4j:bucket4j-core:8.7.0")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:4.8.4")
         api("com.google.guava:guava:32.1.3-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.3.1")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.3.2")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.43.0")
+        api("com.hedera.evm:hedera-evm:0.44.3")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
@@ -67,10 +69,10 @@ dependencies {
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.15.0")
-        api("io.cucumber:cucumber-bom:7.14.0")
+        api("commons-io:commons-io:2.15.1")
+        api("io.cucumber:cucumber-bom:7.14.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.59.0")
+        api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
         api("io.projectreactor:reactor-core-micrometer:1.1.0")
         api("io.swagger:swagger-annotations:1.6.12")
@@ -83,6 +85,7 @@ dependencies {
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
+        api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
         api("org.gaul:s3proxy:2.1.0")
         api("org.hyperledger.besu:secp256k1:0.8.0")
         api("org.hyperledger.besu:evm:23.10.0")
@@ -91,10 +94,10 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.6")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2022.0.4")
-        api("org.testcontainers:junit-jupiter:1.19.2")
+        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0-RC1")
+        api("org.testcontainers:junit-jupiter:1.19.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.21.26")
+        api("software.amazon.awssdk:bom:2.21.37")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }

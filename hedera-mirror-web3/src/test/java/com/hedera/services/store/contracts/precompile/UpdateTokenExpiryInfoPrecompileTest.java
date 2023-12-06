@@ -16,7 +16,9 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenUpdateExpiryInfoWrapper;
 import static com.hedera.services.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile.getTokenUpdateExpiryInfoWrapper;
@@ -28,8 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -119,7 +120,10 @@ class UpdateTokenExpiryInfoPrecompileTest {
     private TokenAccessor tokenAccessor;
 
     @Mock
-    private MirrorEvmContractAliases contractAliases;
+    private PrecompileContext precompileContext;
+
+    private final TransactionBody.Builder transactionBody =
+            TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder());
 
     public static final Bytes UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT = Bytes.fromHexString(
             "0x593d6e8200000000000000000000000000000000000000000000000000000000000008d300000000000000000000000000000000000000000000000000000000bbf7edc700000000000000000000000000000000000000000000000000000000000008d000000000000000000000000000000000000000000000000000000000002820a8");
@@ -127,17 +131,18 @@ class UpdateTokenExpiryInfoPrecompileTest {
             "0xd27be6cd00000000000000000000000000000000000000000000000000000000000008d3000000000000000000000000000000000000000000000000000000000bf7edc700000000000000000000000000000000000000000000000000000000000008d00000000000000000000000000000000000000000000000000000000000000008");
 
     private HTSPrecompiledContract subject;
+    private UpdateTokenExpiryInfoPrecompile updateTokenExpiryInfoPrecompile;
     private MockedStatic<UpdateTokenExpiryInfoPrecompile> staticUpdateTokenExpiryInfoPrecompile;
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         staticUpdateTokenExpiryInfoPrecompile = mockStatic(UpdateTokenExpiryInfoPrecompile.class);
 
         optionValidator = new ContextOptionValidator(evmProperties);
-        final var updateTokenExpiryInfoPrecompile = new UpdateTokenExpiryInfoPrecompile(
+        updateTokenExpiryInfoPrecompile = new UpdateTokenExpiryInfoPrecompile(
                 tokenUpdateLogic, evmProperties, optionValidator, syntheticTxnFactory, precompilePricingUtils);
 
         precompileMapper = new PrecompileMapper(Set.of(updateTokenExpiryInfoPrecompile));
@@ -150,8 +155,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
@@ -176,10 +179,16 @@ class UpdateTokenExpiryInfoPrecompileTest {
         // givenPricingUtilsContext
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(updateTokenExpiryInfoPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a);
+        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -201,10 +210,16 @@ class UpdateTokenExpiryInfoPrecompileTest {
         // givenPricingUtilsContext
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(updateTokenExpiryInfoPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, a -> a);
+        subject.prepareComputation(UPDATE_EXPIRY_INFO_FOR_TOKEN_INPUT_V2, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then

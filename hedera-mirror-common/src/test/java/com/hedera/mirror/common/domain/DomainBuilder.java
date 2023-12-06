@@ -948,7 +948,6 @@ public class DomainBuilder {
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         var builder = TokenTransfer.builder()
                 .amount(100L)
-                .deletedTokenDissociate(false)
                 .id(new TokenTransfer.Id(timestamp(), entityId(), entityId()))
                 .payerAccountId(entityId());
 
@@ -1070,6 +1069,7 @@ public class DomainBuilder {
     /**
      * Generates an encoded entity id above the max reserved id 1000. Use {@link #number()} instead for a number
      * starting from 1.
+     *
      * @return The generated encoded entity id.
      */
     public long id() {

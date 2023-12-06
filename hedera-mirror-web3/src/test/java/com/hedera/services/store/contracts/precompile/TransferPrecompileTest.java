@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
@@ -70,6 +71,7 @@ import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -173,7 +175,7 @@ class TransferPrecompileTest {
     private TransferPrecompile transferPrecompile;
 
     @Mock
-    private ContractCallContext contractCallContext;
+    private PrecompileContext precompileContext;
 
     private BodyParams transferParams;
 
@@ -236,8 +238,6 @@ class TransferPrecompileTest {
 
     @BeforeEach
     void setup() {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         syntheticTxnFactory = new SyntheticTxnFactory();
 
         transferPrecompile = new TransferPrecompile(
@@ -259,14 +259,11 @@ class TransferPrecompileTest {
                 pricingUtils);
 
         staticTransferPrecompile = mockStatic(TransferPrecompile.class);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @AfterEach
     void closeMocks() {
         staticTransferPrecompile.close();
-        staticMock.close();
     }
 
     @Test
@@ -294,18 +291,20 @@ class TransferPrecompileTest {
         given(worldUpdater.getStore()).willReturn(store);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(contractAddress);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(UInt256.valueOf(ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS_VALUE), result);
@@ -317,7 +316,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeTransferTokens(eq(pretendArguments), any()))
@@ -326,14 +325,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
 
         final var result = subject.computeInternal(frame);
 
@@ -347,7 +348,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeTransferNFTs(eq(pretendArguments), any()))
@@ -356,14 +357,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -376,7 +379,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransfer(eq(pretendArguments), any(), any()))
@@ -385,14 +388,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -405,7 +410,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -414,14 +419,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -434,7 +441,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -443,14 +450,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
 
         final var result = subject.computeInternal(frame);
 
@@ -464,7 +473,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -473,14 +482,15 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
         given(worldUpdater.getStore()).willReturn(store);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
-
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -493,7 +503,7 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
+        when(precompileContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -502,14 +512,16 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        ContractCallContext.get().setSenderAddress(contractAddress);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
         given(worldUpdater.getStore()).willReturn(store);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -522,7 +534,6 @@ class TransferPrecompileTest {
         givenMinimalFrameContext();
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        when(contractCallContext.getSenderAddress()).thenReturn(senderAddress);
 
         staticTransferPrecompile
                 .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
@@ -547,17 +558,20 @@ class TransferPrecompileTest {
         given(frame.getRemainingGas()).willReturn(10000L);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(transferPrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
-        when(autoCreationLogic.create(any(), any(), any(), any(), any()))
+        when(autoCreationLogic.create(any(), any(), any(), any()))
                 .thenReturn(Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, lazyCreationFee));
-        given(contractCallContext.getPrecompile()).willReturn(transferPrecompile);
-        given(contractCallContext.getTransactionBody()).willReturn(transactionBody);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -571,11 +585,11 @@ class TransferPrecompileTest {
         staticTransferPrecompile
                 .when(() -> decodeTransferToken(eq(input), any()))
                 .thenReturn(CRYPTO_TRANSFER_EMPTY_WRAPPER);
-        when(pricingUtils.computeGasRequirement(anyLong(), any(), any())).thenReturn(EXPECTED_GAS_PRICE);
+        when(pricingUtils.computeGasRequirement(anyLong(), any(), any(), any())).thenReturn(EXPECTED_GAS_PRICE);
 
         transferPrecompile.body(input, a -> a, null);
 
-        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder);
+        final long result = transferPrecompile.getGasRequirement(TEST_CONSENSUS_TIME, transactionBodyBuilder, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -590,10 +604,10 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -610,10 +624,10 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_TWO_HBAR_ONLY_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -631,10 +645,10 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -651,10 +665,10 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -670,11 +684,10 @@ class TransferPrecompileTest {
                 .when(() -> decodeCryptoTransferV2(eq(input), any(), any()))
                 .thenReturn(CRYPTO_TRANSFER_HBAR_FUNGIBLE_NFT_WRAPPER);
         when(pricingUtils.getMinimumPriceInTinybars(any(), any())).thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
-        given(contractCallContext.getSenderAddress()).willReturn(contractAddress);
-        ContractCallContext.get().setSenderAddress(contractAddress);
 
         final var transactionBody = transferPrecompile.body(input, a -> a, transferParams);
-        final var minimumFeeInTinybars = transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final var minimumFeeInTinybars =
+                transferPrecompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars
@@ -1127,7 +1140,7 @@ class TransferPrecompileTest {
         given(frame.getRecipientAddress()).willReturn(recipientAddress);
     }
 
-    private boolean existsMock(AccountID accountID) {
+    private boolean existsMock(Address address) {
         return true;
     }
 }

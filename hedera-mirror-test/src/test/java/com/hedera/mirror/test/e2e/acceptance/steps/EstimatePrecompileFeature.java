@@ -117,9 +117,9 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
@@ -157,7 +157,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -229,8 +228,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Given("I mint and verify a new nft")
     public void mintNft() {
-        tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
-        networkTransactionResponse = tokenClient.mint(nonFungibleKycUnfrozenTokenId, RandomUtils.nextBytes(4));
+        tokenClient.mint(nonFungibleTokenId, nextBytes(4));
+        networkTransactionResponse = tokenClient.mint(nonFungibleKycUnfrozenTokenId, nextBytes(4));
     }
 
     @Then("the mirror node REST API should return status {int} for the HAPI transaction")
@@ -628,7 +627,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @And("I mint a new NFT and approve second receiver account to all serial numbers")
     public void mintAndApproveAllSerialsToSecondReceiver() {
-        tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
+        tokenClient.mint(nonFungibleTokenId, nextBytes(4));
         accountClient.approveNftAllSerials(nonFungibleTokenId, receiverAccount.getAccountId());
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(nonFungibleTokenId, secondReceiverAccount.getAccountId());
@@ -640,7 +639,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_NFTS,
                 asAddress(nonFungibleTokenId),
-                asAddressArray(Arrays.asList(admin.getAccountId().toSolidityAddress())),
+                asAddressArray(List.of(admin.getAccountId().toSolidityAddress())),
                 asAddressArray(Arrays.asList(
                         receiverAccountAlias,
                         secondReceiverAccount.getAccountId().toSolidityAddress())),
@@ -1520,7 +1519,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var encodedData = Strings.encode(ByteBuffer.wrap(data));
         var response = estimateContract(encodedData, contractAddress);
         var estimateGasValue = response.getResultAsNumber().intValue();
-        assertTrue(isWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation));
+        assertWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation);
         return estimateGasValue;
     }
 
@@ -1685,7 +1684,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with mintToken function for NFT and verify the estimated gas against HAPI")
     public void executeMintNonFungibleWithLimitedGas() {
         var data = encodeDataToByteArray(
-                ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(Arrays.asList("0x02")));
+                ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(List.of("0x02")));
         var estimateGasValue = validateAndReturnGas(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
         executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_NFT, data);
     }
@@ -1700,17 +1699,16 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .build();
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+        assertWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation);
     }
 
     /**
-     * Executes estimate gas for token create with current exchange rates and if this fails reties with next exchange rates.
-     * The consumer accepts boolean value indicating if we should use current or next exchange rate.
-     * true = current, false = next
-     * This is done in order to prevent edge cases like:
-     * System.currentTimeMillis() returns timestamp that is within the current exchange rate limit, but after few ms
-     * the next exchange rate takes place. After some ms when we call the create token with the outdated rates the test fails.
-     * We cannot ensure consistent timing between the call getting the exchange rates and the create token call.
+     * Executes estimate gas for token create with current exchange rates and if this fails reties with next exchange
+     * rates. The consumer accepts boolean value indicating if we should use current or next exchange rate. true =
+     * current, false = next This is done in order to prevent edge cases like: System.currentTimeMillis() returns
+     * timestamp that is within the current exchange rate limit, but after few ms the next exchange rate takes place.
+     * After some ms when we call the create token with the outdated rates the test fails. We cannot ensure consistent
+     * timing between the call getting the exchange rates and the create token call.
      */
     private void executeAndRetryWithNextExchangeRates(Consumer<Boolean> validationFunction) {
         try {

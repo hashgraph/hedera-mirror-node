@@ -165,7 +165,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        sqlProperties.setBatchSize(20_000);
         sqlEntityListener.onStart();
     }
 
@@ -177,7 +176,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void executeBatch() {
         // given
-        sqlProperties.setBatchSize(1);
         Entity entity1 = domainBuilder.entity().get();
         Entity entity2 = domainBuilder.entity().get();
 

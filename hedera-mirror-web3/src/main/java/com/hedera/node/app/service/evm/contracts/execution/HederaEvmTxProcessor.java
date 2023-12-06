@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -97,6 +100,7 @@ public class HederaEvmTxProcessor {
             final HederaEvmAccount sender,
             final Address receiver,
             final long gasPrice,
+            final boolean isEstimate,
             final long gasLimit,
             final long value,
             final Bytes payload,
@@ -104,13 +108,16 @@ public class HederaEvmTxProcessor {
             final Address mirrorReceiver,
             final boolean contractCreation) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
-        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
+        final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
 
         final var valueAsWei = Wei.of(value);
         final var updater = worldState.updater();
         final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
+        final var precompileContext = new PrecompileContext();
+        precompileContext.setEstimate(isEstimate);
+
         final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
                 .maxStackSize(MAX_STACK_SIZE)
                 .worldUpdater(stackedUpdater)
@@ -125,7 +132,11 @@ public class HederaEvmTxProcessor {
                 .isStatic(isStatic)
                 .miningBeneficiary(dynamicProperties.fundingAccountAddress())
                 .blockHashLookup(blockMetaSource::getBlockHash)
-                .contextVariables(Map.of("HederaFunctionality", getFunctionType()));
+                .contextVariables(Map.of(
+                        "HederaFunctionality",
+                        getFunctionType(contractCreation),
+                        PRECOMPILE_CONTEXT,
+                        precompileContext));
 
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
@@ -173,13 +184,12 @@ public class HederaEvmTxProcessor {
         return gasUsedByTransaction;
     }
 
-    protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
-        return livePricesSource.currentGasPrice(
-                consensusTime, isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+    protected long gasPriceTinyBarsGiven(final Instant consensusTime) {
+        return livePricesSource.currentGasPrice(consensusTime, HederaFunctionality.EthereumTransaction);
     }
 
-    protected HederaFunctionality getFunctionType() {
-        return HederaFunctionality.NONE;
+    protected HederaFunctionality getFunctionType(final boolean contractCreation) {
+        return contractCreation ? HederaFunctionality.ContractCreate : HederaFunctionality.ContractCall;
     }
 
     @SuppressWarnings("java:S1172")
