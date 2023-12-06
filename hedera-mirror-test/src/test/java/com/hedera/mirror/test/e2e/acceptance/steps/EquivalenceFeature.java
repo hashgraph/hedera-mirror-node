@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.ALICE;
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.BOB;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
@@ -73,6 +75,7 @@ public class EquivalenceFeature extends AbstractFeature {
     private final TokenClient tokenClient;
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
+    private static final String INVALID_SIGNATURE = "INVALID_SIGNATURE";
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
     private static final String INVALID_TRANSFER_EXCEPTION = "INVALID_RECEIVING_NODE_ACCOUNT";
@@ -251,6 +254,138 @@ public class EquivalenceFeature extends AbstractFeature {
         var contractId = new ContractId(extractAccountNumber(address));
         var message = executeContractCallTransaction(contractId, "destroyContract", null, Hbar.fromTinybars(amount));
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_CONTRACT_ID", extractedStatus);
+    }
+
+    @Then("I execute directCall to range {string} addresses via HTS Precompile without amount")
+    public void directCallHTSPrecompileWithoutAmount(String beneficiary) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "destroyContract", parameters, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        assertEquals("Transaction successful", message);
+    }
+
+    @Then("I execute directCall to range {string} addresses via HTS Precompile with amount")
+    public void directCallHTSPrecompileWithAmount(String beneficiary) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "destroyContract", parameters, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        assertEquals("Transaction successful", message);
+    }
+
+    @Then("I execute directCall to range {string} addresses without amount")
+    public void directCallToRangeAddressesWithoutAmount(String address) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "destroyContract", parameters, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_SOLIDITY_ADDRESS", extractedStatus);
+    }
+
+    @Then("I execute directCall to range {string} addresses with amount {int}")
+    public void directCallToRangeAddressesWithoutAmount(String address, int amount) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(
+                deployedEquivalenceCall, "destroyContract", parameters, Hbar.fromTinybars(amount));
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_FEE_SUBMITTED", extractedStatus);
+    }
+
+    @Then("I execute EOA call to non existing mirror")
+    public void EOACallsNonExistingMirror() {
+        var accountId = new AccountId(extractAccountNumber("0.0.1001")).toSolidityAddress();
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "destroyContract", parameters, null);
+        removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_FEE_SUBMITTED", extractedStatus);
+    }
+
+    @Then("I execute directCall to address {string} with contract without amount")
+    public void directCallToAddressWithoutAmount(String beneficiary) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress(); // 0.0.1005
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(deployedEquivalenceCall, "getBalance", parameters, null);
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute directCall to address above 1000 with invalid contractID without amount")
+    public void directCallToAddressWithoutAmountToInvalidContractID() {
+        var contractId = new ContractId(extractAccountNumber("0.0.10000000"));
+        var deployedContractID = new DeployedContract(null, contractId, null);
+        var message = executeContractCallTransaction(deployedContractID, "makeCallWithoutAmount", null, null);
+        var extractedStatus = extractStatus(message);
+        assertEquals("INVALID_CONTRACT_ID", extractedStatus);
+    }
+
+    @Then("I execute directCall to address {string} with contract with amount {int}")
+    // failed contract revert
+    public void directCallToAddressWithAmount(String beneficiary, int amount) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress(); // 0.0.1005
+        ContractFunctionParameters parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(
+                deployedEquivalenceCall, "makeCallWithAmount", parameters, Hbar.fromTinybars(amount));
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute directCall to address with non-payable contract with amount {int}")
+    public void directCallToAddressWithAmountNonPayable(int amount) {
+        var message = executeContractCallTransaction(
+                deployedPrecompileContract, "isTokenAddress", null, Hbar.fromTinybars(amount));
+        var extractedStatus = extractStatus(message);
+        assertEquals("CONTRACT_REVERT_EXECUTED", extractedStatus);
+    }
+
+    @Then("I execute directCall to address with contract with amount {int} with receiverSig false")
+    public void directCallToAddressWithAmountWithReceiverSigFalse(int amount) {
+        var receiverAccountId = new DeployedContract(
+                null,
+                new ContractId(extractAccountNumber(
+                        accountClient.getAccount(ALICE).getAccountId().toString())),
+                null);
+        var message = executeContractCallTransaction(receiverAccountId, "foo()", null, Hbar.fromTinybars(amount));
+
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute directCall to address with contract with amount {int} with receiverSig true")
+    public void directCallToAddressWithAmountWithReceiverSigTrue(int amount) {
+        var receiverAccountId = new DeployedContract(
+                null,
+                new ContractId(extractAccountNumber(
+                        accountClient.getAccount(BOB).getAccountId().toString())),
+                null);
+        var message = executeContractCallTransaction(receiverAccountId, "foo()", null, Hbar.fromTinybars(amount));
+        var extractedStatus = extractStatus(message);
+        assertEquals(INVALID_SIGNATURE, extractedStatus);
+    }
+
+    @Then("I execute directCall to address with contract with amount {int} with hollow account")
+    public void directCallToAddressWithAmountWithHollowAccount(int amount) {
+        // DirectCall to address(over 0.0.01000) with amount (case Hollow account):
+        // Execute directCall with amount against an address that is empty
+        var receiverAccountId = new DeployedContract(
+                null,
+                new ContractId(extractAccountNumber(
+                        accountClient.getAccount(BOB).getAccountId().toString())),
+                null);
+        var message = executeContractCallTransaction(receiverAccountId, "foo()", null, Hbar.fromTinybars(amount));
+
+        assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+    }
+
+    @Then("I execute directCall to address above 1000 with contract without amount {int}")
+    public void directCallToAddressViaContractWithoutAmount(int amount) {
+        var contractId = new ContractId(extractAccountNumber("0.0.10000000"));
+        var deployedContractID = new DeployedContract(null, contractId, null);
+        var message = executeContractCallTransaction(
+                deployedContractID, "makeCallWithAmount", null, Hbar.fromTinybars(amount));
         var extractedStatus = extractStatus(message);
         assertEquals("INVALID_CONTRACT_ID", extractedStatus);
     }
