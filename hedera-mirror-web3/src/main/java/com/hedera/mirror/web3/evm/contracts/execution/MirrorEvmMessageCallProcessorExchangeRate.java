@@ -32,8 +32,14 @@ public class MirrorEvmMessageCallProcessorExchangeRate extends MirrorEvmMessageC
             final EntityAddressSequencer entityAddressSequencer,
             final EVM evm,
             final PrecompileContractRegistry precompiles,
-            final PrecompilesHolderHtsErcExchangeRate precompilesHolderHtsErc,
+            final PrecompilesHolderHtsErcExchangeRate precompilesHolderHtsErcExchangeRate,
             final GasCalculatorHederaV22 gasCalculator) {
-        super(autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolderHtsErc, gasCalculator);
+        super(
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompiles,
+                precompilesHolderHtsErcExchangeRate,
+                gasCalculator);
     }
 }

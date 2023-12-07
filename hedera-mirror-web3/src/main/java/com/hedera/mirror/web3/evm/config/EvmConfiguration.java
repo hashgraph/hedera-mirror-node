@@ -175,29 +175,20 @@ public class EvmConfiguration {
     }
 
     @Bean
-    Map<String, Provider<ContractCreationProcessor>> contractCreationProcessors(
+    public Provider<ContractCreationProcessor> contractCreationProcessorProvider(
             final ContractCreationProcessor contractCreationProcessor) {
-
-        Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_30_HTS_ERC, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor);
-        processorsMap.put(EVM_VERSION_0_45, () -> contractCreationProcessor);
-        return processorsMap;
+        return () -> contractCreationProcessor;
     }
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
             final MessageCallProcessor messageCallProcessor,
             final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor,
-            final MirrorEvmMessageCallProcessorExchangeRate mirrorEvmMessageCallProcessorErcHtsExchangeRate,
+            final MirrorEvmMessageCallProcessorExchangeRate mirrorEvmMessageCallProcessorExchangeRate,
             final MirrorEvmMessageCallProcessorHtsErc mirrorEvmMessageCallProcessorHtsErc) {
 
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(
-                EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorErcHtsExchangeRate);
+        processorsMap.put(EVM_VERSION_0_30_HTS_ERC_EXCHANGE_RATE, () -> mirrorEvmMessageCallProcessorExchangeRate);
         processorsMap.put(EVM_VERSION_0_30_HTS_ERC, () -> mirrorEvmMessageCallProcessorHtsErc);
         processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
         processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
