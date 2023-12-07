@@ -314,6 +314,7 @@ const convertToNamedQuery = function (query, prefix) {
  * @param {string} tableAlias - Alias to reference the table by
  * @param namedTsQuery - Transaction table timestamp query with named parameters
  * @param {string} timestampColumn - Name of the timestamp column for the table
+ * @param {string} payerAccountIdColumn - Name of the payer ID column for the table
  * @param resultTypeQuery - Transaction result query
  * @param transactionTypeQuery - Transaction type query
  * @param namedAccountQuery - Account query with named parameters
@@ -459,9 +460,7 @@ const getTransactionTimestampsQuery = function (
     transactionTypeQuery
   );
   const transactionOnlyLimitQuery = _.isNil(namedLimitQuery) ? '' : namedLimitQuery;
-  const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
-    ? undefined
-    : `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}
+  const transactionOnlyQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
@@ -502,7 +501,8 @@ const getTransactionTimestampsQuery = function (
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
+        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp,
+        COALESCE(ctl.payer_account_id, ttl.payer_account_id) AS payer_account_id
         FROM (${ctlQuery}) AS ctl
         FULL OUTER JOIN (${ttlQuery}) as ttl
         ON ctl.consensus_timestamp = ttl.consensus_timestamp
@@ -693,7 +693,6 @@ const getTransactions = async (req, res) => {
   const transferList = await createTransferLists(transactionsRows);
 
   const ret = {};
-  ret.sqlQuery = transactionsRowsSqlQuery;
   ret.transactions = transferList.transactions;
 
   ret.links = {
