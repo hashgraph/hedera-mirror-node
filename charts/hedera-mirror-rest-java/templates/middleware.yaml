@@ -1,0 +1,26 @@
+{{- if and .Values.global.middleware .Values.middleware -}}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rest-java.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest-java.fullname" . }}
+  namespace: {{ include "hedera-mirror-rest-java.namespace" . }}
+spec:
+  chain:
+    middlewares:
+{{- range .Values.middleware }}
+      - name: {{ include "hedera-mirror-rest-java.fullname" $ }}-{{ keys . | first | kebabcase }}
+{{- end }}
+
+{{- range .Values.middleware }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-rest-java.labels" $ | nindent 4 }}
+  name: {{ include "hedera-mirror-rest-java.fullname" $ }}-{{ keys . | first | kebabcase }}
+  namespace: {{ include "hedera-mirror-rest-java.namespace" $ }}
+spec:
+  {{- . | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}

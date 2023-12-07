@@ -50,6 +50,7 @@ import TokenBalance from './tokenBalance';
 import TokenTransfer from './tokenTransfer';
 import TokenType from './tokenType';
 import TopicMessage from './topicMessage';
+import TopicMessageLookup from './topicMessageLookup';
 import Transaction from './transaction';
 import TransactionHash from './transactionHash';
 import TransactionId from './transactionId';
@@ -95,6 +96,7 @@ export {
   TokenTransfer,
   TokenType,
   TopicMessage,
+  TopicMessageLookup,
   Transaction,
   TransactionHash,
   TransactionId,

@@ -41,7 +41,9 @@ shortenProjectName(rootProject)
 
 // Shorten project name to remove verbose "hedera-mirror-" prefix
 fun shortenProjectName(project: ProjectDescriptor) {
-    project.name = project.name.removePrefix("hedera-mirror-")
+    if (project != rootProject) {
+        project.name = project.name.removePrefix("hedera-mirror-")
+    }
     project.children.forEach(this::shortenProjectName)
 }
 
