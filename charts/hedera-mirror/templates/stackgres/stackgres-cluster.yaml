@@ -17,6 +17,8 @@ spec:
     pods:
       disableMetricsExporter: true
       persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
+      resources:
+        disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
       {{- if eq ((.Values.stackgres.coordinator.persistentVolume).storageClass) "zfs" }}
       scheduling:
         nodeSelector:
@@ -51,6 +53,8 @@ spec:
       disableMetricsExporter: true
       disablePostgresUtil: true
       persistentVolume: {{ .Values.stackgres.worker.persistentVolume | toYaml | nindent 8 }}
+      resources:
+        disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
       {{- if eq ((.Values.stackgres.worker.persistentVolume).storageClass) "zfs" }}
       scheduling:
         nodeSelector:

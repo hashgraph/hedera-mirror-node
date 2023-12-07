@@ -283,6 +283,7 @@ stackgres:
       memory: 1Gi
     persistentVolume:
       size: 5Gi
+  dedicatedResourcesRequests: true  # Set to true to make the patroni/PostgreSQL container's resource requests equal to the resources section
   enabled: false
   extensions:
     - name: citus
