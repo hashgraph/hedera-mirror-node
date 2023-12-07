@@ -700,10 +700,10 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(royaltyFee.get(5).toString().toLowerCase())
                 .isEqualTo("0x"
                         + tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress());
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress());
     }
 
     // ETHCALL-034
@@ -722,10 +722,10 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(royaltyFee.get(5).toString().toLowerCase())
                 .hasToString("0x"
                         + tokenClient
-                                .getSdkClient()
-                                .getExpandedOperatorAccountId()
-                                .getAccountId()
-                                .toSolidityAddress());
+                        .getSdkClient()
+                        .getExpandedOperatorAccountId()
+                        .getAccountId()
+                        .toSolidityAddress());
     }
 
     private void tokenKeyCheck(final Tuple result) {

@@ -165,5 +165,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         }
     }
 
-    private record TokenAccountBalances(int all, int positive) {}
+    private record TokenAccountBalances(int all, int positive) {
+    }
 }
