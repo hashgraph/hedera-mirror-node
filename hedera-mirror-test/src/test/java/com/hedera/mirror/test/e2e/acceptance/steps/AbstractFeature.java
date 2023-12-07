@@ -231,6 +231,10 @@ abstract class AbstractFeature {
         int getActualGas();
     }
 
+    protected void removeFromContractIdMap(ContractResource key) {
+        contractIdMap.remove(key);
+    }
+
     @RequiredArgsConstructor
     @Getter
     public enum ContractResource {
@@ -238,6 +242,9 @@ abstract class AbstractFeature {
                 "classpath:solidity/artifacts/contracts/EstimatePrecompileContract.sol/EstimatePrecompileContract.json",
                 0),
         ERC("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json", 0),
+        EQUIVALENCE_CALL("classpath:solidity/artifacts/contracts/EquivalenceContract.sol/EquivalenceContract.json", 0),
+        EQUIVALENCE_DESTRUCT(
+                "classpath:solidity/artifacts/contracts/EquivalenceDestruct.sol/EquivalenceDestruct.json", 10000),
         PRECOMPILE("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
         ESTIMATE_GAS(
                 "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json", 1000000),

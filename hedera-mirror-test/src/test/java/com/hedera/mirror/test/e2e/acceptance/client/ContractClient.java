@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractCallQuery;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
 import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
@@ -32,6 +33,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
@@ -167,6 +169,30 @@ public class ContractClient extends AbstractNetworkClient {
 
         log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
         return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
+    }
+
+    @SneakyThrows
+    public ContractFunctionResult executeContractQuery(
+            ContractId contractId, String functionName, Long gas, ContractFunctionParameters parameters) {
+        ContractCallQuery contractCallQuery =
+                new ContractCallQuery().setContractId(contractId).setGas(gas);
+        if (parameters == null) {
+            contractCallQuery.setFunction(functionName);
+        } else {
+            contractCallQuery.setFunction(functionName, parameters);
+        }
+
+        long costInTinybars = contractCallQuery.getCost(client).toTinybars();
+
+        long additionalTinybars = 10000;
+        long totalPaymentInTinybars = costInTinybars + additionalTinybars;
+
+        contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
+
+        ContractFunctionResult functionResult = retryTemplate.execute(x -> contractCallQuery.execute(client));
+
+        log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
+        return functionResult;
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
