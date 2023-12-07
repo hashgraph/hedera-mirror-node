@@ -46,7 +46,8 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom("io.grpc:grpc-bom:1.59.0")
+        val grpcVersion: String by rootProject.extra
+        mavenBom("io.grpc:grpc-bom:${grpcVersion}")
         mavenBom(SpringBootPlugin.BOM_COORDINATES)
     }
 }
@@ -59,18 +60,19 @@ dependencies {
 
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
+    // Disable serial and this-escape warnings due to errors in generated code
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-serial,-this-escape"))
     options.encoding = "UTF-8"
-    sourceCompatibility = "17"
-    targetCompatibility = "17"
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
 }
 
 tasks.compileTestJava {
     dependsOn("generateEffectiveLombokConfig")
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-this-escape"))
     options.encoding = "UTF-8"
-    sourceCompatibility = "17"
-    targetCompatibility = "17"
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
 }
 
 tasks.javadoc {

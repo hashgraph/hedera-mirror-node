@@ -252,6 +252,15 @@ rest:
     - secretRef:
         name: mirror-passwords
 
+restjava:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_rest_java
+  enabled: false
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
+
 rosetta:
   db:
     password: ""  # Randomly generated if left blank

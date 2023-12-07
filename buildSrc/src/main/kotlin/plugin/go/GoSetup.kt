@@ -22,13 +22,12 @@ package plugin.go
 
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.getByName
 import java.io.File
 import java.io.FileInputStream
-import java.net.URL
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
@@ -43,7 +42,7 @@ open class GoSetup : DefaultTask() {
     @TaskAction
     fun prepare() {
         go.goRoot.mkdirs()
-        val url = URL("https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz")
+        val url = URI.create("https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz").toURL()
         val filename = Paths.get(url.path).fileName
         val targetFile = go.cacheDir.toPath().resolve(filename)
 

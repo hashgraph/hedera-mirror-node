@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStat
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UNSUPPORTED_ERROR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
@@ -87,6 +86,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+    private static final String PRECOMPILE_RESULT_IS_NULL = "Precompile result is null";
 
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
@@ -446,7 +446,7 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         final var result = executor.computeCosted();
 
         if (result.getRight() == null) {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+            throw new InvalidTransactionException(PRECOMPILE_RESULT_IS_NULL, FAIL_INVALID);
         }
 
         return result;

@@ -161,21 +161,14 @@ public class EvmConfiguration {
     }
 
     @Bean
-    MessageCallProcessor messageCallProcessor(final EVM evm, final PrecompileContractRegistry precompiles) {
-        return new MessageCallProcessor(evm, precompiles);
-    }
-
-    @Bean
     public Provider<ContractCreationProcessor> contractCreationProcessorProvider(
             final ContractCreationProcessor contractCreationProcessor) {
         return () -> contractCreationProcessor;
     }
 
     @Bean
-    Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
-            final MessageCallProcessor messageCallProcessor,
-            final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
-
+    Map<String, Provider<MessageCallProcessor>> messageCallProcessors(EVM evm, final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
+        var messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry());
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
         processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);

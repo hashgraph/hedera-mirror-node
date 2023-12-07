@@ -24,7 +24,7 @@ complex code underneath.
 
 ### Requirements
 
-- OpenJDK 17+
+- Java 21
 
 ### Test Execution
 
@@ -39,7 +39,7 @@ uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configu
 include:
 
 | Name                                                           | Default                                      | Description                                                                                               |
-| -------------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+|----------------------------------------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.test.acceptance.backOffPeriod`                  | 5s                                           | The amount of time the client will wait before retrying a retryable failure.                              |
 | `hedera.mirror.test.acceptance.createOperatorAccount`          | true                                         | Whether to create a separate operator account to run the acceptance tests.                                |
 | `hedera.mirror.test.acceptance.emitBackgroundMessages`         | false                                        | Whether background topic messages should be emitted.                                                      |
