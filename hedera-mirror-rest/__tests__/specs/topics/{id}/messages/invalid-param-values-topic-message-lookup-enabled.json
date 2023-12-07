@@ -1,0 +1,59 @@
+{
+  "description": "Get messages with invalid params",
+  "setup": {
+    "config": {
+      "query": {
+        "v2": {
+          "topicMessageLookups": true
+        }
+      }
+    },
+    "accounts": [
+      {
+        "num": 7,
+        "type": "TOPIC"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "topicmessages": [
+      {
+        "consensus_timestamp": "1234567890000000001",
+        "sequence_number": 1,
+        "topic_id": 7
+      },
+      {
+        "consensus_timestamp": "1234567890000000002",
+        "sequence_number": 2,
+        "topic_id": 7
+      },
+      {
+        "consensus_timestamp": "1234567890000000003",
+        "sequence_number": 3,
+        "topic_id": 7
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=2_2&limit=-1",
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=-1&limit=-1",
+    "/api/v1/topics/7/messages?topic.id=7&sequencenumber=9223372036854775808&limit=-1"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: sequencenumber"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Unknown query parameter: topic.id"
+        }
+      ]
+    }
+  }
+}
