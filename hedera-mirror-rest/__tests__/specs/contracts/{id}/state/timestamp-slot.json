@@ -1,5 +1,5 @@
 {
-  "description": "Contract state api call for a contract with timestamp param",
+  "description": "Contract state api call for a contract with timestamp and slot params",
   "setup": {
     "entities": [
       {
