@@ -846,9 +846,9 @@ class ContractController extends BaseController {
   async extractContractStateByIdQuery(filters, contractId) {
     let limit = defaultLimit;
     let order = orderFilterValues.ASC;
-    let timestamp = false;
+    let timestampPresent = false;
     const conditions = [this.getFilterWhereCondition(ContractState.CONTRACT_ID, {operator: '=', value: contractId})];
-    const slotInValues = [];
+    const slotFilters = [];
 
     for (const filter of filters) {
       switch (filter.key) {
@@ -866,28 +866,31 @@ class ContractController extends BaseController {
                 value: filter.value,
               })
             );
-            timestamp = true;
+            timestampPresent = true;
           }
           break;
         case filterKeys.SLOT:
-          let slot = utils.formatSlot(filter.value);
-          //we need this additional conversion, because there is inconsistency between colums slot in table contract_state and contract_state_change.
-          if (timestamp) {
-            slot = utils.formatSlot(filter.value, true);
-          }
-          if (filter.operator === utils.opsMap.eq) {
-            slotInValues.push(slot);
-          } else {
-            conditions.push(
-              this.getFilterWhereCondition(ContractState.SLOT, {
-                operator: filter.operator,
-                value: slot,
-              })
-            );
-          }
+          slotFilters.push(filter);
           break;
         default:
           break;
+      }
+    }
+
+    const slotInValues = [];
+    for (const slotFilter of slotFilters) {
+      // If a timestamp filter is present the slot value needs additional conversion
+      // because there is an inconsistency between the column slot in contract_state and contract_state_change.
+      const slot = utils.formatSlot(slotFilter.value, timestampPresent);
+      if (slotFilter.operator === utils.opsMap.eq) {
+        slotInValues.push(slot);
+      } else {
+        conditions.push(
+          this.getFilterWhereCondition(ContractState.SLOT, {
+            operator: slotFilter.operator,
+            value: slot,
+          })
+        );
       }
     }
 
@@ -899,7 +902,7 @@ class ContractController extends BaseController {
       conditions,
       order,
       limit,
-      timestamp,
+      timestamp: timestampPresent,
     };
   }
 
