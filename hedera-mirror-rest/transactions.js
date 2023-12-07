@@ -376,9 +376,9 @@ const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(T
  * @param {Number} limit Max number of rows
  * @param {String} order Sorting order
  * @param {Array} sqlParams query parameter values
- * @return {Array} the query and params to use to obtain the transactions timestamp and payer ID information.
+ * @return {Promise} the Promise for obtaining the results of the query
  */
-const getTransactionTimestampsQueryAndParams = function (
+const getTransactionTimestamps = async (
   tsConfig,
   accountQuery,
   resultTypeQuery,
@@ -388,7 +388,7 @@ const getTransactionTimestampsQueryAndParams = function (
   limit,
   order,
   sqlParams
-) {
+) => {
   const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange);
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     queryTsRange,
@@ -398,8 +398,8 @@ const getTransactionTimestampsQueryAndParams = function (
   );
 
   const pgTransactionTsQuery = utils.convertMySqlStyleQueryToPostgres(transactionTsQuery, sqlParams.length + 1);
-  const transactionTimestampParams = utils.mergeParams(sqlParams, transactionTsParams);
-  const transactionTimestampQuery = getTransactionTimestampsQuery(
+  const transactionTimestampsParams = utils.mergeParams(sqlParams, transactionTsParams);
+  const transactionTimestampsQuery = getTransactionTimestampsQuery(
     accountQuery,
     pgTransactionTsQuery,
     resultTypeQuery,
@@ -409,7 +409,15 @@ const getTransactionTimestampsQueryAndParams = function (
     order
   );
 
-  return [transactionTimestampQuery, transactionTimestampParams];
+  if (logger.isTraceEnabled()) {
+    logger.trace(
+      `getTransactionTimestamps query: ${transactionTimestampsQuery} ${utils.JSONStringify(
+        transactionTimestampsParams
+      )}`
+    );
+  }
+
+  return pool.queryQuietly(transactionTimestampsQuery, transactionTimestampsParams);
 };
 
 /**
@@ -534,12 +542,12 @@ const getTransactionTimestampsQuery = function (
  * consisting of consensus_timestamp and payer_account_id attributes. At least one row is required.
  * @param {String} order Sorting order
  * @param {Number} limit Max number of rows
- * @return {Array} Fully formed parameterized SQL query and query parameter values
+ * @return {Promise} Promise returning the transaction summary results for the provided transaction timestamp rows
  */
-const getTransactionsQueryAndParams = function (timestampQueryRows, order, limit) {
+const getTransactionsSummary = async (timestampQueryRows, order, limit) => {
   // Nothing with which to query
   if (_.isNil(timestampQueryRows) || timestampQueryRows.length === 0) {
-    throw new InvalidArgumentError('No transaction timestamps query results provided');
+    return Promise.resolve({rows: [], sqlQuery: ''});
   }
 
   const minTimestamp =
@@ -629,7 +637,11 @@ const getTransactionsQueryAndParams = function (timestampQueryRows, order, limit
 
   const queryParams = [uniquePayerIdsParam, uniqueTimestampsParam, minTimestamp, maxTimestamp, limit];
 
-  return [query, queryParams];
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTransactionsSummary query: ${query} ${utils.JSONStringify(queryParams)}`);
+  }
+
+  return pool.queryQuietly(query, queryParams);
 };
 
 /**
@@ -661,7 +673,7 @@ const getTransactions = async (req, res) => {
   const limitQuery = utils.convertMySqlStyleQueryToPostgres(query, sqlParams.length + 1);
   sqlParams.push(...params);
 
-  const [transactionTimestampsQuery, transactionTimestampsParams] = getTransactionTimestampsQueryAndParams(
+  const {rows: timestampsRows} = await getTransactionTimestamps(
     {tsRange, tsEqValues, tsNeValues},
     accountQuery,
     resultTypeQuery,
@@ -673,40 +685,15 @@ const getTransactions = async (req, res) => {
     sqlParams
   );
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(
-      `getTransactions timestamps query: ${transactionTimestampsQuery} ${utils.JSONStringify(
-        transactionTimestampsParams
-      )}`
-    );
-  }
+  const {rows: transactionsRows, sqlQuery: transactionsRowsSqlQuery} = await getTransactionsSummary(
+    timestampsRows,
+    order,
+    limit
+  );
+  const transferList = await createTransferLists(transactionsRows);
 
   const ret = {};
-  let transactionsRows, transactionsSqlQuery;
-
-  const {rows: timestampsRows, sqlQuery: transactionTimestampsSqlQuery} = await pool.queryQuietly(
-    transactionTimestampsQuery,
-    transactionTimestampsParams
-  );
-  if (timestampsRows.length === 0) {
-    transactionsRows = [];
-  } else {
-    const [transactionsQuery, transactionsParams] = getTransactionsQueryAndParams(timestampsRows, order, limit);
-    if (logger.isTraceEnabled()) {
-      logger.trace(
-        `getTransactions transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsParams)}`
-      );
-    }
-    ({rows: transactionsRows, sqlQuery: transactionsSqlQuery} = await pool.queryQuietly(
-      transactionsQuery,
-      transactionsParams
-    ));
-    if (utils.isTestEnv()) {
-      ret.transactionsSqlQuery = transactionsSqlQuery;
-    }
-  }
-
-  const transferList = await createTransferLists(transactionsRows);
+  ret.sqlQuery = transactionsRowsSqlQuery;
   ret.transactions = transferList.transactions;
 
   ret.links = {
@@ -719,10 +706,6 @@ const getTransactions = async (req, res) => {
       order
     ),
   };
-
-  if (utils.isTestEnv()) {
-    ret.transactionTimestampsSqlQuery = transactionTimestampsSqlQuery;
-  }
 
   logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = ret;
@@ -913,8 +896,8 @@ const transactions = {
   createTransferLists,
   getTransactions,
   getTransactionsByIdOrHash,
-  getTransactionsQueryAndParams,
-  getTransactionTimestampsQueryAndParams,
+  getTransactionTimestamps,
+  getTransactionsSummary,
 };
 
 const acceptedTransactionParameters = new Set([

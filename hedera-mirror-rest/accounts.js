@@ -467,30 +467,19 @@ const getOneAccount = async (req, res) => {
     const accountParams = [encodedId];
     const pgLimitQuery = utils.convertMySqlStyleQueryToPostgres(limitQuery, 2);
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
-
     const transactionsParams = utils.mergeParams(accountParams, limitParams);
 
-    const [transactionTimestampsQuery, transactionTimestampsParams] =
-      transactions.getTransactionTimestampsQueryAndParams(
-        {tsRange, tsEqValues, tsNeValues},
-        accountQuery,
-        resultTypeQuery,
-        pgLimitQuery,
-        creditDebitQuery,
-        transactionTypeQuery,
-        limit,
-        order,
-        transactionsParams
-      );
-
-    if (logger.isTraceEnabled()) {
-      logger.trace(
-        `getOneAccount transaction timestamps query: ${transactionTimestampsQuery} ${utils.JSONStringify(
-          transactionTimestampsParams
-        )}`
-      );
-    }
-    transactionTimestampsPromise = pool.queryQuietly(transactionTimestampsQuery, transactionTimestampsParams);
+    transactionTimestampsPromise = transactions.getTransactionTimestamps(
+      {tsRange, tsEqValues, tsNeValues},
+      accountQuery,
+      resultTypeQuery,
+      pgLimitQuery,
+      creditDebitQuery,
+      transactionTypeQuery,
+      limit,
+      order,
+      transactionsParams
+    );
   } else {
     // Promise that returns empty result
     transactionTimestampsPromise = Promise.resolve({rows: []});
@@ -511,36 +500,17 @@ const getOneAccount = async (req, res) => {
   }
 
   const ret = processRow(entityResults.rows[0]);
-
   if (utils.isTestEnv()) {
     ret.entitySqlQuery = entityResults.sqlQuery;
-    ret.transactionTimestampsSqlQuery = transactionTimestampsResults.sqlQuery;
   }
 
-  // Process the results of transactions/timestamps queries
-  let transactionsRows, transactionsSqlQuery;
-  if (transactionTimestampsResults.rows.length == 0) {
-    transactionsRows = [];
-  } else {
-    const [transactionsQuery, transactionsParams] = transactions.getTransactionsQueryAndParams(
-      transactionTimestampsResults.rows,
-      order,
-      limit
-    );
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getOneAccount transactions query: ${transactionsQuery} ${utils.JSONStringify(transactionsParams)}`);
-    }
-    ({rows: transactionsRows, sqlQuery: transactionsSqlQuery} = await pool.queryQuietly(
-      transactionsQuery,
-      transactionsParams
-    ));
-
-    if (utils.isTestEnv()) {
-      ret.transactionsSqlQuery = transactionsSqlQuery;
-    }
-  }
-
+  const {rows: transactionsRows} = await transactions.getTransactionsSummary(
+    transactionTimestampsResults.rows,
+    order,
+    limit
+  );
   const transferList = await transactions.createTransferLists(transactionsRows);
+
   ret.transactions = transferList.transactions;
   const {anchorSecNs} = transferList;
 
