@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 21
 
       - name: Vulnerability check
         uses: gradle/gradle-build-action@v2
@@ -68,7 +68,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 21
 
       - name: Cache SonarCloud dependencies
         uses: actions/cache@v3
@@ -97,7 +97,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: 17
+          java-version: 21
 
       - name: Setup Snyk
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
@@ -133,7 +133,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: 17
+          java-version: 21
 
       - name: Setup Snyk
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
@@ -169,7 +169,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: 17
+          java-version: 21
 
       - name: Execute Gradle Snyk Monitor
         uses: gradle/gradle-build-action@v2

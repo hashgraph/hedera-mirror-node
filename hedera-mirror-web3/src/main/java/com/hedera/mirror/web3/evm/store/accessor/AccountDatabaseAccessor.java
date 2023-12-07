@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.*;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
@@ -27,7 +28,11 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
-import com.hedera.mirror.web3.repository.*;
+import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
+import com.hedera.mirror.web3.repository.NftAllowanceRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
@@ -35,9 +40,12 @@ import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
-import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
-import java.util.*;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -87,8 +95,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 getCryptoAllowances(entity.getId()),
                 getFungibleTokenAllowances(entity.getId()),
                 getApproveForAllNfts(entity.getId()),
-                tokenAssociationsCounts.getFirst(),
-                tokenAssociationsCounts.getSecond(),
+                tokenAssociationsCounts.all(),
+                tokenAssociationsCounts.positive(),
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
@@ -134,7 +142,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return EntityNum.fromLong(entityId.getNum());
     }
 
-    private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {
+    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {
         final var counts = tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId);
         int all = 0;
         int positive = 0;
@@ -146,7 +154,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
             all += count.getTokenCount();
         }
 
-        return new Pair<>(all, positive);
+        return new TokenAccountBalances(all, positive);
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -156,4 +164,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
             return null;
         }
     }
+
+    private record TokenAccountBalances(int all, int positive) {}
 }

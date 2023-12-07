@@ -87,12 +87,12 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
 
    This can be done by setting a unique name for the subnet in the UI or through the console with the following command
    ```shell script
-   gcloud container clusters create mirrornode-lb \
+   gcloud container clusters create mirror-node \
        --enable-ip-alias \
        --create-subnetwork="" \
        --network=default \
        --zone=us-central1-a \
-       --cluster-version=1.21.5-gke.1802 \
+       --cluster-version=1.27 \
        --machine-type=n1-standard-4
    ```
 
