@@ -19,12 +19,6 @@ package com.hedera.mirror.web3.evm.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -43,9 +37,6 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION_34 = EVM_VERSION;
     private static final String EVM_VERSION_30 = "v0.30";
     private static final String EVM_VERSION_38 = "v0.38";
-    private static final String HTS_ERC = "HTS,ERC";
-    private static final String EXCHANGE_RATE = "exchangeRate";
-    private static final String PRNG = "PRNG";
     private static final int MAX_REFUND_PERCENT = 100;
     private static final int MAX_CUSTOM_FEES_ALLOWED = 10;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
@@ -55,8 +46,6 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        properties.getEvmVersionToPrecompiles().clear();
-        properties.getSystemPrecompiles().clear();
         properties.getEvmVersions().clear();
     }
 
@@ -92,36 +81,6 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(result).isEqualTo(expectedEvmVersion);
     }
 
-    @ParameterizedTest
-    @MethodSource("blockNumberAndPrecompilesProvider")
-    void getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion, List<String> expectedPrecompiles) {
-
-        // given
-        TreeMap<String, Long> systemPrecompiles = new TreeMap<>();
-        systemPrecompiles.put(EXCHANGE_RATE, 1100L);
-        systemPrecompiles.put(PRNG, 1200L);
-
-        Map<String, Set<String>> evmPrecompiles = new HashMap<>();
-
-        evmPrecompiles.put(EVM_VERSION_30, Set.of(EXCHANGE_RATE, PRNG));
-        evmPrecompiles.put(EVM_VERSION_34, Set.of(EXCHANGE_RATE, PRNG));
-        evmPrecompiles.put(EVM_VERSION_38, Set.of(EXCHANGE_RATE, PRNG));
-
-        properties.setSystemPrecompiles(systemPrecompiles);
-        properties.setEvmVersionToPrecompiles(evmPrecompiles);
-
-        Set<String> precompilesAvailableResult = properties.getPrecompilesAvailableAtBlock(blockNumber, evmVersion);
-
-        assertThat(precompilesAvailableResult).containsExactlyInAnyOrderElementsOf(expectedPrecompiles);
-    }
-
-    @ParameterizedTest
-    @MethodSource("evmWithPrecompilesProvider")
-    void testGetEvmWithPrecompiles(String evmVersion, Set<String> precompiles, String expected) {
-        String result = MirrorNodeEvmProperties.getEvmWithPrecompiles(evmVersion, precompiles);
-        assertThat(result).isEqualTo(expected);
-    }
-
     private static Stream<Arguments> blockNumberToEvmVersionProvider() {
         return Stream.of(
                 Arguments.of(1L, EVM_VERSION_30),
@@ -133,28 +92,5 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
                 Arguments.of(2999L, EVM_VERSION_34),
                 Arguments.of(3000L, EVM_VERSION_38),
                 Arguments.of(5000L, EVM_VERSION_38));
-    }
-
-    private static Stream<Arguments> blockNumberAndPrecompilesProvider() {
-        return Stream.of(
-                Arguments.of(1L, EVM_VERSION_30, Collections.EMPTY_LIST),
-                Arguments.of(500L, EVM_VERSION_30, Collections.EMPTY_LIST),
-                Arguments.of(1099L, EVM_VERSION_30, Collections.EMPTY_LIST),
-                Arguments.of(1100L, EVM_VERSION_30, List.of(EXCHANGE_RATE)),
-                Arguments.of(1199L, EVM_VERSION_30, List.of(EXCHANGE_RATE)),
-                Arguments.of(1200L, EVM_VERSION_34, List.of(EXCHANGE_RATE, PRNG)),
-                Arguments.of(3100L, EVM_VERSION_38, Arrays.asList(EXCHANGE_RATE, PRNG)),
-                Arguments.of(4000L, EVM_VERSION_38, Arrays.asList(EXCHANGE_RATE, PRNG)),
-                Arguments.of(4100L, EVM_VERSION_38, Arrays.asList(EXCHANGE_RATE, PRNG)));
-    }
-
-    private static Stream<Arguments> evmWithPrecompilesProvider() {
-        return Stream.of(
-                Arguments.of(EVM_VERSION_30, Collections.EMPTY_SET, EVM_VERSION_30 + "-" + HTS_ERC),
-                Arguments.of(
-                        EVM_VERSION_30, Set.of(EXCHANGE_RATE), EVM_VERSION_30 + "-" + HTS_ERC + "," + EXCHANGE_RATE),
-                Arguments.of(EVM_VERSION_30, Set.of(EXCHANGE_RATE, PRNG), EVM_VERSION_30),
-                Arguments.of(EVM_VERSION_34, Set.of(EXCHANGE_RATE, PRNG), EVM_VERSION_34),
-                Arguments.of(EVM_VERSION_38, Set.of(EXCHANGE_RATE, PRNG), EVM_VERSION_38));
     }
 }

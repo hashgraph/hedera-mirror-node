@@ -17,10 +17,6 @@
 package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EXCHANGE_RATE;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.HTS_ERC;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.PRNG;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -32,12 +28,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -152,13 +146,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private Duration rateLimit = Duration.ofSeconds(100L);
 
     @Getter
-    private Map<String, Long> systemPrecompiles = new HashMap<>();
-
-    @Getter
     private TreeMap<String, Long> evmVersions = new TreeMap<>();
-
-    @Getter
-    private Map<String, Set<String>> evmVersionToPrecompiles;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -260,67 +248,5 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         }
 
         return closestVersion;
-    }
-
-    /**
-     * Determines the precompiles available at the specified block number based on the evm version that is used at the
-     * specified block timestamp Returns the list of available precompiles at the specified block
-     *
-     * @param blockNumber The block number for which to search
-     * @param evmVersion  The evm version that will be used
-     * @return List of precompiles available at the specified block number
-     */
-    public Set<String> getPrecompilesAvailableAtBlock(Long blockNumber, String evmVersion) {
-        if (CollectionUtils.isEmpty(evmVersionToPrecompiles)) {
-            return new HashSet<>();
-        }
-        Set<String> precompilesForEvm = evmVersionToPrecompiles.get(evmVersion);
-        return precompilesForEvm.stream()
-                .filter(p -> (systemPrecompiles.get(p) <= blockNumber))
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * Returns a string key representing the EVM version with specified precompiles.
-     *
-     * <p>The method matches the provided set of precompiles against known combinations,
-     * appending the relevant precompile names to the EVM version. If the set of precompiles matches a known
-     * combination, a specific version string key is returned. If the set does not match any predefined combination, a
-     * default version string is returned.
-     *
-     * <p>The method considers the following precompile combinations:
-     * <ul>
-     *   <li>Empty set</li>
-     *   <li>Set containing only EXCHANGE_RATE</li>
-     *   <li>Set containing EXCHANGE_RATE and PRNG</li>
-     *
-     * </ul>
-     *
-     * @param evmVersion  The base EVM version to be used for constructing the version string.
-     * @param precompiles A set of strings representing the precompiles to be included. Each string in the set should be
-     *                    a recognized precompile name.
-     * @return A string key representing the EVM version appended with a comma-separated list of precompiles if the set
-     * the set of precompiles matches known combinations. Returns a default version string (defined by EVM_VERSION) if
-     * the set does not match any predefined combinations.
-     */
-    public static String getEvmWithPrecompiles(String evmVersion, Set<String> precompiles) {
-        Set<String> precompileSet = new HashSet<>(precompiles);
-
-        // we have different combinations for ERC, HTS, EXCHANGE_RATE AND PRNG only for v0.30 evm
-        // the higher evm version support them all
-        if (!evmVersion.equals(EVM_VERSION_0_30)) {
-            return evmVersion;
-        }
-
-        if (CollectionUtils.isEmpty(precompiles)) {
-            return evmVersion + "-" + HTS_ERC;
-        } else if (precompileSet.equals(Set.of(EXCHANGE_RATE))) {
-            return evmVersion + "-" + HTS_ERC + "," + EXCHANGE_RATE;
-        } else if (precompileSet.equals(Set.of(EXCHANGE_RATE, PRNG))) {
-            return evmVersion;
-        }
-
-        // point to default version if we don't find anything
-        return EVM_VERSION;
     }
 }
