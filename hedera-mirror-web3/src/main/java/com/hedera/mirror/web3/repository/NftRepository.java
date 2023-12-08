@@ -79,7 +79,8 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
             join entity e on e.id = n.token_id
             where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
             order by n.timestamp_range desc
-            limit 1""",
+            limit 1
+            """,
             nativeQuery = true)
     Optional<Nft> findActiveByIdAndTimestamp(long tokenId, long serialNumber, long blockTimestamp);
 
@@ -89,4 +90,41 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     + "where n.account_id=:accountId and n.deleted is false and e.deleted is not true",
             nativeQuery = true)
     long countByAccountIdNotDeleted(Long accountId);
+
+    /**
+     * Retrieves the most recent state of number of associated tokens (and if their balance is positive)
+     * by accountId up to a given block timestamp.
+     * The method considers both the current state of the token account and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param accountId the ID of the account
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return the number of nfts the accountId owns at the specified timestamp.
+     */
+    @Query(
+            value =
+                    """
+                    select count(*)
+                    from (
+                        (
+                            select token_id
+                            from nft
+                            where account_id = :accountId
+                                and lower(timestamp_range) <= :blockTimestamp
+                                and deleted is not true
+                        )
+                        union all
+                        (
+                            select token_id
+                            from nft_history
+                            where account_id = :accountId
+                                and timestamp_range @> :blockTimestamp
+                                and deleted is not true
+                        )
+                    ) as n
+                    join entity e on e.id = n.token_id
+                    where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+                    """,
+            nativeQuery = true)
+    long countByAccountIdAndTimestampNotDeleted(long accountId, long blockTimestamp);
 }

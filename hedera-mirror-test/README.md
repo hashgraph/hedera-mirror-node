@@ -24,7 +24,7 @@ complex code underneath.
 
 ### Requirements
 
-- OpenJDK 17+
+- Java 21
 
 ### Test Execution
 

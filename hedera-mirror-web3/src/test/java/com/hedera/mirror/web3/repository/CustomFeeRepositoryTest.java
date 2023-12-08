@@ -45,4 +45,100 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
         assertThat(fixedFeesResult).hasSize(1);
         assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
     }
+
+    @Test
+    void findByIdAndTimestampLessThenBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFee()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() + 1);
+        assertThat(result).isPresent();
+        var fixedFeesResult = result.get().getFixedFees();
+        assertThat(fixedFeesResult).hasSize(1);
+        assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
+    }
+
+    @Test
+    void findByIdAndTimestampEqualToBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFee()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower());
+        assertThat(result).isPresent();
+        var fixedFeesResult = result.get().getFixedFees();
+        assertThat(fixedFeesResult).hasSize(1);
+        assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
+    }
+
+    @Test
+    void findByIdAndTimestampGreaterThanBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFee()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() - 1);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalLessThenBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFeeHistory()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() + 1);
+        assertThat(result).isPresent();
+        var fixedFeesResult = result.get().getFixedFees();
+        assertThat(fixedFeesResult).hasSize(1);
+        assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalEqualToBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFeeHistory()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower());
+        assertThat(result).isPresent();
+        var fixedFeesResult = result.get().getFixedFees();
+        assertThat(fixedFeesResult).hasSize(1);
+        assertThat(fixedFeesResult.get(0).getAmount()).isEqualTo(amount);
+    }
+
+    @Test
+    void findByIdAndTimestampHistoricalGreaterThanBlock() {
+        long amount = 12L;
+        var fixedFee = FixedFee.builder().amount(amount).build();
+        var customFee1 = domainBuilder
+                .customFeeHistory()
+                .customize(c -> c.fixedFees(List.of(fixedFee)))
+                .persist();
+        final var tokenId = customFee1.getTokenId();
+
+        var result = customFeeRepository.findByTokenIdAndTimestamp(tokenId, customFee1.getTimestampLower() - 1);
+        assertThat(result).isEmpty();
+    }
 }

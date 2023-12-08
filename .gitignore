@@ -1,5 +1,6 @@
 # Compiled class file
 *.class
+generated/
 
 # OS specific
 .DS_Store
