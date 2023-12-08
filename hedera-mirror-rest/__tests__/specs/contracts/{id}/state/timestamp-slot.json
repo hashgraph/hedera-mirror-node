@@ -10,6 +10,13 @@
       {
         "consensus_timestamp": "1677575107848140633",
         "contract_id": "5001",
+        "slot": "",
+        "value_read": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "value_written": "0x0000000000000000000000000000000000000000000000000000000000000001"
+      },
+      {
+        "consensus_timestamp": "1677575107848140633",
+        "contract_id": "5001",
         "slot": "03",
         "value_read": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "value_written": "0x0000000000000000000000000000000000000000000000000000000000000001"
@@ -17,8 +24,22 @@
     ]
   },
   "urls": [
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=3",
+    "/api/v1/contracts/5001/state?slot=3&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=0x3",
+    "/api/v1/contracts/5001/state?slot=0x3&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=03",
+    "/api/v1/contracts/5001/state?slot=03&timestamp=1677575107.848140636",
     "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=0x03",
-    "/api/v1/contracts/5001/state?slot=0x03&timestamp=1677575107.848140636"
+    "/api/v1/contracts/5001/state?slot=0x03&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=003",
+    "/api/v1/contracts/5001/state?slot=003&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=0x003",
+    "/api/v1/contracts/5001/state?slot=0x003&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=0000000000000000000000000000000000000000000000000000000000000003",
+    "/api/v1/contracts/5001/state?slot=0000000000000000000000000000000000000000000000000000000000000003&timestamp=1677575107.848140636",
+    "/api/v1/contracts/5001/state?timestamp=1677575107.848140636&slot=0x0000000000000000000000000000000000000000000000000000000000000003",
+    "/api/v1/contracts/5001/state?slot=0x0000000000000000000000000000000000000000000000000000000000000003&timestamp=1677575107.848140636"
   ],
   "responseStatus": 200,
   "responseJson": {
