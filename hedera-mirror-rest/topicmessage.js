@@ -101,25 +101,19 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
   const topicId = EntityId.parse(topicIdStr);
-  let pgSqlQuery;
-  let pgSqlParams;
+  let query = {};
   if (config.query.topicMessageLookup) {
-    const query = await getQueryWithTopicMessageLookupTimestamps(topicId, seqNum);
-    if (query === null) {
-      return null;
-    }
-    pgSqlQuery = query.pgSqlQuery;
-    pgSqlParams = query.pgSqlParams;
+    query = await getQueryWithTopicMessageLookupTimestamps(topicId, seqNum);
   } else {
     // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
-    pgSqlQuery = `select *
+    query.pgSqlQuery = `select *
                   from ${TopicMessage.tableName}
                   where ${TopicMessage.TOPIC_ID} = $1
                     and ${TopicMessage.SEQUENCE_NUMBER} = $2 limit 1`;
-    pgSqlParams = [topicId.getEncodedId(), seqNum];
+    query.pgSqlParams = [topicId.getEncodedId(), seqNum];
   }
 
-  res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
+  res.locals[constants.responseDataLabel] = await getMessage(query.pgSqlQuery, query.pgSqlParams);
 };
 
 /**
@@ -411,34 +405,25 @@ const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
 
 const getQueryWithTopicMessageLookupTimestamps = async (topicId, seqNum) => {
   // Get the timestamp range from the topic message lookup table
-  const sequenceNumber = BigInt(seqNum);
-  const topicMessageLookupQuery = `select lower(timestamp_range) as timestamp_start, upper(timestamp_range) as timestamp_end
+  const topicMessageLookupQuery = `select timestamp_range
                     from ${TopicMessageLookup.tableName}
-                    where topic_id = $1 and sequence_number_range @> $2::int8
+                    where topic_id = $1 and sequence_number_range @> $2::bigint
                     order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE}`;
-  const pgObject = utils.buildPgSqlObject(topicMessageLookupQuery, [topicId.getEncodedId(), sequenceNumber]);
-  if (pgObject === null) {
-    return null;
-  }
-
-  const {rows} = await pool.queryQuietly(pgObject.query, pgObject.params);
-  if (_.isNil(rows)) {
-    return null;
-  } else if (rows.length === 0) {
+  const {rows} = await pool.queryQuietly(topicMessageLookupQuery, [topicId.getEncodedId(), seqNum]);
+  if (rows.length === 0) {
     throw new NotFoundError();
   }
 
   // Use the timestamp range as constraints for the topic message query
-  const timestampStart = _.first(rows).timestamp_start;
-  const timestampEnd = _.first(rows).timestamp_end;
+  const timestampBegin = _.first(rows).timestamp_range.begin;
+  const timestampEnd = _.first(rows).timestamp_range.end;
   const pgSqlQuery = `select *
                       from ${TopicMessage.tableName}
                       where ${TopicMessage.TOPIC_ID} = $1
                         and ${TopicMessage.SEQUENCE_NUMBER} = $2
                         and ((${TopicMessage.CONSENSUS_TIMESTAMP} >= $3
-                            and ${TopicMessage.CONSENSUS_TIMESTAMP} < $4))
-                      limit 1`;
-  const pgSqlParams = [topicId.getEncodedId(), sequenceNumber, timestampStart, timestampEnd];
+                            and ${TopicMessage.CONSENSUS_TIMESTAMP} < $4))`;
+  const pgSqlParams = [topicId.getEncodedId(), seqNum, timestampBegin, timestampEnd];
   return {pgSqlQuery, pgSqlParams};
 };
 
