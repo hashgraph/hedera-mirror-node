@@ -547,7 +547,7 @@ const getTransactionTimestampsQuery = function (
 const getTransactionsSummary = async (timestampQueryRows, order, limit) => {
   // Nothing with which to query
   if (_.isNil(timestampQueryRows) || timestampQueryRows.length === 0) {
-    return Promise.resolve({rows: [], sqlQuery: ''});
+    return Promise.resolve({rows: []});
   }
 
   const minTimestamp =
@@ -692,8 +692,9 @@ const getTransactions = async (req, res) => {
   );
   const transferList = await createTransferLists(transactionsRows);
 
-  const ret = {};
-  ret.transactions = transferList.transactions;
+  const ret = {
+    transactions: transferList.transactions,
+  };
 
   ret.links = {
     next: utils.getPaginationLink(
@@ -705,6 +706,10 @@ const getTransactions = async (req, res) => {
       order
     ),
   };
+
+  if (utils.isTestEnv()) {
+    ret.sqlQuery = transactionsRowsSqlQuery;
+  }
 
   logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = ret;
