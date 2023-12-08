@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenAccountRepositoryTest extends Web3IntegrationTest {
+    private final int accountId = 123;
     private final TokenAccountRepository repository;
 
     @Test
@@ -75,6 +76,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByIdAndTimestampLessThanBlock() {
+        domainBuilder.tokenAccount().persist();
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
         assertThat(repository.findByIdAndTimestamp(
@@ -87,6 +89,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByIdAndTimestampEqualToBlock() {
+        domainBuilder.tokenAccount().persist();
         final var tokenAccount = domainBuilder.tokenAccount().persist();
 
         assertThat(repository.findByIdAndTimestamp(
@@ -168,5 +171,142 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                         latestTimestamp + 1))
                 .hasValueSatisfying(
                         actual -> assertThat(actual).returns(latestTimestamp, TokenAccount::getTimestampLower));
+    }
+
+    @Test
+    void countByAccountIdAndTimestampLessThanBlock() {
+        final var tokenAccount = domainBuilder.tokenAccount().persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccount.getAccountId(), tokenAccount.getTimestampLower() + 1))
+                .hasSize(1)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(true, 1));
+    }
+
+    @Test
+    void countByAccountIdAndTimestampLessThanBlockSize() {
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId).balance(0))
+                .persist();
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId).balance(0))
+                .persist();
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccount.getId().getAccountId(), tokenAccount.getTimestampLower() + 1))
+                .hasSize(2);
+    }
+
+    @Test
+    void countByAccountIdAndTimestampEqualToBlock() {
+        final var tokenAccount =
+                domainBuilder.tokenAccount().customize(ta -> ta.balance(0)).persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccount.getAccountId(), tokenAccount.getTimestampLower()))
+                .hasSize(1)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(false, 1));
+    }
+
+    @Test
+    void countByAccountIdAndTimestampGreaterThanBlock() {
+        final var tokenAccount = domainBuilder.tokenAccount().persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccount.getId().getAccountId(), tokenAccount.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void countByAccountIdAndTimestampHistoricalLessThanBlock() {
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+        final var tokenAccountHistory = domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        accountId, tokenAccountHistory.getTimestampLower() + 1))
+                .hasSize(1)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(true, 2));
+    }
+
+    @Test
+    void countByAccountIdAndTimestampHistoricalEqualToBlock() {
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+        final var tokenAccountHistory = domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        accountId, tokenAccountHistory.getTimestampLower()))
+                .hasSize(1)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(true, 2));
+    }
+
+    @Test
+    void countByAccountIdAndTimestampHistoricalGreaterThanBlock() {
+        final var tokenAccountHistory = domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        tokenAccountHistory.getId().getAccountId(), tokenAccountHistory.getTimestampLower() - 1))
+                .isEmpty();
+    }
+
+    @Test
+    void countByAccountIdAndTimestampHistoricalReturnsLatestEntry() {
+        long accountId = 2L;
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId).balance(0))
+                .persist();
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+        final var tokenAccountHistory = domainBuilder
+                .tokenAccountHistory()
+                .customize(ta -> ta.accountId(accountId))
+                .persist();
+
+        assertThat(repository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        accountId, tokenAccountHistory.getTimestampLower() + 1))
+                .hasSize(2)
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrder(tuple(true, 2), tuple(false, 1));
     }
 }
