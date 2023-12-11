@@ -1,5 +1,5 @@
 {
-  "description": "Get single message by valid topic and sequence",
+  "description": "Topic messages for single message",
   "setup": {
     "config": {
       "query": {
@@ -12,9 +12,6 @@
         "type": "TOPIC"
       }
     ],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -28,6 +25,8 @@
       },
       {
         "consensus_timestamp": "1234567890000000003",
+        "message": ["a", "b", "c"],
+        "running_hash": ["d", "e", "f"],
         "sequence_number": 3,
         "topic_id": 7
       }
@@ -38,26 +37,25 @@
         "timestamp_range": "[1234567890000000001,1234567890000000004)",
         "sequence_number_range": "[1,4)",
         "topic_id": 7
+      },
+      {
+        "partition": "topic_message_p2020_08",
+        "timestamp_range": "[1234567890000000004,1234567890000000007)",
+        "sequence_number_range": "[4,7)",
+        "topic_id": 7
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=2",
+  "urls": ["/api/v1/topics/0.7/messages/3", "/api/v1/topics/7/messages/3"],
   "responseStatus": 200,
   "responseJson": {
-    "messages": [
-      {
-        "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000002",
-        "message": "bWVzc2FnZQ==",
-        "payer_account_id": "0.0.3",
-        "running_hash": "cnVubmluZ19oYXNo",
-        "running_hash_version": 2,
-        "sequence_number": 2,
-        "topic_id": "0.0.7"
-      }
-    ],
-    "links": {
-      "next": null
-    }
+    "chunk_info": null,
+    "consensus_timestamp": "1234567890.000000003",
+    "message": "eyJhIiwiYiIsImMifQ==",
+    "payer_account_id": "0.0.3",
+    "running_hash": "eyJkIiwiZSIsImYifQ==",
+    "running_hash_version": 2,
+    "sequence_number": 3,
+    "topic_id": "0.0.7"
   }
 }

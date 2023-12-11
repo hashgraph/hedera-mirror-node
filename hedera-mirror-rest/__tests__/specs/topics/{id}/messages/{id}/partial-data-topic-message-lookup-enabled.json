@@ -1,10 +1,29 @@
 {
   "description": "Get messages with non existing topic id but sequence number found (partial mirror node)",
   "setup": {
+    "config": {
+      "query": {
+        "topicMessageLookup": true
+      }
+    },
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
         "sequence_number": 1,
+        "topic_id": 7
+      }
+    ],
+    "topicmessagelookups": [
+      {
+        "partition": "topic_message_p2020_07",
+        "timestamp_range": "[1234567890000000001,1234567890000000004)",
+        "sequence_number_range": "[1,4)",
+        "topic_id": 7
+      },
+      {
+        "partition": "topic_message_p2020_08",
+        "timestamp_range": "[1234567890000000004,1234567890000000007)",
+        "sequence_number_range": "[4,7)",
         "topic_id": 7
       }
     ]
