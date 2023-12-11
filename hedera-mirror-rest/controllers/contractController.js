@@ -860,14 +860,10 @@ class ContractController extends BaseController {
           break;
         case filterKeys.TIMESTAMP:
           if (filter.operator === utils.opsMap.eq) {
-            conditions.push(
-              this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, {
-                operator: '<=',
-                value: filter.value,
-              })
-            );
-            timestampPresent = true;
+            filter.operator = utils.opsMap.lte;
           }
+          conditions.push(this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, filter));
+          timestampPresent = true;
           break;
         case filterKeys.SLOT:
           slotFilters.push(filter);
