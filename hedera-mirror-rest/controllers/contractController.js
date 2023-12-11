@@ -879,9 +879,10 @@ class ContractController extends BaseController {
 
     const slotInValues = [];
     for (const slotFilter of slotFilters) {
+      // Left pad the slot value if no timestamp filter is present
       // If a timestamp filter is present the slot value needs additional conversion
       // because there is an inconsistency between the column slot in contract_state and contract_state_change.
-      const slot = utils.formatSlot(slotFilter.value, timestampPresent);
+      const slot = utils.formatSlot(slotFilter.value, !timestampPresent);
       if (slotFilter.operator === utils.opsMap.eq) {
         slotInValues.push(slot);
       } else {

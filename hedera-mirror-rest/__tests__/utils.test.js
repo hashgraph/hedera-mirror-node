@@ -1983,31 +1983,31 @@ describe('Utils formatSlot tests', () => {
   test('Verify valid contract_state_change table format slot', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000003';
     const formattedSlot = '03';
-    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 
   test('Verify valid contract_state_change table format odd slot', () => {
     const slot = '3';
     const formattedSlot = '03';
-    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 
   test('Verify valid contract_state_change table format 0 slot', () => {
     const slot = '0';
     const formattedSlot = '';
-    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 
   test('Verify valid contract_state_change table format empty slot', () => {
     const slot = '';
     const formattedSlot = '';
-    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 
-  test('Verify valid slot format if no table is provided', () => {
+  test('Verify valid slot with left pad', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000001';
     const formattedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
-    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
+    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 });
 

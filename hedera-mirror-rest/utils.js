@@ -1236,16 +1236,17 @@ const zeroPaddingRegex = /^0+(?=\d)0/;
  */
 const formatSlot = (slot, leftPad = false) => {
   if (leftPad) {
-    let formattedSlot = stripHexPrefix(slot).replace(zeroPaddingRegex, '0');
-    if (formattedSlot === '0') {
-      formattedSlot = '';
-    } else if (formattedSlot.length % 2) {
-      // Odd numbers will result in truncation when passed to Buffer, so pad to an even value
-      formattedSlot = '0' + formattedSlot;
-    }
-    return Buffer.from(formattedSlot, 'hex');
+    return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
   }
-  return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
+
+  let formattedSlot = stripHexPrefix(slot).replace(zeroPaddingRegex, '0');
+  if (formattedSlot === '0') {
+    formattedSlot = '';
+  } else if (formattedSlot.length % 2) {
+    // Odd numbers will result in truncation when passed to Buffer, so pad to an even value
+    formattedSlot = '0' + formattedSlot;
+  }
+  return Buffer.from(formattedSlot, 'hex');
 };
 
 /**
