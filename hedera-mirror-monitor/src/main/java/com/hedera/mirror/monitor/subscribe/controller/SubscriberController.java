@@ -47,7 +47,8 @@ class SubscriberController {
 
     @GetMapping
     public <T extends ScenarioProperties> Flux<Scenario<T, Object>> subscriptions(
-            @RequestParam Optional<ScenarioProtocol> protocol, @RequestParam Optional<List<ScenarioStatus>> status) {
+            @RequestParam("protocol") Optional<ScenarioProtocol> protocol,
+            @RequestParam("status") Optional<List<ScenarioStatus>> status) {
         return mirrorSubscriber
                 .<Scenario<T, Object>>getSubscriptions()
                 .filter(s -> !protocol.isPresent() || protocol.get() == s.getProtocol())
@@ -57,7 +58,7 @@ class SubscriberController {
 
     @GetMapping("/{name}")
     public <T extends ScenarioProperties> Flux<Scenario<T, Object>> subscriptions(
-            @PathVariable String name, @RequestParam Optional<List<ScenarioStatus>> status) {
+            @PathVariable("name") String name, @RequestParam("status") Optional<List<ScenarioStatus>> status) {
         Flux<Scenario<T, Object>> subscriptions = subscriptions(Optional.empty(), status);
         return subscriptions
                 .filter(subscription -> subscription.getName().equals(name))
@@ -66,7 +67,7 @@ class SubscriberController {
 
     @GetMapping("/{name}/{id}")
     public <T extends ScenarioProperties> Mono<Scenario<T, Object>> subscription(
-            @PathVariable String name, @PathVariable int id) {
+            @PathVariable("name") String name, @PathVariable("id") int id) {
         Flux<Scenario<T, Object>> subscriptions = subscriptions(name, Optional.empty());
         return subscriptions.filter(s -> s.getId() == id).last();
     }

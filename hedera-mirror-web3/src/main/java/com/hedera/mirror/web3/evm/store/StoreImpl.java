@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
@@ -141,6 +142,26 @@ public class StoreImpl implements Store {
     }
 
     @Override
+    public void linkAlias(final Address alias, final Address address) {
+        final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
+        final var foundAccount = getAccount(address, OnMissing.DONT_THROW);
+
+        if (foundAccount.isEmptyAccount()) {
+            final var accountId = EntityIdUtils.accountIdFromEvmAddress(address);
+            final var id = Id.fromGrpcAccount(accountId);
+            final var account = new Account(
+                    ByteString.copyFrom(alias.toArray()),
+                    EntityIdUtils.entityIdFromId(id).getNum(),
+                    id,
+                    0L);
+            accountAccessor.set(alias, account);
+            accountAccessor.set(Id.fromGrpcAccount(accountId).asEvmAddress(), account);
+        } else {
+            accountAccessor.set(alias, foundAccount);
+        }
+    }
+
+    @Override
     public void deleteAccount(final Address accountAddress) {
         final var topFrame = stackedStateFrames.top();
         final var accountAccessor = topFrame.getAccessor(Account.class);
@@ -245,9 +266,8 @@ public class StoreImpl implements Store {
     }
 
     @Override
-    public boolean exists(AccountID accountID) {
+    public boolean exists(final Address address) {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
-        final var address = EntityIdUtils.asTypedEvmAddress(accountID);
         final var account = accountAccessor.get(address);
         return account.isPresent();
     }

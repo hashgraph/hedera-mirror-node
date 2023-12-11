@@ -48,8 +48,11 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenUpdateUsage> factory =
             TokenUpdateUsage::newEstimate;
 
-    public TokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
+    private final Store store;
+
+    public TokenUpdateResourceUsage(final EstimatorFactory estimatorFactory, final Store store) {
         super(estimatorFactory);
+        this.store = store;
     }
 
     @Override
@@ -58,7 +61,7 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage impleme
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo, Store store) throws Exception {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo) throws Exception {
         final var op = txn.getTokenUpdate();
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var token = store.getToken(asTypedEvmAddress(op.getToken()), OnMissing.DONT_THROW);

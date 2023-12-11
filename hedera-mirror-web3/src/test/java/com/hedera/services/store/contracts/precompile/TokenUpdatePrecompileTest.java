@@ -16,7 +16,10 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.services.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
@@ -30,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -142,27 +146,30 @@ class TokenUpdatePrecompileTest {
     @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
 
+    @Mock
+    private PrecompileContext precompileContext;
+
     private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
-    private final TransactionBody transactionBody = TransactionBody.newBuilder()
-            .setTokenUpdate(TokenUpdateTransactionBody.newBuilder())
-            .build();
+    private final TransactionBody.Builder transactionBody =
+            TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder());
 
     private HTSPrecompiledContract subject;
 
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompileStatic;
+    private TokenUpdatePrecompile tokenUpdatePrecompile;
 
     @Mock
     private PrecompileMapper precompileMapper;
 
     @BeforeEach
     void setUp() {
-        final PrecompilePricingUtils pricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils pricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         tokenUpdatePrecompileStatic = Mockito.mockStatic(TokenUpdatePrecompile.class);
 
-        TokenUpdatePrecompile tokenUpdatePrecompile = new TokenUpdatePrecompile(
+        tokenUpdatePrecompile = new TokenUpdatePrecompile(
                 pricingUtils, updateLogic, syntheticTxnFactory, mirrorNodeEvmProperties, contextOptionValidator);
 
         precompileMapper = new PrecompileMapper(Set.of(tokenUpdatePrecompile));
@@ -175,7 +182,6 @@ class TokenUpdatePrecompileTest {
                 store,
                 tokenAccessor,
                 pricingUtils);
-
         ContractCallContext.init();
     }
 
@@ -204,8 +210,9 @@ class TokenUpdatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame)
+                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody.build(), sender);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -230,8 +237,9 @@ class TokenUpdatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a, precompileContext);
+        subject.getPrecompile(frame)
+                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody.build(), sender);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -256,8 +264,9 @@ class TokenUpdatePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a);
-        subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V3, a -> a, precompileContext);
+        subject.getPrecompile(frame)
+                .getMinimumFeeInTinybars(Timestamp.getDefaultInstance(), transactionBody.build(), sender);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(successResult, result);
@@ -281,7 +290,7 @@ class TokenUpdatePrecompileTest {
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -301,9 +310,10 @@ class TokenUpdatePrecompileTest {
                 .thenReturn(updateWrapper);
         given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
                 .willReturn(TransactionBody.newBuilder().setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a);
+        subject.prepareComputation(UPDATE_FUNGIBLE_TOKEN_INPUT_V2, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
@@ -369,6 +379,12 @@ class TokenUpdatePrecompileTest {
         givenMinimalFrameContext();
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenUpdatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

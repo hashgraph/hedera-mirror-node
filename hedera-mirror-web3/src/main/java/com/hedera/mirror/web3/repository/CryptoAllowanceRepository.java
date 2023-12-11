@@ -63,18 +63,24 @@ public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowanc
                                 )
                             ) as all_crypto_allowances
                         ) as grouped_crypto_allowances
-                        where row_number = 1
+                        where row_number = 1 and amount_granted > 0
                         ), transfers as (
-                        select entity_id, sum(ct.amount) as amount
-                        from crypto_transfer ct join crypto_allowances ca on ct.entity_id = ca.spender
-                        where entity_id in (select spender from crypto_allowances)
-                            and is_approval is true
+                        select spender, sum(ct.amount) as amount
+                        from crypto_transfer ct
+                            join crypto_allowances ca
+                            on ct.entity_id = ca.owner
+                                and ct.payer_account_id = ca.spender
+                        where is_approval is true
                             and consensus_timestamp <= :blockTimestamp
                             and consensus_timestamp > lower(ca.timestamp_range)
-                        group by entity_id
+                        group by spender
                         )
-                     select amount_granted, owner, payer_account_id, spender, timestamp_range, coalesce(amount - coalesce((select amount from transfers tr where tr.entity_id = ca.spender), 0), 0) as amount
-                     from crypto_allowances ca
+                    select *
+                    from (
+                        select amount_granted, owner, payer_account_id, spender, timestamp_range, amount_granted + coalesce((select amount from transfers tr where tr.spender = ca.spender), 0) as amount
+                        from crypto_allowances ca
+                    ) result
+                    where amount > 0
                     """,
             nativeQuery = true)
     List<CryptoAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);

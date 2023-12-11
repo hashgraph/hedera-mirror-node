@@ -97,6 +97,8 @@ class StoreImplTest {
             });
     private static final Address TOKEN_ADDRESS = Address.ALTBN128_ADD;
     private static final Address ACCOUNT_ADDRESS = Address.BLS12_MAP_FP2_TO_G2;
+    private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
+    private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
     private static final Id TOKEN_ID = Id.fromGrpcAccount(accountIdFromEvmAddress(TOKEN_ADDRESS));
     private static final Id ACCOUNT_ID = Id.fromGrpcAccount(accountIdFromEvmAddress(ACCOUNT_ADDRESS));
 
@@ -362,6 +364,13 @@ class StoreImplTest {
         assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();
         assertThat(subject.hasApprovedForAll(ACCOUNT_ADDRESS, accountId, tokenId))
                 .isFalse();
+    }
+
+    @Test
+    void linkAliasAccount() {
+        subject.wrap();
+        subject.linkAlias(ALIAS, ACCOUNT_ADDRESS);
+        assertThat(subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW)).isNotNull();
     }
 
     private void setupTokenAndAccount() {

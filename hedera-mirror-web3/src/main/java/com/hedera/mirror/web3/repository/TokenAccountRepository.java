@@ -40,15 +40,38 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
             nativeQuery = true)
     List<TokenAccountAssociationsCount> countByAccountIdAndAssociatedGroupedByBalanceIsPositive(long accountId);
 
-    // TODO
+    /**
+     * Retrieves the most recent state of number of associated tokens (and if their balance is positive)
+     * by accountId up to a given block timestamp.
+     * The method considers both the current state of the token account and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param accountId the ID of the account
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return List of {@link TokenAccountAssociationsCount}
+     */
     @Query(
             value =
                     """
-                    select count(*) as tokenCount, balance>0 as isPositiveBalance from token_account
-                    where account_id = :accountId
-                     and associated
-                     and lower(timestamp_range) <= :blockTimestamp
-                     is true group by balance>0
+                    select count(*) as tokenCount, balance>0 as isPositiveBalance
+                    from (
+                        (
+                            select *
+                            from token_account
+                            where account_id = :accountId
+                                and associated is true
+                                and lower(timestamp_range) <= :blockTimestamp
+                        )
+                        union all
+                        (
+                            select *
+                            from token_account_history
+                            where account_id = :accountId
+                                and associated is true
+                                and timestamp_range @> :blockTimestamp
+                        )
+                    ) as ta
+                    group by balance>0
                     """,
             nativeQuery = true)
     List<TokenAccountAssociationsCount> countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
@@ -60,7 +83,7 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
      * and returns the one that was valid just before or equal to the provided block timestamp.
      *
      * @param accountId the ID of the account
-     * @param tokenId the ID of the token to be retrieved.
+     * @param tokenId the ID of the token
      * @param blockTimestamp  the block timestamp used to filter the results.
      * @return an Optional containing the token account's state at the specified timestamp.
      *         If there is no record found for the given criteria, an empty Optional is returned.

@@ -157,11 +157,6 @@ public class EvmConfiguration {
     }
 
     @Bean
-    MessageCallProcessor messageCallProcessor(final EVM evm, final PrecompileContractRegistry precompiles) {
-        return new MessageCallProcessor(evm, precompiles);
-    }
-
-    @Bean
     Map<String, Provider<ContractCreationProcessor>> contractCreationProcessors(
             final ContractCreationProcessor contractCreationProcessor) {
         return Map.of(
@@ -170,8 +165,8 @@ public class EvmConfiguration {
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
-            final MessageCallProcessor messageCallProcessor,
-            final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
+            EVM evm, MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
+        var messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry());
         return Map.of(
                 EVM_VERSION_0_30, () -> messageCallProcessor, EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
     }

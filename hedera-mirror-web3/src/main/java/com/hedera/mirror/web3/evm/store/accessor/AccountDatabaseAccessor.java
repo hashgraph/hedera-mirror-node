@@ -16,7 +16,8 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import static com.hedera.mirror.common.domain.entity.EntityType.*;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
@@ -29,6 +30,11 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.*;
+import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
+import com.hedera.mirror.web3.repository.NftAllowanceRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
@@ -36,10 +42,12 @@ import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
-import com.mysema.commons.lang.Pair;
 import jakarta.inject.Named;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -168,7 +176,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
             all += count.getTokenCount();
         }
 
-        return new Pair<>(all, positive);
+        return new TokenAccountBalances(all, positive);
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -178,4 +186,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
             return null;
         }
     }
+
+    private record TokenAccountBalances(int all, int positive) {}
 }

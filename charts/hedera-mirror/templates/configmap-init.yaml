@@ -31,6 +31,8 @@ data:
       --set "ownerPassword=${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD}" \
       --set "restPassword=${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}" \
       --set "restUsername=${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME}" \
+      --set "restJavaPassword=${HEDERA_MIRROR_RESTJAVA_DB_PASSWORD}" \
+      --set "restJavaUsername=${HEDERA_MIRROR_RESTJAVA_DB_USERNAME}" \
       --set "rosettaPassword=${HEDERA_MIRROR_ROSETTA_DB_PASSWORD}" \
       --set "rosettaUsername=${HEDERA_MIRROR_ROSETTA_DB_USERNAME}" \
       --set "web3Password=${HEDERA_MIRROR_WEB3_DB_PASSWORD}" \
@@ -50,7 +52,8 @@ data:
     -- Create users
     create user :graphQLUsername with login password :'graphQLPassword' in role readonly;
     create user :grpcUsername with login password :'grpcPassword' in role readonly;
-    create user :importerUsername with login password :'importerPassword' in role readwrite;
+    create user :importerUsername with login password :'importerPassword' in role readwrite admin :ownerUsername;
+    create user :restJavaUsername with login password :'restJavaPassword' in role readonly;
     create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
     create user :web3Username with login password :'web3Password' in role readonly;
     alter user :ownerUsername with createrole;

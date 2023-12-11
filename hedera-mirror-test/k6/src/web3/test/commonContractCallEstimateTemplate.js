@@ -15,27 +15,14 @@
  */
 
 import {SharedArray} from 'k6/data';
-import {vu} from 'k6/execution';
 import {ContractCallTestScenarioBuilder} from './common.js';
 
 function ContractCallEstimateTestTemplate(key) {
-  const allData = new SharedArray(key, () => {
+  const data = new SharedArray(key, () => {
     return JSON.parse(open('./resources/estimate.json'))[key];
   });
 
-  const data = allData[vu.idInTest % allData.length];
-
-  const {options, run} = new ContractCallTestScenarioBuilder()
-    .name(key)
-    .estimate(true)
-    .block(data.block)
-    .data(data.data)
-    .gas(data.gas)
-    .from(data.from)
-    .value(data.value)
-    .to(data.to)
-    .sleep(data.sleep)
-    .build();
+  const {options, run} = new ContractCallTestScenarioBuilder().name(key).estimate(true).vuData(data).build();
 
   return {options, run};
 }

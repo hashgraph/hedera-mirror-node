@@ -1,0 +1,42 @@
+{{- if .Values.test.enabled -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
+  labels: {{- include "hedera-mirror-rest-java.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest-java.fullname" . }}-test
+  namespace: {{ include "hedera-mirror-rest-java.namespace" . }}
+spec:
+  containers:
+    - name: test
+      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag }}"
+      imagePullPolicy: {{ .Values.test.image.pullPolicy }}
+      args:
+        - run
+        - /test/postman.json
+        - --env-var
+        - baseUrl=http://{{ include "hedera-mirror-rest-java.fullname" . }}:{{ .Values.service.port }}
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: rest-java-test
+          mountPath: /test
+          readOnly: true
+  restartPolicy: Never
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 1
+  volumes:
+    - name: rest-java-test
+      configMap:
+        defaultMode: 420
+        name: {{ include "hedera-mirror-rest-java.fullname" . }}-test
+{{- end -}}

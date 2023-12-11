@@ -1,12 +1,12 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "0.93.0-SNAPSHOT",
+  "version": "0.95.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
-    "node": ">=18.12.0 < 21"
+    "node": ">=20 < 21"
   },
   "scripts": {
     "dev": "nodemon --import=extensionless/register server.js",

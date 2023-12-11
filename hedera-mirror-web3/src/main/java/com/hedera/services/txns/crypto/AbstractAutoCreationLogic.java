@@ -80,8 +80,7 @@ public abstract class AbstractAutoCreationLogic {
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
-            final EntityAddressSequencer ids,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+            final EntityAddressSequencer ids) {
         if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
         }
@@ -99,9 +98,9 @@ public abstract class AbstractAutoCreationLogic {
             syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, 0);
         }
 
-        var fee = autoCreationFeeFor(syntheticCreation, store, timestamp, mirrorEvmContractAliases);
+        var fee = autoCreationFeeFor(syntheticCreation, timestamp);
         if (isAliasEVMAddress) {
-            fee += getLazyCreationFinalizationFee(store, timestamp, mirrorEvmContractAliases);
+            fee += getLazyCreationFinalizationFee(timestamp);
         }
 
         final var newId = ids.getNewAccountId();
@@ -129,12 +128,11 @@ public abstract class AbstractAutoCreationLogic {
         store.updateAccount(account);
 
         replaceAliasAndSetBalanceOnChange(change, newId);
-        trackAlias(alias, account.getAccountAddress(), mirrorEvmContractAliases);
+        trackAlias(alias, account.getAccountAddress());
         return Pair.of(OK, fee);
     }
 
-    protected abstract void trackAlias(
-            final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases);
+    protected abstract void trackAlias(final ByteString alias, final Address address);
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
@@ -143,27 +141,18 @@ public abstract class AbstractAutoCreationLogic {
         change.replaceNonEmptyAliasWith(fromAccountId(newAccountId));
     }
 
-    private long getLazyCreationFinalizationFee(
-            final Store store, Timestamp timestamp, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+    private long getLazyCreationFinalizationFee(Timestamp timestamp) {
         // an AccountID is already accounted for in the
         // fee estimator, so we just need to pass a stub ECDSA key
         // in the synthetic crypto update body
         final var updateTxnBody =
                 CryptoUpdateTransactionBody.newBuilder().setKey(Key.newBuilder().setECDSASecp256K1(ByteString.EMPTY));
-        return autoCreationFeeFor(
-                TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody),
-                store,
-                timestamp,
-                mirrorEvmContractAliases);
+        return autoCreationFeeFor(TransactionBody.newBuilder().setCryptoUpdateAccount(updateTxnBody), timestamp);
     }
 
-    private long autoCreationFeeFor(
-            final TransactionBody.Builder cryptoCreateTxn,
-            final Store store,
-            Timestamp timestamp,
-            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+    private long autoCreationFeeFor(final TransactionBody.Builder cryptoCreateTxn, Timestamp timestamp) {
         final var accessor = synthAccessorFor(cryptoCreateTxn);
-        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp, mirrorEvmContractAliases);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 }

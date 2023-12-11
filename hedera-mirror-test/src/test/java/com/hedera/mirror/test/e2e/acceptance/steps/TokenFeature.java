@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.hashgraph.sdk.Status.CURRENT_TREASURY_STILL_OWNS_NFTS;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,7 +66,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -340,7 +340,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I mint a serial number from the token")
     public void mintNftToken() {
-        networkTransactionResponse = tokenClient.mint(tokenId, RandomUtils.nextBytes(4));
+        networkTransactionResponse = tokenClient.mint(tokenId, nextBytes(4));
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);

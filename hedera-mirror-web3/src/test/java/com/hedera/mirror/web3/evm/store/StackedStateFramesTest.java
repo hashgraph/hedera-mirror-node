@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ContextExtension.class)
-class StackedStateFramesTest {
+public class StackedStateFramesTest {
 
     @Test
     void constructionHappyPath() {
@@ -122,7 +122,7 @@ class StackedStateFramesTest {
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
     }
 
-    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
+    public static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override
         public Optional<V> get(@NonNull final K key, Optional<Long> timestamp) {

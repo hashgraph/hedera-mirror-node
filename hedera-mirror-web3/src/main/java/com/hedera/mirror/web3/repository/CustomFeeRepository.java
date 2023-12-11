@@ -22,18 +22,38 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface CustomFeeRepository extends CrudRepository<CustomFee, Long> {
+
+    /**
+     * Retrieves custom fee by its tokenId up to a given block timestamp.
+     * The method considers both the current state of the custom fee and its historical states
+     * and returns the latest valid just before or equal to the provided block timestamp.
+     *
+     * @param tokenId the ID of the account
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return an Optional containing the custom fee state at the specified timestamp.
+     * If there is no record found for the given criteria, an empty Optional is returned.
+     */
     @Query(
             value =
                     """
-            select * from (
-                select * from custom_fee where token_id = ?1
-                union all
-                select * from custom_fee_history where token_id = ?1
-            ) as cf
-            where timestamp_range < int8_range(?2, null)
+            (
+                select *
+                from custom_fee
+                where token_id = :tokenId
+                    and lower(timestamp_range) <= :blockTimestamp
+            )
+            union all
+            (
+                select *
+                from custom_fee_history
+                where token_id = :tokenId
+                    and lower(timestamp_range) <= :blockTimestamp
+                order by lower(timestamp_range) desc
+                limit 1
+            )
             order by timestamp_range desc
-            limit 1;
+            limit 1
             """,
             nativeQuery = true)
-    Optional<CustomFee> findByIdAndTimestamp(long id, long timestamp);
+    Optional<CustomFee> findByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }

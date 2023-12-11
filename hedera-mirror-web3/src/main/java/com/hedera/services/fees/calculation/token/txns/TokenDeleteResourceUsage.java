@@ -18,7 +18,6 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import static com.hedera.services.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.usage.token.TokenDeleteUsage;
 import com.hedera.services.hapi.fees.usage.EstimatorFactory;
@@ -46,7 +45,7 @@ public class TokenDeleteResourceUsage extends AbstractTokenResourceUsage impleme
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, Store store) throws Exception {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) throws Exception {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
         return estimate.get();

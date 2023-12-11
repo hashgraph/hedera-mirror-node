@@ -12,10 +12,6 @@ spec:
       port: 3000
       protocol: TCP
       targetPort: api
-    - name: ui
-      port: 80
-      protocol: TCP
-      targetPort: ui
   selector: {{ include "hedera-mirror-rest-monitor.selectorLabels" . | nindent 4 }}
   type: {{ .Values.monitor.service.type }}
 {{- end }}

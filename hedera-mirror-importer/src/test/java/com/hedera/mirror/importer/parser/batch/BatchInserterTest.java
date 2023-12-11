@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.batch;
 
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -45,7 +46,6 @@ import java.util.HashSet;
 import java.util.List;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
@@ -165,7 +165,7 @@ class BatchInserterTest extends IntegrationTest {
     private TopicMessage topicMessage(int messageSize) {
         return domainBuilder
                 .topicMessage()
-                .customize(t -> t.message(RandomUtils.nextBytes(messageSize)))
+                .customize(t -> t.message(nextBytes(messageSize)))
                 .get();
     }
 }

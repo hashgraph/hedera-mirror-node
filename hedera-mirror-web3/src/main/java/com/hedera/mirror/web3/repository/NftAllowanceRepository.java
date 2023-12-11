@@ -22,36 +22,13 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_NFT_
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
 
-    @Override
     @Cacheable(cacheNames = CACHE_NAME_NFT_ALLOWANCE, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<NftAllowance> findById(Id id);
-
-    // TODO
-    @Query(
-            value =
-                    """
-                    select * from (
-                        select * from nft_allowance
-                        where token_id = :tokenId
-                        and lower(timestamp_range) <= :blockTimestamp
-                        union all
-                            select * from nft_allowance_history
-                            where token_id = :tokenId
-                            and lower(timestamp_range) <= :blockTimestamp
-                    ) as na
-                    order by timestamp_range desc
-                    limit 1;
-                    """,
-            nativeQuery = true)
-    Optional<NftAllowance> findByIdAndTimestamp(long tokenId, long blockTimestamp);
-
     List<NftAllowance> findByOwnerAndApprovedForAllIsTrue(long owner);
 
     /**

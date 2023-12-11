@@ -31,6 +31,7 @@ import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txn.token.DissociateLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -65,8 +66,8 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp, Builder transactionBody) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    public long getGasRequirement(long blockTimestamp, Builder transactionBody, final AccountID sender) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, sender);
     }
 
     @Override
