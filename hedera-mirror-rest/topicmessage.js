@@ -141,6 +141,10 @@ const getTopicMessages = async (req, res) => {
   topicMessagesResponse.messages = [];
   res.locals[constants.responseDataLabel] = topicMessagesResponse;
 
+  if (!query) {
+    return;
+  }
+
   // get results and return formatted response
   // if limit is not 1, set random_page_cost to 0 to make the cost estimation of using the index on
   // (topic_id, consensus_timestamp) lower than that of the primary key so pg planner will choose the better index
@@ -195,9 +199,6 @@ const extractSqlForTopicMessagesLookup = (topicId, filters, limit, order) => {
                     where ${TopicMessageLookup.TOPIC_ID} = $1 `;
   const pgSqlParams = [topicId.getEncodedId()];
 
-  // add filters
-  // let limit = defaultLimit;
-  //let order = constants.orderFilterValues.ASC;
   let equal = null;
   let lowerLimit = 1n;
   let upperLimit = constants.MAX_LONG;
