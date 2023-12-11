@@ -52,6 +52,8 @@ public class AcceptanceTestProperties {
 
     private boolean emitBackgroundMessages = false;
 
+    private EquivalenceNodeConfiguration equivalenceNodeConfiguration = EquivalenceNodeConfiguration.MIRROR;
+
     @Min(1)
     private int maxNodes = 10;
 
@@ -96,5 +98,11 @@ public class AcceptanceTestProperties {
         OTHER,
         PREVIEWNET,
         TESTNET,
+    }
+
+    public enum EquivalenceNodeConfiguration {
+        CONSENSUS,
+        MIRROR,
+        CONSENSUS_MIRROR
     }
 }
