@@ -202,6 +202,30 @@ class TokenDatabaseAccessorTest {
     }
 
     @Test
+    void getAutoRenewHistorical() {
+        setupToken(timestamp);
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity autorenewEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        entity.setAutoRenewAccountId(10L);
+        when(autorenewEntity.getShard()).thenReturn(11L);
+        when(autorenewEntity.getRealm()).thenReturn(12L);
+        when(autorenewEntity.getNum()).thenReturn(13L);
+        when(autorenewEntity.getBalance()).thenReturn(14L);
+        when(entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(autorenewEntity));
+        when(entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get()))
+                .thenReturn(Optional.of(autorenewEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(token -> assertThat(token.getAutoRenewAccount())
+                        .returns(new Id(11, 12, 13), Account::getId)
+                        .returns(14L, Account::getBalance));
+    }
+
+    @Test
     void getTokenDefaultValues() {
         setupToken(Optional.empty());
         databaseToken.setTreasuryAccountId(null);

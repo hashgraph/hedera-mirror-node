@@ -38,7 +38,6 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, TokenRelationship> {
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;
-
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override

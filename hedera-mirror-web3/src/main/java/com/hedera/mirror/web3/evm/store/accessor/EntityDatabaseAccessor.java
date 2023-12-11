@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -37,14 +38,17 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address, final Optional<Long> timestamp) {
-        final var castedAddress = (Address) address;
-        final var addressBytes = castedAddress.toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            return getEntityByMirrorAddress(castedAddress, timestamp);
-        } else {
-            return getEntityByEvmAddress(addressBytes, timestamp);
+    public @NotNull Optional<Entity> get(@NotNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof Address address) {
+            final var addressBytes = address.toArrayUnsafe();
+            if (isMirror(addressBytes)) {
+                return getEntityByMirrorAddress(address, timestamp);
+            } else {
+                return getEntityByEvmAddress(addressBytes, timestamp);
+            }
         }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(Entity.class.getTypeName(), key.getClass().getTypeName()));
     }
 
     private Optional<Entity> getEntityByMirrorAddress(Address address, final Optional<Long> timestamp) {
