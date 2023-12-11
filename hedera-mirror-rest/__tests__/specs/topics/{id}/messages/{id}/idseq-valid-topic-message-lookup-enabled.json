@@ -1,6 +1,11 @@
 {
   "description": "Topic messages for single message",
   "setup": {
+    "config": {
+      "query": {
+        "topicMessageLookup": true
+      }
+    },
     "accounts": [
       {
         "num": 7,
@@ -23,6 +28,20 @@
         "message": ["a", "b", "c"],
         "running_hash": ["d", "e", "f"],
         "sequence_number": 3,
+        "topic_id": 7
+      }
+    ],
+    "topicmessagelookups": [
+      {
+        "partition": "topic_message_p2020_07",
+        "timestamp_range": "[1234567890000000001,1234567890000000004)",
+        "sequence_number_range": "[1,4)",
+        "topic_id": 7
+      },
+      {
+        "partition": "topic_message_p2020_08",
+        "timestamp_range": "[1234567890000000004,1234567890000000007)",
+        "sequence_number_range": "[4,7)",
         "topic_id": 7
       }
     ]
