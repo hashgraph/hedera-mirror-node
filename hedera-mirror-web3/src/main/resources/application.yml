@@ -9,12 +9,6 @@ hedera:
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_web3
-      evm:
-        evm_versions:
-          v0.30:
-          v0.34:
-          v0.38:
-          v0.45:
 logging:
   level:
     root: warn

@@ -16,14 +16,20 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_34_START_BLOCK;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_38_START_BLOCK;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.GENESIS_BLOCK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +55,11 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         properties.getEvmVersions().clear();
     }
 
+    @AfterEach
+    void cleanup() {
+        properties.setNetwork(HederaNetwork.TESTNET);
+    }
+
     @Test
     void correctPropertiesEvaluation() {
         assertThat(properties.evmVersion()).isEqualTo(EVM_VERSION);
@@ -68,14 +79,23 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     @ParameterizedTest
     @MethodSource("blockNumberToEvmVersionProvider")
-    void getEvmVersionForBlock(Long blockNumber, String expectedEvmVersion) {
-
+    void getEvmVersionForBlockFromConfig(Long blockNumber, String expectedEvmVersion) {
         // given
-        TreeMap<String, Long> evmVersions = new TreeMap<>();
-        evmVersions.put(EVM_VERSION_30, 1000L);
-        evmVersions.put(EVM_VERSION_34, 2000L);
-        evmVersions.put(EVM_VERSION_38, 3000L);
+        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+        evmVersions.put(GENESIS_BLOCK, EVM_VERSION_30);
+        evmVersions.put(EVM_VERSION_34_START_BLOCK, EVM_VERSION_34);
+        evmVersions.put(EVM_VERSION_38_START_BLOCK, EVM_VERSION_38);
         properties.setEvmVersions(evmVersions);
+
+        String result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualTo(expectedEvmVersion);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberToEvmVersionProvider")
+    void getEvmVersionForBlockFromHederaNetwork(Long blockNumber, String expectedEvmVersion) {
+        // given
+        properties.setNetwork(HederaNetwork.MAINNET);
 
         String result = properties.getEvmVersionForBlock(blockNumber);
         assertThat(result).isEqualTo(expectedEvmVersion);
@@ -83,14 +103,12 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     private static Stream<Arguments> blockNumberToEvmVersionProvider() {
         return Stream.of(
+                Arguments.of(0L, EVM_VERSION_30),
                 Arguments.of(1L, EVM_VERSION_30),
-                Arguments.of(800L, EVM_VERSION_30),
-                Arguments.of(999L, EVM_VERSION_30),
-                Arguments.of(1000L, EVM_VERSION_30),
-                Arguments.of(1999L, EVM_VERSION_30),
-                Arguments.of(2000L, EVM_VERSION_34),
-                Arguments.of(2999L, EVM_VERSION_34),
-                Arguments.of(3000L, EVM_VERSION_38),
-                Arguments.of(5000L, EVM_VERSION_38));
+                Arguments.of(EVM_VERSION_34_START_BLOCK - 1, EVM_VERSION_30),
+                Arguments.of(EVM_VERSION_34_START_BLOCK, EVM_VERSION_34),
+                Arguments.of(EVM_VERSION_38_START_BLOCK - 1, EVM_VERSION_34),
+                Arguments.of(EVM_VERSION_38_START_BLOCK, EVM_VERSION_38),
+                Arguments.of(EVM_VERSION_38_START_BLOCK + 1000, EVM_VERSION_38));
     }
 }

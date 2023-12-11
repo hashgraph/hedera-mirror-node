@@ -7,12 +7,6 @@ hedera:
         name: ${embedded.postgresql.schema}
         username: ${embedded.postgresql.user}
         password: ${embedded.postgresql.password}
-      evm:
-        evm_versions:
-          v0.30: 1000
-          v0.34: 2000
-          v0.38: 3000
-          v0.45: 4000
 spring:
   datasource:
     name: ${hedera.mirror.web3.db.name}

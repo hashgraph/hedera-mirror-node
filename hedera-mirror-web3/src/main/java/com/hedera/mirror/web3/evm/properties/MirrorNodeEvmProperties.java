@@ -17,6 +17,12 @@
 package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_34_START_BLOCK;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_38_START_BLOCK;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.GENESIS_BLOCK;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -28,8 +34,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import lombok.Getter;
@@ -146,7 +154,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private Duration rateLimit = Duration.ofSeconds(100L);
 
     @Getter
-    private TreeMap<String, Long> evmVersions = new TreeMap<>();
+    private NavigableMap<Long, String> evmVersions = new TreeMap<>();
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -187,9 +195,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public String evmVersion() {
-        if (ContractCallContext.get().useHistorical()) {
-            return getEvmVersionForBlock(
-                    ContractCallContext.get().getRecordFile().getIndex());
+        var context = ContractCallContext.get();
+        if (context.useHistorical()) {
+            return getEvmVersionForBlock(context.getRecordFile().getIndex());
         }
         return evmVersion;
     }
@@ -215,38 +223,50 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127")),
-        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128")),
-        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129")),
-        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"));
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127"), new TreeMap<>() {
+            {
+                put(GENESIS_BLOCK, EVM_VERSION_0_30);
+                put(EVM_VERSION_34_START_BLOCK, EVM_VERSION_0_34);
+                put(EVM_VERSION_38_START_BLOCK, EVM_VERSION_0_38);
+            }
+        }),
+        TESTNET(unhex("01"), Bytes32.fromHexString("0x0128"), Collections.emptyNavigableMap()),
+        PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129"), Collections.emptyNavigableMap()),
+        OTHER(unhex("03"), Bytes32.fromHexString("0x012A"), Collections.emptyNavigableMap());
 
         private final byte[] ledgerId;
         private final Bytes32 chainId;
+        private final NavigableMap<Long, String> evmVersions;
     }
 
     /**
      * Determines the suitable EVM version based on the given block number. Returns the highest version whose block
      * number is less than or equal to the input block number.
+     * The method operates in a hierarchical manner:
+     * 1. It initially attempts to use EVM versions defined in a YAML configuration.
+     * 2. If no YAML configuration is available, it defaults to using EVM versions specified in the HederaNetwork enum.
+     * 3. If no versions are defined in HederaNetwork, it falls back to a predefined default EVM version.
      *
-     * @param blockNumber The block number to check.
-     * @return The key of the suitable EVM version for the given block number, or null if none found.
+     * @param blockNumber The block number for which the EVM version needs to be determined.
+     * @return The key representing the most suitable EVM version for the given block number,
+     * or default EVM version if no applicable version is found.
      */
     public String getEvmVersionForBlock(Long blockNumber) {
+        NavigableMap<Long, String> evmVersions = this.evmVersions;
         if (CollectionUtils.isEmpty(evmVersions)) {
-            // In case we don't have any specified evm versions in yml configuration point to default version
+            // In case we don't have any specified evm versions in yml configuration use HederaNetwork values
+            evmVersions = network.evmVersions;
+        }
+
+        if (CollectionUtils.isEmpty(evmVersions)) {
+            // In case we don't have any specified evm versions in yml or HederaNetwork return default evm version
             return EVM_VERSION;
         }
-        String closestVersion = evmVersions.firstEntry().getKey(); // Default to the lowest version
-
-        for (Map.Entry<String, Long> entry : evmVersions.entrySet()) {
-            // If the block number of the version is greater than the block number we are looking for,
-            // break the loop as we have found the closest version.
-            if (entry.getValue() > blockNumber) {
-                break;
-            }
-            closestVersion = entry.getKey();
+        Entry<Long, String> evmEntry = evmVersions.floorEntry(blockNumber);
+        if (evmEntry != null) {
+            return evmEntry.getValue();
+        } else {
+            return EVM_VERSION; // Return default version if no entry matches the block number
         }
-
-        return closestVersion;
     }
 }
