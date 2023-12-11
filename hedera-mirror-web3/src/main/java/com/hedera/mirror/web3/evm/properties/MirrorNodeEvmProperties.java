@@ -223,13 +223,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127"), new TreeMap<>() {
-            {
-                put(GENESIS_BLOCK, EVM_VERSION_0_30);
-                put(EVM_VERSION_34_START_BLOCK, EVM_VERSION_0_34);
-                put(EVM_VERSION_38_START_BLOCK, EVM_VERSION_0_38);
-            }
-        }),
+        MAINNET(unhex("00"), Bytes32.fromHexString("0x0127"), mainnetEvmVersionsMap()),
         TESTNET(unhex("01"), Bytes32.fromHexString("0x0128"), Collections.emptyNavigableMap()),
         PREVIEWNET(unhex("02"), Bytes32.fromHexString("0x0129"), Collections.emptyNavigableMap()),
         OTHER(unhex("03"), Bytes32.fromHexString("0x012A"), Collections.emptyNavigableMap());
@@ -237,6 +231,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         private final byte[] ledgerId;
         private final Bytes32 chainId;
         private final NavigableMap<Long, String> evmVersions;
+
+        private static NavigableMap<Long, String> mainnetEvmVersionsMap() {
+            NavigableMap<Long, String> evmVersionsMap = new TreeMap<>();
+            evmVersionsMap.put(GENESIS_BLOCK, EVM_VERSION_0_30);
+            evmVersionsMap.put(EVM_VERSION_34_START_BLOCK, EVM_VERSION_0_34);
+            evmVersionsMap.put(EVM_VERSION_38_START_BLOCK, EVM_VERSION_0_38);
+            return evmVersionsMap;
+        }
     }
 
     /**
@@ -252,17 +254,17 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * or default EVM version if no applicable version is found.
      */
     public String getEvmVersionForBlock(Long blockNumber) {
-        NavigableMap<Long, String> evmVersions = this.evmVersions;
-        if (CollectionUtils.isEmpty(evmVersions)) {
+        NavigableMap<Long, String> evmVersionsMap = this.evmVersions;
+        if (CollectionUtils.isEmpty(evmVersionsMap)) {
             // In case we don't have any specified evm versions in yml configuration use HederaNetwork values
-            evmVersions = network.evmVersions;
+            evmVersionsMap = network.evmVersions;
         }
 
-        if (CollectionUtils.isEmpty(evmVersions)) {
+        if (CollectionUtils.isEmpty(evmVersionsMap)) {
             // In case we don't have any specified evm versions in yml or HederaNetwork return default evm version
             return EVM_VERSION;
         }
-        Entry<Long, String> evmEntry = evmVersions.floorEntry(blockNumber);
+        Entry<Long, String> evmEntry = evmVersionsMap.floorEntry(blockNumber);
         if (evmEntry != null) {
             return evmEntry.getValue();
         } else {
