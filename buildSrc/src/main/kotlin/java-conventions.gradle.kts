@@ -41,7 +41,6 @@ repositories {
     maven {
         url = uri("https://artifacts.consensys.net/public/maven/maven/")
     }
-    maven { url = uri("https://repo.spring.io/milestone") }
 }
 
 dependencyManagement {
