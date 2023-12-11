@@ -859,7 +859,11 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.TIMESTAMP:
-          if (filter.operator === utils.opsMap.eq) {
+          if (utils.opsMap.ne === filter.operator) {
+            throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
+          }
+
+          if (utils.opsMap.eq === filter.operator) {
             filter.operator = utils.opsMap.lte;
           }
           conditions.push(this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, filter));
