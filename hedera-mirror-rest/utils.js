@@ -915,13 +915,10 @@ const nsToSecNsWithHyphen = (ns) => {
 /**
  * Given a timestamp, returns the timestamp of the first day of that month
  * @param {BigInt} secNs nanoseconds since epoch
+ * @param {Number} delta number of delta months
  * @returns {BigInt} ns at first day of month
  */
-const getFirstDayOfMonth = (secNs) => {
-  if (_.isNil(secNs)) {
-    return null;
-  }
-
+const getFirstDayOfMonth = (secNs, delta = 0) => {
   if (typeof secNs !== 'bigint') {
     secNs = BigInt(secNs);
   }
@@ -929,7 +926,7 @@ const getFirstDayOfMonth = (secNs) => {
   // Convert nanoseconds to milliseconds for Date object
   const timestampMs = secNs / constants.NANOSECONDS_PER_MILLISECOND;
   const timestampDate = new Date(Number(timestampMs));
-  const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
+  const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth() + delta);
   // Convert milliseconds to nanoseconds
   return BigInt(firstDayMs) * constants.NANOSECONDS_PER_MILLISECOND;
 };

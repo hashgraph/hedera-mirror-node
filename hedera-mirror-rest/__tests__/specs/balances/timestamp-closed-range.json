@@ -1,0 +1,216 @@
+{
+  "description": "Balance api calls for all account balances referencing the latest snapshot in a closed range",
+  "features": {
+    "fakeTime": "2023-06-10Z"
+  },
+  "setup": {
+    "balances": [
+      {
+        "timestamp": 1680308100000000000,
+        "id": 2,
+        "balance": 201
+      },
+      {
+        "timestamp": 1681084800000000000,
+        "id": 2,
+        "balance": 202
+      },
+      {
+        "timestamp": 1682901000000000000,
+        "id": 2,
+        "balance": 203
+      },
+      {
+        "timestamp": 1684112400000000000,
+        "id": 2,
+        "balance": 204
+      },
+      {
+        "timestamp": 1685578500000000000,
+        "id": 2,
+        "balance": 205
+      },
+      {
+        "timestamp": 1686312900000000000,
+        "id": 2,
+        "balance": 206
+      },
+      {
+        "timestamp": 1680308100000000000,
+        "id": 4,
+        "balance": 41,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 301
+          }
+        ]
+      },
+      {
+        "timestamp": 1682901000000000000,
+        "id": 4,
+        "balance": 42,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 302
+          }
+        ]
+      },
+      {
+        "timestamp": 1685578500000000000,
+        "id": 4,
+        "balance": 42,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 302
+          }
+        ]
+      },
+      {
+        "timestamp": 1680308100000000000,
+        "id": 5,
+        "balance": 51
+      },
+      {
+        "timestamp": 1681084800000000000,
+        "id": 5,
+        "balance": 52
+      },
+      {
+        "timestamp": 1682901000000000000,
+        "id": 5,
+        "balance": 52
+      },
+      {
+        "timestamp": 1685578500000000000,
+        "id": 5,
+        "balance": 52
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=gt:1669939200&timestamp=lt:1673136000",
+        "/api/v1/balances?timestamp=gt:1669939200&timestamp=lt:1680308100",
+        "/api/v1/balances?timestamp=gt:1680305000&timestamp=lt:1680308100",
+        "/api/v1/balances?timestamp=gt:1686312900&timestamp=lt:1688774400",
+        "/api/v1/balances?timestamp=gt:1688774400&timestamp=lt:1699401600",
+        "/api/v1/balances?timestamp=gt:1685578500&timestamp=lt:1686312900"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": null,
+        "balances": [],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=gt:1669939200&timestamp=lte:1680308100",
+        "/api/v1/balances?timestamp=gt:1680307200&timestamp=lte:1680308100",
+        "/api/v1/balances?timestamp=gt:1680307200&timestamp=lt:1681084800"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1680308100.000000000",
+        "balances": [
+          {
+            "account": "0.0.5",
+            "balance": 51,
+            "tokens": []
+          },
+          {
+            "account": "0.0.4",
+            "balance": 41,
+            "tokens": [
+              {
+                "balance": 301,
+                "token_id": "0.0.90000"
+              }
+            ]
+          },
+          {
+            "account": "0.0.2",
+            "balance": 201,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "url": "/api/v1/balances?timestamp=gt:1680308100&timestamp=lte:1684112400",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1684112400.000000000",
+        "balances": [
+          {
+            "account": "0.0.5",
+            "balance": 52,
+            "tokens": []
+          },
+          {
+            "account": "0.0.4",
+            "balance": 42,
+            "tokens": [
+              {
+                "balance": 302,
+                "token_id": "0.0.90000"
+              }
+            ]
+          },
+          {
+            "account": "0.0.2",
+            "balance": 204,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/balances?timestamp=gt:1680308100&timestamp=lte:1686312900",
+        "/api/v1/balances?timestamp=gt:1560000000&timestamp=lt:1990000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "1686312900.000000000",
+        "balances": [
+          {
+            "account": "0.0.5",
+            "balance": 52,
+            "tokens": []
+          },
+          {
+            "account": "0.0.4",
+            "balance": 42,
+            "tokens": [
+              {
+                "balance": 302,
+                "token_id": "0.0.90000"
+              }
+            ]
+          },
+          {
+            "account": "0.0.2",
+            "balance": 206,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    }
+  ]
+}

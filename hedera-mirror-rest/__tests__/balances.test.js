@@ -362,7 +362,32 @@ describe('getOptimizedTimestampRange', () => {
     {
       operators: [gte, lte],
       params: ['2022-01-05Z', '2022-07-12Z'],
-      expected: {lowerBound: '2022-01-05Z', upperBound: '2022-07-12Z', neParams: []},
+      expected: {lowerBound: '2022-06-01Z', upperBound: '2022-07-12Z', neParams: []},
+    },
+    {
+      operators: [gte, lte],
+      params: ['2022-01-05Z', '2022-10-02Z'],
+      expected: {lowerBound: '2022-09-01Z', upperBound: '2022-10-02Z', neParams: []},
+    },
+    {
+      operators: [gte, lte],
+      params: ['2022-01-05Z', '2022-10-16Z'],
+      expected: {lowerBound: '2022-09-01Z', upperBound: '2022-10-16Z', neParams: []},
+    },
+    {
+      operators: [gte, lte],
+      params: ['2022-09-10Z', '2022-10-16Z'],
+      expected: {lowerBound: '2022-09-10Z', upperBound: '2022-10-16Z', neParams: []},
+    },
+    {
+      operators: [gte, lte],
+      params: ['2022-10-02Z', '2022-10-16Z'],
+      expected: {lowerBound: '2022-10-02Z', upperBound: '2022-10-16Z', neParams: []},
+    },
+    {
+      operators: [gte, lte],
+      params: ['2022-10-18Z', '2023-02-16Z'],
+      expected: {lowerBound: '2022-10-18Z', upperBound: '2023-02-16Z', neParams: []},
     },
     {
       operators: [gt],
@@ -402,9 +427,10 @@ describe('getOptimizedTimestampRange', () => {
     {
       operators: [gt, gte, lt, lte],
       params: ['2022-01-05Z', '2022-02-10Z', '2022-10-02Z', '2022-09-20Z'],
-      expected: {lowerBound: '2022-02-10Z', upperBound: '2022-09-20Z', neParams: []},
+      expected: {lowerBound: '2022-08-1Z', upperBound: '2022-09-20Z', neParams: []},
     },
   ].map((s) => ({
+    name: s.operators.map((op, index) => `consensus_timestamp${op}${s.params[index]}`).join(' and '),
     query: s.operators.map((op) => `consensus_timestamp ${op} ?`).join(' and '),
     params: s.params.map(toNs),
     expected: {
@@ -414,7 +440,7 @@ describe('getOptimizedTimestampRange', () => {
     },
   }));
 
-  test.each(spec)('$query', ({query, params, expected}) => {
+  test.each(spec)('$name', ({query, params, expected}) => {
     const actual = balances.getOptimizedTimestampRange(query, params);
     expect(actual).toEqual(expected);
   });

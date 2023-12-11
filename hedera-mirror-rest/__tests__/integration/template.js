@@ -45,6 +45,7 @@ import {JSONParse} from '../../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
 import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
 import {Readable} from 'stream';
+import sinon from 'sinon';
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
 const walk = (dir, files = []) => {
@@ -95,6 +96,7 @@ const specs = await getSpecs();
 
 describe(`API specification tests - ${groupSpecPath}`, () => {
   const bucketName = 'hedera-demo-streams';
+  const featureSupport = {};
   const s3TestDataRoot = path.join(getModuleDirname(import.meta), '..', 'data', 's3');
 
   let configOverridden = false;
@@ -180,6 +182,16 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
     }
   };
 
+  const setupFeatureSupport = (features) => {
+    if (features?.fakeTime) {
+      featureSupport.clock = sinon.useFakeTimers({
+        now: Date.parse(features.fakeTime),
+        shouldAdvanceTime: true,
+        shouldClearNativeTimers: true,
+      });
+    }
+  };
+
   const specSetupSteps = async (spec) => {
     await integrationDomainOps.setup(spec);
     if (spec.sql) {
@@ -187,6 +199,13 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
     }
     overrideConfig(spec.config);
+  };
+
+  const teardownFeatureSupport = () => {
+    if (featureSupport.clock) {
+      featureSupport.clock.restore();
+      delete featureSupport.clock;
+    }
   };
 
   const transformStateProofResponse = (jsonObj) => {
@@ -268,6 +287,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
 
   afterEach(() => {
     restoreConfig();
+    teardownFeatureSupport();
   });
 
   Object.entries(specs).forEach(([dir, specs]) => {
@@ -276,6 +296,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
         describe(`${spec.name}`, () => {
           getTests(spec).forEach((tt) => {
             test(`${tt.url}`, async () => {
+              setupFeatureSupport(spec.features);
               await specSetupSteps(spec.setup);
               if (spec.postSetup) {
                 await spec.postSetup();
