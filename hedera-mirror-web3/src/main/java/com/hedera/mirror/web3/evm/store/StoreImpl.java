@@ -275,7 +275,6 @@ public class StoreImpl implements Store {
     @SuppressWarnings("unchecked")
     @Override
     public Optional<Long> getHistoricalTimestamp() {
-        // Get the top frame from stackedStateFrames
         return stackedStateFrames
                 .top()
                 .upstreamFrame
@@ -285,6 +284,7 @@ public class StoreImpl implements Store {
                 .filter(DatabaseBackedStateFrame.class::isInstance)
                 // cast the filtered object to DatabaseBackedStateFrame
                 .map(DatabaseBackedStateFrame.class::cast)
+                // return the timestamp
                 .flatMap(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp);
     }
 

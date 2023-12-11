@@ -259,7 +259,6 @@ class TransferPrecompileTest {
                 pricingUtils);
 
         staticTransferPrecompile = mockStatic(TransferPrecompile.class);
-        ContractCallContext.init();
     }
 
     @AfterEach

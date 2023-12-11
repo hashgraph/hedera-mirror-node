@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.ContextExtension;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -160,8 +159,6 @@ class MirrorHTSPrecompiledContractTest {
                         store,
                         tokenAccessor,
                         precompilePricingUtils));
-
-        ContractCallContext.init();
     }
 
     @Test

@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -156,7 +155,6 @@ class UpdateTokenExpiryInfoPrecompileTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-        ContractCallContext.init();
     }
 
     @AfterEach

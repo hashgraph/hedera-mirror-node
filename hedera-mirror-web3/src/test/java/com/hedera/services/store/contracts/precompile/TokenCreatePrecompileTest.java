@@ -53,7 +53,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -255,7 +254,6 @@ class TokenCreatePrecompileTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-        ContractCallContext.init();
     }
 
     @AfterEach

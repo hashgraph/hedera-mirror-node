@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
-import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import java.util.Optional;
 import lombok.NonNull;
 import org.springframework.core.ResolvableType;
@@ -50,12 +49,6 @@ public abstract class DatabaseAccessor<K, V> {
     @NonNull
     public Class<V> getValueClass() {
         return klassValue;
-    }
-
-    public void throwDatabaseAccessException(String className, Object key)
-            throws DatabaseAccessIncorrectKeyTypeException {
-        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
-                .formatted(className, key.getClass().getTypeName()));
     }
 
     private final Class<K> klassKey;

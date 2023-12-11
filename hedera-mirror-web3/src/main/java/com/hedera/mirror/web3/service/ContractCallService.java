@@ -68,6 +68,7 @@ public class ContractCallService {
         try (ContractCallContext ctx = init()) {
             Bytes result;
             if (params.isEstimate()) {
+                // eth_estimateGas initialization - historical timestamp is Optional.empty()
                 ctx.initializeStackFrames(store.getStackedStateFrames());
                 result = estimateGas(params);
             } else {
@@ -83,6 +84,7 @@ public class ContractCallService {
                         return Bytes.EMPTY.toHexString();
                     }
                 }
+                // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
                 ctx.initializeStackFrames(store.getStackedStateFrames());
                 final var ethCallTxnResult = doProcessCall(params, params.getGas());
 

@@ -229,7 +229,6 @@ class CryptoAllowanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByOwnerAndTimestampWithTransferAfterBlockTimestamp() {
-        long payerAccountId = 1L;
         long spender = 1L;
         long owner = 2L;
         long cryptoAllowanceTimestamp = System.currentTimeMillis();

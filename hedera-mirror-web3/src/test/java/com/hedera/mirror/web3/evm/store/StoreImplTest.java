@@ -373,6 +373,12 @@ class StoreImplTest {
         assertThat(subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW)).isNotNull();
     }
 
+    @Test
+    void getHistoricalTimestamp() {
+        subject.wrap();
+        assertThat(subject.getHistoricalTimestamp()).isEmpty();
+    }
+
     private void setupTokenAndAccount() {
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
