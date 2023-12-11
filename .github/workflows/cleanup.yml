@@ -19,7 +19,7 @@ jobs:
           credentials_json: '${{ secrets.GCR_KEY }}'
 
       - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
