@@ -35,7 +35,8 @@ public class TokenAllowanceDatabaseAccessor extends DatabaseAccessor<Object, Tok
     public @NonNull Optional<TokenAllowance> get(@NonNull Object key, final Optional<Long> timestamp) {
         if (key instanceof AbstractTokenAllowance.Id id) {
             return timestamp
-                    .map(t -> tokenAllowanceRepository.findByIdAndTimestamp(id.getOwner(), t))
+                    .map(t -> tokenAllowanceRepository.findByOwnerSpenderTokenAndTimestamp(
+                            id.getOwner(), id.getSpender(), id.getTokenId(), t))
                     .orElseGet(() -> tokenAllowanceRepository.findById(id));
         }
         throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"

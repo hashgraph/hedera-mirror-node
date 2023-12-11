@@ -48,7 +48,7 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
         if (key instanceof Long tokenId) {
 
             return timestamp
-                    .map(t -> customFeeRepository.findByIdAndTimestamp(tokenId, t))
+                    .map(t -> customFeeRepository.findByTokenIdAndTimestamp(tokenId, t))
                     .orElseGet(() -> customFeeRepository.findById(tokenId))
                     .map(customFee -> mapCustomFee(customFee, timestamp));
         }

@@ -29,7 +29,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
-import com.hedera.mirror.web3.repository.*;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -48,6 +47,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -100,8 +100,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 getCryptoAllowances(entity.getId(), timestamp),
                 getFungibleTokenAllowances(entity.getId(), timestamp),
                 getApproveForAllNfts(entity.getId(), timestamp),
-                tokenAssociationsCounts.getFirst(),
-                tokenAssociationsCounts.getSecond(),
+                tokenAssociationsCounts.all(),
+                tokenAssociationsCounts.positive(),
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
@@ -159,7 +159,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return EntityNum.fromLong(entityId.getNum());
     }
 
-    private Pair<Integer, Integer> getNumberOfAllAndPositiveBalanceTokenAssociations(
+    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(
             long accountId, final Optional<Long> timestamp) {
         var counts = timestamp
                 .map(t -> tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
