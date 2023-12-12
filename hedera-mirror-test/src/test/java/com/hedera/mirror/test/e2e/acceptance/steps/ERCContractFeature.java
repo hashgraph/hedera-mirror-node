@@ -282,16 +282,29 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @RetryAsserts
-    @Then(
-            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
-    public void isApprovedForAllWithAliasSecondContractCall() {
+    @Then("I associate and approve the tokens")
+    public void associateAndApproveTokens() {
         ecdsaAccount = accountClient.getAccount(BOB);
         tokenClient.associate(ecdsaAccount, nonFungibleTokenId);
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(nonFungibleTokenId, ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
+        tokenClient.associate(ecdsaAccount, fungibleTokenId);
+        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                fungibleTokenId,
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                ecdsaAccount.getAccountId(),
+                ecdsaAccount.getPrivateKey(),
+                500);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @RetryAsserts
+    @Then(
+            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
+    public void isApprovedForAllWithAliasSecondContractCall() {
         var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
@@ -307,16 +320,6 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
     public void allowanceAliasAccountsCall() {
-        tokenClient.associate(ecdsaAccount, fungibleTokenId);
-        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
-        networkTransactionResponse = tokenClient.transferFungibleToken(
-                fungibleTokenId,
-                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                ecdsaAccount.getAccountId(),
-                ecdsaAccount.getPrivateKey(),
-                500);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         var data = encodeData(
                 ERC,
                 ALLOWANCE_SELECTOR,
