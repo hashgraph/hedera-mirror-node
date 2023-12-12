@@ -57,8 +57,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
-    private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 1;
 
     private final AccountClient accountClient;
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
@@ -232,7 +230,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new nft with infinite supplyType")
     public void createNewNft() {
-        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE).tokenId();
+        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_ERC).tokenId();
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
         nonFungibleTokenId = tokenId;
     }
