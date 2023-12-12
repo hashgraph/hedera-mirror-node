@@ -199,6 +199,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
     }
     overrideConfig(spec.config);
+    setupFeatureSupport(spec.features);
   };
 
   const teardownFeatureSupport = () => {
@@ -296,7 +297,6 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
         describe(`${spec.name}`, () => {
           getTests(spec).forEach((tt) => {
             test(`${tt.url}`, async () => {
-              setupFeatureSupport(spec.features);
               await specSetupSteps(spec.setup);
               if (spec.postSetup) {
                 await spec.postSetup();

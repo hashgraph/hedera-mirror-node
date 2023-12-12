@@ -1,9 +1,9 @@
 {
   "description": "Balance api calls for all account balances referencing the latest snapshot in a closed range",
-  "features": {
-    "fakeTime": "2023-06-10Z"
-  },
   "setup": {
+    "features": {
+      "fakeTime": "2023-06-10Z"
+    },
     "balances": [
       {
         "timestamp": 1680308100000000000,
