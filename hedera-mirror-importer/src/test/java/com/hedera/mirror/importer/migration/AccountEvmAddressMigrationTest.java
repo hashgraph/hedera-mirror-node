@@ -20,7 +20,7 @@ import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
 import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Tag;
@@ -30,7 +30,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class AccountEvmAddressMigrationTest extends IntegrationTest {
+class AccountEvmAddressMigrationTest extends ImporterIntegrationTest {
 
     private final JdbcOperations jdbcOperations;
     private final AccountEvmAddressMigration migration;

@@ -28,7 +28,7 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -51,7 +51,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class TokenAccountBalanceMigrationTest extends IntegrationTest {
+class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
 
     private static final String DELETE_TOKEN_BALANCE_SQL = "delete from token_balance where consensus_timestamp <= ?";
 

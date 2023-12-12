@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -46,7 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @SuppressWarnings("java:S5786")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-public class ErrataMigrationTest extends IntegrationTest {
+public class ErrataMigrationTest extends ImporterIntegrationTest {
 
     public static final long BAD_TIMESTAMP1 = 1568415600193620000L;
     private static final long BAD_TIMESTAMP2 = 1568528100472477002L;

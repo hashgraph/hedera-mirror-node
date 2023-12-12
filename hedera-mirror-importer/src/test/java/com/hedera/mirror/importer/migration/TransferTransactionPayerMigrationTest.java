@@ -31,7 +31,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -67,7 +67,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
-class TransferTransactionPayerMigrationTest extends IntegrationTest {
+class TransferTransactionPayerMigrationTest extends ImporterIntegrationTest {
 
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3);
     private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001);

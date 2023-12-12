@@ -39,7 +39,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -86,7 +86,7 @@ import org.springframework.data.util.Version;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class ContractResultServiceImplIntegrationTest extends IntegrationTest {
+class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
 
     private final ContractRepository contractRepository;
     private final ContractActionRepository contractActionRepository;

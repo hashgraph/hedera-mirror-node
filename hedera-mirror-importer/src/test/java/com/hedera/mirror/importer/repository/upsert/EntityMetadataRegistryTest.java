@@ -25,7 +25,7 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.persistence.Id;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -38,7 +38,7 @@ import org.springframework.data.domain.Persistable;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class EntityMetadataRegistryTest extends IntegrationTest {
+class EntityMetadataRegistryTest extends ImporterIntegrationTest {
 
     private final EntityMetadataRegistry registry;
 

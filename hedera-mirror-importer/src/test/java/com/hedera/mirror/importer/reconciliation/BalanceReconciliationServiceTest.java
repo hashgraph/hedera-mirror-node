@@ -38,7 +38,7 @@ import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
 import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.Gauge;
@@ -55,7 +55,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class BalanceReconciliationServiceTest extends IntegrationTest {
+class BalanceReconciliationServiceTest extends ImporterIntegrationTest {
 
     private final DomainBuilder domainBuilder;
     private final MeterRegistry meterRegistry;

@@ -18,13 +18,13 @@ package com.hedera.mirror.importer.parser.record.historicalbalance;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class HistoricalBalancePropertiesTest extends IntegrationTest {
+class HistoricalBalancePropertiesTest extends ImporterIntegrationTest {
 
     private final HistoricalBalanceProperties properties;
 

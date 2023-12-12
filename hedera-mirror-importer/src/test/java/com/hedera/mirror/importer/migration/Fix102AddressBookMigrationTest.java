@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import jakarta.annotation.Resource;
 import java.io.File;
@@ -34,7 +34,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 
 @EnabledIfV1
 @Tag("migration")
-class Fix102AddressBookMigrationTest extends IntegrationTest {
+class Fix102AddressBookMigrationTest extends ImporterIntegrationTest {
 
     @Resource
     private AddressBookRepository addressBookRepository;

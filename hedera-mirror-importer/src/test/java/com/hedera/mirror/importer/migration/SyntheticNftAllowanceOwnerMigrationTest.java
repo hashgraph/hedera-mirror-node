@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance.NftAllowanceBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class SyntheticNftAllowanceOwnerMigrationTest extends IntegrationTest {
+class SyntheticNftAllowanceOwnerMigrationTest extends ImporterIntegrationTest {
 
     private static final EntityId CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.2001");
     private static final EntityId CORRECT_CONTRACT_RESULT_SENDER_ID = EntityId.of("0.0.3001");

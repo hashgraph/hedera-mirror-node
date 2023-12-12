@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.balance.AccountBalance.Id;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
+class FixFungibleTokenTotalSupplyMigrationTest extends ImporterIntegrationTest {
 
     private final FixFungibleTokenTotalSupplyMigration migration;
     private final TokenRepository tokenRepository;

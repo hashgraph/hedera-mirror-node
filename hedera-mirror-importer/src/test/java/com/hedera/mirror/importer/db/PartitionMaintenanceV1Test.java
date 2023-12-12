@@ -20,7 +20,7 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PA
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV1
-class PartitionMaintenanceV1Test extends IntegrationTest {
+class PartitionMaintenanceV1Test extends ImporterIntegrationTest {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
     private static final String TOKEN_BALANCE_TABLE_NAME = "token_balance";
