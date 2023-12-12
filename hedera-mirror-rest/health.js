@@ -23,7 +23,7 @@ const readinessQuery = 'select true from address_book limit 1';
  *
  * @returns {Promise<*>}
  */
-const beforeShutdown = async () => {
+const onShutdown = async () => {
   logger.info(`Closing connection pool`);
   return pool.end();
 };
@@ -54,7 +54,7 @@ const readinessCheck = async () => {
 const livenessCheck = async () => {};
 
 export default {
-  beforeShutdown,
+  onShutdown,
   livenessCheck,
   readinessCheck,
 };
