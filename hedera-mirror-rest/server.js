@@ -192,7 +192,7 @@ if (!isTestEnv()) {
       '/health/readiness': health.readinessCheck,
       '/health/liveness': health.livenessCheck,
     },
-    beforeShutdown: health.beforeShutdown,
+    onShutdown: health.beforeShutdown,
   });
 }
 
