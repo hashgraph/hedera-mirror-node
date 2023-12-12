@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.db.DBProperties;
 import jakarta.annotation.Nonnull;
 import java.util.List;
@@ -45,7 +45,7 @@ import org.springframework.transaction.support.TransactionOperations;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class AsyncJavaMigrationTest extends IntegrationTest {
+class AsyncJavaMigrationTest extends ImporterIntegrationTest {
 
     private static final int ELAPSED = 20;
     private static final String TEST_MIGRATION_DESCRIPTION = "Async java migration for testing";

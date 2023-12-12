@@ -25,7 +25,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityHistoryRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -42,7 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class SidecarContractMigrationTest extends IntegrationTest {
+class SidecarContractMigrationTest extends ImporterIntegrationTest {
 
     private final ContractRepository contractRepository;
     private final EntityHistoryRepository entityHistoryRepository;

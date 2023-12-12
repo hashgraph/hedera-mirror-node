@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
@@ -75,7 +75,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class AddressBookServiceImplTest extends IntegrationTest {
+class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
     private static final NodeAddressBook UPDATED = addressBook(10, 0);
     private static final NodeAddressBook FINAL = addressBook(15, 0);

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
@@ -39,7 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class RecordFileParserIntegrationTest extends IntegrationTest {
+class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
 
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;

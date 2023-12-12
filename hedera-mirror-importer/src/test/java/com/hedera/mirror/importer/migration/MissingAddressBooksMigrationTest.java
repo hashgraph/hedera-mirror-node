@@ -26,7 +26,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -53,7 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class MissingAddressBooksMigrationTest extends IntegrationTest {
+class MissingAddressBooksMigrationTest extends ImporterIntegrationTest {
 
     private static final NodeAddressBook FINAL = addressBook(15, 0);
 

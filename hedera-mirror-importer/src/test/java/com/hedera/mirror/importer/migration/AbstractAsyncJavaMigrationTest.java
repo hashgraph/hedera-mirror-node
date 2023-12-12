@@ -19,13 +19,13 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.time.Duration;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> extends IntegrationTest {
+abstract class AbstractAsyncJavaMigrationTest<T extends AsyncJavaMigration<?>> extends ImporterIntegrationTest {
 
     private static final String RESET_CHECKSUM_SQL = "update flyway_schema_history set checksum = -1 where script = ?";
 

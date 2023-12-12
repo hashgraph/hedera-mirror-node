@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import java.io.File;
 import java.util.Collections;
@@ -37,7 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
+class FillMissingContractInitsourceMigrationTest extends ImporterIntegrationTest {
 
     @Value("classpath:db/migration/v1/R__fill_missing_contract_initsource.sql")
     private final File migrationSql;

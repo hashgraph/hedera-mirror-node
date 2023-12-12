@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @RequiredArgsConstructor
-public abstract class BatchEntityListenerTest extends IntegrationTest {
+public abstract class BatchEntityListenerTest extends ImporterIntegrationTest {
 
     protected final BatchEntityListener entityListener;
     protected final EntityListenerProperties properties;

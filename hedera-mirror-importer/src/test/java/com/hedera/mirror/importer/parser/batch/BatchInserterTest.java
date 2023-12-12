@@ -30,7 +30,7 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -52,7 +52,7 @@ import org.postgresql.copy.CopyManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class BatchInserterTest extends IntegrationTest {
+class BatchInserterTest extends ImporterIntegrationTest {
 
     private final BatchPersister batchInserter;
     private final CryptoTransferRepository cryptoTransferRepository;

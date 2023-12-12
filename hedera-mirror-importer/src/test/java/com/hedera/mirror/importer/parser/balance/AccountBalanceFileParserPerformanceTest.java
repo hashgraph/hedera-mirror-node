@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.parser.balance;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -38,7 +38,7 @@ import org.springframework.core.io.Resource;
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class AccountBalanceFileParserPerformanceTest extends IntegrationTest {
+class AccountBalanceFileParserPerformanceTest extends ImporterIntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceFileParser balanceFileParser;

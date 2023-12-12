@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.Arrays;
@@ -49,7 +49,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.1")
-class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
+class ContractLogsConvertTopicsToBytesMigrationTest extends ImporterIntegrationTest {
 
     private final @Owner JdbcOperations jdbcOperations;
 

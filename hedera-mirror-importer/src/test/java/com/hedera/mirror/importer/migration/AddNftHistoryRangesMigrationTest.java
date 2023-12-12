@@ -22,7 +22,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.NftHistory;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import java.io.File;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.87.2")
-class AddNftHistoryRangesMigrationTest extends IntegrationTest {
+class AddNftHistoryRangesMigrationTest extends ImporterIntegrationTest {
 
     private static final RowMapper<NftHistory> NFT_HISTORY_ROW_MAPPER = rowMapper(NftHistory.class);
 

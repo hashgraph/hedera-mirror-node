@@ -22,7 +22,7 @@ import static com.hedera.mirror.importer.migration.BlockNumberMigration.BLOCK_NU
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class BlockNumberMigrationTest extends IntegrationTest {
+class BlockNumberMigrationTest extends ImporterIntegrationTest {
 
     private static final long CORRECT_CONSENSUS_END =
             BLOCK_NUMBER_MAPPING.get(TESTNET).getKey();

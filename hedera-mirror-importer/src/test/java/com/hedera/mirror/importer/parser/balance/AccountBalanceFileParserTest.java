@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class AccountBalanceFileParserTest extends IntegrationTest {
+class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     private final AccountBalanceBuilder accountBalanceBuilder;
     private final AccountBalanceFileBuilder accountBalanceFileBuilder;
