@@ -4,11 +4,3 @@ embedded:
       # Adding embedded containers' dependencies enables them by default. However, only few tests needs pubsub emulator,
       # so it is enabled only for those tests.
       enabled: false
-  postgresql:
-    database: mirror_node
-    docker-image: postgres:14-alpine
-    initScriptPath: db/scripts/init.sql
-    password: mirror_node_pass
-    user: mirror_node
-  redis:
-    docker-image: redis:6-alpine

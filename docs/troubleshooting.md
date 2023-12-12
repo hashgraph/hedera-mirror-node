@@ -24,7 +24,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
+    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+      morning).
 
 - `Error closing connection`
 
@@ -32,9 +33,10 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - Check Cloud SQL console to figure out if connection limit is being reached. If so, restarting importer would be one
-    way to temporarily fix it.
-  - Ensure no service outage happens due to connection limit, restart as needed.
+    - Check Cloud SQL console to figure out if connection limit is being reached. If so, restarting importer would be
+      one
+      way to temporarily fix it.
+    - Ensure no service outage happens due to connection limit, restart as needed.
 
 - `Error parsing record file` \
   `previous hash is null` \
@@ -49,8 +51,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - Notify devops immediately
-  - Check if any recent changes were made to the code related to the error
+    - Notify devops immediately
+    - Check if any recent changes were made to the code related to the error
 
 - `Error saving file in database` \
   `Unable to connect to database` \
@@ -62,8 +64,9 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - Check Cloud SQL instance is up and running correctly (by executing some SQL queries). If the problem seems on Cloud
-    SQL side, escalate to devops.
+    - Check Cloud SQL instance is up and running correctly (by executing some SQL queries). If the problem seems on
+      Cloud
+      SQL side, escalate to devops.
 
 - `ERRORS processing account balances file`
 
@@ -72,15 +75,15 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - If bad data in the stream, escalate to devops
-  - If due to sql exception, check if next try is successful. If the error continues, investigate.
+    - If bad data in the stream, escalate to devops
+    - If due to sql exception, check if next try is successful. If the error continues, investigate.
 
 - `Exception`
 
   Actions:
 
-  - See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate
-    anyway)
+    - See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate
+      anyway)
 
 - `Failed downloading`
 
@@ -90,27 +93,28 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - Try downloading failing files locally (checks S3 is up)
-  - Check socket usage, packet loss, etc on importer instance
+    - Try downloading failing files locally (checks S3 is up)
+    - Check socket usage, packet loss, etc on importer instance
 
 - `Failed to parse NodeAddressBook from`
 
   Actions:
 
-  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
+    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+      morning).
 
 - `Insufficient downloaded signature file count, requires at least`
   This can happen if
 
-  1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
-     Logging rate will be at most 20/min.
-  2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach 100/min.
+    1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
+       Logging rate will be at most 20/min.
+    2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach 100/min.
 
   Effect: In case of bad signatures, it'll halt system progress.
 
   Actions:
 
-  - If happens due to bad signatures, escalate to devops.
+    - If happens due to bad signatures, escalate to devops.
 
 - `Long overflow when converting time to nanos timestamp`
 
@@ -119,13 +123,14 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
+    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+      morning).
 
 - `Unable to copy address book from`
 
   Actions:
 
-  - For emergency fix, manually copy known good address book to the destination.
+    - For emergency fix, manually copy known good address book to the destination.
 
 - `Unable to guess correct transaction type since there's not exactly one`
 
@@ -134,44 +139,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next morning).
-
-#### Stream Restart
-
-There have been cases in the past before OA where the stream had to be restarted. A stream restart entails a new S3
-bucket and zeroing out the hash of the previous file in the first file in that bucket. If you're using the old bucket,
-there will be no errors but you won't receive any new data after the restart event. To recover you need the wipe the
-files and database:
-
-1 ) Stop Mirror Node Importer
-
-```console
-sudo systemctl stop hedera-mirror-importer
-```
-
-2 ) Change Bucket Name and Region
-
-```console
-sudo vi /usr/etc/hedera-mirror-importer/application.yml
-```
-
-3 ) Wipe Database
-
-```console
-scp hedera-mirror-importer/src/main/resources/db/scripts/drop.sql user@server:~
-ssh user@server
-psql -h dbhost -d mirror_node -U mirror_node -f drop.sql
-```
-
-> **_NOTE:_** The `cleanup.sql` script was previously used to wipe the database as it truncates the tables and resets identities.
-> However, it was not designed to account for bootstrap data such as address books which are persisted during flyway migrations.
-> Hence, `drop.sql` is favored over `cleanup.sql` as it clears the schema and allows migrations to be re-run accordingly.
-
-4 ) Start Mirror Node Importer
-
-```console
-sudo systemctl start hedera-mirror-importer
-```
+    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+      morning).
 
 ## Detecting and alerting issues
 
@@ -223,38 +192,38 @@ Alerts: Low-Priority PagerDuty Alert during business hours only Response: Requir
 
 #### Log-based alerts
 
-| Log Message                                                                                 | Default Priority | Conditional Priority            |
-| ------------------------------------------------------------------------------------------- | ---------------- | ------------------------------- |
-| `Error parsing record file`                                                                 | HIGH             |                                 |
-| `Error starting watch service`                                                              | HIGH             |                                 |
-| `ERRORS processing account balances file`                                                   | HIGH             |                                 |
-| `previous hash is null`                                                                     | HIGH             |                                 |
-| `Failed to parse NodeAddressBook from`                                                      | HIGH             |                                 |
-| `Hash mismatch for file`                                                                    | HIGH             |                                 |
-| `Long overflow when converting time to nanos timestamp`                                     | HIGH             |                                 |
-| `Previous file hash not available`                                                          | HIGH             |                                 |
-| `Unable to extract hash and signature from file`                                            | HIGH             |                                 |
-| `Unable to guess correct transaction type since there's not exactly one`                    | HIGH             |                                 |
-| `Unknown file delimiter`                                                                    | HIGH             |                                 |
-| `Unknown record file delimiter`                                                             | HIGH             |                                 |
-| `Error processing balances files after`                                                     | MEDIUM           |                                 |
-| `Exception processing account balances file`                                                | MEDIUM           |                                 |
-| `Encountered unknown transaction type`                                                      | LOW              | HIGH (if 10 entries over 10 min |
-| `Error closing connection`                                                                  | LOW              | HIGH (if 10 entries over 10 min |
-| `Account balance dataset timestamp mismatch!`                                               | LOW              |                                 |
-| `Error decoding hex string`                                                                 | LOW              |                                 |
-| `Failed to verify`                                                                          | LOW              |                                 |
-| `Input parameter is not a folder`                                                           | LOW              |                                 |
-| `Failed to verify signature with public key`                                                | LOW              |                                 |
-| `Missing signature for file`                                                                | LOW              |                                 |
-| `Error saving file in database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Failed downloading`                                                                        | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Insufficient downloaded signature file count, requires at least`                           | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Signature verification failed`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to connect to database`                                                             | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to fetch entity types`                                                              | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to prepare SQL statements`                                                          | NONE             | HIGH (if 30 entries in 1 min)   |
-| `Unable to set connection to not auto commit`                                               | NONE             | HIGH (if 30 entries in 1 min)   |
+| Log Message                                                              | Default Priority | Conditional Priority            |
+|--------------------------------------------------------------------------|------------------|---------------------------------|
+| `Error parsing record file`                                              | HIGH             |                                 |
+| `Error starting watch service`                                           | HIGH             |                                 |
+| `ERRORS processing account balances file`                                | HIGH             |                                 |
+| `previous hash is null`                                                  | HIGH             |                                 |
+| `Failed to parse NodeAddressBook from`                                   | HIGH             |                                 |
+| `Hash mismatch for file`                                                 | HIGH             |                                 |
+| `Long overflow when converting time to nanos timestamp`                  | HIGH             |                                 |
+| `Previous file hash not available`                                       | HIGH             |                                 |
+| `Unable to extract hash and signature from file`                         | HIGH             |                                 |
+| `Unable to guess correct transaction type since there's not exactly one` | HIGH             |                                 |
+| `Unknown file delimiter`                                                 | HIGH             |                                 |
+| `Unknown record file delimiter`                                          | HIGH             |                                 |
+| `Error processing balances files after`                                  | MEDIUM           |                                 |
+| `Exception processing account balances file`                             | MEDIUM           |                                 |
+| `Encountered unknown transaction type`                                   | LOW              | HIGH (if 10 entries over 10 min |
+| `Error closing connection`                                               | LOW              | HIGH (if 10 entries over 10 min |
+| `Account balance dataset timestamp mismatch!`                            | LOW              |                                 |
+| `Error decoding hex string`                                              | LOW              |                                 |
+| `Failed to verify`                                                       | LOW              |                                 |
+| `Input parameter is not a folder`                                        | LOW              |                                 |
+| `Failed to verify signature with public key`                             | LOW              |                                 |
+| `Missing signature for file`                                             | LOW              |                                 |
+| `Error saving file in database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Failed downloading`                                                     | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Insufficient downloaded signature file count, requires at least`        | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Signature verification failed`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to connect to database`                                          | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to fetch entity types`                                           | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to prepare SQL statements`                                       | NONE             | HIGH (if 30 entries in 1 min)   |
+| `Unable to set connection to not auto commit`                            | NONE             | HIGH (if 30 entries in 1 min)   |
 
 Anything that wakes up a human in the middle of the night should be immediately actionable. For all `HIGH` priority
 alerts, there should be a section in the guide above listing immediate actionable steps someone can take to reduce

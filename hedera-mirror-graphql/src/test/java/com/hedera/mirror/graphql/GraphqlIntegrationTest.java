@@ -16,49 +16,6 @@
 
 package com.hedera.mirror.graphql;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import jakarta.annotation.Resource;
-import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.transaction.support.TransactionOperations;
+import com.hedera.mirror.common.config.CommonIntegrationTest;
 
-@Import(GraphqlIntegrationTest.IntegrationTestConfiguration.class)
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/cleanup.sql")
-@SpringBootTest
-public abstract class GraphqlIntegrationTest {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        log.info("Executing: {}", testInfo.getDisplayName());
-    }
-
-    @TestConfiguration
-    static class IntegrationTestConfiguration {
-
-        @Bean
-        MeterRegistry meterRegistry() {
-            return new SimpleMeterRegistry();
-        }
-
-        @Bean
-        DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-            return new DomainBuilder(entityManager, transactionOperations);
-        }
-    }
-}
+public abstract class GraphqlIntegrationTest extends CommonIntegrationTest {}
