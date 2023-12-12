@@ -16,11 +16,9 @@
 
 package com.hedera.mirror.importer.config;
 
-import com.hedera.mirror.importer.db.DBProperties;
-import com.zaxxer.hikari.HikariDataSource;
 import javax.sql.DataSource;
+import org.flywaydb.core.Flyway;
 import org.springframework.boot.autoconfigure.jdbc.JdbcProperties;
-import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -37,22 +35,8 @@ class JdbcTemplateConfiguration {
 
     @Bean
     @Owner
-    JdbcTemplate jdbcTemplateOwner(DBProperties dbProperties, JdbcProperties properties) {
-        return createJdbcTemplate(createDataSource(dbProperties), properties);
-    }
-
-    HikariDataSource createDataSource(DBProperties dbProperties) {
-        var jdbcUrl = String.format(
-                "jdbc:postgresql://%s:%d/%s?tcpKeepAlive=true",
-                dbProperties.getHost(), dbProperties.getPort(), dbProperties.getName());
-        var dataSource = DataSourceBuilder.create()
-                .password(dbProperties.getOwnerPassword())
-                .url(jdbcUrl)
-                .username(dbProperties.getOwner())
-                .type(HikariDataSource.class)
-                .build();
-        dataSource.setConnectionInitSql(dbProperties.getConnectionInitSql());
-        return dataSource;
+    JdbcTemplate jdbcTemplateOwner(Flyway flyway, JdbcProperties properties) {
+        return createJdbcTemplate(flyway.getConfiguration().getDataSource(), properties);
     }
 
     private JdbcTemplate createJdbcTemplate(DataSource dataSource, JdbcProperties properties) {

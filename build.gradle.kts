@@ -36,7 +36,6 @@ extra.apply {
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.5.0")
 }
 
@@ -53,6 +52,7 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
+        api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.7.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.8.4")
         api("com.google.guava:guava:32.1.3-jre")
@@ -64,9 +64,8 @@ dependencies {
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
-        api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
-        api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.0")
+        api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.15.1")

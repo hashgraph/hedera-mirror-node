@@ -1,35 +1,4 @@
-hedera:
-  mirror:
-    web3:
-      db:
-        host: ${embedded.postgresql.host}
-        port: ${embedded.postgresql.port}
-        name: ${embedded.postgresql.schema}
-        username: ${embedded.postgresql.user}
-        password: ${embedded.postgresql.password}
 spring:
-  datasource:
-    name: ${hedera.mirror.web3.db.name}
-    password: ${hedera.mirror.web3.db.password}
-    url: jdbc:postgresql://${hedera.mirror.web3.db.host}:${hedera.mirror.web3.db.port}/${hedera.mirror.web3.db.name}
-    username: ${hedera.mirror.web3.db.username}
-  flyway:
-    baselineOnMigrate: true
-    connectRetries: 10
-    ignoreMigrationPatterns: ["*:missing", "*:ignored"]
-    placeholders:
-      api-password: mirror_api_pass
-      api-user: mirror_api
-      db-name: ${hedera.mirror.web3.db.name}
-      db-user: ${hedera.mirror.web3.db.username}
-      idPartitionSize: 1000000000000000
-      maxEntityId: 5000000
-      maxEntityIdRatio: 2.0
-      partitionStartDate: "'1970-01-01'"
-      partitionTimeInterval: "'10 years'"
-      schema: public
-      shardCount: 2
-      topicRunningHashV2AddedTimestamp: 0
   test:
     database:
       replace: NONE
