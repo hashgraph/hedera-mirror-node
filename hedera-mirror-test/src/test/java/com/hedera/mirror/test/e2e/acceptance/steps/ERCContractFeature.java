@@ -57,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
+
     private final AccountClient accountClient;
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
     private final MirrorNodeClient mirrorClient;
@@ -254,7 +255,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new nft with infinite supplyType")
     public void createNewNft() {
-        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE).tokenId();
+        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_ERC).tokenId();
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
         nonFungibleTokenId = tokenId;
     }
@@ -306,10 +307,8 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @RetryAsserts
-    @Then(
-            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
-    public void isApprovedForAllWithAliasSecondContractCall() {
+    @Then("I associate and approve the tokens")
+    public void associateAndApproveTokens() {
         ecdsaAccount = accountClient.getAccount(BOB);
         tokenClient.associate(ecdsaAccount, nonFungibleTokenId);
         networkTransactionResponse =
