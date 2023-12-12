@@ -10,7 +10,7 @@ comment on table contract_transaction_hash is 'First 32 bytes of network transac
 
 insert into contract_transaction_hash(consensus_timestamp,hash,payer_account_id,entity_id, transaction_result)
     (select  cr.consensus_timestamp, cr.transaction_hash, cr.payer_account_id, cr.contract_id, cr.transaction_result
-     from contract_result cr);
+     from contract_result cr where cr.transaction_hash is not null);
 
 insert into contract_transaction_hash(consensus_timestamp,hash,payer_account_id,entity_id, transaction_result)
     (select et.consensus_timestamp, et.hash, et.payer_account_id, t.payer_account_id, t.result
