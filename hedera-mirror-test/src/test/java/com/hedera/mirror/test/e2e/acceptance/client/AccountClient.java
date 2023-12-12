@@ -309,6 +309,7 @@ public class AccountClient extends AbstractNetworkClient {
     public enum AccountNameEnum {
         ALICE(false, Key.KeyCase.ED25519),
         BOB(true, Key.KeyCase.ECDSA_SECP256K1),
+        // used in token.feature
         CAROL(false, Key.KeyCase.ED25519),
         DAVE(false, Key.KeyCase.ED25519),
         OPERATOR(false, Key.KeyCase.ED25519); // These may not be accurate for operator

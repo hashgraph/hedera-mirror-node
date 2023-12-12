@@ -57,8 +57,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
-    private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 1;
 
     private final AccountClient accountClient;
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
@@ -232,7 +230,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new nft with infinite supplyType")
     public void createNewNft() {
-        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE).tokenId();
+        final var tokenId = tokenClient.getToken(TokenNameEnum.NFT_ERC).tokenId();
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
         nonFungibleTokenId = tokenId;
     }
@@ -284,16 +282,29 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @RetryAsserts
-    @Then(
-            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
-    public void isApprovedForAllWithAliasSecondContractCall() {
+    @Then("I associate and approve the tokens")
+    public void associateAndApproveTokens() {
         ecdsaAccount = accountClient.getAccount(BOB);
         tokenClient.associate(ecdsaAccount, nonFungibleTokenId);
         networkTransactionResponse =
                 accountClient.approveNftAllSerials(nonFungibleTokenId, ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
+        tokenClient.associate(ecdsaAccount, fungibleTokenId);
+        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                fungibleTokenId,
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                ecdsaAccount.getAccountId(),
+                ecdsaAccount.getPrivateKey(),
+                500);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @RetryAsserts
+    @Then(
+            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
+    public void isApprovedForAllWithAliasSecondContractCall() {
         var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
@@ -309,16 +320,6 @@ public class ERCContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with alias accounts")
     public void allowanceAliasAccountsCall() {
-        tokenClient.associate(ecdsaAccount, fungibleTokenId);
-        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
-        networkTransactionResponse = tokenClient.transferFungibleToken(
-                fungibleTokenId,
-                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                ecdsaAccount.getAccountId(),
-                ecdsaAccount.getPrivateKey(),
-                500);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-
         var data = encodeData(
                 ERC,
                 ALLOWANCE_SELECTOR,
