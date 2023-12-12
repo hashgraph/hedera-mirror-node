@@ -85,9 +85,6 @@ public class EvmConfiguration {
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_38 = "v0.38";
     public static final String EVM_VERSION_0_45 = "v0.45";
-    public static final Long GENESIS_BLOCK = 0L;
-    public static final Long EVM_VERSION_34_START_BLOCK = 44029066L;
-    public static final Long EVM_VERSION_38_START_BLOCK = 49117794L;
 
     public static final String EVM_VERSION = EVM_VERSION_0_34;
     private final CacheProperties cacheProperties;
