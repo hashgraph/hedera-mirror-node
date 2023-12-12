@@ -263,30 +263,16 @@ const getOptimizedTimestampRange = (tsQuery, tsParams) => {
     return {};
   }
 
+  // The optimized range of [lower, upper] should overlap with at most two months, with the exception that when upper
+  // is more than 1 month in the future, the range may cover more months. Since the partition maintenance job will
+  // create at most one monthly partition ahead, it's unnecessary to adjust the upper bound.
+  // With the assumption that the data in db is in sync with the network, in other words, the balance information is
+  // update-to-date as of NOW in wall clock, the algorithm below sets lower bound to
+  //   max(lowerBound from user, first day of the month before the month min(now, upperBound) is in)
   const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-  if (upperBound !== constants.MAX_LONG) {
-    if (lowerBound === 0n) {
-      // There is an upper bound but no lowerBound
-      const firstDayOfUpperBoundMonth = utils.getFirstDayOfMonth(upperBound);
-      const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
-      lowerBound =
-        firstDayOfUpperBoundMonth < firstDayOfCurrentMonth
-          ? // if the upper bound is in a month prior to the current month, the lower bound is the beginning of
-            // the month prior to the month the upper bound is in. For example if the upper bound month is November
-            // 2022, the lower bound timestamp is the beginning of October 2022.
-            utils.getFirstDayOfMonth(firstDayOfUpperBoundMonth - 1n)
-          : // If upper bound is in the current or later month the lower bound is the beginning of the month before
-            // current month. For example if the current month is November, the lower bound timestamp is
-            // the beginning of October.
-            utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    }
-  } else {
-    // There is only a lower bound, set the lower bound to the maximum of (gteParam, the first day of the month
-    // before the current month)
-    const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
-    const firstDayOfPreviousMonth = utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    lowerBound = lowerBound > firstDayOfPreviousMonth ? lowerBound : firstDayOfPreviousMonth;
-  }
+  const effectiveUpperBound = upperBound > nowInNs ? nowInNs : upperBound;
+  const optimalLowerBound = utils.getFirstDayOfMonth(effectiveUpperBound, -1);
+  lowerBound = lowerBound > optimalLowerBound ? lowerBound : optimalLowerBound;
 
   return {lowerBound, upperBound, neParams};
 };
