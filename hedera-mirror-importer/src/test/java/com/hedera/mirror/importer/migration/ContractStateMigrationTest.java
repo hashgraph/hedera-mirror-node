@@ -22,7 +22,7 @@ import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.ContractStateRepository;
 import java.io.File;
@@ -44,7 +44,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.67.0")
-class ContractStateMigrationTest extends IntegrationTest {
+class ContractStateMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_SQL = """
             drop table if exists contract_state;

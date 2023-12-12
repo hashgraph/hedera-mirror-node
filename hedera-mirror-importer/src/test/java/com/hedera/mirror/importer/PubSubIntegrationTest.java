@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Import;
             "hedera.mirror.importer.parser.record.entity.enabled=false",
             "hedera.mirror.importer.parser.record.pubsub.enabled=true"
         })
-public abstract class PubSubIntegrationTest extends IntegrationTest {
+public abstract class PubSubIntegrationTest extends ImporterIntegrationTest {
 
     private static final String SUBSCRIPTION = "testSubscription";
 

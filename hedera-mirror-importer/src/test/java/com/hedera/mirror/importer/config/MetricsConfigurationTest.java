@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.MetricsConfiguration.TableMetric;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class MetricsConfigurationTest extends IntegrationTest {
+class MetricsConfigurationTest extends ImporterIntegrationTest {
 
     private final MeterRegistry meterRegistry;
 

@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
@@ -60,7 +60,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.80.1")
-class NestNftTransferMigrationTest extends IntegrationTest {
+class NestNftTransferMigrationTest extends ImporterIntegrationTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

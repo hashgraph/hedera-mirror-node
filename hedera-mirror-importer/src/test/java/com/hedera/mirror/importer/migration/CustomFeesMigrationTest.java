@@ -27,7 +27,7 @@ import com.hedera.mirror.common.domain.token.FixedFee;
 import com.hedera.mirror.common.domain.token.FractionalFee;
 import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.migration.CustomFeesMigrationTest.MigrationCustomFee.Id;
 import com.hedera.mirror.importer.repository.CustomFeeRepository;
@@ -61,7 +61,7 @@ import org.springframework.util.StreamUtils;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = {"spring.flyway.target=1.85.1"})
-class CustomFeesMigrationTest extends IntegrationTest {
+class CustomFeesMigrationTest extends ImporterIntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
     private final @Owner JdbcTemplate jdbcTemplate;

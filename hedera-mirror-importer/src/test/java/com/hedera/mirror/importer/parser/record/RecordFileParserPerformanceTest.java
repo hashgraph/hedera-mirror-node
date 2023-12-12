@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("performance")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("performance")
-class RecordFileParserPerformanceTest extends IntegrationTest {
+class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
 
     private final ParserPerformanceProperties performanceProperties;
     private final RecordFileParser recordFileParser;

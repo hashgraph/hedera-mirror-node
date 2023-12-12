@@ -54,7 +54,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
@@ -115,7 +115,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class SqlEntityListenerTest extends IntegrationTest {
+class SqlEntityListenerTest extends ImporterIntegrationTest {
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractActionRepository contractActionRepository;

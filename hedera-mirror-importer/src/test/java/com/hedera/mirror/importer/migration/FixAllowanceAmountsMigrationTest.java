@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -48,7 +48,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.84.1")
-class FixAllowanceAmountsMigrationTest extends IntegrationTest {
+class FixAllowanceAmountsMigrationTest extends ImporterIntegrationTest {
 
     private static final EntityId PAYER = EntityId.of("0.0.1001");
 

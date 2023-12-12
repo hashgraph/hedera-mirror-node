@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.db;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @TestInstance(Lifecycle.PER_CLASS)
-class TimePartitionServiceTest extends IntegrationTest {
+class TimePartitionServiceTest extends ImporterIntegrationTest {
 
     private static final List<TimePartition> EVENT_TIME_PARTITIONS = List.of(
             TimePartition.builder()

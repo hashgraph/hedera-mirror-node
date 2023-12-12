@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.66.0")
-class TokenAccountMigrationTest extends IntegrationTest {
+class TokenAccountMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_SQL =
             """

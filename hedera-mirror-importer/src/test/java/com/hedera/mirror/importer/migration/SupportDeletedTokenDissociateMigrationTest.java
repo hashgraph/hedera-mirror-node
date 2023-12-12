@@ -33,7 +33,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EnumType;
@@ -62,7 +62,7 @@ import org.springframework.test.context.TestPropertySource;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.44.1")
-class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
+class SupportDeletedTokenDissociateMigrationTest extends ImporterIntegrationTest {
 
     private static final int TRANSACTION_TYPE_TOKEN_DISSOCIATE = 41;
     private static final EntityId TREASURY = EntityId.of("0.0.200");
@@ -518,7 +518,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     private List<MigrationNftTransfer> findAllNftTransfers() {
         return jdbcOperations.query(
-                "select * from nft_transfer", IntegrationTest.rowMapper(MigrationNftTransfer.class));
+                "select * from nft_transfer", ImporterIntegrationTest.rowMapper(MigrationNftTransfer.class));
     }
 
     // Use a custom class for entity table since its columns have changed from the current domain object

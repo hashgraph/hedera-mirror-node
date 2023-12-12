@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV2;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @EnabledIfV2
-class PartitionMaintenanceV2Test extends IntegrationTest {
+class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
     private static final String GET_LATEST_PARTITIONS =
             """
             select distinct on (tp.parent_table) tp.parent_table,

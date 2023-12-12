@@ -35,7 +35,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
@@ -77,7 +77,7 @@ import java.util.function.Consumer;
 import lombok.SneakyThrows;
 import org.springframework.transaction.support.TransactionTemplate;
 
-public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
+public abstract class AbstractEntityRecordItemListenerTest extends ImporterIntegrationTest {
 
     protected static final ContractID CONTRACT_ID =
             ContractID.newBuilder().setContractNum(901).build();

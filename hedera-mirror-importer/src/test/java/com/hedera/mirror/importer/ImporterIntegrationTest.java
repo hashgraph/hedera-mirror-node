@@ -21,7 +21,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.IntegrationTest.Configuration;
+import com.hedera.mirror.importer.ImporterIntegrationTest.Configuration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
 import com.redis.testcontainers.RedisContainer;
@@ -65,7 +65,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @ExtendWith(SoftAssertionsExtension.class)
 @Import(Configuration.class)
-public abstract class IntegrationTest extends CommonIntegrationTest {
+public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = new ConcurrentHashMap<>();
 

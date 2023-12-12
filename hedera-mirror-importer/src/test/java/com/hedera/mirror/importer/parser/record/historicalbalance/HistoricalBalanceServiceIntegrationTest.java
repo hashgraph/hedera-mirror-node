@@ -33,7 +33,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
@@ -69,7 +69,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(OutputCaptureExtension.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class HistoricalBalanceServiceIntegrationTest extends IntegrationTest {
+class HistoricalBalanceServiceIntegrationTest extends ImporterIntegrationTest {
 
     private static final String[] ACCOUNT_BALANCE_FILE_IGNORE_FIELDS = new String[] {"loadStart", "loadEnd", "name"};
 
