@@ -30,7 +30,7 @@ const custom = {
         response: {
           compression: false,
           limit: {
-            max: 30,
+            max: 101,
           },
         },
         shard: 1,
