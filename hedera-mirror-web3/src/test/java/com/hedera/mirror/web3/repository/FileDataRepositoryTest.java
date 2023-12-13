@@ -32,9 +32,8 @@ import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class FileDataRepositoryTest extends Web3IntegrationTest {
 
     private static final long expiry = 1_234_567_890L;

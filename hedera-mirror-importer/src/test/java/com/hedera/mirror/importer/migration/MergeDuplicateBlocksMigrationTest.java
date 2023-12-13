@@ -27,9 +27,8 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class MergeDuplicateBlocksMigrationTest extends ImporterIntegrationTest {
 
     private static final long NUMBER = 44029066L;

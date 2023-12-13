@@ -21,10 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.token.Token;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenHistoryRepositoryTest extends AbstractRepositoryTest {
 
     private static final RowMapper<Token> ROW_MAPPER = rowMapper(Token.class);

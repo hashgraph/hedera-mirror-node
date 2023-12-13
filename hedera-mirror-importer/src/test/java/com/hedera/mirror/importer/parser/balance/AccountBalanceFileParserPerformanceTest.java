@@ -31,13 +31,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
 @Tag("performance")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class AccountBalanceFileParserPerformanceTest extends ImporterIntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;

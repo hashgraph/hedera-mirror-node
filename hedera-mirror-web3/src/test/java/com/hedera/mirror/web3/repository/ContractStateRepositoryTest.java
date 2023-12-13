@@ -23,9 +23,8 @@ import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class ContractStateRepositoryTest extends Web3IntegrationTest {
 
     private final ContractStateRepository contractStateRepository;

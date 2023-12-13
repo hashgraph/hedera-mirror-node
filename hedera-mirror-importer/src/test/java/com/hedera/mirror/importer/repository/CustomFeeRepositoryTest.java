@@ -22,10 +22,9 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class CustomFeeRepositoryTest extends AbstractRepositoryTest {
 
     private final CustomFeeRepository customFeeRepository;

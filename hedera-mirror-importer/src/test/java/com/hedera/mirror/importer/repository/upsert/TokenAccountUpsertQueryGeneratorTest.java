@@ -22,9 +22,8 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenAccountUpsertQueryGeneratorTest extends ImporterIntegrationTest {
 
     private final EntityMetadataRegistry entityMetadataRegistry;
