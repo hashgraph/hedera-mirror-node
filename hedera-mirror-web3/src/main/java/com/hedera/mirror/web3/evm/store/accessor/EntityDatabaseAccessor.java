@@ -42,23 +42,23 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
         if (key instanceof Address address) {
             final var addressBytes = address.toArrayUnsafe();
             if (isMirror(addressBytes)) {
-                return getEntityByMirrorAddress(address, timestamp);
+                return getEntityByMirrorAddressAndTimestamp(address, timestamp);
             } else {
-                return getEntityByEvmAddress(addressBytes, timestamp);
+                return getEntityByEvmAddressAndTimestamp(addressBytes, timestamp);
             }
         }
         throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
                 .formatted(Entity.class.getTypeName(), key.getClass().getTypeName()));
     }
 
-    private Optional<Entity> getEntityByMirrorAddress(Address address, final Optional<Long> timestamp) {
+    private Optional<Entity> getEntityByMirrorAddressAndTimestamp(Address address, final Optional<Long> timestamp) {
         final var entityId = entityIdNumFromEvmAddress(address);
         return timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId));
     }
 
-    private Optional<Entity> getEntityByEvmAddress(byte[] addressBytes, final Optional<Long> timestamp) {
+    private Optional<Entity> getEntityByEvmAddressAndTimestamp(byte[] addressBytes, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
                 .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));

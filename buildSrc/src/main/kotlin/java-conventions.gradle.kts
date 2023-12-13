@@ -41,7 +41,6 @@ repositories {
     maven {
         url = uri("https://artifacts.consensys.net/public/maven/maven/")
     }
-    maven { url = uri("https://repo.spring.io/milestone") }
 }
 
 dependencyManagement {
@@ -83,6 +82,8 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
+    systemProperty("user.timezone", "UTC")
+    systemProperty("spring.test.constructor.autowire.mode", "ALL")
     if (System.getenv().containsKey("CI")) {
         retry {
             maxRetries = 3

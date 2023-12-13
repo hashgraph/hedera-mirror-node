@@ -34,6 +34,9 @@ dependencies {
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
     testImplementation("org.hyperledger.besu:evm")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("io.micrometer:micrometer-core")
     testClasses(sourceSets["test"].output)
 }
 

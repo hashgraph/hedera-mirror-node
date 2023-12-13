@@ -3,9 +3,7 @@
   "setup": {
     "config": {
       "query": {
-        "v2": {
-          "topicMessageLookups": true
-        }
+        "topicMessageLookup": true
       }
     },
     "accounts": [

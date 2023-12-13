@@ -29,12 +29,12 @@ import io.micrometer.observation.ObservationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.SslMode;
 import io.vertx.pgclient.pubsub.PgChannel;
 import io.vertx.pgclient.pubsub.PgSubscriber;
 import jakarta.inject.Named;
 import java.time.Duration;
 import java.util.Objects;
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,12 +46,17 @@ public class NotifyingTopicListener extends SharedTopicListener {
 
     final ObjectMapper objectMapper;
     private final Mono<PgChannel> channel;
+    private final JdbcConnectionDetails connectionDetails;
     private final DbProperties dbProperties;
     private final Flux<TopicMessage> topicMessages;
 
     public NotifyingTopicListener(
-            DbProperties dbProperties, ListenerProperties listenerProperties, ObservationRegistry observationRegistry) {
+            JdbcConnectionDetails connectionDetails,
+            DbProperties dbProperties,
+            ListenerProperties listenerProperties,
+            ObservationRegistry observationRegistry) {
         super(listenerProperties);
+        this.connectionDetails = connectionDetails;
         this.dbProperties = dbProperties;
 
         // use EntityIdDeserializer/EntityIdSerializer for EntityIds (e.g. payer_account_id)
@@ -94,12 +99,9 @@ public class NotifyingTopicListener extends SharedTopicListener {
     }
 
     private Mono<PgChannel> createChannel() {
-        PgConnectOptions connectOptions = new PgConnectOptions()
-                .setDatabase(dbProperties.getName())
-                .setHost(dbProperties.getHost())
+        var uri = connectionDetails.getJdbcUrl().replace("jdbc:", "");
+        var connectOptions = PgConnectOptions.fromUri(uri)
                 .setPassword(dbProperties.getPassword())
-                .setPort(dbProperties.getPort())
-                .setSslMode(SslMode.DISABLE)
                 .setUser(dbProperties.getUsername());
 
         Duration interval = listenerProperties.getInterval();

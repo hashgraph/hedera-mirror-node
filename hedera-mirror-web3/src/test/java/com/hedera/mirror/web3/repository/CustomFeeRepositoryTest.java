@@ -23,9 +23,8 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class CustomFeeRepositoryTest extends Web3IntegrationTest {
     private final CustomFeeRepository customFeeRepository;
 

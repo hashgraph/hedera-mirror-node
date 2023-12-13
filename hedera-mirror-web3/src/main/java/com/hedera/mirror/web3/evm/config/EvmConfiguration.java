@@ -36,6 +36,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.txns.util.PrngLogic;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,6 +83,9 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
     public static final String EVM_VERSION_0_30 = "v0.30";
     public static final String EVM_VERSION_0_34 = "v0.34";
+    public static final String EVM_VERSION_0_38 = "v0.38";
+    public static final String EVM_VERSION_0_45 = "v0.45";
+
     public static final String EVM_VERSION = EVM_VERSION_0_34;
     private final CacheProperties cacheProperties;
 
@@ -157,18 +161,22 @@ public class EvmConfiguration {
     }
 
     @Bean
-    Map<String, Provider<ContractCreationProcessor>> contractCreationProcessors(
+    Provider<ContractCreationProcessor> contractCreationProcessorProvider(
             final ContractCreationProcessor contractCreationProcessor) {
-        return Map.of(
-                EVM_VERSION_0_30, () -> contractCreationProcessor, EVM_VERSION_0_34, () -> contractCreationProcessor);
+        return () -> contractCreationProcessor;
     }
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
-            EVM evm, MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
+            EVM evm, final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
         var messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry());
-        return Map.of(
-                EVM_VERSION_0_30, () -> messageCallProcessor, EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
+        Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
+        processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_45, () -> mirrorEvmMessageCallProcessor);
+
+        return processorsMap;
     }
 
     @Bean

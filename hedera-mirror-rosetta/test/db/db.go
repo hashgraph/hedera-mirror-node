@@ -23,6 +23,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"github.com/ory/dockertest/v3"
 	"io/ioutil"
 	"os"
 	"path"
@@ -35,7 +36,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	_ "github.com/lib/pq"
-	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	dbCleanupScript = "hedera-mirror-importer/src/test/resources/db/scripts/cleanup.sql"
+	dbCleanupScript = "hedera-mirror-common/src/test/resources/cleanup.sql"
 	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
 	dbUsername      = "mirror_rosetta_integration"

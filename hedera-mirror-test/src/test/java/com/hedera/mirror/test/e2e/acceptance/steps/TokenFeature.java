@@ -67,11 +67,10 @@ import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class TokenFeature extends AbstractFeature {
 
     private static final int INITIAL_SUPPLY = 1_000_000;

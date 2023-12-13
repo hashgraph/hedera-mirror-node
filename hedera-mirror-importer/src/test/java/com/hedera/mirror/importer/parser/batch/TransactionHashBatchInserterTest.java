@@ -23,7 +23,7 @@ import static org.springframework.transaction.support.TransactionSynchronization
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
@@ -45,15 +45,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class TransactionHashBatchInserterTest extends IntegrationTest {
+@RequiredArgsConstructor
+class TransactionHashBatchInserterTest extends ImporterIntegrationTest {
     private final JdbcTemplate jdbcTemplate;
     private final BatchPersister batchPersister;
     private final TransactionRepository transactionRepository;

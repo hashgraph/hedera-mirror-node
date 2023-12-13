@@ -24,9 +24,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class AddressBookRepositoryTest extends GrpcIntegrationTest {
 
     private final AddressBookRepository addressBookRepository;

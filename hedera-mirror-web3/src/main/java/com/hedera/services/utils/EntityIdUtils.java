@@ -189,7 +189,7 @@ public final class EntityIdUtils {
         return EntityId.of(id.shard(), id.realm(), id.num());
     }
 
-    public static EntityId entityIdFromUftId(NftId id) {
+    public static EntityId entityIdFromNftId(NftId id) {
         if (id == null) {
             return null;
         }

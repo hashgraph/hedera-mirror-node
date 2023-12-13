@@ -150,18 +150,8 @@ class MirrorEvmTxProcessorTest {
                     mcpVersion = EVM_VERSION_0_34;
                     return new MessageCallProcessor(evm30, new PrecompileContractRegistry());
                 });
-        final Map<String, Provider<ContractCreationProcessor>> ccps = Map.of(
-                EVM_VERSION_0_30,
-                () -> {
-                    ccpVersion = EVM_VERSION_0_30;
-
-                    return new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
-                },
-                EVM_VERSION_0_34,
-                () -> {
-                    ccpVersion = EVM_VERSION_0_34;
-                    return new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
-                });
+        Provider<ContractCreationProcessor> contractCreationProcessorProvider =
+                () -> new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
@@ -169,7 +159,7 @@ class MirrorEvmTxProcessorTest {
                 evmProperties,
                 gasCalculator,
                 mcps,
-                ccps,
+                contractCreationProcessorProvider,
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),

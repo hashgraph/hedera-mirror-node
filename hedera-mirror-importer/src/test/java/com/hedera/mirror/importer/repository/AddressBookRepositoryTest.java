@@ -25,9 +25,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     private final AddressBookRepository addressBookRepository;

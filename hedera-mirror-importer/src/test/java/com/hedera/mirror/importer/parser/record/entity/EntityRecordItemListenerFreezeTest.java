@@ -23,9 +23,8 @@ import com.hedera.mirror.importer.repository.NetworkFreezeRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 
     private final NetworkFreezeRepository networkFreezeRepository;

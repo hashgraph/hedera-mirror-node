@@ -106,4 +106,8 @@ public class ContractCallContext implements AutoCloseable {
             stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
     }
+
+    public boolean useHistorical() {
+        return recordFile != null;
+    }
 }

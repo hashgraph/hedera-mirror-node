@@ -25,7 +25,7 @@ import static org.springframework.transaction.support.TransactionSynchronization
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import java.sql.Connection;
@@ -37,13 +37,12 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class TransactionHashTxManagerTest extends IntegrationTest {
+@RequiredArgsConstructor
+class TransactionHashTxManagerTest extends ImporterIntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
     private final TransactionTemplate transactionTemplate;

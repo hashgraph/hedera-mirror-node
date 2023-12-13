@@ -40,11 +40,11 @@ dependencies {
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("com.playtika.testcontainers:embedded-postgresql")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.flywaydb:flyway-core")
-    testImplementation(project(path = ":common", configuration = "testClasses"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
 }
 
 val configureOpenApi: (OpenApiGeneratorGenerateExtension) -> Void by extra

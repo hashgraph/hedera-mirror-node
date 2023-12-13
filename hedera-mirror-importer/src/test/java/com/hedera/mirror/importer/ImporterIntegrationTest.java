@@ -18,12 +18,13 @@ package com.hedera.mirror.importer;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.common.converter.EntityIdConverter;
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
+import com.hedera.mirror.importer.ImporterIntegrationTest.Configuration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
+import com.redis.testcontainers.RedisContainer;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
 import jakarta.persistence.Id;
@@ -45,48 +46,37 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 @ExtendWith(SoftAssertionsExtension.class)
-@SpringBootTest
-@Import(IntegrationTestConfiguration.class)
-public abstract class IntegrationTest {
+@Import(Configuration.class)
+public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     private static final Map<Class<?>, String> DEFAULT_DOMAIN_CLASS_IDS = new ConcurrentHashMap<>();
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    protected DomainBuilder domainBuilder;
 
     @Resource
     protected JdbcOperations jdbcOperations;
 
     @Resource
-    protected IntegrationTestConfiguration.RetryRecorder retryRecorder;
+    protected RetryRecorder retryRecorder;
 
     @InjectSoftAssertions
     protected SoftAssertions softly;
-
-    @Resource
-    private Collection<CacheManager> cacheManagers;
-
-    @Resource
-    private String cleanupSql;
 
     @Resource
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -95,7 +85,7 @@ public abstract class IntegrationTest {
     private MirrorProperties mirrorProperties;
 
     @Getter
-    @Value("#{environment.acceptsProfiles('!v2')}")
+    @Value("#{environment.matchesProfiles('!v2')}")
     private boolean v1;
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
@@ -116,12 +106,6 @@ public abstract class IntegrationTest {
         DataClassRowMapper<T> dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
-    }
-
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        reset();
-        log.info("Executing: {}", testInfo.getDisplayName());
     }
 
     protected <T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
@@ -146,16 +130,11 @@ public abstract class IntegrationTest {
     }
 
     protected void reset() {
-        cacheManagers.forEach(this::resetCacheManager);
+        super.reset();
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         mirrorProperties.setStartDate(Instant.EPOCH);
-        jdbcOperations.execute(cleanupSql);
         retryRecorder.reset();
-    }
-
-    protected void resetCacheManager(CacheManager cacheManager) {
-        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
     protected Boolean tableExists(String name) {
@@ -179,5 +158,17 @@ public abstract class IntegrationTest {
                 .collect(Collectors.joining(","));
 
         return !idColumns.isEmpty() ? idColumns : "id";
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class Configuration {
+
+        @Bean
+        @ServiceConnection("redis")
+        RedisContainer redis() {
+            var logger = LoggerFactory.getLogger(RedisContainer.class);
+            return new RedisContainer(DockerImageName.parse(REDIS_IMAGE))
+                    .withLogConsumer(new Slf4jLogConsumer(logger, true));
+        }
     }
 }

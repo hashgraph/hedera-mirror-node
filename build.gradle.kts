@@ -29,14 +29,13 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.59.1")
+    set("grpcVersion", "1.60.0")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("testcontainersSpringBootVersion", "3.0.6")
     set("vertxVersion", "4.5.0")
 }
 
@@ -53,6 +52,7 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
+        api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.7.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:4.8.4")
         api("com.google.guava:guava:32.1.3-jre")
@@ -64,9 +64,8 @@ dependencies {
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.43.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
-        api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
-        api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.0")
+        api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.15.1")
@@ -80,7 +79,7 @@ dependencies {
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:2.15.0.RELEASE")
-        api("net.java.dev.jna:jna:5.13.0")
+        api("net.java.dev.jna:jna:5.14.0")
         api("org.apache.commons:commons-compress:1.25.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
@@ -94,10 +93,10 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.6")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0-RC1")
+        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
         api("org.testcontainers:junit-jupiter:1.19.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.21.37")
+        api("software.amazon.awssdk:bom:2.21.42")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }

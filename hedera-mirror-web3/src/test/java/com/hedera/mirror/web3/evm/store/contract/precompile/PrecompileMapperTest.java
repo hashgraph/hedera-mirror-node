@@ -18,19 +18,15 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
+import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 
-@SpringBootTest
-@Import(IntegrationTestConfiguration.class)
-class PrecompileMapperTest {
+@RequiredArgsConstructor
+class PrecompileMapperTest extends Web3IntegrationTest {
 
-    @Autowired
-    private PrecompileMapper precompileMapper;
+    private final PrecompileMapper precompileMapper;
 
     @Test
     void nonExistingAbiReturnsEmpty() {

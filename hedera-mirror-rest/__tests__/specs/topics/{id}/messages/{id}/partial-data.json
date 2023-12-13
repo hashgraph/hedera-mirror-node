@@ -1,10 +1,6 @@
 {
   "description": "Get messages with non existing topic id but sequence number found (partial mirror node)",
   "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",

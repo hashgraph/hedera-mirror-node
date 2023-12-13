@@ -40,7 +40,7 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     @Override
     public @NonNull Optional<UniqueToken> get(@NonNull Object key, final Optional<Long> timestamp) {
         if (key instanceof NftId nftId) {
-            final var tokenId = EntityIdUtils.entityIdFromUftId(nftId).getId();
+            final var tokenId = EntityIdUtils.entityIdFromNftId(nftId).getId();
             return timestamp
                     .map(t -> nftRepository.findActiveByIdAndTimestamp(tokenId, nftId.serialNo(), t))
                     .orElseGet(() -> nftRepository.findActiveById(tokenId, nftId.serialNo()))

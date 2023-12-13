@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -46,7 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.7")
-class ContractResultMigrationTest extends IntegrationTest {
+class ContractResultMigrationTest extends ImporterIntegrationTest {
 
     private final RowMapper<MigrationContractLog> logsRowMapper = new DataClassRowMapper<>(MigrationContractLog.class);
     private long id = 0;

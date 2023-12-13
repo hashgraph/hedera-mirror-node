@@ -23,9 +23,8 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class RecordFileRepositoryTest extends Web3IntegrationTest {
 
     @Resource

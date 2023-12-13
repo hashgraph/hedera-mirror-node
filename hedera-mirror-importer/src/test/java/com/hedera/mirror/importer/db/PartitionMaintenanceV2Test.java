@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV2;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +30,13 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @EnabledIfV2
-class PartitionMaintenanceV2Test extends IntegrationTest {
+class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
     private static final String GET_LATEST_PARTITIONS =
             """
             select distinct on (tp.parent_table) tp.parent_table,
