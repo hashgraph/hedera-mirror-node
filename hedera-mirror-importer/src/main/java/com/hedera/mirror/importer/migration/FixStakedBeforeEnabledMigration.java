@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +77,7 @@ public class FixStakedBeforeEnabledMigration extends AbstractJavaMigration {
     private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.3");
 
     private final NamedParameterJdbcOperations jdbcOperations;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Override
     public MigrationVersion getVersion() {
@@ -91,8 +91,8 @@ public class FixStakedBeforeEnabledMigration extends AbstractJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getNetwork();
-        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(hederaNetwork)) {
+        var hederaNetwork = importerProperties.getNetwork();
+        if (!ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(hederaNetwork)) {
             return;
         }
 

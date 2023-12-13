@@ -33,8 +33,8 @@ import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
@@ -92,7 +92,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
     private final CacheManager cacheManager;
 
     private final FileDataRepository fileDataRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -162,14 +162,14 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
     @Test
     void startupWithOtherNetworkIncorrectInitialAddressBookPath() {
-        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
-        otherNetworkMirrorProperties.setDataPath(dataPath);
-        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
-        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        ImporterProperties otherNetworkImporterProperties = new ImporterProperties();
+        otherNetworkImporterProperties.setDataPath(dataPath);
+        otherNetworkImporterProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
                 fileDataRepository,
-                otherNetworkMirrorProperties,
+                otherNetworkImporterProperties,
                 nodeStakeRepository,
                 transactionTemplate);
         assertThrows(IllegalStateException.class, () -> {
@@ -200,14 +200,14 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                 .to("");
         fileCopier.copy();
 
-        MirrorProperties otherNetworkMirrorProperties = new MirrorProperties();
-        otherNetworkMirrorProperties.setDataPath(dataPath);
-        otherNetworkMirrorProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
-        otherNetworkMirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        ImporterProperties otherNetworkImporterProperties = new ImporterProperties();
+        otherNetworkImporterProperties.setDataPath(dataPath);
+        otherNetworkImporterProperties.setInitialAddressBook(dataPath.resolve("test-v1"));
+        otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
                 fileDataRepository,
-                otherNetworkMirrorProperties,
+                otherNetworkImporterProperties,
                 nodeStakeRepository,
                 transactionTemplate);
         AddressBook addressBook = customAddressBookService.getCurrent();
@@ -969,7 +969,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                             .stake(stake))
                     .persist();
         }
-        mirrorProperties.setConsensusMode(mode);
+        importerProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
@@ -1001,7 +1001,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                             .stake(10000L))
                     .persist();
         }
-        mirrorProperties.setConsensusMode(mode);
+        importerProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)

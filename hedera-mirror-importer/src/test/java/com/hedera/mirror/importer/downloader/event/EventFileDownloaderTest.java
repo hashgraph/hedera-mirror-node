@@ -40,7 +40,7 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest<EventFi
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var eventDownloaderProperties = new EventDownloaderProperties(commonDownloaderProperties);
         eventDownloaderProperties.setEnabled(true);
         return eventDownloaderProperties;
     }
@@ -51,6 +51,7 @@ class EventFileDownloaderTest extends AbstractLinkedStreamDownloaderTest<EventFi
         return new EventFileDownloader(
                 consensusNodeService,
                 (EventDownloaderProperties) downloaderProperties,
+                importerProperties,
                 meterRegistry,
                 dateRangeProcessor,
                 nodeSignatureVerifier,

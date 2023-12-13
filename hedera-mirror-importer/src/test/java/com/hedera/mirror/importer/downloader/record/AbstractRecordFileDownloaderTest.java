@@ -64,7 +64,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        return new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        return new RecordDownloaderProperties(commonDownloaderProperties);
     }
 
     @Override
@@ -85,6 +85,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
         return new RecordFileDownloader(
                 consensusNodeService,
                 (RecordDownloaderProperties) downloaderProperties,
+                importerProperties,
                 meterRegistry,
                 dateRangeProcessor,
                 nodeSignatureVerifier,

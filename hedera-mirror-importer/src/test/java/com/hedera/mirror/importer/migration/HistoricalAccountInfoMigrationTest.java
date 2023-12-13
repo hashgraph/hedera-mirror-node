@@ -26,7 +26,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -53,21 +53,21 @@ class HistoricalAccountInfoMigrationTest extends ImporterIntegrationTest {
 
     private final HistoricalAccountInfoMigration historicalAccountInfoMigration;
     private final EntityRepository entityRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     private String network;
 
     @BeforeEach
     void before() {
-        network = mirrorProperties.getNetwork();
-        mirrorProperties.setImportHistoricalAccountInfo(true);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        network = importerProperties.getNetwork();
+        importerProperties.setImportHistoricalAccountInfo(true);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.MAINNET);
     }
 
     @AfterEach
     void after() {
-        mirrorProperties.setImportHistoricalAccountInfo(false);
-        mirrorProperties.setNetwork(network);
+        importerProperties.setImportHistoricalAccountInfo(false);
+        importerProperties.setNetwork(network);
     }
 
     @Test
@@ -138,42 +138,42 @@ class HistoricalAccountInfoMigrationTest extends ImporterIntegrationTest {
 
     @Test
     void disabled() throws Exception {
-        mirrorProperties.setImportHistoricalAccountInfo(false);
+        importerProperties.setImportHistoricalAccountInfo(false);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void notMainnet() throws Exception {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.DEMO);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void startDateAfter() throws Exception {
-        mirrorProperties.setStartDate(Instant.now());
+        importerProperties.setStartDate(Instant.now());
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }
 
     @Test
     void startDateBefore() throws Exception {
-        mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE.minusNanos(1));
+        importerProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE.minusNanos(1));
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);
     }
 
     @Test
     void startDateEquals() throws Exception {
-        mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE);
+        importerProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);
     }
 
     @Test
     void startDateNull() throws Exception {
-        mirrorProperties.setStartDate(null);
+        importerProperties.setStartDate(null);
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isZero();
     }

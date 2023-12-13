@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -59,7 +59,7 @@ class CompositeStreamFileProviderTest {
 
     @BeforeEach
     void setup() {
-        properties = new CommonDownloaderProperties(new MirrorProperties());
+        properties = new CommonDownloaderProperties(new ImporterProperties());
         properties.getSources().add(new StreamSourceProperties());
         properties.getSources().add(new StreamSourceProperties());
         compositeStreamFileProvider =

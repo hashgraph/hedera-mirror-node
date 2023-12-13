@@ -28,7 +28,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -69,22 +69,22 @@ class DateRangeCalculatorTest {
     @Mock
     private RecordFileRepository recordFileRepository;
 
-    private MirrorProperties mirrorProperties;
+    private ImporterProperties importerProperties;
     private List<DownloaderProperties> downloaderPropertiesList;
     private DateRangeCalculator dateRangeCalculator;
 
     @BeforeEach
     void setUp() {
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
-        var commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
-        var balanceDownloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        var recordDownloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        importerProperties = new ImporterProperties();
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
+        var commonDownloaderProperties = new CommonDownloaderProperties(importerProperties);
+        var balanceDownloaderProperties = new BalanceDownloaderProperties(commonDownloaderProperties);
+        var eventDownloaderProperties = new EventDownloaderProperties(commonDownloaderProperties);
+        var recordDownloaderProperties = new RecordDownloaderProperties(commonDownloaderProperties);
         downloaderPropertiesList =
                 List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
         dateRangeCalculator = new DateRangeCalculator(
-                mirrorProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
+                importerProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);
@@ -118,7 +118,7 @@ class DateRangeCalculatorTest {
     @Test
     void startDateNotSetAndEndDateAfterLongMaxAndDatabaseNotEmpty() {
         var past = STARTUP_TIME.minusSeconds(100);
-        mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
+        importerProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
         streamFileRepositories.forEach((streamType, repository) ->
                 doReturn(streamFile(streamType, past, false)).when(repository).findLatest());
         verifyWhenLastStreamFileFromDatabase(past);
@@ -127,9 +127,9 @@ class DateRangeCalculatorTest {
     @Test
     void startDateSetAndDatabaseEmpty() {
         var startDate = STARTUP_TIME.plusSeconds(10L);
-        mirrorProperties.setStartDate(startDate);
-        var expectedFilter = new DateRangeFilter(mirrorProperties.getStartDate(), null);
-        var expectedDate = mirrorProperties.getStartDate();
+        importerProperties.setStartDate(startDate);
+        var expectedFilter = new DateRangeFilter(importerProperties.getStartDate(), null);
+        var expectedDate = importerProperties.getStartDate();
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
             assertThat(dateRangeCalculator.getLastStreamFile(streamType))
@@ -142,7 +142,7 @@ class DateRangeCalculatorTest {
     @ValueSource(longs = {0, 1})
     void startDateNotAfterDatabase(long nanos) {
         var past = STARTUP_TIME.minusSeconds(100);
-        mirrorProperties.setStartDate(past.minusNanos(nanos));
+        importerProperties.setStartDate(past.minusNanos(nanos));
         streamFileRepositories.forEach((streamType, repository) ->
                 doReturn(streamFile(streamType, past, false)).when(repository).findLatest());
         verifyWhenLastStreamFileFromDatabase(past);
@@ -158,7 +158,7 @@ class DateRangeCalculatorTest {
                         .findLatest());
 
         var startDate = lastFileInstant.plusNanos(diffNanos);
-        mirrorProperties.setStartDate(startDate);
+        importerProperties.setStartDate(startDate);
         var effectiveStartDate = max(startDate, lastFileInstant);
 
         var expectedFilter = new DateRangeFilter(startDate, null);
@@ -183,8 +183,8 @@ class DateRangeCalculatorTest {
                 ", 2020-08-18T09:00:05.123Z,"
             })
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant lastFileDate) {
-        mirrorProperties.setStartDate(startDate);
-        mirrorProperties.setEndDate(endDate);
+        importerProperties.setStartDate(startDate);
+        importerProperties.setEndDate(endDate);
 
         if (lastFileDate != null) {
             streamFileRepositories.forEach(

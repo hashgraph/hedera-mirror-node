@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
@@ -41,14 +41,14 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private static final String[] ENTITY_FIELDS =
             new String[] {"id", "declineReward", "stakedNodeId", "stakePeriodStart"};
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final FixStakedBeforeEnabledMigration migration;
 
     private long lastHapi26EpochDay;
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        importerProperties.setNetwork(HederaNetwork.TESTNET);
     }
 
     @Test
@@ -82,7 +82,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     void otherNetwork() {
         // given
         setupForMainnet();
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        importerProperties.setNetwork(HederaNetwork.OTHER);
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L)
@@ -257,7 +257,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
     }
 
     private void setupForMainnet() {
-        mirrorProperties.setNetwork(HederaNetwork.MAINNET);
+        importerProperties.setNetwork(HederaNetwork.MAINNET);
         lastHapi26EpochDay = Utility.getEpochDay(LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET);
         // Persist last Hapi version 26 RecordFile
         domainBuilder

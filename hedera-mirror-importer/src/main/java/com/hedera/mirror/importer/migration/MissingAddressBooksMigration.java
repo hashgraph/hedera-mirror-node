@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 import jakarta.inject.Named;
@@ -33,8 +33,8 @@ public class MissingAddressBooksMigration extends RepeatableMigration {
     public MissingAddressBooksMigration(
             AddressBookService addressBookService,
             AddressBookServiceEndpointRepository addressBookServiceEndpointRepository,
-            MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+            ImporterProperties importerProperties) {
+        super(importerProperties.getMigration());
         this.addressBookService = addressBookService;
         this.addressBookServiceEndpointRepository = addressBookServiceEndpointRepository;
     }

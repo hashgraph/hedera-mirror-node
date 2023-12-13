@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -186,7 +186,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     private static final DataClassRowMapper<SyntheticCryptoTransferApprovalMigration.ApprovalTransfer> resultRowMapper =
             new DataClassRowMapper<>(ApprovalTransfer.class);
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final NamedParameterJdbcTemplate transferJdbcTemplate;
 
     @Getter
@@ -196,12 +196,12 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
     public SyntheticCryptoTransferApprovalMigration(
             DBProperties dbProperties,
             RecordFileRepository recordFileRepository,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             NamedParameterJdbcTemplate transferJdbcTemplate,
             TransactionOperations transactionOperations) {
-        super(mirrorProperties.getMigration(), transferJdbcTemplate, dbProperties.getSchema());
+        super(importerProperties.getMigration(), transferJdbcTemplate, dbProperties.getSchema());
         this.recordFileRepository = recordFileRepository;
-        this.mirrorProperties = mirrorProperties;
+        this.importerProperties = importerProperties;
         this.transferJdbcTemplate = transferJdbcTemplate;
         this.transactionOperations = transactionOperations;
     }
@@ -224,7 +224,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
 
     @Override
     protected Optional<Long> migratePartial(Long lowerBound) {
-        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+        if (!ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(importerProperties.getNetwork())) {
             log.info("Skipping migration since it only applies to mainnet");
             return Optional.empty();
         }

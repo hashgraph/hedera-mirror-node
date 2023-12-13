@@ -82,7 +82,7 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
     private DateRangeCalculator dateRangeCalculator;
 
     @Resource
-    private MirrorProperties mirrorProperties;
+    private ImporterProperties importerProperties;
 
     @Getter
     @Value("#{environment.matchesProfiles('!v2')}")
@@ -132,8 +132,8 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
     protected void reset() {
         super.reset();
         dateRangeCalculator.clear();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
-        mirrorProperties.setStartDate(Instant.EPOCH);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
+        importerProperties.setStartDate(Instant.EPOCH);
         retryRecorder.reset();
     }
 
