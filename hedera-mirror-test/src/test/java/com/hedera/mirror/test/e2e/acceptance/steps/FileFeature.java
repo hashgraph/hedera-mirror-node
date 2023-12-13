@@ -32,11 +32,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class FileFeature {
     private static final String originalFileContents = "Mirror Node v1";
     private static final String updateBaseFileContents = "Mirror Node v2,";

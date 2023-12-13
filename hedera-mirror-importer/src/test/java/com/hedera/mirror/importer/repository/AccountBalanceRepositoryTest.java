@@ -31,9 +31,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
     private final AccountBalanceRepository accountBalanceRepository;

@@ -52,10 +52,9 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class ERCContractFeature extends AbstractFeature {
 
     private final AccountClient accountClient;
@@ -315,9 +314,22 @@ public class ERCContractFeature extends AbstractFeature {
                 accountClient.approveNftAllSerials(nonFungibleTokenId, ecdsaAccount.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        var getIsApproveForAllResponse = callContract(
-                true,
-                StringUtils.EMPTY,
+        tokenClient.associate(ecdsaAccount, fungibleTokenId);
+        accountClient.approveToken(fungibleTokenId, ecdsaAccount.getAccountId(), 1_000);
+        networkTransactionResponse = tokenClient.transferFungibleToken(
+                fungibleTokenId,
+                tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                ecdsaAccount.getAccountId(),
+                ecdsaAccount.getPrivateKey(),
+                500);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @RetryAsserts
+    @Then(
+            "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
+    public void isApprovedForAllWithAliasSecondContractCall() {
+        var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
                 asAddress(nonFungibleTokenId),

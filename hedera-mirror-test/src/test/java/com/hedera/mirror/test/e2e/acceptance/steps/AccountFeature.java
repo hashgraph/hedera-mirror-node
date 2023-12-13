@@ -43,13 +43,12 @@ import java.util.List;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.OrderComparator;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
 @Data
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class AccountFeature extends AbstractFeature {
 
     private static Runnable CLEANUP;

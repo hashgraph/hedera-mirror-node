@@ -23,9 +23,8 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenRepositoryTest extends Web3IntegrationTest {
 
     private final TokenRepository tokenRepository;

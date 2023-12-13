@@ -26,9 +26,8 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenAccountRepositoryTest extends Web3IntegrationTest {
     private final int accountId = 123;
     private final TokenAccountRepository repository;

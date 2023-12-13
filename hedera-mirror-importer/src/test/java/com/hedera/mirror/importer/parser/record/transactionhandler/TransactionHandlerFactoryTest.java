@@ -23,9 +23,8 @@ import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TransactionHandlerFactoryTest extends ImporterIntegrationTest {
 
     private final TransactionHandlerFactory transactionHandlerFactory;

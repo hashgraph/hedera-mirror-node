@@ -24,7 +24,6 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
@@ -32,7 +31,7 @@ import org.springframework.validation.annotation.Validated;
 @Component("eventDownloaderProperties")
 @ConfigurationProperties("hedera.mirror.importer.downloader.event")
 @Data
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Validated
 public class EventDownloaderProperties implements DownloaderProperties {
 
