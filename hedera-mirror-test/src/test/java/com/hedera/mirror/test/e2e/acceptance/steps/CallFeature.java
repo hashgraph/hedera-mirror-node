@@ -120,7 +120,7 @@ public class CallFeature extends AbstractFeature {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
         var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
-        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_SYMBOL_SELECTOR, tokenId);
+        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
 
         assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
     }
@@ -134,7 +134,8 @@ public class CallFeature extends AbstractFeature {
                 .tokenId();
         var totalSupplyOfNft = mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply();
 
-        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, tokenId);
+        var response =
+                callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, asAddress(tokenId));
         assertThat(response.getResultAsNumber()).isEqualTo(totalSupplyOfNft);
     }
 
