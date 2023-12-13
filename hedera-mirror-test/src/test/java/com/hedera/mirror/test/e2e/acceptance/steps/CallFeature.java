@@ -55,6 +55,7 @@ import java.math.BigInteger;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -65,9 +66,7 @@ public class CallFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-    private String ercContractAddress;
     private String precompileContractAddress;
-    private String estimateContractAddress;
     private ExpandedAccountId receiverAccountId;
 
     public static String[] splitAddresses(String result) {
@@ -86,21 +85,19 @@ public class CallFeature extends AbstractFeature {
     }
 
     @Given("I successfully create ERC contract")
-    public void createNewERCtestContract() throws IOException {
+    public void createNewERCtestContract() {
         var deployedContract = getContract(ERC);
-        ercContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create Precompile contract")
-    public void createNewPrecompileTestContract() throws IOException {
+    public void createNewPrecompileTestContract() {
         var deployedContract = getContract(PRECOMPILE);
         precompileContractAddress = deployedContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create EstimateGas contract")
     public void createNewEstimateTestContract() throws IOException {
-        var deployedContract = getContract(ESTIMATE_GAS);
-        estimateContractAddress = deployedContract.contractId().toSolidityAddress();
+        getContract(ESTIMATE_GAS);
         receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
@@ -111,8 +108,7 @@ public class CallFeature extends AbstractFeature {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
         var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
-        var data = encodeData(ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, ercContractAddress);
+        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
 
         assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol() + "_name");
     }
@@ -124,8 +120,7 @@ public class CallFeature extends AbstractFeature {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
         var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
-        var data = encodeData(ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, ercContractAddress);
+        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_SYMBOL_SELECTOR, tokenId);
 
         assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
     }
@@ -139,9 +134,7 @@ public class CallFeature extends AbstractFeature {
                 .tokenId();
         var totalSupplyOfNft = mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply();
 
-        var data = encodeData(ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, ercContractAddress);
-
+        var response = callContract(true, StringUtils.EMPTY, ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, tokenId);
         assertThat(response.getResultAsNumber()).isEqualTo(totalSupplyOfNft);
     }
 
@@ -161,9 +154,13 @@ public class CallFeature extends AbstractFeature {
                 .mapToLong(MirrorAccountBalance.Token::getBalance)
                 .findFirst();
 
-        var data = encodeData(ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(tokenId), asAddress(contractClient));
-        var response = callContract(data, ercContractAddress);
-
+        var response = callContract(
+                true,
+                StringUtils.EMPTY,
+                ERC,
+                IERC721_TOKEN_BALANCE_OF_SELECTOR,
+                asAddress(tokenId),
+                asAddress(contractClient));
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
     }
 
@@ -183,9 +180,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, precompileContractAddress);
-
+        var response = callContract(true, StringUtils.EMPTY, PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
         assertThat(response.getResultAsBoolean()).isTrue();
     }
 
@@ -197,9 +192,13 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = encodeData(PRECOMPILE, HTS_IS_FROZEN_SELECTOR, asAddress(tokenId), asAddress(contractClient));
-        var response = callContract(data, precompileContractAddress);
-
+        var response = callContract(
+                true,
+                StringUtils.EMPTY,
+                PRECOMPILE,
+                HTS_IS_FROZEN_SELECTOR,
+                asAddress(tokenId),
+                asAddress(contractClient));
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
@@ -211,9 +210,13 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = encodeData(PRECOMPILE, HTS_IS_KYC_GRANTED_SELECTOR, asAddress(tokenId), asAddress(contractClient));
-        var response = callContract(data, precompileContractAddress);
-
+        var response = callContract(
+                true,
+                StringUtils.EMPTY,
+                PRECOMPILE,
+                HTS_IS_KYC_GRANTED_SELECTOR,
+                asAddress(tokenId),
+                asAddress(contractClient));
         assertThat(response.getResultAsBoolean()).isTrue();
     }
 
@@ -225,9 +228,8 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = encodeData(PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, precompileContractAddress);
-
+        var response = callContract(
+                true, StringUtils.EMPTY, PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(tokenId));
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
@@ -239,33 +241,30 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = encodeData(PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(tokenId));
-        var response = callContract(data, precompileContractAddress);
-
+        var response = callContract(
+                true, StringUtils.EMPTY, PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(tokenId));
         assertThat(response.getResultAsBoolean()).isFalse();
     }
 
     @Then("I call function with update and I expect return of the updated value")
     public void ethCallUpdateFunction() {
         var updateValue = new BigInteger("5");
-        var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER_SELECTOR, updateValue);
-        var response = callContract(data, estimateContractAddress);
-
+        var response = callContract(true, StringUtils.EMPTY, ESTIMATE_GAS, UPDATE_COUNTER_SELECTOR, updateValue);
         assertEquals(response.getResultAsNumber(), updateValue);
     }
 
     @Then("I call function that makes N times state update")
     public void ethCallStateUpdateNTimesFunction() {
-        var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
-        var response = callContract(data, estimateContractAddress);
-
+        var response = callContract(
+                true, StringUtils.EMPTY, ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
         assertEquals(String.valueOf(response.getResultAsNumber()), "14");
     }
 
     @Then("I call function with nested deploy using create function")
     public void ethCallNestedDeployViaCreateFunction() {
-        var data = encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR);
-        var response = callContract(data, estimateContractAddress);
+        var response = callContract(
+                true, StringUtils.EMPTY, ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR);
+
         String[] addresses = splitAddresses(response.getResult());
 
         validateAddresses(addresses);
@@ -273,11 +272,10 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I call function with nested deploy using create2 function")
     public void ethCallNestedDeployViaCreate2Function() {
-        var data = encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR);
-        var response = callContract(data, estimateContractAddress);
+        var response = callContract(
+                true, StringUtils.EMPTY, ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR);
 
         String[] addresses = splitAddresses(response.getResult());
-
         validateAddresses(addresses);
     }
 
@@ -286,8 +284,10 @@ public class CallFeature extends AbstractFeature {
     @Then("I successfully update the balance of an account and get the updated balance after 2 seconds")
     public void getBalance() throws InterruptedException {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
-        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
-        var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+
+        var initialBalance = callContract(true, StringUtils.EMPTY, ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress)
+                .getResultAsNumber();
+
         networkTransactionResponse = accountClient.sendCryptoTransfer(
                 receiverAccountId.getAccountId(),
                 Hbar.fromTinybars(initialBalance.longValue()),
@@ -295,16 +295,24 @@ public class CallFeature extends AbstractFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         // wait for token cache to expire
         Thread.sleep(2000);
-        var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
+
+        var updatedBalance = callContract(true, StringUtils.EMPTY, ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress)
+                .getResultAsNumber();
+
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
     }
 
     @RetryAsserts
     @Then("I call function with transfer that returns the balance")
     public void ethCallReentrancyCallFunction() {
-        var data = encodeData(
-                ESTIMATE_GAS, REENTRANCY_CALL_WITH_GAS, asAddress(receiverAccountId), new BigInteger("10000"));
-        var response = callContract(data, estimateContractAddress);
+        var response = callContract(
+                true,
+                StringUtils.EMPTY,
+                ESTIMATE_GAS,
+                REENTRANCY_CALL_WITH_GAS,
+                asAddress(receiverAccountId),
+                new BigInteger("10000"));
+
         String[] balances = splitAddresses(response.getResult());
         // verify initial balance
         assertEquals(Integer.parseInt(balances[0], 16), 1000000);

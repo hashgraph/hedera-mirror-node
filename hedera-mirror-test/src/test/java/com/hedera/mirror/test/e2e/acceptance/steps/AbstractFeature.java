@@ -16,19 +16,17 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
+import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.readCompiledArtifact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.util.Strings;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
@@ -37,8 +35,6 @@ import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +47,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-abstract class AbstractFeature {
+public abstract class AbstractFeature {
     protected NetworkTransactionResponse networkTransactionResponse;
     protected ContractId contractId;
     private static final Map<ContractResource, DeployedContract> contractIdMap = new ConcurrentHashMap<>();
@@ -66,12 +62,12 @@ abstract class AbstractFeature {
     protected MirrorNodeClient mirrorClient;
 
     @Autowired
-    protected ObjectMapper mapper;
+    protected NetworkAdapter networkAdapter;
 
     protected ExchangeRateResponse exchangeRates;
 
     @Autowired
-    private ResourceLoader resourceLoader;
+    private static ResourceLoader resourceLoader;
 
     protected long calculateCreateTokenFee(double usdFee, boolean useCurrentFee) {
         if (exchangeRates == null) {
@@ -112,7 +108,7 @@ abstract class AbstractFeature {
         return mirrorTransaction;
     }
 
-    protected DeployedContract getContract(ContractResource contractResource) throws IOException {
+    public DeployedContract getContract(ContractResource contractResource) {
         synchronized (contractIdMap) {
             return contractIdMap.computeIfAbsent(contractResource, x -> {
                 var resource = resourceLoader.getResource(contractResource.path);
@@ -161,12 +157,8 @@ abstract class AbstractFeature {
         return contractId;
     }
 
-    protected record DeployedContract(
+    public record DeployedContract(
             FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
-
-    protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
-        return mapper.readValue(in, CompiledSolidityArtifact.class);
-    }
 
     protected ContractCallResponse callContract(String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
@@ -177,6 +169,16 @@ abstract class AbstractFeature {
                 .build();
 
         return mirrorClient.contractsCall(contractCallRequestBody);
+    }
+
+    protected ContractCallResponse callContract(
+            boolean toMirror,
+            final String from,
+            final ContractResource contractResource,
+            final SelectorInterface method,
+            final Object... arguments) {
+        return networkAdapter.contractsCall(
+                toMirror, false, from, contractResource, getContract(contractResource), method, arguments);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {
@@ -190,44 +192,11 @@ abstract class AbstractFeature {
         return mirrorClient.contractsCall(contractCallRequestBody);
     }
 
-    protected String encodeData(ContractResource resource, SelectorInterface method, Object... args) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        return Strings.encode(function.encodeCallWithArgs(args));
-    }
-
-    protected byte[] encodeDataToByteArray(ContractResource resource, SelectorInterface method, Object... args) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        ByteBuffer byteBuffer = function.encodeCallWithArgs(args);
-        return byteBuffer.array();
-    }
-
-    protected String encodeData(SelectorInterface method, Object... args) {
-        return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
-    }
-
-    protected InputStream getResourceAsStream(String resourcePath) throws IOException {
-        return resourceLoader.getResource(resourcePath).getInputStream();
-    }
-
-    protected interface SelectorInterface {
+    public interface SelectorInterface {
         String getSelector();
     }
 
-    protected interface ContractMethodInterface extends SelectorInterface {
+    public interface ContractMethodInterface extends SelectorInterface {
         int getActualGas();
     }
 

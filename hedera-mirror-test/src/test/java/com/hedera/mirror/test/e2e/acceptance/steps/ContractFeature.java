@@ -16,6 +16,12 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PARENT_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ContractFeature.ContractMethods.GET_ACCOUNT_BALANCE_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ContractFeature.ContractMethods.GET_SENDER_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ContractFeature.ContractMethods.IDENTIFIER_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ContractFeature.ContractMethods.MULTIPLY_SIMPLE_NUMBERS_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.ContractFeature.ContractMethods.WRONG_SELECTOR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +37,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
@@ -46,6 +51,7 @@ import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,12 +62,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
-    private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
-    private static final String GET_SENDER_SELECTOR = "5e01eb5a";
-    private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
-    private static final String IDENTIFIER_SELECTOR = "7998a1c4";
-    private static final String WRONG_SELECTOR = "000000";
+
     private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
+    private static final String IDENTIFIER_SELECTOR_HASH = "7998a1c4";
     private static final int EVM_ADDRESS_SALT = 42;
     private DeployedContract deployedParentContract;
     private final AccountClient accountClient;
@@ -79,7 +82,7 @@ public class ContractFeature extends AbstractFeature {
 
     @Given("I successfully create a contract from the parent contract bytes with 10000000 balance")
     public void createNewContract() throws IOException {
-        deployedParentContract = getContract(ContractResource.PARENT_CONTRACT);
+        deployedParentContract = getContract(PARENT_CONTRACT);
     }
 
     @Given("I successfully call the contract")
@@ -160,49 +163,20 @@ public class ContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = deployedParentContract.contractId().toSolidityAddress();
 
-        var contractCallRequestGetAccountBalance = ContractCallRequest.builder()
-                .data(GET_ACCOUNT_BALANCE_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
-        var getAccountBalanceResponse = mirrorClient.contractsCall(contractCallRequestGetAccountBalance);
+        var getAccountBalanceResponse = callContract(true, from, PARENT_CONTRACT, GET_ACCOUNT_BALANCE_SELECTOR);
         assertThat(getAccountBalanceResponse.getResultAsNumber()).isEqualTo(1000L);
 
-        var contractCallRequestGetSender = ContractCallRequest.builder()
-                .data(GET_SENDER_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
-        var getSenderResponse = mirrorClient.contractsCall(contractCallRequestGetSender);
+        var getSenderResponse = callContract(true, from, PARENT_CONTRACT, GET_SENDER_SELECTOR);
         assertThat(getSenderResponse.getResultAsAddress()).isEqualTo(from);
 
-        var contractCallMultiplySimpleNumbers = ContractCallRequest.builder()
-                .data(MULTIPLY_SIMPLE_NUMBERS_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
-        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(contractCallMultiplySimpleNumbers);
+        var multiplySimpleNumbersResponse = callContract(true, from, PARENT_CONTRACT, MULTIPLY_SIMPLE_NUMBERS_SELECTOR);
         assertThat(multiplySimpleNumbersResponse.getResultAsNumber()).isEqualTo(4L);
 
-        var contractCallIdentifier = ContractCallRequest.builder()
-                .data(IDENTIFIER_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
-        var identifierResponse = mirrorClient.contractsCall(contractCallIdentifier);
-        assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
+        var identifierResponse = callContract(true, from, PARENT_CONTRACT, IDENTIFIER_SELECTOR);
+        assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR_HASH);
 
-        var contractCallWrongSelector = ContractCallRequest.builder()
-                .data(WRONG_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallWrongSelector))
+        assertThatThrownBy(() -> networkAdapter.contractsCall(
+                        true, false, from, PARENT_CONTRACT, getContract(PARENT_CONTRACT), WRONG_SELECTOR))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
@@ -495,5 +469,17 @@ public class ContractFeature extends AbstractFeature {
     private enum ContractExecutionStage {
         CREATION,
         CALL
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    enum ContractMethods implements SelectorInterface {
+        GET_ACCOUNT_BALANCE_SELECTOR("getAccountBalance"),
+        GET_SENDER_SELECTOR("getSender"),
+        MULTIPLY_SIMPLE_NUMBERS_SELECTOR("multiplySimpleNumbers"),
+        IDENTIFIER_SELECTOR("identifier"),
+        WRONG_SELECTOR("wrong");
+
+        private final String selector;
     }
 }

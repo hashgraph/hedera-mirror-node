@@ -68,8 +68,8 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute selfdestruct and set beneficiary to {string} address")
-    public void selfDestructAndSetBeneficiary(String beneficiary) {
+    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {node}")
+    public void selfDestructAndSetBeneficiary(String beneficiary, String node) {
         var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
         var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
@@ -82,8 +82,8 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute balance opcode to system account {string} address would return 0")
-    public void balanceOfAddress(String address) {
+    @Then("I execute balance opcode to system account {string} address would return 0 with call to {node}")
+    public void balanceOfAddress(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getBalance", parameters);
@@ -101,24 +101,26 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(new BigInteger("10000"), functionResult.getInt256(0));
     }
 
-    @Then("I verify extcodesize opcode against a system account {string} address returns 0")
-    public void extCodeSizeAgainstSystemAccount(String address) {
+    @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {node}")
+    public void extCodeSizeAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeSize", parameters);
         assertEquals(new BigInteger("0"), functionResult.getInt256(0));
     }
 
-    @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
-    public void extCodeCopyAgainstSystemAccount(String address) {
+    @Then(
+            "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {node}")
+    public void extCodeCopyAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "copyCode", parameters);
         assertArrayEquals(new byte[0], functionResult.getBytes(0));
     }
 
-    @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
-    public void extCodeHashAgainstSystemAccount(String address) {
+    @Then(
+            "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {node}")
+    public void extCodeHashAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
         var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeHash", parameters);
@@ -134,7 +136,7 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(OBTAINER_SAME_CONTRACT_ID_EXCEPTION, extractedStatus);
     }
 
-    private static long extractAccountNumber(String account) {
+    public static long extractAccountNumber(String account) {
         String[] parts = account.split("\\.");
         return Long.parseLong(parts[parts.length - 1]);
     }
