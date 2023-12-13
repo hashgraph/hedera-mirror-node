@@ -723,7 +723,6 @@ public class ServicesConfiguration {
                 evmInfrastructureFactory(),
                 mirrorNodeEvmProperties,
                 precompileMapper,
-                evmHTSPrecompiledContract(),
                 store,
                 tokenAccessor,
                 precompilePricingUtils);

@@ -39,7 +39,6 @@ import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -128,9 +127,6 @@ class WipeNonFungiblePrecompileTest {
     private ExchangeRate exchangeRate;
 
     @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-
-    @Mock
     private Store store;
 
     @Mock
@@ -177,13 +173,7 @@ class WipeNonFungiblePrecompileTest {
         wipePrecompile = new WipeNonFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                evmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                precompilePricingUtils);
+                infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
     }
 
     @Test

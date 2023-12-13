@@ -33,7 +33,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -71,20 +70,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
- * This class is a modified thread-safe copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
- * adapter interface which is used by
- * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services
- * package.
+ * This class is a modified thread-safe copy of HTSPrecompiledContract from hedera-services repo.
  * <p>
  * Differences with the original class: 1. Use abstraction for the state by introducing {@link Store} interface. 2. Use
  * workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the
  * need of having separate precompile classes. 3. All stateful fields are extracted into {@link ContractCallContext} and the class is converted to a singleton bean
  */
-public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
+public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     public static final TupleType redirectType = TupleType.parse("(int32,bytes)");
 
@@ -97,7 +91,6 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
-    private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private final Store store;
     private final TokenAccessor tokenAccessor;
     private final PrecompilePricingUtils precompilePricingUtils;
@@ -107,14 +100,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
             final Store store,
             final TokenAccessor tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
+        super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
-        this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
         this.store = store;
         this.tokenAccessor = tokenAccessor;
         this.precompilePricingUtils = precompilePricingUtils;
@@ -146,8 +138,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 return Pair.of(defaultGas(), null);
             }
 
-            return evmHTSPrecompiledContract.computeCosted(
-                    input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
+            return super.computeCosted(input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
         }
 
         /* Workaround allowing execution of read only precompile methods in a dynamic context (non pure/view).
@@ -162,6 +153,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return Pair.of(precompileContext.getGasRequirement(), result.getOutput());
     }
 
+    @Override
     @NonNull
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
         if (unqualifiedDelegateDetected(frame)) {

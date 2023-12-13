@@ -94,4 +94,8 @@ public class ContractCallContext implements AutoCloseable {
         }
         setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
     }
+
+    public boolean useHistorical() {
+        return recordFile != null;
+    }
 }

@@ -54,7 +54,7 @@ public class HederaEvmTxProcessor {
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
-    protected final Map<String, Provider<ContractCreationProcessor>> ccps;
+    protected final Provider<ContractCreationProcessor> contractCreationProcessorProvider;
     protected final HederaEvmOperationTracer tracer;
     protected final EvmProperties dynamicProperties;
 
@@ -65,7 +65,7 @@ public class HederaEvmTxProcessor {
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<ContractCreationProcessor> contractCreationProcessorProvider,
             final BlockMetaSource blockMetaSource,
             final HederaEvmOperationTracer tracer) {
         this.worldState = worldState;
@@ -74,14 +74,13 @@ public class HederaEvmTxProcessor {
         this.gasCalculator = gasCalculator;
 
         this.mcps = mcps;
-        this.ccps = ccps;
+        this.contractCreationProcessorProvider = contractCreationProcessorProvider;
         this.blockMetaSource = blockMetaSource;
         this.tracer = tracer;
     }
 
     /**
-     * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a
-     * field.
+     * Executes the {@link MessageFrame} of the EVM transaction and fills execution results into a field.
      *
      * @param sender The origin {@link MutableAccount} that initiates the transaction
      * @param receiver the priority form of the receiving {@link Address} (i.e., EIP-1014 if
@@ -204,10 +203,10 @@ public class HederaEvmTxProcessor {
         executor.process(frame, operationTracer);
     }
 
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, final String evmVersion) {
+    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, String evmVersion) {
         return switch (type) {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
-            case CONTRACT_CREATION -> ccps.get(evmVersion).get();
+            case CONTRACT_CREATION -> contractCreationProcessorProvider.get();
         };
     }
 }
