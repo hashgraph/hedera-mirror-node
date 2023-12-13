@@ -29,6 +29,7 @@ import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -145,6 +146,38 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     public ExecuteContractResult executeContract(
+            ContractId contractId,
+            long gas,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount,
+            ExpandedAccountId payer) {
+
+        ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
+                .setContractId(contractId)
+                .setGas(gas)
+                .setTransactionMemo(getMemo("Execute contract"));
+
+        if (parameters == null) {
+            contractExecuteTransaction.setFunction(functionName);
+        } else {
+            contractExecuteTransaction.setFunction(functionName, parameters);
+        }
+
+        if (payableAmount != null) {
+            contractExecuteTransaction.setPayableAmount(payableAmount);
+        }
+
+        var response = executeTransactionAndRetrieveReceipt(contractExecuteTransaction, payer);
+
+        TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
+        logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
+
+        log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
+        return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
+    }
+
+    public ExecuteContractResult executeContract(
             ContractId contractId, long gas, String functionName, byte[] parameters, Hbar payableAmount) {
 
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
@@ -213,5 +246,6 @@ public class ContractClient extends AbstractNetworkClient {
     }
 
     public record ExecuteContractResult(
-            ContractFunctionResult contractFunctionResult, NetworkTransactionResponse networkTransactionResponse) {}
+            ContractFunctionResult contractFunctionResult, NetworkTransactionResponse networkTransactionResponse) {
+    }
 }

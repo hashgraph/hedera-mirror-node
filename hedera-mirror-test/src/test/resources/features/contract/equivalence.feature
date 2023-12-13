@@ -120,18 +120,18 @@ Feature: in-equivalence tests
     Given I ensure token "FUNGIBLE" has been created
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
-    Then I execute "internal" call against Ecrecover precompile
-    Then I execute "static" call against Ecrecover precompile
-    Then I execute "delegate" call against Ecrecover precompile
-    Then I execute "internal" call against SHA-256 precompile
-    Then I execute "static" call against SHA-256 precompile
-    Then I execute "delegate" call against SHA-256 precompile
-    Then I execute "internal" call against Ripemd-160 precompile
-    Then I execute "static" call against Ripemd-160 precompile
-    Then I execute "delegate" call against Ripemd-160 precompile
-    Then I execute "internal" call against Identity precompile
-    Then I execute "static" call against Identity precompile
-    Then I execute "delegate" call against Identity precompile
+    Then I execute internal "call" against Identity precompile
+    Then I execute internal "staticcall" against Identity precompile
+    Then I execute internal "delegatecall" against Identity precompile
+    Then I execute internal "call" against Ecrecover precompile
+    Then I execute internal "staticcall" against Ecrecover precompile
+    Then I execute internal "delegatecall" against Ecrecover precompile
+    Then I execute internal "call" against SHA-256 precompile
+    Then I execute internal "staticcall" against SHA-256 precompile
+    Then I execute internal "delegatecall" against SHA-256 precompile
+    Then I execute internal "call" against Ripemd-160 precompile
+    Then I execute internal "staticcall" against Ripemd-160 precompile
+    Then I execute internal "delegatecall" against Ripemd-160 precompile
     Then I make internal "call" to ethereum precompile "0.0.1" address with amount
     Then I make internal "call" to ethereum precompile "0.0.9" address with amount
     Then I make internal "callcode" to ethereum precompile "0.0.1" address with amount
@@ -158,26 +158,27 @@ Feature: in-equivalence tests
     Given I successfully create estimate precompile contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Given I successfully create tokens
-    And I update the account and token key
+    Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
-    Then I call precompile with transfer FUNGIBLE token to a <account> address
-    Then I call precompile with transfer NFT token to a <account> address
-    Then I call precompile with transferFrom FUNGIBLE token to a <account> address
+    Then I call precompile with transfer "FUNGIBLE" token to a <account> address
+    Then I call precompile with transfer "NFT" token to a <account> address
+    Then I call precompile with transferFrom "FUNGIBLE" token to a <account> address
+    Then I call precompile with transferFrom "NFT" token to a <account> address
 
     Examples:
-      | account   |
+      | account     |
 #      | "0.0.0" |  INVALID_ALIAS_KEY
-      | "0.0.1"   |
-      | "0.0.2"   |
-      | "0.0.3"   |
-      | "0.0.4"   |
-      | "0.0.5"   |
-      | "0.0.6"   |
-      | "0.0.7"   |
-      | "0.0.8"   |
-      | "0.0.9"   |
-      | "0.0.10"  |
-      | "0.0.11"  |
+      | "0.0.1"     |
+      | "0.0.2"     |
+      | "0.0.3"     |
+      | "0.0.4"     |
+      | "0.0.5"     |
+      | "0.0.6"     |
+      | "0.0.7"     |
+      | "0.0.8"     |
+      | "0.0.9"     |
+      | "0.0.10"    |
+      | "0.0.11"    |
 #      | "0.0.350" |  INVALID_ALIAS_KEY
 #      | "0.0.356" |  INVALID_ALIAS_KEY
 #      | "0.0.357" |  INVALID_ALIAS_KEY
@@ -185,10 +186,12 @@ Feature: in-equivalence tests
 #      | "0.0.359" |  INVALID_ALIAS_KEY
 #      | "0.0.360" |  INVALID_ALIAS_KEY
 #      | "0.0.361" |  INVALID_ALIAS_KEY
-      | "0.0.750" |
-      | "0.0.800" |
+      | "0.0.750"   |
+      | "0.0.800"   |
+      | "0.0.10010" |
 
   Scenario: Validate in-equivalence tests for HTS Transfers with state modification
+    Given I successfully create equivalence call contract
     Given I successfully create estimate precompile contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Given I successfully create tokens
@@ -197,11 +200,25 @@ Feature: in-equivalence tests
     Then I call precompile with transferFromNFT to a "0.0.9" address
     Then I call precompile with transferFromNFT to a "0.0.10" address
     Then I call precompile with transferFromNFT to a "0.0.11" address
-    #Then I call precompile with transferFromNFT to a "0.0.350" address
-    #Then I call precompile with transferFromNFT to a "0.0.357" address
-#    Then I call precompile with transferFromNFT to a "0.0.358" address
-#    Then I call precompile with transferFromNFT to a "0.0.359" address
-#    Then I call precompile with transferFromNFT to a "0.0.360" address
-#    Then I call precompile with transferFromNFT to a "0.0.361" address
+#    Then I call precompile with transferFromNFT to a "0.0.350" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.357" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.358" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.359" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.360" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.361" address  INVALID_ALIAS_KEY
     Then I call precompile with transferFromNFT to a "0.0.750" address
     Then I call precompile with transferFromNFT to a "0.0.800" address
+    Then I call precompile with transferFrom "NFT" token to a contract
+    Then I call precompile with transferFrom "FUNGIBLE" token to a contract
+    Then I call precompile with transferFrom "FUNGIBLE" token to a "BOB" EVM address
+#    Then I call precompile with transferFrom "NFT" token to a "BOB" EVM address //success, should fail
+    Given I mint a new nft
+    Then I call precompile with transferFrom "NFT" token to a "ALICE" EVM address
+    Then I call precompile with transferFrom "FUNGIBLE" token to a "ALICE" EVM address
+    Given I mint a new nft
+    Then I call precompile with transferFrom "NFT" token to an EVM address
+    Then I call precompile with transferFrom "FUNGIBLE" token to an EVM address
+    Given I mint a new nft
+    And I update the "BOB" account and token key
+    Then I call precompile with signer BOB to transferFrom "NFT" token to ALICE
+    Then I call precompile with signer BOB to transferFrom "FUNGIBLE" token to ALICE

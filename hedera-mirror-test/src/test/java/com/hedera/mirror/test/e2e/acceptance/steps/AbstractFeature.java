@@ -142,7 +142,7 @@ abstract class AbstractFeature {
     }
 
     protected FileId persistContractBytes(String contractContents) {
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        networkTransactionResponse = fileClient.createFile(new byte[]{});
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         var fileId = networkTransactionResponse.getReceipt().fileId;
@@ -162,7 +162,8 @@ abstract class AbstractFeature {
     }
 
     protected record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {
+    }
 
     protected CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
@@ -249,7 +250,10 @@ abstract class AbstractFeature {
         EQUIVALENCE_CALL("classpath:solidity/artifacts/contracts/EquivalenceContract.sol/EquivalenceContract.json", 0),
         EQUIVALENCE_DESTRUCT(
                 "classpath:solidity/artifacts/contracts/EquivalenceDestruct.sol/EquivalenceDestruct.json", 10000),
-        PRECOMPILE("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
+        EQUIVALENCE_PAYABLE(
+                "classpath:solidity/artifacts/contracts/EquivalenceContract.sol/EquivalencePayableContract.json",
+                10000), PRECOMPILE(
+                "classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
         ESTIMATE_GAS(
                 "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json", 1000000),
         PARENT_CONTRACT("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json", 10000000);
