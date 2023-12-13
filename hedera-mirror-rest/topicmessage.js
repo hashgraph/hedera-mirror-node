@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,18 @@
  */
 
 import {getResponseLimit} from './config';
+import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
 import {TopicMessage} from './model';
 import * as utils from './utils';
 import {TopicMessageViewModel} from './viewmodel';
-import _ from 'lodash';
-import config from './config';
-import {TopicMessageLookup} from './model';
 
 const {default: defaultLimit} = getResponseLimit();
 
 const columnMap = {
-  sequencenumber: TopicMessage.SEQUENCE_NUMBER,
+  [constants.filterKeys.SEQUENCE_NUMBER]: TopicMessage.SEQUENCE_NUMBER,
   [constants.filterKeys.TIMESTAMP]: TopicMessage.CONSENSUS_TIMESTAMP,
 };
 
@@ -80,12 +78,12 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
   const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
-  const pgSqlQuery = `select *
+  const query = `select *
                       from ${TopicMessage.tableName}
                       where ${TopicMessage.CONSENSUS_TIMESTAMP} = $1`;
-  const pgSqlParams = [consensusTimestamp];
+  const params = [consensusTimestamp];
 
-  res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
+  res.locals[constants.responseDataLabel] = await getMessage(query, params);
 };
 
 /**
@@ -100,20 +98,21 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
   const topicIdStr = req.params.topicId;
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
-  const topicId = EntityId.parse(topicIdStr);
-  let query = {};
-  if (config.query.topicMessageLookup) {
-    query = await getQueryWithTopicMessageLookupTimestamps(topicId, seqNum);
-  } else {
-    // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
-    query.pgSqlQuery = `select *
+
+  const topicId = EntityId.parse(topicIdStr).getEncodedId();
+  let query = `select *
                   from ${TopicMessage.tableName}
                   where ${TopicMessage.TOPIC_ID} = $1
-                    and ${TopicMessage.SEQUENCE_NUMBER} = $2 limit 1`;
-    query.pgSqlParams = [topicId.getEncodedId(), seqNum];
+                    and ${TopicMessage.SEQUENCE_NUMBER} = $2`;
+  const params = [topicId, seqNum];
+
+  if (config.query.topicMessageLookup) {
+    const {begin, end} = await getTopicMessageTimestampRange(topicId, seqNum);
+    params.push(begin, end);
+    query += ` and ${TopicMessage.CONSENSUS_TIMESTAMP} >= $3 and ${TopicMessage.CONSENSUS_TIMESTAMP} < $4`;
   }
 
-  res.locals[constants.responseDataLabel] = await getMessage(query.pgSqlQuery, query.pgSqlParams);
+  res.locals[constants.responseDataLabel] = await getMessage(query, params);
 };
 
 /**
@@ -123,24 +122,21 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 const getTopicMessages = async (req, res) => {
   const topicIdStr = req.params.topicId;
   validateGetTopicMessagesParams(topicIdStr);
+
+  const encoding = req.query[constants.filterKeys.ENCODING];
   const filters = utils.buildAndValidateFilters(req.query, acceptedTopicsParameters);
-
-  const topicId = EntityId.parse(topicIdStr);
-
-  // build sql query validated param and filters
-  const {query, params, order, limit} = await extractSqlFromTopicMessagesRequest(topicId, filters);
-
-  const messageEncoding = req.query[constants.filterKeys.ENCODING];
+  const topicId = EntityId.parse(topicIdStr).getEncodedId();
 
   const topicMessagesResponse = {
+    messages: [],
     links: {
       next: null,
     },
   };
-
-  topicMessagesResponse.messages = [];
   res.locals[constants.responseDataLabel] = topicMessagesResponse;
 
+  // build sql query validated param and filters
+  const {query, params, order, limit} = await extractSqlFromTopicMessagesRequest(topicId, filters);
   if (!query) {
     return;
   }
@@ -151,7 +147,7 @@ const getTopicMessages = async (req, res) => {
   // when querying topic messages by id
   const queryHint = limit !== 1 ? constants.zeroRandomPageCostQueryHint : undefined;
   const messages = await getMessages(query, params, queryHint);
-  topicMessagesResponse.messages = messages.map((m) => new TopicMessageViewModel(m, messageEncoding));
+  topicMessagesResponse.messages = messages.map((m) => new TopicMessageViewModel(m, encoding));
 
   // populate next
   const lastTimeStamp =
@@ -169,266 +165,216 @@ const getTopicMessages = async (req, res) => {
   );
 };
 
-const getSequenceNumberFromTopicMessageLookup = async (topicId, order, limit) => {
-  const sequenceNumber = await getSequenceNumber(topicId, order);
-  let lowerLimit;
-  let upperLimit;
-  switch (order) {
-    case constants.orderFilterValues.ASC:
-      lowerLimit = sequenceNumber;
-      upperLimit = lowerLimit + limit;
-      break;
-    case constants.orderFilterValues.DESC:
-      upperLimit = sequenceNumber;
-      lowerLimit = upperLimit - limit;
-      break;
-  }
-  let pgSqlQuery = `select lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
-                    from topic_message_lookup
-                    where ${TopicMessageLookup.TOPIC_ID} = $1 
-                      and  sequence_number_range && $2::int8range
-                    order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE} ${order}`;
-  const pgSqlParams = [topicId.getEncodedId(), `[${lowerLimit},${upperLimit}]`];
-
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
-};
-
-const extractSqlForTopicMessagesLookup = (topicId, filters, limit, order) => {
-  let pgSqlQuery = `select lower(timestamp_range) as timestamp_start,upper(timestamp_range) as timestamp_end
-                    from topic_message_lookup
-                    where ${TopicMessageLookup.TOPIC_ID} = $1 `;
-  const pgSqlParams = [topicId.getEncodedId()];
-
-  let equal = null;
-  let lowerLimit = 1n;
-  let upperLimit = constants.MAX_LONG;
-
-  const bigIntMax = (...args) => args.reduce((m, e) => (e > m ? e : m));
-  const bigIntMin = (...args) => args.reduce((m, e) => (e < m ? e : m));
-  for (const filter of filters) {
-    if (filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
-      // validating seq number to have only one eq and no ne operators.
-      switch (filter.operator) {
-        case utils.opsMap.eq:
-          if (!_.isNil(equal)) {
-            throw new InvalidArgumentError(`Only one equal (eq) operator is allowed for ${filter.key}`);
-          }
-
-          equal = filter;
-          lowerLimit = BigInt(filter.value);
-          upperLimit = BigInt(filter.value);
-          break;
-        case utils.opsMap.ne:
-          throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${filter.key}`);
-        case utils.opsMap.gt: // The lower limit is max of all lower limits
-          lowerLimit = bigIntMax(lowerLimit, BigInt(filter.value) + 1n);
-          break;
-        case utils.opsMap.gte: // The lower limit is max of all lower limits
-          lowerLimit = bigIntMax(lowerLimit, BigInt(filter.value));
-          break;
-        case utils.opsMap.lt: // The upper limit is max of all upper limits
-          upperLimit = bigIntMin(upperLimit, BigInt(filter.value) - 1n);
-          break;
-        case utils.opsMap.lte: // The upper limit is max of all upper limits
-          upperLimit = bigIntMin(upperLimit, BigInt(filter.value));
-          break;
-        default:
-          break;
-      }
-    }
-  }
-  // If the range built is empty shortcut with an empty response
-  if (lowerLimit > upperLimit) {
-    // need to return an empty response
-    return null;
-  }
-
-  // we add or subtract the limit depending on the order to obtain the range. This scenario is yet to be tested
-  if (upperLimit !== constants.MAX_LONG) {
-    if (lowerLimit === 1n) {
-      // There is an upper bound but no lowerBound
-      lowerLimit = upperLimit - BigInt(limit);
-    }
-  } else {
-    // There is only a lower bound, no upper bound
-    upperLimit = lowerLimit + BigInt(limit);
-  }
-
-  pgSqlQuery += ` and  sequence_number_range && $2::int8range`;
-  pgSqlQuery += ` order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE} ${order}`;
-  pgSqlParams.push(`[${lowerLimit},${upperLimit}]`);
-
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
-};
-
 const extractSqlFromTopicMessagesRequest = async (topicId, filters) => {
-  let pgSqlQuery = `select *
-                    from ${TopicMessage.tableName}
-                    where ${TopicMessage.TOPIC_ID} = $1`;
-  let nextParamCount = 2;
-  const pgSqlParams = [topicId.getEncodedId()];
-  let sequenceNumber = false;
+  const conditions = [`${TopicMessage.TOPIC_ID} = $1`];
+  const params = [topicId];
+  const sequenceNumberFilters = [];
+  const timestampFilters = [];
+  const filtersMap = {
+    [constants.filterKeys.SEQUENCE_NUMBER]: sequenceNumberFilters,
+    [constants.filterKeys.TIMESTAMP]: timestampFilters,
+  };
+  const topicMessageLookupEnabled = config.query.topicMessageLookup;
 
   // add filters
   let limit = defaultLimit;
   let order = constants.orderFilterValues.ASC;
 
   for (const filter of filters) {
-    if (filter.key === constants.filterKeys.LIMIT) {
-      limit = filter.value;
-      continue;
-    }
+    switch (filter.key) {
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      default:
+        const column = columnMap[filter.key];
+        if (!column) {
+          break;
+        }
 
-    // handle keys that do not require formatting first
-    if (filter.key === constants.filterKeys.ORDER) {
-      order = filter.value;
-      continue;
+        if (topicMessageLookupEnabled) {
+          filtersMap[filter.key].push(filter);
+        }
+        conditions.push(`${column}${filter.operator}$${params.push(filter.value)}`);
+        break;
     }
-
-    if (config.query.topicMessageLookup && filter.key === constants.filterKeys.SEQUENCE_NUMBER) {
-      sequenceNumber = true;
-      // add sequence number range
-    }
-
-    const columnKey = columnMap[filter.key];
-    if (columnKey === undefined) {
-      continue;
-    }
-
-    pgSqlQuery += ` and ${columnMap[filter.key]}${filter.operator}$${nextParamCount++}`;
-    pgSqlParams.push(filter.value);
   }
 
-  // Query the topic_message_lookup table only for V2
-  if (config.query.topicMessageLookup) {
-    // If there is no sequence number in the request URL,
-    // query the topic_message_lookup table for either the min or max sequence number depending on order.
-
-    // this needs to be fixed and gotten values
-    const rows = await getTopicMessageTimestamps(topicId, filters, sequenceNumber, limit, order);
-    if (rows === null) {
+  if (topicMessageLookupEnabled) {
+    const ranges = await getTopicMessageTimestampRanges(topicId, sequenceNumberFilters, timestampFilters, limit, order);
+    if (ranges.length === 0) {
       return {};
     }
 
-    if (rows.length) {
-      const condition = rows
-        .map((row) => `(consensus_timestamp >= ${row.timestamp_start} and consensus_timestamp < ${row.timestamp_end})`)
-        .join(' or ');
-      pgSqlQuery += ` and (${condition})`;
+    const timestampRangeCondition = ranges
+      .map((r) => `(consensus_timestamp >= $${params.push(r.begin)} and consensus_timestamp < $${params.push(r.end)})`)
+      .join(' or ');
+    conditions.push(`(${timestampRangeCondition})`);
+  }
+
+  const query = `select *
+      from ${TopicMessage.tableName}
+      where ${conditions.join(' and ')}
+      order by ${TopicMessage.CONSENSUS_TIMESTAMP} ${order}
+      limit $${params.push(limit)}`;
+
+  return utils.buildPgSqlObject(query, params, order, limit);
+};
+
+const getRangeFromFilters = (filters, defaultLower = 0n) => {
+  // Set upper to MAX_LONG - 1 to avoid overflow in Postgres, because
+  // postgres=> select int8range(0::bigint, 9223372036854775807::bigint, '[]');
+  // ERROR:  bigint out of range
+  const range = {lower: defaultLower, upper: constants.MAX_LONG - 1n};
+  for (const filter of filters) {
+    let value = BigInt(filter.value);
+    switch (filter.operator) {
+      case utils.opsMap.eq:
+        if (value < range.lower || value > range.upper) {
+          // The range is effectively empty, so return null
+          return null;
+        }
+
+        range.lower = range.upper = value;
+        break;
+      case utils.opsMap.gt:
+        value += 1n;
+      case utils.opsMap.gte:
+        range.lower = utils.bigIntMax(range.lower, value);
+        break;
+      case utils.opsMap.lt:
+        value -= 1n;
+      case utils.opsMap.lte:
+        range.upper = utils.bigIntMin(range.upper, value);
+        break;
+      case utils.opsMap.ne:
+        throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${filter.key}`);
     }
   }
 
-  // add order
-  pgSqlQuery += ` order by ${TopicMessage.CONSENSUS_TIMESTAMP} ${order}`;
-
-  // add limit
-  pgSqlQuery += ` limit $${nextParamCount++}`;
-  pgSqlParams.push(limit);
-
-  // close query
-  pgSqlQuery += ';';
-
-  return utils.buildPgSqlObject(pgSqlQuery, pgSqlParams, order, limit);
+  return range.lower <= range.upper ? range : null;
 };
 
-const getTopicMessageTimestamps = async (topicId, filters, hasSequenceNumberForV2, limit, order) => {
-  const pgObject = hasSequenceNumberForV2
-    ? extractSqlForTopicMessagesLookup(topicId, filters, limit, order)
-    : await getSequenceNumberFromTopicMessageLookup(topicId, order, limit);
-
-  if (pgObject === null) {
-    return null;
+const getTopicMessageTimestampRanges = async (topicId, sequenceNumberFilters, timestampFilters, limit, order) => {
+  const sequenceNumberRange = getRangeFromFilters(sequenceNumberFilters, 1n);
+  const timestampRange = getRangeFromFilters(timestampFilters);
+  if (sequenceNumberRange === null || timestampRange === null) {
+    return [];
   }
 
-  const params = pgObject.params;
-  const query = pgObject.query;
-
-  const {rows} = await pool.queryQuietly(query, params);
-  if (rows.length === 0) {
-    throw new NotFoundError();
-  }
-
-  return rows;
-};
-
-const getSequenceNumber = async (topicId, order) => {
-  const params = [topicId.getEncodedId()];
+  const isOrderAsc = order === constants.orderFilterValues.ASC;
   let query;
+  const params = [
+    topicId,
+    `[${sequenceNumberRange.lower},${sequenceNumberRange.upper}]`,
+    `[${timestampRange.lower},${timestampRange.upper}]`,
+  ];
 
-  switch (order) {
-    case constants.orderFilterValues.ASC:
-      query =
-        'select MIN(lower(sequence_number_range)) as sequence_number from topic_message_lookup where topic_id = $1';
-      break;
-    case constants.orderFilterValues.DESC:
-      query =
-        'select MAX(upper(sequence_number_range)) as sequence_number from topic_message_lookup where topic_id = $1';
-      break;
+  if (sequenceNumberRange.upper - sequenceNumberRange.lower + 1n <= limit) {
+    // If the range size doesn't exceed the limit, use it as is. Note explicitly casting topic id to bigint is
+    // required to utilize the btree gist index on (topic_id, sequence_number_range)
+    query = `select timestamp_range
+      from topic_message_lookup
+      where topic_id = $1::bigint and sequence_number_range && $2::int8range and timestamp_range && $3::int8range
+      order by sequence_number_range`;
+  } else {
+    // Depending on the order, first query the table to find the bound of the sequence number range and build the actual
+    // range from the bound and the limit, then query the table with the actual range
+    // params.push(isOrderAsc ? sequenceNumberRange.upper : sequenceNumberRange.lower);
+    params.push(limit);
+    // Since the information in the table can't tell the first sequence number satisfying the sequence number range and
+    // the timestamp range, for instance, with sequencenumber=lt:500, timestamp=lt:1000, limit=25, and order=desc, the
+    // first sequence number range might be [300, 400), the minimum value of the largest sequence number is 300, and
+    // the maximum is 399. In order to get the correct timestamp range, we need to use an actual range which covers
+    // all possible sequence number values, i.e., [276, 400)
+    // Notes:
+    // - for asc order, when expanding the upper, the delta least(limit, 9223372036854775807::bigint - upper(range)) is
+    //   used to ensure no overflow occurs
+    // - for desc order, lower bound is expanded by limit - 1, since the lower bound is inclusive
+    // - upper($2::int8range) is always the exclusive upper bound, i.e., when the value passed in is '[1, 10]', pg
+    //   upper returns 11
+    const rangeExpression = isOrderAsc
+      ? `int8range(lower(range), least(upper(range) + least($4, 9223372036854775807::bigint - upper(range)), upper($2::int8range)), '[)')`
+      : `int8range(greatest(lower(range) - ($4 - 1), lower($2::int8range)), upper(range), '[)')`;
+
+    query = `with actual_range as (
+        select ${rangeExpression} as range
+        from (
+          select sequence_number_range as range
+          from topic_message_lookup
+          where topic_id = $1::bigint and
+            sequence_number_range && $2::int8range and
+            timestamp_range && $3::int8range
+          order by sequence_number_range ${order}
+          limit 1
+        ) as t
+      )
+      select timestamp_range
+      from topic_message_lookup as t, actual_range as a
+      where topic_id = $1::bigint and
+        sequence_number_range && a.range and
+        timestamp_range && $3::int8range
+      order by sequence_number_range`;
+  }
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getTopicMessageTimestampRanges query: ${query}, params: ${params}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
-  if (rows.length === 0) {
-    throw new NotFoundError();
-  }
-
-  return rows[0].sequence_number;
+  return rows.map((r) => r.timestamp_range);
 };
 
 /**
  * Retrieves topic message from
  */
-const getMessage = async (pgSqlQuery, pgSqlParams) => {
+const getMessage = async (query, params) => {
   if (logger.isTraceEnabled()) {
-    logger.trace(`getMessage query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+    logger.trace(`getMessage query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
-  const messages = rows.map((tm) => new TopicMessage(tm));
-  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
 
-  logger.debug('getMessage returning single entry');
-
-  return new TopicMessageViewModel(messages[0]);
+  return new TopicMessageViewModel(new TopicMessage(rows[0]));
 };
 
-const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
+const getMessages = async (query, params, preQueryHint) => {
   if (logger.isTraceEnabled()) {
-    logger.trace(`getMessages query: ${pgSqlQuery}, params: ${pgSqlParams}`);
+    logger.trace(`getMessages query: ${query}, params: ${params}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams, preQueryHint);
+  const {rows} = await pool.queryQuietly(query, params, preQueryHint);
   logger.debug(`getMessages returning ${rows.length} entries`);
   return rows.map((row) => new TopicMessage(row));
 };
 
-const getQueryWithTopicMessageLookupTimestamps = async (topicId, seqNum) => {
-  // Get the timestamp range from the topic message lookup table
-  const topicMessageLookupQuery = `select timestamp_range
-                    from ${TopicMessageLookup.tableName}
-                    where topic_id = $1 and sequence_number_range @> $2::bigint
-                    order by ${TopicMessageLookup.SEQUENCE_NUMBER_RANGE}`;
-  const {rows} = await pool.queryQuietly(topicMessageLookupQuery, [topicId.getEncodedId(), seqNum]);
+const getTopicMessageTimestampRange = async (topicId, seqNum) => {
+  // Get the timestamp range from the topic message lookup table. Note explicitly casting topic id to bigint is required
+  // to utilize the btree gist index on (topic_id, sequence_number_range)
+  const query = `select timestamp_range
+                    from topic_message_lookup
+                    where topic_id = $1::bigint and sequence_number_range @> $2::bigint
+                    order by sequence_number_range`;
+  const params = [topicId, seqNum];
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getMessages query: ${query}, params: ${params}`);
+  }
+
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {
     throw new NotFoundError();
   }
 
-  // Use the timestamp range as constraints for the topic message query
-  const timestampBegin = _.first(rows).timestamp_range.begin;
-  const timestampEnd = _.first(rows).timestamp_range.end;
-  const pgSqlQuery = `select *
-                      from ${TopicMessage.tableName}
-                      where ${TopicMessage.TOPIC_ID} = $1
-                        and ${TopicMessage.SEQUENCE_NUMBER} = $2
-                        and ((${TopicMessage.CONSENSUS_TIMESTAMP} >= $3
-                            and ${TopicMessage.CONSENSUS_TIMESTAMP} < $4))`;
-  const pgSqlParams = [topicId.getEncodedId(), seqNum, timestampBegin, timestampEnd];
-  return {pgSqlQuery, pgSqlParams};
+  return rows[0].timestamp_range;
 };
 
-const topicmessage = {
+const topicMessage = {
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
@@ -443,13 +389,14 @@ const acceptedTopicsParameters = new Set([
 ]);
 
 if (utils.isTestEnv()) {
-  Object.assign(topicmessage, {
+  Object.assign(topicMessage, {
     extractSqlFromTopicMessagesRequest,
-    extractSqlForTopicMessagesLookup,
+    getRangeFromFilters,
+    getTopicMessageTimestampRanges,
     validateConsensusTimestampParam,
     validateGetSequenceMessageParams,
     validateGetTopicMessagesParams,
   });
 }
 
-export default topicmessage;
+export default topicMessage;

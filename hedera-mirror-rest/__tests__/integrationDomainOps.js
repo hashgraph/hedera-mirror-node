@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1211,6 +1211,7 @@ const addTopicMessageLookup = async (topicMessageLookups) => {
 
   await insertDomainObject(table, insertFields, topicMessageLookups);
 };
+
 const addSchedule = async (schedule) => {
   schedule = {
     creator_account_id: '0.0.1024',
@@ -1606,6 +1607,7 @@ export default {
   loadRecordFiles,
   loadStakingRewardTransfers,
   loadTokenAccounts,
+  loadTopicMessageLookups,
   loadTransactions,
   setAccountBalance,
   setup,
