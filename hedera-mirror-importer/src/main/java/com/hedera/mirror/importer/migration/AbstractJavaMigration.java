@@ -25,7 +25,7 @@ import org.flywaydb.core.api.migration.JavaMigration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-abstract class MirrorBaseJavaMigration implements JavaMigration {
+abstract class AbstractJavaMigration implements JavaMigration {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
 

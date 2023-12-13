@@ -112,7 +112,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
     private Instant getStartTime() {
         return mirrorProperties.getStartDate() == null
-                ? MirrorDateRangePropertiesProcessor.STARTUP_TIME
+                ? DateRangeCalculator.STARTUP_TIME
                 : mirrorProperties.getStartDate();
     }
 

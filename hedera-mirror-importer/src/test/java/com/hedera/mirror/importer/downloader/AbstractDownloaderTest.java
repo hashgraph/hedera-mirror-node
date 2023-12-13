@@ -41,7 +41,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
@@ -117,7 +117,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     protected StreamFileNotifier streamFileNotifier;
 
     @Mock
-    protected MirrorDateRangePropertiesProcessor dateRangeProcessor;
+    protected DateRangeCalculator dateRangeProcessor;
 
     @TempDir
     protected Path s3Path;

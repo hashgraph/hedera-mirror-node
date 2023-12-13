@@ -41,7 +41,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @CustomLog
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
-class MirrorImporterConfiguration {
+class ImporterConfiguration {
 
     private final MirrorProperties mirrorProperties;
 

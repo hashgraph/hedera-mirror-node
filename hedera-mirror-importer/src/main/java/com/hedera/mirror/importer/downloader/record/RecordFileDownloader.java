@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -62,7 +62,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
             ConsensusNodeService consensusNodeService,
             RecordDownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SidecarFileReader sidecarFileReader,
             SidecarProperties sidecarProperties,
@@ -74,7 +74,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
                 consensusNodeService,
                 downloaderProperties,
                 meterRegistry,
-                mirrorDateRangePropertiesProcessor,
+                dateRangeCalculator,
                 nodeSignatureVerifier,
                 signatureFileReader,
                 streamFileNotifier,

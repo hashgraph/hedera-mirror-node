@@ -34,7 +34,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class MirrorBaseJavaMigrationTest {
+class AbstractJavaMigrationTest {
 
     @ParameterizedTest
     @MethodSource("skipMigrationTestArgumentProvider")
@@ -57,7 +57,7 @@ class MirrorBaseJavaMigrationTest {
         ", 1, 2, true"
     })
     void verify(String version, String baseline, String target, boolean result) throws IOException {
-        MirrorBaseJavaMigrationSpy migration = new MirrorBaseJavaMigrationSpy(version);
+        AbstractJavaMigrationSpy migration = new AbstractJavaMigrationSpy(version);
         migration.migrate(new FlywayContext(getConfiguration(baseline, target)));
         assertThat(migration.isMigrationCompleted()).isEqualTo(result);
     }
@@ -129,7 +129,7 @@ class MirrorBaseJavaMigrationTest {
 
     @Data
     @RequiredArgsConstructor
-    private class MirrorBaseJavaMigrationSpy extends MirrorBaseJavaMigration {
+    private class AbstractJavaMigrationSpy extends AbstractJavaMigration {
 
         private boolean migrationCompleted = false;
         private final String version;
@@ -165,7 +165,7 @@ class MirrorBaseJavaMigrationTest {
         }
     }
 
-    private static class JavaMigration extends MirrorBaseJavaMigration {
+    private static class JavaMigration extends AbstractJavaMigration {
 
         private MigrationVersion version;
 
