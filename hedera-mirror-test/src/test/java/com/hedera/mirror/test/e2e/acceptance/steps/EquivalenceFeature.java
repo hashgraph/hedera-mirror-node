@@ -42,6 +42,7 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
@@ -60,6 +61,8 @@ import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,19 +75,25 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
-    private static final String INVALID_TRANSFER_EXCEPTION = "INVALID_RECEIVING_NODE_ACCOUNT";
+    private static final String INVALID_RECEIVING_NODE_ACCOUNT = "INVALID_RECEIVING_NODE_ACCOUNT";
     private static final String TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = "TOKEN_NOT_ASSOCIATED_TO_ACCOUNT";
     private static final String SPENDER_DOES_NOT_HAVE_ALLOWANCE = "SPENDER_DOES_NOT_HAVE_ALLOWANCE";
-
+    private static final String INVALID_ALIAS_KEY = "INVALID_ALIAS_KEY";
+    private static final String INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE = "INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE";
+    private static final String SUCCESS = "SUCCESS";
     private DeployedContract deployedEquivalenceDestruct;
     private DeployedContract deployedEquivalenceCall;
     private DeployedContract deployedPrecompileContract;
-
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
     private String precompileContractSolidityAddress;
     private final AccountClient accountClient;
     private ExpandedAccountId admin;
+    private ExpandedAccountId receiverAccount;
+    private ExpandedAccountId secondReceiverAccount;
+    private String receiverAccountAlias;
+    private String secondReceiverAccountAlias;
+
     private TokenId fungibleTokenId;
     private TokenId nonFungibleTokenId;
 
@@ -108,6 +117,10 @@ public class EquivalenceFeature extends AbstractFeature {
         precompileContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+        receiverAccountAlias = receiverAccount.getPublicKey().toEvmAddress().toString();
+        secondReceiverAccount = accountClient.getAccount(AccountNameEnum.ALICE);
+        secondReceiverAccountAlias = secondReceiverAccount.getAccountId().toSolidityAddress();
     }
 
     @Given("I successfully create tokens")
@@ -121,29 +134,31 @@ public class EquivalenceFeature extends AbstractFeature {
         networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, RandomUtils.nextBytes(4));
     }
 
-    @And("I update the account and token key")
-    public void updateAccountAndTokensKeys() throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        var keyList = KeyList.of(admin.getPublicKey(), deployedPrecompileContract.contractId())
+    @And("I update the {account} account and token key")
+    public void updateAccountAndTokensKeys(AccountNameEnum accountName)
+            throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
+        var account = accountName.name().equals("OPERATOR") ? admin : receiverAccount;
+        var keyList = KeyList.of(account.getPublicKey(), deployedPrecompileContract.contractId())
                 .setThreshold(1);
         new AccountUpdateTransaction()
-                .setAccountId(admin.getAccountId())
+                .setAccountId(account.getAccountId())
                 .setKey(keyList)
                 .freezeWith(accountClient.getClient())
-                .sign(admin.getPrivateKey())
+                .sign(account.getPrivateKey())
                 .execute(accountClient.getClient());
         new TokenUpdateTransaction()
                 .setTokenId(fungibleTokenId)
                 .setSupplyKey(keyList)
                 .setAdminKey(keyList)
                 .freezeWith(accountClient.getClient())
-                .sign(admin.getPrivateKey())
+                .sign(account.getPrivateKey())
                 .execute(accountClient.getClient());
         var tokenUpdate = new TokenUpdateTransaction()
                 .setTokenId(nonFungibleTokenId)
                 .setSupplyKey(keyList)
                 .setAdminKey(keyList)
                 .freezeWith(accountClient.getClient())
-                .sign(admin.getPrivateKey())
+                .sign(account.getPrivateKey())
                 .execute(accountClient.getClient());
         networkTransactionResponse = new NetworkTransactionResponse(
                 tokenUpdate.transactionId, tokenUpdate.getReceipt(accountClient.getClient()));
@@ -281,7 +296,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute {string} call against Ecrecover precompile")
+    @Then("I execute internal {string} against Ecrecover precompile")
     public void executeAllCallsForEcrecover(String calltype) {
         var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
         var hashedMessage =
@@ -302,7 +317,7 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(messageSignerAddress, asAddress(resultMessageSigner).toString());
     }
 
-    @Then("I execute {string} call against SHA-256 precompile")
+    @Then("I execute internal {string} against SHA-256 precompile")
     public void executeAllCallsForSha256(String calltype) {
         var message = "Encode me!";
         var hashedMessage = "68907fbd785a694c3617d35a6ce49477ac5704d75f0e727e353da7bc664aacc2";
@@ -322,7 +337,7 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(hashedMessage, to32BytesString(resultMessage));
     }
 
-    @Then("I execute {string} call against Ripemd-160 precompile")
+    @Then("I execute internal {string} against Ripemd-160 precompile")
     public void executeAllCallsForRipemd160(String calltype) {
         var message = "Encode me!";
         var hashedMessage = "4f0c39893f4c1c805aea87a95b5d359a218920d6";
@@ -341,6 +356,26 @@ public class EquivalenceFeature extends AbstractFeature {
                 .getResultData();
         var result = Bytes.fromHexString(resultMessage).trimLeadingZeros().toUnprefixedHexString();
         assertEquals(hashedMessage, result);
+    }
+
+    @Then("I execute internal {string} against Identity precompile")
+    public void executeAllCallsForIdentity(String calltype) {
+        var message = "Encode me!";
+        var messageBytes = message.getBytes(StandardCharsets.UTF_8);
+        var parameters = new ContractFunctionParameters()
+                .addAddress("0x0000000000000000000000000000000000000004")
+                .addBytes(messageBytes);
+
+        var callType = getMethodName(calltype, "without");
+        executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+
+        var transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        var resultMessage = mirrorClient
+                .getContractActions(transactionId)
+                .getActions()
+                .get(1)
+                .getResultData();
+        assertEquals(resultMessage.replace("0x", ""), Hex.encodeHexString(messageBytes));
     }
 
     @Then("I execute internal call against HTS precompile with approve function for {token} with amount")
@@ -436,35 +471,19 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(INVALID_FEE_SUBMITTED, message);
     }
 
-    @Then("I call precompile with transfer FUNGIBLE token to a {string} address")
-    public void transferFungibleTokens(String address) {
-        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters()
-                .addAddress(fungibleTokenId.toSolidityAddress())
-                .addAddress(admin.getAccountId().toSolidityAddress())
-                .addAddress(receiverAccountId)
-                .addInt64(1L);
-        var transactionId = executeContractCallTransactionAndReturnId(
-                deployedPrecompileContract, "transferTokenExternal", parameters, null);
-        var message = mirrorClient
-                .getTransactions(transactionId)
-                .getTransactions()
-                .get(1)
-                .getResult();
-        var expectedMessage = getExpectedResponseMessage(address);
-        assertEquals(expectedMessage, message);
-    }
 
-    @Then("I call precompile with transferFrom FUNGIBLE token to a {string} address")
-    public void transferFromFungibleTokens(String address) {
+    @Then("I call precompile with transferFrom {token} token to a {string} address")
+    public void transferFromFungibleTokens(TokenNameEnum tokenName, String address) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
         var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters()
-                .addAddress(fungibleTokenId.toSolidityAddress())
+                .addAddress(tokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(receiverAccountId)
                 .addUint256(new BigInteger("1"));
         var transactionId = executeContractCallTransactionAndReturnId(
-                deployedPrecompileContract, "transferFromExternal", parameters, null);
+                deployedPrecompileContract, contractFunction, parameters, null);
         var message = mirrorClient
                 .getTransactions(transactionId)
                 .getTransactions()
@@ -474,16 +493,98 @@ public class EquivalenceFeature extends AbstractFeature {
         assertEquals(expectedMessage, message);
     }
 
-    @Then("I call precompile with transfer NFT token to a {string} address")
-    public void transferNftTokens(String address) {
-        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+    @Then("I call precompile with transferFrom {token} token to an EVM address")
+    public void transferFromFungibleTokensToEVM(TokenNameEnum tokenName) throws InvalidProtocolBufferException {
+        var HEX_DIGITS = "0123456789abcdef";
+        var RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        approveTokenFor(tokenName, tokenId, AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
         var parameters = new ContractFunctionParameters()
-                .addAddress(nonFungibleTokenId.toSolidityAddress())
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(RANDOM_ADDRESS.substring(24, 64))
+                .addUint256(new BigInteger("3"));
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, contractFunction, parameters, null);
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
+
+        assertEquals(SUCCESS, message);
+    }
+
+    @Then("I call precompile with transferFrom {token} token to a {account} EVM address")
+    public void transferFromFungibleTokensReceiver(TokenNameEnum tokenName, AccountNameEnum accountName)
+            throws InvalidProtocolBufferException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        String accountAlias = (accountName.name().equals("ALICE")) ? secondReceiverAccountAlias : receiverAccountAlias;
+        var accountId = (accountName.name().equals("ALICE")) ? secondReceiverAccount : receiverAccount;
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        var expectedMessage =
+                (accountName.name().equals("ALICE")) ? SUCCESS : INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+
+        approveTokenFor(tokenName, tokenId, AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+        tokenClient.associate(accountId, tokenId);
+        var parameters = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(accountAlias)
+                .addUint256(new BigInteger("2"));
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, contractFunction, parameters, null);
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
+
+        assertEquals(expectedMessage, message);
+    }
+
+    @Then("I call precompile with signer BOB to transferFrom {token} token to ALICE")
+    public void transferFromBobToAlice(TokenNameEnum tokenName) throws InvalidProtocolBufferException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+
+        approveTokenFor(tokenName, tokenId, AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+        approveTokenFor(tokenName, tokenId, receiverAccount.getAccountId());
+        accountClient.sendCryptoTransfer(receiverAccount.getAccountId(), Hbar.from(50L),
+                receiverAccount.getPrivateKey());
+
+        var parameters = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
+                .addUint256(new BigInteger("4"));
+        var transactionId = executeContractCallTransactionWithPayerAndReturnId(
+                deployedPrecompileContract, contractFunction, parameters, null, receiverAccount);
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
+
+        assertEquals(SUCCESS, message);
+    }
+
+    @Then("I call precompile with transfer {token} token to a {string} address")
+    public void transferNftTokens(TokenNameEnum tokenName, String address) throws InvalidProtocolBufferException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transfer");
+        approveTokenFor(tokenName, tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+        var parameters = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(receiverAccountId)
                 .addInt64(1L);
         var transactionId = executeContractCallTransactionAndReturnId(
-                deployedPrecompileContract, "transferNFTExternal", parameters, null);
+                deployedPrecompileContract, contractFunction, parameters, null);
         var message = mirrorClient
                 .getTransactions(transactionId)
                 .getTransactions()
@@ -508,11 +609,34 @@ public class EquivalenceFeature extends AbstractFeature {
                 .getTransactions()
                 .get(1)
                 .getResult();
-        var expectedMessage = INVALID_TRANSFER_EXCEPTION;
+        var expectedMessage = INVALID_RECEIVING_NODE_ACCOUNT;
         if (extractAccountNumber(address) > 751) {
             expectedMessage = SPENDER_DOES_NOT_HAVE_ALLOWANCE;
         }
         assertEquals(expectedMessage, message);
+    }
+
+    @Then("I call precompile with transferFrom {token} token to a contract")
+    public void transferFromTokensToContract(TokenNameEnum tokenName)
+            throws InvalidProtocolBufferException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        tokenClient.associate(deployedEquivalenceCall.contractId(), tokenId);
+        approveTokenFor(tokenName, tokenId, AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var parameters = new ContractFunctionParameters()
+                .addAddress(tokenId.toSolidityAddress())
+                .addAddress(admin.getAccountId().toSolidityAddress())
+                .addAddress(deployedEquivalenceCall.contractId().toSolidityAddress())
+                .addUint256(new BigInteger("1"));
+        var transactionId = executeContractCallTransactionAndReturnId(
+                deployedPrecompileContract, contractFunction, parameters, null);
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(1)
+                .getResult();
+        assertEquals(SUCCESS, message);
     }
 
     public String getMethodName(String typeOfCall, String amountValue) {
@@ -525,7 +649,10 @@ public class EquivalenceFeature extends AbstractFeature {
             case "delegatecall_without" -> "makeDelegateCall";
             case "callcode_without" -> "callCodeToContractWithoutAmount";
             case "callcode_with" -> "callCodeToContractWithAmount";
-            case "internal_without" -> "makeCallWithoutAmount";
+            case "non_fungible_transferFrom" -> "transferFromNFTExternal";
+            case "fungible_transferFrom" -> "transferFromExternal";
+            case "fungible_transfer" -> "transferTokenExternal";
+            case "non_fungible_transfer" -> "transferNFTExternal";
             default -> "Unknown";
         };
     }
@@ -656,6 +783,34 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
+    private String executeContractCallTransactionWithPayerAndReturnId(
+            DeployedContract deployedContract,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount,
+            ExpandedAccountId payer
+    ) {
+        try {
+            ExecuteContractResult executeContractResult = contractClient.executeContract(
+                    deployedContract.contractId(),
+                    contractClient
+                            .getSdkClient()
+                            .getAcceptanceTestProperties()
+                            .getFeatureProperties()
+                            .getMaxContractFunctionGas(),
+                    functionName,
+                    parameters,
+                    payableAmount,
+                    payer);
+
+            networkTransactionResponse = executeContractResult.networkTransactionResponse();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            return networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        } catch (Exception e) {
+            return extractTransactionId(e.getMessage());
+        }
+    }
+
     private ContractFunctionResult executeContractCallQuery(
             DeployedContract deployedContract, String functionName, ContractFunctionParameters parameters) {
         return contractClient.executeContractQuery(
@@ -692,11 +847,22 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     private static String getExpectedResponseMessage(String address) {
-        var expectedMessage = INVALID_TRANSFER_EXCEPTION;
-        if (extractAccountNumber(address) > 751) {
+        var expectedMessage = INVALID_RECEIVING_NODE_ACCOUNT;
+        if (extractAccountNumber(address) > 751 && extractAccountNumber(address) < 1001) {
             expectedMessage = TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+        } else if (extractAccountNumber(address) > 1001) {
+            expectedMessage = INVALID_ALIAS_KEY;
         }
         return expectedMessage;
+    }
+
+    private void approveTokenFor(TokenNameEnum tokenName, TokenId tokenId, AccountId accountId)
+            throws InvalidProtocolBufferException {
+        if (tokenName.getSymbol().equals("non_fungible")) {
+            accountClient.approveNftAllSerials(tokenId, accountId);
+        } else {
+            accountClient.approveToken(tokenId, accountId, 10L);
+        }
     }
 
     @Getter
