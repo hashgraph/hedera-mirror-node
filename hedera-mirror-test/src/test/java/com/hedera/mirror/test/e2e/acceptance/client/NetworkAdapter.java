@@ -51,10 +51,10 @@ public class NetworkAdapter {
     private MirrorNodeClient mirrorClient;
 
     @Autowired
-    private static ResourceLoader resourceLoader;
+    private ResourceLoader resourceLoader;
 
     @Autowired
-    protected static ObjectMapper mapper;
+    protected ObjectMapper mapper;
 
     public ContractCallResponse contractsCall(
             boolean toMirror,
@@ -98,27 +98,15 @@ public class NetworkAdapter {
         return Strings.encode(function.encodeCallWithArgs(args));
     }
 
-    public static Tuple decodeResult(ContractResource resource, SelectorInterface method, final byte[] result) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        return function.decodeReturn(result);
-    }
-
     public String encodeData(SelectorInterface method, Object... args) {
         return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
     }
 
-    public static CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
+    public CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
     }
 
-    public static InputStream getResourceAsStream(String resourcePath) throws IOException {
+    public InputStream getResourceAsStream(String resourcePath) throws IOException {
         return resourceLoader.getResource(resourcePath).getInputStream();
     }
 
@@ -154,6 +142,18 @@ public class NetworkAdapter {
         }
 
         return contractCallResponse;
+    }
+
+    private Tuple decodeResult(ContractResource resource, SelectorInterface method, final byte[] result) {
+        String json;
+        try (var in = getResourceAsStream(resource.getPath())) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Function function = Function.fromJson(json);
+        return function.decodeReturn(result);
     }
 
     private ContractFunctionParameters convertParametersForSDK(final Object... arguments) {

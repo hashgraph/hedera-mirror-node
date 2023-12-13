@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.readCompiledArtifact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -67,7 +66,7 @@ public abstract class AbstractFeature {
     protected ExchangeRateResponse exchangeRates;
 
     @Autowired
-    private static ResourceLoader resourceLoader;
+    private ResourceLoader resourceLoader;
 
     protected long calculateCreateTokenFee(double usdFee, boolean useCurrentFee) {
         if (exchangeRates == null) {
@@ -113,7 +112,7 @@ public abstract class AbstractFeature {
             return contractIdMap.computeIfAbsent(contractResource, x -> {
                 var resource = resourceLoader.getResource(contractResource.path);
                 try (var in = resource.getInputStream()) {
-                    CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
+                    CompiledSolidityArtifact compiledSolidityArtifact = networkAdapter.readCompiledArtifact(in);
                     var fileId = persistContractBytes(
                             compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
                     networkTransactionResponse = contractClient.createContract(

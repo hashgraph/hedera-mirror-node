@@ -18,6 +18,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.DESTROY_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_BALANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_HASH;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,10 +33,11 @@ import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.io.IOException;
 import java.math.BigInteger;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -41,24 +47,22 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
-    private DeployedContract deployedEquivalenceDestruct;
-    private DeployedContract deployedEquivalenceCall;
+    private DeployedContract equivalenceDestructContract;
+    private DeployedContract equivalenceCallContract;
 
     private String equivalenceDestructContractSolidityAddress;
-    private String equivalenceCallContractSolidityAddress;
+    private static final String MIRROR_NODE_CHOICE = "mirror";
 
     @Given("I successfully create selfdestruct contract")
-    public void createNewSelfDestructContract() throws IOException {
-        deployedEquivalenceDestruct = getContract(EQUIVALENCE_DESTRUCT);
+    public void createNewSelfDestructContract() {
+        equivalenceDestructContract = getContract(EQUIVALENCE_DESTRUCT);
         equivalenceDestructContractSolidityAddress =
-                deployedEquivalenceDestruct.contractId().toSolidityAddress();
+                equivalenceDestructContract.contractId().toSolidityAddress();
     }
 
     @Given("I successfully create equivalence call contract")
-    public void createNewEquivalenceCallContract() throws IOException {
-        deployedEquivalenceCall = getContract(EQUIVALENCE_CALL);
-        equivalenceCallContractSolidityAddress =
-                deployedEquivalenceCall.contractId().toSolidityAddress();
+    public void createNewEquivalenceCallContract() {
+        equivalenceCallContract = getContract(EQUIVALENCE_CALL);
     }
 
     @Then("the mirror node REST API should return status {int} for the contracts creation")
@@ -68,69 +72,74 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {node}")
+    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {string}")
     public void selfDestructAndSetBeneficiary(String beneficiary, String node) {
         var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
+        var message = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, parameters);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
-        var extractedStatus = extractStatus(message);
+        var extractedStatus = extractStatus(message.getResultAsText());
         if (extractAccountNumber(beneficiary) < 751) {
             assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, extractedStatus);
         } else {
-            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
+            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message.getResultAsText());
         }
     }
 
-    @Then("I execute balance opcode to system account {string} address would return 0 with call to {node}")
+    @Then("I execute balance opcode to system account {string} address would return 0 with call to {string}")
     public void balanceOfAddress(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getBalance", parameters);
+        var functionResult = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, parameters);
         if (extractAccountNumber(address) < 751) {
-            assertEquals(new BigInteger("0"), functionResult.getInt256(0));
+            assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
         } else {
-            assertTrue(functionResult.getInt256(0).longValue() > 1);
+            assertTrue(functionResult.getResultAsNumber().longValue() > 1);
         }
     }
 
     @Then("I execute balance opcode against a contract with balance")
     public void balanceOfContract() {
         var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getBalance", parameters);
+        var functionResult = executeContractCallQuery(equivalenceCallContract, "getBalance", parameters);
         assertEquals(new BigInteger("10000"), functionResult.getInt256(0));
     }
 
-    @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {node}")
+    @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {string}")
     public void extCodeSizeAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeSize", parameters);
-        assertEquals(new BigInteger("0"), functionResult.getInt256(0));
+        var functionResult = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, parameters);
+        assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
     }
 
     @Then(
-            "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {node}")
+            "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeCopyAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "copyCode", parameters);
-        assertArrayEquals(new byte[0], functionResult.getBytes(0));
+        var functionResult = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, parameters);
+        assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 
     @Then(
-            "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {node}")
+            "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeHashAgainstSystemAccount(String address, String node) {
         var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
         var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = executeContractCallQuery(deployedEquivalenceCall, "getCodeHash", parameters);
-        assertArrayEquals(new byte[0], functionResult.getBytes(0));
+        var functionResult = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, parameters);
+        assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 
     @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
     public void selfDestructAndSetBeneficiaryToDeletedContract() {
         var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
-        var message = executeContractCallTransaction(deployedEquivalenceDestruct, "destroyContract", parameters);
+        var message = executeContractCallTransaction(equivalenceDestructContract, "destroyContract", parameters);
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         var extractedStatus = extractStatus(message);
         assertEquals(OBTAINER_SAME_CONTRACT_ID_EXCEPTION, extractedStatus);
@@ -188,5 +197,17 @@ public class EquivalenceFeature extends AbstractFeature {
         }
 
         return "Status not found";
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    enum ContractMethods implements SelectorInterface {
+        GET_BALANCE("getBalance"),
+        DESTROY_CONTRACT("destroyContract"),
+        COPY_CODE("copyCode"),
+        GET_CODE_SIZE("getCodeSize"),
+        GET_CODE_HASH("getCodeHash");
+
+        private final String selector;
     }
 }

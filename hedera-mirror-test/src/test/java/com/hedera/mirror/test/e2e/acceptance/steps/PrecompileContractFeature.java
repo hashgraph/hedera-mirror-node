@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.getResourceAsStream;
-import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.readCompiledArtifact;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.ALLOWANCE_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.BALANCE_OF_SELECTOR;
@@ -806,8 +804,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
         Optional<Object> function;
-        try (var in = getResourceAsStream(PRECOMPILE.getPath())) {
-            function = Arrays.stream(readCompiledArtifact(in).getAbi())
+        try (var in = networkAdapter.getResourceAsStream(PRECOMPILE.getPath())) {
+            function = Arrays.stream(networkAdapter.readCompiledArtifact(in).getAbi())
                     .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
                     .findFirst();
         } catch (IOException e) {

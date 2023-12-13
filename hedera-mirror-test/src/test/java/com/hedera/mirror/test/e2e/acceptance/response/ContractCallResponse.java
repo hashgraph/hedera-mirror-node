@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
+import io.micrometer.common.util.StringUtils;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +48,10 @@ public class ContractCallResponse {
     }
 
     public Bytes getResultAsBytes() {
+        if (StringUtils.isEmpty(result)) {
+            return Bytes.EMPTY;
+        }
+
         return Bytes.fromHexString(result);
     }
 
