@@ -72,7 +72,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         super.verifyStreamFiles(List.of(file1, file2), s -> {});
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -98,7 +98,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                     .block();
             assertThat(transactionSidecarRecords).isEmpty();
         });
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -122,7 +122,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                 assertThat(sidecarTypes).isEmpty();
             }
         });
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -132,7 +132,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
-        assertThat(mirrorProperties.getDataPath())
+        assertThat(importerProperties.getDataPath())
                 .isNotEmptyDirectory()
                 .isDirectoryRecursivelyContaining(
                         "glob:**/streams/recordstreams/record*/sidecar/2022-07-13T08_46_11.304284003Z_01.rcd.gz");
@@ -146,7 +146,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         verifyForSuccess(List.of(file1));
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -169,7 +169,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
             downloader.download();
 
             verifyForSuccess(List.of(file1));
-            assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+            assertThat(importerProperties.getDataPath()).isEmptyDirectory();
         }
     }
 

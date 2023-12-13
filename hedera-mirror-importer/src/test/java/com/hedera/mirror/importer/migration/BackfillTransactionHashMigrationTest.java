@@ -22,7 +22,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -53,7 +53,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
 
     private final EntityProperties entityProperties;
     private final @Owner JdbcTemplate jdbcTemplate;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final TransactionHashRepository transactionHashRepository;
     private final Environment environment;
 
@@ -72,8 +72,9 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
         migrationProperties
                 .getParams()
                 .put("startTimestamp", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
-        mirrorProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
-        migration = new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, mirrorProperties, environment);
+        importerProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
+        migration =
+                new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, importerProperties, environment);
     }
 
     @AfterEach

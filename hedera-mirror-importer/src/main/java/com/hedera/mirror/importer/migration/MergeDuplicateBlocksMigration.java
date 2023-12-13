@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import jakarta.inject.Named;
 import java.io.IOException;
@@ -55,18 +55,18 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
                     """;
 
     private final JdbcTemplate jdbcTemplate;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Lazy
-    protected MergeDuplicateBlocksMigration(@Owner JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+    protected MergeDuplicateBlocksMigration(@Owner JdbcTemplate jdbcTemplate, ImporterProperties importerProperties) {
+        super(importerProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
-        this.mirrorProperties = mirrorProperties;
+        this.importerProperties = importerProperties;
     }
 
     @Override
     protected void doMigrate() throws IOException {
-        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+        if (!ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(importerProperties.getNetwork())) {
             return;
         }
 

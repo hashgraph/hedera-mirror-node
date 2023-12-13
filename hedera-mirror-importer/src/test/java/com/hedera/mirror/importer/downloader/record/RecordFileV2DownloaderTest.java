@@ -51,7 +51,7 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
     @Test
     @DisplayName("Download and verify V1 files")
     void downloadV1() {
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         loadAddressBook("test-v1");
         var allRecordFiles = TestRecordFiles.getAll();
         var testRecordFiles = Map.of(

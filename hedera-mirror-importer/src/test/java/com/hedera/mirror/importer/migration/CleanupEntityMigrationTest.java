@@ -28,7 +28,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -62,13 +62,13 @@ class CleanupEntityMigrationTest extends ImporterIntegrationTest {
     private final File migrationSql;
 
     private final EntityRepository entityRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final TransactionRepository transactionRepository;
 
     @BeforeEach
     void before() {
-        mirrorProperties.setStartDate(Instant.EPOCH);
-        mirrorProperties.setEndDate(Instant.EPOCH.plusSeconds(1));
+        importerProperties.setStartDate(Instant.EPOCH);
+        importerProperties.setEndDate(Instant.EPOCH.plusSeconds(1));
         setEntityTablesPreV_1_36();
     }
 

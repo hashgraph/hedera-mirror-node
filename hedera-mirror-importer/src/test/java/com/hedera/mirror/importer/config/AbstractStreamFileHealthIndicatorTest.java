@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doReturn;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -69,7 +69,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     private AbstractParserProperties parserProperties;
 
-    protected MirrorProperties mirrorProperties;
+    protected ImporterProperties importerProperties;
 
     abstract AbstractParserProperties getParserProperties();
 
@@ -88,12 +88,12 @@ abstract class AbstractStreamFileHealthIndicatorTest {
         doReturn(streamCloseLatencySearch).when(meterRegistry).find(STREAM_CLOSE_LATENCY_METRIC_NAME);
         doReturn(streamParseDurationSearch).when(meterRegistry).find(STREAM_PARSE_DURATION_METRIC_NAME);
 
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setEndDate(Instant.MAX);
+        importerProperties = new ImporterProperties();
+        importerProperties.setEndDate(Instant.MAX);
         parserProperties = getParserProperties();
 
         streamFileHealthIndicator =
-                new StreamFileHealthIndicator(leaderService, meterRegistry, mirrorProperties, parserProperties);
+                new StreamFileHealthIndicator(leaderService, meterRegistry, importerProperties, parserProperties);
     }
 
     @Test
@@ -148,7 +148,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     void startupNoStreamFilesAfterWindowBeforeFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
-        mirrorProperties.setStartDate(Instant.now().plus(1, ChronoUnit.DAYS));
+        importerProperties.setStartDate(Instant.now().plus(1, ChronoUnit.DAYS));
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -172,7 +172,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     void startupNoStreamFilesAfterFirstFileClose() {
         // set window time to smaller value
         parserProperties.setProcessingTimeout(Duration.ofSeconds(-10L));
-        mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
+        importerProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
 
         // update fileClose mean otherwise larger default value is used
         doReturn(1.0).when(streamCloseLatencyDurationTimer).mean(any());
@@ -221,7 +221,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
     @Test
     void noNewStreamFilesAfterWindow() {
         //        parserProperties.setProcessingTimeout(Duration.ofMinutes(-10L)); // force end of timeout to before now
-        mirrorProperties.setStartDate(Instant.EPOCH);
+        importerProperties.setStartDate(Instant.EPOCH);
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
@@ -245,7 +245,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void noNewStreamFilesAfterWindowAndEndTime() {
-        mirrorProperties.setEndDate(Instant.now().minusSeconds(60)); // force endDate to before now
+        importerProperties.setEndDate(Instant.now().minusSeconds(60)); // force endDate to before now
         parserProperties = getParserProperties();
 
         Health health = streamFileHealthIndicator.health();
@@ -255,7 +255,7 @@ abstract class AbstractStreamFileHealthIndicatorTest {
 
     @Test
     void recoverWhenNewStreamFiles() {
-        mirrorProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
+        importerProperties.setStartDate(Instant.now().minus(1, ChronoUnit.DAYS));
 
         Health health = streamFileHealthIndicator.health();
         assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);

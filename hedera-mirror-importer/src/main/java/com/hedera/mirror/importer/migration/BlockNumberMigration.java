@@ -16,12 +16,12 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.TESTNET;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import java.util.Map;
@@ -36,13 +36,13 @@ public class BlockNumberMigration extends RepeatableMigration {
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
             MAINNET, Pair.of(1656461547557609267L, 34305852L));
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordFileRepository recordFileRepository;
 
     @Lazy
-    public BlockNumberMigration(MirrorProperties mirrorProperties, RecordFileRepository recordFileRepository) {
-        super(mirrorProperties.getMigration());
-        this.mirrorProperties = mirrorProperties;
+    public BlockNumberMigration(ImporterProperties importerProperties, RecordFileRepository recordFileRepository) {
+        super(importerProperties.getMigration());
+        this.importerProperties = importerProperties;
         this.recordFileRepository = recordFileRepository;
     }
 
@@ -58,7 +58,7 @@ public class BlockNumberMigration extends RepeatableMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getNetwork();
+        var hederaNetwork = importerProperties.getNetwork();
         var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(hederaNetwork);
 
         if (consensusEndAndBlockNumber == null) {

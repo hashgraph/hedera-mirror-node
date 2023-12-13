@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.io.IOException;
 import java.util.List;
@@ -39,12 +39,12 @@ class AccountBalanceLineParserV2Test {
 
     private static final long timestamp = 1596340377922333444L;
     private AccountBalanceLineParserV2 parser;
-    private MirrorProperties mirrorProperties;
+    private ImporterProperties importerProperties;
 
     @BeforeEach
     void setup() {
-        mirrorProperties = new MirrorProperties();
-        parser = new AccountBalanceLineParserV2(mirrorProperties);
+        importerProperties = new ImporterProperties();
+        parser = new AccountBalanceLineParserV2(importerProperties);
     }
 
     @DisplayName("Parse account balance line")
@@ -122,11 +122,11 @@ class AccountBalanceLineParserV2Test {
                                     actualId.getTokenId().getNum()));
                     assertThat(actualId).isNotNull();
                     assertThat(actualId.getConsensusTimestamp()).isEqualTo(timestamp);
-                    assertThat(actualId.getAccountId().getShard()).isEqualTo(mirrorProperties.getShard());
+                    assertThat(actualId.getAccountId().getShard()).isEqualTo(importerProperties.getShard());
                     assertThat(actualId.getAccountId().getRealm()).isEqualTo(expectedRealm);
                     assertThat(actualId.getAccountId().getNum()).isEqualTo(expectedAccount);
 
-                    assertThat(actualId.getTokenId().getShard()).isEqualTo(mirrorProperties.getShard());
+                    assertThat(actualId.getTokenId().getShard()).isEqualTo(importerProperties.getShard());
                     assertThat(actualId.getTokenId().getRealm()).isEqualTo(expectedRealm);
                 }
             } else {

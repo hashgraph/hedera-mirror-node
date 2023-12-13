@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.config;
 import static com.hedera.mirror.importer.downloader.Downloader.STREAM_CLOSE_LATENCY_METRIC_NAME;
 import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -60,7 +60,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
 
     private final LeaderService leaderService;
     private final MeterRegistry meterRegistry;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final ParserProperties parserProperty;
 
     @Override
@@ -73,7 +73,7 @@ public class StreamFileHealthIndicator implements HealthIndicator {
         }
 
         // consider case where endTime has been passed
-        if (mirrorProperties.getEndDate().isBefore(currentInstant)) {
+        if (importerProperties.getEndDate().isBefore(currentInstant)) {
             return endDateInPastHealth;
         }
 
@@ -111,9 +111,9 @@ public class StreamFileHealthIndicator implements HealthIndicator {
     }
 
     private Instant getStartTime() {
-        return mirrorProperties.getStartDate() == null
+        return importerProperties.getStartDate() == null
                 ? DateRangeCalculator.STARTUP_TIME
-                : mirrorProperties.getStartDate();
+                : importerProperties.getStartDate();
     }
 
     private Health getResolvedHealthWhenNoStreamFilesParsed(Instant currentInstant, Instant lastCheck) {

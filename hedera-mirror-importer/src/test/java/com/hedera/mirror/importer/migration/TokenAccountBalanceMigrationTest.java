@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -61,7 +61,7 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenTransferRepository tokenTransferRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     private TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private AccountBalanceFile accountBalanceFile1;
@@ -78,7 +78,7 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(domainBuilder.timestamp());
         tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
+                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test

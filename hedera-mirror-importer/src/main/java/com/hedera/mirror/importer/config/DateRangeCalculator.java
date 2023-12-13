@@ -22,7 +22,7 @@ import static org.apache.commons.lang3.ObjectUtils.max;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -46,7 +46,7 @@ public class DateRangeCalculator {
 
     static final Instant STARTUP_TIME = Instant.now();
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final EventFileRepository eventFileRepository;
     private final RecordFileRepository recordFileRepository;
@@ -69,8 +69,8 @@ public class DateRangeCalculator {
     }
 
     private DateRangeFilter newDateRangeFilter(StreamType streamType) {
-        Instant startDate = mirrorProperties.getStartDate();
-        Instant endDate = mirrorProperties.getEndDate();
+        Instant startDate = importerProperties.getStartDate();
+        Instant endDate = importerProperties.getEndDate();
         Instant lastFileInstant = findLatest(streamType)
                 .map(StreamFile::getConsensusStart)
                 .map(nanos -> Instant.ofEpochSecond(0, nanos))
@@ -85,7 +85,7 @@ public class DateRangeCalculator {
         if (startDate != null) {
             filterStartDate = max(startDate, lastFileInstant);
         } else {
-            if (!MirrorProperties.HederaNetwork.DEMO.equalsIgnoreCase(mirrorProperties.getNetwork())
+            if (!ImporterProperties.HederaNetwork.DEMO.equalsIgnoreCase(importerProperties.getNetwork())
                     && lastFileInstant == null) {
                 filterStartDate = STARTUP_TIME;
             }
@@ -98,7 +98,7 @@ public class DateRangeCalculator {
     }
 
     /**
-     * Gets the latest stream file for downloader based on startDate in MirrorProperties, the startDateAdjustment and
+     * Gets the latest stream file for downloader based on startDate in ImporterProperties, the startDateAdjustment and
      * last valid downloaded stream file.
      *
      * @param streamType What type of stream to retrieve
@@ -106,7 +106,7 @@ public class DateRangeCalculator {
      * start date
      */
     public <T extends StreamFile<?>> Optional<T> getLastStreamFile(StreamType streamType) {
-        Instant startDate = mirrorProperties.getStartDate();
+        Instant startDate = importerProperties.getStartDate();
         Optional<T> streamFile = findLatest(streamType);
         Instant lastFileInstant = streamFile
                 .map(StreamFile::getConsensusStart)
@@ -120,11 +120,11 @@ public class DateRangeCalculator {
             effectiveStartDate = max(startDate, hasStreamFile ? lastFileInstant : Instant.EPOCH);
         } else if (hasStreamFile) {
             effectiveStartDate = lastFileInstant;
-        } else if (MirrorProperties.HederaNetwork.DEMO.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+        } else if (ImporterProperties.HederaNetwork.DEMO.equalsIgnoreCase(importerProperties.getNetwork())) {
             effectiveStartDate = Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
         }
 
-        Instant endDate = mirrorProperties.getEndDate();
+        Instant endDate = importerProperties.getEndDate();
         if (startDate != null && startDate.compareTo(endDate) > 0) {
             throw new InvalidConfigurationException(String.format(
                     "Date range constraint violation: " + "startDate (%s) > endDate (%s)", startDate, endDate));
@@ -149,7 +149,7 @@ public class DateRangeCalculator {
                 "{}: downloader will download files in time range ({}, {}]",
                 streamType,
                 effectiveStartDate,
-                mirrorProperties.getEndDate());
+                importerProperties.getEndDate());
         return streamFile;
     }
 

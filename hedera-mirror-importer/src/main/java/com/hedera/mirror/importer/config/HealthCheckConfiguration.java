@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.config;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,7 +36,7 @@ import org.springframework.context.annotation.Configuration;
 class HealthCheckConfiguration {
 
     private final LeaderService leaderService;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final Collection<ParserProperties> parserProperties;
 
     @Bean
@@ -45,7 +45,7 @@ class HealthCheckConfiguration {
         Map<String, HealthIndicator> healthIndicators = parserProperties.stream()
                 .collect(Collectors.toMap(
                         k -> k.getStreamType().toString(),
-                        v -> new StreamFileHealthIndicator(leaderService, registry, mirrorProperties, v)));
+                        v -> new StreamFileHealthIndicator(leaderService, registry, importerProperties, v)));
 
         return CompositeHealthContributor.fromMap(healthIndicators);
     }

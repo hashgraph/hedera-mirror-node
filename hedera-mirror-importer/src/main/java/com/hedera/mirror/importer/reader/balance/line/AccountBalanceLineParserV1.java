@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.reader.balance.line;
 import com.google.common.base.Splitter;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import jakarta.inject.Named;
 import java.util.Collections;
@@ -32,7 +32,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
 
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     /**
      * Parses an account balance line to extract shard, realm, account, and balance. If the shard matches
@@ -63,10 +63,10 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
                 throw new InvalidDatasetException(INVALID_BALANCE + line);
             }
 
-            if (shardNum != mirrorProperties.getShard()) {
+            if (shardNum != importerProperties.getShard()) {
                 throw new InvalidDatasetException(String.format(
                         "Invalid account balance line: %s. Expect " + "shard (%d), got shard (%d)",
-                        line, mirrorProperties.getShard(), shardNum));
+                        line, importerProperties.getShard(), shardNum));
             }
 
             return new AccountBalance(

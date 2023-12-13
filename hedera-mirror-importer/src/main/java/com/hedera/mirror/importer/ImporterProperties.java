@@ -36,7 +36,7 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
-public class MirrorProperties {
+public class ImporterProperties {
 
     public static final String STREAMS = "streams";
     static final String NETWORK_PREFIX_DELIMITER = "-";

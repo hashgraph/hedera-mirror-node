@@ -37,7 +37,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
@@ -125,7 +125,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     protected S3Proxy s3Proxy;
     protected FileCopier fileCopier;
     protected CommonDownloaderProperties commonDownloaderProperties;
-    protected MirrorProperties mirrorProperties;
+    protected ImporterProperties importerProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader<T, ?> downloader;
@@ -207,7 +207,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         }
     }
 
-    // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
+    // Implementation can assume that importerProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
     protected Map<String, Long> getExpectedFileIndexMap() {
@@ -267,12 +267,12 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     }
 
     private void initProperties() {
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setDataPath(dataPath);
-        mirrorProperties.setStartBlockNumber(101L);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        importerProperties = new ImporterProperties();
+        importerProperties.setDataPath(dataPath);
+        importerProperties.setStartBlockNumber(101L);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
 
-        commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
+        commonDownloaderProperties = new CommonDownloaderProperties(importerProperties);
         commonDownloaderProperties.setEndpointOverride("http://localhost:" + S3_PROXY_PORT);
         // tests (except for "testPartialCollection" test) expect every Streamfile to be present
         commonDownloaderProperties.setDownloadRatio(BigDecimal.ONE);
@@ -308,27 +308,27 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         if (pathType == PathType.ACCOUNT_ID) {
             fileCopier.copy();
         } else {
-            fileCopier.copyAsNodeIdStructure(Path::getParent, mirrorProperties.getNetwork());
+            fileCopier.copyAsNodeIdStructure(Path::getParent, importerProperties.getNetwork());
         }
     }
 
     @ParameterizedTest(name = "Download and verify files with path type: {0}")
     @EnumSource(PathType.class)
     void download(PathType pathType) {
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         preparePathType(pathType);
 
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
     @DisplayName("Non-unanimous consensus reached")
     void partialConsensus() throws IOException {
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
 
         fileCopier.copy();
         var nodePath =
@@ -345,7 +345,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     void oneThirdConsensus() {
         nodes.forEach(c -> ((ConsensusNodeStub) c).setTotalStake(3));
         nodes.remove(Iterables.getLast(nodes));
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         var nodeAccountId = nodes.iterator().next().getNodeAccountId();
 
         var nodePath = downloaderProperties.getStreamType().getNodePrefix() + nodeAccountId;
@@ -361,7 +361,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     void lessThanOneThirdConsensus() {
         nodes.forEach(c -> ((ConsensusNodeStub) c).setTotalStake(4));
         nodes.remove(Iterables.getLast(nodes));
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         var nodeAccountId = nodes.iterator().next().getNodeAccountId();
 
         var nodePath = downloaderProperties.getStreamType().getNodePrefix() + nodeAccountId;
@@ -435,7 +435,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(mirrorProperties.getDataPath()))
+        assertThat(Files.walk(importerProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isStreamFile);
@@ -448,7 +448,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         preparePathType(pathType);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
-        assertThat(Files.walk(mirrorProperties.getDataPath()))
+        assertThat(Files.walk(importerProperties.getDataPath()))
                 .filteredOn(p -> !p.toFile().isDirectory())
                 .hasSizeGreaterThan(0)
                 .allMatch(this::isSigFile);
@@ -487,7 +487,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     @Test
     @DisplayName("Download and verify two group of files in the same bucket")
     void downloadValidFilesInSameBucket() {
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
 
         // last valid downloaded file's timestamp is set to file1's timestamp - (I/2 + 1ns), so both file1 and file2
         // will be in the bucket [lastTimestamp + I/2, lastTimestamp + 3*I/2). Note the interval I is set to twice of
@@ -500,7 +500,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         downloader.download();
 
         verifyForSuccess();
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -536,11 +536,11 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
         "1, file2",
     })
     void endDate(long seconds, String fileChoice) {
-        mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
+        importerProperties.setStartBlockNumber(null);
         commonDownloaderProperties.setBatchSize(1);
         List<String> expectedFiles = instantFilenamePairs.stream()
-                .filter(pair -> !pair.getLeft().isAfter(mirrorProperties.getEndDate()))
+                .filter(pair -> !pair.getLeft().isAfter(importerProperties.getEndDate()))
                 .map(Pair::getRight)
                 .collect(Collectors.toList());
         expectLastStreamFile(Instant.EPOCH);
@@ -556,7 +556,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     @Test
     void singleNodeSigFileCorrupted() throws Exception {
         corruptedNodeAccountId = nodes.iterator().next().getNodeAccountId();
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path)
                 .filter(this::isSigFile)
@@ -570,7 +570,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     @Test
     void singleNodeStreamFileCorrupted() throws Exception {
         corruptedNodeAccountId = nodes.iterator().next().getNodeAccountId();
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path)
                 .filter(Predicate.not(this::isSigFile))
@@ -585,7 +585,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() {
         commonDownloaderProperties.setBatchSize(1);
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
 
@@ -625,13 +625,13 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
     @Test
     void persistBytes() {
         downloaderProperties.setPersistBytes(true);
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
         verifyForSuccess();
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test
@@ -667,7 +667,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
 
     @SneakyThrows
     private void differentFilenames(Duration offset) {
-        mirrorProperties.setStartBlockNumber(null);
+        importerProperties.setStartBlockNumber(null);
 
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         fileCopier.filterFiles(getStreamFilenameInstantString(file2) + "*").copy();

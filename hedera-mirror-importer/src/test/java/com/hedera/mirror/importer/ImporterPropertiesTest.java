@@ -19,12 +19,12 @@ package com.hedera.mirror.importer;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class MirrorPropertiesTest {
+class ImporterPropertiesTest {
 
     @ParameterizedTest(name = "Network {2} is canonical network {0}, with prefix {1}")
     @CsvSource({
@@ -47,7 +47,7 @@ class MirrorPropertiesTest {
     })
     void verifyCanonicalNetworkWithPrefix(String expectedHederaNetwork, String expectedPrefix, String networkName) {
 
-        var properties = new MirrorProperties();
+        var properties = new ImporterProperties();
         properties.setNetwork(networkName);
         assertThat(properties.getNetwork()).isEqualTo(expectedHederaNetwork);
         assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
@@ -62,7 +62,7 @@ class MirrorPropertiesTest {
     })
     void verifyNonCanonicalNetworkWithPrefix(String expectedNetwork, String expectedPrefix, String networkName) {
 
-        var properties = new MirrorProperties();
+        var properties = new ImporterProperties();
         properties.setNetwork(networkName);
         assertThat(properties.getNetwork()).isEqualTo(expectedNetwork);
         assertThat(properties.getNetworkPrefix()).isEqualTo(expectedPrefix);
@@ -70,7 +70,7 @@ class MirrorPropertiesTest {
 
     @Test
     void verifySetNetworkPropertyValidation() {
-        var properties = new MirrorProperties();
+        var properties = new ImporterProperties();
         assertThat(properties.getNetwork()).isEqualTo(HederaNetwork.DEMO); // Default
         assertThat(properties.getNetworkPrefix()).isNull();
 

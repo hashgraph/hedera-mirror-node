@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
@@ -77,10 +77,10 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
     @Lazy
     public InitializeEntityBalanceMigration(
             JdbcOperations jdbcOperations,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             AccountBalanceFileRepository accountBalanceFileRepository,
             RecordFileRepository recordFileRepository) {
-        super(mirrorProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
+        super(importerProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
         this.jdbcOperations = jdbcOperations;
     }
 

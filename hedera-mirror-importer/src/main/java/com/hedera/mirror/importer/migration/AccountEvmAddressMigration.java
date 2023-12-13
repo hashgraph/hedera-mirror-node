@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.io.IOException;
@@ -31,8 +31,9 @@ public class AccountEvmAddressMigration extends RepeatableMigration {
     private final NamedParameterJdbcOperations jdbcOperations;
 
     @Lazy
-    public AccountEvmAddressMigration(NamedParameterJdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+    public AccountEvmAddressMigration(
+            NamedParameterJdbcOperations jdbcOperations, ImporterProperties importerProperties) {
+        super(importerProperties.getMigration());
         this.jdbcOperations = jdbcOperations;
     }
 

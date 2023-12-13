@@ -17,8 +17,8 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import jakarta.inject.Named;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -87,7 +87,7 @@ public class RecalculatePendingRewardMigration extends AbstractJavaMigration {
     private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.4");
 
     private final NamedParameterJdbcOperations jdbcOperations;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Override
     public String getDescription() {
@@ -101,7 +101,7 @@ public class RecalculatePendingRewardMigration extends AbstractJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getNetwork();
+        var hederaNetwork = importerProperties.getNetwork();
         Long consensusTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(hederaNetwork);
         if (consensusTimestamp == null) {
             return;

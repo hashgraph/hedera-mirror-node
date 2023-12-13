@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.downloader.event;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import jakarta.validation.constraints.NotNull;
@@ -35,7 +34,6 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class EventDownloaderProperties implements DownloaderProperties {
 
-    private final MirrorProperties mirrorProperties;
     private final CommonDownloaderProperties common;
 
     private boolean enabled = false;

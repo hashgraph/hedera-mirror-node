@@ -28,7 +28,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -60,13 +60,13 @@ class RemoveInvalidEntityMigrationTest extends ImporterIntegrationTest {
     @Value("classpath:db/migration/v1/V1.31.2__remove_invalid_entities.sql")
     private final File migrationSql;
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final TransactionRepository transactionRepository;
 
     @BeforeEach
     void before() {
-        mirrorProperties.setStartDate(Instant.EPOCH);
-        mirrorProperties.setEndDate(Instant.EPOCH.plusSeconds(1));
+        importerProperties.setStartDate(Instant.EPOCH);
+        importerProperties.setEndDate(Instant.EPOCH.plusSeconds(1));
     }
 
     @Test
