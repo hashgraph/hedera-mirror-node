@@ -32,7 +32,6 @@ import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
@@ -110,9 +109,6 @@ class UnpausePrecompileTest {
     private AccessorFactory accessorFactory;
 
     @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-
-    @Mock
     private Store store;
 
     @Mock
@@ -167,13 +163,7 @@ class UnpausePrecompileTest {
         staticUnpausePrecompile = Mockito.mockStatic(UnpausePrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                evmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                precompilePricingUtils);
+                infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
     }
 
     @AfterEach
