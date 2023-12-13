@@ -101,9 +101,8 @@ public class ContractCallContext implements AutoCloseable {
      * using this method.)
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
-        final Optional<Long> timestamp =
-                recordFile == null ? Optional.empty() : Optional.of(recordFile.getConsensusEnd());
         if (stackedStateFrames != null) {
+            final var timestamp = Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
             stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
     }

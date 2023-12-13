@@ -92,7 +92,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
                 getTreasury(databaseToken.getTreasuryAccountId(), timestamp),
-                getAutoRenewAccount(entity, timestamp),
+                getAutoRenewAccount(entity.getAutoRenewAccountId(), timestamp),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
@@ -118,10 +118,13 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
     }
 
-    private Account getAutoRenewAccount(Entity entity, final Optional<Long> timestamp) {
+    private Account getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
+        if (autoRenewAccountId == null) {
+            return null;
+        }
         return timestamp
-                .map(t -> entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), t))
-                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entity.getAutoRenewAccountId()))
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),

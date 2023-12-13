@@ -73,10 +73,9 @@ public class ContractCallService {
                 result = estimateGas(params);
             } else {
                 BlockType block = params.getBlock();
-                boolean isHistoricalCall = block != BlockType.LATEST;
-                Optional<RecordFile> recordFileOptional;
-                if (isHistoricalCall) {
-                    recordFileOptional = findRecordFileByBlock(block);
+                // if we have historical call then set corresponding file record
+                if (block != BlockType.LATEST) {
+                    Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
                     if (recordFileOptional.isPresent()) {
                         ctx.setRecordFile(recordFileOptional.get());
                     } else {
@@ -85,6 +84,7 @@ public class ContractCallService {
                     }
                 }
                 // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
+                // if the call is historical
                 ctx.initializeStackFrames(store.getStackedStateFrames());
                 final var ethCallTxnResult = doProcessCall(params, params.getGas());
 

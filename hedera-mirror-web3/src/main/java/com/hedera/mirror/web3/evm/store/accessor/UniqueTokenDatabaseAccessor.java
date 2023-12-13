@@ -25,6 +25,7 @@ import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.utils.EntityIdUtils;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Optional;
@@ -39,11 +40,10 @@ public class UniqueTokenDatabaseAccessor extends DatabaseAccessor<Object, Unique
     @Override
     public @NonNull Optional<UniqueToken> get(@NonNull Object key, final Optional<Long> timestamp) {
         if (key instanceof NftId nftId) {
+            final var tokenId = EntityIdUtils.entityIdFromUftId(nftId).getId();
             return timestamp
-                    .map(t -> nftRepository.findActiveByIdAndTimestamp(
-                            nftId.tokenId().getTokenNum(), nftId.serialNo(), t))
-                    .orElseGet(
-                            () -> nftRepository.findActiveById(nftId.tokenId().getTokenNum(), nftId.serialNo()))
+                    .map(t -> nftRepository.findActiveByIdAndTimestamp(tokenId, nftId.serialNo(), t))
+                    .orElseGet(() -> nftRepository.findActiveById(tokenId, nftId.serialNo()))
                     .map(this::mapNftToUniqueToken);
         }
         throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
