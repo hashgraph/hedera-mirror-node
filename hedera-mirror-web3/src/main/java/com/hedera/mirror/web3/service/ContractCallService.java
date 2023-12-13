@@ -65,9 +65,11 @@ public class ContractCallService {
         var stopwatch = Stopwatch.createStarted();
         var stringResult = "";
 
-        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
+        try (ContractCallContext ctx = init()) {
             Bytes result;
             if (params.isEstimate()) {
+                // eth_estimateGas initialization - historical timestamp is Optional.empty()
+                ctx.initializeStackFrames(store.getStackedStateFrames());
                 result = estimateGas(params);
             } else {
                 BlockType block = params.getBlock();
@@ -81,7 +83,9 @@ public class ContractCallService {
                         return Bytes.EMPTY.toHexString();
                     }
                 }
-
+                // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
+                // if the call is historical
+                ctx.initializeStackFrames(store.getStackedStateFrames());
                 final var ethCallTxnResult = doProcessCall(params, params.getGas());
 
                 validateResult(ethCallTxnResult, params.getCallType());

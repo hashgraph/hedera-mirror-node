@@ -40,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -269,6 +270,22 @@ public class StoreImpl implements Store {
         final var accountAccessor = stackedStateFrames.top().getAccessor(Account.class);
         final var account = accountAccessor.get(address);
         return account.isPresent();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Optional<Long> getHistoricalTimestamp() {
+        return stackedStateFrames
+                .top()
+                .upstreamFrame
+                // flatten the nested Optional<UpstreamFrame>
+                .flatMap(CachingStateFrame::getUpstream)
+                // filter out non-DatabaseBackedStateFrame instances
+                .filter(DatabaseBackedStateFrame.class::isInstance)
+                // cast the filtered object to DatabaseBackedStateFrame
+                .map(DatabaseBackedStateFrame.class::cast)
+                // return the timestamp
+                .flatMap(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp);
     }
 
     /**

@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,24 @@ class TokenAccountDatabaseAccessorTest extends Web3IntegrationTest {
                 .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
                 .persist();
 
-        assertThat(tokenAccountDatabaseAccessor.get(tokenAccount.getId()).get())
+        assertThat(tokenAccountDatabaseAccessor
+                        .get(tokenAccount.getId(), Optional.empty())
+                        .get())
+                .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
+                .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
+                .returns(tokenAccount.getBalance(), TokenAccount::getBalance);
+    }
+
+    @Test
+    void testGetHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
+                .persist();
+
+        assertThat(tokenAccountDatabaseAccessor
+                        .get(tokenAccount.getId(), Optional.of(tokenAccount.getTimestampLower()))
+                        .get())
                 .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
                 .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
                 .returns(tokenAccount.getBalance(), TokenAccount::getBalance);

@@ -104,7 +104,7 @@ public abstract class PrecompiledContractBaseTest {
     static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override
-        public Optional<V> get(@NonNull final K key) {
+        public Optional<V> get(@NonNull final K key, final Optional<Long> timestamp) {
             throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
         }
     }
