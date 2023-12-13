@@ -42,7 +42,7 @@ import lombok.Value;
 @CustomLog
 @Named
 @RequiredArgsConstructor
-public class MirrorDateRangePropertiesProcessor {
+public class DateRangeCalculator {
 
     static final Instant STARTUP_TIME = Instant.now();
 
@@ -64,7 +64,7 @@ public class MirrorDateRangePropertiesProcessor {
      * @param type - downloader type
      * @return the DateRangeFilter
      */
-    public DateRangeFilter getDateRangeFilter(StreamType type) {
+    public DateRangeFilter getFilter(StreamType type) {
         return filters.computeIfAbsent(type, this::newDateRangeFilter);
     }
 

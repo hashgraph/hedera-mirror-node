@@ -28,7 +28,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
+public class FixStakedBeforeEnabledMigration extends AbstractJavaMigration {
 
     static final Long LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET = 1658419200981687000L;
 

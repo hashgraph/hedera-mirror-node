@@ -29,7 +29,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
+public class RecalculatePendingRewardMigration extends AbstractJavaMigration {
 
     static final Map<String, Long> FIRST_NONZERO_REWARD_RATE_TIMESTAMP = Map.of(
             HederaNetwork.MAINNET, 1666310400447390002L,

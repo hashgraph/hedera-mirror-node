@@ -30,7 +30,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -94,7 +94,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected final StreamFileProvider streamFileProvider;
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
-    protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    protected final DateRangeCalculator dateRangeCalculator;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     private final ConsensusNodeService consensusNodeService;
@@ -114,7 +114,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             ConsensusNodeService consensusNodeService,
             DownloaderProperties downloaderProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader,
             StreamFileNotifier streamFileNotifier,
@@ -123,7 +123,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         this.consensusNodeService = consensusNodeService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
-        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.dateRangeCalculator = dateRangeCalculator;
         this.nodeSignatureVerifier = nodeSignatureVerifier;
         this.signatureFileReader = signatureFileReader;
         this.streamFileProvider = streamFileProvider;
@@ -266,7 +266,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return lastStreamFile
                 .get()
                 .or(() -> {
-                    Optional<T> streamFile = mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType);
+                    Optional<T> streamFile = dateRangeCalculator.getLastStreamFile(streamType);
                     lastStreamFile.compareAndSet(Optional.empty(), streamFile);
                     return streamFile;
                 })

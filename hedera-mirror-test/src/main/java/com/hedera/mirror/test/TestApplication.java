@@ -31,7 +31,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @CustomLog
 @SpringBootApplication
-public class MirrorTestApplication {
+public class TestApplication {
 
     @SuppressWarnings("java:S106")
     public static void main(String[] args) {
