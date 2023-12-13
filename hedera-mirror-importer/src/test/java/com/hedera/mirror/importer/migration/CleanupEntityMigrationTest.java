@@ -43,7 +43,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -52,7 +51,7 @@ import org.springframework.test.context.TestPropertySource;
 @DisableRepeatableSqlMigration
 @EnabledIfV1
 @Import(DisablePartitionMaintenanceConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
 class CleanupEntityMigrationTest extends ImporterIntegrationTest {

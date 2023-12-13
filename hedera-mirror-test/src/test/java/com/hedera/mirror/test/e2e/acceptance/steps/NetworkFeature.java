@@ -25,10 +25,9 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Data
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class NetworkFeature {
 
     private final MirrorNodeClient mirrorClient;

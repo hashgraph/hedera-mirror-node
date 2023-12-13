@@ -22,9 +22,8 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class CustomFeeHistoryRepositoryTest extends ImporterIntegrationTest {
 
     private final CustomFeeHistoryRepository repository;

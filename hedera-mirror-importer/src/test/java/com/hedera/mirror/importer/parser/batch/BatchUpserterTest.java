@@ -65,10 +65,9 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionOperations;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class BatchUpserterTest extends ImporterIntegrationTest {
 
     private static final Key KEY = Key.newBuilder()

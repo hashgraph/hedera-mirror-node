@@ -33,10 +33,9 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 class BackfillBlockMigrationTest extends ImporterIntegrationTest {
 

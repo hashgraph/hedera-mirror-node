@@ -25,10 +25,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class EntityRepositoryTest extends AbstractRepositoryTest {
 
     private static final RowMapper<Entity> ROW_MAPPER = rowMapper(Entity.class);

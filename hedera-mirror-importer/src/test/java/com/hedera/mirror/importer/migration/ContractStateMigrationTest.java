@@ -33,7 +33,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -41,7 +40,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @EnabledIfV1
 @Import(DisablePartitionMaintenanceConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.67.0")
 class ContractStateMigrationTest extends ImporterIntegrationTest {

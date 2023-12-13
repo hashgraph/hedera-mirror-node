@@ -29,10 +29,9 @@ import jakarta.inject.Named;
 import java.time.Instant;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class FreezeTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;

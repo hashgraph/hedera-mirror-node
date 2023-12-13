@@ -23,9 +23,8 @@ import com.hedera.mirror.common.domain.entity.EntityHistory;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class EntityHistoryRepositoryTest extends AbstractRepositoryTest {
 
     private final EntityHistoryRepository entityHistoryRepository;

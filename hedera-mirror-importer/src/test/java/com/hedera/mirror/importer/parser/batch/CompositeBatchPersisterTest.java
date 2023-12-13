@@ -34,10 +34,9 @@ import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class CompositeBatchPersisterTest extends ImporterIntegrationTest {
 
     private final CompositeBatchPersister compositeBatchInserter;

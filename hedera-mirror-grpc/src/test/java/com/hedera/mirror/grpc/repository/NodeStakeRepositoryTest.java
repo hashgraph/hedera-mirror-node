@@ -23,9 +23,8 @@ import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class NodeStakeRepositoryTest extends GrpcIntegrationTest {
 
     private final NodeStakeRepository nodeStakeRepository;

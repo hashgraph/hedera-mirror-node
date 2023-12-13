@@ -25,10 +25,9 @@ import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 class AccountEvmAddressMigrationTest extends ImporterIntegrationTest {
 

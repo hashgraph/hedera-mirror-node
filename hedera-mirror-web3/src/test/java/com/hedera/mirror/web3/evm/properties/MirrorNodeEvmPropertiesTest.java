@@ -23,9 +23,8 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
     private static final int MAX_REFUND_PERCENT = 100;
