@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import java.util.ArrayList;
@@ -33,12 +33,11 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
-class BackfillBlockMigrationTest extends IntegrationTest {
+class BackfillBlockMigrationTest extends ImporterIntegrationTest {
 
     private final BackfillBlockMigration backfillBlockMigration;
 

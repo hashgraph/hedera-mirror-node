@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -35,10 +35,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class AccountBalanceFileParserTest extends IntegrationTest {
+@RequiredArgsConstructor
+class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     private final AccountBalanceBuilder accountBalanceBuilder;
     private final AccountBalanceFileBuilder accountBalanceFileBuilder;
@@ -47,7 +46,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final BalanceParserProperties parserProperties;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @BeforeEach
     void setup() {
@@ -128,8 +127,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     @Test
     void errata() {
         // given
-        var network = mirrorProperties.getNetwork();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        var network = importerProperties.getNetwork();
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.MAINNET);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(BAD_TIMESTAMP1);
         List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
 
@@ -139,7 +138,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         // then
         assertAccountBalanceFile(accountBalanceFile, items);
         assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(-1);
-        mirrorProperties.setNetwork(network);
+        importerProperties.setNetwork(network);
     }
 
     void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {

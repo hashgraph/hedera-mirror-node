@@ -27,9 +27,8 @@ import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerTest {
 
     private final NetworkStakeRepository networkStakeRepository;

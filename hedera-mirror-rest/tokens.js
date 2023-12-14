@@ -16,6 +16,7 @@
 
 import _ from 'lodash';
 
+import balances from './balances';
 import {getResponseLimit} from './config';
 import {
   entityTypes,
@@ -479,12 +480,6 @@ const tokenBalancesSqlQueryColumns = {
   TOKEN_ID: 'ti.token_id',
 };
 
-// token balances query to column maps
-const tokenBalancesFilterColumnMap = {
-  [filterKeys.ACCOUNT_BALANCE]: tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
-  [filterKeys.ACCOUNT_ID]: tokenBalancesSqlQueryColumns.ACCOUNT_ID,
-};
-
 /**
  * Extracts SQL query, params, order, and limit
  *
@@ -492,22 +487,29 @@ const tokenBalancesFilterColumnMap = {
  * @param {[]} filters parsed and validated filters
  * @return {{query: string, limit: number, params: [], order: 'asc'|'desc'}}
  */
-const extractSqlFromTokenBalancesRequest = (tokenId, filters) => {
+const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
+  const balanceConditions = [];
+  const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
   let limit = defaultLimit;
   let order = orderFilterValues.DESC;
-  let joinEntityClause = '';
-  const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
-  const selectFields = ['ti.account_id', 'ti.balance'];
   const params = [tokenId];
-  const tsQueryConditions = [];
+  let publicKey;
+  const tsConditions = [];
+  const tsParams = [];
 
   for (const filter of filters) {
     switch (filter.key) {
+      case filterKeys.ACCOUNT_ID:
+        conditions.push(`${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${filter.operator} $${params.push(filter.value)}`);
+        break;
+      case filterKeys.ACCOUNT_BALANCE:
+        balanceConditions.push(
+          `${tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE} ${filter.operator} $${params.push(filter.value)}`
+        );
+        break;
       case filterKeys.ACCOUNT_PUBLICKEY:
-        joinEntityClause = `join entity e
-          on e.type = '${entityTypes.ACCOUNT}'
-          and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
-          and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
+        // honor the last public key filter
+        publicKey = filter.value;
         break;
       case filterKeys.LIMIT:
         limit = filter.value;
@@ -517,43 +519,68 @@ const extractSqlFromTokenBalancesRequest = (tokenId, filters) => {
         break;
       case filterKeys.TIMESTAMP:
         const op = transformTimestampFilterOp(filter.operator);
-        params.push(filter.value);
-        tsQueryConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${params.length}`);
+        tsParams.push(filter.value);
+        // balances.getAccountBalanceTimestampRange only supports MySQL style placeholders
+        tsConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} ?`);
         break;
       default:
-        const columnKey = tokenBalancesFilterColumnMap[filter.key];
-        if (!columnKey) {
-          break;
-        }
-
-        conditions.push(`${columnKey} ${filter.operator} $${params.push(filter.value)}`);
         break;
     }
   }
 
-  let tokenInfoTable = 'token_account';
-  if (tsQueryConditions.length) {
-    tokenInfoTable = 'token_balance';
+  const joinEntityClause = publicKey
+    ? `join entity as e
+      on e.type = '${entityTypes.ACCOUNT}' and
+        e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} and
+        ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(publicKey)}`
+    : '';
 
-    const tsQueryWhereClause = tsQueryConditions.length !== 0 ? `where ${tsQueryConditions.join(' and ')}` : '';
-    const tsQuery = `select ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP}
-                   from token_balance ti
-                     ${tsQueryWhereClause}
-                   order by ${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} desc
-                   limit 1`;
+  let query;
+  if (tsConditions.length) {
+    const tsQuery = tsConditions.join(' and ');
+    const {lower, upper} = await balances.getAccountBalanceTimestampRange(tsQuery, tsParams);
+    if (lower === undefined) {
+      return {};
+    }
 
-    selectFields.push('ti.consensus_timestamp');
-    conditions.push(`ti.consensus_timestamp = (${tsQuery})`);
+    conditions.push(
+      `${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} >= $${params.push(lower)}`,
+      `${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} <= $${params.push(upper)}`
+    );
+    query = `select
+        distinct on (ti.account_id)
+        ti.account_id,
+        ti.balance,
+        $${params.length}::bigint as consensus_timestamp
+      from token_balance as ti
+      ${joinEntityClause}
+      where ${conditions.join(' and ')}
+      order by ti.account_id ${order}, ti.consensus_timestamp desc`;
+    if (balanceConditions.length) {
+      // Apply balance filter after retrieving the latest balance as of the upper timestamp
+      query = `with ti as (${query})
+        select *
+        from ti
+        where ${balanceConditions.join(' and ')}
+        order by account_id ${order}`;
+    }
   } else {
-    selectFields.push('(select max(consensus_end) from record_file) as consensus_timestamp');
     conditions.push('ti.associated = true');
-  }
-  const whereQuery = `where ${conditions.join('\nand ')}`;
-  const orderQuery = `order by ${tokenBalancesSqlQueryColumns.ACCOUNT_ID} ${order}`;
-  const limitQuery = `limit $${params.push(limit)}`;
-  const baseQuery = ['select', selectFields.join(',\n'), `from ${tokenInfoTable} ti`].join('\n');
-  const query = [baseQuery, joinEntityClause, whereQuery, orderQuery, limitQuery].filter((q) => q !== '').join('\n');
+    if (balanceConditions.length) {
+      conditions.push(...balanceConditions);
+    }
 
+    query = `select 
+        ti.account_id,
+        ti.balance,
+        (select max(consensus_end) from record_file) as consensus_timestamp
+       from token_account as ti
+       ${joinEntityClause}
+       where ${conditions.join(' and ')}
+       order by ti.account_id ${order}`;
+  }
+
+  query += `\nlimit $${params.push(limit)}`;
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
@@ -574,33 +601,41 @@ const getTokenBalances = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query, acceptedTokenBalancesParameters);
 
-  const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, filters);
+  const response = {
+    timestamp: null,
+    balances: [],
+    links: {
+      next: null,
+    },
+  };
+  res.locals[responseDataLabel] = response;
+
+  const {query, params, limit, order} = await extractSqlFromTokenBalancesRequest(tokenId, filters);
+  if (query === undefined) {
+    return;
+  }
+
   if (logger.isTraceEnabled()) {
     logger.trace(`getTokenBalances query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
-  const response = {
-    timestamp: rows.length > 0 ? utils.nsToSecNs(rows[0].consensus_timestamp) : null,
-    balances: rows.map((row) => formatTokenBalanceRow(row)),
-    links: {
-      next: null,
-    },
-  };
+  if (rows.length > 0) {
+    response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
+    response.balances = rows.map(formatTokenBalanceRow);
 
-  // Pagination links
-  const anchorAccountId = response.balances.length > 0 ? response.balances[response.balances.length - 1].account : 0;
-  response.links.next = utils.getPaginationLink(
-    req,
-    response.balances.length !== limit,
-    {
-      [filterKeys.ACCOUNT_ID]: anchorAccountId,
-    },
-    order
-  );
+    const anchorAccountId = response.balances[response.balances.length - 1].account;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.balances.length !== limit,
+      {
+        [filterKeys.ACCOUNT_ID]: anchorAccountId,
+      },
+      order
+    );
+  }
 
   logger.debug(`getTokenBalances returning ${response.balances.length} entries`);
-  res.locals[responseDataLabel] = response;
 };
 
 /**

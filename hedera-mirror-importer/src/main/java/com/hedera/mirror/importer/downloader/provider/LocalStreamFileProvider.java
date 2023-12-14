@@ -48,7 +48,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath = properties.getMirrorProperties().getStreamPath();
+        var basePath = properties.getImporterProperties().getStreamPath();
         return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
@@ -87,9 +87,10 @@ public class LocalStreamFileProvider implements StreamFileProvider {
                                 case ACCOUNT_ID, AUTO -> Path.of(
                                         streamType.getPath(), streamType.getNodePrefix() + node.getNodeAccountId());
                                 case NODE_ID -> Path.of(
-                                        properties.getMirrorProperties().getNetwork(),
-                                        String.valueOf(
-                                                properties.getMirrorProperties().getShard()),
+                                        properties.getImporterProperties().getNetwork(),
+                                        String.valueOf(properties
+                                                .getImporterProperties()
+                                                .getShard()),
                                         String.valueOf(node.getNodeId()),
                                         streamType.getNodeIdBasedSuffix());
                             };
@@ -106,7 +107,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
      * Search YYYY-MM-DD sub-folders if present, otherwise just search streams directory.
      */
     private Flux<Path> getBasePaths(StreamFilename streamFilename) {
-        var basePath = properties.getMirrorProperties().getStreamPath();
+        var basePath = properties.getImporterProperties().getStreamPath();
         basePath.toFile().mkdirs();
 
         try (var subDirs = Files.list(basePath)) {
@@ -154,7 +155,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
     }
 
     private StreamFileData toStreamFileData(File file) {
-        var basePath = properties.getMirrorProperties().getStreamPath();
+        var basePath = properties.getImporterProperties().getStreamPath();
         var filename = StreamFilename.from(basePath.relativize(file.toPath()).toString());
         return StreamFileData.from(basePath, filename);
     }

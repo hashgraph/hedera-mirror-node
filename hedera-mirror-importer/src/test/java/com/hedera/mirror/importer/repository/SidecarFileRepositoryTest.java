@@ -21,9 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class SidecarFileRepositoryTest extends AbstractRepositoryTest {
 
     private final SidecarFileRepository sidecarFileRepository;

@@ -1,21 +1,13 @@
 {
   "apps": [
     {
-      "cwd": "./monitor_apis/",
+      "cwd": "./",
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "monitor-api",
       "node_args": "--import=extensionless/register",
       "env": {
         "NODE_ENV": "production"
-      }
-    },
-    {
-      "exec_mode": "fork_mode",
-      "script": "serve",
-      "name": "monitor-dashboard",
-      "env": {
-        "PM2_SERVE_PATH": "./monitor_dashboard"
       }
     }
   ]

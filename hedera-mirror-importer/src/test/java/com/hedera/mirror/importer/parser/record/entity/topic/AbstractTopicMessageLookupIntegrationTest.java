@@ -20,7 +20,7 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PA
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION_OVERLAP;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
@@ -36,7 +36,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-public abstract class AbstractTopicMessageLookupIntegrationTest extends IntegrationTest {
+public abstract class AbstractTopicMessageLookupIntegrationTest extends ImporterIntegrationTest {
 
     protected static final Duration RECORD_FILE_INTERVAL = StreamType.RECORD.getFileCloseInterval();
 

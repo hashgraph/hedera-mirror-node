@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.retention;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import java.time.Duration;
@@ -29,10 +29,9 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class RetentionJobTest extends IntegrationTest {
+@RequiredArgsConstructor
+class RetentionJobTest extends ImporterIntegrationTest {
 
     private final RecordFileRepository recordFileRepository;
     private final RetentionJob retentionJob;

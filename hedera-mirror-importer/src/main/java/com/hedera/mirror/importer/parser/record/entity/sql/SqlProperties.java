@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import jakarta.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -25,9 +24,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.sql")
 public class SqlProperties {
-
-    @Min(1)
-    private int batchSize = 20_000;
 
     private boolean enabled = true;
 }

@@ -28,7 +28,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigration {
+public class ConvertEthereumTransactionValueMigration extends AbstractJavaMigration {
 
     private static final String SELECT_NON_NULL_VALUE_SQL =
             "select consensus_timestamp, value " + "from ethereum_transaction "

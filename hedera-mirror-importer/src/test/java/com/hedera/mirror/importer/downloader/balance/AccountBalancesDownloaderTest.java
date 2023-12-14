@@ -55,7 +55,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
 
     @Override
     protected DownloaderProperties getDownloaderProperties() {
-        var properties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        var properties = new BalanceDownloaderProperties(commonDownloaderProperties);
         properties.setEnabled(true);
         return properties;
     }
@@ -63,12 +63,13 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
     @Override
     protected Downloader<AccountBalanceFile, AccountBalance> getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(
-                new BalanceParserProperties(), new AccountBalanceLineParserV1(mirrorProperties));
+                new BalanceParserProperties(), new AccountBalanceLineParserV1(importerProperties));
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
         return new AccountBalancesDownloader(
                 accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
+                importerProperties,
                 meterRegistry,
                 dateRangeProcessor,
                 nodeSignatureVerifier,
@@ -107,6 +108,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
                 accountBalanceFileRepository,
                 consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties,
+                importerProperties,
                 meterRegistry,
                 dateRangeProcessor,
                 nodeSignatureVerifier,
@@ -125,7 +127,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest<AccountBalanc
         downloader.download();
 
         verifyForSuccess();
-        assertThat(mirrorProperties.getDataPath()).isEmptyDirectory();
+        assertThat(importerProperties.getDataPath()).isEmptyDirectory();
     }
 
     @Test

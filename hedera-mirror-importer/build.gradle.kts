@@ -56,12 +56,12 @@ dependencies {
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.github.vertical-blank:sql-formatter")
     testImplementation("com.playtika.testcontainers:embedded-google-pubsub")
-    testImplementation("com.playtika.testcontainers:embedded-postgresql")
-    testImplementation("com.playtika.testcontainers:embedded-redis")
+    testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")
     testImplementation("commons-beanutils:commons-beanutils")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api") // Used by s3proxy
     testImplementation("org.gaul:s3proxy")
-    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
 }

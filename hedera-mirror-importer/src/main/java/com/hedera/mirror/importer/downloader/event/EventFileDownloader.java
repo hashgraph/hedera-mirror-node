@@ -18,8 +18,9 @@ package com.hedera.mirror.importer.downloader.event;
 
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.event.EventItem;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
@@ -38,8 +39,9 @@ public class EventFileDownloader extends Downloader<EventFile, EventItem> {
     public EventFileDownloader(
             ConsensusNodeService consensusNodeService,
             EventDownloaderProperties downloaderProperties,
+            ImporterProperties importerProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader,
             StreamFileNotifier streamFileNotifier,
@@ -48,8 +50,9 @@ public class EventFileDownloader extends Downloader<EventFile, EventItem> {
         super(
                 consensusNodeService,
                 downloaderProperties,
+                importerProperties,
                 meterRegistry,
-                mirrorDateRangePropertiesProcessor,
+                dateRangeCalculator,
                 nodeSignatureVerifier,
                 signatureFileReader,
                 streamFileNotifier,

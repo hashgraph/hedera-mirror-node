@@ -21,9 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class ContractLogRepositoryTest extends AbstractRepositoryTest {
 
     private final ContractLogRepository contractLogRepository;

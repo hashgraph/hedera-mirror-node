@@ -4,6 +4,9 @@ set -e
 PGCONF="${PGCONF:-/var/lib/postgresql/data}"
 PGHBA="${PGCONF}/pg_hba.conf"
 DB_SPECIFIC_EXTENSION_SQL=
+# PostgreSQL 16 requires role A to have Admin privilege on role B in order to grant role B to any other role, and there
+# are several versioned v1 migrations that grant :importerUsername to :ownerUsername.
+DB_SPECIFIC_IMPORTER_ROLE_ADMIN="admin :ownerUsername"
 DB_SPECIFIC_SQL="alter user :ownerUsername with createrole;"
 
 # v2 schema no longer creates the REST API user, while v1 schema still does
@@ -16,6 +19,7 @@ if [[ "${SCHEMA_V2}" == "true" ]]; then
                              grant temporary on database :dbName to :ownerUsername;
                              alter type timestamptz owner to :ownerUsername;
                              "
+  DB_SPECIFIC_MIRROR_IMPORTER_ROLE_ADMIN=
   DB_SPECIFIC_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 
@@ -58,7 +62,7 @@ create role readwrite in role readonly;
 -- Create users
 create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
 create user :grpcUsername with login password :'grpcPassword' in role readonly;
-create user :importerUsername with login password :'importerPassword' in role readwrite;
+create user :importerUsername with login password :'importerPassword' in role readwrite ${DB_SPECIFIC_IMPORTER_ROLE_ADMIN};
 create user :restJavaUsername with login password :'restJavaPassword' in role readonly;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 create user :web3Username with login password :'web3Password' in role readonly;

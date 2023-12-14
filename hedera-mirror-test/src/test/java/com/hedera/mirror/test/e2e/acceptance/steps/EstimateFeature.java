@@ -71,10 +71,9 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class EstimateFeature extends AbstractEstimateFeature {
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
@@ -230,7 +229,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSignerResponse.getResultAsNumber().intValue();
 
-        assertTrue(isWithinDeviation(MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation));
+        assertWithinDeviation(MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
 
     @Then("I call estimateGas with function that makes a call to invalid smart contract")
@@ -419,7 +418,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24350),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53477),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55693),
-        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 174704),
+        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 254007),
         DESTROY("destroy", 26171),
         GET_GAS_LEFT("getGasLeft", 21326),
         GET_MOCK_ADDRESS("getMockContractAddress", 0),

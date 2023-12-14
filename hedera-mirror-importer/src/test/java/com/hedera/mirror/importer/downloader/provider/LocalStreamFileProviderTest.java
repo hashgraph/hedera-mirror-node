@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.downloader.provider;
 
-import static com.hedera.mirror.importer.MirrorProperties.STREAMS;
+import static com.hedera.mirror.importer.ImporterProperties.STREAMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.StreamType;
@@ -178,7 +178,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
             fileCopier.copy();
         } else {
             fileCopier.copyAsNodeIdStructure(
-                    Path::getParent, properties.getMirrorProperties().getNetwork());
+                    Path::getParent, properties.getImporterProperties().getNetwork());
         }
 
         var accountId = "0.0.3";
@@ -196,7 +196,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
     @SneakyThrows
     private File createSignature(String... paths) {
         var subPath = Path.of("", paths);
-        var streamsDir = properties.getMirrorProperties().getStreamPath();
+        var streamsDir = properties.getImporterProperties().getStreamPath();
         var file = streamsDir.resolve(subPath).toFile();
         file.getParentFile().mkdirs();
         file.createNewFile();

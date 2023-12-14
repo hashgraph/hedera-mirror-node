@@ -17,11 +17,11 @@
 package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import jakarta.annotation.Resource;
 import org.springframework.jdbc.core.JdbcOperations;
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+public abstract class AbstractRepositoryTest extends ImporterIntegrationTest {
 
     @Resource
     protected DomainBuilder domainBuilder;

@@ -16,10 +16,13 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.impl.DeleteTokenPrecompile.decodeDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
@@ -27,12 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
@@ -109,9 +111,6 @@ class DeleteTokenPrecompileTest {
     private AccessorFactory accessorFactory;
 
     @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-
-    @Mock
     private AssetsLoader assetLoader;
 
     @Mock
@@ -132,34 +131,29 @@ class DeleteTokenPrecompileTest {
     @Mock
     private TokenAccessor tokenAccessor;
 
+    @Mock
+    private PrecompileContext precompileContext;
+
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
 
     private HTSPrecompiledContract subject;
+    private DeleteTokenPrecompile deletePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenDelete, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, hederaEvmContractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
         DeleteLogic deleteLogic = new DeleteLogic();
-        final var deletePrecompile =
-                new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
+        deletePrecompile = new DeleteTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, deleteLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(deletePrecompile));
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                evmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
+                infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
     }
 
     @Test
@@ -168,10 +162,16 @@ class DeleteTokenPrecompileTest {
         givenFrameContext();
         givenMinimalContextForSuccessfulCall();
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(deletePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(DELETE_INPUT, a -> a);
+        subject.prepareComputation(DELETE_INPUT, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -186,13 +186,19 @@ class DeleteTokenPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(deletePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(DELETE_INPUT, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(DELETE_INPUT, a -> a, precompileContext);
+        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

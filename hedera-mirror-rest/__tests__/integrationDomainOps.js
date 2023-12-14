@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import * as math from 'mathjs';
 import pgformat from 'pg-format';
 
 import base32 from '../base32';
@@ -66,6 +65,7 @@ const setup = async (testDataJson) => {
   await loadSchedules(testDataJson.schedules);
   await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
+  await loadTopicMessageLookups(testDataJson.topicmessagelookups);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
   await loadTokenAllowances(testDataJson.tokenAllowances);
@@ -435,6 +435,16 @@ const loadTopicMessages = async (messages) => {
 
   for (const message of messages) {
     await addTopicMessage(message);
+  }
+};
+
+const loadTopicMessageLookups = async (topicMessageLookups) => {
+  if (topicMessageLookups == null) {
+    return;
+  }
+
+  for (const topicMessageLookup of topicMessageLookups) {
+    await addTopicMessageLookup(topicMessageLookup);
   }
 };
 
@@ -1194,6 +1204,13 @@ const addTopicMessage = async (message) => {
   await insertDomainObject(table, insertFields, message);
 };
 
+const addTopicMessageLookup = async (topicMessageLookups) => {
+  const insertFields = ['partition', 'timestamp_range', 'sequence_number_range', 'topic_id'];
+
+  const table = 'topic_message_lookup';
+
+  await insertDomainObject(table, insertFields, topicMessageLookups);
+};
 const addSchedule = async (schedule) => {
   schedule = {
     creator_account_id: '0.0.1024',

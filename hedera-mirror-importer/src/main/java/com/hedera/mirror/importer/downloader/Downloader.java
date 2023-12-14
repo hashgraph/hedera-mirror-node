@@ -27,10 +27,10 @@ import com.google.common.collect.TreeMultimap;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -89,16 +89,16 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
+    protected final ImporterProperties importerProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
     protected final StreamFileProvider streamFileProvider;
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
-    protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    protected final DateRangeCalculator dateRangeCalculator;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
 
     private final ConsensusNodeService consensusNodeService;
-    private final MirrorProperties mirrorProperties;
     private final StreamType streamType;
 
     // Metrics
@@ -113,8 +113,9 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     protected Downloader(
             ConsensusNodeService consensusNodeService,
             DownloaderProperties downloaderProperties,
+            ImporterProperties importerProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader,
             StreamFileNotifier streamFileNotifier,
@@ -122,14 +123,14 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             StreamFileReader<T, ?> streamFileReader) {
         this.consensusNodeService = consensusNodeService;
         this.downloaderProperties = downloaderProperties;
+        this.importerProperties = importerProperties;
         this.meterRegistry = meterRegistry;
-        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.dateRangeCalculator = dateRangeCalculator;
         this.nodeSignatureVerifier = nodeSignatureVerifier;
         this.signatureFileReader = signatureFileReader;
         this.streamFileProvider = streamFileProvider;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
-        this.mirrorProperties = downloaderProperties.getMirrorProperties();
         this.streamType = downloaderProperties.getStreamType();
 
         // Metrics
@@ -167,7 +168,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
             // Following is a cost optimization to not unnecessarily list the public demo bucket once complete
             if (sigFilesMap.isEmpty()
-                    && MirrorProperties.HederaNetwork.DEMO.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+                    && ImporterProperties.HederaNetwork.DEMO.equalsIgnoreCase(importerProperties.getNetwork())) {
                 downloaderProperties.setEnabled(false);
                 log.warn("Disabled polling after downloading all files in demo bucket");
             }
@@ -191,7 +192,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 .get()
                 .map(StreamFile::getIndex)
                 .map(v -> v + 1)
-                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
+                .or(() -> Optional.ofNullable(importerProperties.getStartBlockNumber()))
                 .orElse(0L);
         streamFile.setIndex(index);
     }
@@ -266,7 +267,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return lastStreamFile
                 .get()
                 .or(() -> {
-                    Optional<T> streamFile = mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType);
+                    Optional<T> streamFile = dateRangeCalculator.getLastStreamFile(streamType);
                     lastStreamFile.compareAndSet(Optional.empty(), streamFile);
                     return streamFile;
                 })
@@ -338,7 +339,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
     }
 
     private boolean verifySignatures(Collection<StreamFileSignature> signatures) {
-        Instant endDate = mirrorProperties.getEndDate();
+        Instant endDate = importerProperties.getEndDate();
 
         for (var signature : signatures) {
             // Ignore signatures that didn't validate or weren't in the majority
@@ -360,11 +361,11 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 if (downloaderProperties.isWriteFiles()) {
                     Utility.archiveFile(
-                            streamFileData.getFilePath(), streamFile.getBytes(), mirrorProperties.getStreamPath());
+                            streamFileData.getFilePath(), streamFile.getBytes(), importerProperties.getStreamPath());
                 }
 
                 if (downloaderProperties.isWriteSignatures()) {
-                    var destination = mirrorProperties.getStreamPath();
+                    var destination = importerProperties.getStreamPath();
                     signatures.forEach(
                             s -> Utility.archiveFile(s.getFilename().getFilePath(), s.getBytes(), destination));
                 }

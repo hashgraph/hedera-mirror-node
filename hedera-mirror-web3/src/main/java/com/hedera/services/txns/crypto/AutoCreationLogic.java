@@ -40,11 +40,15 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class AutoCreationLogic extends AbstractAutoCreationLogic {
 
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
+
     public AutoCreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
-            final SyntheticTxnFactory syntheticTxnFactory) {
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
         super(feeCalculator, evmProperties, syntheticTxnFactory);
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     /**
@@ -55,11 +59,9 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
      *
      * @param alias
      * @param address
-     * @param mirrorEvmContractAliases
      */
     @Override
-    protected void trackAlias(
-            final ByteString alias, final Address address, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+    protected void trackAlias(final ByteString alias, final Address address) {
         if (isAliasSizeGreaterThanEvmAddress(alias)) {
             // if the alias is not derived from ECDSA public key
             final var key = asPrimitiveKeyUnchecked(alias);

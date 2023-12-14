@@ -16,13 +16,13 @@
 
 package com.hedera.mirror.importer.parser.balance;
 
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static com.hedera.mirror.importer.config.DateRangeCalculator.DateRangeFilter;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
@@ -45,7 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
     private final BatchPersister batchPersister;
-    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private final DateRangeCalculator dateRangeCalculator;
     private final BalanceStreamFileListener streamFileListener;
 
     public AccountBalanceFileParser(
@@ -53,11 +53,11 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             MeterRegistry meterRegistry,
             BalanceParserProperties parserProperties,
             StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             BalanceStreamFileListener streamFileListener) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.batchPersister = batchPersister;
-        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.dateRangeCalculator = dateRangeCalculator;
         this.streamFileListener = streamFileListener;
     }
 
@@ -81,7 +81,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     @Override
     protected void doParse(AccountBalanceFile accountBalanceFile) {
         log.info("Starting processing account balances file {}", accountBalanceFile.getName());
-        DateRangeFilter filter = mirrorDateRangePropertiesProcessor.getDateRangeFilter(StreamType.BALANCE);
+        DateRangeFilter filter = dateRangeCalculator.getFilter(StreamType.BALANCE);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
         long count = 0L;
 

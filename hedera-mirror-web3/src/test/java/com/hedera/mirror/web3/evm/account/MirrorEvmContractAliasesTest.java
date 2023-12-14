@@ -21,12 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.ContextExtension;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -35,8 +35,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.Key;
 import java.security.InvalidKeyException;
-import java.util.Map;
-import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -58,8 +56,8 @@ class MirrorEvmContractAliasesTest {
     private static final String ALIAS_HEX = "0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb";
     private static final Address ALIAS = Address.fromHexString(ALIAS_HEX);
 
-    private static final EntityId entityId = EntityId.of(0L, 0L, 3L);
-    private static final Id id = new Id(0L, 0L, 3L);
+    private static final EntityId entityId = EntityId.of(0L, 0L, 1252L);
+    private static final Id id = new Id(0L, 0L, 1252L);
 
     @Mock
     private Store store;
@@ -80,25 +78,16 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
-    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromAliases() {
-        ContractCallContext.get().getAliases().put(ALIAS, ADDRESS);
-
-        assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
-    }
-
-    @Test
-    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
-        ContractCallContext.get().getPendingAliases().put(ALIAS, ADDRESS);
-
+    void resolveForEvmWhenAliasIsPresentShouldReturnMatchingAddress() {
+        given(store.getAccount(ALIAS, OnMissing.DONT_THROW)).willReturn(account);
+        given(account.getId()).willReturn(id);
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
     @Test
     void resolveForEvmWhenAliasAndPendingAliasIsPresentShouldReturnMatchingAddressFromPendingAliases() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getPendingAliases().put(ALIAS, ADDRESS);
-        contractCallContext.getAliases().put(ALIAS, Address.ZERO);
-
+        given(store.getAccount(ALIAS, OnMissing.DONT_THROW)).willReturn(account);
+        given(account.getId()).willReturn(id);
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(ADDRESS);
     }
 
@@ -110,104 +99,34 @@ class MirrorEvmContractAliasesTest {
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
     }
 
-    @Test
-    void initializeWithEmptyAliasesMap() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        assertThat(contractCallContext.getAliases()).isNotNull().isEmpty();
-        assertThat(contractCallContext.getPendingAliases()).isNotNull().isEmpty();
-        assertThat(contractCallContext.getPendingRemovals()).isNotNull().isEmpty();
-    }
+    //    @Test
+    //    void link() {
+    //        mirrorEvmContractAliases.link(ALIAS, ADDRESS);
+    //        ContractCallContext contractCallContext = ContractCallContext.get();
+    //        assertThat(contractCallContext.getPendingAliases()).hasSize(1).containsEntry(ALIAS, ADDRESS);
+    //        assertThat(contractCallContext.getPendingRemovals()).isEmpty();
+    //    }
+
+    //    @Test
+    //    void unlink() {
+    //        ContractCallContext contractCallContext = ContractCallContext.get();
+    //        pendingAliases.put(ALIAS, ADDRESS);
+    //
+    //        mirrorEvmContractAliases.unlink(ALIAS);
+    //
+    //        assertThat(pendingAliases).isEmpty();
+    //        assertThat(contractCallContext.getPendingRemovals()).hasSize(1).contains(ALIAS);
+    //    }
 
     @Test
-    void link() {
-        mirrorEvmContractAliases.link(ALIAS, ADDRESS);
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        assertThat(contractCallContext.getPendingAliases()).hasSize(1).containsEntry(ALIAS, ADDRESS);
-        assertThat(contractCallContext.getPendingRemovals()).isEmpty();
-    }
-
-    @Test
-    void unlink() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
-        pendingAliases.put(ALIAS, ADDRESS);
-
-        mirrorEvmContractAliases.unlink(ALIAS);
-
-        assertThat(pendingAliases).isEmpty();
-        assertThat(contractCallContext.getPendingRemovals()).hasSize(1).contains(ALIAS);
-    }
-
-    @Test
-    void commitAddsAllFromPendingAliases() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
-        pendingAliases.put(ALIAS, ADDRESS);
-
-        mirrorEvmContractAliases.commit();
-
-        assertThat(contractCallContext.getAliases()).containsEntry(ALIAS, ADDRESS);
-        assertThat(pendingAliases).isEmpty();
-    }
-
-    @Test
-    void commitRemovesAllFromPendingRemovals() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> aliases = contractCallContext.getAliases();
-        aliases.put(ALIAS, ADDRESS);
-        Set<Address> pendingRemovals = contractCallContext.getPendingRemovals();
-        pendingRemovals.add(ALIAS);
-
-        mirrorEvmContractAliases.commit();
-
-        assertThat(aliases).doesNotContainEntry(ALIAS, ADDRESS);
-        assertThat(pendingRemovals).isEmpty();
-    }
-
-    @Test
-    void resetPendingChangesClearsPendingAliases() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
-        pendingAliases.put(ALIAS, ADDRESS);
-
-        mirrorEvmContractAliases.resetPendingChanges();
-
-        assertThat(pendingAliases).isEmpty();
-    }
-
-    @Test
-    void resetPendingChangesClearsPendingRemovals() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Set<Address> pendingRemovals = contractCallContext.getPendingRemovals();
-        pendingRemovals.add(ALIAS);
-
-        mirrorEvmContractAliases.resetPendingChanges();
-
-        assertThat(pendingRemovals).isEmpty();
-    }
-
-    @Test
-    void isInUseShouldBeTrueIfInPendingAliases() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getPendingAliases().put(ALIAS, ADDRESS);
-
-        assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
-    }
-
-    @Test
-    void isInUseShouldBeTrueIfInAliasesAndNotInPendingRemovals() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getAliases().put(ALIAS, ADDRESS);
-
+    void isInUseShouldBeTrueIfAliasesIsPresent() {
+        given(store.exists(ALIAS)).willReturn(true);
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isTrue();
     }
 
     @Test
     void isInUseShouldBeFalseIfInAliasesAndInPendingRemovals() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getAliases().put(ALIAS, ADDRESS);
-        contractCallContext.getPendingRemovals().add(ALIAS);
-
+        given(store.exists(ALIAS)).willReturn(false);
         assertThat(mirrorEvmContractAliases.isInUse(ALIAS)).isFalse();
     }
 
@@ -229,6 +148,7 @@ class MirrorEvmContractAliasesTest {
             utilities
                     .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
                     .thenReturn(new byte[0]);
+            given(store.exists(recoveredAddress)).willReturn(true);
             assertTrue(mirrorEvmContractAliases.isInUse(recoveredAddress));
         }
     }

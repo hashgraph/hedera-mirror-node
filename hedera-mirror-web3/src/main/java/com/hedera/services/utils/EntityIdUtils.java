@@ -25,6 +25,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -182,6 +183,13 @@ public final class EntityIdUtils {
     }
 
     public static EntityId entityIdFromId(Id id) {
+        if (id == null) {
+            return null;
+        }
+        return EntityId.of(id.shard(), id.realm(), id.num());
+    }
+
+    public static EntityId entityIdFromNftId(NftId id) {
         if (id == null) {
             return null;
         }

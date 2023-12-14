@@ -30,9 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrationTest {
 

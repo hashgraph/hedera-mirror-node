@@ -19,21 +19,44 @@ package com.hedera.mirror.web3.evm.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
+import java.util.Collections;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION = "v0.34";
+    private static final String EVM_VERSION_34 = EVM_VERSION;
+    private static final String EVM_VERSION_30 = "v0.30";
+    private static final String EVM_VERSION_38 = "v0.38";
     private static final int MAX_REFUND_PERCENT = 100;
     private static final int MAX_CUSTOM_FEES_ALLOWED = 10;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
     private static final Bytes32 CHAIN_ID = Bytes32.fromHexString("0x0128");
 
     private final MirrorNodeEvmProperties properties;
+
+    @BeforeEach
+    void setup() {
+        properties.setEvmVersions(new TreeMap<>());
+    }
+
+    @AfterEach
+    void cleanup() {
+        properties.setNetwork(HederaNetwork.TESTNET);
+    }
 
     @Test
     void correctPropertiesEvaluation() {
@@ -50,5 +73,74 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.shouldAutoRenewContracts()).isFalse();
         assertThat(properties.shouldAutoRenewSomeEntityType()).isFalse();
         assertThat(properties.maxCustomFeesAllowed()).isEqualTo(MAX_CUSTOM_FEES_ALLOWED);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberToEvmVersionProviderMainnet")
+    void getEvmVersionForBlockFromHederaNetwork(Long blockNumber, String expectedEvmVersion) {
+        // given
+        properties.setNetwork(HederaNetwork.MAINNET);
+
+        String result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualTo(expectedEvmVersion);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberToEvmVersionProviderCustom")
+    void getEvmVersionForBlockFromConfig(Long blockNumber, String expectedEvmVersion) {
+        // given
+        properties.setEvmVersions(createEvmVersionsMapCustom());
+
+        String result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualTo(expectedEvmVersion);
+    }
+
+    private static NavigableMap<Long, String> createEvmVersionsMapCustom() {
+        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+        evmVersions.put(0L, EVM_VERSION_30);
+        evmVersions.put(1000L, EVM_VERSION_34);
+        evmVersions.put(2000L, EVM_VERSION_38);
+        return Collections.unmodifiableNavigableMap(evmVersions);
+    }
+
+    private static NavigableMap<Long, String> createEvmVersionsMapMainnet() {
+        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+        evmVersions.put(0L, EVM_VERSION_30);
+        evmVersions.put(44029066L, EVM_VERSION_34);
+        evmVersions.put(49117794L, EVM_VERSION_38);
+        return Collections.unmodifiableNavigableMap(evmVersions);
+    }
+
+    private static Stream<Arguments> blockNumberToEvmVersionProviderCustom() {
+        return blockNumberToEvmVersionProvider(createEvmVersionsMapCustom());
+    }
+
+    private static Stream<Arguments> blockNumberToEvmVersionProviderMainnet() {
+        return blockNumberToEvmVersionProvider(createEvmVersionsMapMainnet());
+    }
+
+    private static Stream<Arguments> blockNumberToEvmVersionProvider(NavigableMap<Long, String> evmVersions) {
+        Stream.Builder<Arguments> argumentsBuilder = Stream.builder();
+
+        Long firstKey = evmVersions.firstKey();
+        // return default EVM version for key - 1 since none will be found
+        argumentsBuilder.add(Arguments.of(firstKey - 1, EVM_VERSION));
+
+        for (Map.Entry<Long, String> entry : evmVersions.entrySet()) {
+            Long key = entry.getKey();
+            String currentValue = entry.getValue();
+            // Test the block number just before the key (key - 1) if it's not the first key
+            if (!key.equals(firstKey)) {
+                String lowerValue = evmVersions.lowerEntry(key).getValue();
+                argumentsBuilder.add(Arguments.of(key - 1, lowerValue));
+            }
+
+            // test the exact key
+            argumentsBuilder.add(Arguments.of(key, currentValue));
+
+            // Test the next block number after the key (key + 1)
+            argumentsBuilder.add(Arguments.of(key + 1, currentValue));
+        }
+        return argumentsBuilder.build();
     }
 }

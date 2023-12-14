@@ -67,7 +67,8 @@ public class ContextExtension implements InvocationInterceptor {
         var stackedStateFrames =
                 getStackedStateFrames(invocationContext.getTarget().get());
 
-        try (var context = ContractCallContext.init(stackedStateFrames)) {
+        try (var context = ContractCallContext.init()) {
+            context.initializeStackFrames(stackedStateFrames);
             log.debug("Creating new context {}", context);
             return invocation.proceed();
         }

@@ -7,6 +7,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 - [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
+- [Hedera Mirror Java REST API](hedera-mirror-rest-java)
 - [Hedera Mirror Rosetta API](hedera-mirror-rosetta)
 - [Hedera Mirror Web3 API](hedera-mirror-web3)
 
@@ -86,12 +87,12 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
 
    This can be done by setting a unique name for the subnet in the UI or through the console with the following command
    ```shell script
-   gcloud container clusters create mirrornode-lb \
+   gcloud container clusters create mirror-node \
        --enable-ip-alias \
        --create-subnetwork="" \
        --network=default \
        --zone=us-central1-a \
-       --cluster-version=1.21.5-gke.1802 \
+       --cluster-version=1.27 \
        --machine-type=n1-standard-4
    ```
 
@@ -175,6 +176,12 @@ To access the REST API:
 
 ```shell script
 curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
+```
+
+To access the Java REST API:
+
+```shell script
+curl -s "http://${SERVICE_IP}/api/v1/dummy"
 ```
 
 To access the Rosetta API:

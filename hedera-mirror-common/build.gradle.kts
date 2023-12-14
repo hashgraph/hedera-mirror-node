@@ -20,15 +20,12 @@ plugins { id("java-conventions") }
 
 dependencies {
     val testClasses by configurations.creating
-    annotationProcessor(group = "com.querydsl", name = "querydsl-apt", classifier = "jakarta")
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
     api("com.fasterxml.jackson.core:jackson-databind")
     api("com.github.ben-manes.caffeine:caffeine")
     api("com.google.guava:guava")
     api("com.google.protobuf:protobuf-java")
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
-    api("com.querydsl:querydsl-apt")
-    api("com.querydsl:querydsl-jpa")
     api("io.hypersistence:hypersistence-utils-hibernate-62")
     api("commons-codec:commons-codec")
     api("io.projectreactor:reactor-core")
@@ -37,6 +34,9 @@ dependencies {
     api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
     testImplementation("org.hyperledger.besu:evm")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("io.micrometer:micrometer-core")
     testClasses(sourceSets["test"].output)
 }
 

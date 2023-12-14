@@ -30,7 +30,7 @@ const custom = {
         response: {
           compression: false,
           limit: {
-            max: 30,
+            max: 101,
           },
         },
         shard: 1,
@@ -205,6 +205,7 @@ describe('Override query config', () => {
       maxTransactionConsensusTimestampRange: '10m',
       maxTransactionConsensusTimestampRangeNs: 600000000000n,
       strictTimestampParam: true,
+      topicMessageLookup: false,
     };
     const config = await loadCustomConfig(customConfig(queryConfig));
     expect(config.query).toEqual(expected);

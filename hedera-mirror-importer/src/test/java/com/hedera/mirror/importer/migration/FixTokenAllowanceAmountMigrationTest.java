@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer.Id;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
@@ -40,10 +39,10 @@ import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
 @Import(DisablePartitionMaintenanceConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.87.0")
-class FixTokenAllowanceAmountMigrationTest extends IntegrationTest {
+class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
 

@@ -81,8 +81,8 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(final long blockTimestamp, final Builder transactionBody) {
-        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
+    public long getGasRequirement(final long blockTimestamp, final Builder transactionBody, final AccountID sender) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, sender);
     }
 
     @Override

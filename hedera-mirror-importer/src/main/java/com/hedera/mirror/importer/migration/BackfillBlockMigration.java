@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.annotation.Nonnull;
@@ -59,11 +59,11 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
     @Lazy
     public BackfillBlockMigration(
             DBProperties dbProperties,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             NamedParameterJdbcTemplate jdbcTemplate,
             RecordFileRepository recordFileRepository,
             TransactionOperations transactionOperations) {
-        super(mirrorProperties.getMigration(), jdbcTemplate, dbProperties.getSchema());
+        super(importerProperties.getMigration(), jdbcTemplate, dbProperties.getSchema());
         this.recordFileRepository = recordFileRepository;
         this.transactionOperations = transactionOperations;
     }

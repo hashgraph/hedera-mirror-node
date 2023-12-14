@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.55.4")
-class MissingEvmAddressMigrationTest extends IntegrationTest {
+class MissingEvmAddressMigrationTest extends ImporterIntegrationTest {
 
     private static final String TABLE_IDS = "id";
 

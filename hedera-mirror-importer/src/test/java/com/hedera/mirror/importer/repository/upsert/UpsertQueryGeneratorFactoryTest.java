@@ -21,13 +21,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
+@RequiredArgsConstructor
+class UpsertQueryGeneratorFactoryTest extends ImporterIntegrationTest {
 
     private final UpsertQueryGeneratorFactory factory;
     private final TokenAccountUpsertQueryGenerator customUpsertQueryGenerator;

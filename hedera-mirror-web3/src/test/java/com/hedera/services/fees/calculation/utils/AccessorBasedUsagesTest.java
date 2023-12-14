@@ -111,9 +111,7 @@ class AccessorBasedUsagesTest {
 
         given(txnAccessor.getFunction()).willReturn(ContractCreate);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases));
+        assertThrows(IllegalArgumentException.class, () -> subject.assess(sigUsage, txnAccessor, accumulator));
     }
 
     @Test
@@ -127,7 +125,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.availXferUsageMeta()).willReturn(xferMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
 
-        subject.assess(sigUsage, txnAccessor, usageAccumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, usageAccumulator);
 
         verify(cryptoOpsUsage).cryptoTransferUsage(sigUsage, xferMeta, baseMeta, usageAccumulator);
         assertEquals(multiplier, xferMeta.getTokenMultiplier());
@@ -152,7 +150,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(txnAccessor.getSpanMapAccessor().getTokenCreateMeta(any())).willReturn(opMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
     }
@@ -166,7 +164,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenBurnMeta(any())).willReturn(tokenBurnMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenBurnUsage(sigUsage, baseMeta, tokenBurnMeta, accumulator);
     }
@@ -180,7 +178,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenWipeMeta(any())).willReturn(tokenWipeMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenWipeUsage(sigUsage, baseMeta, tokenWipeMeta, accumulator);
     }
@@ -192,9 +190,9 @@ class AccessorBasedUsagesTest {
         final var accumulator = new UsageAccumulator();
         given(txnAccessor.getFunction()).willReturn(TokenMint);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
-        given(opUsageCtxHelper.metaForTokenMint(txnAccessor, store)).willReturn(tokenMintMeta);
+        given(opUsageCtxHelper.metaForTokenMint(txnAccessor)).willReturn(tokenMintMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, accumulator, txnAccessor.getSubType());
     }
@@ -208,7 +206,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenFreezeMeta(any())).willReturn(tokenFreezeMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenFreezeUsage(sigUsage, baseMeta, tokenFreezeMeta, accumulator);
     }
@@ -222,7 +220,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenUnfreezeMeta(any())).willReturn(tokenUnfreezeMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenUnfreezeUsage(sigUsage, baseMeta, tokenUnfreezeMeta, accumulator);
     }
@@ -236,7 +234,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenPauseMeta(any())).willReturn(tokenPauseMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenPauseUsage(sigUsage, baseMeta, tokenPauseMeta, accumulator);
     }
@@ -250,7 +248,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getSpanMapAccessor().getTokenUnpauseMeta(any())).willReturn(tokenUnpauseMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(tokenOpsUsage).tokenUnpauseUsage(sigUsage, baseMeta, tokenUnpauseMeta, accumulator);
     }
@@ -270,7 +268,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(txnAccessor.getSpanMapAccessor().getCryptoCreateMeta(any())).willReturn(opMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(cryptoOpsUsage).cryptoCreateUsage(sigUsage, baseMeta, opMeta, accumulator);
     }
@@ -305,9 +303,9 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(txnAccessor.getSpanMapAccessor().getCryptoUpdateMeta(any())).willReturn(opMeta);
-        given(opUsageCtxHelper.ctxForCryptoUpdate(any(), any(), any())).willReturn(cryptoContext);
+        given(opUsageCtxHelper.ctxForCryptoUpdate(any())).willReturn(cryptoContext);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         long THREE_MONTHS_IN_SECONDS = 7776000L;
         verify(cryptoOpsUsage)
@@ -345,9 +343,9 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(txnAccessor.getSpanMapAccessor().getCryptoUpdateMeta(any())).willReturn(opMeta);
-        given(opUsageCtxHelper.ctxForCryptoUpdate(any(), any(), any())).willReturn(cryptoContext);
+        given(opUsageCtxHelper.ctxForCryptoUpdate(any())).willReturn(cryptoContext);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(cryptoOpsUsage).cryptoUpdateUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator, defaultPeriod);
     }
@@ -375,10 +373,9 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
         given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(txnAccessor.getSpanMapAccessor().getCryptoApproveMeta(any())).willReturn(opMeta);
-        given(opUsageCtxHelper.ctxForCryptoAllowance(txnAccessor, store, mirrorEvmContractAliases))
-                .willReturn(cryptoContext);
+        given(opUsageCtxHelper.ctxForCryptoAllowance(txnAccessor)).willReturn(cryptoContext);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(cryptoOpsUsage).cryptoApproveAllowanceUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
     }
@@ -398,7 +395,7 @@ class AccessorBasedUsagesTest {
         given(txnAccessor.getSpanMapAccessor().getCryptoDeleteAllowanceMeta(any()))
                 .willReturn(opMeta);
 
-        subject.assess(sigUsage, txnAccessor, accumulator, store, mirrorEvmContractAliases);
+        subject.assess(sigUsage, txnAccessor, accumulator);
 
         verify(cryptoOpsUsage).cryptoDeleteAllowanceUsage(sigUsage, baseMeta, opMeta, accumulator);
     }

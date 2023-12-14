@@ -1,12 +1,6 @@
 {
   "description": "Topic messages for single message with invalid param values",
-  "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "topicmessages": []
-  },
+  "setup": {},
   "url": "/api/v1/topics/0.0.-3/messages/a",
   "responseStatus": 400,
   "responseJson": {

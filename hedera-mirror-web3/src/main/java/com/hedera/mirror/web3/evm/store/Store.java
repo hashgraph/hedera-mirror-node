@@ -25,6 +25,7 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -61,6 +62,8 @@ public interface Store {
 
     void updateAccount(Account updatedAccount);
 
+    void linkAlias(final Address alias, final Address address);
+
     void deleteAccount(Address accountAddress);
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
@@ -89,7 +92,9 @@ public interface Store {
 
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 
-    boolean exists(AccountID accountID);
+    boolean exists(Address accountID);
+
+    Optional<Long> getHistoricalTimestamp();
 
     enum OnMissing {
         THROW,

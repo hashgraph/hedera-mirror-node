@@ -20,9 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenAllowanceHistoryRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenAllowanceHistoryRepository tokenAllowanceHistoryRepository;

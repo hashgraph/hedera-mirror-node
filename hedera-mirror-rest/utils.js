@@ -915,27 +915,20 @@ const nsToSecNsWithHyphen = (ns) => {
 /**
  * Given a timestamp, returns the timestamp of the first day of that month
  * @param {BigInt} secNs nanoseconds since epoch
+ * @param {Number} delta number of delta months
  * @returns {BigInt} ns at first day of month
  */
-const getFirstDayOfMonth = (secNs) => {
-  if (_.isNil(secNs)) {
-    return null;
-  }
-
-  if (typeof secNs !== 'BigInt') {
+const getFirstDayOfMonth = (secNs, delta = 0) => {
+  if (typeof secNs !== 'bigint') {
     secNs = BigInt(secNs);
   }
 
   // Convert nanoseconds to milliseconds for Date object
   const timestampMs = secNs / constants.NANOSECONDS_PER_MILLISECOND;
   const timestampDate = new Date(Number(timestampMs));
-  const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth());
+  const firstDayMs = Date.UTC(timestampDate.getUTCFullYear(), timestampDate.getUTCMonth() + delta);
   // Convert milliseconds to nanoseconds
   return BigInt(firstDayMs) * constants.NANOSECONDS_PER_MILLISECOND;
-};
-
-const secNsToSeconds = (secNs) => {
-  return math.floor(Number(secNs));
 };
 
 /**
@@ -1240,10 +1233,17 @@ const zeroPaddingRegex = /^0+(?=\d)0/;
  */
 const formatSlot = (slot, leftPad = false) => {
   if (leftPad) {
-    const formatedSlot = stripHexPrefix(slot).replace(zeroPaddingRegex, '0');
-    return Buffer.from(formatedSlot === '0' ? '' : formatedSlot, 'hex');
+    return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
   }
-  return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
+
+  let formattedSlot = stripHexPrefix(slot).replace(zeroPaddingRegex, '0');
+  if (formattedSlot === '0') {
+    formattedSlot = '';
+  } else if (formattedSlot.length % 2) {
+    // An odd length will result in truncation when passed to Buffer, so pad to an even value
+    formattedSlot = '0' + formattedSlot;
+  }
+  return Buffer.from(formattedSlot, 'hex');
 };
 
 /**
@@ -1742,7 +1742,6 @@ export {
   parseTransactionTypeParam,
   randomString,
   resultSuccess,
-  secNsToSeconds,
   toHexString,
   toHexStringNonQuantity,
   toHexStringQuantity,

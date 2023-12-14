@@ -54,7 +54,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
@@ -111,11 +111,10 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class SqlEntityListenerTest extends IntegrationTest {
+@RequiredArgsConstructor
+class SqlEntityListenerTest extends ImporterIntegrationTest {
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractActionRepository contractActionRepository;
@@ -165,7 +164,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        sqlProperties.setBatchSize(20_000);
         sqlEntityListener.onStart();
     }
 
@@ -177,7 +175,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void executeBatch() {
         // given
-        sqlProperties.setBatchSize(1);
         Entity entity1 = domainBuilder.entity().get();
         Entity entity2 = domainBuilder.entity().get();
 

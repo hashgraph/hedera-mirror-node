@@ -16,6 +16,7 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_FREEZE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.*;
 import static com.hedera.services.store.contracts.precompile.impl.FreezeTokenPrecompile.decodeFreeze;
@@ -26,12 +27,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
@@ -100,9 +100,6 @@ class FreezeTokenPrecompileTest {
     private AccessorFactory accessorFactory;
 
     @Mock
-    private EvmHTSPrecompiledContract evmHTSPrecompiledContract;
-
-    @Mock
     private AssetsLoader assetLoader;
 
     @Mock
@@ -120,6 +117,9 @@ class FreezeTokenPrecompileTest {
     @Mock
     private TokenAccessor tokenAccessor;
 
+    @Mock
+    private PrecompileContext precompileContext;
+
     private HTSPrecompiledContract subject;
     private MockedStatic<FreezeTokenPrecompile> staticFreezeTokenPrecompile;
 
@@ -135,30 +135,22 @@ class FreezeTokenPrecompileTest {
 
     private final TransactionBody.Builder transactionBody =
             TransactionBody.newBuilder().setTokenFreeze(TokenFreezeAccountTransactionBody.newBuilder());
+    private FreezeTokenPrecompile freezeTokenPrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(HederaFunctionality.TokenFreezeAccount, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        final PrecompilePricingUtils precompilePricingUtils = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory, store, contractAliases);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
-        FreezeTokenPrecompile freezeTokenPrecompile =
-                new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
+        freezeTokenPrecompile = new FreezeTokenPrecompile(precompilePricingUtils, syntheticTxnFactory, freezeLogic);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(freezeTokenPrecompile));
         staticFreezeTokenPrecompile = Mockito.mockStatic(FreezeTokenPrecompile.class);
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory,
-                evmProperties,
-                precompileMapper,
-                evmHTSPrecompiledContract,
-                store,
-                tokenAccessor,
-                precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
+                infrastructureFactory, evmProperties, precompileMapper, store, tokenAccessor, precompilePricingUtils);
     }
 
     @AfterEach
@@ -174,10 +166,16 @@ class FreezeTokenPrecompileTest {
         givenMinimalContextForSuccessfulCall();
         givenFreezeUnfreezeContext();
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(freezeTokenPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
+        subject.prepareComputation(input, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then
@@ -192,15 +190,20 @@ class FreezeTokenPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         givenPricingUtilsContext();
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(freezeTokenPrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         // when
         subject.prepareFields(frame);
-        subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME, transactionBody);
+        subject.prepareComputation(input, a -> a, precompileContext);
+        final var result = subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }

@@ -94,10 +94,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
     private static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);

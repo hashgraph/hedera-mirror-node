@@ -28,8 +28,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -45,15 +45,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
-class InitializeEntityBalanceMigrationTest extends IntegrationTest {
+class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
 
     private static final String DELETE_ACCOUNT_BALANCE_SQL =
             "delete from account_balance where consensus_timestamp <= ?";
@@ -65,7 +64,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordFileRepository recordFileRepository;
     private InitializeEntityBalanceMigration migration;
     private Entity account;
@@ -81,7 +80,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(0L);
         migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
+                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test
@@ -117,6 +116,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
+        setExpectedBalance();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -136,6 +136,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
+        setExpectedBalance();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -150,9 +151,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -167,9 +165,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -184,9 +179,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -200,6 +192,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.doMigrate();
 
         // then
+        setExpectedBalance();
         account.setDeleted(false); // We only know for sure that entities in the balance file are not deleted
         accountDeleted.setDeleted(null);
         contract.setDeleted(null);
@@ -221,9 +214,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.onEnd(accountBalanceFile2);
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -251,9 +241,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.onEnd(accountBalanceFile3);
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -268,9 +255,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         migration.onEnd(accountBalanceFile2);
 
         // then
-        account.setBalance(0L);
-        accountDeleted.setBalance(0L);
-        contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -305,6 +289,13 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
                 .persist();
     }
 
+    private void setExpectedBalance() {
+        account.setBalance(505L);
+        account.setBalanceTimestamp(recordFile2.getConsensusEnd());
+        accountDeleted.setBalance(20L);
+        contract.setBalance(25L);
+    }
+
     private void setup() {
         setupForFirstAccountBalanceFile();
 
@@ -329,17 +320,15 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
                 .persist();
         persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
         persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
-
-        // Set expected balances
-        account.setBalance(505L);
-        accountDeleted.setBalance(20L);
-        contract.setBalance(25L);
     }
 
     private void setupForFirstAccountBalanceFile() {
         account = domainBuilder
                 .entity()
-                .customize(e -> e.balance(0L).deleted(null).createdTimestamp(timestamp(Duration.ofSeconds(1L))))
+                .customize(e -> e.balance(0L)
+                        .balanceTimestamp(null)
+                        .deleted(null)
+                        .createdTimestamp(timestamp(Duration.ofSeconds(1L))))
                 .persist();
         accountDeleted = domainBuilder
                 .entity()
@@ -348,6 +337,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         topic = domainBuilder
                 .entity()
                 .customize(e -> e.balance(null)
+                        .balanceTimestamp(null)
                         .createdTimestamp(timestamp(Duration.ofSeconds(1)))
                         .type(TOPIC))
                 .persist();
@@ -375,6 +365,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         contract = domainBuilder
                 .entity()
                 .customize(e -> e.balance(0L)
+                        .balanceTimestamp(accountBalanceTimestamp1 + 10)
                         .createdTimestamp(timestamp(Duration.ofSeconds(1)))
                         .type(CONTRACT))
                 .persist();

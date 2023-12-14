@@ -38,7 +38,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class ContractResultMigration extends MirrorBaseJavaMigration {
+public class ContractResultMigration extends AbstractJavaMigration {
 
     static final DataClassRowMapper<MigrationContractResult> resultRowMapper;
     private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.46.8");

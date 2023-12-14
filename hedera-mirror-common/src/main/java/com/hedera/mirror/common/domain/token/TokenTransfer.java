@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
 import java.io.Serial;
 import java.io.Serializable;
 import lombok.AccessLevel;
@@ -45,27 +44,13 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
     private long amount;
 
-    @JsonIgnore
-    @Transient
-    private boolean deletedTokenDissociate;
-
     private Boolean isApproval;
 
     private EntityId payerAccountId;
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
-        this(consensusTimestamp, amount, tokenId, accountId, false);
-    }
-
-    public TokenTransfer(
-            long consensusTimestamp,
-            long amount,
-            EntityId tokenId,
-            EntityId accountId,
-            boolean deletedTokenDissociate) {
         id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
         this.amount = amount;
-        this.deletedTokenDissociate = deletedTokenDissociate;
     }
 
     @JsonIgnore

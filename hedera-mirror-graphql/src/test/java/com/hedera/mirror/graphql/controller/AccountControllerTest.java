@@ -27,13 +27,12 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureHttpGraphQlTester;
 import org.springframework.graphql.ResponseError;
 import org.springframework.graphql.test.tester.HttpGraphQlTester;
 
 @AutoConfigureHttpGraphQlTester
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class AccountControllerTest extends GraphqlIntegrationTest {
 
     private final AccountMapper accountMapper;

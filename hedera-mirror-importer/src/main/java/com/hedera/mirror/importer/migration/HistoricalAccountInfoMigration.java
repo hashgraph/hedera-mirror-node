@@ -21,7 +21,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import jakarta.inject.Named;
@@ -54,7 +54,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
     private final Set<Long> contractIds = new HashSet<>();
     private final EntityRepository entityRepository;
     private final NamedParameterJdbcTemplate jdbcOperations;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Value("classpath:accountInfoContracts.txt")
     private Resource accountInfoContracts;
@@ -66,11 +66,11 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
     public HistoricalAccountInfoMigration(
             EntityRepository entityRepository,
             NamedParameterJdbcTemplate jdbcTemplate,
-            MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+            ImporterProperties importerProperties) {
+        super(importerProperties.getMigration());
         this.entityRepository = entityRepository;
         this.jdbcOperations = jdbcTemplate;
-        this.mirrorProperties = mirrorProperties;
+        this.importerProperties = importerProperties;
     }
 
     @Override
@@ -90,17 +90,17 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
 
     @Override
     protected void doMigrate() throws IOException {
-        if (!mirrorProperties.isImportHistoricalAccountInfo()) {
+        if (!importerProperties.isImportHistoricalAccountInfo()) {
             log.info("Skipping migration since importing historical account information is disabled");
             return;
         }
 
-        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+        if (!ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(importerProperties.getNetwork())) {
             log.info("Skipping migration since it only applies to mainnet");
             return;
         }
 
-        Instant startDate = Objects.requireNonNullElseGet(mirrorProperties.getStartDate(), Instant::now);
+        Instant startDate = Objects.requireNonNullElseGet(importerProperties.getStartDate(), Instant::now);
         if (startDate.isAfter(EXPORT_DATE)) {
             log.info("Skipping migration since start date {} is after the export date {}", startDate, EXPORT_DATE);
             return;

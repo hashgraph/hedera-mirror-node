@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -140,9 +140,12 @@ public class FixCryptoAllowanceAmountMigration extends AsyncJavaMigration<Long> 
     public FixCryptoAllowanceAmountMigration(
             DBProperties dbProperties,
             EntityProperties entityProperties,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             @Owner JdbcTemplate jdbcTemplate) {
-        super(mirrorProperties.getMigration(), new NamedParameterJdbcTemplate(jdbcTemplate), dbProperties.getSchema());
+        super(
+                importerProperties.getMigration(),
+                new NamedParameterJdbcTemplate(jdbcTemplate),
+                dbProperties.getSchema());
         this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
     }

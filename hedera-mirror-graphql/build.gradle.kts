@@ -46,10 +46,11 @@ dependencies {
         group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("com.playtika.testcontainers:embedded-postgresql")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.graphql:spring-graphql-test")
+    testImplementation("org.testcontainers:postgresql")
 }
 
 generatePojoConf {

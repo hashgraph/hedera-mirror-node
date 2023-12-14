@@ -39,6 +39,7 @@ import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.PauseLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -78,7 +79,8 @@ public class PausePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         Objects.requireNonNull(transactionBody, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(PAUSE, consensusTime);
     }

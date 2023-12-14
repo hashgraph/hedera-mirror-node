@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.DBProperties;
@@ -47,12 +47,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.core.publisher.Flux;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTest<FixCryptoAllowanceAmountMigration> {
 
@@ -70,7 +69,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     @BeforeEach
     void setup() {
         // Create migration object for each test case due to the cached earliestTimestamp
-        var mirrorProperties = new MirrorProperties();
+        var mirrorProperties = new ImporterProperties();
         migration =
                 new FixCryptoAllowanceAmountMigration(dbProperties, entityProperties, mirrorProperties, jdbcTemplate);
     }
@@ -280,7 +279,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
         var entityProperties = new EntityProperties();
         entityProperties.getPersist().setTrackAllowance(trackAllowance);
         var migration = new FixCryptoAllowanceAmountMigration(
-                dbProperties, entityProperties, new MirrorProperties(), jdbcTemplate);
+                dbProperties, entityProperties, new ImporterProperties(), jdbcTemplate);
         var configuration = new FluentConfiguration().target(migration.getMinimumVersion());
 
         // when, then

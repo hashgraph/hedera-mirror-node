@@ -16,51 +16,14 @@
 
 package com.hedera.mirror.web3;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
+import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.web3.evm.store.Store;
-import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.Resource;
-import java.util.Collection;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.jdbc.Sql;
 
 @ExtendWith(ContextExtension.class)
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:cleanup.sql")
-@SpringBootTest
-@Import(IntegrationTestConfiguration.class)
-public abstract class Web3IntegrationTest {
-
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected MeterRegistry meterRegistry;
+public abstract class Web3IntegrationTest extends CommonIntegrationTest {
 
     @Resource
     protected Store store;
-
-    @Resource
-    private Collection<CacheManager> cacheManagers;
-
-    protected void reset() {
-        cacheManagers.forEach(
-                c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
-    }
-
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        reset();
-        log.info("Executing: {}", testInfo.getDisplayName());
-    }
 }

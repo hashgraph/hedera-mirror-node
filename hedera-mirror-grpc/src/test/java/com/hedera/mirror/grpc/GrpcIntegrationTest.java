@@ -16,53 +16,38 @@
 
 package com.hedera.mirror.grpc;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import jakarta.annotation.Resource;
-import jakarta.persistence.EntityManager;
-import java.util.Collection;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
-import org.slf4j.Logger;
+import com.hedera.mirror.common.config.CommonIntegrationTest;
+import com.hedera.mirror.grpc.GrpcIntegrationTest.Configuration;
+import com.redis.testcontainers.RedisContainer;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.cache.CacheManager;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.jdbc.Sql;
+import org.springframework.context.annotation.Primary;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
-// Same database is used for all tests, so clean it up before each test.
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:cleanup.sql")
-@SpringBootTest
-@Import(GrpcIntegrationTest.Config.class)
-public abstract class GrpcIntegrationTest {
+@Import(Configuration.class)
+public abstract class GrpcIntegrationTest extends CommonIntegrationTest {
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
-
-    @Resource
-    private Collection<CacheManager> cacheManagers;
-
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        reset();
-        log.info("Executing: {}", testInfo.getDisplayName());
-    }
-
-    protected void reset() {
-        cacheManagers.forEach(
-                c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
-    }
-
-    @TestConfiguration
-    static class Config {
+    @TestConfiguration(proxyBeanMethods = false)
+    static class Configuration {
         @Bean
-        DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-            return new DomainBuilder(entityManager, transactionOperations);
+        @ServiceConnection("redis")
+        RedisContainer redis() {
+            var logger = LoggerFactory.getLogger(RedisContainer.class);
+            return new RedisContainer(DockerImageName.parse(REDIS_IMAGE))
+                    .withLogConsumer(new Slf4jLogConsumer(logger, true));
+        }
+
+        @Bean
+        @Primary
+        TransactionOperations transactionOperations(PlatformTransactionManager transactionManager) {
+            return new TransactionTemplate(transactionManager);
         }
     }
 }

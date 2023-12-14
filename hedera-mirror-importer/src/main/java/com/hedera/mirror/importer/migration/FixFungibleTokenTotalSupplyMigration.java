@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import jakarta.inject.Named;
 import java.io.IOException;
 import lombok.CustomLog;
@@ -65,8 +65,8 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public FixFungibleTokenTotalSupplyMigration(JdbcTemplate jdbcTemplate, MirrorProperties mirrorProperties) {
-        super(mirrorProperties.getMigration());
+    public FixFungibleTokenTotalSupplyMigration(JdbcTemplate jdbcTemplate, ImporterProperties importerProperties) {
+        super(importerProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
     }
 

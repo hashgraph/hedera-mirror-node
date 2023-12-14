@@ -82,7 +82,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class CallFeature extends AbstractFeature {
 
     private static final String HEX_REGEX = "^[0-9a-fA-F]+$";

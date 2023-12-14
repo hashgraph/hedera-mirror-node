@@ -20,6 +20,7 @@ import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.services.store.models.Account;
@@ -37,40 +38,44 @@ import org.hyperledger.besu.datatypes.Address;
 public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, TokenRelationship> {
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;
-
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<TokenRelationship> get(@NonNull Object key) {
-        final var tokenRelationshipKey = (TokenRelationshipKey) key;
-        return findAccount(tokenRelationshipKey.accountAddress())
-                .flatMap(account -> findToken(tokenRelationshipKey.tokenAddress())
-                        .flatMap(token -> findTokenAccount(token, account)
-                                .filter(AbstractTokenAccount::getAssociated)
-                                .map(tokenAccount -> new TokenRelationship(
-                                        token,
-                                        account,
-                                        tokenAccount.getBalance(),
-                                        TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
-                                        TokenKycStatusEnum.REVOKED != tokenAccount.getKycStatus(),
-                                        false,
-                                        false,
-                                        Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
-                                        0))));
+    public @NonNull Optional<TokenRelationship> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof TokenRelationshipKey tokenRelationshipKey) {
+            return findAccount(tokenRelationshipKey.accountAddress(), timestamp)
+                    .flatMap(account -> findToken(tokenRelationshipKey.tokenAddress(), timestamp)
+                            .flatMap(token -> findTokenAccount(token, account, timestamp)
+                                    .filter(AbstractTokenAccount::getAssociated)
+                                    .map(tokenAccount -> new TokenRelationship(
+                                            token,
+                                            account,
+                                            tokenAccount.getBalance(),
+                                            TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
+                                            TokenKycStatusEnum.REVOKED != tokenAccount.getKycStatus(),
+                                            false,
+                                            false,
+                                            Boolean.TRUE == tokenAccount.getAutomaticAssociation(),
+                                            0))));
+        }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(TokenRelationship.class.getTypeName(), key.getClass().getTypeName()));
     }
 
-    private Optional<Account> findAccount(Address address) {
-        return accountDatabaseAccessor.get(address);
+    private Optional<Account> findAccount(Address address, final Optional<Long> timestamp) {
+        return accountDatabaseAccessor.get(address, timestamp);
     }
 
-    private Optional<Token> findToken(Address address) {
-        return tokenDatabaseAccessor.get(address);
+    private Optional<Token> findToken(Address address, final Optional<Long> timestamp) {
+        return tokenDatabaseAccessor.get(address, timestamp);
     }
 
-    private Optional<TokenAccount> findTokenAccount(Token token, Account account) {
+    private Optional<TokenAccount> findTokenAccount(Token token, Account account, final Optional<Long> timestamp) {
         AbstractTokenAccount.Id id = new AbstractTokenAccount.Id();
         id.setTokenId(EntityIdUtils.entityIdFromId(token.getId()).getId());
         id.setAccountId(EntityIdUtils.entityIdFromId(account.getId()).getId());
-        return tokenAccountRepository.findById(id);
+        return timestamp
+                .map(t -> tokenAccountRepository.findByIdAndTimestamp(id.getAccountId(), id.getTokenId(), t))
+                .orElseGet(() -> tokenAccountRepository.findById(id));
     }
 }

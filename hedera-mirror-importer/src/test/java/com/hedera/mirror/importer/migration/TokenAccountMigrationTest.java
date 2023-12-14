@@ -23,7 +23,7 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import java.io.File;
 import java.util.ArrayList;
@@ -37,7 +37,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -45,10 +44,10 @@ import org.springframework.test.context.TestPropertySource;
 
 @EnabledIfV1
 @Import(DisablePartitionMaintenanceConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.66.0")
-class TokenAccountMigrationTest extends IntegrationTest {
+class TokenAccountMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_SQL =
             """

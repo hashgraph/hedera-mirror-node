@@ -61,7 +61,7 @@ public class PublishScenarioProperties extends ScenarioProperties {
     private TransactionType type;
 
     public PublishScenarioProperties() {
-        getRetry().setMaxAttempts(1L);
+        retry.setMaxAttempts(1L);
     }
 
     @Override

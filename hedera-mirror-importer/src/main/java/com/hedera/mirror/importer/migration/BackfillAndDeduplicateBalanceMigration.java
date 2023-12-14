@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.db.TimePartitionService;
@@ -155,10 +155,13 @@ public class BackfillAndDeduplicateBalanceMigration extends AsyncJavaMigration<L
     @Lazy
     public BackfillAndDeduplicateBalanceMigration(
             DBProperties dbProperties,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             @Owner JdbcTemplate jdbcTemplate,
             TimePartitionService timePartitionService) {
-        super(mirrorProperties.getMigration(), new NamedParameterJdbcTemplate(jdbcTemplate), dbProperties.getSchema());
+        super(
+                importerProperties.getMigration(),
+                new NamedParameterJdbcTemplate(jdbcTemplate),
+                dbProperties.getSchema());
         this.jdbcTemplate = jdbcTemplate;
         this.timePartitionService = timePartitionService;
     }

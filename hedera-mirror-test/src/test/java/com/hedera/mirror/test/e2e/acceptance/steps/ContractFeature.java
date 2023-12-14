@@ -47,14 +47,13 @@ import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class ContractFeature extends AbstractFeature {
     private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
     private static final String GET_SENDER_SELECTOR = "5e01eb5a";

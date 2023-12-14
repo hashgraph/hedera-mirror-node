@@ -16,7 +16,6 @@
 
 package com.hedera.services.fees.calculation.crypto.queries;
 
-import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -45,7 +44,7 @@ public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
     }
 
     @Override
-    public FeeData usageGiven(Query query, Store store, @Nullable Map<String, Object> queryCtx) {
+    public FeeData usageGiven(Query query, @Nullable Map<String, Object> queryCtx) {
         return usageFor(query.getTransactionGetRecord().getHeader().getResponseType());
     }
 

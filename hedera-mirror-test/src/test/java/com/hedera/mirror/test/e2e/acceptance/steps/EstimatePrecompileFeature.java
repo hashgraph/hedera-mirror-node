@@ -134,7 +134,6 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
@@ -172,10 +171,9 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     private static final String HEX_DIGITS = "0123456789abcdef";
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[]{};
@@ -1548,7 +1546,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var encodedData = Strings.encode(ByteBuffer.wrap(data));
         var response = estimateContract(encodedData, contractAddress);
         var estimateGasValue = response.getResultAsNumber().intValue();
-        assertTrue(isWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation));
+        assertWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation);
         return estimateGasValue;
     }
 
@@ -1926,7 +1924,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .build();
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
-        assertTrue(isWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation));
+        assertWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation);
     }
 
     /**

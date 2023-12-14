@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record;
 
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static com.hedera.mirror.importer.config.DateRangeCalculator.DateRangeFilter;
 import static com.hedera.mirror.importer.reader.record.ProtoRecordFileReader.VERSION;
 
 import com.google.common.base.Stopwatch;
@@ -26,7 +26,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -55,7 +55,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
-    private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private final DateRangeCalculator dateRangeCalculator;
 
     // Metrics
     private final Map<Integer, Timer> latencyMetrics;
@@ -70,13 +70,13 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             StreamFileRepository<RecordFile, Long> streamFileRepository,
             RecordItemListener recordItemListener,
             RecordStreamFileListener recordStreamFileListener,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+            DateRangeCalculator dateRangeCalculator) {
         super(meterRegistry, parserProperties, streamFileRepository);
         this.applicationEventPublisher = applicationEventPublisher;
         this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
-        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.dateRangeCalculator = dateRangeCalculator;
 
         // build transaction latency metrics
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
@@ -127,8 +127,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     @Override
     protected void doParse(RecordFile recordFile) {
-        DateRangeFilter dateRangeFilter =
-                mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType());
+        DateRangeFilter dateRangeFilter = dateRangeCalculator.getFilter(parserProperties.getStreamType());
 
         try {
             Flux<RecordItem> recordItems = recordFile.getItems();

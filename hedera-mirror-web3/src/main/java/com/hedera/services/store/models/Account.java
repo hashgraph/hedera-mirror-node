@@ -165,6 +165,34 @@ public class Account extends HederaEvmAccount {
                 0L);
     }
 
+    /**
+     * Create a partial account with only alias, ID and balance values.
+     * Used for treasury accounts as those are the only fields we need.
+     */
+    public Account(ByteString alias, Long entityId, Id id, long balance) {
+        this(
+                alias,
+                entityId,
+                id,
+                0L,
+                balance,
+                false,
+                0L,
+                0L,
+                null,
+                0,
+                new TreeMap<>(),
+                new TreeMap<>(),
+                new TreeSet<>(),
+                0,
+                0,
+                0,
+                0L,
+                false,
+                null,
+                0L);
+    }
+
     public static Account getEmptyAccount() {
         return new Account(0L, Id.DEFAULT, 0L);
     }

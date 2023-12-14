@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.get;
-
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -32,7 +29,6 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.store.models.Account;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -62,7 +58,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Provider<ContractCreationProcessor> contractCreationProcessorProvider,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
@@ -74,7 +70,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 dynamicProperties,
                 gasCalculator,
                 mcps,
-                ccps,
+                contractCreationProcessorProvider,
                 blockMetaSource,
                 operationTracer);
 
@@ -84,11 +80,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     }
 
     public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
-        final long gasPrice = gasPriceTinyBarsGiven(Instant.now(), true);
-
-        final var contractCallContext = ContractCallContext.get();
-        contractCallContext.setCreate(Address.ZERO.equals(params.getReceiver()));
-        contractCallContext.setEstimate(params.isEstimate());
+        final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
         if (params.isEstimate()) {
@@ -100,6 +92,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getSender(),
                 params.getReceiver(),
                 gasPrice,
+                params.isEstimate(),
                 params.isEstimate() ? estimatedGas : params.getGas(),
                 params.getValue(),
                 params.getCallData(),
@@ -108,18 +101,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getReceiver().equals(Address.ZERO));
     }
 
-    @SuppressWarnings("java:S5411")
-    @Override
-    protected HederaFunctionality getFunctionType() {
-        return ContractCallContext.get().isCreate()
-                ? HederaFunctionality.ContractCreate
-                : HederaFunctionality.ContractCall;
-    }
-
     @Override
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
-        if (get().isCreate()) {
+        if (Address.ZERO.equals(to)) {
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
                     .address(to)
@@ -133,7 +118,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0) {
+            if (code == null && value <= 0 && !payload.isEmpty()) {
                 throw new MirrorEvmTransactionException(
                         ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }

@@ -49,6 +49,7 @@ class MirrorEntityAccessTest {
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
     private static final byte[] DATA = BYTES.toArrayUnsafe();
     private static final Address ADDRESS = Address.fromHexString(HEX);
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
     private static final Long ENTITY_ID =
             EntityId.of(ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum()).getId();
@@ -224,7 +225,8 @@ class MirrorEntityAccessTest {
 
     @Test
     void getStorage() {
-        when(contractStateRepository.findStorage(ENTITY_ID, BYTES.toArrayUnsafe()))
+        when(store.getHistoricalTimestamp()).thenReturn(timestamp);
+        when(contractStateRepository.findStorageByBlockTimestamp(ENTITY_ID, BYTES.toArrayUnsafe(), timestamp.get()))
                 .thenReturn(Optional.of(DATA));
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(HEX));

@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
@@ -50,7 +50,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
@@ -61,10 +60,10 @@ import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
 @Import(DisablePartitionMaintenanceConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.89.1")
-class TimePartitionBalanceTablesMigrationTest extends IntegrationTest {
+class TimePartitionBalanceTablesMigrationTest extends ImporterIntegrationTest {
 
     private static final String CLEANUP_SQL =
             """

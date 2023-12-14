@@ -79,12 +79,28 @@ public class CompositeBatchPersister implements BatchPersister {
             throw new UnsupportedOperationException("Object does not support batch insertion: " + domainClass);
         }
 
+        var entityClass = getEntityClass(domainClass);
         Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
+
         if (upsertable != null) {
             UpsertQueryGenerator generator = upsertQueryGeneratorFactory.get(domainClass);
-            return new BatchUpserter(domainClass, dataSource, meterRegistry, properties, generator);
+            return new BatchUpserter(entityClass, dataSource, meterRegistry, properties, generator);
         } else {
-            return new BatchInserter(domainClass, dataSource, meterRegistry, properties);
+            return new BatchInserter(entityClass, dataSource, meterRegistry, properties);
         }
+    }
+
+    // Finds which parent class has the Entity annotation to get an accurate table name
+    private Class<?> getEntityClass(Class<?> domainClass) {
+        if (domainClass == null || domainClass == Object.class) {
+            throw new IllegalStateException("Unable to find Entity annotation");
+        }
+
+        var entity = AnnotationUtils.getAnnotation(domainClass, Entity.class);
+        if (entity != null) {
+            return domainClass;
+        }
+
+        return getEntityClass(domainClass.getSuperclass());
     }
 }

@@ -50,12 +50,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class TopicFeature {
 
     private final AcceptanceTestProperties acceptanceProps;
@@ -213,7 +212,7 @@ public class TopicFeature {
 
     @When("I publish {int} batches of {int} messages every {long} milliseconds")
     @Retryable(
-            value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            retryFor = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     @SuppressWarnings("java:S2925")
@@ -233,7 +232,7 @@ public class TopicFeature {
     }
 
     @Retryable(
-            value = {PrecheckStatusException.class, ReceiptStatusException.class},
+            retryFor = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishTopicMessages(int messageCount) {
@@ -243,7 +242,7 @@ public class TopicFeature {
 
     @When("I publish and verify {int} messages sent")
     @Retryable(
-            value = {AssertionError.class, PrecheckStatusException.class, ReceiptStatusException.class},
+            retryFor = {AssertionError.class, PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void publishAndVerifyTopicMessages(int messageCount) {

@@ -115,7 +115,7 @@ class GetTxnRecordResourceUsageTest {
         final var queryCtx = new HashMap<String, Object>();
         given(usageEstimator.getTransactionRecordQueryFeeMatrices(MISSING_RECORD_STANDIN, ANSWER_ONLY))
                 .willReturn(answerOnlyUsage);
-        final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, store, queryCtx);
+        final var actual = subject.usageGiven(satisfiableAnswerOnlyQuery, queryCtx);
         assertSame(answerOnlyUsage, actual);
     }
 

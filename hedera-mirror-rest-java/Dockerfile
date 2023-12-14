@@ -1,9 +1,9 @@
-FROM eclipse-temurin:17.0.8.1_1-jre-jammy as builder
+FROM eclipse-temurin:21-jre-jammy as builder
 WORKDIR /app
 COPY build/libs/*.jar ./
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM eclipse-temurin:17.0.8.1_1-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80"
 EXPOSE 8084
 HEALTHCHECK --interval=10s --retries=3 --start-period=50s --timeout=2s CMD curl -f http://localhost:8084/actuator/health/liveness
@@ -20,4 +20,4 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*    # install OS updates
 USER 1000:1000
 
-ENTRYPOINT ["java", "org.springframework.boot.loader.JarLauncher"]
+ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

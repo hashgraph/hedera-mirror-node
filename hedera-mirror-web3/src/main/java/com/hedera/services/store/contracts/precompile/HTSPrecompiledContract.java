@@ -16,11 +16,11 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.PrecompileMapper.UNSUPPORTED_ERROR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 
@@ -28,11 +28,11 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.evm.store.contract.precompile.HTSPrecompiledContractAdapter;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
@@ -58,6 +58,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -69,20 +70,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 
 /**
- * This class is a modified thread-safe copy of HTSPrecompiledContract from hedera-services repo. Additionally, it implements an
- * adapter interface which is used by
- * {@link com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract}. In this way once we start
- * consuming libraries like smart-contract-service it would be easier to delete the code base inside com.hedera.services
- * package.
+ * This class is a modified thread-safe copy of HTSPrecompiledContract from hedera-services repo.
  * <p>
  * Differences with the original class: 1. Use abstraction for the state by introducing {@link Store} interface. 2. Use
  * workaround to execute read only precompiles via calling ViewExecutor and RedirectViewExecutors, thus removing the
  * need of having separate precompile classes. 3. All stateful fields are extracted into {@link ContractCallContext} and the class is converted to a singleton bean
  */
-public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
+public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     public static final TupleType redirectType = TupleType.parse("(int32,bytes)");
 
@@ -90,11 +86,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             null, true, MessageFrame.State.COMPLETED_FAILED, Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR));
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
     private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+    private static final String PRECOMPILE_RESULT_IS_NULL = "Precompile result is null";
 
     private final MirrorNodeEvmProperties evmProperties;
     private final EvmInfrastructureFactory infrastructureFactory;
     private final PrecompileMapper precompileMapper;
-    private final EvmHTSPrecompiledContract evmHTSPrecompiledContract;
     private final Store store;
     private final TokenAccessor tokenAccessor;
     private final PrecompilePricingUtils precompilePricingUtils;
@@ -104,14 +100,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             final EvmInfrastructureFactory infrastructureFactory,
             final MirrorNodeEvmProperties evmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
             final Store store,
             final TokenAccessor tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
+        super(infrastructureFactory);
         this.infrastructureFactory = infrastructureFactory;
         this.evmProperties = evmProperties;
         this.precompileMapper = precompileMapper;
-        this.evmHTSPrecompiledContract = evmHTSPrecompiledContract;
         this.store = store;
         this.tokenAccessor = tokenAccessor;
         this.precompilePricingUtils = precompilePricingUtils;
@@ -143,8 +138,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                 return Pair.of(defaultGas(), null);
             }
 
-            return evmHTSPrecompiledContract.computeCosted(
-                    input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
+            return super.computeCosted(input, frame, precompilePricingUtils::computeViewFunctionGas, tokenAccessor);
         }
 
         /* Workaround allowing execution of read only precompile methods in a dynamic context (non pure/view).
@@ -155,9 +149,11 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         }
 
         final var result = computePrecompile(input, frame);
-        return Pair.of(ContractCallContext.get().getGasRequirement(), result.getOutput());
+        final var precompileContext = precompileContext(frame);
+        return Pair.of(precompileContext.getGasRequirement(), result.getOutput());
     }
 
+    @Override
     @NonNull
     public PrecompileContractResult computePrecompile(final Bytes input, @NonNull final MessageFrame frame) {
         if (unqualifiedDelegateDetected(frame)) {
@@ -165,8 +161,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
             return INVALID_DELEGATE;
         }
         prepareFields(frame);
+        final var precompileContext = precompileContext(frame);
         try {
-            prepareComputation(input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased);
+            prepareComputation(
+                    input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased, precompileContext);
         } catch (final NoSuchElementException e) {
             final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
@@ -175,9 +173,10 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
 
         final var now = frame.getBlockValues().getTimestamp();
 
-        final var contractCallContext = ContractCallContext.get();
-        contractCallContext.setGasRequirement(
-                contractCallContext.getPrecompile().getGasRequirement(now, contractCallContext.getTransactionBody()));
+        precompileContext.setGasRequirement(precompileContext
+                .getPrecompile()
+                .getGasRequirement(
+                        now, precompileContext.getTransactionBody(), precompileContext.getSenderAddressAsProto()));
         final Bytes result = computeInternal(frame);
 
         return result == null
@@ -212,25 +211,25 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
     }
 
     protected Bytes computeInternal(final MessageFrame frame) {
-        ContractCallContext contractCallContext = ContractCallContext.get();
+        final var precompileContext = precompileContext(frame);
         Bytes result;
-        final var precompile = contractCallContext.getPrecompile();
+        final var precompile = precompileContext.getPrecompile();
         try {
-            precompile.handleSentHbars(frame, contractCallContext.getTransactionBody());
-            validateTrue(frame.getRemainingGas() >= contractCallContext.getGasRequirement(), INSUFFICIENT_GAS);
+            precompile.handleSentHbars(frame, precompileContext.getTransactionBody());
+            validateTrue(frame.getRemainingGas() >= precompileContext.getGasRequirement(), INSUFFICIENT_GAS);
 
             // if we have top level token call with estimate gas and missing sender - return empty result
             // N.B. this should be done for precompiles that depend on the sender address
-            if (Address.ZERO.equals(contractCallContext.getSenderAddress())
-                    && contractCallContext.isEstimate()
+            if (Address.ZERO.equals(precompileContext.getSenderAddress())
+                    && precompileContext.isEstimate()
                     && (precompile instanceof ERCTransferPrecompile
                             || precompile instanceof ApprovePrecompile
                             || precompile instanceof AssociatePrecompile
                             || precompile instanceof DissociatePrecompile)) {
                 return Bytes.EMPTY;
             }
-            final var precompileResultWrapper = precompile.run(
-                    frame, contractCallContext.getTransactionBody().build());
+            final var precompileResultWrapper =
+                    precompile.run(frame, precompileContext.getTransactionBody().build());
 
             result = precompile.getSuccessResultFor(precompileResultWrapper);
 
@@ -258,12 +257,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return result;
     }
 
-    void prepareComputation(Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    void prepareComputation(
+            Bytes input, final UnaryOperator<byte[]> aliasResolver, final PrecompileContext precompileContext) {
         final int functionId = input.getInt(0);
 
-        var contractCallContext = ContractCallContext.get();
-        var senderAddress = contractCallContext.getSenderAddress();
+        var senderAddress = precompileContext.getSenderAddress();
         Precompile precompile;
+        TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
         switch (functionId) {
             case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                 final var target = getRedirectTarget(input);
@@ -304,40 +304,40 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                         }
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setTransactionBody(precompile.body(
+                        transactionBodyBuilder = precompile.body(
                                 input,
                                 aliasResolver,
-                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken)));
+                                new ApproveParams(target.token(), senderAddress, ownerId, isFungibleToken));
                     }
                     case AbiConstants.ABI_ID_ERC_SET_APPROVAL_FOR_ALL -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setTransactionBody(
-                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress)));
+                        transactionBodyBuilder =
+                                precompile.body(input, aliasResolver, new ApproveForAllParams(tokenId, senderAddress));
                     }
                     case AbiConstants.ABI_ID_ERC_TRANSFER, AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
-                        contractCallContext.setTransactionBody(precompile.body(
+                        transactionBodyBuilder = precompile.body(
                                 input.slice(24),
                                 aliasResolver,
-                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId)));
+                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
                     }
                     default -> {
                         precompile =
                                 precompileMapper.lookup(nestedFunctionSelector).orElseThrow();
                         if (AbiConstants.ABI_ID_HRC_ASSOCIATE == nestedFunctionSelector
                                 || AbiConstants.ABI_ID_HRC_DISSOCIATE == nestedFunctionSelector) {
-                            contractCallContext.setTransactionBody(
-                                    precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress)));
+                            transactionBodyBuilder =
+                                    precompile.body(input, aliasResolver, new HrcParams(tokenId, senderAddress));
                         }
                     }
                 }
             }
             case AbiConstants.ABI_ID_APPROVE -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, null, true));
             }
             case AbiConstants.ABI_ID_APPROVE_NFT -> {
                 final var approveDecodedNftInfo =
@@ -353,13 +353,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                                 OnMissing.THROW)
                         .getOwner();
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ApproveParams(Address.ZERO, senderAddress, ownerId, false));
             }
             case AbiConstants.ABI_ID_SET_APPROVAL_FOR_ALL -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress)));
+                transactionBodyBuilder =
+                        precompile.body(input, aliasResolver, new ApproveForAllParams(null, senderAddress));
             }
             case AbiConstants.ABI_ID_TRANSFER_TOKENS,
                     AbiConstants.ABI_ID_TRANSFER_TOKEN,
@@ -368,13 +368,13 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER,
                     AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists)));
+                transactionBodyBuilder =
+                        precompile.body(input, aliasResolver, new TransferParams(functionId, store::exists));
             }
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(precompile.body(
-                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null)));
+                transactionBodyBuilder = precompile.body(
+                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
             }
             case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
                     AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,
@@ -389,25 +389,25 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2,
                     AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3 -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(precompile.body(
+                transactionBodyBuilder = precompile.body(
                         input,
                         aliasResolver,
-                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW))));
+                        new CreateParams(functionId, store.getAccount(senderAddress, OnMissing.DONT_THROW)));
             }
             default -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
-                contractCallContext.setTransactionBody(
-                        precompile.body(input, aliasResolver, new FunctionParam(functionId)));
+                transactionBodyBuilder = precompile.body(input, aliasResolver, new FunctionParam(functionId));
             }
         }
-        contractCallContext.setPrecompile(precompile);
-        contractCallContext.setGasRequirement(defaultGas());
+        precompileContext.setTransactionBody(transactionBodyBuilder);
+        precompileContext.setPrecompile(precompile);
+        precompileContext.setGasRequirement(defaultGas());
     }
 
     void prepareFields(final MessageFrame frame) {
         final var unaliasedSenderAddress = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())
                 .permissivelyUnaliased(frame.getSenderAddress().toArray());
-        ContractCallContext.get().setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
+        precompileContext(frame).setSenderAddress(Address.wrap(Bytes.of(unaliasedSenderAddress)));
     }
 
     private Pair<Long, Bytes> handleReadsFromDynamicContext(Bytes input, @NonNull final MessageFrame frame) {
@@ -446,7 +446,7 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         final var result = executor.computeCosted();
 
         if (result.getRight() == null) {
-            throw new UnsupportedOperationException(UNSUPPORTED_ERROR);
+            throw new InvalidTransactionException(PRECOMPILE_RESULT_IS_NULL, FAIL_INVALID);
         }
 
         return result;
@@ -483,8 +483,22 @@ public class HTSPrecompiledContract implements HTSPrecompiledContractAdapter {
         return evmProperties.getHtsDefaultGasCost();
     }
 
+    private static PrecompileContext precompileContext(@NonNull final MessageFrame frame) {
+        final var precompileContext = initialFrameOf(frame).getContextVariable(PRECOMPILE_CONTEXT);
+        if (precompileContext == null) {
+            throw new InvalidTransactionException("Frame is missing precompile context", FAIL_INVALID);
+        } else {
+            return (PrecompileContext) precompileContext;
+        }
+    }
+
+    private static @NonNull MessageFrame initialFrameOf(@NonNull final MessageFrame frame) {
+        final var stack = frame.getMessageFrameStack();
+        return stack.isEmpty() ? frame : stack.getLast();
+    }
+
     @VisibleForTesting
-    Precompile getPrecompile() {
-        return ContractCallContext.get().getPrecompile();
+    Precompile getPrecompile(final MessageFrame frame) {
+        return precompileContext(frame).getPrecompile();
     }
 }

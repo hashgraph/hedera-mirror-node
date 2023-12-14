@@ -19,11 +19,11 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class TokenAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
 
     private final TokenAllowanceDatabaseAccessor tokenAllowanceDatabaseAccessor;
@@ -32,7 +32,17 @@ class TokenAllowanceDatabaseAccessorTest extends Web3IntegrationTest {
     void testGet() {
         final var tokenAllowance = domainBuilder.tokenAllowance().persist();
 
-        assertThat(tokenAllowanceDatabaseAccessor.get(tokenAllowance.getId()))
+        assertThat(tokenAllowanceDatabaseAccessor.get(tokenAllowance.getId(), Optional.empty()))
+                .get()
+                .isEqualTo(tokenAllowance);
+    }
+
+    @Test
+    void testGetHistorical() {
+        final var tokenAllowance = domainBuilder.tokenAllowance().persist();
+
+        assertThat(tokenAllowanceDatabaseAccessor.get(
+                        tokenAllowance.getId(), Optional.of(tokenAllowance.getTimestampLower())))
                 .get()
                 .isEqualTo(tokenAllowance);
     }
