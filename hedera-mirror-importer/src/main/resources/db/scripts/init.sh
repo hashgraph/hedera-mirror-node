@@ -46,7 +46,9 @@ psql -d "user=postgres connect_timeout=3" \
   --set "rosettaPassword=${ROSETTA_PASSWORD:-mirror_rosetta_pass}" \
   --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" \
   --set "web3Password=${WEB3_PASSWORD:-mirror_web3_pass}" \
-  --set "web3Username=${WEB3_USERNAME:-mirror_web3}" <<__SQL__
+  --set "web3Username=${WEB3_USERNAME:-mirror_web3}" \
+  --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA}" \
+  --set "tempSchemaAdminRole=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA}_admin"  <<__SQL__
 
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
@@ -58,6 +60,7 @@ create extension if not exists pg_stat_statements;
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
+create role :tempSchemaAdminRole in role readwrite;
 
 -- Create users
 create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
@@ -77,19 +80,28 @@ create schema if not exists :dbSchema authorization :ownerUsername;
 grant usage on schema :dbSchema to public;
 revoke create on schema :dbSchema from public;
 
+-- Create temp table schema
+create schema if not exists :tempSchema authorization :tempSchemaAdminRole;
+grant usage on schema :tempSchema to public;
+revoke create on schema :tempSchema from public;
+
 -- Grant readonly privileges
 grant connect on database :dbName to readonly;
-grant select on all tables in schema :dbSchema to readonly;
-grant select on all sequences in schema :dbSchema to readonly;
-grant usage on schema :dbSchema to readonly;
-alter default privileges in schema :dbSchema grant select on tables to readonly;
-alter default privileges in schema :dbSchema grant select on sequences to readonly;
+grant select on all tables in schema :dbSchema, :tempSchema to readonly;
+grant select on all sequences in schema :dbSchema, :tempSchema to readonly;
+grant usage on schema :dbSchema, :tempSchema to readonly;
+alter default privileges in schema :dbSchema, :tempSchema grant select on tables to readonly;
+alter default privileges in schema :dbSchema, :tempSchema grant select on sequences to readonly;
 
 -- Grant readwrite privileges
-grant insert, update, delete on all tables in schema :dbSchema to readwrite;
-grant usage on all sequences in schema :dbSchema to readwrite;
-alter default privileges in schema :dbSchema grant insert, update, delete on tables to readwrite;
-alter default privileges in schema :dbSchema grant usage on sequences to readwrite;
+grant insert, update, delete on all tables in schema :dbSchema, :tempSchema to readwrite;
+grant usage on all sequences in schema :dbSchema, :tempSchema to readwrite;
+alter default privileges in schema :dbSchema, :tempSchema grant insert, update, delete on tables to readwrite;
+alter default privileges in schema :dbSchema, :tempSchema grant usage on sequences to readwrite;
+
+-- Grant temp schema admin privileges
+grant :tempSchemaAdminRole to :ownerUsername;
+grant :tempSchemaAdminRole to :importerUsername;
 
 -- Partition privileges
 \connect :dbName postgres
@@ -97,7 +109,7 @@ ${DB_SPECIFIC_EXTENSION_SQL}
 
 -- Alter search path
 \connect postgres postgres
-alter database :dbName set search_path = :dbSchema, public;
+alter database :dbName set search_path = :dbSchema, public, :tempSchema;
 __SQL__
 
 mv "${PGHBA}.bak" "${PGHBA}"
