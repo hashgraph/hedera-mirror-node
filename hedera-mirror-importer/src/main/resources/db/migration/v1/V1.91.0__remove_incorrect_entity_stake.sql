@@ -15,7 +15,7 @@ begin
 
   raise notice 'last_known_good_timestamp: %', last_known_good_timestamp;
 
-  select 1
+  perform 1
   from entity_stake_history
   where id = 800 and timestamp_range @> last_known_good_timestamp;
   if not found then

@@ -47,10 +47,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.support.TransactionOperations;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     private static final String[] ENTITY_STATE_START_FIELDS =
@@ -108,16 +109,6 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.deleted(true).timestampRange(Range.atLeast(nodeStakeTimestamp - 3)))
                 .persist(); // deleted
-        // account with balance deduplicated
-        var account5 = domainBuilder
-                .entity()
-                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
-                .persist();
-        //        // account with balance deduplicated and balance changes at multiple balance snapshot timestamps
-        //        var account6 = domainBuilder
-        //                .entity()
-        //                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
-        //                .persist();
         // entity created after node stake timestamp will not appear in entity_state_start
         domainBuilder
                 .entity()
@@ -137,10 +128,15 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
 
         long balanceTimestamp = nodeStakeTimestamp - 1000L;
-        long deduplicatedBalanceTimestamp = balanceTimestamp - 2678299999999999L;
+        long previousBalanceTimestamp = balanceTimestamp - 1000L;
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(50000L).id(new AccountBalance.Id(previousBalanceTimestamp, treasury.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -148,35 +144,24 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(200L).id(new AccountBalance.Id(balanceTimestamp, account2.toEntityId())))
+                .customize(ab ->
+                        ab.balance(80L).id(new AccountBalance.Id(previousBalanceTimestamp, account1.toEntityId())))
                 .persist();
+        // These entities' balance info is deduped, so there is only data at previousBalanceTimestamp
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(400L).id(new AccountBalance.Id(balanceTimestamp, account4.toEntityId())))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(40000L)
-                        .id(new AccountBalance.Id(deduplicatedBalanceTimestamp, treasury.toEntityId())))
+                .customize(ab ->
+                        ab.balance(200L).id(new AccountBalance.Id(previousBalanceTimestamp, account2.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab ->
-                        ab.balance(501L).id(new AccountBalance.Id(deduplicatedBalanceTimestamp, account5.toEntityId())))
+                        ab.balance(400L).id(new AccountBalance.Id(previousBalanceTimestamp, account4.toEntityId())))
                 .persist();
-        //        domainBuilder
-        //                .accountBalance()
-        //                .customize(ab -> ab.balance(600L).id(new AccountBalance.Id(deduplicatedBalanceTimestamp,
-        // account6.toEntityId())))
-        //                .persist();
-        //        domainBuilder
-        //                .accountBalance()
-        //                .customize(ab -> ab.balance(601L).id(new AccountBalance.Id(balanceTimestamp,
-        // account6.toEntityId())))
-        //                .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(500L).id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
+                .customize(ab ->
+                        ab.balance(500L).id(new AccountBalance.Id(previousBalanceTimestamp, contract.toEntityId())))
                 .persist();
 
         persistCryptoTransfer(20L, balanceTimestamp, account1.getId());
@@ -194,8 +179,6 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .stakedAccountId(0L)
                 .stakedNodeId(3L)
                 .build();
-        var expectedAccount5 =
-                account5.toBuilder().balance(501L).stakedAccountId(0L).build();
         var expectedContract = contract.toBuilder()
                 .balance(500L)
                 .stakedAccountId(0L)
@@ -224,8 +207,6 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                     expectedAccount1,
                     expectedAccount2,
                     expectedAccount3,
-                    expectedAccount5,
-                    // expectedAccount6,
                     expectedContract,
                     expectedStackingRewardAccount,
                     expectedTreasury));
@@ -265,8 +246,8 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         long balanceTimestamp = timestamp - 1000L;
         domainBuilder
-                .accountBalanceFile()
-                .customize(abf -> abf.consensusTimestamp(balanceTimestamp))
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(balanceTimestamp, EntityId.of(TREASURY))))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -313,13 +294,14 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.timestampRange(Range.atLeast(balanceTimestamp - 1000L)))
                 .persist();
-        domainBuilder
-                .accountBalanceFile()
-                .customize(abf -> abf.consensusTimestamp(balanceTimestamp))
-                .persist();
+        var treasury = domainBuilder.entity(TREASURY, balanceTimestamp - 9000).persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(100L).id(new AccountBalance.Id(balanceTimestamp, account.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(200L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
                 .persist();
 
         transactionOperations.executeWithoutResult(s -> {
@@ -399,29 +381,30 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
 
         // Account balance and crypto transfer before nodeStakeTimestamp
-        long accountBalanceTimestamp = nodeStakeTimestamp - 500;
+        long balanceTimestamp = nodeStakeTimestamp - 500;
+        long previousBalanceTimestamp = balanceTimestamp - 500;
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(5000).id(new Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(5000).id(new Id(previousBalanceTimestamp, treasury.toEntityId())))
+                .persist();
+        // Deduped balance info
         domainBuilder
                 .accountBalance()
                 .customize(
-                        ab -> ab.balance(1000).id(new Id(accountBalanceTimestamp, stakingRewardAccount.toEntityId())))
+                        ab -> ab.balance(1000).id(new Id(previousBalanceTimestamp, stakingRewardAccount.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(5000).id(new Id(accountBalanceTimestamp, treasury.toEntityId())))
+                .customize(ab -> ab.balance(1500).id(new Id(previousBalanceTimestamp, aliceEntityId)))
                 .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(1500).id(new Id(accountBalanceTimestamp, aliceEntityId)))
-                .persist();
-        persistCryptoTransfer(150, accountBalanceTimestamp + 10, STAKING_REWARD_ACCOUNT);
+        persistCryptoTransfer(150, balanceTimestamp + 10, STAKING_REWARD_ACCOUNT);
 
         // Account balance before nextNodeStakeTimestamp
         long accountBalanceTimestampBeforeNextNodeStake = nextNodeStakeTimestamp - 700;
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(2000)
-                        .id(new Id(accountBalanceTimestampBeforeNextNodeStake, stakingRewardAccount.toEntityId())))
-                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab ->
@@ -429,7 +412,20 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(1700).id(new Id(accountBalanceTimestampBeforeNextNodeStake, aliceEntityId)))
+                .customize(ab -> ab.balance(5000)
+                        .id(new Id(accountBalanceTimestampBeforeNextNodeStake - 100, treasury.toEntityId())))
+                .persist();
+        // Deduped balance info
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(2000)
+                        .id(new Id(
+                                accountBalanceTimestampBeforeNextNodeStake - 100, stakingRewardAccount.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(1700).id(new Id(accountBalanceTimestampBeforeNextNodeStake - 100, aliceEntityId)))
                 .persist();
 
         var expectedAlice = alice.toBuilder()
@@ -606,6 +602,16 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         // account balance
         long balanceTimestamp = nodeStake.getConsensusTimestamp() - 1000L;
+        long previousBalanceTimestamp = balanceTimestamp - 1000L;
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(5000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(5000L).id(new AccountBalance.Id(previousBalanceTimestamp, treasury.toEntityId())))
+                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(100L).id(new AccountBalance.Id(balanceTimestamp, entity1.toEntityId())))
@@ -626,31 +632,26 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .accountBalance()
                 .customize(ab -> ab.balance(500L).id(new AccountBalance.Id(balanceTimestamp, entity5.toEntityId())))
                 .persist();
+        // Deduped
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(600L).id(new AccountBalance.Id(balanceTimestamp, entity6.toEntityId())))
+                .customize(ab ->
+                        ab.balance(600L).id(new AccountBalance.Id(previousBalanceTimestamp, entity6.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(800L).id(new AccountBalance.Id(balanceTimestamp, entity8.toEntityId())))
+                .customize(ab ->
+                        ab.balance(800L).id(new AccountBalance.Id(previousBalanceTimestamp, entity8.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(900L).id(new AccountBalance.Id(balanceTimestamp, entity9.toEntityId())))
+                .customize(ab ->
+                        ab.balance(900L).id(new AccountBalance.Id(previousBalanceTimestamp, entity9.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(1000L).id(new AccountBalance.Id(balanceTimestamp, entity10.toEntityId())))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(5000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
-                .persist();
-        domainBuilder
-                .recordFile()
-                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L)
-                        .consensusEnd(balanceTimestamp + 100L)
-                        .hapiVersionMinor(25))
+                .customize(ab ->
+                        ab.balance(1000L).id(new AccountBalance.Id(previousBalanceTimestamp, entity10.toEntityId())))
                 .persist();
 
         // existing entity stake, note entity4 has been deleted, its existing entity stake will no longer update
@@ -712,23 +713,24 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity(TREASURY, nodeStake.getConsensusTimestamp() - 20)
                 .persist();
         long balanceTimestamp = nodeStake.getConsensusTimestamp() - 1000L;
+        long previousBalanceTimestamp = balanceTimestamp - 1000L;
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(5000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(5000L).id(new AccountBalance.Id(previousBalanceTimestamp, treasury.toEntityId())))
+                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(0L).id(new AccountBalance.Id(balanceTimestamp, account.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(5L).id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(5000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
-                .persist();
-        domainBuilder
-                .recordFile()
-                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L)
-                        .consensusEnd(balanceTimestamp + 100L)
-                        .hapiVersionMinor(25))
+                .customize(
+                        ab -> ab.balance(5L).id(new AccountBalance.Id(previousBalanceTimestamp, contract.toEntityId())))
                 .persist();
         var expectedEntityStakes = List.of(
                 fromEntity(account, nodeStake, 0L, 0L),
@@ -813,9 +815,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .nodeId(2L)
                         .rewardRate(0L))
                 .persist();
+        var treasury = EntityId.of(TREASURY);
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(nodeStakeTimestamp - 1000L, EntityId.of(2L))))
+                .customize(ab -> ab.id(new AccountBalance.Id(nodeStakeTimestamp - 1000, EntityId.of(TREASURY))))
                 .persist();
         // The following two are old NodeStake, which shouldn't be used in pending reward calculation
         domainBuilder
@@ -907,19 +910,25 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .id(TREASURY)
                         .timestampRange(Range.atLeast(previousNodeStakeTimestamp)))
                 .persist();
-        long balanceTimestamp = nodeStakeTimestamp - 2000L;
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(accountStake.getStakeTotalStart())
-                        .id(new Id(balanceTimestamp, account.toEntityId())))
-                .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.id(new Id(balanceTimestamp, stakingRewardAccount.toEntityId())))
-                .persist();
+        long balanceTimestamp = nodeStakeTimestamp - 2000;
+        long previousBalanceTimestamp = balanceTimestamp - 2000;
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.id(new Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, treasury.toEntityId())))
+                .persist();
+        // Deduped
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(accountStake.getStakeTotalStart())
+                        .id(new Id(previousBalanceTimestamp, account.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, stakingRewardAccount.toEntityId())))
                 .persist();
         var expectedAccountStake = fromEntity(account, nodeStake, 0, accountStake.getStakeTotalStart());
         expectedAccountStake.setPendingReward(
@@ -949,7 +958,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
     void save() {
         var entityStake = domainBuilder.entityStake().get();
         entityStakeRepository.save(entityStake);
-        assertThat(entityStakeRepository.findById(entityStake.getId())).get().isEqualTo(entityStake);
+        assertThat(entityStakeRepository.findById(entityStake.getId())).contains(entityStake);
     }
 
     private void assertEntityStartStart(List<Entity> expected) {
