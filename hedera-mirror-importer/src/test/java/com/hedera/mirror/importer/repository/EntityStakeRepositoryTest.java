@@ -108,6 +108,16 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.deleted(true).timestampRange(Range.atLeast(nodeStakeTimestamp - 3)))
                 .persist(); // deleted
+        // account with balance deduplicated
+        var account5 = domainBuilder
+                .entity()
+                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
+                .persist();
+        //        // account with balance deduplicated and balance changes at multiple balance snapshot timestamps
+        //        var account6 = domainBuilder
+        //                .entity()
+        //                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
+        //                .persist();
         // entity created after node stake timestamp will not appear in entity_state_start
         domainBuilder
                 .entity()
@@ -127,6 +137,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
 
         long balanceTimestamp = nodeStakeTimestamp - 1000L;
+        long deduplicatedBalanceTimestamp = balanceTimestamp - 2678299999999999L;
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
@@ -143,6 +154,26 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .accountBalance()
                 .customize(ab -> ab.balance(400L).id(new AccountBalance.Id(balanceTimestamp, account4.toEntityId())))
                 .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(40000L)
+                        .id(new AccountBalance.Id(deduplicatedBalanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(501L).id(new AccountBalance.Id(deduplicatedBalanceTimestamp, account5.toEntityId())))
+                .persist();
+        //        domainBuilder
+        //                .accountBalance()
+        //                .customize(ab -> ab.balance(600L).id(new AccountBalance.Id(deduplicatedBalanceTimestamp,
+        // account6.toEntityId())))
+        //                .persist();
+        //        domainBuilder
+        //                .accountBalance()
+        //                .customize(ab -> ab.balance(601L).id(new AccountBalance.Id(balanceTimestamp,
+        // account6.toEntityId())))
+        //                .persist();
         domainBuilder
                 .accountBalance()
                 .customize(ab -> ab.balance(500L).id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
@@ -163,6 +194,8 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .stakedAccountId(0L)
                 .stakedNodeId(3L)
                 .build();
+        var expectedAccount5 =
+                account5.toBuilder().balance(501L).stakedAccountId(0L).build();
         var expectedContract = contract.toBuilder()
                 .balance(500L)
                 .stakedAccountId(0L)
@@ -191,6 +224,8 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                     expectedAccount1,
                     expectedAccount2,
                     expectedAccount3,
+                    expectedAccount5,
+                    // expectedAccount6,
                     expectedContract,
                     expectedStackingRewardAccount,
                     expectedTreasury));
