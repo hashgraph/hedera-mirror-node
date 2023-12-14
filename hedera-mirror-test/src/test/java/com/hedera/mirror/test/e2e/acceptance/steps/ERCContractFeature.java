@@ -329,7 +329,9 @@ public class ERCContractFeature extends AbstractFeature {
     @Then(
             "I call the erc contract via the mirror node REST API for token isApprovedForAll with response true with alias accounts")
     public void isApprovedForAllWithAliasSecondContractCall() {
-        var data = encodeData(
+        var getIsApproveForAllResponse = callContract(
+                true,
+                StringUtils.EMPTY,
                 ERC,
                 IS_APPROVED_FOR_ALL_SELECTOR,
                 asAddress(nonFungibleTokenId),
