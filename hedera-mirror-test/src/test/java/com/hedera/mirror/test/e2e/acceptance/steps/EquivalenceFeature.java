@@ -79,6 +79,7 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_SIGNATURE = "INVALID_SIGNATURE";
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
+    private static final String CONTRACT_REVERTED = "CONTRACT_REVERT_EXECUTED";
     private static final String INVALID_RECEIVING_NODE_ACCOUNT = "INVALID_RECEIVING_NODE_ACCOUNT";
     private static final String INVALID_ALIAS_KEY = "INVALID_ALIAS_KEY";
     private static final String INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE = "INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE";
@@ -441,9 +442,17 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addBytes(new byte[0]);
         if (amountType.equals("with")) {
             var result = executeContractCallTransaction(
-                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(123L));
+                    deployedEquivalenceCall, "makeCallWithAmountRevert", parameters, Hbar.fromTinybars(123L));
+            if (payable.equals("payable")){
+                assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, result);
+            }
+            else {
+                var status = extractStatus(result);
+                assertEquals(CONTRACT_REVERTED, status);
+            }
         } else {
             var result = executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, result);
         }
     }
 
