@@ -78,8 +78,6 @@ import java.util.List;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -272,14 +270,6 @@ public class CallFeature extends AbstractFeature {
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft);
-    }
-
-    @RetryAsserts
-    @Given("I verify the precompile contract bytecode is deployed")
-    public void contractDeployed() {
-        var response = mirrorClient.getContractInfo(precompileContractAddress);
-        assertThat(response.getBytecode()).isNotBlank();
-        assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     @RetryAsserts
