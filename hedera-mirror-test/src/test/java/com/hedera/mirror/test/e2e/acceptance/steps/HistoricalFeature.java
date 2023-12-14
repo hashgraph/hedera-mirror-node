@@ -34,6 +34,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.Cont
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -49,6 +50,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import io.cucumber.java.en.Given;
@@ -59,6 +61,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -115,9 +118,18 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
     }
 
-    @Given("I create {string} token")
-    public void createFungibleToken(String token) {
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(token));
+    @Given("I create fungible token")
+    public void createFungibleToken() {
+        var tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_HISTORICAL);
+        if (tokenResponse.response() != null) {
+            networkTransactionResponse = tokenResponse.response();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+        }
+    }
+
+    @Given("I create non-fungible token")
+    public void createNonFungibleToken() {
+        var tokenResponse = tokenClient.getToken(TokenNameEnum.NFT_HISTORICAL);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -126,7 +138,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
     @Then("I successfully update the contract storage and get the initial value via historical data")
     public void getHistoricalContractStorage() throws InterruptedException {
-        waitForBlocks(1);
+        //        waitForBlocks(1);
         var data = encodeData(ESTIMATE_GAS, GET_COUNTER);
         var initialResponse = callContract(data, estimateContractSolidityAddress);
         // the block number where contract storage variable is still with initial value
@@ -138,7 +150,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         executeContractCallTransaction(deployedEstimateContract.contractId(), "updateCounter", parameters, null);
 
         var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress);
-        //        assertEquals(response.getResultAsNumber(), initialResponse.getResultAsNumber());
+        assertEquals(initialResponse.getResultAsNumber(), response.getResultAsNumber());
     }
 
     @Then("I successfully update the balance of an account and get the initial balance via historical data")
@@ -147,17 +159,18 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
+        networkTransactionResponse =
+                accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
         var initialResponse =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForBlocks(2);
-        var now = getLastBlockNumber();
         networkTransactionResponse =
-                accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000));
+                accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress)
                 .getResultAsNumber();
-        //        assertEquals(response, initialResponse);
+        assertEquals(initialResponse, response);
     }
 
     @Then("I verify that historical data for negative block returns bad request")
@@ -176,7 +189,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         var currentBlock = getLastBlockNumber();
-        assertEthCallReturnsBadRequest(currentBlock+"0", data, estimateContractSolidityAddress);
+        assertEthCallReturnsBadRequest(currentBlock + "0", data, estimateContractSolidityAddress);
     }
 
     @Then("I verify that historical data for {string} block is treated as latest")
@@ -204,7 +217,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var blockAfterDeletion = getLastBlockNumber();
         waitForBlocks(2);
         var response = callContract(blockAfterDeletion, data, estimateContractSolidityAddress);
-        var test = "tes";
         assertEquals(response.getResultAsNumber().intValue(), 0);
     }
 
@@ -213,12 +225,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFORMATION, asAddress(tokenId));
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
-        log.info("data:{}, contract:{}", data, precompileContractSolidityAddress);
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, precompileContractSolidityAddress);
         var initialInfo = getTokenInfo(response);
@@ -227,9 +233,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        // var check = getTokenInfo(callContract(data, precompileContractSolidityAddress)); //delete
-        // var afterSymbol = getTokenInfo(callContract(initialBlockNumber, data, estimateContractSolidityAddress));
-        // assertEquals(initialInfo, afterSymbol);
+        var afterSymbol = getTokenInfo(callContract(initialBlockNumber, data, precompileContractSolidityAddress));
+        assertEquals(initialInfo, afterSymbol);
     }
 
     @Then("I verify that historical data for {string} is returned via balanceOf")
@@ -249,9 +254,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        //        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        //        var balanceOfHistorical = historicalResponse.getResultAsNumber();
-        // assertEquals(initialBalance, balanceOfHistorical);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
+        assertEquals(initialBalance, balanceOfHistorical);
     }
 
     @Then("I verify that historical data for {string} is returned via balanceOf by direct call")
@@ -271,9 +276,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        //        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-        //        var balanceOfHistorical = historicalResponse.getResultAsNumber();
-        // assertEquals(initialBalance, balanceOfHistorical);
+        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
+        assertEquals(initialBalance, balanceOfHistorical);
     }
 
     @Then("I verify historical data for {string} is returned for allowance")
@@ -288,15 +293,17 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 100L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        //        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
-        //        var historicalAllowance = historicalResponse.getResultAsNumber();
-        //        assertEquals(initialAllowance, historicalAllowance);
+        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
+        var historicalAllowance = historicalResponse.getResultAsNumber();
+        assertEquals(initialAllowance, historicalAllowance);
     }
 
     @Then("I verify historical data for {string} is returned for getApproved")
     public void getHistoricalDataForGetApproved(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
-          var nftId = new NftId(tokenId, 1L);
+        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var initialBlockNumber = getLastBlockNumber();
@@ -306,31 +313,32 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         waitForBlocks(2);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-//        var historicalResponse = callContract(initialBlockNumber, data, estimateContractSolidityAddress);
-//        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
-//        assertEquals(initialApprovedAddress, historicalApprovedAddress);
+        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
+        assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
     @Then("I verify historical data for {string} is returned for ERC allowance")
     public void getHistoricalDataForERCAllowance(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
         var initialBlockNumber = getLastBlockNumber();
-        var data = encodeData(
-                ERC, ERC_ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
+        var data = encodeData(ERC, ERC_ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, ercContractSolidityAddress);
         var initialAllowance = response.getResultAsNumber();
         waitForBlocks(2);
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 150L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        //        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        //        var historicalAllowance = historicalResponse.getResultAsNumber();
-        //        assertEquals(initialAllowance, historicalAllowance);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var historicalAllowance = historicalResponse.getResultAsNumber();
+        assertEquals(initialAllowance, historicalAllowance);
     }
 
     @Then("I verify historical data for {string} is returned for ERC getApproved")
     public void getHistoricalDataForERCGetApproved(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -341,9 +349,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         waitForBlocks(2);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-//        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-//        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
-//        assertEquals(initialApprovedAddress, historicalApprovedAddress);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
+        assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
     @Then("I verify historical data for {string} is returned for allowance by direct call")
@@ -357,28 +365,29 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         waitForBlocks(2);
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 200L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var test =  callContract(data, tokenId.toSolidityAddress()).getResultAsNumber();
-        //        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-        //        var historicalAllowance = historicalResponse.getResultAsNumber();
-        //        assertEquals(initialAllowance, historicalAllowance);
+        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
+        var historicalAllowance = historicalResponse.getResultAsNumber();
+        assertEquals(initialAllowance, historicalAllowance);
     }
 
     @Then("I verify historical data for {string} is returned for getApproved direct call")
     public void getHistoricalDataForGetApprovedDirectCall(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var initialBlockNumber = getLastBlockNumber();
-        var data = encodeData(GET_APPROVED_DIRECT, asAddress(tokenId), new BigInteger("1"));
+        var data = encodeData(GET_APPROVED_DIRECT, new BigInteger("1"));
         var response = callContract(data, tokenId.toSolidityAddress());
         var initialApprovedAddress = response.getResultAsAddress();
         waitForBlocks(2);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-//        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-//        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
-//        assertEquals(initialApprovedAddress, historicalApprovedAddress);
+        var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
+        assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
     private String getLastBlockNumber() {
@@ -441,6 +450,19 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         return nestedTuple.get(1);
     }
 
+    protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .block(block)
+                .data(data)
+                .to(contractAddress)
+                .estimate(false)
+                .build();
+
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
     @Getter
     @RequiredArgsConstructor
     enum ContractMethods implements SelectorInterface {
@@ -452,8 +474,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         ERC_ALLOWANCE("allowance"),
         ERC_GET_APPROVED("getApproved"),
         GET_APPROVED("getApprovedExternal"),
-        GET_APPROVED_DIRECT("getApprovedExternal(address,uint256)"),
-        GET_COUNTER("getCounter"),
+        GET_APPROVED_DIRECT("getApproved(uint256)"),
+        GET_COUNTER("counter"),
         GET_TOKEN_INFORMATION("getInformationForToken");
 
         private final String selector;

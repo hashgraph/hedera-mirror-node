@@ -1,6 +1,11 @@
 hedera:
   mirror:
     web3:
+      evm:
+        evm_versions:
+          0: v0.30
+          200: v0.34
+          500: v0.38
       db:
         host: 127.0.0.1
         name: mirror_node
@@ -9,6 +14,7 @@ hedera:
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_web3
+
 logging:
   level:
     root: warn
