@@ -19,7 +19,7 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
@@ -30,11 +30,11 @@ import org.springframework.context.annotation.Lazy;
 @Tag("migration")
 class DummyMigrationTest extends ImporterIntegrationTest {
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Test
     void checksum() {
-        var dummyMigration = new DummyMigration(mirrorProperties);
+        var dummyMigration = new DummyMigration(importerProperties);
         assertThat(dummyMigration.getChecksum()).isEqualTo(5);
     }
 
@@ -44,8 +44,8 @@ class DummyMigrationTest extends ImporterIntegrationTest {
         private boolean migrated = false;
 
         @Lazy
-        public DummyMigration(MirrorProperties mirrorProperties) {
-            super(mirrorProperties.getMigration());
+        public DummyMigration(ImporterProperties importerProperties) {
+            super(importerProperties.getMigration());
         }
 
         @Override

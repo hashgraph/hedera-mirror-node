@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.downloader;
 
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -46,7 +46,7 @@ public class CommonDownloaderProperties {
 
     private static final MathContext MATH_CONTEXT = new MathContext(19, RoundingMode.DOWN);
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     private String accessKey;
 
@@ -92,9 +92,9 @@ public class CommonDownloaderProperties {
     @PostConstruct
     public void init() {
         if (StringUtils.isBlank(bucketName)
-                && StringUtils.isBlank(HederaNetwork.getBucketName(mirrorProperties.getNetwork()))) {
+                && StringUtils.isBlank(HederaNetwork.getBucketName(importerProperties.getNetwork()))) {
             throw new IllegalArgumentException(
-                    "Must define bucketName for network named '%s'".formatted(mirrorProperties.getNetwork()));
+                    "Must define bucketName for network named '%s'".formatted(importerProperties.getNetwork()));
         }
 
         StreamSourceProperties.SourceCredentials credentials = null;
@@ -134,13 +134,13 @@ public class CommonDownloaderProperties {
     public String getBucketName() {
         return StringUtils.isNotBlank(bucketName)
                 ? bucketName
-                : HederaNetwork.getBucketName(mirrorProperties.getNetwork());
+                : HederaNetwork.getBucketName(importerProperties.getNetwork());
     }
 
     public boolean isAnonymousCredentials() {
         return allowAnonymousAccess != null
                 ? allowAnonymousAccess
-                : HederaNetwork.isAllowAnonymousAccess(mirrorProperties.getNetwork());
+                : HederaNetwork.isAllowAnonymousAccess(importerProperties.getNetwork());
     }
 
     public enum PathType {

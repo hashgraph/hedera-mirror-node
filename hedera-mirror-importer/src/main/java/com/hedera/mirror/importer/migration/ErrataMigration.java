@@ -22,8 +22,8 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.config.DateRangeCalculator.DateRangeFilter;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -74,7 +74,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionOperations transactionOperations;
@@ -89,18 +89,18 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             EntityRecordItemListener entityRecordItemListener,
             EntityProperties entityProperties,
             NamedParameterJdbcOperations jdbcOperations,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             RecordStreamFileListener recordStreamFileListener,
             TokenTransferRepository tokenTransferRepository,
             TransactionOperations transactionOperations,
             TransactionRepository transactionRepository) {
-        super(mirrorProperties.getMigration());
+        super(importerProperties.getMigration());
         this.balanceOffsets = balanceOffsets;
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.entityRecordItemListener = entityRecordItemListener;
         this.entityProperties = entityProperties;
         this.jdbcOperations = jdbcOperations;
-        this.mirrorProperties = mirrorProperties;
+        this.importerProperties = importerProperties;
         this.recordStreamFileListener = recordStreamFileListener;
         this.tokenTransferRepository = tokenTransferRepository;
         this.transactionOperations = transactionOperations;
@@ -221,7 +221,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         Arrays.sort(resources, Comparator.comparing(Resource::getFilename));
         recordStreamFileListener.onStart();
-        var dateRangeFilter = new DateRangeFilter(mirrorProperties.getStartDate(), mirrorProperties.getEndDate());
+        var dateRangeFilter = new DateRangeFilter(importerProperties.getStartDate(), importerProperties.getEndDate());
 
         for (Resource resource : resources) {
             String name = resource.getFilename();
@@ -325,7 +325,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     }
 
     private boolean isMainnet() {
-        return MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork());
+        return ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(importerProperties.getNetwork());
     }
 
     private boolean shouldApplyFixedTimeOffset(long consensusTimestamp) {

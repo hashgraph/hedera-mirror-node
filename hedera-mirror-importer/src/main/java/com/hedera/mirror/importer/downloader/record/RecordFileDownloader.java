@@ -21,9 +21,10 @@ import com.google.common.collect.Multimaps;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.Downloader;
@@ -61,8 +62,9 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
     public RecordFileDownloader(
             ConsensusNodeService consensusNodeService,
             RecordDownloaderProperties downloaderProperties,
+            ImporterProperties importerProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SidecarFileReader sidecarFileReader,
             SidecarProperties sidecarProperties,
@@ -73,8 +75,9 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
         super(
                 consensusNodeService,
                 downloaderProperties,
+                importerProperties,
                 meterRegistry,
-                mirrorDateRangePropertiesProcessor,
+                dateRangeCalculator,
                 nodeSignatureVerifier,
                 signatureFileReader,
                 streamFileNotifier,
@@ -148,7 +151,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
             }
 
             if (downloaderProperties.isWriteFiles()) {
-                var streamPath = downloaderProperties.getMirrorProperties().getStreamPath();
+                var streamPath = importerProperties.getStreamPath();
                 Utility.archiveFile(streamFileData.getFilePath(), sidecar.getBytes(), streamPath);
             }
 

@@ -41,6 +41,7 @@ class EntityDatabaseAccessorTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final Address ALIAS_ADDRESS = Address.fromHexString(ALIAS_HEX);
 
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     private static final Entity mockEntity = mock(Entity.class);
 
     @InjectMocks
@@ -54,7 +55,16 @@ class EntityDatabaseAccessorTest {
         when(entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(ADDRESS)))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(entityDatabaseAccessor.get(ADDRESS))
+        assertThat(entityDatabaseAccessor.get(ADDRESS, Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByAddressHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(entityIdNumFromEvmAddress(ADDRESS), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(entityDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
@@ -63,7 +73,16 @@ class EntityDatabaseAccessorTest {
         when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArrayUnsafe()))
                 .thenReturn(Optional.of(mockEntity));
 
-        assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS))
+        assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS, Optional.empty()))
+                .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
+    }
+
+    @Test
+    void getEntityByAliasHistorical() {
+        when(entityRepository.findActiveByEvmAddressAndTimestamp(ALIAS_ADDRESS.toArrayUnsafe(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+
+        assertThat(entityDatabaseAccessor.get(ALIAS_ADDRESS, timestamp))
                 .hasValueSatisfying(entity -> assertThat(entity).isEqualTo(mockEntity));
     }
 
@@ -71,7 +90,15 @@ class EntityDatabaseAccessorTest {
     void evmAddressFromIdReturnZeroWhenNoEntityFound() {
         when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.empty());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), Optional.empty()))
+                .isEqualTo(Address.ZERO);
+    }
+
+    @Test
+    void evmAddressFromIdReturnZeroWhenNoEntityFoundHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(0L, timestamp.get())).thenReturn(Optional.empty());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), timestamp))
                 .isEqualTo(Address.ZERO);
     }
 
@@ -80,7 +107,16 @@ class EntityDatabaseAccessorTest {
         when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
         when(mockEntity.getEvmAddress()).thenReturn(ADDRESS.toArray());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), Optional.empty()))
+                .isEqualTo(ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAddressFromEntityEvmAddressWhenPresentHistorical() {
+        when(entityRepository.findByIdAndDeletedIsFalse(anyLong())).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), Optional.empty()))
                 .isEqualTo(ADDRESS);
     }
 
@@ -90,7 +126,17 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getEvmAddress()).thenReturn(null);
         when(mockEntity.getAlias()).thenReturn(ALIAS_ADDRESS.toArray());
 
-        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class)))
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), Optional.empty()))
+                .isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void evmAddressFromIdReturnAliasFromEntityWhenPresentAndNoEvmAddressHistorical() {
+        when(entityRepository.findActiveByIdAndTimestamp(0L, timestamp.get())).thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(ALIAS_ADDRESS.toArray());
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(mock(EntityId.class), timestamp))
                 .isEqualTo(ALIAS_ADDRESS);
     }
 
@@ -101,6 +147,18 @@ class EntityDatabaseAccessorTest {
         when(mockEntity.getAlias()).thenReturn(null);
 
         final var entityId = EntityId.of(1L, 2L, 3L);
-        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId)).isEqualTo(toAddress(entityId));
+        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId, Optional.empty()))
+                .isEqualTo(toAddress(entityId));
+    }
+
+    @Test
+    void evmAddressFromIdReturnToAddressByDefaultHistorical() {
+        final var entityId = EntityId.of(1L, 2L, 3L);
+        when(entityRepository.findActiveByIdAndTimestamp(entityId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(mockEntity));
+        when(mockEntity.getEvmAddress()).thenReturn(null);
+        when(mockEntity.getAlias()).thenReturn(null);
+
+        assertThat(entityDatabaseAccessor.evmAddressFromId(entityId, timestamp)).isEqualTo(toAddress(entityId));
     }
 }

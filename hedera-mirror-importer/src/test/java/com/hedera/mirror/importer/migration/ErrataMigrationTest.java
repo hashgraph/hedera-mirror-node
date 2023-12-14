@@ -25,7 +25,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -72,19 +72,19 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final ErrataMigration errataMigration;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final TransactionRepository transactionRepository;
 
     @BeforeEach
     void setup() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.MAINNET);
     }
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG);
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
-        mirrorProperties.setStartDate(Instant.EPOCH);
+        importerProperties.setEndDate(Utility.MAX_INSTANT_LONG);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
+        importerProperties.setStartDate(Instant.EPOCH);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
 
     @Test
     void migrateNotMainnet() throws Exception {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
         domainBuilder
                 .accountBalanceFile()
@@ -115,8 +115,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
     @Test
     void migrateOutsideDateRange() throws Exception {
         Instant now = Instant.now();
-        mirrorProperties.setStartDate(now);
-        mirrorProperties.setEndDate(now.plusSeconds(1L));
+        importerProperties.setStartDate(now);
+        importerProperties.setEndDate(now.plusSeconds(1L));
 
         errataMigration.doMigrate();
 
@@ -220,7 +220,7 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
 
     @Test
     void onEndNotMainnet() {
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
         AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
         errataMigration.onStart(); // Call to increase test coverage of no-op methods

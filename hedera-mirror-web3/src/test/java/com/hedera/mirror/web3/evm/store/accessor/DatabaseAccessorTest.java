@@ -34,7 +34,7 @@ class DatabaseAccessorTest {
 
     static class DBAccessorTestImpl extends DatabaseAccessor<AccessDeniedException, LongStream> {
         @NonNull
-        public Optional<LongStream> get(@NonNull final AccessDeniedException ignored) {
+        public Optional<LongStream> get(@NonNull final AccessDeniedException ignored, final Optional<Long> timestamp) {
             return Optional.empty();
         }
     }
@@ -42,7 +42,6 @@ class DatabaseAccessorTest {
     @Test
     void genericTypeParametersReflectionTest() {
         final var sut = new DBAccessorTestImpl();
-
         softly.assertThat(sut.getKeyClass()).isEqualTo(AccessDeniedException.class);
         softly.assertThat(sut.getValueClass()).isEqualTo(LongStream.class);
     }

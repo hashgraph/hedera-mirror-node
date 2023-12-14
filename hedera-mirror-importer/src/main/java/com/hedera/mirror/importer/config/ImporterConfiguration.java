@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.config;
 
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 import com.hedera.mirror.importer.leader.LeaderService;
 import lombok.CustomLog;
@@ -41,9 +41,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @CustomLog
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
-class MirrorImporterConfiguration {
+class ImporterConfiguration {
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Bean
     @ConditionalOnCloudPlatform(CloudPlatform.KUBERNETES)
@@ -61,9 +61,9 @@ class MirrorImporterConfiguration {
     @Bean
     FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
         return configuration -> {
-            Long timestamp = mirrorProperties.getTopicRunningHashV2AddedTimestamp();
+            Long timestamp = importerProperties.getTopicRunningHashV2AddedTimestamp();
             if (timestamp == null) {
-                if (MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(mirrorProperties.getNetwork())) {
+                if (ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(importerProperties.getNetwork())) {
                     timestamp = 1592499600000000000L;
                 } else {
                     timestamp = 1588706343553042000L;

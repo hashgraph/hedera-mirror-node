@@ -43,7 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
@@ -92,7 +92,7 @@ class NodeSignatureVerifierTest {
     @BeforeEach
     @SneakyThrows
     void setup() {
-        commonDownloaderProperties = new CommonDownloaderProperties(new MirrorProperties());
+        commonDownloaderProperties = new CommonDownloaderProperties(new ImporterProperties());
         commonDownloaderProperties.setConsensusRatio(
                 BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19, RoundingMode.DOWN));
         nodeSignatureVerifier = new NodeSignatureVerifier(consensusValidator);

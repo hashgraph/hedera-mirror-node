@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -51,6 +52,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.hyperledger.besu.datatypes.Address;
 
 @Named
 @RequiredArgsConstructor
@@ -64,21 +66,24 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
-
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final TokenAccountRepository tokenAccountRepository;
 
     @Override
-    public @NonNull Optional<Account> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::accountFromEntity);
+    public @NonNull Optional<Account> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof Address address) {
+            return entityDatabaseAccessor.get(address, timestamp).map(entity -> accountFromEntity(entity, timestamp));
+        }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(Account.class.getTypeName(), key.getClass().getTypeName()));
     }
 
-    private Account accountFromEntity(Entity entity) {
+    private Account accountFromEntity(Entity entity, final Optional<Long> timestamp) {
         if (!ACCOUNT.equals(entity.getType()) && !CONTRACT.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map an account/contract from a different type");
         }
-
-        final var tokenAssociationsCounts = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId());
+        final var tokenAssociationsCounts =
+                getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
         return new Account(
                 entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                         ? ByteString.copyFrom(entity.getEvmAddress())
@@ -88,13 +93,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
                 Optional.ofNullable(entity.getBalance()).orElse(0L),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
-                getOwnedNfts(entity.getId()),
+                getOwnedNfts(entity.getId(), timestamp),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(DEFAULT_AUTO_RENEW_PERIOD),
                 idFromEntityId(entity.getProxyAccountId()),
                 Optional.ofNullable(entity.getMaxAutomaticTokenAssociations()).orElse(0),
-                getCryptoAllowances(entity.getId()),
-                getFungibleTokenAllowances(entity.getId()),
-                getApproveForAllNfts(entity.getId()),
+                getCryptoAllowances(entity.getId(), timestamp),
+                getFungibleTokenAllowances(entity.getId(), timestamp),
+                getApproveForAllNfts(entity.getId(), timestamp),
                 tokenAssociationsCounts.all(),
                 tokenAssociationsCounts.positive(),
                 0,
@@ -106,12 +111,17 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                         : 0L);
     }
 
-    private long getOwnedNfts(Long accountId) {
-        return nftRepository.countByAccountIdNotDeleted(accountId);
+    private long getOwnedNfts(Long accountId, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, t))
+                .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId));
     }
 
-    private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId) {
-        return cryptoAllowanceRepository.findByOwner(ownerId).stream()
+    private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
+                .stream()
                 .collect(Collectors.toMap(
                         cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
                         CryptoAllowance::getAmount,
@@ -119,8 +129,12 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                         TreeMap::new));
     }
 
-    private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(Long ownerId) {
-        return tokenAllowanceRepository.findByOwner(ownerId).stream()
+    private SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances(
+            Long ownerId, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
+                .stream()
                 .collect(Collectors.toMap(
                         tokenAllowance -> new FcTokenAllowanceId(
                                 entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
@@ -130,8 +144,11 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                         TreeMap::new));
     }
 
-    private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId) {
-        return nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId).stream()
+    private SortedSet<FcTokenAllowanceId> getApproveForAllNfts(Long ownerId, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, t))
+                .orElseGet(() -> nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId))
+                .stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
                         entityNumFromId(EntityId.of(nftAllowance.getTokenId())),
                         entityNumFromId(EntityId.of(nftAllowance.getSpender()))))
@@ -142,8 +159,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return EntityNum.fromLong(entityId.getNum());
     }
 
-    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(long accountId) {
-        final var counts = tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId);
+    private TokenAccountBalances getNumberOfAllAndPositiveBalanceTokenAssociations(
+            long accountId, final Optional<Long> timestamp) {
+        var counts = timestamp
+                .map(t -> tokenAccountRepository.countByAccountIdAndTimestampAndAssociatedGroupedByBalanceIsPositive(
+                        accountId, t))
+                .orElseGet(() ->
+                        tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId));
         int all = 0;
         int positive = 0;
 
@@ -165,6 +187,5 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         }
     }
 
-    private record TokenAccountBalances(int all, int positive) {
-    }
+    private record TokenAccountBalances(int all, int positive) {}
 }

@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.UPPER_BOUND_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +34,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -78,7 +78,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TransactionRepository transactionRepository;
     private final TokenTransferRepository tokenTransferRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private Entity currentKeyUnaffectedEntity;
     private Entity currentKeyAffectedEntity;
     private Entity noKeyEntity;
@@ -87,14 +87,14 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     @BeforeEach
     @SneakyThrows
     void setup() {
-        mirrorProperties.setNetwork(MAINNET);
+        importerProperties.setNetwork(MAINNET);
         migration.setExecuted(false);
         migration.setComplete(false);
     }
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(TESTNET);
+        importerProperties.setNetwork(TESTNET);
     }
 
     @Test

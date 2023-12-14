@@ -18,9 +18,10 @@ package com.hedera.mirror.importer.downloader.balance;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
@@ -46,8 +47,9 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
             AccountBalanceFileRepository accountBalanceFileRepository,
             ConsensusNodeService consensusNodeService,
             BalanceDownloaderProperties downloaderProperties,
+            ImporterProperties importerProperties,
             MeterRegistry meterRegistry,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+            DateRangeCalculator dateRangeCalculator,
             NodeSignatureVerifier nodeSignatureVerifier,
             SignatureFileReader signatureFileReader,
             StreamFileNotifier streamFileNotifier,
@@ -56,8 +58,9 @@ public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, Ac
         super(
                 consensusNodeService,
                 downloaderProperties,
+                importerProperties,
                 meterRegistry,
-                mirrorDateRangePropertiesProcessor,
+                dateRangeCalculator,
                 nodeSignatureVerifier,
                 signatureFileReader,
                 streamFileNotifier,

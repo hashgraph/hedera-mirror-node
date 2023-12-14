@@ -20,7 +20,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
@@ -55,9 +55,9 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     public BackfillTransactionHashMigration(
             EntityProperties entityProperties,
             @Owner JdbcTemplate jdbcTemplate,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             Environment environment) {
-        super(mirrorProperties.getMigration());
+        super(importerProperties.getMigration());
         this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
         this.isV2 = environment.acceptsProfiles(Profiles.of("v2"));

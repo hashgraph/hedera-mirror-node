@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -64,7 +64,7 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final @Owner JdbcTemplate jdbcTemplate;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordFileRepository recordFileRepository;
     private InitializeEntityBalanceMigration migration;
     private Entity account;
@@ -80,7 +80,7 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(0L);
         migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
+                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test

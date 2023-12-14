@@ -45,6 +45,8 @@ class UniqueTokenDatabaseAccessorTest {
     @Mock
     private NftRepository nftRepository;
 
+    private static final Optional<Long> timestamp = Optional.of(1234L);
+
     @Test
     void get() {
         int createdTimestampNanos = 13;
@@ -58,14 +60,41 @@ class UniqueTokenDatabaseAccessorTest {
         when(nftRepository.findActiveById(nft.getTokenId(), nft.getSerialNumber()))
                 .thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft))).hasValueSatisfying(uniqueToken -> assertThat(
-                        uniqueToken)
-                .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
-                .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
-                .returns(new RichInstant(createdTimestampSecs, createdTimestampNanos), UniqueToken::getCreationTime)
-                .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
-                .returns(idFromEntityId(nft.getSpender()), UniqueToken::getSpender)
-                .returns(nft.getMetadata(), UniqueToken::getMetadata));
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), Optional.empty()))
+                .hasValueSatisfying(uniqueToken -> assertThat(uniqueToken)
+                        .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
+                        .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
+                        .returns(
+                                new RichInstant(createdTimestampSecs, createdTimestampNanos),
+                                UniqueToken::getCreationTime)
+                        .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
+                        .returns(idFromEntityId(nft.getSpender()), UniqueToken::getSpender)
+                        .returns(nft.getMetadata(), UniqueToken::getMetadata));
+    }
+
+    @Test
+    void getHistorical() {
+        int createdTimestampNanos = 13;
+        long createdTimestampSecs = 12;
+
+        Nft nft = domainBuilder
+                .nft()
+                .customize(n -> n.createdTimestamp(createdTimestampSecs * 1_000_000_000 + createdTimestampNanos))
+                .get();
+
+        when(nftRepository.findActiveByIdAndTimestamp(nft.getTokenId(), nft.getSerialNumber(), timestamp.get()))
+                .thenReturn(Optional.of(nft));
+
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), timestamp))
+                .hasValueSatisfying(uniqueToken -> assertThat(uniqueToken)
+                        .returns(idFromEntityId(EntityId.of(nft.getTokenId())), UniqueToken::getTokenId)
+                        .returns(nft.getId().getSerialNumber(), UniqueToken::getSerialNumber)
+                        .returns(
+                                new RichInstant(createdTimestampSecs, createdTimestampNanos),
+                                UniqueToken::getCreationTime)
+                        .returns(idFromEntityId(nft.getAccountId()), UniqueToken::getOwner)
+                        .returns(idFromEntityId(nft.getSpender()), UniqueToken::getSpender)
+                        .returns(nft.getMetadata(), UniqueToken::getMetadata));
     }
 
     @Test
@@ -74,7 +103,7 @@ class UniqueTokenDatabaseAccessorTest {
 
         when(nftRepository.findActiveById(anyLong(), anyLong())).thenReturn(Optional.of(nft));
 
-        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft)))
+        assertThat(uniqueTokenDatabaseAccessor.get(getNftKey(nft), Optional.empty()))
                 .hasValueSatisfying(uniqueToken ->
                         assertThat(uniqueToken.getCreationTime()).isEqualTo(RichInstant.MISSING_INSTANT));
     }

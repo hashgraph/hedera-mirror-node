@@ -22,7 +22,7 @@ import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.common.converter.EntityIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.ImporterIntegrationTest.Configuration;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
 import com.redis.testcontainers.RedisContainer;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
@@ -79,10 +79,10 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
     protected SoftAssertions softly;
 
     @Resource
-    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private DateRangeCalculator dateRangeCalculator;
 
     @Resource
-    private MirrorProperties mirrorProperties;
+    private ImporterProperties importerProperties;
 
     @Getter
     @Value("#{environment.matchesProfiles('!v2')}")
@@ -131,9 +131,9 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     protected void reset() {
         super.reset();
-        mirrorDateRangePropertiesProcessor.clear();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
-        mirrorProperties.setStartDate(Instant.EPOCH);
+        dateRangeCalculator.clear();
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
+        importerProperties.setStartDate(Instant.EPOCH);
         retryRecorder.reset();
     }
 

@@ -18,8 +18,8 @@ package com.hedera.mirror.importer.config;
 
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.importer.TestUtils.plus;
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
+import static com.hedera.mirror.importer.config.DateRangeCalculator.DateRangeFilter;
+import static com.hedera.mirror.importer.config.DateRangeCalculator.STARTUP_TIME;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.apache.commons.lang3.ObjectUtils.max;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.doReturn;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -56,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MirrorDateRangePropertiesProcessorTest {
+class DateRangeCalculatorTest {
 
     private final Map<StreamType, StreamFileRepository<?, ?>> streamFileRepositories = new HashMap<>();
 
@@ -69,22 +69,22 @@ class MirrorDateRangePropertiesProcessorTest {
     @Mock
     private RecordFileRepository recordFileRepository;
 
-    private MirrorProperties mirrorProperties;
+    private ImporterProperties importerProperties;
     private List<DownloaderProperties> downloaderPropertiesList;
-    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private DateRangeCalculator dateRangeCalculator;
 
     @BeforeEach
     void setUp() {
-        mirrorProperties = new MirrorProperties();
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
-        var commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
-        var balanceDownloaderProperties = new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        var recordDownloaderProperties = new RecordDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        importerProperties = new ImporterProperties();
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
+        var commonDownloaderProperties = new CommonDownloaderProperties(importerProperties);
+        var balanceDownloaderProperties = new BalanceDownloaderProperties(commonDownloaderProperties);
+        var eventDownloaderProperties = new EventDownloaderProperties(commonDownloaderProperties);
+        var recordDownloaderProperties = new RecordDownloaderProperties(commonDownloaderProperties);
         downloaderPropertiesList =
                 List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
-        mirrorDateRangePropertiesProcessor = new MirrorDateRangePropertiesProcessor(
-                mirrorProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
+        dateRangeCalculator = new DateRangeCalculator(
+                importerProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
         eventDownloaderProperties.setEnabled(true);
@@ -101,10 +101,9 @@ class MirrorDateRangePropertiesProcessorTest {
         var expectedFilter = new DateRangeFilter(expectedDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             var streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+            assertThat(dateRangeCalculator.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate, true));
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
-                    .isEqualTo(expectedFilter);
+            assertThat(dateRangeCalculator.getFilter(streamType)).isEqualTo(expectedFilter);
         }
     }
 
@@ -119,7 +118,7 @@ class MirrorDateRangePropertiesProcessorTest {
     @Test
     void startDateNotSetAndEndDateAfterLongMaxAndDatabaseNotEmpty() {
         var past = STARTUP_TIME.minusSeconds(100);
-        mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
+        importerProperties.setEndDate(Utility.MAX_INSTANT_LONG.plusNanos(1));
         streamFileRepositories.forEach((streamType, repository) ->
                 doReturn(streamFile(streamType, past, false)).when(repository).findLatest());
         verifyWhenLastStreamFileFromDatabase(past);
@@ -128,15 +127,14 @@ class MirrorDateRangePropertiesProcessorTest {
     @Test
     void startDateSetAndDatabaseEmpty() {
         var startDate = STARTUP_TIME.plusSeconds(10L);
-        mirrorProperties.setStartDate(startDate);
-        var expectedFilter = new DateRangeFilter(mirrorProperties.getStartDate(), null);
-        var expectedDate = mirrorProperties.getStartDate();
+        importerProperties.setStartDate(startDate);
+        var expectedFilter = new DateRangeFilter(importerProperties.getStartDate(), null);
+        var expectedDate = importerProperties.getStartDate();
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+            assertThat(dateRangeCalculator.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate, true));
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
-                    .isEqualTo(expectedFilter);
+            assertThat(dateRangeCalculator.getFilter(streamType)).isEqualTo(expectedFilter);
         }
     }
 
@@ -144,7 +142,7 @@ class MirrorDateRangePropertiesProcessorTest {
     @ValueSource(longs = {0, 1})
     void startDateNotAfterDatabase(long nanos) {
         var past = STARTUP_TIME.minusSeconds(100);
-        mirrorProperties.setStartDate(past.minusNanos(nanos));
+        importerProperties.setStartDate(past.minusNanos(nanos));
         streamFileRepositories.forEach((streamType, repository) ->
                 doReturn(streamFile(streamType, past, false)).when(repository).findLatest());
         verifyWhenLastStreamFileFromDatabase(past);
@@ -160,16 +158,16 @@ class MirrorDateRangePropertiesProcessorTest {
                         .findLatest());
 
         var startDate = lastFileInstant.plusNanos(diffNanos);
-        mirrorProperties.setStartDate(startDate);
+        importerProperties.setStartDate(startDate);
         var effectiveStartDate = max(startDate, lastFileInstant);
 
         var expectedFilter = new DateRangeFilter(startDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             var streamType = downloaderProperties.getStreamType();
 
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+            assertThat(dateRangeCalculator.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, effectiveStartDate, true));
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
+            assertThat(dateRangeCalculator.getFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }
     }
@@ -185,8 +183,8 @@ class MirrorDateRangePropertiesProcessorTest {
                 ", 2020-08-18T09:00:05.123Z,"
             })
     void startDateNotBeforeEndDate(Instant startDate, Instant endDate, Instant lastFileDate) {
-        mirrorProperties.setStartDate(startDate);
-        mirrorProperties.setEndDate(endDate);
+        importerProperties.setStartDate(startDate);
+        importerProperties.setEndDate(endDate);
 
         if (lastFileDate != null) {
             streamFileRepositories.forEach(
@@ -197,7 +195,7 @@ class MirrorDateRangePropertiesProcessorTest {
 
         for (var downloaderProperties : downloaderPropertiesList) {
             var streamType = downloaderProperties.getStreamType();
-            assertThatThrownBy(() -> mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+            assertThatThrownBy(() -> dateRangeCalculator.getLastStreamFile(streamType))
                     .isInstanceOf(InvalidConfigurationException.class);
         }
     }
@@ -244,12 +242,11 @@ class MirrorDateRangePropertiesProcessorTest {
             long expectedConsensusEnd = streamType != StreamType.BALANCE
                     ? plus(expectedConsensusStart, streamType.getFileCloseInterval())
                     : expectedConsensusStart;
-            assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
+            assertThat(dateRangeCalculator.getLastStreamFile(streamType))
                     .get()
                     .returns(expectedConsensusStart, StreamFile::getConsensusStart)
                     .returns(expectedConsensusEnd, StreamFile::getConsensusEnd);
-            assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType))
-                    .isEqualTo(expectedDateRangeFilter);
+            assertThat(dateRangeCalculator.getFilter(streamType)).isEqualTo(expectedDateRangeFilter);
         }
     }
 }

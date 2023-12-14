@@ -22,9 +22,9 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @ConfigurationPropertiesScan
 @SpringBootApplication
-public class MirrorImporterApplication {
+public class ImporterApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MirrorImporterApplication.class, args);
+        SpringApplication.run(ImporterApplication.class, args);
     }
 }

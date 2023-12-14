@@ -31,7 +31,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.ContextExtension;
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -156,8 +155,6 @@ class HTSPrecompiledContractTest {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
-
-        ContractCallContext.init(store.getStackedStateFrames());
     }
 
     @Test
@@ -446,7 +443,7 @@ class HTSPrecompiledContractTest {
     static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override
-        public Optional<V> get(@NonNull final K key) {
+        public Optional<V> get(@NonNull final K key, final Optional<Long> timestamp) {
             throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
         }
     }

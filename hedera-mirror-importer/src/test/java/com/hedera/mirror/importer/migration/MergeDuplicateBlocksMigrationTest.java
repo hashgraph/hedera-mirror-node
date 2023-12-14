@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ class MergeDuplicateBlocksMigrationTest extends ImporterIntegrationTest {
     private static final long TIMESTAMP2 = 1675962001984524003L;
 
     private final MergeDuplicateBlocksMigration migration;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordFileRepository recordFileRepository;
     private final TransactionRepository transactionRepository;
 
@@ -57,7 +57,7 @@ class MergeDuplicateBlocksMigrationTest extends ImporterIntegrationTest {
     @Test
     void notMainnet() throws Exception {
         // Given
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
 
         // When
         migration.doMigrate();
@@ -74,7 +74,7 @@ class MergeDuplicateBlocksMigrationTest extends ImporterIntegrationTest {
     @Test
     void mainnet() throws Exception {
         // Given
-        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        importerProperties.setNetwork(ImporterProperties.HederaNetwork.MAINNET);
 
         // When
         migration.doMigrate();

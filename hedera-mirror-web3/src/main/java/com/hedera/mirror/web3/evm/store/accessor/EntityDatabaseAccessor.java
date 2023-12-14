@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import jakarta.inject.Named;
 import java.util.Optional;
@@ -37,21 +38,40 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object address) {
-        final var castedAddress = (Address) address;
-        final var addressBytes = (castedAddress).toArrayUnsafe();
-        if (isMirror(addressBytes)) {
-            final var entityId = entityIdNumFromEvmAddress((Address) address);
-            return entityRepository.findByIdAndDeletedIsFalse(entityId);
-        } else {
-            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+    public @NotNull Optional<Entity> get(@NotNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof Address address) {
+            final var addressBytes = address.toArrayUnsafe();
+            if (isMirror(addressBytes)) {
+                return getEntityByMirrorAddressAndTimestamp(address, timestamp);
+            } else {
+                return getEntityByEvmAddressAndTimestamp(addressBytes, timestamp);
+            }
         }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(Entity.class.getTypeName(), key.getClass().getTypeName()));
     }
 
-    public Address evmAddressFromId(EntityId entityId) {
-        Entity entity =
-                entityRepository.findByIdAndDeletedIsFalse(entityId.getId()).orElse(null);
+    private Optional<Entity> getEntityByMirrorAddressAndTimestamp(Address address, final Optional<Long> timestamp) {
+        final var entityId = entityIdNumFromEvmAddress(address);
+        return timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(entityId, t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(entityId));
+    }
 
+    private Optional<Entity> getEntityByEvmAddressAndTimestamp(byte[] addressBytes, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> entityRepository.findActiveByEvmAddressAndTimestamp(addressBytes, t))
+                .orElseGet(() -> entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes));
+    }
+
+    public Address evmAddressFromId(EntityId entityId, final Optional<Long> timestamp) {
+        Entity entity = timestamp
+                .map(t -> entityRepository
+                        .findActiveByIdAndTimestamp(entityId.getId(), t)
+                        .orElse(null))
+                .orElseGet(() -> entityRepository
+                        .findByIdAndDeletedIsFalse(entityId.getId())
+                        .orElse(null));
         if (entity == null) {
             return Address.ZERO;
         }
