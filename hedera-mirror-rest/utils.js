@@ -685,31 +685,37 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
  * @param {Range} tsRange timestamp range, typically based on query parameters
  * @return {Range} fully bound timestamp range
  */
-const bindTimestampRange = function (tsRange) {
+const bindTimestampRange = (tsRange, order = 'desc') => {
   const {bindTimestampRange, maxTimestampRangeNs} = config.query;
   if (!bindTimestampRange) {
     return tsRange;
   }
 
-  let queryTsRange;
-  if (tsRange) {
-    if (tsRange.begin && tsRange.end) {
-      return tsRange; // Already fully bound
+  const queryTsRange = tsRange ? Range(tsRange.begin ?? null, tsRange.end ?? null, tsRange.bounds ?? '[]') : Range();
+
+  if (_.isNil(queryTsRange.end)) {
+    if (_.isNil(queryTsRange.begin)) {
+      queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
+    } else {
+      queryTsRange.end = queryTsRange.begin + maxTimestampRangeNs;
     }
-    // Copy, as original may be used elsewhere
-    queryTsRange = Range(tsRange.begin, tsRange.end, '[]');
   } else {
-    queryTsRange = Range();
+    if (_.isNil(queryTsRange.begin)) {
+      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
+    }
+    // Fully bound by client. Trim if not within max timestamp range.
+    else {
+      if (queryTsRange.end - queryTsRange.begin > maxTimestampRangeNs) {
+        if (order === 'desc') {
+          queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
+        } else {
+          queryTsRange.end = queryTsRange.begin + maxTimestampRangeNs;
+        }
+      }
+    }
   }
 
-  if (queryTsRange.end) {
-    queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
-  } else if (queryTsRange.begin) {
-    queryTsRange.end = queryTsRange.begin + maxTimestampRangeNs;
-  } else {
-    queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-    queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
-  }
   return queryTsRange;
 };
 

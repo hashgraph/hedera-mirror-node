@@ -1356,30 +1356,55 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
 
 describe('Utils test - utils.bindTimestampRange', () => {
   let clock;
+  let saveBindTimestampRange;
+  let saveMaxTimestampRangeNs;
+
   // Set now, so Date.now() returns the expected epoch millis
   const now = Date.parse('2022-10-15T08:10:15.333Z');
   const nowNs = BigInt(now) * constants.NANOSECONDS_PER_MILLISECOND;
 
   beforeAll(() => {
+    saveBindTimestampRange = config.query.bindTimestampRange;
+    saveMaxTimestampRangeNs = config.query.maxTimestampRangeNs;
     clock = sinon.useFakeTimers({now});
   });
 
   afterAll(() => {
+    config.query.bindTimestampRange = saveBindTimestampRange;
+    config.query.maxTimestampRangeNs = saveMaxTimestampRangeNs;
     clock.restore();
   });
 
-  test('Verify already bound range', () => {
+  test('Verify already bound range within max', () => {
     const inputRange = Range(1000000000n, 2000000000n);
     config.query.bindTimestampRange = false;
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+
     config.query.bindTimestampRange = true;
+    config.query.maxTimestampRangeNs = 1000000000n;
+    expect(utils.bindTimestampRange(inputRange)).toEqual(inputRange);
+  });
+  test('Verify already bound range exceeds max', () => {
+    const inputRange = Range(1000000000n, 2000000000n);
+    config.query.bindTimestampRange = false;
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+
+    config.query.bindTimestampRange = true;
+    config.query.maxTimestampRangeNs = 50000n;
+    expect(utils.bindTimestampRange(inputRange)).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs)
+    );
   });
   test('Verify end only range', () => {
     const inputRange = Range(null, 2000000000n);
     config.query.bindTimestampRange = false;
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+
     config.query.bindTimestampRange = true;
+    config.query.maxTimestampRangeNs = 1000000000n;
     const outputRange = Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end);
     expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
   });
@@ -1387,7 +1412,9 @@ describe('Utils test - utils.bindTimestampRange', () => {
     const inputRange = Range(1000000000n, null);
     config.query.bindTimestampRange = false;
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+
     config.query.bindTimestampRange = true;
+    config.query.maxTimestampRangeNs = 1000000000n;
     const outputRange = Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs);
     expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
   });
@@ -1399,6 +1426,7 @@ describe('Utils test - utils.bindTimestampRange', () => {
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
 
     config.query.bindTimestampRange = true;
+    config.query.maxTimestampRangeNs = 1000000000n;
     const outputRange = Range(nowNs - config.query.maxTimestampRangeNs, nowNs);
     expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
     expect(utils.bindTimestampRange(undefined)).toEqual(outputRange);
